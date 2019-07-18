@@ -383,11 +383,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <System.Runtime.CompilerServices.ExtensionAttribute()>
         Public Function HasSameMetadataDefinitionAs(mi1 As MethodBase, mi2 As MethodBase) As Boolean
-#If UNSUPPORTEDAPI Then
-            return (mi1.MetadataToken = mi2.MetadataToken) AndAlso mi1.Module.Equals(mi2.Module)
-#Else
             Return mi1.Module.Equals(mi2.Module) AndAlso s_MemberEquivalence(mi1, mi2)
-#End If
         End Function
 
     End Module

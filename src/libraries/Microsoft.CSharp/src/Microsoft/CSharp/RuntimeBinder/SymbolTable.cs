@@ -764,11 +764,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     MethodBase methodBase = t.DeclaringMethod;
                     bool bAdded = false;
-#if UNSUPPORTEDAPI
-                    foreach (MethodInfo methinfo in Enumerable.Where(t.DeclaringType.GetRuntimeMethods(), m => m.MetadataToken == methodBase.MetadataToken))
-#else
                     foreach (MethodInfo methinfo in Enumerable.Where(t.DeclaringType.GetRuntimeMethods(), m => m.HasSameMetadataDefinitionAs(methodBase)))
-#endif
                     {
                         if (!methinfo.IsGenericMethod)
                         {
@@ -1410,9 +1406,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             MethodInfo method = member as MethodInfo;
 
             Debug.Assert(method != null || member is ConstructorInfo);
-#if UNSUPPORTEDAPI
-            Debug.Assert(member.DeclaringType == member.ReflectedType);
-#endif
+      
             // If we are trying to add an actual method via MethodKindEnum.Actual, and
             // the memberinfo is a special name, and its not static, then return null.
             // We'll re-add the thing later with some other method kind.
@@ -1494,7 +1488,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 methodSymbol.RetType = VoidType.Instance;
             }
 
-            methodSymbol.modOptCount = GetCountOfModOpts(parameters);
+            methodSymbol.modOptCount = 0;
 
             methodSymbol.isParamArray = DoesMethodHaveParameterArray(parameters);
             methodSymbol.isHideByName = false;
@@ -1578,15 +1572,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                     CType cvType = SymbolLoader.GetPredefindType(PredefinedType.PT_OBJECT);
 
                     // We need to use RawDefaultValue, because DefaultValue is too clever.
-#if UNSUPPORTEDAPI
-                    if (parameter.RawDefaultValue != null)
-                    {
-                        object defValue = parameter.RawDefaultValue;
-#else
                     if (parameter.DefaultValue != null)
                     {
                         object defValue = parameter.DefaultValue;
-#endif
                         Debug.Assert(Type.GetTypeCode(defValue.GetType()) != TypeCode.Decimal); // Handled above
                         switch (Type.GetTypeCode(defValue.GetType()))
                         {
@@ -1683,25 +1671,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             return null;
         }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private static uint GetCountOfModOpts(ParameterInfo[] parameters)
-        {
-            uint count = 0;
-#if UNSUPPORTEDAPI
-            foreach (ParameterInfo p in parameters)
-            {
-                if (p.GetOptionalCustomModifiers() != null)
-                {
-                    count += (uint)p.GetOptionalCustomModifiers().Length;
-                }
-            }
-#endif
-            return count;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
 
         private static TypeArray CreateParameterArray(MemberInfo associatedInfo, ParameterInfo[] parameters)
         {
