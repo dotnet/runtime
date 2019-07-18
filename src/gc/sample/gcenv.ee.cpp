@@ -9,8 +9,6 @@
 #include "gcenv.h"
 #include "gc.h"
 
-MethodTable * g_pFreeObjectMethodTable;
-
 EEConfig * g_pConfig;
 
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
