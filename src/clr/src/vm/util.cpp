@@ -1796,21 +1796,15 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    static size_t maxSize;
-    static size_t maxTrueSize;
+    static volatile size_t s_maxSize;
+    static volatile size_t s_maxTrueSize;
 
-    if (maxSize)
-    {
-        // maxSize and maxTrueSize cached
-        if (bTrueSize)
-        {
-            return maxTrueSize;
-        }
-        else
-        {
-            return maxSize;
-        }
-    }
+    size_t size = bTrueSize ? s_maxTrueSize : s_maxSize;
+    if (size != 0)
+        return size;
+
+    size_t maxSize = 0;
+    size_t maxTrueSize = 0;
 
     // For x86, always get from cpuid.
 #if !defined (_TARGET_X86_)
@@ -1827,11 +1821,11 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     maxSize = maxTrueSize * 3;
 #endif
 
+    s_maxSize = maxSize;
+    s_maxTrueSize = maxTrueSize;
+
     //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
-    if (bTrueSize)
-        return maxTrueSize;
-    else
-        return maxSize;
+    return bTrueSize ? maxTrueSize : maxSize;
 }
 #endif // CROSSGEN_COMPILE
 

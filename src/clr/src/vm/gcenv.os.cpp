@@ -194,6 +194,8 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
     GroupProcNo srcGroupProcNo(srcProcNo);
     GroupProcNo dstGroupProcNo(dstProcNo);
 
+    PROCESSOR_NUMBER proc;
+
     if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         if (srcGroupProcNo.GetGroup() != dstGroupProcNo.GetGroup())
@@ -202,15 +204,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             //group. DO NOT MOVE THREADS ACROSS CPU GROUPS
             return true;
         }
-    }
 
-#if !defined(FEATURE_CORESYSTEM)
-    SetThreadIdealProcessor(GetCurrentThread(), (DWORD)dstGroupProcNo.GetProcIndex());
-#else
-    PROCESSOR_NUMBER proc;
-
-    if (CPUGroupInfo::CanEnableGCCPUGroups())
-    {
         proc.Group = (WORD)dstGroupProcNo.GetGroup();
         proc.Number = (BYTE)dstGroupProcNo.GetProcIndex();
         proc.Reserved = 0;
@@ -225,7 +219,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, &proc);
         }
     }
-#endif // !FEATURE_CORESYSTEM
+
     return success;
 
 #else // !FEATURE_PAL
