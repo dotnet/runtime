@@ -618,6 +618,7 @@ function_name() to call the system's implementation
 #define _WITH_GETLINE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -692,7 +693,7 @@ typedef enum _TimeConversionConstants
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, size_t* val);
+ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
 #ifdef __APPLE__
 bool
