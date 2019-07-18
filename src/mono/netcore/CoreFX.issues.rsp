@@ -1061,11 +1061,9 @@
 ##  System.Reflection.MetadataLoadContext.Tests
 ####################################################################
 
-# System.InvalidOperationException : Sequence contains no elements
-# https://github.com/mono/mono/issues/15339
-# 
 # https://github.com/mono/mono/issues/15340
--nomethod System.Reflection.Tests.CustomAttributeTests.*
+-nomethod System.Reflection.Tests.CustomAttributeTests.TestDllImportPseudoCustomAttribute
+-nomethod System.Reflection.Tests.CustomAttributeTests.TestMarshalAsPseudoCustomAttribute
 -nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
 -nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
 
