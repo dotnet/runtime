@@ -21,27 +21,18 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 
     push_nonvol_reg {r7} /* FP. x64-RBP */
 
-    ldr r4,   [r0, #(CONTEXT_R4)]
-    ldr r5,   [r0, #(CONTEXT_R5)]
-    ldr r6,   [r0, #(CONTEXT_R6)]
-    ldr r7,   [r0, #(CONTEXT_R7)]
-    ldr r8,   [r0, #(CONTEXT_R8)]
-    ldr r9,   [r0, #(CONTEXT_R9)]
-    ldr r10,  [r0, #(CONTEXT_R10)]
-    ldr r11,  [r0, #(CONTEXT_R11)]
-    ldr sp,   [r0, #(CONTEXT_Sp)]
-    ldr lr,   [r0, #(CONTEXT_Pc)]
-
-    ldr d8,   [r0, #(CONTEXT_D8)]
-    ldr d9,   [r0, #(CONTEXT_D9)]
-    ldr d10,  [r0, #(CONTEXT_D10)]
-    ldr d11,  [r0, #(CONTEXT_D11)]
-    ldr d12,  [r0, #(CONTEXT_D12)]
-    ldr d13,  [r0, #(CONTEXT_D13)]
-    ldr d14,  [r0, #(CONTEXT_D14)]
-    ldr d15,  [r0, #(CONTEXT_D15)]
+    ldr	r4,	[r0, #(CONTEXT_R4)]
+    ldr	r5,	[r0, #(CONTEXT_R5)]
+    ldr	r6,	[r0, #(CONTEXT_R6)]
+    ldr	r7,	[r0, #(CONTEXT_R7)]
+    ldr	r8,	[r0, #(CONTEXT_R8)]
+    ldr	r9,	[r0, #(CONTEXT_R9)]
+    ldr	r10,	[r0, #(CONTEXT_R10)]
+    ldr	r11,	[r0, #(CONTEXT_R11)]
+    ldr	sp,	[r0, #(CONTEXT_Sp)]
+    ldr	lr,	[r0, #(CONTEXT_Pc)]
 
     // The PAL_SEHException pointer
-    mov r0, r1
-    b   EXTERNAL_C_FUNC(ThrowExceptionHelper)
+    mov	r0,	r1
+    b	EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
