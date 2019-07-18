@@ -112,8 +112,8 @@ namespace System.Diagnostics.Tracing
     public abstract partial class EventListener : System.IDisposable
     {
         protected EventListener() { }
-        public event System.EventHandler<System.Diagnostics.Tracing.EventSourceCreatedEventArgs> EventSourceCreated { add { } remove { } }
-        public event System.EventHandler<System.Diagnostics.Tracing.EventWrittenEventArgs> EventWritten { add { } remove { } }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventSourceCreatedEventArgs>? EventSourceCreated { add { } remove { } }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventWrittenEventArgs>? EventWritten { add { } remove { } }
         public void DisableEvents(System.Diagnostics.Tracing.EventSource eventSource) { }
         public virtual void Dispose() { }
         public void EnableEvents(System.Diagnostics.Tracing.EventSource eventSource, System.Diagnostics.Tracing.EventLevel level) { }
@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tracing
         public System.Guid Guid { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Diagnostics.Tracing.EventSourceSettings Settings { get { throw null; } }
-        public event System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs> EventCommandExecuted { add { } remove { } }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>? EventCommandExecuted { add { } remove { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~EventSource() { }

@@ -32,9 +32,9 @@ namespace System.Runtime.Loader
         public static System.Runtime.Loader.AssemblyLoadContext Default { get { throw null; } }
         public bool IsCollectible { get { throw null; } }
         public string? Name { get { throw null; } }
-        public event System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly?> Resolving { add { } remove { } }
-        public event System.Func<System.Reflection.Assembly, string, System.IntPtr> ResolvingUnmanagedDll { add { } remove { } }
-        public event System.Action<System.Runtime.Loader.AssemblyLoadContext> Unloading { add { } remove { } }
+        public event System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly?>? Resolving { add { } remove { } }
+        public event System.Func<System.Reflection.Assembly, string, System.IntPtr>? ResolvingUnmanagedDll { add { } remove { } }
+        public event System.Action<System.Runtime.Loader.AssemblyLoadContext>? Unloading { add { } remove { } }
         public System.Runtime.Loader.AssemblyLoadContext.ContextualReflectionScope EnterContextualReflection() { throw null; }
         public static System.Runtime.Loader.AssemblyLoadContext.ContextualReflectionScope EnterContextualReflection(System.Reflection.Assembly? activating) { throw null; }
         ~AssemblyLoadContext() { }
