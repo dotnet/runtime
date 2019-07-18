@@ -18,6 +18,9 @@
   <ItemGroup>
     <!-- CodePages is part of the framework but we don't yet have a MicrosoftNETCoreAppPackageVersion with that change -->
     <IgnoredReference Include="System.Text.Encoding.CodePages"/>
+
+    <!-- Temporarily suppress checking System.Private.CoreLib until we get a new MicrosoftNETCoreAppPackageVersion built against a 5.0 version of it -->
+    <IgnoredReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <Target Name="CheckForWorkaroundRemoval" AfterTargets="ResolveReferences">
     <Error Condition="'%(Reference.FileName)' == 'System.Text.Encoding.CodePages' AND '%(Reference.NuGetPackageId)' == 'Microsoft.NETCore.App'"

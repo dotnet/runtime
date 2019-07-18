@@ -12,6 +12,6 @@
     "Microsoft.DotNet.Build.Tasks.Configuration": "1.0.0-beta.19365.4",
     "Microsoft.DotNet.CoreFxTesting": "1.0.0-beta.19365.4",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
-    "Microsoft.NET.Sdk.IL": "3.0.0-preview8.19363.2"
+    "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19366.2"
   }
 }
