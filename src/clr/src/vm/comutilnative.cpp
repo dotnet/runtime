@@ -762,11 +762,7 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     PTR_BYTE dstPtr = dst->GetDataPtr() + dstOffset;
 
     if ((srcPtr != dstPtr) && (count > 0)) {
-#if defined(_AMD64_) && !defined(PLATFORM_UNIX)
-        JIT_MemCpy(dstPtr, srcPtr, count);
-#else
         memmove(dstPtr, srcPtr, count);
-#endif
     }
 
     FC_GC_POLL();
