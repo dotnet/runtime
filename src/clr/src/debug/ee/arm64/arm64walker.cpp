@@ -200,12 +200,15 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                 switch (opc)
                 {
                 case 0: //4byte data into St
-                    RegContents = 0xFFFFFFFF & RegContents;  //zero the upper 32bit
-                    SetReg(context, RegNum, RegContents);
-                case 1: //8byte data into Dt
-                    SetReg(context, RegNum, RegContents);
+                    SimdRegContents.Low = 0xFFFFFFFF & RegContents;  //zero the upper 32bit
+                    SimdRegContents.High = 0;
+                    SetSimdReg(context, RegNum, SimdRegContents);
                     break;
-
+                case 1: //8byte data into Dt
+                    SimdRegContents.Low = RegContents;
+                    SimdRegContents.High = 0;
+                    SetSimdReg(context, RegNum, SimdRegContents);
+                    break;
                 case 2: //SIMD 16 byte data
                     SimdRegContents = GetSimdMem(ip);
                     SetSimdReg(context, RegNum, SimdRegContents);
