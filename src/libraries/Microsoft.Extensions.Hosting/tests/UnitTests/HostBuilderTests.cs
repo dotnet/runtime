@@ -261,17 +261,18 @@ namespace Microsoft.Extensions.Hosting
                 { "contentRoot", Path.GetFullPath(".") }
             };
 
-            var host = new HostBuilder()
+            using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(config =>
                 {
                     config.AddInMemoryCollection(parameters);
-                }).Build();
+                }).Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
 
-            var env = host.Services.GetRequiredService<IHostEnvironment>();
-
-            Assert.Equal("MyProjectReference", env.ApplicationName);
-            Assert.Equal(Environments.Development, env.EnvironmentName);
-            Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+                Assert.Equal("MyProjectReference", env.ApplicationName);
+                Assert.Equal(Environments.Development, env.EnvironmentName);
+                Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+            }
         }
 
         [Fact]
@@ -391,9 +392,10 @@ namespace Microsoft.Extensions.Hosting
                     Assert.NotNull(options);
                     options.ValidateScopes = true;
                 });
-            var host = hostBuilder.Build();
-
-            Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
+            using (var host = hostBuilder.Build())
+            {
+                Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
+            }
         }
 
         [Fact]
@@ -416,9 +418,11 @@ namespace Microsoft.Extensions.Hosting
                      Assert.Equal("1", container.State);
                      container.State = "2";
                  });
-            var host = hostBuilder.Build();
-            var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
-            Assert.Equal("2", fakeServices.State);
+            using (var host = hostBuilder.Build())
+            {
+                var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
+                Assert.Equal("2", fakeServices.State);
+            }
         }
 
         [Fact]
@@ -494,7 +498,7 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void SetsFullPathToContentRoot()
         {
-            var host = new HostBuilder()
+            using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(config =>
                 {
                     config.AddInMemoryCollection(new[]
@@ -502,11 +506,13 @@ namespace Microsoft.Extensions.Hosting
                         new KeyValuePair<string, string>(HostDefaults.ContentRootKey, Path.GetFullPath("."))
                     });
                 })
-                .Build();
-            var env = host.Services.GetRequiredService<IHostEnvironment>();
+                .Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
 
-            Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
-            Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
+                Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+                Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
+            }
         }
 
         [Fact]

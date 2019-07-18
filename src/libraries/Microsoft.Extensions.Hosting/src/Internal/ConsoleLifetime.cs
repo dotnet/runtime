@@ -19,14 +19,15 @@ namespace Microsoft.Extensions.Hosting.Internal
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime)
-            : this(options, environment, applicationLifetime, NullLoggerFactory.Instance) { }
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions)
+            : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance) { }
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
         {
             Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             Environment = environment ?? throw new ArgumentNullException(nameof(environment));
             ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
+            HostOptions = hostOptions?.Value ?? throw new ArgumentNullException(nameof(hostOptions));
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
@@ -35,6 +36,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IHostEnvironment Environment { get; }
 
         private IHostApplicationLifetime ApplicationLifetime { get; }
+
+        private HostOptions HostOptions { get; }
 
         private ILogger Logger { get; }
 
@@ -76,6 +79,10 @@ namespace Microsoft.Extensions.Hosting.Internal
         private void OnProcessExit(object sender, EventArgs e)
         {
             ApplicationLifetime.StopApplication();
+            if(!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
+            {
+                Logger.LogInformation("Waiting for the host to be disposed. Ensure all 'IHost' instances are wrapped in 'using' blocks.");
+            }
             _shutdownBlock.WaitOne();
             // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
             // Suppress that since we shut down gracefully. https://github.com/aspnet/AspNetCore/issues/6526
