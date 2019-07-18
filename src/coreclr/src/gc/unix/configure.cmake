@@ -4,6 +4,7 @@ check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
+check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 
 check_cxx_source_compiles("
     #include <pthread.h>

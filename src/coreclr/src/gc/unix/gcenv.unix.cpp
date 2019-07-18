@@ -18,17 +18,25 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 
+#undef min
+#undef max
+
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
 #else
  #error "sys/time.h required by GC PAL for the time being"
-#endif // HAVE_SYS_TIME_
+#endif
 
 #if HAVE_SYS_MMAN_H
  #include <sys/mman.h>
 #else
  #error "sys/mman.h required by GC PAL"
-#endif // HAVE_SYS_MMAN_H
+#endif
+
+#if HAVE_SYSCTLBYNAME
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -678,6 +686,42 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
+static size_t GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheSize = 0;
+
+#ifdef _SC_LEVEL1_DCACHE_SIZE
+    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL2_CACHE_SIZE
+    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL3_CACHE_SIZE
+    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL4_CACHE_SIZE
+    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+
+#if HAVE_SYSCTLBYNAME
+    if (cacheSize == 0)
+    {
+        int64_t cacheSizeFromSysctl = 0;
+        size_t sz = sizeof(cacheSizeFromSysctl);
+        const bool success = sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
+        if (success)
+        {
+            assert(cacheSizeFromSysctl > 0);
+            cacheSize = ( size_t) cacheSizeFromSysctl;
+        }
+    }
+#endif
+
+    return cacheSize;
+}
+
 // Get size of the largest cache on the processor die
 // Parameters:
 //  trueSize - true to return true cache size, false to return scaled up size based on
@@ -686,8 +730,26 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //  Size of the cache
 size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
-    // TODO(segilles) processor detection
-    return 0;
+    static volatile size_t s_maxSize;
+    static volatile size_t s_maxTrueSize;
+
+    size_t size = trueSize ? s_maxTrueSize : s_maxSize;
+    if (size != 0)
+        return size;
+
+    size_t maxSize, maxTrueSize;
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
+
+#if defined(_ARM64_)
+    // Bigger gen0 size helps arm64 targets
+    maxSize = maxTrueSize * 3;
+#endif
+
+    s_maxSize = maxSize;
+    s_maxTrueSize = maxTrueSize;
+
+    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    return trueSize ? maxTrueSize : maxSize;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
