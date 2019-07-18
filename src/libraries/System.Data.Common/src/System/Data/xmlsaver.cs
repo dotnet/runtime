@@ -2615,7 +2615,7 @@ namespace System.Data
                                 {
                                     string xsdTypeName = Keywords.XSD_PREFIXCOLON + XmlTreeGen.XmlDataTypeName(valuesType);
                                     _xmlw.WriteAttributeString(Keywords.XSI, Keywords.TYPE, Keywords.XSINS, xsdTypeName);
-                                    _xmlw.WriteAttributeString(Keywords.XMLNS_XSD, Keywords.XSDNS);
+                                    _xmlw.WriteAttributeString(Keywords.XSD_PREFIX, Keywords.XMLNS, Keywords.XSDNS, xsdTypeName);
                                 }
                                 if (!DataStorage.IsSqlType(valuesType))
                                 {
@@ -2934,9 +2934,6 @@ namespace System.Data
                 }
             }
 
-
-
-
             //write the attribute columns first, if any
             foreach (DataColumn col in row.Table.Columns)
             {
@@ -3044,7 +3041,7 @@ namespace System.Data
                                 {
                                     string xsdTypeName = Keywords.XSD_PREFIXCOLON + XmlTreeGen.XmlDataTypeName(valuesType);
                                     _xmlw.WriteAttributeString(Keywords.XSI, Keywords.TYPE, Keywords.XSINS, xsdTypeName);
-                                    _xmlw.WriteAttributeString(Keywords.XMLNS_XSD, Keywords.XSDNS);
+                                    _xmlw.WriteAttributeString(Keywords.XSD_PREFIX, Keywords.XMLNS, Keywords.XSDNS, xsdTypeName);
                                 }
                                 if (!DataStorage.IsSqlType(valuesType))
                                 {
