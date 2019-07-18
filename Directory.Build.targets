@@ -105,6 +105,26 @@
       <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
       <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+      <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
+      
+      <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
+      <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
+      
+      <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
+      
+      <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
+      <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
+
+      <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
+      <RuntimePackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimePackageRelease>
+      <RuntimePackageRelease>$([System.String]::Copy('$(RuntimePackageRelease)').Replace('-', '_'))</RuntimePackageRelease>
+
+      <RuntimeDepsRpmPackageVersion>$(ProductionVersion)</RuntimeDepsRpmPackageVersion>
+      <RuntimeDepsRpmPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimeDepsRpmPackageRelease>
+      <RuntimeDepsRpmPackageRelease>$([System.String]::Copy('$(RuntimeDepsRpmPackageRelease)').Replace('-', '_'))</RuntimeDepsRpmPackageRelease>
+    </PropertyGroup>
   </Target>
 
   <Target Name="GetInstallerLocations"
@@ -130,6 +150,13 @@
       <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
       <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductBandVersion)</RuntimeDependenciesDebPkgName>
       <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
+
+      <HostFxrRpmPkgName>dotnet-hostfxr-$(ProductBandVersion)</HostFxrRpmPkgName>
+      <HostFxrRpmPkgName>$(HostFxrRpmPkgName.ToLower())</HostFxrRpmPkgName>
+      <SharedFxRpmPkgName>dotnet-runtime-$(ProductBandVersion)</SharedFxRpmPkgName>
+      <SharedFxRpmPkgName>$(SharedFxRpmPkgName.ToLower())</SharedFxRpmPkgName>
+      <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductBandVersion)</RuntimeDependenciesRpmPkgName>
+      <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
     </PropertyGroup>
 
     <PropertyGroup>

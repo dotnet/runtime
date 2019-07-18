@@ -21,8 +21,9 @@ steps:
 - script: |
     set -x
     df -h
-    $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-      /root/coresetup/src/pkg/packaging/installers.proj \
+    $(DockerRunMSBuild) ${{ parameters.image }} ./build.sh \
+      --ci \
+      /p:Subset=Installer \
       /p:UsePrebuiltPortableBinariesForInstallers=true \
       $(PackagePortableBitsArgs) \
       /p:GenerateProjectInstallers=true \
