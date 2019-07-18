@@ -5,6 +5,7 @@
 using Microsoft.DotNet.CoreSetup.Test;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -61,11 +62,14 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             return new NuGetArtifactTester(nupkgPath);
         }
 
+        public NuGetVersion PackageVersion { get; }
+
         private readonly PackageArchiveReader _reader;
 
         public NuGetArtifactTester(string file)
         {
             _reader = new PackageArchiveReader(ZipFile.Open(file, ZipArchiveMode.Read));
+            PackageVersion = _reader.NuspecReader.GetVersion();
         }
 
         public void Dispose()

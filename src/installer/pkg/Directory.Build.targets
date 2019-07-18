@@ -111,7 +111,8 @@
   <Target Name="GenerateMsiVersionString">
     <PropertyGroup>
       <VersionPadding Condition="'$(VersionPadding)'==''">5</VersionPadding>
-      <VersionComparisonDate>2016-01-01</VersionComparisonDate>
+      <!-- Using the following default comparison date will produce versions that align with our internal build system. -->
+      <VersionComparisonDate Condition="'$(VersionComparisonDate)'==''">1996-04-01</VersionComparisonDate>
     </PropertyGroup>
 
     <GenerateCurrentVersion
