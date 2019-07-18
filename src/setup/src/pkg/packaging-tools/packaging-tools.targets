@@ -117,6 +117,25 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="GetLatestCommit"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+    <PropertyGroup>
+      <LatestCommit Condition="'$(LatestCommit)' == ''">$(SourceRevisionId)</LatestCommit>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ReturnLatestCommit"
+          DependsOnTargets="GetLatestCommit"
+          Returns="$(LatestCommit)" />
+
+  <!-- Override pkgproj tool target to provide commit info. -->
+  <Target Name="GetSyncInfo"
+          DependsOnTargets="GetLatestCommit">
+    <ItemGroup>
+      <SyncInfoLines Include="$(LatestCommit)" />
+    </ItemGroup>
+  </Target>
+
   <!--
     By default, shared frameworks are generated based on the package. This can be overridden by the
     project, and in the future, the runtime pack is likely to be used to assemble the sfx.
