@@ -38,7 +38,7 @@ namespace System.Data.SqlClient
             get { return _exception.Source; }
         }
 
-        override public string ToString()
+        public override string ToString()
         {
             return Message;
         }

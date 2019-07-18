@@ -229,7 +229,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        override internal object CurrentAsPrincipal
+        internal override object CurrentAsPrincipal
         {
             get
             {
@@ -445,7 +445,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        override internal bool MoveNext()
+        internal override bool MoveNext()
         {
             bool needToRetry;
 
@@ -493,7 +493,7 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        override internal void Reset()
+        internal override void Reset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Reset");
 
@@ -587,7 +587,7 @@ namespace System.DirectoryServices.AccountManagement
                 get { return (handle == IntPtr.Zero); }
             }
 
-            override protected bool ReleaseHandle()
+            protected override bool ReleaseHandle()
             {
                 if (handle != IntPtr.Zero)
                     Marshal.FreeHGlobal(handle);

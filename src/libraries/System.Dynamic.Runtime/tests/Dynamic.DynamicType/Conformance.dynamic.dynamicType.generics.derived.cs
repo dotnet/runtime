@@ -1825,7 +1825,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.de
     // <Code>
 
     public delegate int Foo<T>(T t);
-    abstract public class C<T>
+    public abstract class C<T>
     {
         public abstract int M(T x);
         public abstract int P

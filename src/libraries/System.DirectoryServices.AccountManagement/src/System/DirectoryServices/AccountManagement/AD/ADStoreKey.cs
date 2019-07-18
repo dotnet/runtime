@@ -52,7 +52,7 @@ namespace System.DirectoryServices.AccountManagement
                             Utils.ByteArrayToString(sid));
         }
 
-        override public bool Equals(object o)
+        public override bool Equals(object o)
         {
             if (!(o is ADStoreKey))
                 return false;
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.AccountManagement
             return false;
         }
 
-        override public int GetHashCode()
+        public override int GetHashCode()
         {
             return (_wellKnownSid == false) ?
                         _objectGuid.GetHashCode() :

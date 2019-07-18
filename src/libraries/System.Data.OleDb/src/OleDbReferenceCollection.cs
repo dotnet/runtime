@@ -15,12 +15,12 @@ namespace System.Data.OleDb
         internal const int CommandTag = 1;
         internal const int DataReaderTag = 2;
 
-        override public void Add(object value, int tag)
+        public override void Add(object value, int tag)
         {
             base.AddItem(value, tag);
         }
 
-        override protected void NotifyItem(int message, int tag, object value)
+        protected override void NotifyItem(int message, int tag, object value)
         {
             bool canceling = (Canceling == message);
             if (CommandTag == tag)
@@ -37,7 +37,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public void Remove(object value)
+        public override void Remove(object value)
         {
             base.RemoveItem(value);
         }

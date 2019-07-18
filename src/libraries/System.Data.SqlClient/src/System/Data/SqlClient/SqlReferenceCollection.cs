@@ -17,7 +17,7 @@ namespace System.Data.SqlClient
         internal const int CommandTag = 2;
         internal const int BulkCopyTag = 3;
 
-        override public void Add(object value, int tag)
+        public override void Add(object value, int tag)
         {
             Debug.Assert(DataReaderTag == tag || CommandTag == tag || BulkCopyTag == tag, "unexpected tag?");
             Debug.Assert(DataReaderTag != tag || value is SqlDataReader, "tag doesn't match object type: SqlDataReader");
@@ -52,7 +52,7 @@ namespace System.Data.SqlClient
             return FindItem<SqlCommand>(CommandTag, (command) => (command.StateObject == stateObj));
         }
 
-        override protected void NotifyItem(int message, int tag, object value)
+        protected override void NotifyItem(int message, int tag, object value)
         {
             Debug.Assert(0 == message, "unexpected message?");
             Debug.Assert(DataReaderTag == tag || CommandTag == tag || BulkCopyTag == tag, "unexpected tag?");
@@ -78,7 +78,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public void Remove(object value)
+        public override void Remove(object value)
         {
             Debug.Assert(value is SqlDataReader || value is SqlCommand || value is SqlBulkCopy, "SqlReferenceCollection.Remove expected a SqlDataReader or SqlCommand or SqlBulkCopy");
 

@@ -825,7 +825,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
     public class Base2<U, V>
     {
-        virtual internal int M()
+        internal virtual int M()
         {
             return 101;
         }

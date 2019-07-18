@@ -14,7 +14,7 @@ namespace System.DirectoryServices.AccountManagement
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    abstract public class PrincipalException : SystemException
+    public abstract class PrincipalException : SystemException
     {
         internal PrincipalException() : base() { }
 

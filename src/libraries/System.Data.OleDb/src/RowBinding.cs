@@ -626,7 +626,7 @@ namespace System.Data.OleDb
             return value;
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
             _iaccessor = null;

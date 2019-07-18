@@ -104,7 +104,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public DbType DbType
+        public override DbType DbType
         {
             get
             {
@@ -161,7 +161,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public string ParameterName
+        public override string ParameterName
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -561,7 +561,7 @@ namespace System.Data.OleDb
         RefreshProperties(RefreshProperties.All),
         TypeConverter(typeof(StringConverter)),
         ]
-        override public object Value
+        public override object Value
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {

@@ -59,7 +59,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected DbConnection DbConnection
+        protected override DbConnection DbConnection
         {
             get
             {
@@ -75,7 +75,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public IsolationLevel IsolationLevel
+        public override IsolationLevel IsolationLevel
         {
             get
             {
@@ -120,7 +120,7 @@ namespace System.Data.SqlClient
         // PUBLIC METHODS
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        override public void Commit()
+        public override void Commit()
         {
             Exception e = null;
             Guid operationId = s_diagnosticListener.WriteTransactionCommitBefore(_isolationLevel, _connection);
@@ -170,7 +170,7 @@ namespace System.Data.SqlClient
             base.Dispose(disposing);
         }
 
-        override public void Rollback()
+        public override void Rollback()
         {
             Exception e = null;
             Guid operationId = s_diagnosticListener.WriteTransactionRollbackBefore(_isolationLevel, _connection, null);

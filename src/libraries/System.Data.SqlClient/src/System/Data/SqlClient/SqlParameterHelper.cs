@@ -26,7 +26,7 @@ namespace System.Data.SqlClient
             set => _coercedValue = value;
         }
 
-        override public ParameterDirection Direction
+        public override ParameterDirection Direction
         {
             get
             {
@@ -53,7 +53,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool IsNullable
+        public override bool IsNullable
         {
             get => _flags.HasFlag(SqlParameterFlags.IsNullable);
             set => Set(SqlParameterFlags.IsNullable, value);
@@ -75,7 +75,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int Size
+        public override int Size
         {
             get
             {
@@ -105,7 +105,7 @@ namespace System.Data.SqlClient
             return (0 != _size);
         }
 
-        override public string SourceColumn
+        public override string SourceColumn
         {
             get => (_sourceColumn ?? ADP.StrEmpty);
             set => _sourceColumn = value;
@@ -132,7 +132,7 @@ namespace System.Data.SqlClient
             _parent = null;
         }
 
-        override public string ToString()
+        public override string ToString()
         {
             return ParameterName;
         }

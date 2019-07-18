@@ -73,7 +73,7 @@ namespace System.DirectoryServices.AccountManagement
         private ConstraintType _constraint;
         private object _constraintData;
 
-        override internal bool MoveNext()
+        internal override bool MoveNext()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNConstraintLinkedAttrSet", "Entering MoveNext");
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNConstraintLinkedAttrSet", "Filter {0}", _constraintData);

@@ -145,10 +145,10 @@ namespace System.Configuration
                 pp.IsDirty = false;
         }
 
-        virtual public SettingsPropertyCollection Properties { get { return _properties; } }
-        virtual public SettingsProviderCollection Providers { get { return _providers; } }
-        virtual public SettingsPropertyValueCollection PropertyValues { get { return _propertyValues; } }
-        virtual public SettingsContext Context { get { return _context; } }
+        public virtual SettingsPropertyCollection Properties { get { return _properties; } }
+        public virtual SettingsProviderCollection Providers { get { return _providers; } }
+        public virtual SettingsPropertyValueCollection PropertyValues { get { return _propertyValues; } }
+        public virtual SettingsContext Context { get { return _context; } }
 
         private void GetPropertiesFromProvider(SettingsProvider provider)
         {

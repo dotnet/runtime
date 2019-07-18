@@ -9,14 +9,14 @@ using SysTx = System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    abstract internal class DbConnectionClosed : DbConnectionInternal
+    internal abstract class DbConnectionClosed : DbConnectionInternal
     {
         // Construct an "empty" connection
         protected DbConnectionClosed(ConnectionState state, bool hidePassword, bool allowSetConnectionString) : base(state, hidePassword, allowSetConnectionString)
         {
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             get
             {
@@ -24,12 +24,12 @@ namespace System.Data.ProviderBase
             }
         }
 
-        override protected void Activate(SysTx.Transaction transaction)
+        protected override void Activate(SysTx.Transaction transaction)
         {
             throw ADP.ClosedConnectionError();
         }
 
-        override public DbTransaction BeginTransaction(IsolationLevel il)
+        public override DbTransaction BeginTransaction(IsolationLevel il)
         {
             throw ADP.ClosedConnectionError();
         }
@@ -39,17 +39,17 @@ namespace System.Data.ProviderBase
             // not much to do here...
         }
 
-        override protected void Deactivate()
+        protected override void Deactivate()
         {
             throw ADP.ClosedConnectionError();
         }
 
-        override public void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction transaction)
         {
             throw ADP.ClosedConnectionError();
         }
 
-        override protected internal DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+        protected internal override DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
         {
             throw ADP.ClosedConnectionError();
         }
@@ -65,7 +65,7 @@ namespace System.Data.ProviderBase
         }
     }
 
-    abstract internal class DbConnectionBusy : DbConnectionClosed
+    internal abstract class DbConnectionBusy : DbConnectionClosed
     {
         protected DbConnectionBusy(ConnectionState state) : base(state, true, false)
         {

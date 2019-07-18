@@ -130,7 +130,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public int Depth
+        public override int Depth
         {
             get
             {
@@ -142,7 +142,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public Int32 FieldCount
+        public override Int32 FieldCount
         {
             get
             {
@@ -155,7 +155,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public bool HasRows
+        public override bool HasRows
         {
             get
             {
@@ -167,7 +167,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public Boolean IsClosed
+        public override Boolean IsClosed
         {
             get
             { // if we have a rowset or multipleresults, we may have more to read
@@ -184,7 +184,7 @@ namespace System.Data.OleDb
             get { return _metadata; }
         }
 
-        override public int RecordsAffected
+        public override int RecordsAffected
         {
             get
             {
@@ -199,7 +199,7 @@ namespace System.Data.OleDb
             }
         }*/
 
-        override public object this[Int32 index]
+        public override object this[Int32 index]
         {
             get
             {
@@ -207,7 +207,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public object this[String name]
+        public override object this[String name]
         {
             get
             {
@@ -253,7 +253,7 @@ namespace System.Data.OleDb
             return irow;
         }
 
-        override public DataTable GetSchemaTable()
+        public override DataTable GetSchemaTable()
         {
             DataTable schemaTable = _dbSchemaTable;
             if (null == schemaTable)
@@ -643,7 +643,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public void Close()
+        public override void Close()
         {
             OleDbConnection con = _connection;
             OleDbCommand cmd = _command;
@@ -828,13 +828,13 @@ namespace System.Data.OleDb
             DisposeNativeRowset();
         }
 
-        override public Boolean GetBoolean(int ordinal)
+        public override Boolean GetBoolean(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueBoolean();
         }
 
-        override public Byte GetByte(int ordinal)
+        public override Byte GetByte(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueByte();
@@ -862,7 +862,7 @@ namespace System.Data.OleDb
             return binding;
         }
 
-        override public Int64 GetBytes(int ordinal, Int64 dataIndex, byte[] buffer, Int32 bufferIndex, Int32 length)
+        public override Int64 GetBytes(int ordinal, Int64 dataIndex, byte[] buffer, Int32 bufferIndex, Int32 length)
         {
             ColumnBinding binding = DoSequentialCheck(ordinal, dataIndex, ADP.GetBytes);
             byte[] value = binding.ValueByteArray();
@@ -898,7 +898,7 @@ namespace System.Data.OleDb
             return byteCount;
         }
 
-        override public Int64 GetChars(int ordinal, Int64 dataIndex, char[] buffer, Int32 bufferIndex, Int32 length)
+        public override Int64 GetChars(int ordinal, Int64 dataIndex, char[] buffer, Int32 bufferIndex, Int32 length)
         {
             ColumnBinding binding = DoSequentialCheck(ordinal, dataIndex, ADP.GetChars);
             string value = binding.ValueString();
@@ -936,7 +936,7 @@ namespace System.Data.OleDb
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        override public Char GetChar(int ordinal)
+        public override Char GetChar(int ordinal)
         {
             throw ADP.NotSupported();
         }
@@ -948,7 +948,7 @@ namespace System.Data.OleDb
             return binding.ValueChapter();
         }
 
-        override protected DbDataReader GetDbDataReader(int ordinal)
+        protected override DbDataReader GetDbDataReader(int ordinal)
         {
             return GetData(ordinal);
         }
@@ -987,7 +987,7 @@ namespace System.Data.OleDb
             return reader;
         }
 
-        override public String GetDataTypeName(int index)
+        public override String GetDataTypeName(int index)
         {
             if (null != _metadata)
             {
@@ -996,30 +996,30 @@ namespace System.Data.OleDb
             throw ADP.DataReaderNoData();
         }
 
-        override public DateTime GetDateTime(int ordinal)
+        public override DateTime GetDateTime(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueDateTime();
         }
 
-        override public Decimal GetDecimal(int ordinal)
+        public override Decimal GetDecimal(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueDecimal();
         }
 
-        override public Double GetDouble(int ordinal)
+        public override Double GetDouble(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueDouble();
         }
 
-        override public IEnumerator GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return new DbEnumerator((IDataReader)this, IsCommandBehavior(CommandBehavior.CloseConnection));
         }
 
-        override public Type GetFieldType(int index)
+        public override Type GetFieldType(int index)
         {
             if (null != _metadata)
             {
@@ -1028,37 +1028,37 @@ namespace System.Data.OleDb
             throw ADP.DataReaderNoData();
         }
 
-        override public Single GetFloat(int ordinal)
+        public override Single GetFloat(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueSingle();
         }
 
-        override public Guid GetGuid(int ordinal)
+        public override Guid GetGuid(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueGuid();
         }
 
-        override public Int16 GetInt16(int ordinal)
+        public override Int16 GetInt16(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueInt16();
         }
 
-        override public Int32 GetInt32(int ordinal)
+        public override Int32 GetInt32(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueInt32();
         }
 
-        override public Int64 GetInt64(int ordinal)
+        public override Int64 GetInt64(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueInt64();
         }
 
-        override public String GetName(int index)
+        public override String GetName(int index)
         {
             if (null != _metadata)
             {
@@ -1068,7 +1068,7 @@ namespace System.Data.OleDb
             throw ADP.DataReaderNoData();
         }
 
-        override public Int32 GetOrdinal(String name)
+        public override Int32 GetOrdinal(String name)
         {
             if (null == _fieldNameLookup)
             {
@@ -1081,7 +1081,7 @@ namespace System.Data.OleDb
             return _fieldNameLookup.GetOrdinal(name);
         }
 
-        override public String GetString(int ordinal)
+        public override String GetString(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueString();
@@ -1153,14 +1153,14 @@ namespace System.Data.OleDb
             return binding;
         }
 
-        override public object GetValue(int ordinal)
+        public override object GetValue(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             object value = binding.Value();
             return value;
         }
 
-        override public Int32 GetValues(object[] values)
+        public override Int32 GetValues(object[] values)
         {
             if (null == values)
             {
@@ -1181,7 +1181,7 @@ namespace System.Data.OleDb
             return (condition == (condition & _commandBehavior));
         }
 
-        override public Boolean IsDBNull(int ordinal)
+        public override Boolean IsDBNull(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.IsValueNull();
@@ -1221,7 +1221,7 @@ namespace System.Data.OleDb
             return recordsAffected;
         }
 
-        override public int VisibleFieldCount
+        public override int VisibleFieldCount
         {
             get
             {
@@ -1321,7 +1321,7 @@ namespace System.Data.OleDb
             Debug.Assert(false, "<oledb.OleDbDataReader.NextResultsInfinite|INFO> System.Data.OleDb.OleDbDataReader: 2000 IMultipleResult.GetResult(NULL, DBRESULTFLAG_DEFAULT, IID_NULL, NULL, NULL) iterations with 0 records affected. Stopping suspect infinite loop. To work-around try using ExecuteReader() and iterating through results with NextResult().\n");
         }
 
-        override public bool NextResult()
+        public override bool NextResult()
         {
             bool retflag = false;
             if (IsClosed)
@@ -1384,7 +1384,7 @@ namespace System.Data.OleDb
             return retflag;
         }
 
-        override public bool Read()
+        public override bool Read()
         {
             bool retflag = false;
             OleDbCommand command = _command;

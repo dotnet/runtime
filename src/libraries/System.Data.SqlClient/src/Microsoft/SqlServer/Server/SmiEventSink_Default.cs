@@ -28,7 +28,7 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-        virtual internal string ServerVersion
+        internal virtual string ServerVersion
         {
             get
             {

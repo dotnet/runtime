@@ -120,7 +120,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;

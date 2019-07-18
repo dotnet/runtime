@@ -31,7 +31,7 @@ namespace Microsoft.Win32.SafeHandles
             { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);
         }

@@ -13,7 +13,7 @@ using System.Collections;
 namespace System.DirectoryServices.AccountManagement
 {
     [System.Diagnostics.DebuggerDisplay("Name ( {Name} )")]
-    abstract public class Principal : IDisposable
+    public abstract class Principal : IDisposable
     {
         //
         // Public properties

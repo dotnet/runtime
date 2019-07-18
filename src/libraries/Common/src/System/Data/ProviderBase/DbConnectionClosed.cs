@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Data.ProviderBase
 {
-    abstract internal partial class DbConnectionClosed : DbConnectionInternal
+    internal abstract partial class DbConnectionClosed : DbConnectionInternal
     {
         // Construct an "empty" connection
         protected DbConnectionClosed(ConnectionState state, bool hidePassword, bool allowSetConnectionString) : base(state, hidePassword, allowSetConnectionString)
@@ -37,7 +37,7 @@ namespace System.Data.ProviderBase
             => base.TryOpenConnectionInternal(outerConnection, connectionFactory, retry, userOptions);
     }
 
-    abstract internal class DbConnectionBusy : DbConnectionClosed
+    internal abstract class DbConnectionBusy : DbConnectionClosed
     {
         protected DbConnectionBusy(ConnectionState state) : base(state, true, false)
         {

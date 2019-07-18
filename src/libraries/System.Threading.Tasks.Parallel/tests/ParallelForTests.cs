@@ -1418,7 +1418,7 @@ namespace System.Threading.Tasks.Tests
                 _data = data;
             }
 
-            override public IList<IEnumerator<TSource>> GetPartitions(int partitionCount)
+            public override IList<IEnumerator<TSource>> GetPartitions(int partitionCount)
             {
                 if (partitionCount <= 0)
                 {
@@ -1434,7 +1434,7 @@ namespace System.Threading.Tasks.Tests
                 return partitions;
             }
 
-            override public IEnumerable<TSource> GetDynamicPartitions()
+            public override IEnumerable<TSource> GetDynamicPartitions()
             {
                 return DropIndices(Partitioner.Create(_data, true).GetOrderableDynamicPartitions());
             }
