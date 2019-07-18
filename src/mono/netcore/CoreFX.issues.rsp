@@ -31,13 +31,6 @@
 -nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
 
 ####################################################################
-##  System.Collections.Tests
-####################################################################
-
-# tests pass when disabling inline, but fail by default. https://github.com/mono/mono/issues/14859
--nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_*
-
-####################################################################
 ##  System.Diagnostics.Process.Tests
 ####################################################################
 
@@ -47,14 +40,6 @@
 # times out waiting for remote process. Would it require system wide dotnet?
 # https://github.com/mono/mono/issues/14903
 -nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
-
-####################################################################
-##  System.Diagnostics.Debug
-####################################################################
-
-# disabled in CoreCLR too
--nomethod System.Diagnostics.Tests.DebugTestsNoListeners.Print
--nomethod System.Diagnostics.Tests.DebugTestsUsingListeners.Print
 
 ####################################################################
 ##  System.Diagnostics.TraceSource.Tests
@@ -102,13 +87,6 @@
 # OOM Exception gets thrown for the 68 (currently) tests that fail.
 # https://github.com/mono/mono/issues/14912
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds*
-
-# Process crashes really hard.
-# https://github.com/mono/mono/issues/14913
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToNullableULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToNullableULongTest
 
 # Expected exception to be thrown.  None is
 # https://github.com/mono/mono/issues/14917
@@ -217,9 +195,7 @@
 
 # Should throw NotSupportedException, but we do not. 
 # https://github.com/mono/mono/issues/14993
--nomethod System.SpanTests.SpanTests.Span_StaticOperator
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_Constructor
--nomethod System.SpanTests.SpanTests.ReadOnlySpan_Operator
 -nomethod System.SpanTests.SpanTests.Span_Constructor
 
 # Should throw NotSupportedException - Non static method requires a target
@@ -425,10 +401,6 @@
 # https://github.com/mono/mono/issues/15021
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
 
-# The right versions are not being returned
-# https://github.com/mono/mono/issues/15022
--nomethod System.Reflection.Tests.AssemblyNameTests.Version
-
 # Typename string differs 
 # https://github.com/mono/mono/issues/15023
 -nomethod System.Reflection.Tests.GetTypeTests.GetType_EmptyString
@@ -479,18 +451,6 @@
 # Assertion failed... Not sure why 
 # https://github.com/mono/mono/issues/15069
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
-
-# typeof difference in the assertion 
-# https://github.com/mono/mono/issues/15070
--nomethod System.Reflection.Tests.MemberInfoTests.GenericMethodsInheritTheReflectedTypeOfTheirTemplate
-
-# Returns byte array when it should return null
-# https://github.com/mono/mono/issues/15072
--nomethod System.Reflection.Tests.AssemblyNameTests.SetPublicKeyToken_GetPublicKeyToken
-
-# AssemblyName functionality not fully implemented
-# https://github.com/mono/mono/issues/15073
--nomethod System.Reflection.Tests.AssemblyNameTests.FullName
 
 # Fails b/c it returns the wrong assembly string
 # https://github.com/mono/mono/issues/15074
@@ -597,10 +557,6 @@
 # https://github.com/mono/mono/issues/15097
 -nomethod System.Runtime.InteropServices.Tests.GetFunctionPointerForDelegateTests.GetFunctionPointer_GenericDelegate_ThrowsArgumentException
 
-# typeof(object).Assembly.ImageRuntimeVersion returns null because the corelib metadata version string is empty
-# https://github.com/mono/mono/issues/15100
--nomethod System.Runtime.InteropServices.RuntimeEnvironmentTests.RuntimeEnvironmentSysVersion
-
 # AE with The structure must not be a value class;
 # https://github.com/mono/mono/issues/15101
 -nomethod System.Runtime.InteropServices.Tests.PtrToStructureTests.PtrToStructure_ZeroPointer_ThrowsArgumentNullException
@@ -694,8 +650,7 @@
 # and expects it to trigger domain.ProcessExit event
 -nomethod System.Tests.ExitCodeTests.SigTermExitCode
 
-# causes 'error: Return type can't be a byref type Parameter name: returnType':
-# while the test passes, xunit fails in the end if it's enabled
+# error: Invalid IL code in (wrapper dynamic-method) object:<xsl:apply-templates> (System.Xml.Xsl.Runtime.XmlQueryRuntime,System.Xml.XPath.XPathNavigator,double): IL_0179: ret
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
 
 # Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
@@ -725,13 +680,13 @@
 ##  System.Text.Json.Tests
 ####################################################################
 
-# JsonSerializer.Parse<Enum>(...) generates invalid IL through DynamicMethod
-# Mono throws "System.MemberAccessException: Cannot create an abstract class: System.Enum" from System.Reflection.Emit.DynamicMethod.CreateDelegate
-# CoreCLR creates the delegate, but fails to execute it with "System.InvalidOperationException: Instances of abstract classes cannot be created."
--nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail
-
 # The JSON value is not in a supported DateTime format
--nonamespace System.Text.Json.Serialization.Tests
+-noclass System.Text.Json.Serialization.Tests.ObjectTests
+-noclass System.Text.Json.Serialization.Tests.ArrayTests
+-nomethod System.Text.Json.Serialization.Tests.DictionaryTests.DictionaryOfClasses
+-nomethod System.Text.Json.Serialization.Tests.CacheTests.PropertyCacheWithMinInputsFirst
+-nomethod System.Text.Json.Serialization.Tests.CacheTests.PropertyCacheWithMinInputsLast
+-nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail
 
 ####################################################################
 ##  System.Threading.Tests
@@ -762,10 +717,6 @@
 # Expects PlatformNotSupportedException but none thrown
 # https://github.com/mono/mono/issues/15161
 -nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
-
-# There is an attribute on the test itself to skip on Mono 
-# https://github.com/dotnet/corefx/blob/30ca4113ed07fc78060a0c9d3f95eee4fe8f8ee3/src/System.Threading/tests/SynchronizationContextTests.cs#L47
--nomethod System.Threading.Tests.SynchronizationContextTests.WaitNotificationTest
 
 ####################################################################
 ##  System.Threading.ThreadPool.Tests
@@ -940,15 +891,6 @@
 # FileNotFoundException
 # https://github.com/mono/mono/issues/15192
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
-
-####################################################################
-##  System.Reflection.Metadata.Tests
-####################################################################
-
-# Expected null, got a double byte array
-# https://github.com/mono/mono/issues/15193
--nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameWithCultureSet
--nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameForAssemblyDefinition
 
 ####################################################################
 ##  System.Reflection.TypeExtensions.CoreCLR.Tests
