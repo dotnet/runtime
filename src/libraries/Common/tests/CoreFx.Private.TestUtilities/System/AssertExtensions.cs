@@ -75,6 +75,40 @@ namespace System
             return exception;
         }
 
+        public static TException Throws<TException, TResult>(Func<TResult> func)
+            where TException : Exception
+        {
+            object result = null;
+            bool returned = false;
+            try
+            {
+                return
+                    Assert.Throws<TException>(() =>
+                    {
+                        result = func();
+                        returned = true;
+                    });
+            }
+            catch (Exception ex) when (returned)
+            {
+                string resultStr;
+                if (result == null)
+                {
+                    resultStr = "(null)";
+                }
+                else
+                {
+                    resultStr = result.ToString();
+                    if (typeof(TResult) == typeof(string))
+                    {
+                        resultStr = $"\"{resultStr}\"";
+                    }
+                }
+
+                throw new AggregateException($"Result: {resultStr}", ex);
+            }
+        }
+
         public static T Throws<T>(string expectedParamName, Func<object> testCode)
             where T : ArgumentException
         {
