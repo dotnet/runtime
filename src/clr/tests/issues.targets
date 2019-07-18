@@ -59,14 +59,14 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex4/*">
             <Issue>14249</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex4a/*">
+            <Issue>14249</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/misc/waitone2/*">
             <Issue>6397</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
             <Issue>19441;22020</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex2a/*">
-            <Issue>19406</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracecontrol/tracecontrol/*">
             <Issue>20299</Issue>
