@@ -18,7 +18,6 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>Mono</RootNamespace>
     <Copyright>(C) 2006, Jb Evain</Copyright>
     <Version>0.2.0.0</Version>
@@ -32,62 +31,6 @@
   <PropertyGroup Condition=" $(Configuration.EndsWith('Release')) ">
     <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="Linker.Steps\BaseStep.cs" />
-    <Compile Include="Linker.Steps\BlacklistStep.cs" />
-    <Compile Include="Linker.Steps\CleanStep.cs" />
-    <Compile Include="Linker.Steps\RegenerateGuidStep.cs" />
-    <Compile Include="Linker.Steps\LoadI18nAssemblies.cs" />
-    <Compile Include="Linker.Steps\RemoveSecurityStep.cs" />
-    <Compile Include="Linker\Inflater.cs" />
-    <Compile Include="Linker\MethodBodyScanner.cs" />
-    <Compile Include="Linker\IXApiVisitor.cs" />
-    <Compile Include="Linker\I18nAssemblies.cs" />
-    <Compile Include="Linker.Steps\IStep.cs" />
-    <Compile Include="Linker.Steps\LoadReferencesStep.cs" />
-    <Compile Include="Linker.Steps\MarkStep.cs" />
-    <Compile Include="Linker.Steps\ClearInitLocals.cs" />
-    <Compile Include="Linker.Steps\OutputStep.cs" />
-    <Compile Include="Linker.Steps\ResolveFromXApiStep.cs" />
-    <Compile Include="Linker.Steps\ResolveFromAssemblyStep.cs" />
-    <Compile Include="Linker.Steps\ResolveFromXmlStep.cs" />
-    <Compile Include="Linker.Steps\ResolveStep.cs" />
-    <Compile Include="Linker.Steps\SweepStep.cs" />
-    <Compile Include="Linker.Steps\AddBypassNGenStep.cs" />
-    <Compile Include="Linker\Annotations.cs" />
-    <Compile Include="Linker\AssemblyAction.cs" />
-    <Compile Include="Linker\AssemblyInfo.cs" />
-    <Compile Include="Linker\AssemblyResolver.cs" />
-    <Compile Include="Linker\AssemblyUtilities.cs" />
-    <Compile Include="Linker\DirectoryAssemblyResolver.cs" />
-    <Compile Include="Linker\Driver.cs" />
-    <Compile Include="Linker\LinkContext.cs" />
-    <Compile Include="Linker\LoadException.cs" />
-    <Compile Include="Linker\MarkException.cs" />
-    <Compile Include="Linker\MarkingHelpers.cs" />
-    <Compile Include="Linker\MethodAction.cs" />
-    <Compile Include="Linker\MethodReferenceExtensions.cs" />
-    <Compile Include="Linker\OverrideInformation.cs" />
-    <Compile Include="Linker\Pipeline.cs" />
-    <Compile Include="Linker\TypeDefinitionExtensions.cs" />
-    <Compile Include="Linker\TypePreserve.cs" />
-    <Compile Include="Linker\TypeReferenceExtensions.cs" />
-    <Compile Include="Linker\TypeNameParser.cs" />
-    <Compile Include="Linker\XApiReader.cs" />
-    <Compile Include="Linker.Steps\TypeMapStep.cs" />
-    <Compile Include="Linker\ILogger.cs" />
-    <Compile Include="Linker\ConsoleLogger.cs" />
-    <Compile Include="Linker\Tracer.cs" />
-    <Compile Include="Linker.Steps\PreserveDependencyLookupStep.cs" />
-    <Compile Include="Linker.Steps\PreserveCalendarsStep.cs" />
-    <Compile Include="Linker.Steps\RemoveFeaturesStep.cs" />
-    <Compile Include="Linker.Steps\CodeRewriterStep.cs" />
-    <Compile Include="Linker.Steps\ReflectionBlockedStep.cs" />
-    <Compile Include="Linker\KnownMembers.cs" />
-    <Compile Include="Linker\BCL.cs" />
-    <Compile Include="Linker\MethodDefinitionExtensions.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
