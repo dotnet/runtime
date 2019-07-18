@@ -55,6 +55,7 @@
     <Compile Include="System\Data\DataSetTest.cs" />
     <Compile Include="System\Data\DataSetTest2.cs" />
     <Compile Include="System\Data\DataSetTypedDataSetTest.cs" />
+    <Compile Include="System\Data\DataSetWriteXMLTest.cs" />
     <Compile Include="System\Data\DataTableCollectionTest.cs" />
     <Compile Include="System\Data\DataTableCollectionTest2.cs" />
     <Compile Include="System\Data\DataTableExtensionsTest.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
