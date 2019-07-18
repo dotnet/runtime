@@ -35,7 +35,6 @@
         Name="corefx" />
       <_coreClrVersionFile
         Include="$(_runtimePackageDir)version.txt"
-        Condition="'$(PackageTargetRuntime)' != ''"
         Name="coreclr" />
 
       <DependencyVersionFile Include="@(_coreFxVersionFile);@(_coreClrVersionFile)" />
@@ -46,7 +45,7 @@
       Text="Failed to locate corefx version.txt file." />
 
     <Error
-      Condition="'@(_coreClrVersionFile)' == '' AND '$(PackageTargetRuntime)' != ''"
+      Condition="'@(_coreClrVersionFile)' == ''"
       Text="Failed to locate coreclr version.txt file." />
   </Target>
 
