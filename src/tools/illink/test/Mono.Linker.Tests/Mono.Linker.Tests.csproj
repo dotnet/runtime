@@ -20,7 +20,6 @@
 
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,39 +34,6 @@
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="TestCasesRunner\CompilerOptions.cs" />
-    <Compile Include="TestCasesRunner\FormattingUtils.cs" />
-    <Compile Include="TestCasesRunner\ILCompiler.cs" />
-    <Compile Include="TestCasesRunner\SourceAndDestinationPair.cs" />
-    <Compile Include="TestCasesRunner\SetupCompileInfo.cs" />
-    <Compile Include="TestCasesRunner\PeVerifier.cs" />
-    <Compile Include="TestCasesRunner\TestCaseAssemblyResolver.cs" />
-    <Compile Include="TestCases\IndividualTests.cs" />
-    <Compile Include="TestCases\TestSuites.cs" />
-    <Compile Include="TestCases\TestDatabase.cs" />
-    <Compile Include="Tests\PreserveActionComparisonTests.cs" />
-    <Compile Include="TestCasesRunner\LinkXmlHelpers.cs" />
-    <Compile Include="TestCasesRunner\LinkedTestCaseResult.cs" />
-    <Compile Include="TestCasesRunner\ManagedCompilationResult.cs" />
-    <Compile Include="TestCasesRunner\TestCaseCollector.cs" />
-    <Compile Include="TestCasesRunner\TestCaseLinkerOptions.cs" />
-    <Compile Include="TestCasesRunner\TestRunner.cs" />
-    <Compile Include="TestCases\TestCase.cs" />
-    <Compile Include="Extensions\NiceIO.cs" />
-    <Compile Include="Extensions\CecilExtensions.cs" />
-    <Compile Include="TestCasesRunner\ExpectationsProvider.cs" />
-    <Compile Include="TestCasesRunner\AssemblyChecker.cs" />
-    <Compile Include="TestCasesRunner\LinkerArgumentBuilder.cs" />
-    <Compile Include="TestCasesRunner\LinkerDriver.cs" />
-    <Compile Include="TestCasesRunner\ObjectFactory.cs" />
-    <Compile Include="TestCasesRunner\ResultChecker.cs" />
-    <Compile Include="TestCasesRunner\TestCaseCompiler.cs" />
-    <Compile Include="TestCasesRunner\TestCaseMetadaProvider.cs" />
-    <Compile Include="TestCasesRunner\TestCaseSandbox.cs" />
-    <Compile Include="Tests\TypeNameParserTests.cs" />
-    <Compile Include="Tests\ParseResponseFileLinesTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition=" $(ILLinkBuild) ">
