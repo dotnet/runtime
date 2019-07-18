@@ -4560,14 +4560,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET) {
 			sp -= 2;
-			sp [0].data.p = (guint8*)sp [0].data.p + sp [1].data.i;
+			sp [0].data.p = (guint8*)sp [0].data.p + sp [1].data.nati;
 			sp ++;
 			++ip;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
-			sp [0].data.i = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;
+			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;
 			sp ++;
 			++ip;
 			MINT_IN_BREAK;
