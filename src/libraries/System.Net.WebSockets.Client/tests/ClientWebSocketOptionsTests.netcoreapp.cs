@@ -63,7 +63,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
+                Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
             }),
             new LoopbackServer.Options { UseSsl = secure, WebSocketEndpoint = true });
 
@@ -100,7 +100,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                     // Complete the WebSocket upgrade over the secure channel. After this is done, the client-side
                     // ConnectAsync should complete.
-                    Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
+                    Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
                 }), new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true });
             }
         }
