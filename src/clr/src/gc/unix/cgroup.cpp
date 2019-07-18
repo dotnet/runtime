@@ -24,6 +24,7 @@ Abstract:
 #include <string.h>
 #include <sys/resource.h>
 #include <errno.h>
+#include <limits>
 
 #include "cgroup.h"
 
@@ -56,7 +57,7 @@ public:
         free(s_cpu_cgroup_path);
     }
 
-    static bool GetPhysicalMemoryLimit(size_t *val)
+    static bool GetPhysicalMemoryLimit(uint64_t *val)
     {
         char *mem_limit_filename = nullptr;
         bool result = false;
@@ -81,6 +82,7 @@ public:
     {
         char *mem_usage_filename = nullptr;
         bool result = false;
+        uint64_t temp = 0;
 
         if (s_memory_cgroup_path == nullptr)
             return result;
@@ -93,7 +95,18 @@ public:
 
         strcpy(mem_usage_filename, s_memory_cgroup_path);
         strcat(mem_usage_filename, MEM_USAGE_FILENAME);
-        result = ReadMemoryValueFromFile(mem_usage_filename, val);
+        result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
+        if (result)
+        {
+            if (temp > std::numeric_limits<size_t>::max())
+            {
+                *val = std::numeric_limits<size_t>::max();
+            }
+            else
+            {
+                *val = (size_t)temp;
+            }
+        }
         free(mem_usage_filename);
         return result;
     }
@@ -313,13 +326,13 @@ private:
         return cgroup_path;
     }
     
-    static bool ReadMemoryValueFromFile(const char* filename, size_t* val)
+    static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
         bool result = false;
         char *line = nullptr;
         size_t lineLen = 0;
         char* endptr = nullptr;
-        size_t num = 0, l, multiplier;
+        uint64_t num = 0, l, multiplier;
         FILE* file = nullptr;
     
         if (val == nullptr)
@@ -428,7 +441,7 @@ void CleanupCGroup()
 
 size_t GetRestrictedPhysicalMemoryLimit()
 {
-    size_t physical_memory_limit = 0;
+    uint64_t physical_memory_limit = 0;
  
     if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
          return 0;
@@ -463,7 +476,16 @@ size_t GetRestrictedPhysicalMemoryLimit()
         }
     }
 
-    return physical_memory_limit;
+    if (physical_memory_limit > std::numeric_limits<size_t>::max())
+    {
+        // It is observed in practice when the memory is unrestricted, Linux control 
+        // group returns a physical limit that is bigger than the address space
+        return std::numeric_limits<size_t>::max();
+    }
+    else
+    {
+        return (size_t)physical_memory_limit;
+    }
 }
 
 bool GetPhysicalMemoryUsed(size_t* val)

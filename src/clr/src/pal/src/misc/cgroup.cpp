@@ -44,7 +44,7 @@ public:
         PAL_free(s_cpu_cgroup_path);
     }
     
-    static bool GetPhysicalMemoryLimit(size_t *val)
+    static bool GetPhysicalMemoryLimit(uint64_t *val)
     {
         char *mem_limit_filename = nullptr;
         bool result = false;
@@ -69,6 +69,7 @@ public:
     {
         char *mem_usage_filename = nullptr;
         bool result = false;
+        uint64_t temp;
 
         if (s_memory_cgroup_path == nullptr)
             return result;
@@ -81,7 +82,18 @@ public:
 
         strcpy(mem_usage_filename, s_memory_cgroup_path);
         strcat(mem_usage_filename, MEM_USAGE_FILENAME);
-        result = ReadMemoryValueFromFile(mem_usage_filename, val);
+        result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
+        if (result)
+        {
+            if (temp > std::numeric_limits<size_t>::max())
+            {
+                *val = std::numeric_limits<size_t>::max();
+            }
+            else
+            {
+                *val = (size_t)temp;
+            }
+        }
         free(mem_usage_filename);
         return result;
     }
@@ -303,7 +315,7 @@ private:
         return cgroup_path;
     }
 
-    static bool ReadMemoryValueFromFile(const char* filename, size_t* val)
+    static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
         return ::ReadMemoryValueFromFile(filename, val);
     }
@@ -380,18 +392,30 @@ size_t
 PALAPI
 PAL_GetRestrictedPhysicalMemoryLimit()
 {
+    uint64_t physical_memory_limit_64 = 0;
     size_t physical_memory_limit = 0;
 
-    if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
+    if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit_64))
          return 0;
 
     // If there's no memory limit specified on the container this 
     // actually returns 0x7FFFFFFFFFFFF000 (2^63-1 rounded down to 
     // 4k which is a common page size). So we know we are not
     // running in a memory restricted environment.
-    if (physical_memory_limit > 0x7FFFFFFF00000000)
+    if (physical_memory_limit_64 > 0x7FFFFFFF00000000)
     {
         return 0;
+    }
+
+    if (physical_memory_limit_64 > std::numeric_limits<size_t>::max())
+    {
+        // It is observed in practice when the memory is unrestricted, Linux control
+        // group returns a physical limit that is bigger than the address space
+        physical_memory_limit = std::numeric_limits<size_t>::max();
+    }
+    else
+    {
+        physical_memory_limit = (size_t)physical_memory_limit_64;
     }
 
     struct rlimit curr_rlimit;
