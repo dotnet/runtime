@@ -7,8 +7,6 @@
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <PackageId>unused</PackageId>
 
-    <ProjectDepsFileName>$(SharedFrameworkName).deps.json</ProjectDepsFileName>
-
     <!--
       When blank, MicrosoftNETPlatformLibrary defaults to Microsoft.NETCore.App. This property
       causes the SDK to trim dependencies when publishing a framework-dependent app. We want to be

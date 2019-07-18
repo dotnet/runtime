@@ -214,7 +214,7 @@
   <Target Name="GetDependencyDataFileInclusionDefaults">
     <PropertyGroup Condition="'$(BuildTargetPath)' != ''">
       <FileVersionPropsTargetPath Condition="'$(FileVersionPropsTargetPath)' == ''">$(BuildTargetPath)$(Id).props</FileVersionPropsTargetPath>
-      <PlatformManifestTargetPath Condition="'$(PlatformManifestTargetPath)' == ''">$(BuildTargetPath)$(Id).props</PlatformManifestTargetPath>
+      <PlatformManifestTargetPath Condition="'$(PlatformManifestTargetPath)' == ''">$(BuildTargetPath)$(Id.Replace('.Internal', '')).PlatformManifest.txt</PlatformManifestTargetPath>
     </PropertyGroup>
   </Target>
 
@@ -230,21 +230,39 @@
 
   <Target Name="IncludeFileVersionPropsFile"
           DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
-          BeforeTargets="GetFiles"
-          Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
-    <ItemGroup>
+          BeforeTargets="GetFiles">
+    <!-- Create a copy with some per-pkgproj templates replaced. -->
+    <PropertyGroup>
+      <_propsFileTemplateFile Condition="'%(_depprojDataFile.PropsFile)' == 'true'">%(_depprojDataFile.Identity)</_propsFileTemplateFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('$(_propsFileTemplateFile)')">
+      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
+      <_filledPropsFileContent>$([System.IO.File]::ReadAllText('$(_propsFileTemplateFile)')
+        .Replace("__PackageId__", "$(Id.Replace('.', '_'))")
+        .Replace("__PreferredPackages__", "$(Id);$(_runtimeDependencyItems)"))
+      </_filledPropsFileContent>
+
+      <_filledPropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</_filledPropsFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_filledPropsFile)' != ''"
+      File="$(_filledPropsFile)"
+      Lines="$(_filledPropsFileContent)"
+      Overwrite="true" />
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
       <File
-        Include="@(_depprojDataFile)"
-        Condition="'%(_depprojDataFile.PropsFile)' == 'true'"
+        Include="$(_filledPropsFile)"
         TargetPath="$(FileVersionPropsTargetPath)" />
     </ItemGroup>
   </Target>
 
   <Target Name="IncludePlatformManifestFile"
           DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
-          BeforeTargets="GetFiles"
-          Condition="'$(PackageTargetRuntime)' == '' AND '$(PlatformManifestTargetPath)' != ''">
-    <ItemGroup>
+          BeforeTargets="GetFiles">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == '' AND '$(PlatformManifestTargetPath)' != ''">
       <File
         Include="@(_depprojDataFile)"
         Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'"

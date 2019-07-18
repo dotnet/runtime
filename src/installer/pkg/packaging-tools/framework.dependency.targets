@@ -68,7 +68,9 @@
 
   <!-- Creates the *.versions.txt file describing where data in this package came from. -->
   <Target Name="GenerateHashVersionsFile"
-          DependsOnTargets="GetDependencyVersionFiles"
+          DependsOnTargets="
+            GetDependencyVersionFiles;
+            GetLatestCommit"
           Condition="'$(FrameworkPackageName)' != ''">
     <Error
       Condition="'@(DependencyVersionFile)' != '' AND !Exists('%(DependencyVersionFile.Identity)')"
@@ -91,8 +93,8 @@
   <Target Name="SetupGenerateFileVersionProps"
           Condition="'$(FrameworkPackageName)' != ''">
     <PropertyGroup>
-      <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
-      <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
+      <PropsFile>$(IntermediateOutputPath)$(FrameworkPackageName).props</PropsFile>
+      <PlatformManifestFile>$(IntermediateOutputPath)$(FrameworkPackageName).PlatformManifest.txt</PlatformManifestFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -142,12 +144,18 @@
       <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     </PropertyGroup>
 
+    <!--
+      Generate the props file using placeholders for __PackageId__ and __PreferredPackages__. Each
+      pkgproj that depends on this depproj needs to fill it in with unique info. The depproj's copy
+      of the props file is considered a template. The tokens use underscores because the PackageId
+      string needs to be valid XML.
+    -->
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
-                              PackageId="$(FrameworkPackageName)"
+                              PackageId="__PackageId__"
                               PackageVersion="$(Version)"
                               PlatformManifestFile="$(PlatformManifestFile)"
                               PropsFile="$(PropsFile)"
-                              PreferredPackages="$(Id);@(RuntimeDependency)"
+                              PreferredPackages="__PreferredPackages__"
                               PermitDllAndExeFilesLackingFileVersion="$(PermitDllAndExeFilesLackingFileVersion)" />
   </Target>
 
