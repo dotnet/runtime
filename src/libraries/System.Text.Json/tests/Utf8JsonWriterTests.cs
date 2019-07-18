@@ -2204,64 +2204,21 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void WriteBase64String(bool formatted, bool skipValidation)
+        [InlineData(true, true, "message")]
+        [InlineData(true, false, "message")]
+        [InlineData(false, true, "message")]
+        [InlineData(false, false, "message")]
+        [InlineData(true, true, "escape mess><age")]
+        [InlineData(true, false, "escape mess><age")]
+        [InlineData(false, true, "escape mess><age")]
+        [InlineData(false, false, "escape mess><age")]
+        [InlineData(true, true, "<write base64 string when escape length bigger than given string")]
+        [InlineData(true, false, "<write base64 string when escape length bigger than given string")]
+        [InlineData(false, true, "<write base64 string when escape length bigger than given string")]
+        [InlineData(false, false, "<write base64 string when escape length bigger than given string")]
+        public void WriteBase64String(bool formatted, bool skipValidation, string inputValue)
         {
-            string propertyName = "message";
-            byte[] value = { 1, 2, 3, 4, 5 };
-            string expectedStr = GetBase64ExpectedString(prettyPrint: formatted, propertyName, value);
-
-            JsonEncodedText encodedPropertyName = JsonEncodedText.Encode(propertyName);
-
-            byte[] utf8PropertyName = Encoding.UTF8.GetBytes("message");
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-
-            for (int i = 0; i < 4; i++)
-            {
-                var output = new ArrayBufferWriter<byte>(32);
-                var jsonUtf8 = new Utf8JsonWriter(output, options);
-
-                jsonUtf8.WriteStartObject();
-
-                switch (i)
-                {
-                    case 0:
-                        jsonUtf8.WriteBase64String(propertyName, value);
-                        jsonUtf8.WriteBase64String(propertyName, value);
-                        break;
-                    case 1:
-                        jsonUtf8.WriteBase64String(propertyName.AsSpan(), value);
-                        jsonUtf8.WriteBase64String(propertyName.AsSpan(), value);
-                        break;
-                    case 2:
-                        jsonUtf8.WriteBase64String(utf8PropertyName, value);
-                        jsonUtf8.WriteBase64String(utf8PropertyName, value);
-                        break;
-                    case 3:
-                        jsonUtf8.WriteBase64String(encodedPropertyName, value);
-                        jsonUtf8.WriteBase64String(encodedPropertyName, value);
-                        break;
-                }
-
-                jsonUtf8.WriteEndObject();
-                jsonUtf8.Flush();
-
-                AssertContents(expectedStr, output);
-            }
-        }
-
-        [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void WriteBase64StringEscaped(bool formatted, bool skipValidation)
-        {
-            string propertyName = "mess><age";
+            string propertyName = inputValue;
             byte[] value = { 1, 2, 3, 4, 5, 6 };
             string expectedStr = GetBase64ExpectedString(prettyPrint: formatted, propertyName, value);
 
@@ -2305,7 +2262,7 @@ namespace System.Text.Json.Tests
             }
 
             // Verify that escaping does not change the input strings/spans.
-            Assert.Equal("mess><age", propertyName);
+            Assert.Equal(inputValue, propertyName);
             Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6 }, value);
             Assert.True(propertyName.AsSpan().SequenceEqual(propertyNameSpan));
             Assert.True(Encoding.UTF8.GetBytes(propertyName).AsSpan().SequenceEqual(propertyNameSpanUtf8));
@@ -3095,6 +3052,17 @@ namespace System.Text.Json.Tests
 
                 AssertContents(expectedStr, output);
             }
+        }
+
+        [Fact]
+        public void EscapeSurrogatePairsThrowsHighSurrogateMissing()
+        {
+            string propertyName = "a \uD800\uDC00\uDE6D a";
+            string value = propertyName;
+            var output = new ArrayBufferWriter<byte>(12);
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(propertyName, value));
         }
 
         private const string InvalidUtf8 = "\"\\uFFFD(\"";
@@ -5471,23 +5439,21 @@ namespace System.Text.Json.Tests
 
         private static string GetEscapedExpectedString(bool prettyPrint, string propertyName, string value, StringEscapeHandling escaping, bool escape = true)
         {
-            var ms = new MemoryStream();
-            TextWriter streamWriter = new StreamWriter(ms, new UTF8Encoding(false), 1024, true);
-
-            var json = new JsonTextWriter(streamWriter)
+            using (TextWriter stringWriter = new StringWriter())
+            using (var json = new JsonTextWriter(stringWriter)
             {
                 Formatting = prettyPrint ? Formatting.Indented : Formatting.None,
                 StringEscapeHandling = escaping
-            };
+            })
+            {
+                json.WriteStartObject();
+                json.WritePropertyName(propertyName, escape);
+                json.WriteValue(value);
+                json.WriteEnd();
 
-            json.WriteStartObject();
-            json.WritePropertyName(propertyName, escape);
-            json.WriteValue(value);
-            json.WriteEnd();
-
-            json.Flush();
-
-            return Encoding.UTF8.GetString(ms.ToArray());
+                json.Flush();
+                return stringWriter.ToString();
+            }
         }
 
         private static string GetCustomExpectedString(bool prettyPrint)
