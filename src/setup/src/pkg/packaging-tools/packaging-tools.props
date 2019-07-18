@@ -43,7 +43,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(FrameworkPackType)' != ''">
-    <Version>$(ProductVersion)</Version>
     <PackageType>DotnetPlatform</PackageType>
 
     <!--
@@ -68,7 +67,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
-    <Version>$(ProductVersion)</Version>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
