@@ -44,12 +44,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 foreach (PropertyInfo p in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
                 {
-#if UNSUPPORTEDAPI
-                if ((p.MetadataToken != propertyInfo.MetadataToken) || (p.Module != propertyInfo.Module))
-#else
                     if (!p.HasSameMetadataDefinitionAs(propertyInfo))
                     {
-#endif
                         continue;
                     }
                     Debug.Assert((p.Name == propertyInfo.Name) &&
