@@ -422,13 +422,13 @@ PAL_HasGetCurrentProcessorNumber()
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, size_t* val)
+ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char *line = nullptr;
     size_t lineLen = 0;
     char* endptr = nullptr;
-    size_t num = 0, l, multiplier;
+    uint64_t num = 0, l, multiplier;
 
     if (val == nullptr)
         return false;
