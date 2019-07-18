@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <IsFrameworkPackage>true</IsFrameworkPackage>
-    <ShortFrameworkName>dotnet</ShortFrameworkName>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />

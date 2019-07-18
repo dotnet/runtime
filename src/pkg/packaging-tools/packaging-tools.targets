@@ -51,6 +51,10 @@
       <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
     </PropertyGroup>
 
+    <Error
+      Text="InstallerName starts with a '-': missing ShortFrameworkName value."
+      Condition="$(InstallerName.StartsWith('-'))" />
+
     <PropertyGroup>
       <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
       <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
