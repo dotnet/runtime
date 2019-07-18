@@ -48,7 +48,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public string ToString()
+        public override string ToString()
         {
             return Message;
         }

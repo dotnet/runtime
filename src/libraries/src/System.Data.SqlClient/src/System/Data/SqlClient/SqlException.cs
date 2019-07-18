@@ -117,7 +117,7 @@ namespace System.Data.SqlClient
             get { return Errors.Count > 0 ? Errors[0].State : default; }
         }
 
-        override public string Source
+        public override string Source
         {
             get { return Errors.Count > 0 ? Errors[0].Source : default; }
         }

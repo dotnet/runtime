@@ -143,7 +143,7 @@ namespace System.Data.OleDb
             InnerConnection.AddWeakReference(value, tag);
         }
 
-        override protected DbCommand CreateDbCommand()
+        protected override DbCommand CreateDbCommand()
         {
             DbCommand command = null;
 
@@ -153,7 +153,7 @@ namespace System.Data.OleDb
             return command;
         }
 
-        override protected void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -190,7 +190,7 @@ namespace System.Data.OleDb
         //    GC.KeepAlive(this);
         //}
 
-        override public void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction transaction)
         {
             // If we're currently enlisted in a transaction and we were called
             // on the EnlistTransaction method (Whidbey) we're not allowed to
@@ -226,17 +226,17 @@ namespace System.Data.OleDb
             GC.KeepAlive(this);
         }
 
-        override public DataTable GetSchema()
+        public override DataTable GetSchema()
         {
             return this.GetSchema(DbMetaDataCollectionNames.MetaDataCollections, null);
         }
 
-        override public DataTable GetSchema(string collectionName)
+        public override DataTable GetSchema(string collectionName)
         {
             return this.GetSchema(collectionName, null);
         }
 
-        override public DataTable GetSchema(string collectionName, string[] restrictionValues)
+        public override DataTable GetSchema(string collectionName, string[] restrictionValues)
         {
             // NOTE: This is virtual because not all providers may choose to support
             //       returning schema data

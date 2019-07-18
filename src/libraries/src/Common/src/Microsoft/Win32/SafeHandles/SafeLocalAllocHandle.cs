@@ -38,7 +38,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
         }

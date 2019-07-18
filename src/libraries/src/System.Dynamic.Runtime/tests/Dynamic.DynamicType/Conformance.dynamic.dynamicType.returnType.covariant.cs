@@ -15,7 +15,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     // <Code>
     using System.Collections.Generic;
 
-    abstract public class BaseObject
+    public abstract class BaseObject
     {
         public virtual object this[int i]
         {
@@ -401,7 +401,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     //<Expects Status=success></Expects>
     // <Code>
 
-    abstract public class BaseObject<T>
+    public abstract class BaseObject<T>
     {
         protected T storage;
         public virtual T this[int x]
@@ -1232,7 +1232,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     // <Code>
     using System.Collections.Generic;
 
-    abstract public class BaseObject
+    public abstract class BaseObject
     {
         public virtual object RetObject()
         {
@@ -1562,7 +1562,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     //<Expects Status=success></Expects>
     // <Code>
 
-    abstract public class BaseObject<T>
+    public abstract class BaseObject<T>
     {
         public virtual T RetObject()
         {
@@ -1647,7 +1647,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     // <Code>
     using System.Collections.Generic;
 
-    abstract public class BaseObject<T>
+    public abstract class BaseObject<T>
     {
         public virtual T RetObject<U>()
         {
@@ -1850,7 +1850,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     // <Code>
     using System.Collections.Generic;
 
-    abstract public class BaseObject
+    public abstract class BaseObject
     {
         public virtual object Prop1
         {
@@ -2236,7 +2236,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.returnType.
     //<Expects Status=success></Expects>
     // <Code>
 
-    abstract public class BaseObject<T>
+    public abstract class BaseObject<T>
     {
         protected T storage;
         public virtual T Prop

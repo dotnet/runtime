@@ -22,7 +22,7 @@ namespace Microsoft.Win32.SafeHandles
             get { return new SafeAllocHHandle(IntPtr.Zero); }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             if (handle != IntPtr.Zero)
             {

@@ -21,7 +21,7 @@ namespace System.Data.SqlClient
 
         public static readonly SqlConnectionFactory SingletonInstance = new SqlConnectionFactory();
 
-        override public DbProviderFactory ProviderFactory
+        public override DbProviderFactory ProviderFactory
         {
             get
             {
@@ -29,12 +29,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection)
+        protected override DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection)
         {
             return CreateConnection(options, poolKey, poolGroupProviderInfo, pool, owningConnection, userOptions: null);
         }
 
-        override protected DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+        protected override DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
         {
             SqlConnectionString opt = (SqlConnectionString)options;
             SqlConnectionPoolKey key = (SqlConnectionPoolKey)poolKey;
@@ -143,7 +143,7 @@ namespace System.Data.SqlClient
             return result;
         }
 
-        override internal DbConnectionPoolProviderInfo CreateConnectionPoolProviderInfo(DbConnectionOptions connectionOptions)
+        internal override DbConnectionPoolProviderInfo CreateConnectionPoolProviderInfo(DbConnectionOptions connectionOptions)
         {
             DbConnectionPoolProviderInfo providerInfo = null;
 
@@ -155,7 +155,7 @@ namespace System.Data.SqlClient
             return providerInfo;
         }
 
-        override protected DbConnectionPoolGroupOptions CreateConnectionPoolGroupOptions(DbConnectionOptions connectionOptions)
+        protected override DbConnectionPoolGroupOptions CreateConnectionPoolGroupOptions(DbConnectionOptions connectionOptions)
         {
             SqlConnectionString opt = (SqlConnectionString)connectionOptions;
 
@@ -182,7 +182,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override internal DbConnectionPoolGroupProviderInfo CreateConnectionPoolGroupProviderInfo(DbConnectionOptions connectionOptions)
+        internal override DbConnectionPoolGroupProviderInfo CreateConnectionPoolGroupProviderInfo(DbConnectionOptions connectionOptions)
         {
             return new SqlConnectionPoolGroupProviderInfo((SqlConnectionString)connectionOptions);
         }
@@ -203,7 +203,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override internal DbConnectionPoolGroup GetConnectionPoolGroup(DbConnection connection)
+        internal override DbConnectionPoolGroup GetConnectionPoolGroup(DbConnection connection)
         {
             SqlConnection c = (connection as SqlConnection);
             if (null != c)
@@ -213,7 +213,7 @@ namespace System.Data.SqlClient
             return null;
         }
 
-        override internal DbConnectionInternal GetInnerConnection(DbConnection connection)
+        internal override DbConnectionInternal GetInnerConnection(DbConnection connection)
         {
             SqlConnection c = (connection as SqlConnection);
             if (null != c)
@@ -224,7 +224,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override internal void PermissionDemand(DbConnection outerConnection)
+        internal override void PermissionDemand(DbConnection outerConnection)
         {
             SqlConnection c = (outerConnection as SqlConnection);
             if (null != c)
@@ -233,7 +233,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
+        internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
         {
             SqlConnection c = (outerConnection as SqlConnection);
             if (null != c)
@@ -242,7 +242,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)
+        internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)
         {
             SqlConnection c = (owningObject as SqlConnection);
             if (null != c)
@@ -251,7 +251,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal bool SetInnerConnectionFrom(DbConnection owningObject, DbConnectionInternal to, DbConnectionInternal from)
+        internal override bool SetInnerConnectionFrom(DbConnection owningObject, DbConnectionInternal to, DbConnectionInternal from)
         {
             SqlConnection c = (owningObject as SqlConnection);
             if (null != c)
@@ -261,7 +261,7 @@ namespace System.Data.SqlClient
             return false;
         }
 
-        override internal void SetInnerConnectionTo(DbConnection owningObject, DbConnectionInternal to)
+        internal override void SetInnerConnectionTo(DbConnection owningObject, DbConnectionInternal to)
         {
             SqlConnection c = (owningObject as SqlConnection);
             if (null != c)

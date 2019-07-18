@@ -175,17 +175,17 @@ namespace System.Data.Odbc
 
         partial void RepairInnerConnection();
 
-        override public DataTable GetSchema()
+        public override DataTable GetSchema()
         {
             return this.GetSchema(DbMetaDataCollectionNames.MetaDataCollections, null);
         }
 
-        override public DataTable GetSchema(string collectionName)
+        public override DataTable GetSchema(string collectionName)
         {
             return this.GetSchema(collectionName, null);
         }
 
-        override public DataTable GetSchema(string collectionName, string[] restrictionValues)
+        public override DataTable GetSchema(string collectionName, string[] restrictionValues)
         {
             // NOTE: This is virtual because not all providers may choose to support
             //       returning schema data

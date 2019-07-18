@@ -225,7 +225,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected void OnRowUpdated(RowUpdatedEventArgs value)
+        protected override void OnRowUpdated(RowUpdatedEventArgs value)
         {
             SqlRowUpdatedEventHandler handler = (SqlRowUpdatedEventHandler)Events[EventRowUpdated];
             if ((null != handler) && (value is SqlRowUpdatedEventArgs))
@@ -235,7 +235,7 @@ namespace System.Data.SqlClient
             base.OnRowUpdated(value);
         }
 
-        override protected void OnRowUpdating(RowUpdatingEventArgs value)
+        protected override void OnRowUpdating(RowUpdatingEventArgs value)
         {
             SqlRowUpdatingEventHandler handler = (SqlRowUpdatingEventHandler)Events[EventRowUpdating];
             if ((null != handler) && (value is SqlRowUpdatingEventArgs))

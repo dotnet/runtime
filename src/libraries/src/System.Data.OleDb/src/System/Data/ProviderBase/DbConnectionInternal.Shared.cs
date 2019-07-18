@@ -167,7 +167,7 @@ namespace System.Data.ProviderBase
         /// <value>
         /// True if the enlisted transaction can be unbound on transaction completion; otherwise false.
         /// </value>
-        virtual protected bool UnbindOnTransactionCompletion
+        protected virtual bool UnbindOnTransactionCompletion
         {
             get
             {
@@ -176,7 +176,7 @@ namespace System.Data.ProviderBase
         }
 
         // Is this a connection that must be put in stasis (or is already in stasis) pending the end of it's transaction?
-        virtual protected internal bool IsNonPoolableTransactionRoot
+        protected internal virtual bool IsNonPoolableTransactionRoot
         {
             get
             {
@@ -184,7 +184,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        virtual internal bool IsTransactionRoot
+        internal virtual bool IsTransactionRoot
         {
             get
             {
@@ -265,7 +265,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        abstract public string ServerVersion
+        public abstract string ServerVersion
         {
             get;
         }
@@ -286,7 +286,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        abstract protected void Activate(SysTx.Transaction transaction);
+        protected abstract void Activate(SysTx.Transaction transaction);
 
         internal void AddWeakReference(object value, int tag)
         {
@@ -301,34 +301,34 @@ namespace System.Data.ProviderBase
             _referenceCollection.Add(value, tag);
         }
 
-        abstract public DbTransaction BeginTransaction(IsolationLevel il);
+        public abstract DbTransaction BeginTransaction(IsolationLevel il);
 
-        virtual internal void PrepareForReplaceConnection()
+        internal virtual void PrepareForReplaceConnection()
         {
             // By default, there is no preperation required
         }
 
-        virtual protected void PrepareForCloseConnection()
+        protected virtual void PrepareForCloseConnection()
         {
             // By default, there is no preperation required
         }
 
-        virtual protected object ObtainAdditionalLocksForClose()
+        protected virtual object ObtainAdditionalLocksForClose()
         {
             return null; // no additional locks in default implementation
         }
 
-        virtual protected void ReleaseAdditionalLocksForClose(object lockToken)
+        protected virtual void ReleaseAdditionalLocksForClose(object lockToken)
         {
             // no additional locks in default implementation
         }
 
-        virtual protected DbReferenceCollection CreateReferenceCollection()
+        protected virtual DbReferenceCollection CreateReferenceCollection()
         {
             throw ADP.InternalError(ADP.InternalErrorCode.AttemptingToConstructReferenceCollectionOnStaticObject);
         }
 
-        abstract protected void Deactivate();
+        protected abstract void Deactivate();
 
         internal void DeactivateConnection()
         {
@@ -358,7 +358,7 @@ namespace System.Data.ProviderBase
             Deactivate();
         }
 
-        virtual internal void DelegatedTransactionEnded()
+        internal virtual void DelegatedTransactionEnded()
         {
             // Called by System.Transactions when the delegated transaction has
             // completed.  We need to make closed connections that are in stasis
@@ -420,9 +420,9 @@ namespace System.Data.ProviderBase
             _connectionIsDoomed = true;
         }
 
-        abstract public void EnlistTransaction(SysTx.Transaction transaction);
+        public abstract void EnlistTransaction(SysTx.Transaction transaction);
 
-        virtual protected internal DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+        protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
         {
             Debug.Assert(outerConnection != null, "outerConnection may not be null.");
 

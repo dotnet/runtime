@@ -167,7 +167,7 @@ namespace System.Data.OleDb
             get { return ConnectionString.Provider; }
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             // consider making a method, not a property
             get
@@ -242,12 +242,12 @@ namespace System.Data.OleDb
             return (UnsafeNativeMethods.ICommandText)icommandText;
         }
 
-        override protected void Activate(SysTx.Transaction transaction)
+        protected override void Activate(SysTx.Transaction transaction)
         {
             throw ADP.NotSupported();
         }
 
-        override public DbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        public override DbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             OleDbConnection outerConnection = Connection;
             if (null != LocalTransaction)
@@ -281,12 +281,12 @@ namespace System.Data.OleDb
             return transaction;
         }
 
-        override protected DbReferenceCollection CreateReferenceCollection()
+        protected override DbReferenceCollection CreateReferenceCollection()
         {
             return new OleDbReferenceCollection();
         }
 
-        override protected void Deactivate()
+        protected override void Deactivate()
         { // used by both managed and native pooling
             NotifyWeakReference(OleDbReferenceCollection.Closing);
 
@@ -319,7 +319,7 @@ namespace System.Data.OleDb
             base.Dispose();
         }
 
-        override public void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction transaction)
         {
             OleDbConnection outerConnection = Connection;
             if (null != LocalTransaction)

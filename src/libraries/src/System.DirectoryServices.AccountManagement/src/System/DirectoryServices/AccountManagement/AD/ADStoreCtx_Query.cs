@@ -186,7 +186,7 @@ namespace System.DirectoryServices.AccountManagement
             return ds;
         }
 
-        virtual protected string GetObjectClassPortion(Type principalType)
+        protected virtual string GetObjectClassPortion(Type principalType)
         {
             string ldapFilter;
 

@@ -906,7 +906,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
                 _data = data;
             }
 
-            override public IList<IEnumerator<TSource>> GetPartitions(int partitionCount)
+            public override IList<IEnumerator<TSource>> GetPartitions(int partitionCount)
             {
                 if (partitionCount <= 0)
                 {
@@ -922,7 +922,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
                 return partitions;
             }
 
-            override public IEnumerable<TSource> GetDynamicPartitions()
+            public override IEnumerable<TSource> GetDynamicPartitions()
             {
                 return DropIndices(Partitioner.Create(_data, true).GetOrderableDynamicPartitions());
             }

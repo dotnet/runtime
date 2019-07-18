@@ -118,7 +118,7 @@ namespace System.Management
     /// </summary>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    abstract public class ManagementOptions : ICloneable
+    public abstract class ManagementOptions : ICloneable
     {
         /// <summary>
         ///    <para> Specifies an infinite timeout.</para>

@@ -87,7 +87,7 @@ namespace Windows.UI.Xaml
                     || gl1.Value != gl2.Value);
         }
 
-        override public bool Equals(object oCompare)
+        public override bool Equals(object oCompare)
         {
             if (oCompare is GridLength)
             {

@@ -2732,10 +2732,10 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
     public delegate void MyEventHandler1(dynamic sender, EventArgs e);
     public delegate void MyEventHandler2(dynamic sender);
     public delegate void MyEventHandler3(object d1, dynamic d2, EventArgs e);
-    abstract public class MyEvent1
+    public abstract class MyEvent1
     {
-        abstract internal event MyEventHandler1 myEvent1;
-        virtual internal event MyEventHandler2 myEvent2;
+        internal abstract event MyEventHandler1 myEvent1;
+        internal virtual event MyEventHandler2 myEvent2;
         public event MyEventHandler3 myEvent3;
         internal void Fire2(EventArgs e)
         {
@@ -2752,7 +2752,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
 
     public class MyEvent2 : MyEvent1
     {
-        override internal event MyEventHandler1 myEvent1;
+        internal override event MyEventHandler1 myEvent1;
         new internal event MyEventHandler2 myEvent2;
         // public event MyEventHandler3 myEvent3;
         public void Fire1(EventArgs e)
@@ -2965,7 +2965,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
     // <Code>
     using System;
 
-    abstract public class A1
+    public abstract class A1
     {
         internal abstract event EventHandler E5;
     }

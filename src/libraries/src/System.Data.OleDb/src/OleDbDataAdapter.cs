@@ -134,12 +134,12 @@ namespace System.Data.OleDb
             return new OleDbDataAdapter(this);
         }
 
-        override protected RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected override RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new OleDbRowUpdatedEventArgs(dataRow, command, statementType, tableMapping);
         }
 
-        override protected RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected override RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new OleDbRowUpdatingEventArgs(dataRow, command, statementType, tableMapping);
         }
@@ -305,7 +305,7 @@ namespace System.Data.OleDb
             return results;
         }
 
-        //override protected int Fill(DataTable dataTable, IDataReader dataReader) {
+        //protected override int Fill(DataTable dataTable, IDataReader dataReader) {
         //    return base.Fill(dataTable, dataReader);
         //}
 
@@ -444,7 +444,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override protected void OnRowUpdated(RowUpdatedEventArgs value)
+        protected override void OnRowUpdated(RowUpdatedEventArgs value)
         {
             OleDbRowUpdatedEventHandler handler = (OleDbRowUpdatedEventHandler)Events[EventRowUpdated];
             if ((null != handler) && (value is OleDbRowUpdatedEventArgs))
@@ -454,7 +454,7 @@ namespace System.Data.OleDb
             base.OnRowUpdated(value);
         }
 
-        override protected void OnRowUpdating(RowUpdatingEventArgs value)
+        protected override void OnRowUpdating(RowUpdatingEventArgs value)
         {
             OleDbRowUpdatingEventHandler handler = (OleDbRowUpdatingEventHandler)Events[EventRowUpdating];
             if ((null != handler) && (value is OleDbRowUpdatingEventArgs))

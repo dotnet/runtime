@@ -129,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Return the principal we're positioned at as a Principal object.
         // Need to use our StoreCtx's GetAsPrincipal to convert the native object to a Principal
-        override internal object CurrentAsPrincipal
+        internal override object CurrentAsPrincipal
         {
             get
             {
@@ -155,7 +155,7 @@ namespace System.DirectoryServices.AccountManagement
         // Advance the enumerator to the next principal in the result set, pulling in additional pages
         // of results (or ranges of attribute values) as needed.
         // Returns true if successful, false if no more results to return.
-        override internal bool MoveNext()
+        internal override bool MoveNext()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNext");
 
@@ -934,7 +934,7 @@ namespace System.DirectoryServices.AccountManagement
         // operation, e.g., if doing a paged search, may need to re-retrieve the first page of results.
         // As a special case, if the ResultSet is already at the very beginning, this is guaranteed to be
         // a no-op.
-        override internal void Reset()
+        internal override void Reset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Reset");
 
@@ -1023,7 +1023,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        override internal ResultSetBookmark BookmarkAndReset()
+        internal override ResultSetBookmark BookmarkAndReset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Bookmarking");
 
@@ -1142,7 +1142,7 @@ namespace System.DirectoryServices.AccountManagement
             return bookmark;
         }
 
-        override internal void RestoreBookmark(ResultSetBookmark bookmark)
+        internal override void RestoreBookmark(ResultSetBookmark bookmark)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Restoring from bookmark");
 

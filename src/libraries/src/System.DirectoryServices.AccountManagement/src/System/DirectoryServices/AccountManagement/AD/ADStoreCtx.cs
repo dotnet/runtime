@@ -2477,7 +2477,7 @@ namespace System.DirectoryServices.AccountManagement
         protected StoreCapabilityMap storeCapability = 0;
 
         // Must be called inside of lock(domainInfoLock)
-        virtual protected void LoadDomainInfo()
+        protected virtual void LoadDomainInfo()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 

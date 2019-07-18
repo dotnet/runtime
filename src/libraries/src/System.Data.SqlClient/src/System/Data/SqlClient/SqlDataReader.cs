@@ -141,7 +141,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int Depth
+        public override int Depth
         {
             get
             {
@@ -155,7 +155,7 @@ namespace System.Data.SqlClient
         }
 
         // fields/attributes collection
-        override public int FieldCount
+        public override int FieldCount
         {
             get
             {
@@ -177,7 +177,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool HasRows
+        public override bool HasRows
         {
             get
             {
@@ -194,7 +194,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool IsClosed
+        public override bool IsClosed
         {
             get
             {
@@ -338,7 +338,7 @@ namespace System.Data.SqlClient
             return metaDataReturn;
         }
 
-        override public int RecordsAffected
+        public override int RecordsAffected
         {
             get
             {
@@ -378,7 +378,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int VisibleFieldCount
+        public override int VisibleFieldCount
         {
             get
             {
@@ -396,7 +396,7 @@ namespace System.Data.SqlClient
         }
 
         // this operator
-        override public object this[int i]
+        public override object this[int i]
         {
             get
             {
@@ -404,7 +404,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public object this[string name]
+        public override object this[string name]
         {
             get
             {
@@ -1015,7 +1015,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        virtual internal void CloseReaderFromConnection()
+        internal virtual void CloseReaderFromConnection()
         {
             var parser = _parser;
             Debug.Assert(parser == null || parser.State != TdsParserState.OpenNotLoggedIn, "Reader on a connection that is not logged in");
@@ -1107,7 +1107,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        override public string GetDataTypeName(int i)
+        public override string GetDataTypeName(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -1166,7 +1166,7 @@ namespace System.Data.SqlClient
             return dataTypeName;
         }
 
-        virtual internal SqlBuffer.StorageType GetVariantInternalStorageType(int i)
+        internal virtual SqlBuffer.StorageType GetVariantInternalStorageType(int i)
         {
             Debug.Assert(null != _data, "Attempting to get variant internal storage type");
             Debug.Assert(i < _data.Length, "Reading beyond data length?");
@@ -1174,12 +1174,12 @@ namespace System.Data.SqlClient
             return _data[i].VariantInternalStorageType;
         }
 
-        override public IEnumerator GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return new DbEnumerator(this, IsCommandBehavior(CommandBehavior.CloseConnection));
         }
 
-        override public Type GetFieldType(int i)
+        public override Type GetFieldType(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -1238,7 +1238,7 @@ namespace System.Data.SqlClient
             return fieldType;
         }
 
-        virtual internal int GetLocaleId(int i)
+        internal virtual int GetLocaleId(int i)
         {
             _SqlMetaData sqlMetaData = MetaData[i];
             int lcid;
@@ -1254,13 +1254,13 @@ namespace System.Data.SqlClient
             return lcid;
         }
 
-        override public string GetName(int i)
+        public override string GetName(int i)
         {
             CheckMetaDataIsReady(columnIndex: i);
             return _metaData[i].column;
         }
 
-        override public Type GetProviderSpecificFieldType(int i)
+        public override Type GetProviderSpecificFieldType(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -1319,7 +1319,7 @@ namespace System.Data.SqlClient
         }
 
         // named field access
-        override public int GetOrdinal(string name)
+        public override int GetOrdinal(string name)
         {
             SqlStatistics statistics = null;
             try
@@ -1338,12 +1338,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public object GetProviderSpecificValue(int i)
+        public override object GetProviderSpecificValue(int i)
         {
             return GetSqlValue(i);
         }
 
-        override public int GetProviderSpecificValues(object[] values)
+        public override int GetProviderSpecificValues(object[] values)
         {
             return GetSqlValues(values);
         }
@@ -1370,13 +1370,13 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool GetBoolean(int i)
+        public override bool GetBoolean(int i)
         {
             ReadColumn(i);
             return _data[i].Boolean;
         }
 
-        virtual public XmlReader GetXmlReader(int i)
+        public virtual XmlReader GetXmlReader(int i)
         {
             // NOTE: sql_variant can not contain a XML data type: https://docs.microsoft.com/en-us/sql/t-sql/data-types/sql-variant-transact-sql
             // If this ever changes, the following code should be changed to be like GetStream\GetTextReader
@@ -1415,7 +1415,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public Stream GetStream(int i)
+        public override Stream GetStream(int i)
         {
             CheckDataIsReady(columnIndex: i);
 
@@ -1456,13 +1456,13 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public byte GetByte(int i)
+        public override byte GetByte(int i)
         {
             ReadColumn(i);
             return _data[i].Byte;
         }
 
-        override public long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
         {
             SqlStatistics statistics = null;
             long cbBytes = 0;
@@ -1491,7 +1491,7 @@ namespace System.Data.SqlClient
         }
 
         // Used (indirectly) by SqlCommand.CompleteXmlReader
-        virtual internal long GetBytesInternal(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        internal virtual long GetBytesInternal(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
         {
             if (_currentTask != null)
             {
@@ -1791,7 +1791,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public TextReader GetTextReader(int i)
+        public override TextReader GetTextReader(int i)
         {
             CheckDataIsReady(columnIndex: i);
 
@@ -1842,12 +1842,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public char GetChar(int i)
+        public override char GetChar(int i)
         {
             throw ADP.NotSupported();
         }
 
-        override public long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
         {
             SqlStatistics statistics = null;
 
@@ -2106,7 +2106,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override public DateTime GetDateTime(int i)
+        public override DateTime GetDateTime(int i)
         {
             ReadColumn(i);
 
@@ -2127,74 +2127,74 @@ namespace System.Data.SqlClient
             return dt;
         }
 
-        override public decimal GetDecimal(int i)
+        public override decimal GetDecimal(int i)
         {
             ReadColumn(i);
             return _data[i].Decimal;
         }
 
-        override public double GetDouble(int i)
+        public override double GetDouble(int i)
         {
             ReadColumn(i);
             return _data[i].Double;
         }
 
-        override public float GetFloat(int i)
+        public override float GetFloat(int i)
         {
             ReadColumn(i);
             return _data[i].Single;
         }
 
-        override public Guid GetGuid(int i)
+        public override Guid GetGuid(int i)
         {
             ReadColumn(i);
             return _data[i].Guid;
         }
 
-        override public short GetInt16(int i)
+        public override short GetInt16(int i)
         {
             ReadColumn(i);
             return _data[i].Int16;
         }
 
-        override public int GetInt32(int i)
+        public override int GetInt32(int i)
         {
             ReadColumn(i);
             return _data[i].Int32;
         }
 
-        override public long GetInt64(int i)
+        public override long GetInt64(int i)
         {
             ReadColumn(i);
             return _data[i].Int64;
         }
 
-        virtual public SqlBoolean GetSqlBoolean(int i)
+        public virtual SqlBoolean GetSqlBoolean(int i)
         {
             ReadColumn(i);
             return _data[i].SqlBoolean;
         }
 
-        virtual public SqlBinary GetSqlBinary(int i)
+        public virtual SqlBinary GetSqlBinary(int i)
         {
             ReadColumn(i, setTimeout: true, allowPartiallyReadColumn: true);
             return _data[i].SqlBinary;
         }
 
-        virtual public SqlByte GetSqlByte(int i)
+        public virtual SqlByte GetSqlByte(int i)
         {
             ReadColumn(i);
             return _data[i].SqlByte;
         }
 
-        virtual public SqlBytes GetSqlBytes(int i)
+        public virtual SqlBytes GetSqlBytes(int i)
         {
             ReadColumn(i);
             SqlBinary data = _data[i].SqlBinary;
             return new SqlBytes(data);
         }
 
-        virtual public SqlChars GetSqlChars(int i)
+        public virtual SqlChars GetSqlChars(int i)
         {
             ReadColumn(i);
             SqlString data;
@@ -2210,61 +2210,61 @@ namespace System.Data.SqlClient
             return new SqlChars(data);
         }
 
-        virtual public SqlDateTime GetSqlDateTime(int i)
+        public virtual SqlDateTime GetSqlDateTime(int i)
         {
             ReadColumn(i);
             return _data[i].SqlDateTime;
         }
 
-        virtual public SqlDecimal GetSqlDecimal(int i)
+        public virtual SqlDecimal GetSqlDecimal(int i)
         {
             ReadColumn(i);
             return _data[i].SqlDecimal;
         }
 
-        virtual public SqlGuid GetSqlGuid(int i)
+        public virtual SqlGuid GetSqlGuid(int i)
         {
             ReadColumn(i);
             return _data[i].SqlGuid;
         }
 
-        virtual public SqlDouble GetSqlDouble(int i)
+        public virtual SqlDouble GetSqlDouble(int i)
         {
             ReadColumn(i);
             return _data[i].SqlDouble;
         }
 
-        virtual public SqlInt16 GetSqlInt16(int i)
+        public virtual SqlInt16 GetSqlInt16(int i)
         {
             ReadColumn(i);
             return _data[i].SqlInt16;
         }
 
-        virtual public SqlInt32 GetSqlInt32(int i)
+        public virtual SqlInt32 GetSqlInt32(int i)
         {
             ReadColumn(i);
             return _data[i].SqlInt32;
         }
 
-        virtual public SqlInt64 GetSqlInt64(int i)
+        public virtual SqlInt64 GetSqlInt64(int i)
         {
             ReadColumn(i);
             return _data[i].SqlInt64;
         }
 
-        virtual public SqlMoney GetSqlMoney(int i)
+        public virtual SqlMoney GetSqlMoney(int i)
         {
             ReadColumn(i);
             return _data[i].SqlMoney;
         }
 
-        virtual public SqlSingle GetSqlSingle(int i)
+        public virtual SqlSingle GetSqlSingle(int i)
         {
             ReadColumn(i);
             return _data[i].SqlSingle;
         }
 
-        virtual public SqlString GetSqlString(int i)
+        public virtual SqlString GetSqlString(int i)
         {
             ReadColumn(i);
 
@@ -2276,7 +2276,7 @@ namespace System.Data.SqlClient
             return _data[i].SqlString;
         }
 
-        virtual public SqlXml GetSqlXml(int i)
+        public virtual SqlXml GetSqlXml(int i)
         {
             ReadColumn(i);
             SqlXml sx = null;
@@ -2306,7 +2306,7 @@ namespace System.Data.SqlClient
             return sx;
         }
 
-        virtual public object GetSqlValue(int i)
+        public virtual object GetSqlValue(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -2388,7 +2388,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        virtual public int GetSqlValues(object[] values)
+        public virtual int GetSqlValues(object[] values)
         {
             SqlStatistics statistics = null;
             try
@@ -2416,7 +2416,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string GetString(int i)
+        public override string GetString(int i)
         {
             ReadColumn(i);
 
@@ -2429,7 +2429,7 @@ namespace System.Data.SqlClient
             return _data[i].String;
         }
 
-        override public T GetFieldValue<T>(int i)
+        public override T GetFieldValue<T>(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -2445,7 +2445,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public object GetValue(int i)
+        public override object GetValue(int i)
         {
             SqlStatistics statistics = null;
             try
@@ -2461,7 +2461,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        virtual public TimeSpan GetTimeSpan(int i)
+        public virtual TimeSpan GetTimeSpan(int i)
         {
             ReadColumn(i);
 
@@ -2482,7 +2482,7 @@ namespace System.Data.SqlClient
             return t;
         }
 
-        virtual public DateTimeOffset GetDateTimeOffset(int i)
+        public virtual DateTimeOffset GetDateTimeOffset(int i)
         {
             ReadColumn(i);
 
@@ -2719,7 +2719,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int GetValues(object[] values)
+        public override int GetValues(object[] values)
         {
             SqlStatistics statistics = null;
             bool sequentialAccess = IsCommandBehavior(CommandBehavior.SequentialAccess);
@@ -2982,7 +2982,7 @@ namespace System.Data.SqlClient
             return TdsEnums.SQLROW == token || TdsEnums.SQLNBCROW == token;
         }
 
-        override public bool IsDBNull(int i)
+        public override bool IsDBNull(int i)
         {
             {
                 CheckHeaderIsReady(columnIndex: i);
@@ -3000,7 +3000,7 @@ namespace System.Data.SqlClient
             return (condition == (condition & _commandBehavior));
         }
 
-        override public bool NextResult()
+        public override bool NextResult()
         {
             if (_currentTask != null)
             {
@@ -3155,7 +3155,7 @@ namespace System.Data.SqlClient
         }
 
         // user must call Read() to position on the first row
-        override public bool Read()
+        public override bool Read()
         {
             if (_currentTask != null)
             {
@@ -4419,7 +4419,7 @@ namespace System.Data.SqlClient
             return InvokeRetryable(moreFunc, source, registration);
         }
 
-        override public Task<bool> IsDBNullAsync(int i, CancellationToken cancellationToken)
+        public override Task<bool> IsDBNullAsync(int i, CancellationToken cancellationToken)
         {
             try
             {
@@ -4543,7 +4543,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public Task<T> GetFieldValueAsync<T>(int i, CancellationToken cancellationToken)
+        public override Task<T> GetFieldValueAsync<T>(int i, CancellationToken cancellationToken)
         {
             try
             {

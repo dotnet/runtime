@@ -87,7 +87,7 @@ namespace System.Data.SqlClient
             AddRange((Array)values);
         }
 
-        override public bool Contains(string value)
+        public override bool Contains(string value)
         { // WebData 97349
             return (-1 != IndexOf(value));
         }

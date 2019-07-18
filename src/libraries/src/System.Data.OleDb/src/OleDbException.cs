@@ -36,7 +36,7 @@ namespace System.Data.OleDb
             this.oledbErrors = errors;
         }
 
-        override public void GetObjectData(SerializationInfo si, StreamingContext context)
+        public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             if (null == si)
             {
@@ -47,7 +47,7 @@ namespace System.Data.OleDb
         }
 
         [TypeConverter(typeof(ErrorCodeConverter))]
-        override public int ErrorCode
+        public override int ErrorCode
         {
             get
             {
@@ -138,7 +138,7 @@ namespace System.Data.OleDb
             {
             }
 
-            override public object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
                 if (destinationType == null)
                 {

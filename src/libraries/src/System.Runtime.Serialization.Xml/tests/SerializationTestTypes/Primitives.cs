@@ -835,14 +835,14 @@ namespace SerializationTestTypes
         private string _b;
 
         [DataMember]
-        override public int A
+        public override int A
         {
             set { _a = value; }
             get { return _a; }
         }
 
         [DataMember]
-        override public string B
+        public override string B
         {
             set { _b = value; }
             get { return _b; }

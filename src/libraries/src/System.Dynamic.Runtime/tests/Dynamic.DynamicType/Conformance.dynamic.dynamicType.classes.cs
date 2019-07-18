@@ -12,7 +12,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.abs
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    abstract public class Base
+    public abstract class Base
     {
         public abstract int Foo(dynamic o);
     }
@@ -57,7 +57,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.abs
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    abstract public class Base
+    public abstract class Base
     {
         public abstract int Foo(dynamic o);
     }
@@ -107,7 +107,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.abs
         void Foo();
     }
 
-    abstract public class Base
+    public abstract class Base
     {
         public abstract int Foo(dynamic o);
     }
@@ -161,7 +161,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.abs
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    abstract public class Base
+    public abstract class Base
     {
         public abstract int Foo(object o);
     }
@@ -206,7 +206,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.abs
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    abstract public class Base
+    public abstract class Base
     {
         public abstract int Foo(dynamic o);
     }
@@ -604,7 +604,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.sim
     // <Code>
     namespace NS
     {
-        abstract public class Base
+        public abstract class Base
         {
             protected static int result = 0;
             public static bool Bar(object o)
