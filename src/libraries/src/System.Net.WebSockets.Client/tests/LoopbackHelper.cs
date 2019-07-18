@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,15 +12,19 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class LoopbackHelper
     {
-        public static async Task<bool> WebSocketHandshakeAsync(LoopbackServer.Connection connection)
+        public static async Task<Dictionary<string, string>> WebSocketHandshakeAsync(LoopbackServer.Connection connection)
         {
             string serverResponse = null;
-            string currentRequestLine;
-            while (!string.IsNullOrEmpty(currentRequestLine = await connection.ReadLineAsync().ConfigureAwait(false)))
+            List<string> headers = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+
+            var results = new Dictionary<string, string>();
+            foreach (string header in headers)
             {
-                string[] tokens = currentRequestLine.Split(new char[] { ':' }, 2);
+                string[] tokens = header.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
                 if (tokens.Length == 2)
                 {
+                    results.Add(tokens[0].Trim(), tokens[1].Trim());
+
                     string headerName = tokens[0];
                     if (headerName == "Sec-WebSocket-Key")
                     {
@@ -39,10 +44,10 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 // We received a valid WebSocket opening handshake. Send the appropriate response.
                 await connection.Writer.WriteAsync(serverResponse).ConfigureAwait(false);
-                return true;
+                return results;
             }
 
-            return false;
+            return null;
         }
 
         private static string ComputeWebSocketHandshakeSecurityAcceptValue(string secWebSocketKey)
