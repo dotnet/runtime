@@ -277,6 +277,44 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_Sp(mc)      ((mc).sp)
 #define MCREG_Pc(mc)      ((mc).pc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
+
+
+inline
+fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
+{
+    size_t size = 0;
+
+    do
+    {
+        fpsimd_context* fp = reinterpret_cast<fpsimd_context *>(&mc->uc_mcontext.__reserved[size]);
+
+        if(fp->head.magic == FPSIMD_MAGIC)
+        {
+            _ASSERTE(fp->head.size >= sizeof(fpsimd_context));
+            _ASSERTE(size + fp->head.size <= sizeof(mc->uc_mcontext.__reserved));
+
+            return fp;
+        }
+
+        if (fp->head.size == 0)
+        {
+            break;
+        }
+
+        size += fp->head.size;
+    } while (size + sizeof(fpsimd_context) <= sizeof(mc->uc_mcontext.__reserved));
+
+    _ASSERTE(false);
+
+    return nullptr;
+}
+
+inline
+const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
+{
+    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+}
+
 #else
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
