@@ -9,7 +9,7 @@ namespace System.Diagnostics.Contracts
 {
     public static partial class Contract
     {
-        public static event System.EventHandler<System.Diagnostics.Contracts.ContractFailedEventArgs> ContractFailed { add { } remove { } }
+        public static event System.EventHandler<System.Diagnostics.Contracts.ContractFailedEventArgs>? ContractFailed { add { } remove { } }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }

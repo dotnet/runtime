@@ -26,15 +26,15 @@ namespace System
         public string? RelativeSearchPath { get { throw null; } }
         public System.AppDomainSetup SetupInformation { get { throw null; } }
         public bool ShadowCopyFiles { get { throw null; } }
-        public event System.AssemblyLoadEventHandler AssemblyLoad { add { } remove { } }
-        public event System.ResolveEventHandler AssemblyResolve { add { } remove { } }
-        public event System.EventHandler DomainUnload { add { } remove { } }
-        public event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
-        public event System.EventHandler ProcessExit { add { } remove { } }
-        public event System.ResolveEventHandler ReflectionOnlyAssemblyResolve { add { } remove { } }
-        public event System.ResolveEventHandler ResourceResolve { add { } remove { } }
-        public event System.ResolveEventHandler TypeResolve { add { } remove { } }
-        public event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
+        public event System.AssemblyLoadEventHandler? AssemblyLoad { add { } remove { } }
+        public event System.ResolveEventHandler? AssemblyResolve { add { } remove { } }
+        public event System.EventHandler? DomainUnload { add { } remove { } }
+        public event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>? FirstChanceException { add { } remove { } }
+        public event System.EventHandler? ProcessExit { add { } remove { } }
+        public event System.ResolveEventHandler? ReflectionOnlyAssemblyResolve { add { } remove { } }
+        public event System.ResolveEventHandler? ResourceResolve { add { } remove { } }
+        public event System.ResolveEventHandler? TypeResolve { add { } remove { } }
+        public event System.UnhandledExceptionEventHandler? UnhandledException { add { } remove { } }
         [System.ObsoleteAttribute("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public void AppendPrivatePath(string? path) { }
         public string ApplyPolicy(string assemblyName) { throw null; }
@@ -969,7 +969,7 @@ namespace System
     {
         public Progress() { }
         public Progress(System.Action<T> handler) { }
-        public event System.EventHandler<T> ProgressChanged { add { } remove { } }
+        public event System.EventHandler<T>? ProgressChanged { add { } remove { } }
         protected virtual void OnReport(T value) { }
         void System.IProgress<T>.Report(T value) { }
     }

@@ -1191,7 +1191,7 @@ namespace System
         public virtual string? Source { get { throw null; } set { } }
         public virtual string? StackTrace { get { throw null; } }
         public System.Reflection.MethodBase? TargetSite { get { throw null; } }
-        protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs> SerializeObjectState { add { } remove { } }
+        protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>? SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public new System.Type GetType() { throw null; }
@@ -5363,7 +5363,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.Module> Modules { get { throw null; } }
         public virtual bool ReflectionOnly { get { throw null; } }
         public virtual System.Security.SecurityRuleSet SecurityRuleSet { get { throw null; } }
-        public virtual event System.Reflection.ModuleResolveEventHandler ModuleResolve { add { } remove { } }
+        public virtual event System.Reflection.ModuleResolveEventHandler? ModuleResolve { add { } remove { } }
         public object? CreateInstance(string typeName) { throw null; }
         public object? CreateInstance(string typeName, bool ignoreCase) { throw null; }
         public virtual object? CreateInstance(string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object[]? args, System.Globalization.CultureInfo? culture, object[]? activationAttributes) { throw null; }
@@ -8277,7 +8277,7 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.TaskScheduler Default { get { throw null; } }
         public int Id { get { throw null; } }
         public virtual int MaximumConcurrencyLevel { get { throw null; } }
-        public static event System.EventHandler<System.Threading.Tasks.UnobservedTaskExceptionEventArgs> UnobservedTaskException { add { } remove { } }
+        public static event System.EventHandler<System.Threading.Tasks.UnobservedTaskExceptionEventArgs>? UnobservedTaskException { add { } remove { } }
         public static System.Threading.Tasks.TaskScheduler FromCurrentSynchronizationContext() { throw null; }
         protected abstract System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task>? GetScheduledTasks();
         protected internal abstract void QueueTask(System.Threading.Tasks.Task task);
