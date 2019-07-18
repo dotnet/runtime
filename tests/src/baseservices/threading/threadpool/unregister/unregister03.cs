@@ -24,8 +24,10 @@ namespace UnregisterWaitNativeBug
 {
     class Program
     {
-        public int ret = 0;
-        RegisteredWaitHandle[] regWait;
+        private int ret = 0;
+        private RegisteredWaitHandle[] regWait;
+        private readonly AutoResetEvent expectedWaitsCompleted = new AutoResetEvent(false);
+
         static int Main(string[] args)
         {
             Program p = new Program();
@@ -33,6 +35,7 @@ namespace UnregisterWaitNativeBug
             Console.WriteLine(100 == p.ret ? "Test Passed" : "Test Failed");
             return p.ret;
         }
+
         public void Run()
         {
             int size = 100;
@@ -50,15 +53,25 @@ namespace UnregisterWaitNativeBug
                 are[i].Set();
                 are[i] = null;
             }
-            Thread.Sleep(1000);
+
+            if (expectedWaitsCompleted.WaitOne(30_000))
+            {
+                // Wait a bit longer to verify that there are not any additional wait completions
+                Thread.Sleep(50);
+            }
+
             for (int i = 0; i < size; i++)
             {
                 regWait[i].Unregister(are[i]);
             }
         }
+
         public void TheCallBack(object foo, bool state) 
         {
-            Interlocked.Increment(ref ret);
+            if (Interlocked.Increment(ref ret) == 100)
+            {
+                expectedWaitsCompleted.Set();
+            }
         }
     }
 }
