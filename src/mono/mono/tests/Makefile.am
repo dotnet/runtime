@@ -1736,7 +1736,6 @@ KNOWN_FAILING_TESTS = \
 	appdomain-marshalbyref-assemblyload.exe	\
 	abort-try-holes.exe \
 	threads-init.exe \
-	dim-constrainedcall.exe \
 	gptail1.exe \
 	itaili1.exe \
 	sirtail1.exe \

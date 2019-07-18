@@ -5636,10 +5636,12 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		 * A simple solution would be to box always and make a normal virtual call, but that would
 		 * be bad performance wise.
 		 */
-		if (mono_class_is_interface (cmethod->klass) && mono_class_is_ginst (cmethod->klass)) {
+		if (mono_class_is_interface (cmethod->klass) && mono_class_is_ginst (cmethod->klass) &&
+		    (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 			/*
 			 * The parent classes implement no generic interfaces, so the called method will be a vtype method, so no boxing neccessary.
 			 */
+			/* If the method is not abstract, it's a default interface method, and we need to box */
 			need_box = FALSE;
 		}
 
