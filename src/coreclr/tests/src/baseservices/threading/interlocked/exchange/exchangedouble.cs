@@ -77,7 +77,7 @@ namespace Exchange
             signal.WaitOne();
             for (int i = 0; i < numberOfIterations; i++)
             {
-                tmpVal = totalValue;
+                tmpVal = Volatile.Read(ref totalValue);
                 if (tmpVal != newValueB && tmpVal != newValueA)
                 {
                     Console.WriteLine(tmpVal + "," +
