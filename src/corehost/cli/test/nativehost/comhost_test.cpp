@@ -125,3 +125,44 @@ bool comhost_test::concurrent(const pal::string_t &comhost_path, const pal::stri
     std::cout << ss.str();
     return succeeded;
 }
+
+bool comhost_test::errorinfo(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count)
+{
+    CLSID clsid;
+    std::vector<char> clsidVect;
+    if (!get_clsid(clsid_str, &clsid, clsidVect))
+        return false;
+
+    comhost_exports comhost(comhost_path);
+
+    for (int i = 0; i < count; ++i)
+    {
+        HRESULT hr = activate_class(comhost, clsid);
+        if (SUCCEEDED(hr))
+            return false;
+
+        IErrorInfo *ei = nullptr;
+        hr = ::GetErrorInfo(0, &ei);
+        if (FAILED(hr) || ei == nullptr)
+        {
+            std::cout << "IErrorInfo not set" << std::endl;
+            return false;
+        }
+
+        BSTR errorDesc = nullptr;
+        hr = ei->GetDescription(&errorDesc);
+        if (FAILED(hr) || errorDesc == nullptr)
+        {
+            ei->Release();
+            std::cout << "IErrorInfo description not set" << std::endl;
+            return false;
+        }
+
+        std::wcout << errorDesc << std::endl;
+
+        ::SysFreeString(errorDesc);
+        ei->Release();
+    }
+
+    return true;
+}
