@@ -34,9 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string scenario = synchronous ? "synchronous" : "concurrent";
             string args = $"comhost {scenario} {count} {sharedState.ComHostPath} {sharedState.ClsidString}";
             CommandResult result = Command.Create(sharedState.NativeHostPath, args)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable("DOTNET_ROOT", sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
                 .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
                 .Execute();
@@ -59,26 +57,57 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 return;
             }
 
-            var fixture = sharedState.ComLibraryFixture.Copy();
+            using (var fixture = sharedState.ComLibraryFixture.Copy())
+            {
+                File.WriteAllText(Path.Combine(fixture.TestProject.BuiltApp.Location, "hostfxr.dll"), string.Empty);
+                var comHostWithAppLocalFxr = Path.Combine(
+                    fixture.TestProject.BuiltApp.Location,
+                    $"{ fixture.TestProject.AssemblyName }.comhost.dll");
 
-            File.WriteAllText(Path.Combine(fixture.TestProject.BuiltApp.Location, "hostfxr.dll"), string.Empty);
-            var comHostWithAppLocalFxr = Path.Combine(
-                fixture.TestProject.BuiltApp.Location,
-                $"{ fixture.TestProject.AssemblyName }.comhost.dll");
+                string args = $"comhost synchronous 1 {comHostWithAppLocalFxr} {sharedState.ClsidString}";
+                CommandResult result = Command.Create(sharedState.NativeHostPath, args)
+                    .EnableTracingAndCaptureOutputs()
+                    .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
+                    .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
+                    .Execute();
 
-            string args = $"comhost synchronous 1 {comHostWithAppLocalFxr} {sharedState.ClsidString}";
-            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
-                .Execute();
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                    .And.HaveStdErrContaining("Using environment variable DOTNET_ROOT");
+            }
+        }
 
-            result.Should().Pass()
-                .And.HaveStdOutContaining("New instance of Server created")
-                .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                .And.HaveStdErrContaining("Using environment variable DOTNET_ROOT");
+        [Fact]
+        public void ActivateClass_ValidateIErrorInfoResult()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // COM activation is only supported on Windows
+                return;
+            }
+
+            using (var fixture = sharedState.ComLibraryFixture.Copy())
+            {
+                string missingRuntimeConfig = Path.Combine(fixture.TestProject.BuiltApp.Location,
+                            $"{ fixture.TestProject.AssemblyName }.runtimeconfig.json");
+
+                File.Delete(missingRuntimeConfig);
+
+                var comHost = Path.Combine(
+                    fixture.TestProject.BuiltApp.Location,
+                    $"{ fixture.TestProject.AssemblyName }.comhost.dll");
+
+                string args = $"comhost errorinfo 1 {comHost} {sharedState.ClsidString}";
+                CommandResult result = Command.Create(sharedState.NativeHostPath, args)
+                    .EnableTracingAndCaptureOutputs()
+                    .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
+                    .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining($"The specified runtimeconfig.json [{missingRuntimeConfig}] does not exist");
+            }
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -100,6 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
 
+                // [TODO] BEGIN - Remove once using .NET Core 3.0 to build tests
                 ComHostPath = Path.Combine(
                     ComLibraryFixture.TestProject.BuiltApp.Location,
                     $"{ ComLibraryFixture.TestProject.AssemblyName }.comhost.dll");
@@ -118,6 +148,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     }
                 };
                 File.WriteAllText($"{ ComHostPath }.clsidmap", clsidMap.ToString());
+                // [TODO] END - Remove once using .NET Core 3.0 to build tests
             }
 
             protected override void Dispose(bool disposing)
