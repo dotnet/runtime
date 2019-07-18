@@ -113,7 +113,7 @@ namespace System.Data.ProviderBase
             Dispose(true);
         }
 
-        virtual protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -412,7 +412,7 @@ namespace System.Data.ProviderBase
 
         }
 
-        virtual public DataTable GetSchema(DbConnection connection, string collectionName, string[] restrictions)
+        public virtual DataTable GetSchema(DbConnection connection, string collectionName, string[] restrictions)
         {
             Debug.Assert(_metaDataCollectionsDataSet != null);
 
@@ -525,7 +525,7 @@ namespace System.Data.ProviderBase
             _metaDataCollectionsDataSet.ReadXml(XmlStream);
         }
 
-        virtual protected DataTable PrepareCollection(String collectionName, String[] restrictions, DbConnection connection)
+        protected virtual DataTable PrepareCollection(String collectionName, String[] restrictions, DbConnection connection)
         {
             throw ADP.NotSupported();
         }

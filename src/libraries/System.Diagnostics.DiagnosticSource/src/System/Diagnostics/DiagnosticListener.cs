@@ -157,7 +157,7 @@ namespace System.Diagnostics
         /// Note that we do not do the Dispose(bool) pattern because we frankly don't want to support
         /// subclasses that have non-managed state.   
         /// </summary>
-        virtual public void Dispose()
+        public virtual void Dispose()
         {
             // Remove myself from the list of all listeners.  
             lock (s_allListenersLock)

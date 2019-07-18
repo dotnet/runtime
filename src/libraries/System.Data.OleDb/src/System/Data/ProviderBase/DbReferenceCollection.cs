@@ -77,7 +77,7 @@ namespace System.Data.ProviderBase
             _lastItemIndex = 0;
         }
 
-        abstract public void Add(object value, int tag);
+        public abstract void Add(object value, int tag);
 
         protected void AddItem(object value, int tag)
         {
@@ -222,9 +222,9 @@ namespace System.Data.ProviderBase
             }
         }
 
-        abstract protected void NotifyItem(int message, int tag, object value);
+        protected abstract void NotifyItem(int message, int tag, object value);
 
-        abstract public void Remove(object value);
+        public abstract void Remove(object value);
 
         protected void RemoveItem(object value)
         {

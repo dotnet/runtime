@@ -14,7 +14,7 @@ namespace System.DirectoryServices.AccountManagement
             // Nothing to do
         }
 
-        override internal object CurrentAsPrincipal
+        internal override object CurrentAsPrincipal
         {
             get
             {
@@ -22,23 +22,23 @@ namespace System.DirectoryServices.AccountManagement
                 return null;
             }
         }
-        override internal bool MoveNext()
+        internal override bool MoveNext()
         {
             // Mimic an empty set
             return false;
         }
 
-        override internal void Reset()
+        internal override void Reset()
         {
             // Nothing to do
         }
 
-        override internal ResultSetBookmark BookmarkAndReset()
+        internal override ResultSetBookmark BookmarkAndReset()
         {
             return new EmptySetBookmark();
         }
 
-        override internal void RestoreBookmark(ResultSetBookmark bookmark)
+        internal override void RestoreBookmark(ResultSetBookmark bookmark)
         {
             // Nothing to do
         }

@@ -19,7 +19,7 @@ namespace System.Data.OleDb
             set { base.Command = value; }
         }
 
-        override protected IDbCommand BaseCommand
+        protected override IDbCommand BaseCommand
         {
             get { return base.BaseCommand; }
             set { base.BaseCommand = (value as OleDbCommand); }

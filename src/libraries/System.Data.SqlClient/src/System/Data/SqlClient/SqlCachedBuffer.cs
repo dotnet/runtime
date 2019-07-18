@@ -106,7 +106,7 @@ namespace System.Data.SqlClient
             return new SqlCachedStream(this);
         }
 
-        override public string ToString()
+        public override string ToString()
         {
             if (IsNull)
                 throw new SqlNullValueException();

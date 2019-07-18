@@ -24,7 +24,7 @@ public enum NodeFlags
     Indent = 512
 }
 
-abstract public class CXmlBase
+public abstract class CXmlBase
 {
     protected XmlNodeType pnType;
     protected string pstrName;
@@ -66,13 +66,13 @@ abstract public class CXmlBase
     //
     // Virtual Methods and Properties
     //
-    abstract public void Write(XmlWriter rXmlWriter);
+    public abstract void Write(XmlWriter rXmlWriter);
 
-    abstract public string Xml { get; }
+    public abstract string Xml { get; }
 
-    abstract public void WriteXml(TextWriter rTW);
+    public abstract void WriteXml(TextWriter rTW);
 
-    abstract public string Value { get; }
+    public abstract string Value { get; }
 
     //
     // Public Methods and Properties
@@ -181,7 +181,7 @@ public class CXmlAttribute : CXmlBase
     //
     // Public Methods and Properties (Override)
     //
-    override public void Write(XmlWriter rXmlWriter)
+    public override void Write(XmlWriter rXmlWriter)
     {
         CXmlBase rNode;
 
@@ -198,7 +198,7 @@ public class CXmlAttribute : CXmlBase
         }
     }
 
-    override public string Xml
+    public override string Xml
     {
         get
         {
@@ -208,7 +208,7 @@ public class CXmlAttribute : CXmlBase
         }
     }
 
-    override public void WriteXml(TextWriter rTW)
+    public override void WriteXml(TextWriter rTW)
     {
         if ((this.peFlags & NodeFlags.DefaultAttribute) == 0)
         {
@@ -226,7 +226,7 @@ public class CXmlAttribute : CXmlBase
     //
     // Public Methods and Properties
     //
-    override public string Value
+    public override string Value
     {
         get
         {
@@ -307,7 +307,7 @@ public class CXmlNode : CXmlBase
     //
     // Public Methods and Properties (Override)
     //
-    override public void Write(XmlWriter rXmlWriter)
+    public override void Write(XmlWriter rXmlWriter)
     {
         CXmlBase rNode;
         CXmlAttribute rAttribute;
@@ -403,7 +403,7 @@ public class CXmlNode : CXmlBase
         }
     }
 
-    override public string Xml
+    public override string Xml
     {
         get
         {
@@ -413,7 +413,7 @@ public class CXmlNode : CXmlBase
         }
     }
 
-    override public void WriteXml(TextWriter rTW)
+    public override void WriteXml(TextWriter rTW)
     {
         string strXml;
         CXmlAttribute rAttribute;
@@ -508,7 +508,7 @@ public class CXmlNode : CXmlBase
         get { return _strValue; }
     }
 
-    override public string Value
+    public override string Value
     {
         get
         {
@@ -779,7 +779,7 @@ public class CXmlCache
         }
     }
 
-    virtual public string Xml
+    public virtual string Xml
     {
         get
         {
@@ -1097,7 +1097,7 @@ public class ChecksumWriter : TextWriter
     // --------------------------------------------------------------------------------------------------
     //    Public methods
     // --------------------------------------------------------------------------------------------------
-    override public void Write(string str)
+    public override void Write(string str)
     {
         int i;
         int m;
@@ -1109,7 +1109,7 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(char[] rgch)
+    public override void Write(char[] rgch)
     {
         int i;
         int m;
@@ -1121,7 +1121,7 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(char[] rgch, int iOffset, int iCount)
+    public override void Write(char[] rgch, int iOffset, int iCount)
     {
         int i;
         int m;
@@ -1133,7 +1133,7 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(char ch)
+    public override void Write(char ch)
     {
         _dResult += Math.Round((decimal)(ch / (_nPosition + 1.0)), 10);
         _nPosition++;
@@ -1165,7 +1165,7 @@ public class BufferWriter : TextWriter
     // --------------------------------------------------------------------------------------------------
     //    Properties
     // --------------------------------------------------------------------------------------------------
-    override public string ToString()
+    public override string ToString()
     {
         return new string(_rgchBuffer, 0, _nBufferUsed);
     }
@@ -1179,7 +1179,7 @@ public class BufferWriter : TextWriter
     // --------------------------------------------------------------------------------------------------
     //    Public methods
     // --------------------------------------------------------------------------------------------------
-    override public void Write(string str)
+    public override void Write(string str)
     {
         int i;
         int m;
@@ -1191,7 +1191,7 @@ public class BufferWriter : TextWriter
         }
     }
 
-    override public void Write(char[] rgch)
+    public override void Write(char[] rgch)
     {
         int i;
         int m;
@@ -1203,7 +1203,7 @@ public class BufferWriter : TextWriter
         }
     }
 
-    override public void Write(char[] rgch, int iOffset, int iCount)
+    public override void Write(char[] rgch, int iOffset, int iCount)
     {
         int i;
         int m;
@@ -1215,7 +1215,7 @@ public class BufferWriter : TextWriter
         }
     }
 
-    override public void Write(char ch)
+    public override void Write(char ch)
     {
         if (_nBufferUsed == _nBufferSize)
         {

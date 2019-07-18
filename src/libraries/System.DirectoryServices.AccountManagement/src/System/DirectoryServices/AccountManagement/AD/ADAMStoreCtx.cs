@@ -92,7 +92,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Must be called inside of lock(domainInfoLock)
-        override protected void LoadDomainInfo()
+        protected override void LoadDomainInfo()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 

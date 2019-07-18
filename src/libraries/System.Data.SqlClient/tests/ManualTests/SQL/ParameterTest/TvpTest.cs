@@ -1448,72 +1448,72 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             _currentRow = -1;
         }
 
-        override public int Depth
+        public override int Depth
         {
             get { return 0; }
         }
 
-        override public int FieldCount
+        public override int FieldCount
         {
             get { return _sourceData[_currentRow].FieldCount; }
         }
 
-        override public bool HasRows
+        public override bool HasRows
         {
             get { return _sourceData.Count > 0; }
         }
 
-        override public bool IsClosed
+        public override bool IsClosed
         {
             get { return false; }
         }
 
-        override public int RecordsAffected
+        public override int RecordsAffected
         {
             get { return 0; }
         }
 
-        override public object this[int ordinal]
+        public override object this[int ordinal]
         {
             get { return GetValue(ordinal); }
         }
 
-        override public object this[string name]
+        public override object this[string name]
         {
             get { return GetValue(GetOrdinal(name)); }
         }
 
-        override public void Close()
+        public override void Close()
         {
             _currentRow = _sourceData.Count;
         }
 
-        override public string GetDataTypeName(int ordinal)
+        public override string GetDataTypeName(int ordinal)
         {
             return _sourceData[_currentRow].GetDataTypeName(ordinal);
         }
 
-        override public IEnumerator GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return _sourceData.GetEnumerator();
         }
 
-        override public Type GetFieldType(int ordinal)
+        public override Type GetFieldType(int ordinal)
         {
             return _sourceData[_currentRow].GetFieldType(ordinal);
         }
 
-        override public string GetName(int ordinal)
+        public override string GetName(int ordinal)
         {
             return _sourceData[_currentRow].GetName(ordinal);
         }
 
-        override public int GetOrdinal(string name)
+        public override int GetOrdinal(string name)
         {
             return _sourceData[_currentRow].GetOrdinal(name);
         }
 
-        override public DataTable GetSchemaTable()
+        public override DataTable GetSchemaTable()
         {
             SqlDataRecord rec = _sourceData[0];
 
@@ -1575,37 +1575,37 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return schemaTable;
         }
 
-        override public bool GetBoolean(int ordinal)
+        public override bool GetBoolean(int ordinal)
         {
             return _sourceData[_currentRow].GetBoolean(ordinal);
         }
 
-        override public byte GetByte(int ordinal)
+        public override byte GetByte(int ordinal)
         {
             return _sourceData[_currentRow].GetByte(ordinal);
         }
 
-        override public long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
+        public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
         {
             return _sourceData[_currentRow].GetBytes(ordinal, dataOffset, buffer, bufferOffset, length);
         }
 
-        override public char GetChar(int ordinal)
+        public override char GetChar(int ordinal)
         {
             return _sourceData[_currentRow].GetChar(ordinal);
         }
 
-        override public long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
+        public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
         {
             return _sourceData[_currentRow].GetChars(ordinal, dataOffset, buffer, bufferOffset, length);
         }
 
-        override public DateTime GetDateTime(int ordinal)
+        public override DateTime GetDateTime(int ordinal)
         {
             return _sourceData[_currentRow].GetDateTime(ordinal);
         }
 
-        override public decimal GetDecimal(int ordinal)
+        public override decimal GetDecimal(int ordinal)
         {
             // DataRecord may have illegal values for Decimal...
             decimal result;
@@ -1620,63 +1620,63 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return result;
         }
 
-        override public double GetDouble(int ordinal)
+        public override double GetDouble(int ordinal)
         {
             return _sourceData[_currentRow].GetDouble(ordinal);
         }
 
-        override public float GetFloat(int ordinal)
+        public override float GetFloat(int ordinal)
         {
             return _sourceData[_currentRow].GetFloat(ordinal);
         }
 
-        override public Guid GetGuid(int ordinal)
+        public override Guid GetGuid(int ordinal)
         {
             return _sourceData[_currentRow].GetGuid(ordinal);
         }
 
-        override public short GetInt16(int ordinal)
+        public override short GetInt16(int ordinal)
         {
             return _sourceData[_currentRow].GetInt16(ordinal);
         }
 
-        override public int GetInt32(int ordinal)
+        public override int GetInt32(int ordinal)
         {
             return _sourceData[_currentRow].GetInt32(ordinal);
         }
 
-        override public long GetInt64(int ordinal)
+        public override long GetInt64(int ordinal)
         {
             return _sourceData[_currentRow].GetInt64(ordinal);
         }
 
-        override public string GetString(int ordinal)
+        public override string GetString(int ordinal)
         {
             return _sourceData[_currentRow].GetString(ordinal);
         }
 
-        override public object GetValue(int ordinal)
+        public override object GetValue(int ordinal)
         {
             return _sourceData[_currentRow].GetValue(ordinal);
         }
 
-        override public int GetValues(object[] values)
+        public override int GetValues(object[] values)
         {
             return _sourceData[_currentRow].GetValues(values);
         }
 
-        override public bool IsDBNull(int ordinal)
+        public override bool IsDBNull(int ordinal)
         {
             return _sourceData[_currentRow].IsDBNull(ordinal);
         }
 
-        override public bool NextResult()
+        public override bool NextResult()
         {
             Close();
             return false;
         }
 
-        override public bool Read()
+        public override bool Read()
         {
             _currentRow++;
 

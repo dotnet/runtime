@@ -42,7 +42,7 @@ namespace System.Data.SqlClient
             _advanceReader = advanceReader;
         }
 
-        override public bool CanRead
+        public override bool CanRead
         {
             get
             {
@@ -50,7 +50,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool CanSeek
+        public override bool CanSeek
         {
             get
             {
@@ -58,7 +58,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool CanWrite
+        public override bool CanWrite
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public long Length
+        public override long Length
         {
             get
             {
@@ -74,7 +74,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public long Position
+        public override long Position
         {
             get
             {
@@ -86,7 +86,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             try
             {
@@ -102,12 +102,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public void Flush()
+        public override void Flush()
         {
             throw ADP.NotSupported();
         }
 
-        override public int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             int intCount = 0;
             int cBufferedData = 0;
@@ -293,17 +293,17 @@ namespace System.Data.SqlClient
             return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(this, closeInput: true, async: async);
         }
 
-        override public long Seek(long offset, SeekOrigin origin)
+        public override long Seek(long offset, SeekOrigin origin)
         {
             throw ADP.NotSupported();
         }
 
-        override public void SetLength(long value)
+        public override void SetLength(long value)
         {
             throw ADP.NotSupported();
         }
 
-        override public void Write(byte[] buffer, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             throw ADP.NotSupported();
         }
@@ -327,7 +327,7 @@ namespace System.Data.SqlClient
             _cachedBytes = sqlBuf.CachedBytes;
         }
 
-        override public bool CanRead
+        public override bool CanRead
         {
             get
             {
@@ -335,7 +335,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool CanSeek
+        public override bool CanSeek
         {
             get
             {
@@ -343,7 +343,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public bool CanWrite
+        public override bool CanWrite
         {
             get
             {
@@ -351,7 +351,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public long Length
+        public override long Length
         {
             get
             {
@@ -359,7 +359,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public long Position
+        public override long Position
         {
             get
             {
@@ -384,7 +384,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             try
             {
@@ -401,12 +401,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public void Flush()
+        public override void Flush()
         {
             throw ADP.NotSupported();
         }
 
-        override public int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             int cb;
             int intCount = 0;
@@ -464,7 +464,7 @@ namespace System.Data.SqlClient
             return intCount;
         }
 
-        override public long Seek(long offset, SeekOrigin origin)
+        public override long Seek(long offset, SeekOrigin origin)
         {
             long pos = 0;
 
@@ -495,12 +495,12 @@ namespace System.Data.SqlClient
             return pos;
         }
 
-        override public void SetLength(long value)
+        public override void SetLength(long value)
         {
             throw ADP.NotSupported();
         }
 
-        override public void Write(byte[] buffer, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             throw ADP.NotSupported();
         }

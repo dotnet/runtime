@@ -23,7 +23,7 @@ namespace System.Net.Sockets
             return Interop.Winsock.GetAddrInfoW(nodename, servicename, ref hints, out outAddrInfo);
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             Interop.Winsock.freeaddrinfo(handle);
             return true;

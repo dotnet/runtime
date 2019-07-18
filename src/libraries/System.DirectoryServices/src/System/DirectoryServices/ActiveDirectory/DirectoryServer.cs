@@ -161,7 +161,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #endregion public methods
 
-        #region abstract public methods
+        #region public abstract methods
 
         public abstract void CheckReplicationConsistency();
 
@@ -183,7 +183,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public abstract void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options);
 
-        #endregion abstract public methods
+        #endregion public abstract methods
 
         #region public properties
 
@@ -211,7 +211,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #endregion public properties
 
-        #region abstract public properties
+        #region public abstract properties
 
         public abstract string IPAddress { get; }
 
@@ -223,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public abstract ReplicationConnectionCollection OutboundConnections { get; }
 
-        #endregion abstract public properties
+        #endregion public abstract properties
 
         #region private methods
 

@@ -14,7 +14,7 @@ namespace System.DirectoryServices.ActiveDirectory
             SetHandle(value);
         }
 
-        override protected bool ReleaseHandle() => UnsafeNativeMethods.LsaClose(handle) == 0;
+        protected override bool ReleaseHandle() => UnsafeNativeMethods.LsaClose(handle) == 0;
     }
 
     internal sealed class LsaLogonProcessSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
             SetHandle(value);
         }
 
-        override protected bool ReleaseHandle() => NativeMethods.LsaDeregisterLogonProcess(handle) == 0;
+        protected override bool ReleaseHandle() => NativeMethods.LsaDeregisterLogonProcess(handle) == 0;
     }
 
     internal sealed class LoadLibrarySafeHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -38,6 +38,6 @@ namespace System.DirectoryServices.ActiveDirectory
             SetHandle(value);
         }
 
-        override protected bool ReleaseHandle() => UnsafeNativeMethods.FreeLibrary(handle) != 0;
+        protected override bool ReleaseHandle() => UnsafeNativeMethods.FreeLibrary(handle) != 0;
     }
 }

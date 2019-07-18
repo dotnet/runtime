@@ -159,7 +159,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public DataRowVersion SourceVersion
+        public override DataRowVersion SourceVersion
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {

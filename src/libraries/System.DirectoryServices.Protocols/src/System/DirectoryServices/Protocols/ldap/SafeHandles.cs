@@ -28,7 +28,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             Wldap32.ber_free(handle, 1);
             return true;
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.Protocols
             SetHandle(value);
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             Marshal.FreeHGlobal(handle);
             return true;
@@ -93,7 +93,7 @@ namespace System.DirectoryServices.Protocols
                 SetHandle(value);
             }
         }
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             if (handle != IntPtr.Zero)
             {

@@ -302,7 +302,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected DbConnection DbConnection
+        protected override DbConnection DbConnection
         {
             get
             {
@@ -377,7 +377,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected DbTransaction DbTransaction
+        protected override DbTransaction DbTransaction
         {
             get
             {
@@ -389,7 +389,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string CommandText
+        public override string CommandText
         {
             get
             {
@@ -406,7 +406,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int CommandTimeout
+        public override int CommandTimeout
         {
             get
             {
@@ -435,7 +435,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public CommandType CommandType
+        public override CommandType CommandType
         {
             get
             {
@@ -492,7 +492,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override protected DbParameterCollection DbParameterCollection
+        protected override DbParameterCollection DbParameterCollection
         {
             get
             {
@@ -500,7 +500,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public UpdateRowSource UpdatedRowSource
+        public override UpdateRowSource UpdatedRowSource
         {
             get
             {
@@ -561,7 +561,7 @@ namespace System.Data.SqlClient
             this.IsDirty = true;
         }
 
-        override public void Prepare()
+        public override void Prepare()
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -687,7 +687,7 @@ namespace System.Data.SqlClient
         // It doesn't make sense to verify the connection exists or that it is open during cancel
         // because immediately after checkin the connection can be closed or removed via another thread.
         //
-        override public void Cancel()
+        public override void Cancel()
         {
             SqlStatistics statistics = null;
             try
@@ -773,12 +773,12 @@ namespace System.Data.SqlClient
             return new SqlParameter();
         }
 
-        override protected DbParameter CreateDbParameter()
+        protected override DbParameter CreateDbParameter()
         {
             return CreateParameter();
         }
 
-        override protected void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             { // release managed objects
@@ -788,7 +788,7 @@ namespace System.Data.SqlClient
             base.Dispose(disposing);
         }
 
-        override public object ExecuteScalar()
+        public override object ExecuteScalar()
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -856,7 +856,7 @@ namespace System.Data.SqlClient
             return retResult;
         }
 
-        override public int ExecuteNonQuery()
+        public override int ExecuteNonQuery()
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1410,7 +1410,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override protected DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
+        protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
             return ExecuteReader(behavior);
         }

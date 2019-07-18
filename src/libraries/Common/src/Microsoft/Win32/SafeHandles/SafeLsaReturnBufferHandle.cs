@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(handle);
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // LsaFreeReturnBuffer returns an NTSTATUS
             return Interop.SspiCli.LsaFreeReturnBuffer(handle) >= 0;

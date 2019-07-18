@@ -86,7 +86,7 @@ internal static partial class Interop
             {
             }
 
-            override protected bool ReleaseHandle()
+            protected override bool ReleaseHandle()
             {
                 return Interop.IpHlpApi.IcmpCloseHandle(handle);
             }

@@ -66,21 +66,21 @@ namespace System.Data.OleDb
             return (OleDbCommand)base.GetDeleteCommand(useColumnsForParameterNames);
         }
 
-        override protected string GetParameterName(int parameterOrdinal)
+        protected override string GetParameterName(int parameterOrdinal)
         {
             return "p" + parameterOrdinal.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
-        override protected string GetParameterName(string parameterName)
+        protected override string GetParameterName(string parameterName)
         {
             return parameterName;
         }
 
-        override protected string GetParameterPlaceholder(int parameterOrdinal)
+        protected override string GetParameterPlaceholder(int parameterOrdinal)
         {
             return "?";
         }
 
-        override protected void ApplyParameterInfo(DbParameter parameter, DataRow datarow, StatementType statementType, bool whereClause)
+        protected override void ApplyParameterInfo(DbParameter parameter, DataRow datarow, StatementType statementType, bool whereClause)
         {
             OleDbParameter p = (OleDbParameter)parameter;
             object valueType = datarow[SchemaTableColumn.ProviderType];
@@ -396,7 +396,7 @@ namespace System.Data.OleDb
             return ADP.BuildQuotedString(quotePrefix, quoteSuffix, unquotedIdentifier);
         }
 
-        override protected void SetRowUpdatingHandler(DbDataAdapter adapter)
+        protected override void SetRowUpdatingHandler(DbDataAdapter adapter)
         {
             Debug.Assert(adapter is OleDbDataAdapter, "!OleDbDataAdapter");
             if (adapter == base.DataAdapter)

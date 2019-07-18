@@ -49,7 +49,7 @@ namespace System.Data.OleDb
         }
 
         [RefreshProperties(RefreshProperties.All)]
-        override public ParameterDirection Direction
+        public override ParameterDirection Direction
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -76,7 +76,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public bool IsNullable
+        public override bool IsNullable
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -96,7 +96,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public int Size
+        public override int Size
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -135,7 +135,7 @@ namespace System.Data.OleDb
             return (0 != _size);
         }
 
-        override public string SourceColumn
+        public override string SourceColumn
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -160,7 +160,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public DataRowVersion SourceVersion
+        public override DataRowVersion SourceVersion
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -220,7 +220,7 @@ namespace System.Data.OleDb
             _parent = null;
         }
 
-        override public string ToString()
+        public override string ToString()
         { // V1.2.3300, XXXParameter V1.0.3300
             return ParameterName;
         }

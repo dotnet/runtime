@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(handle);
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             return Interop.Advapi32.LsaFreeMemory(handle) == 0;
         }

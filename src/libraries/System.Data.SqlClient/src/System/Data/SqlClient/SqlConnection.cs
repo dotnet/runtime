@@ -550,7 +550,7 @@ namespace System.Data.SqlClient
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
-        override protected DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+        protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
         {
             DbTransaction transaction = BeginTransaction(isolationLevel);
 

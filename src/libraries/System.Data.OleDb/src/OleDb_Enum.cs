@@ -215,7 +215,7 @@ namespace System.Data.OleDb
         }
 
 #if DEBUG
-        override public string ToString()
+        public override string ToString()
         {
             return enumOleDbType.ToString();
         }

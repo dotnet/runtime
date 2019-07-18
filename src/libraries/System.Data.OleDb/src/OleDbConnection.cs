@@ -44,7 +44,7 @@ namespace System.Data.OleDb
         SettingsBindable(true),
         RefreshProperties(RefreshProperties.All),
         ]
-        override public string ConnectionString
+        public override string ConnectionString
         {
             get
             {
@@ -64,7 +64,7 @@ namespace System.Data.OleDb
         [
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        override public int ConnectionTimeout
+        public override int ConnectionTimeout
         {
             get
             {
@@ -90,7 +90,7 @@ namespace System.Data.OleDb
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        override public string Database
+        public override string Database
         {
             get
             {
@@ -123,7 +123,7 @@ namespace System.Data.OleDb
         [
         Browsable(true)
         ]
-        override public string DataSource
+        public override string DataSource
         {
             get
             {
@@ -189,7 +189,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             get
             {
@@ -202,7 +202,7 @@ namespace System.Data.OleDb
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         // ResDescriptionAttribute(SR.DbConnection_State),
         ]
-        override public ConnectionState State
+        public override ConnectionState State
         {
             get
             {
@@ -316,7 +316,7 @@ namespace System.Data.OleDb
             return (OleDbTransaction)InnerConnection.BeginTransaction(isolationLevel);
         }
 
-        override public void ChangeDatabase(string value)
+        public override void ChangeDatabase(string value)
         {
             CheckStateOpen(ADP.ChangeDatabase);
             if ((null == value) || (0 == value.Trim().Length))
@@ -341,7 +341,7 @@ namespace System.Data.OleDb
             return clone;
         }
 
-        override public void Close()
+        public override void Close()
         {
             InnerConnection.CloseConnection(this, ConnectionFactory);
             // does not require GC.KeepAlive(this) because of OnStateChange
@@ -367,7 +367,7 @@ namespace System.Data.OleDb
 
         // suppress this message - we cannot use SafeHandle here.
         [SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
-        override protected DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+        protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
 
@@ -523,7 +523,7 @@ namespace System.Data.OleDb
 #endif
         }
 
-        override public void Open()
+        public override void Open()
         {
             InnerConnection.OpenConnection(this, ConnectionFactory);
 
