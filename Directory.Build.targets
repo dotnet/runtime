@@ -11,6 +11,14 @@
   <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(LocalBuildToolsTaskFile)" />
   <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
+  <PropertyGroup>
+    <!--
+      Define this here (not just in Versions.props) because the SDK resets it
+      unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
+    -->
+    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+  </PropertyGroup>
+
   <!--
     Arcade SDK versioning is defined by static properties in a targets file: work around this by
     moving properties based on versioning into a target.

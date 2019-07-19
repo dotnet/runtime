@@ -8,7 +8,7 @@
     <FrameworkListTargetPath>data/</FrameworkListTargetPath>
 
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
-    <TargetFrameworkVersion>3.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
 
     <!--
