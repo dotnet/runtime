@@ -126,7 +126,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 
     pResult->Reset();    
 
-    if (m_wszCodeBase==NULL)
+    if (m_wszCodeBase == NULL)
     {
         GetFileOrDisplayName(0, assemblyDisplayName);
     }
@@ -140,7 +140,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase==NULL && IsMscorlibSatellite())
+    if (m_wszCodeBase == NULL && IsMscorlibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
         StackSString tmpString;
@@ -159,9 +159,9 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
   
         hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
-    else if(m_wszCodeBase==NULL)
+    else if (m_wszCodeBase == NULL)
     {
-        // For name based binding these arguments shouldnt have been changed from default
+        // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         SafeComHolder<IAssemblyName> pName;
         hr = CreateAssemblyNameObject(&pName, assemblyDisplayName, CANOF_PARSE_DISPLAY_NAME, NULL);
@@ -173,11 +173,11 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     else
     {
         hr = pTPABinder->Bind(assemblyDisplayName,
-                           m_wszCodeBase,
-                           GetParentAssembly()? GetParentAssembly()->GetFile():NULL,
-                           fNgenExplicitBind,
-                           fExplicitBindToNativeImage,
-                          &pPrivAsm);
+                              m_wszCodeBase,
+                              GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
+                              fNgenExplicitBind,
+                              fExplicitBindToNativeImage,
+                              &pPrivAsm);
     }
 
     pResult->SetHRBindResult(hr);
