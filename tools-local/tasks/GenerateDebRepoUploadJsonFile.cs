@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Microsoft.Build.Framework;
 using System.IO;
-using System.Collections.Generic;
-using Microsoft.Build.Construction;
 
 
 namespace Microsoft.DotNet.Build.Tasks

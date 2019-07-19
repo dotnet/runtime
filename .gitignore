@@ -2,10 +2,11 @@ syntax: glob
 
 ### VisualStudio ###
 
-# Tools directory
+# Tool Runtime Dir
 /[Tt]ools/
 .dotnet/
 .packages/
+.tools/
 
 # User-specific files
 *.suo
@@ -14,6 +15,7 @@ syntax: glob
 *.sln.docstates
 
 # Build results
+artifacts/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/

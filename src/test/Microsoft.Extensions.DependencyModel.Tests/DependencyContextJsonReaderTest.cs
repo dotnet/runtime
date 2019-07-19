@@ -479,16 +479,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable()
         {
-            ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable(false);
+            ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableCore(false);
         }
 
         [Fact]
         public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableWithAssemblyVersions()
         {
-            ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable(true);
+            ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableCore(true);
         }
 
-        private void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable(bool useAssemblyVersions)
+        private void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableCore(bool useAssemblyVersions)
         {
             string json =
 @"{

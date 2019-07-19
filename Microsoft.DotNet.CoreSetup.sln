@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.PlatformAb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyModel", "src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj", "{566D86A6-D940-4270-867E-C9EA0EA01F6E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostActivationTests", "src\test\HostActivationTests\HostActivationTests.csproj", "{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostActivation.Tests", "src\test\HostActivation.Tests\HostActivation.Tests.csproj", "{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyModel.Tests", "src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj", "{D86A859D-E6FA-4E73-A255-5776FC473A25}"
 EndProject
@@ -30,6 +30,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.Bundle.Tests", "src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj", "{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BundleHelper", "src\test\BundleTests\Helpers\BundleHelper.csproj", "{8116F946-FB24-4524-9028-43F5A3A80EE3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.CoreSetup.Packaging.Tests", "src\test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj", "{F1584324-A41A-4CE7-B23F-DB2252CFE276}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -187,6 +189,22 @@ Global
 		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
 		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
 		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|x64.Build.0 = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Release|x64.ActiveCfg = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Release|x64.Build.0 = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.RelWithDebInfo|Any CPU.ActiveCfg = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -201,6 +219,7 @@ Global
 		{2745A51D-3425-4F68-8349-A8B8BC27DD87} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 		{1E76A78E-9E39-480D-8CD3-B7D0A858FECB} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 		{8116F946-FB24-4524-9028-43F5A3A80EE3} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
+		{F1584324-A41A-4CE7-B23F-DB2252CFE276} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28B9726D-802B-478D-AF7A-B9243B9E180B}

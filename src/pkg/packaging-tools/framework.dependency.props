@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Shared properties specific to dependency projects (depproj).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+  </ItemGroup>
+
+</Project>

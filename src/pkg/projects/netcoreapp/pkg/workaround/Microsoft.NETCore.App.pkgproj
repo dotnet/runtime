@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
   <PropertyGroup>
     <ExcludeDepprojReference>true</ExcludeDepprojReference>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <!-- Exclude runtime.json from the package. -->
@@ -15,39 +15,12 @@
     <ExcludeLineupReference>true</ExcludeLineupReference>
 
     <BuildRuntimePackages>false</BuildRuntimePackages>
-
-    <GenerateSharedFramework>true</GenerateSharedFramework>
-    <GenerateRuntimeGraph>true</GenerateRuntimeGraph>
-
-    <!--
-      Make sure the installer file is generated with the name from /dir.props. This allows the
-      existing infra to bundle it without any changes.
-    -->
-    <InstallerFile>$(SharedFrameworkInstallerFile)</InstallerFile>
-
-    <!-- Lay out the sfx in the legacy location for old packaging to keep working for now. -->
-    <SharedFrameworkLayoutDir>$(SharedFrameworkPublishDir)</SharedFrameworkLayoutDir>
-
-    <!-- These components are installed by the root shared framework, but not others. -->
-    <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
-    <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Dependency Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
-  <!--
-    Use the internal package to generate the shared framework. Allows the shared framework to
-    continue to have the correct name without other workarounds.
-  -->
-  <Target Name="GetSharedFrameworkPackageReferences"
-          Returns="@(SharedFrameworkPackageReference)">
-    <ItemGroup>
-      <SharedFrameworkPackageReference Include="Microsoft.NETCore.App.Internal" Version="$(Version)" />
-      <SharedFrameworkPackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(HostVersion)" />
-    </ItemGroup>
-  </Target>
 </Project>

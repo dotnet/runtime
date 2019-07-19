@@ -1,0 +1,141 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+  </PropertyGroup>
+
+  <!--
+    Get branding names for the installers.
+  -->
+  <Target Name="GetInstallerBrandingNames"
+          DependsOnTargets="GetProductVersions">
+    <PropertyGroup
+      Condition="
+        '$(ReleaseBrandSuffix)' == '' and
+        '$(PreReleaseVersionLabel)' != '' and
+        $(PreReleaseVersionLabel.StartsWith('preview'))">
+      <!-- Convert 'preview7' to 'Preview 7'. -->
+      <ReleaseBrandSuffix>$(PreReleaseVersionLabel.Substring(0,1).ToUpperInvariant())</ReleaseBrandSuffix>
+      <ReleaseBrandSuffix>$(ReleaseBrandSuffix)$(PreReleaseVersionLabel.Substring(1,6))</ReleaseBrandSuffix>
+      <ReleaseBrandSuffix>$(ReleaseBrandSuffix) $(PreReleaseVersionLabel.Substring(7))</ReleaseBrandSuffix>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ProductBrandPrefix Condition="'$(ProductBrandPrefix)' == ''">Microsoft .NET Core</ProductBrandPrefix>
+      <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
+      <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
+
+      <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
+      <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+      <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
+      <AppHostPackBrandName>$(ProductBrandPrefix) AppHost Pack - $(ProductBrandSuffix)</AppHostPackBrandName>
+      <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Ensure the deb tool is built. -->
+  <Target Name="InitializeDotnetDebTool">
+    <MSBuild
+      Projects="$(DotnetDebToolSourceDir)dotnet-deb-tool.csproj"
+      Targets="Restore;Build" />
+  </Target>
+
+  <!--
+    Check if the deb package build tool prereq is available.
+    This issue tracks adding a way to raise this as a build error: https://github.com/dotnet/core-setup/issues/5396
+  -->
+  <Target Name="TestDebuild">
+    <!-- run Debuild -->
+    <Exec
+      Command="/usr/bin/env debuild -h > /dev/null 2>&amp;1"
+      ContinueOnError="true"
+      IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ExitCode" PropertyName="DebuildExitCode" />
+    </Exec>
+
+    <!-- Check if it successfully showed us a help message. -->
+    <PropertyGroup>
+      <DebuildPresent>false</DebuildPresent>
+      <DebuildPresent Condition=" '$(DebuildExitCode)' == '0' ">true</DebuildPresent>
+    </PropertyGroup>
+
+    <Message Condition=" '$(DebuildPresent)'  != 'true' "
+             Text="Debuild Not found, Debian packages will not be built."
+             Importance="High" />
+  </Target>
+
+  <!--
+    Check if the RPM package build tool prereq is available.
+    This issue tracks adding a way to raise this as a build error: https://github.com/dotnet/core-setup/issues/5396
+  -->
+  <Target Name="TestFPMTool">
+    <!-- run FPM  -->
+    <Exec
+      Command="/usr/bin/env fpm -h > /dev/null 2>&amp;1"
+      ContinueOnError="true"
+      IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ExitCode" PropertyName="FPMExitCode" />
+    </Exec>
+
+    <!-- Check if it successfully showed us a help message. -->
+    <PropertyGroup>
+      <FPMPresent>false</FPMPresent>
+      <FPMPresent Condition=" '$(FPMExitCode)' == '0' ">true</FPMPresent>
+    </PropertyGroup>
+
+    <Message Condition=" '$(FPMPresent)'  != 'true' "
+             Text="FPM tool Not found, RPM packages will not be built."
+             Importance="High" />
+  </Target>
+
+  <!--
+    Acquire WiX tools, if not present.
+  -->
+  <Target Name="AcquireWix"
+          DependsOnTargets="GetAcquireWixProperties"
+          Condition="'$(GenerateMSI)' == 'true'">
+    <MSBuild Projects="$(AcquireWixProjectFile)" Targets="AcquireWixCore" />
+  </Target>
+
+  <Target Name="GetAcquireWixProperties">
+    <PropertyGroup>
+      <AcquireWixProjectFile>$(PackagingToolsDir)acquire-wix\acquire-wix.proj</AcquireWixProjectFile>
+      <WixDownloadFilename>wix.$(WixVersion).zip</WixDownloadFilename>
+      <WixDownloadUrl>https://dotnetcli.azureedge.net/build/wix/$(WixDownloadFilename)</WixDownloadUrl>
+      <WixDestinationPath>$(WixToolsDir)$(WixDownloadFilename)</WixDestinationPath>
+      <WixDownloadSentinel>$(WixToolsDir)WixDownload.$(WixVersion).sentinel</WixDownloadSentinel>
+    </PropertyGroup>
+  </Target>
+
+  <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+
+  <Target Name="GenerateMsiVersionString">
+    <PropertyGroup>
+      <VersionPadding Condition="'$(VersionPadding)'==''">5</VersionPadding>
+      <!-- Using the following default comparison date will produce versions that align with our internal build system. -->
+      <VersionComparisonDate Condition="'$(VersionComparisonDate)'==''">1996-04-01</VersionComparisonDate>
+    </PropertyGroup>
+
+    <GenerateCurrentVersion
+      SeedDate="$([System.DateTime]::Now.ToString(yyyy-MM-dd))"
+      OfficialBuildId="$(OfficialBuildId)"
+      ComparisonDate="$(VersionComparisonDate)"
+      Padding="$(VersionPadding)">
+      <Output PropertyName="BuildNumberMajor" TaskParameter="GeneratedVersion" />
+      <Output PropertyName="BuildNumberMinor" TaskParameter="GeneratedRevision" />
+    </GenerateCurrentVersion>
+
+    <GenerateMsiVersion
+      Major="$(MajorVersion)"
+      Minor="$(MinorVersion)"
+      Patch="$(PatchVersion)"
+      BuildNumberMajor="$(BuildNumberMajor)"
+      BuildNumberMinor="$(BuildNumberMajor)">
+      <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
+    </GenerateMsiVersion>
+  </Target>
+
+</Project>

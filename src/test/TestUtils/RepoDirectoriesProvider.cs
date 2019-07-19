@@ -1,5 +1,9 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -9,13 +13,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string BuildArchitecture { get; }
         public string TargetRID { get; }
         public string MicrosoftNETCoreAppVersion { get; }
+        public string Configuration { get; }
         public string RepoRoot { get; }
+        public string BaseArtifactsFolder { get; }
+        public string BaseBinFolder { get; }
+        public string BaseObjFolder { get; }
         public string Artifacts { get; }
         public string HostArtifacts { get; }
         public string BuiltDotnet { get; }
         public string NugetPackages { get; }
         public string CorehostPackages { get; }
         public string DotnetSDK { get; }
+
+        private string _testContextVariableFilePath { get; }
+        private ImmutableDictionary<string, string> _testContextVariables { get; }
 
         public RepoDirectoriesProvider(
             string repoRoot = null,
@@ -28,30 +39,72 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             RepoRoot = repoRoot ?? GetRepoRootDirectory();
 
-            string baseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "bin");
+            _testContextVariableFilePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "TestContextVariables.txt");
 
-            TargetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
-            BuildRID = Environment.GetEnvironmentVariable("BUILDRID");
-            BuildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
-            MicrosoftNETCoreAppVersion = microsoftNETCoreAppVersion ?? Environment.GetEnvironmentVariable("MNA_VERSION");
+            _testContextVariables = File.ReadAllLines(_testContextVariableFilePath)
+                .ToImmutableDictionary(
+                    line => line.Substring(0, line.IndexOf('=')),
+                    line => line.Substring(line.IndexOf('=') + 1),
+                    StringComparer.OrdinalIgnoreCase);
 
-            string configuration = Environment.GetEnvironmentVariable("BUILD_CONFIGURATION");
-            string osPlatformConfig = $"{BuildRID}.{configuration}";
+            BaseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "artifacts");
+            BaseBinFolder = artifacts ?? Path.Combine(BaseArtifactsFolder, "bin");
+            BaseObjFolder = artifacts ?? Path.Combine(BaseArtifactsFolder, "obj");
 
-            DotnetSDK = dotnetSdk ?? Environment.GetEnvironmentVariable("DOTNET_SDK_PATH");
+            TargetRID = GetTestContextVariable("TEST_TARGETRID");
+            BuildRID = GetTestContextVariable("BUILDRID");
+            BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");
+            MicrosoftNETCoreAppVersion = microsoftNETCoreAppVersion ?? GetTestContextVariable("MNA_VERSION");
+
+            Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
+            string osPlatformConfig = $"{BuildRID}.{Configuration}";
+
+            DotnetSDK = dotnetSdk ?? GetTestContextVariable("DOTNET_SDK_PATH");
 
             if (!Directory.Exists(DotnetSDK))
             {
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");
             }
 
-            Artifacts = Path.Combine(baseArtifactsFolder, osPlatformConfig);
+            Artifacts = Path.Combine(BaseBinFolder, osPlatformConfig);
             HostArtifacts = artifacts ?? Path.Combine(Artifacts, "corehost");
 
-            NugetPackages = nugetPackages ?? Path.Combine(RepoRoot, "packages");
+            NugetPackages = nugetPackages ??
+                GetTestContextVariable("NUGET_PACKAGES") ??
+                Path.Combine(RepoRoot, ".packages");
 
             CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
-            BuiltDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", osPlatformConfig, "sharedFrameworkPublish");
+            BuiltDotnet = builtDotnet ?? Path.Combine(BaseObjFolder, osPlatformConfig, "sharedFrameworkPublish");
+        }
+
+        public string GetTestContextVariable(string name)
+        {
+            return GetTestContextVariableOrNull(name) ?? throw new ArgumentException(
+                $"Unable to find variable '{name}' in " +
+                $"test context variable file '{_testContextVariableFilePath}'");
+        }
+
+        public string GetTestContextVariableOrNull(string name)
+        {
+            // Allow env var override, although normally the test context variables file is used.
+            // Don't accept NUGET_PACKAGES env override specifically: Arcade sets this and it leaks
+            // in during build.cmd/sh runs, replacing the test-specific dir.
+            if (!name.Equals("NUGET_PACKAGES", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Environment.GetEnvironmentVariable(name) is string envValue)
+                {
+                    return envValue;
+                }
+            }
+
+            if (_testContextVariables.TryGetValue(name, out string value))
+            {
+                return value;
+            }
+
+            return null;
         }
 
         private static string GetRepoRootDirectory()

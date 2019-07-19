@@ -251,7 +251,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command WithUserProfile(string userprofile)
         {
             string userDir;
-            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            if (InternalAbstractions.RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
             {
                 userDir = "USERPROFILE";
             }

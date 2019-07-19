@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Target Name="PrepareTestAssets"
+          DependsOnTargets="
+            GetProductVersions;
+            DetermineTestOutputDirectory">
+    <!--
+      Ensure installers (and therefore shared framework projects) are built first. Include used
+      transitive dependenices here in case Subset is defined.
+    -->
+    <MSBuild
+      Projects="
+        @(ManagedProjectToBuild);
+        @(PkgprojProjectToBuild);
+        @(InstallerProjectToBuild)"
+      Targets="Build" />
+
+    <PropertyGroup>
+      <TempFolderRoot>$(IntermediateOutputPath)temp\</TempFolderRoot>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(_HostRid)</TestTargetRid>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <DirsToClean Include="$(TestDir)\**\bin" />
+      <DirsToClean Include="$(TestDir)\**\obj" />
+      <DirsToClean Include="$(TestRestorePackagesPath)" />
+      <DirsToClean Include="$(TempFolderRoot)$(TargetArchitecture)" />
+
+      <TestAssetProjectToRestore Include="$(TestAssetsDir)**\*.csproj" />
+
+      <AllTestRestoreSources Include="@(RestoreTestSource)"/>
+      <AllTestRestoreSources Include="@(RestoreTestFallbackSource)"/>
+    </ItemGroup>
+
+    <RemoveDir Directories="@(DirsToClean)" />
+
+    <Message Importance="High" Text="Running NuGet Restore for test asset projects..." />
+
+    <MSBuild
+      Projects="@(TestAssetProjectToRestore)"
+      Targets="Restore"
+      Properties="
+        ArtifactsShippingPackagesDir=$(ArtifactsShippingPackagesDir);
+        TestRestorePackagesPath=$(TestRestorePackagesPath);
+        TestTargetRid=$(TestTargetRid);
+        MNAVersion=$(ProductVersion)" />
+  </Target>
+
+</Project>

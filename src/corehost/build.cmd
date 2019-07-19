@@ -4,7 +4,8 @@ setlocal
 :SetupArgs
 :: Initialize the args that will be passed to cmake
 set __nativeWindowsDir=%~dp0Windows
-set __binDir=%~dp0..\..\bin
+set __binDir=%~dp0..\..\artifacts\bin
+set __objDir=%~dp0..\..\artifacts\obj
 set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
@@ -94,9 +95,9 @@ if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\%__TargetRid%.%CMAKE_BUILD_TYPE%\corehost"
+    set "__IntermediatesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\corehost"
 )
-set "__ResourcesDir=%__binDir%\obj\%__TargetRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
+set "__ResourcesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 
