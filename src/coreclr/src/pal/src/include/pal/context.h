@@ -375,6 +375,59 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define MCREG_Pc(mc)        ((mc).arm_pc)
 #define MCREG_Cpsr(mc)      ((mc).arm_cpsr)
 
+
+// Flatterned layout of the arm kernel struct vfp_sigframe
+struct VfpSigFrame
+{
+    DWORD   magic;
+    DWORD   size;
+    DWORD64 D[32]; // Some arm cpus have 16 D registers.  The kernel will ignore the extra.
+    DWORD   Fpscr;
+    DWORD   Padding;
+    DWORD   Fpexc;
+    DWORD   Fpinst;
+    DWORD   Fpinst2;
+    DWORD   Padding2;
+};
+
+inline
+VfpSigFrame* GetNativeSigSimdContext(native_context_t *mc)
+{
+    size_t size = 0;
+
+    const DWORD VfpMagic = 0x56465001; // VFP_MAGIC from arm kernel
+
+    do
+    {
+        VfpSigFrame* fp = reinterpret_cast<VfpSigFrame *>(&mc->uc_regspace[size]);
+
+        if (fp->magic == VfpMagic)
+        {
+            _ASSERTE(fp->size == sizeof(VfpSigFrame));
+            _ASSERTE(size + fp->size <= sizeof(mc->uc_regspace));
+
+            return fp;
+        }
+
+        if (fp->size == 0)
+        {
+            break;
+        }
+
+        size += fp->size;
+    } while (size + sizeof(VfpSigFrame) <= sizeof(mc->uc_regspace));
+
+    // VFP is not required on all armv7 processors, this structure may not be present
+
+    return nullptr;
+}
+
+inline
+const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
+{
+    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+}
+
 #elif defined(_X86_)
 
 #define MCREG_Ebx(mc)       ((mc).mc_ebx)
