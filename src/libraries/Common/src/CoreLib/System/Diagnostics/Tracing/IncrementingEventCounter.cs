@@ -73,6 +73,15 @@ namespace System.Diagnostics.Tracing
                 EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new IncrementingEventCounterPayloadType(payload));
             }
         }
+
+        // Updates the value.
+        internal void UpdateMetric()
+        {
+            lock (this)
+            {
+                _prevIncrement = _increment;
+            }
+        }
     }
 
 
