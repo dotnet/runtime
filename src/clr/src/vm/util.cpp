@@ -1817,7 +1817,7 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 #endif
 
-#if defined (_TARGET_X86) || defined(_TARGET_AMD64_)
+#if defined (_TARGET_X86_) || defined(_TARGET_AMD64_)
     if (maxSize == 0)
     {
         maxSize = maxTrueSize = GetCacheSizeFromCpuId();
