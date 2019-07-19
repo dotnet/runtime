@@ -10,7 +10,7 @@ pr:
 - release/3.0
 - dev/arcade-migration
 
-name: $(Date:yyyyMMdd)$(Rev:.rr)
+name: $(Date:yyyyMMdd)$(Rev:.r)
 
 variables:
   - name: TeamName

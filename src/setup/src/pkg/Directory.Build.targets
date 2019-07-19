@@ -10,7 +10,11 @@
   -->
   <Target Name="GetInstallerBrandingNames"
           DependsOnTargets="GetProductVersions">
-    <PropertyGroup Condition="'$(PreReleaseVersionLabel)' != '' and $(PreReleaseVersionLabel.StartsWith('preview'))">
+    <PropertyGroup
+      Condition="
+        '$(ReleaseBrandSuffix)' == '' and
+        '$(PreReleaseVersionLabel)' != '' and
+        $(PreReleaseVersionLabel.StartsWith('preview'))">
       <!-- Convert 'preview7' to 'Preview 7'. -->
       <ReleaseBrandSuffix>$(PreReleaseVersionLabel.Substring(0,1).ToUpperInvariant())</ReleaseBrandSuffix>
       <ReleaseBrandSuffix>$(ReleaseBrandSuffix)$(PreReleaseVersionLabel.Substring(1,6))</ReleaseBrandSuffix>
