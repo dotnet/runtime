@@ -1631,7 +1631,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(37352)]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
