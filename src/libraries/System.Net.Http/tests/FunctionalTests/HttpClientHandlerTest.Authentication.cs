@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\n")]
         [InlineData("WWW-Authenticate: Digest realm=\"hello1\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\n")]
-        public async void HttpClientHandler_MultipleAuthenticateHeaders_WithSameAuth_Succeeds(string authenticateHeader)
+        public async Task HttpClientHandler_MultipleAuthenticateHeaders_WithSameAuth_Succeeds(string authenticateHeader)
         {
             if (IsWinHttpHandler)
             {
@@ -135,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"testnonce\"\r\n")]
-        public async void HttpClientHandler_IncorrectCredentials_Fails(string authenticateHeader)
+        public async Task HttpClientHandler_IncorrectCredentials_Fails(string authenticateHeader)
         {
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>

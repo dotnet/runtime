@@ -324,7 +324,7 @@ namespace System.Net.Http.Functional.Tests
 
             public string Uri => _uri;
 
-            private async void ProcessRequests()
+            private async Task ProcessRequests()
             {
                 while (true)
                 {

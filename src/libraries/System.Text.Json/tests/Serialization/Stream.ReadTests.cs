@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         [Fact]
-        public static async void NullArgumentFail()
+        public static async Task NullArgumentFail()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync<string>((Stream)null));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync(new MemoryStream(), (Type)null));

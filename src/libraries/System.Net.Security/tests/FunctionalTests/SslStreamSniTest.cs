@@ -18,11 +18,11 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        public void SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
+        public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
-            WithVirtualConnection(async (server, client) =>
+            await WithVirtualConnection(async (server, client) =>
                 {
                     Task clientJob = Task.Run(() => {
                         client.AuthenticateAsClient(hostName);
@@ -52,7 +52,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
-        public async void SslStream_ServerCallbackAndLocalCertificateSelectionSet_Throws(string hostName)
+        public async Task SslStream_ServerCallbackAndLocalCertificateSelectionSet_Throws(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
@@ -97,7 +97,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
-        public async void SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
+        public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
@@ -137,9 +137,9 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStream_NoSniFromClient_CallbackReturnsNull()
+        public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {
-            WithVirtualConnection(async (server, client) =>
+            await WithVirtualConnection(async (server, client) =>
             {
                 Task clientJob = Task.Run(() => {
                     Assert.Throws<VirtualNetwork.VirtualNetworkConnectionBroken>(() =>
@@ -197,7 +197,7 @@ namespace System.Net.Security.Tests
             };
         }
 
-        private async void WithVirtualConnection(Func<SslStream, SslStream, Task> serverClientConnection, RemoteCertificateValidationCallback clientCertValidate)
+        private async Task WithVirtualConnection(Func<SslStream, SslStream, Task> serverClientConnection, RemoteCertificateValidationCallback clientCertValidate)
         {
             VirtualNetwork vn = new VirtualNetwork();
             using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
