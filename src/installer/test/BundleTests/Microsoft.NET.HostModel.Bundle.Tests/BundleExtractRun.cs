@@ -21,7 +21,7 @@ namespace Microsoft.NET.HostModel.Tests
             sharedTestState = fixture;
         }
 
-        public void RunTheApp(string path)
+        private void RunTheApp(string path)
         {
             Command.Create(path)
                 .CaptureStdErr()

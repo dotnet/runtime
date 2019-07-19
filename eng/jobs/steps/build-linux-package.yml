@@ -12,8 +12,8 @@ steps:
       set -x
       df -h
       $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-        /root/coresetup/build.proj \
-        /t:BuildTraversalBuildDependencies \
+        /root/coresetup/tools-local/tasks/core-setup.tasks.csproj \
+        /t:Restore /t:Build /t:CreateHostMachineInfoFile \
         $(CommonMSBuildArgs) \
         /bl:msbuild.${{ parameters.distroRid }}.traversaldependencies.binlog
     displayName: ====== Build traversal build dependencies - ${{ parameters.distroRid }}
@@ -21,8 +21,9 @@ steps:
 - script: |
     set -x
     df -h
-    $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-      /root/coresetup/src/pkg/packaging/dir.proj \
+    $(DockerRunMSBuild) ${{ parameters.image }} ./build.sh \
+      --ci \
+      /p:Subset=Installer \
       /p:UsePrebuiltPortableBinariesForInstallers=true \
       $(PackagePortableBitsArgs) \
       /p:GenerateProjectInstallers=true \
@@ -31,18 +32,3 @@ steps:
       ${{ parameters.outputRidArg }} \
       /bl:msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
-
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-  - script: |
-      set -x
-      df -h
-      $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-        /root/coresetup/publish/publish.proj \
-        /p:PublishType=$(_PublishType) \
-        $(PackagePortableBitsArgs) \
-        $(CommonMSBuildArgs) \
-        $(_CommonPublishArgs) \
-        ${{ parameters.outputRidArg }} \
-        /bl:msbuild.${{ parameters.distroRid }}.publish.binlog
-    displayName: -> Publish ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
-    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))

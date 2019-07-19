@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project='package.props' />
 
-  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
 
   <PropertyGroup>
     <DebianConfigJsonName>debian_config.json</DebianConfigJsonName>
@@ -14,7 +14,12 @@
           Condition="'$(BuildDebPackage)'=='true'" />
 
   <Target Name="GenerateRuntimeDebs" 
-          DependsOnTargets="GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb;GenerateRuntimeDependenciesDeb"
+          DependsOnTargets="
+            GetInstallerBrandingNames;
+            GenerateSharedHostDeb;
+            GenerateHostFxrDeb;
+            GenerateSharedFrameworkDeb;
+            GenerateRuntimeDependenciesDeb"
           Condition="'$(BuildRuntimeDebs)' == 'true'" />
 
   <Target Name="BuildDebs"
@@ -75,8 +80,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedHostTokenValue)" />
 
-    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -154,8 +160,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(HostFxrTokenValue)" />
 
-    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -247,8 +254,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
-    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -328,8 +336,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
-    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
+
+    <ChecksumExtension>.sha512</ChecksumExtension>
+    <DownloadDirectory>$(ArtifactsDir)PackageDownload/Artifacts/</DownloadDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(MicrosoftDotNetBuildTasksFeedPackage)" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
+    <PackageReference Include="$(MicrosoftSymbolUploaderBuildTaskPackage)" Version="$(MicrosoftSymbolUploaderBuildTaskVersion)" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
+  </ItemGroup>
+
+</Project>

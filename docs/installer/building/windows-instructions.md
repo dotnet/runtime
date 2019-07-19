@@ -34,9 +34,10 @@ If using Visual Studio 2019, then at least CMake 3.14 is required.
 
 ## Git
 
-For actual user operations, it is often more convinient to use the GIT features built into Visual Studio 2015.
-However the Core-Setup and the tests use the GIT command line utilities directly so you need to install them
-for these to work properly.   You can get it from 
+For actual user operations, it is often convenient to use the Git features built
+into your editor or IDE. However, Core-Setup and the tests use the Git command
+line utilities directly, so you need to set them up for the build to work
+properly. You can get Git from:
 
 - Install [Git For Windows](https://git-for-windows.github.io/)
 - Add its location (e.g. C:\Program Files\Git\cmd) to the PATH environment variable.  
@@ -50,11 +51,6 @@ Typically this is %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 Powershell version must be 3.0 or higher. This should be the case for Windows 8 and later builds.
 - Windows 7 SP1 can install Powershell version 4 [here](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
 
-## DotNet Core SDK
-While not strictly needed to build or tests the .NET Core repository, having the .NET Core SDK installed lets 
-you use the dotnet.exe command to run .NET Core applications in the 'normal' way.  Visual Studio 2015 (update 3) should have
-installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .Net Core SDK](https://www.microsoft.com/net/core) page.  
-
 ## Adding to the default PATH variable
 
 The commands above need to be on your command lookup path.   Some installers will automatically add them to 
@@ -67,10 +63,16 @@ You can of course add a directory to the PATH environment variable with the synt
 However the change above will only last until the command windows closes.   You can make your change to
 the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables, 
 and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want
-to change it for the currnet user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+to change it for the current user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
 
 -------------------------------------
 # Building
 
-Once all the necessary tools are in place, building is trivial.  Simply run build build.cmd script that lives at
-the base of the repository.   
+Once all the necessary tools are in place, building is trivial.  Simply run the
+`build.cmd` script that lives at the base of the repository.
+
+If you want to build a subset of the build because `build.cmd` takes too long,
+try using the `Subset` property. For example, adding `/p:Subset=CoreHost` to
+your build command makes it only build the native project. Read the
+documentation in [Subsets.props](/Subsets.props) and try `/p:Subset=help` for
+more info.
