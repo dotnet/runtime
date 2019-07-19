@@ -157,7 +157,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loaded-images.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loaded-images-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-global.c">

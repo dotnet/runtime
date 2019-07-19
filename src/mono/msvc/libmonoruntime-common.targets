@@ -56,7 +56,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\jit-icall-reg.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loaded-images.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loaded-images-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-global.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-netcore.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />

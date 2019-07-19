@@ -300,7 +300,7 @@ common_sources = \
 	jit-info.c		\
 	loader.c		\
 	loader-internals.h	\
-	loaded-images.h		\
+	loaded-images-internals.h		\
 	loaded-images.c		\
 	loaded-images-global.c	\
 	loaded-images-netcore.c	\
