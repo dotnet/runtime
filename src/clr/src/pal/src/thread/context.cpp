@@ -476,6 +476,16 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
+#elif defined(_ARM_)
+        VfpSigFrame* fp = GetNativeSigSimdContext(native);
+        if (fp)
+        {
+            fp->Fpscr = lpContext->Fpscr;
+            for (int i = 0; i < 32; i++)
+            {
+                fp->D[i] = lpContext->D[i];
+            }
+        }
 #endif
     }
 
@@ -584,6 +594,22 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
+        }
+#elif defined(_ARM_)
+        const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
+        if (fp)
+        {
+            lpContext->Fpscr = fp->Fpscr;
+            for (int i = 0; i < 32; i++)
+            {
+                lpContext->D[i] = fp->D[i];
+            }
+        }
+        else
+        {
+            // Floating point state is not valid
+            // Mark the context correctly
+            lpContext->ContextFlags &= ~(ULONG)CONTEXT_FLOATING_POINT;
         }
 #endif
     }
