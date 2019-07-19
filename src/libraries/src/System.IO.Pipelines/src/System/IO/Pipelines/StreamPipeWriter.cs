@@ -214,9 +214,9 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            _internalTokenSource?.Dispose();
-
             FlushInternal();
+
+            _internalTokenSource?.Dispose();
 
             if (!_leaveOpen)
             {
@@ -233,9 +233,9 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            _internalTokenSource?.Dispose();
-
             await FlushAsyncInternal().ConfigureAwait(false);
+
+            _internalTokenSource?.Dispose();
 
             if (!_leaveOpen)
             {
