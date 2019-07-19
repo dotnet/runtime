@@ -77,6 +77,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             public const int InvalidArgFailure = unchecked((int)0x80008081);
             public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
+            public const int ResolverInitFailure = unchecked((int)0x8000808b);
+            public const int ResolverResolveFailure = unchecked((int)0x8000808c);
+            public const int LibHostInvalidArgs = unchecked((int)0x80008092);
         }
     }
 }

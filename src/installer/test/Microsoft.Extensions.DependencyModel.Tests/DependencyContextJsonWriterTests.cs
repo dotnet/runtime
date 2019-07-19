@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -106,7 +108,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void WritesCompilationLibraries()
         {
-            var result = Save(Create(
+            DependencyContext dependencyContext = Create(
                             "Target",
                             "runtime",
                             true,
@@ -116,7 +118,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "package",
                                         "PackageName",
                                         "1.2.3",
-                                        "HASH",
+                                        "HASH+/==", // verify that '+' and '/' is not getting escaped to workaround bug in older xunit https://github.com/dotnet/core-setup/issues/7137
                                         new [] {"Banana.dll"},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
@@ -125,7 +127,23 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackagePath",
                                         "PackageHashPath"
                                     )
-                            }));
+                            });
+
+            using (var memoryStream = new MemoryStream())
+            {
+                new DependencyContextWriter().Write(dependencyContext, memoryStream);
+                var reader = new Utf8JsonReader(memoryStream.ToArray());
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.PropertyName && reader.ValueTextEquals("sha512"))
+                    {
+                        Assert.True(reader.Read());
+                        Assert.Equal("HASH+/==", Encoding.UTF8.GetString(reader.ValueSpan.ToArray()));
+                    }
+                }
+            }
+
+            JObject result = Save(dependencyContext);
 
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
@@ -139,7 +157,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
             library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("sha512", "HASH+/==");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");

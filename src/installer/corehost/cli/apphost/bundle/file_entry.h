@@ -43,17 +43,12 @@ namespace bundle
         pal::string_t m_relative_path; // Path of an embedded file, relative to the extraction directory.
 
     public:
-        file_entry_t()
-            :m_data(), m_relative_path()
-        {
-        }
+        const pal::string_t& relative_path() const { return m_relative_path; }
+        int64_t offset() const { return m_data.offset; }
+        int64_t size() const { return m_data.size; }
+        file_type_t type() const { return m_data.type; }
 
-        const pal::string_t& relative_path() { return m_relative_path; }
-        int64_t offset() { return m_data.offset; }
-        int64_t size() { return m_data.size; }
-        file_type_t type() { return m_data.type; }
-
-        static file_entry_t* read(FILE* stream);
+        static file_entry_t read(FILE* stream);
 
     private:
         static const pal::char_t bundle_dir_separator = '/';
