@@ -463,7 +463,7 @@ namespace System.IO.Tests
         #region Write Async Overloads
 
         [Fact]
-        public async void WriteAsyncCharTest()
+        public async Task WriteAsyncCharTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -473,7 +473,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteAsyncStringTest()
+        public async Task WriteAsyncStringTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -484,7 +484,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteAsyncCharArrayIndexCountTest()
+        public async Task WriteAsyncCharArrayIndexCountTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -498,7 +498,7 @@ namespace System.IO.Tests
         #region WriteLineAsync Overloads
 
         [Fact]
-        public async void WriteLineAsyncTest()
+        public async Task WriteLineAsyncTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -508,7 +508,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteLineAsyncCharTest()
+        public async Task WriteLineAsyncCharTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -518,7 +518,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteLineAsyncStringTest()
+        public async Task WriteLineAsyncStringTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
@@ -529,7 +529,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteLineAsyncCharArrayIndexCount()
+        public async Task WriteLineAsyncCharArrayIndexCount()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {

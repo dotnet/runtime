@@ -437,7 +437,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public async void TestLeaveOpenAfterValidDecompress()
+        public async Task TestLeaveOpenAfterValidDecompress()
         {
             //Create the Stream
             int _bufferSize = 1024;

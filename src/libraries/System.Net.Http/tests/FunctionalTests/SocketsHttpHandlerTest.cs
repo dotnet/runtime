@@ -1183,7 +1183,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Authentication_SocketsHttpHandler_TestData))]
-        public async void SocketsHttpHandler_Authentication_Succeeds(string authenticateHeader, bool result)
+        public async Task SocketsHttpHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
             await HttpClientHandler_Authentication_Succeeds(authenticateHeader, result);
         }
@@ -2204,7 +2204,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("http://a/\u00C3\u0028", new byte[] { (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)':', (byte)'/', (byte)'/', (byte)'a', (byte)'/', 0xC3, 0x28 })]
         // Incomplete utf-8 sequence
         [InlineData("http://a/\u00C2", new byte[] { (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)':', (byte)'/', (byte)'/', (byte)'a', (byte)'/', 0xC2 })]
-        public async void LocationHeader_DecodesUtf8_Success(string expected, byte[] location)
+        public async Task LocationHeader_DecodesUtf8_Success(string expected, byte[] location)
         {
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {

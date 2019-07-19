@@ -132,7 +132,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async void TestBaseClassReadAsync()
+        public async Task TestBaseClassReadAsync()
         {
             WrapperChannel<int> channel = new WrapperChannel<int>(10);
             ChannelReader<int> reader = channel.Reader;

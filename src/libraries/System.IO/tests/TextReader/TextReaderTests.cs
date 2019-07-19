@@ -164,7 +164,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void ReadBlockAsyncCharArr()
+        public async Task ReadBlockAsyncCharArr()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();
             using (CharArrayTextReader tr = baseInfo.textReader)
