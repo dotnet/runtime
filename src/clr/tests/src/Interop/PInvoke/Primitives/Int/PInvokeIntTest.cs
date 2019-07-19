@@ -53,7 +53,7 @@ class ClientPInvokeIntNativeTest
         }
 
         int int3 = intManaged;
-        if (intReturn != Marshal_InOut(int3))
+        if (intReturn != Marshal_Out(int3))
         {
             failures++;
             Console.WriteLine("Out return value is wrong");
@@ -92,12 +92,12 @@ class ClientPInvokeIntNativeTest
         if (intReturn != MarshalPointer_Out(out int6))
         {
             failures++;
-            Console.WriteLine("RefInOut return value is wrong");
+            Console.WriteLine("RefOut return value is wrong");
         }
         if (intNative != int6)
         {
             failures++;
-            Console.WriteLine("RefInOut byref value is wrong.");
+            Console.WriteLine("Out byref value is wrong.");
         }
 
         return 100 + failures;
