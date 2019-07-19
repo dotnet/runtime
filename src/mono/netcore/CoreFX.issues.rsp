@@ -397,6 +397,10 @@
 ##  System.Reflection.Tests
 ####################################################################
 
+# Runtime crashes
+-nomethod System.Reflection.Tests.AssemblyTests.CreateInstance
+-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
+
 # Expected to throw FileLoadException, but we aren't
 # https://github.com/mono/mono/issues/15021
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
@@ -634,11 +638,11 @@
 
 # RuntimeAssembly.IsCollectible is not implemented yet
 # Implementation task https://github.com/mono/mono/issues/15142
--nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad
--nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext
--nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad
--nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
--nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
+-nomethod System.Reflection.Tests.IsCollectibleTests.*
+
+# Runtime crashes instead of TypeLoadException
+-nomethod System.Tests.TypeTestsExtended.GetTypeByName_NoSuchType_ThrowsTypeLoadException
+-nomethod System.Tests.TypeTestsExtended.GetTypeByNameCaseSensitiveTypeloadFailure
 
 # Mono ignores [Optional] attribute defined on parameters in delegates
 # https://github.com/mono/mono/issues/15148
@@ -751,6 +755,7 @@
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTest
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTestWithTransparentViews
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_IMetadataViewWithDefaultedInt64
+-nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
@@ -1120,6 +1125,7 @@
 # Xml differences... Looks like the parsing isn't working
 # https://github.com/mono/mono/issues/15353
 -nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
+-nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
 
 ####################################################################
 ##  System.Net.Requests.Tests
