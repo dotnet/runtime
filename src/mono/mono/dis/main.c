@@ -1942,7 +1942,7 @@ monodis_assembly_load_hook (MonoAssembly *assembly, gpointer user_data)
 }
 
 static MonoAssembly *
-monodis_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
+monodis_assembly_search_hook (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error)
 {
         GList *tmp;
 
@@ -2047,7 +2047,7 @@ main (int argc, char *argv [])
 	mono_thread_info_runtime_init (&ticallbacks);
 
 	mono_install_assembly_load_hook (monodis_assembly_load_hook, NULL);
-	mono_install_assembly_search_hook (monodis_assembly_search_hook, NULL);
+	mono_install_assembly_search_hook_v2 (monodis_assembly_search_hook, NULL, FALSE, FALSE);
 
 	/*
 	 * If we just have one file, use the corlib version it requires.

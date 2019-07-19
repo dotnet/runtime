@@ -40,7 +40,8 @@ MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageO
 
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
-MONO_API MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, mono_bool refonly);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, mono_bool refonly);
 MONO_API void          mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname);
 MONO_API void          mono_assembly_load_reference (MonoImage *image, int index);
 MONO_API void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
@@ -69,19 +70,24 @@ MONO_API void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc fun
  * assemblies for a given assembly name.
  */
 typedef MonoAssembly *(*MonoAssemblySearchFunc)         (MonoAssemblyName *aname, void* user_data);
-MONO_API void          mono_install_assembly_search_hook (MonoAssemblySearchFunc func, void* user_data);
-MONO_API void 	      mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, void* user_data);
+MONO_API MONO_RT_EXTERNAL_ONLY
+void          mono_install_assembly_search_hook (MonoAssemblySearchFunc func, void* user_data);
+MONO_API MONO_RT_EXTERNAL_ONLY
+void 	      mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, void* user_data);
 
-MONO_API MonoAssembly* mono_assembly_invoke_search_hook (MonoAssemblyName *aname);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_invoke_search_hook (MonoAssemblyName *aname);
 
 /*
  * Installs a new search function which is used as a last resort when loading 
  * an assembly fails. This could invoke AssemblyResolve events.
  */
-MONO_API void          
+MONO_API MONO_RT_EXTERNAL_ONLY
+void
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, void* user_data);
 
-MONO_API void          
+MONO_API MONO_RT_EXTERNAL_ONLY
+void
 mono_install_assembly_postload_refonly_search_hook (MonoAssemblySearchFunc func, void* user_data);
 
 

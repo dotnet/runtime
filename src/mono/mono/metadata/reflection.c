@@ -14,6 +14,7 @@
  */
 #include <config.h>
 #include "mono/utils/mono-membar.h"
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/metadata-internals.h"
@@ -1930,7 +1931,7 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 	error_init (error);
 
 	if (info->assembly.name) {
-		MonoAssembly *assembly = mono_assembly_loaded_full (&info->assembly, FALSE);
+		MonoAssembly *assembly = mono_assembly_loaded_internal (mono_domain_ambient_alc (mono_domain_get ()), &info->assembly, FALSE);
 		if (!assembly && image && image->assembly && mono_assembly_names_equal (&info->assembly, &image->assembly->aname))
 			/* 
 			 * This could happen in the AOT compiler case when the search hook is not

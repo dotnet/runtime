@@ -111,8 +111,13 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      MonoError *error);
 
 static MonoAssembly *
-mono_domain_assembly_search (MonoAssemblyName *aname,
-							 gpointer user_data);
+mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
+			     MonoAssemblyName *aname,
+			     gboolean refonly,
+			     gboolean postload,
+			     gpointer user_data,
+			     MonoError *error);
+
 
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
@@ -299,10 +304,10 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE);
 	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE);
-	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
-	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
-	mono_install_assembly_postload_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
-	mono_install_assembly_postload_refonly_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_assembly_asmctx_from_path_hook (mono_domain_asmctx_from_path, NULL);
 
@@ -1298,6 +1303,7 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomainHandle ad, MonoBoolean re
 		ass = (MonoAssembly *)tmp->data;
 		MonoBoolean ass_refonly = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
 		/* .NET Framework GetAssemblies() includes LoadFrom and Load(byte[]) assemblies, too */
+		/* For netcore, this should return all the assemblies in the domain - from every ALC */
 		if (refonly != ass_refonly)
 			continue;
 		if (ass->corlib_internal)
@@ -1381,8 +1387,11 @@ leave:
 }
 
 MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting,
-									  gboolean refonly)
+mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
+				      MonoAssemblyName *aname,
+				      gboolean refonly, gboolean postload,
+				      gpointer user_data,
+				      MonoError *error_out)
 {
 	ERROR_DECL (error);
 	MonoAssembly *assembly;
@@ -2321,14 +2330,17 @@ mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyNa
  * Check whenever a given assembly was already loaded in the current appdomain.
  */
 static MonoAssembly *
-mono_domain_assembly_search (MonoAssemblyName *aname,
-							 gpointer user_data)
+mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
+			     MonoAssemblyName *aname,
+			     gboolean refonly,
+			     gboolean postload,
+			     gpointer user_data,
+			     MonoError *error)
 {
 	g_assert (aname != NULL);
 	MonoDomain *domain = mono_domain_get ();
 	GSList *tmp;
 	MonoAssembly *ass;
-	gboolean refonly = GPOINTER_TO_UINT (user_data);
 	const gboolean strong_name = aname->public_key_token[0] != 0;
 	/* If it's not a strong name, any version that has the right simple
 	 * name is good enough to satisfy the request.  .NET Framework also
