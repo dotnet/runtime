@@ -101,7 +101,7 @@ namespace HttpStress
                     })
                     { IsBackground = true }.Start();
 
-                    /// Request context factory to be applied in the context of a single worker
+                    // Request context factory to be applied in the context of a single worker
                     Func<RequestContext> CreateRequestContextFactory(int taskNum)
                     {
                         // Creates a System.Random instance that is specific to the current client job
