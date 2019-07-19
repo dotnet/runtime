@@ -77,21 +77,27 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
         dotnet_root.c_str()
     };
 
-    hostfxr_handle context;
-    int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
-    if (!STATUS_CODE_SUCCEEDED(rc))
-        return rc;
+    hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
 
-    rc = hostfxr_get_runtime_delegate(context, type, reinterpret_cast<void**>(delegate));
-
-    int rcClose = hostfxr_close(context);
-    if (rcClose != StatusCode::Success)
     {
-        assert(false && "Failed to close host context");
-        trace::verbose(_X("Failed to close host context: 0x%x"), rcClose);
-    }
+        propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
 
-    return rc;
+        hostfxr_handle context;
+        int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
+        if (!STATUS_CODE_SUCCEEDED(rc))
+            return rc;
+
+        rc = hostfxr_get_runtime_delegate(context, type, reinterpret_cast<void**>(delegate));
+
+        int rcClose = hostfxr_close(context);
+        if (rcClose != StatusCode::Success)
+        {
+            assert(false && "Failed to close host context");
+            trace::verbose(_X("Failed to close host context: 0x%x"), rcClose);
+        }
+
+        return rc;
+    }
 }
 
 #endif //_COREHOST_CLI_FXR_RESOLVER_H_
