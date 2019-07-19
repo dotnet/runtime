@@ -169,11 +169,5 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementation for how this happens.
             return x.CompareTo(y);
         }
-
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
-        internal static ref byte GetRawSzArrayData(this Array array) =>
-            ref Unsafe.As<RawSzArrayData>(array).Data;
     }
 }
