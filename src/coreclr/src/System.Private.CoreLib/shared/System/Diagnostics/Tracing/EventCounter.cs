@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void ResetStatistics()
+        internal void ResetStatistics()
         {
             Debug.Assert(Monitor.IsEntered(this));
             _count = 0;
