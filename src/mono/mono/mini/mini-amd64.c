@@ -8010,11 +8010,6 @@ mono_arch_finish_init (void)
 #endif
 }
 
-void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
 #define CMP_SIZE (6 + 1)
 #define CMP_REG_REG_SIZE (4 + 1)
 #define BR_SMALL_SIZE 2

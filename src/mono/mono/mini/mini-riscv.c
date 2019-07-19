@@ -46,11 +46,6 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
-void
 mono_arch_cleanup (void)
 {
 }

@@ -5252,11 +5252,6 @@ mono_arch_finish_init (void)
 }
 
 void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
-void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	int this_dreg = mips_a0;

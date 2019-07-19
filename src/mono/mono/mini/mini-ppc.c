@@ -5474,11 +5474,6 @@ mono_arch_finish_init (void)
 {
 }
 
-void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
 #define CMP_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 4)
 #define BR_SIZE 4
 #define LOADSTORE_SIZE 4

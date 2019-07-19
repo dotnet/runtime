@@ -441,12 +441,6 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
-
 MonoMethod*
 mono_arch_find_imt_method (host_mgreg_t *regs, guint8 *code)
 {

@@ -5406,11 +5406,6 @@ mono_arch_finish_init (void)
 	}
 }
 
-void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
 // Linear handler, the bsearch head compare is shorter
 //[2 + 4] x86_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
 //[1 + 1] x86_branch8(inst,cond,imm,is_signed)

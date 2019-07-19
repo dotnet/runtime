@@ -1009,11 +1009,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 }
 
 void
-mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
-{
-}
-
-void
 mono_arch_flush_register_windows (void)
 {
 }
