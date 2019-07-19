@@ -106,6 +106,10 @@ typedef unsigned int ULONG, *PULONG;
 #define STDMETHODCALLTYPE
 #endif
 
+#ifndef STDMETHODVCALLTYPE
+#define STDMETHODVCALLTYPE
+#endif
+
 #ifndef _MSC_VER
 #if __i386__
 #define __stdcall __attribute__((stdcall))
