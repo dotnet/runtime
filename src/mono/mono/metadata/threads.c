@@ -6738,4 +6738,10 @@ ves_icall_System_Threading_Thread_InitInternal (MonoThreadObjectHandle thread_ha
 	MONO_OBJECT_SETREF_INTERNAL (internal, internal_thread, internal);
 }
 
+guint64
+ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
+{
+	return mono_native_thread_os_id_get ();
+}
+
 #endif

@@ -8,6 +8,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <pthread.h>
+#include <sys/syscall.h>
 
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
@@ -34,6 +35,12 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
+}
+
+guint64
+mono_native_thread_os_id_get (void)
+{
+	return (guint64)syscall (SYS_gettid);
 }
 
 #endif

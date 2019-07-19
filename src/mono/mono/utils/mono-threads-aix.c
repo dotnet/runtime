@@ -45,4 +45,14 @@ mono_threads_platform_is_main_thread (void)
 	return pthread_self () == 1;
 }
 
+guint64
+mono_native_thread_os_id_get (void)
+{
+	pthread_t t = pthread_self ();
+	struct __pthrdsinfo ti;
+	int err, size = 0;
+	err = pthread_getthrds_np (&t, PTHRDSINFO_QUERY_TID, &ti, sizeof (struct __pthrdsinfo), NULL, &size);
+	return (guint64)ti.__pi_tid;
+}
+
 #endif

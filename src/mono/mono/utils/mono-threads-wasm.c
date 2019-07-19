@@ -100,6 +100,16 @@ mono_native_thread_id_get (void)
 #endif
 }
 
+guint64
+mono_native_thread_os_id_get (void)
+{
+#ifdef __EMSCRIPTEN_PTHREADS__
+	return (guint64)pthread_self ();
+#else
+	return 1;
+#endif
+}
+
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {

@@ -622,6 +622,16 @@ void mono_threads_coop_end_global_suspend (void);
 MONO_API MonoNativeThreadId
 mono_native_thread_id_get (void);
 
+/*
+ * This does _not_ return the same value as mono_native_thread_id_get, except on Windows.
+ * On POSIX, mono_native_thread_id_get returns the value from pthread_self, which is then
+ * passed around as an identifier to other pthread functions. However this function, where 
+ * possible, returns the OS-unique thread id value, fetched in a platform-specific manner. 
+ * It will not work with the various pthread functions, should never be used as a
+ * MonoNativeThreadId, and is intended solely to match the output of various diagonistic tools.
+ */
+guint64 mono_native_thread_os_id_get (void);
+
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 

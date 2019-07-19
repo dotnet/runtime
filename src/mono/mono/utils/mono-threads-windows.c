@@ -406,6 +406,12 @@ mono_native_thread_id_get (void)
 	return GetCurrentThreadId ();
 }
 
+guint64
+mono_native_thread_os_id_get (void)
+{
+	return (guint64)GetCurrentThreadId ();
+}
+
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {

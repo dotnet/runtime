@@ -90,7 +90,7 @@ namespace System.Threading
 
 		internal static ulong CurrentOSThreadId {
 			get {
-				throw new NotImplementedException ();
+				return GetCurrentOSThreadId ();
 			}
 		}
 
@@ -268,6 +268,9 @@ namespace System.Threading
 				throw new ThreadStateException ("Thread is dead; state can not be accessed.");
 			return state;
 		}
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		private extern static ulong GetCurrentOSThreadId ();
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static void InitInternal (Thread thread);
