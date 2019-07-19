@@ -164,6 +164,12 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+
+        internal static ref byte GetRawSzArrayData(this Array array) =>
+            ref Unsafe.As<RawSzArrayData>(array).Data;
+
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
