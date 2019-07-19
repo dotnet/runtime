@@ -544,7 +544,7 @@ LLegacyPrefix:
             // W is the top bit of opcode2.
             if ((opcode1 & 0x80) != 0)
             {
-                rex.b = 1;
+                rex.r = 1;
                 fRex = true;
             }
             if ((opcode1 & 0x40) == 0)
@@ -1084,7 +1084,7 @@ LLegacyPrefix:
         // Further adjust the address by the size of the cbImmedSize (if any).
         if (cbImmedSize == 0x3)
         {
-            // The size of the cbImmedSizeiate depends on the effective operand size:
+            // The cbImmedSize depends on the effective operand size:
             // 2 bytes if the effective operand size is 16-bit, or
             // 4 bytes if the effective operand size is 32- or 64-bit.
             if (fPrefix66)
