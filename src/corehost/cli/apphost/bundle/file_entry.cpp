@@ -16,13 +16,13 @@ bool file_entry_t::is_valid()
         static_cast<file_type_t>(m_data.type) < file_type_t::__last;
 }
 
-file_entry_t* file_entry_t::read(FILE* stream)
+file_entry_t file_entry_t::read(FILE* stream)
 {
-    file_entry_t* entry = new file_entry_t();
+    file_entry_t entry;
 
     // First read the fixed-sized portion of file-entry
-    bundle_runner_t::read(&entry->m_data, sizeof(entry->m_data), stream);
-    if (!entry->is_valid())
+    bundle_runner_t::read(&entry.m_data, sizeof(entry.m_data), stream);
+    if (!entry.is_valid())
     {
         trace::error(_X("Failure processing application bundle; possible file corruption."));
         trace::error(_X("Invalid FileEntry detected."));
@@ -30,10 +30,10 @@ file_entry_t* file_entry_t::read(FILE* stream)
     }
 
     size_t path_length =
-        bundle_runner_t::get_path_length(entry->m_data.path_length_byte_1, stream);
+        bundle_runner_t::get_path_length(entry.m_data.path_length_byte_1, stream);
 
     // Read the relative-path, given its length 
-    pal::string_t& path = entry->m_relative_path;
+    pal::string_t& path = entry.m_relative_path;
     bundle_runner_t::read_string(path, path_length, stream);
 
     // Fixup the relative-path to have current platform's directory separator.
@@ -49,5 +49,3 @@ file_entry_t* file_entry_t::read(FILE* stream)
 
     return entry;
 }
-
-

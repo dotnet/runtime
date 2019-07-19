@@ -156,6 +156,7 @@ if(WIN32)
     add_compile_options(/GF) # enable read-only string pooling
     add_compile_options(/FC) # use full pathnames in diagnostics
     add_compile_options(/DEBUG)
+    add_compile_options(/Zi) # enable debugging information
     add_compile_options(/GS)
     add_compile_options(/W1)
     add_compile_options(/we5038) # make reorder warnings into errors
@@ -189,6 +190,7 @@ if(WIN32)
     set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
     set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
 else()
+    add_compile_options(-g) # enable debugging information
     add_compile_options(-Wall)
     add_compile_options(-Wextra)
     if(CMAKE_C_COMPILER_ID STREQUAL Clang)

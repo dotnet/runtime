@@ -9,6 +9,7 @@
 #include <hostfxr.h>
 #include <coreclr_delegates.h>
 #include <corehost_context_contract.h>
+#include "hostfxr_exports.h"
 #include "host_context_test.h"
 #include <utils.h>
 
@@ -20,66 +21,6 @@ namespace
 
     const hostfxr_delegate_type first_delegate_type = hostfxr_delegate_type::hdt_com_activation;
     const hostfxr_delegate_type secondary_delegate_type = hostfxr_delegate_type::hdt_load_in_memory_assembly;
-
-    class hostfxr_exports
-    {
-    public:
-        hostfxr_initialize_for_dotnet_command_line_fn init_command_line;
-        hostfxr_run_app_fn run_app;
-
-        hostfxr_initialize_for_runtime_config_fn init_config;
-        hostfxr_get_runtime_delegate_fn get_delegate;
-
-        hostfxr_get_runtime_property_value_fn get_prop_value;
-        hostfxr_set_runtime_property_value_fn set_prop_value;
-        hostfxr_get_runtime_properties_fn get_properties;
-
-        hostfxr_close_fn close;
-
-        hostfxr_main_startupinfo_fn main_startupinfo;
-
-    public:
-        hostfxr_exports(const pal::string_t &hostfxr_path)
-        {
-            if (!pal::load_library(&hostfxr_path, &_dll))
-            {
-                std::cout << "Load library of hostfxr failed" << std::endl;
-                throw StatusCode::CoreHostLibLoadFailure;
-            }
-
-            init_command_line = (hostfxr_initialize_for_dotnet_command_line_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_dotnet_command_line");
-            run_app = (hostfxr_run_app_fn)pal::get_symbol(_dll, "hostfxr_run_app");
-
-            init_config = (hostfxr_initialize_for_runtime_config_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_runtime_config");
-            get_delegate = (hostfxr_get_runtime_delegate_fn)pal::get_symbol(_dll, "hostfxr_get_runtime_delegate");
-
-            get_prop_value = (hostfxr_get_runtime_property_value_fn)pal::get_symbol(_dll, "hostfxr_get_runtime_property_value");
-            set_prop_value = (hostfxr_set_runtime_property_value_fn)pal::get_symbol(_dll, "hostfxr_set_runtime_property_value");
-            get_properties = (hostfxr_get_runtime_properties_fn)pal::get_symbol(_dll, "hostfxr_get_runtime_properties");
-
-            close = (hostfxr_close_fn)pal::get_symbol(_dll, "hostfxr_close");
-
-            main_startupinfo = (hostfxr_main_startupinfo_fn)pal::get_symbol(_dll, "hostfxr_main_startupinfo");
-
-            if (init_command_line == nullptr || run_app == nullptr
-                || init_config == nullptr || get_delegate == nullptr
-                || get_prop_value == nullptr || set_prop_value == nullptr
-                || get_properties == nullptr || close == nullptr
-                || main_startupinfo == nullptr)
-            {
-                std::cout << "Failed to get hostfxr entry points" << std::endl;
-                throw StatusCode::CoreHostEntryPointFailure;
-            }
-        }
-
-        ~hostfxr_exports()
-        {
-            pal::unload_library(_dll);
-        }
-
-    private:
-        pal::dll_t _dll;
-    };
 
     void get_property_value(
         const hostfxr_exports &hostfxr,
@@ -234,7 +175,7 @@ namespace
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
 
-    bool load_assembly_and_get_function_pointer(
+    bool load_assembly_and_get_function_pointer_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
         int argc,
@@ -538,5 +479,5 @@ bool host_context_test::load_assembly_and_get_function_pointer(
 {
     hostfxr_exports hostfxr{ hostfxr_path };
 
-    return load_assembly_and_get_function_pointer(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+    return load_assembly_and_get_function_pointer_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
 }
