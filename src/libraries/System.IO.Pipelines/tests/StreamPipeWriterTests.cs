@@ -62,6 +62,25 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task CompleteAsyncDoesNotThrowObjectDisposedException()
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var stream = new MemoryStream();
+            PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+
+            await writer.FlushAsync();
+            bytes.AsSpan().CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+
+            Assert.Equal(0, stream.Length);
+
+            await writer.CompleteAsync();
+
+            Assert.Equal(bytes.Length, stream.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
+        }
+
+        [Fact]
         public async Task DataWrittenOnFlushAsync()
         {
             byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
