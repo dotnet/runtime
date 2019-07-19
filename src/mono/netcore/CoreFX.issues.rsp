@@ -88,10 +88,6 @@
 # https://github.com/mono/mono/issues/14912
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds*
 
-# Expected exception to be thrown.  None is
-# https://github.com/mono/mono/issues/14917
--nomethod System.Linq.Expressions.Tests.BindTests.GlobalField
-
 # Exceptions are different.
 # https://github.com/mono/mono/issues/14918
 -nomethod System.Linq.Expressions.Tests.BindTests.ConstantField
