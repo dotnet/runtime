@@ -7099,26 +7099,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_RAW_SZ_ARRAY_DATA)->GetMemberDef())
-    {
-        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_SZARRAY_DATA__DATA)->GetMemberDef();
-
-        static BYTE ilcode[] = { CEE_LDARG_0,
-                                 CEE_LDFLDA,0,0,0,0,
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawSzArrayData);
-        ilcode[3] = (BYTE)(tokRawSzArrayData >> 8);
-        ilcode[4] = (BYTE)(tokRawSzArrayData >> 16);
-        ilcode[5] = (BYTE)(tokRawSzArrayData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
 
     return false;
 }
@@ -7564,6 +7544,27 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         }
 
         methInfo->ILCodeSize = sizeof(returnTrue);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
+    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_RAW_SZ_ARRAY_DATA)->GetMemberDef())
+    {
+        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_SZARRAY_DATA__DATA)->GetMemberDef();
+
+        static BYTE ilcode[] = { CEE_LDARG_0,
+                                 CEE_LDFLDA,0,0,0,0,
+                                 CEE_RET };
+
+        ilcode[2] = (BYTE)(tokRawSzArrayData);
+        ilcode[3] = (BYTE)(tokRawSzArrayData >> 8);
+        ilcode[4] = (BYTE)(tokRawSzArrayData >> 16);
+        ilcode[5] = (BYTE)(tokRawSzArrayData >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
         methInfo->maxStack = 1;
         methInfo->EHcount = 0;
         methInfo->options = (CorInfoOptions)0;
