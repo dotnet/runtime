@@ -800,8 +800,7 @@ void ZapImage::AddRelocsForEHClauses(ZapExceptionInfo * pExceptionInfo)
 // ZapMethodHeader
 //
 
-#if defined(_TARGET_X86_)
-
+#ifdef _TARGET_X86_
 DWORD ZapCodeBlob::ComputeRVA(ZapWriter * pZapWriter, DWORD dwPos)
 {
     void * pData = GetData();
@@ -810,7 +809,6 @@ DWORD ZapCodeBlob::ComputeRVA(ZapWriter * pZapWriter, DWORD dwPos)
 
     dwPos = AlignUp(dwPos, dwAlignment);
 
-#ifdef _TARGET_X86_
     //
     // Padding for straddler relocations.
     //
@@ -839,7 +837,6 @@ DWORD ZapCodeBlob::ComputeRVA(ZapWriter * pZapWriter, DWORD dwPos)
     SetRVA(dwPaddedPos);
 
     return dwPaddedPos + size;
-#endif // _TARGET_X86_
 }
 
 template <DWORD alignment>
@@ -894,9 +891,7 @@ ZapCodeBlob * ZapCodeBlob::NewAlignedBlob(ZapWriter * pWriter, PVOID pData, SIZE
         return NULL;
     }
 }
-
-#endif
-
+#endif // _TARGET_X86_
 
 // See function prototype for details on why this iterator is "partial"
 BOOL ZapMethodHeader::PartialTargetMethodIterator::GetNext(CORINFO_METHOD_HANDLE *pHnd)
