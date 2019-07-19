@@ -65,6 +65,7 @@
     <SystemSecurityPermissionsVersion>5.0.0-alpha1.19368.4</SystemSecurityPermissionsVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha1.19368.4</SystemSecurityPrincipalWindowsVersion>
     <SystemTextJsonVersion>5.0.0-alpha1.19368.4</SystemTextJsonVersion>
+    <SystemTextEncodingsWebVersion>5.0.0-alpha1.19368.4</SystemTextEncodingsWebVersion>
     <SystemThreadingAccessControlVersion>5.0.0-alpha1.19368.4</SystemThreadingAccessControlVersion>
     <SystemWindowsExtensionsPackageVersion>5.0.0-alpha1.19368.4</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Bundle Test Helpers</Description>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>BundleHelper</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
