@@ -1,0 +1,30 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+
+  <!-- If signing is enabled, wait until all projects in this stage are done and sign them. -->
+  <Target Name="Build"
+          Condition="
+            '$(SkipSigning)' != 'true' and
+            '$(OSGroup)' == 'Windows_NT'">
+    <!-- Ensure all projects in this stage have built. -->
+    <MSBuild
+      Projects="@(StageProject)"
+      Targets="Build" />
+
+    <!--
+      Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
+      if '$(<StageName>)' == 'true' and points Arcade to the correct files.
+    -->
+    <MSBuild
+      Projects="$(ArcadeSdkSignProject)"
+      Targets="Sign"
+      Properties="
+        $(MSBuildProjectName)=true;
+        BaseOutputRootPath=$(BaseOutputRootPath);
+        CrossGenRootPath=$(CrossGenRootPath);
+        ArtifactsBinDir=$(ArtifactsBinDir);
+        ArtifactsPackagesDir=$(ArtifactsPackagesDir)" />
+  </Target>
+
+</Project>

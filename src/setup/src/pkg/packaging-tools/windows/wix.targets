@@ -19,7 +19,10 @@
   </Target>
 
   <!-- Set up information to pass to WiX, depending on the type of installer being created. -->
-  <Target Name="GetWixBuildConfiguration" DependsOnTargets="GetInstallerProperties">
+  <Target Name="GetWixBuildConfiguration"
+          DependsOnTargets="
+            AcquireWix;
+            GetInstallerProperties">
 
     <ItemGroup Condition="'$(FrameworkPackType)' != ''">
       <DirectoryToHarvest

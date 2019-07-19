@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Shared properties specific to packaging projects (pkgproj).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+  </ItemGroup>
+
+</Project>

@@ -1,27 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
-    <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
+    <PackageLicenseFile>LICENSE.TXT</PackageLicenseFile>
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Authors>Microsoft</Authors>
-    <NugetLicenseFile>$(RepoRoot)LICENSE.TXT</NugetLicenseFile>
+    <NugetLicenseFile>$(RepoRoot)$(PackageLicenseFile)</NugetLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <!-- Allow SemVer v2 -->
-    <NoWarn>$(NoWarn);NU5105</NoWarn>
+    <!--
+      Arcade specifies a default en-US NeutralLanguage, which creates a
+      System.Resources.NeutralResourcesLanguageAttribute that doesn't compile with existing
+      references for PlatformAbstractions on netstandard1.3. Clearing NeutralLanguage removes it.
+
+      If this Arcade SDK feature is desired in the future, this will need to be worked through. No
+      issue tracks this as of writing.
+    -->
+    <NeutralLanguage></NeutralLanguage>
   </PropertyGroup>
 
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>$(RepoRoot)tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
+    <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
+    <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
   </PropertyGroup>
@@ -52,5 +60,4 @@
     </Content>
   </ItemGroup>
 
-  <Import Condition="Exists('$(ToolsDir)versioning.props')" Project="$(ToolsDir)versioning.props" />
 </Project>

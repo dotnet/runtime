@@ -1,12 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <VersionPrefix>1.0.0</VersionPrefix>
-    <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
+    <MajorVersion>5</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <PreReleaseVersionLabel>alpha1</PreReleaseVersionLabel>
+    <ReleaseBrandSuffix>Alpha 1</ReleaseBrandSuffix>
+    <!-- Enable to remove prerelease label. -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
+    <!-- Disable SemVer v2 until after 3.0.0. -->
+    <SemanticVersioningV1 Condition="
+      $(MajorVersion) &lt; 3 or
+      '$(MajorVersion).$(MinorVersion).$(PatchVersion)' == '3.0.0'">true</SemanticVersioningV1>
+    <!-- "Latest" channel to publish to. -->
+    <Channel>master</Channel>
+    <ContainerName>dotnet</ContainerName>
+    <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
+    <!-- Max version of NETCoreApp, used by test projects. -->
+    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
+    <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- list of nuget package sources passed to NuGet -->
+    <RestoreSources>
+      $(OverridePackageSource);
+      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
+      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
+      https://dotnetfeed.blob.core.windows.net/dotnet-windowsdesktop/index.json;
+      https://api.nuget.org/v3/index.json;
+      $(RestoreSources);
+    </RestoreSources>
+  </PropertyGroup>
+  <PropertyGroup>
     <MicrosoftDotNetMaestroTasksVersion>1.0.0-beta.18619.4</MicrosoftDotNetMaestroTasksVersion>
   </PropertyGroup>
   <!--Package versions-->
   <PropertyGroup>
+    <!-- arcade -->
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19308.1</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19308.1</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19308.1</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- corefx -->
     <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19369.3</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha1.19369.3</MicrosoftNETCoreTargetsPackageVersion>
@@ -30,6 +65,7 @@
     <SystemSecurityPermissionsVersion>5.0.0-alpha1.19369.3</SystemSecurityPermissionsVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha1.19369.3</SystemSecurityPrincipalWindowsVersion>
     <SystemTextJsonVersion>5.0.0-alpha1.19369.3</SystemTextJsonVersion>
+    <SystemTextEncodingsWebVersion>5.0.0-alpha1.19369.3</SystemTextEncodingsWebVersion>
     <SystemThreadingAccessControlVersion>5.0.0-alpha1.19369.3</SystemThreadingAccessControlVersion>
     <SystemWindowsExtensionsPackageVersion>5.0.0-alpha1.19369.3</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->
@@ -42,14 +78,29 @@
     <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview8.19359.5</MicrosoftDotNetWpfGitHubPackageVersion>
     <!-- wpf-int -->
     <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview8.19364.2</MicrosoftDotNetWpfDncEngPackageVersion>
+    <!-- Not auto-updated. -->
+    <MicrosoftBuildPackageVersion>15.7.179</MicrosoftBuildPackageVersion>
+    <MicrosoftBuildFrameworkPackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildFrameworkPackageVersion>
+    <MicrosoftBuildTasksCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildTasksCorePackageVersion>
+    <MicrosoftBuildUtilitiesCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildUtilitiesCorePackageVersion>
+    <MicrosoftDotNetPlatformAbstractionsPackageVersion>1.1.1</MicrosoftDotNetPlatformAbstractionsPackageVersion>
+    <NugetProjectModelPackageVersion>4.9.4</NugetProjectModelPackageVersion>
+    <NugetPackagingPackageVersion>4.9.4</NugetPackagingPackageVersion>
+    <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
+    <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
+    <!-- Infrastructure and test-only. -->
+    <MicrosoftSourceLinkVersion>1.0.0-beta2-18618-05</MicrosoftSourceLinkVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
+    <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
     <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
     <NETStandardLibraryPackage>NETStandard.Library</NETStandardLibraryPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
     <MicrosoftBclJsonSourcesPackage>Microsoft.Bcl.Json.Sources</MicrosoftBclJsonSourcesPackage>
+    <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
+    <MicrosoftSymbolUploaderBuildTaskPackage>Microsoft.SymbolUploader.Build.Task</MicrosoftSymbolUploaderBuildTaskPackage>
   </PropertyGroup>
 </Project>

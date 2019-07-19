@@ -4,25 +4,5 @@
     <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
     <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>  
-    <HostFxrDebPkgName>$(DotnetHostFxrString)$(ProductBandVersion)</HostFxrDebPkgName>
-    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
-    <SharedFxDebPkgName>$(DotnetRuntimeString)$(ProductBandVersion)</SharedFxDebPkgName>
-    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductBandVersion)</RuntimeDependenciesDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
-    
-    <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-    <HostPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostPackageVersion>
-    
-    <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-    <HostResolverPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostResolverPackageVersion>
-    
-    <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
-    <RuntimePackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</RuntimePackageVersion>
-    
-    <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
-    <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
   </PropertyGroup>
 </Project>

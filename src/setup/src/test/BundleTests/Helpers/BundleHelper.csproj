@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Bundle Test Helpers</Description>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>BundleHelper</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
@@ -10,10 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\TestUtils\TestUtils.csproj" />
     <ProjectReference Include="..\..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
   </ItemGroup>
 
 </Project>

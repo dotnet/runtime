@@ -85,6 +85,10 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>1303d28179b4369cbfac43affd723fa6e0bc9554</Sha>
     </Dependency>
+    <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha1.19369.3">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>1303d28179b4369cbfac43affd723fa6e0bc9554</Sha>
+    </Dependency>
     <Dependency Name="System.Text.Json" Version="5.0.0-alpha1.19369.3">
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>1303d28179b4369cbfac43affd723fa6e0bc9554</Sha>

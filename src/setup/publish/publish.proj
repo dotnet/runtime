@@ -1,51 +1,34 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <UsingTask TaskName="DownloadFromAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
-  <UsingTask TaskName="ExecWithRetriesForNuGetPush" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-  <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
-  <UsingTask TaskName="ListAzureBlobs" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
-  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-  <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
-  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
+  <UsingTask TaskName="DownloadFromAzure" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="ListAzureBlobs" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
-  <PropertyGroup>
-    <!-- Always push the build assets to azure for final publish -->
-    <BuildDependsOn Condition="'$(PublishType)' == 'blob'">
-      PublishToAzure;
-    </BuildDependsOn>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
-    <!--
-      If we are not setting a publish type (i.e. nopublishtype) then do
-      the old style publishing otherwise ignore these steps because we are
-      running an orchestrated publish.
-    -->
-    <BuildDependsOn Condition="$(PublishType.Contains('nopublishtype'))">
-      $(BuildDependsOn);
-      PublishDebFilesToDebianRepo;
-      PublishFinalOutput;
-    </BuildDependsOn>
-  </PropertyGroup>
-
-  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
+  <Target Name="Build"
+          DependsOnTargets="
+            PublishDebFilesToDebianRepo;
+            PublishFinalOutput;
+            UpdateVersionsRepo" />
 
   <Target Name="PublishFinalOutput"
-          Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackages;RunPublishSymbols;FinalizeBuildInAzure" />
-    
-  <Target Name="GetPackagesToSign" DependsOnTargets="GatherShippingPackages">
-    <ItemGroup>
-      <FilesToSign Include="@(ShippedNugetPackage)">
-        <Authenticode>NuGet</Authenticode>
-      </FilesToSign>
-    </ItemGroup>
-    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" />
-  </Target>
-  
+          DependsOnTargets="
+            SignPackages;
+            PublishNuGetPackages;
+            PublishToAzure;
+            RunPublishSymbols;
+            FinalizeBuildInAzure" />
+
   <Target Name="SignPackages"
-          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
-          DependsOnTargets="GetPackagesToSign;SignFiles">
+          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
+    <MSBuild
+      Projects="$(RepoRoot)signing\SignFinalPackages.proj"
+      Targets="Build"
+      Properties="DownloadDirectory=$(DownloadDirectory)" />
   </Target>
 
   <!--
@@ -55,87 +38,123 @@
   -->
   <Target Name="UpdateVersionsRepo"
           Condition="'$(GitHubAuthToken)' != ''"
-          DependsOnTargets="GatherShippingPackages;
+          DependsOnTargets="FindDownloadedArtifacts;
                             UpdatePublishedVersions" />
 
-  <Target Name="GatherShippingPackages">
+  <!--
+    Look through the downloaded artifacts to figure out how to ship them. Creates item groups for
+    other types of publishing to use.
+  -->
+  <Target Name="FindDownloadedArtifacts">
     <ItemGroup>
-      <PackagesToShip Include="$(DownloadDirectory)*.nupkg"
-                      Exclude="$(DownloadDirectory)*.symbols.nupkg;
-                               $(DownloadDirectory)VS.Redist.Common.*.nupkg" />
-      <PackagesToShip Remove="%(PackagesToShip.Identity)"
-                      Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
-      <ShippedNuGetPackage Include="@(PackagesToShip)" />
+      <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
+
+      <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+      <DownloadedNupkgFile
+        Include="$(DownloadDirectory)**\*.nupkg"
+        Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!-- RID-specific nupkg. These are published from every job. -->
+      <RuntimeNupkgFile
+        Include="
+          $(DownloadDirectory)**\runtime.*.nupkg;
+          $(DownloadDirectory)**\*.Runtime.*.nupkg;
+          $(DownloadDirectory)**\*.App.Host.*.nupkg;
+          $(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
+        Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!--
+        RID-agnostic nupkg. These are built with the same ID/version by every job, so only one job's
+        results are published.
+      -->
+      <RidAgnosticNupkgToPublishFile
+        Include="$(DownloadDirectory)$(PublishRidAgnosticPackagesFromJobName)\**\*.nupkg"
+        Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
+      
+      <RidAgnosticNupkgToIgnoreFile
+        Include="@(DownloadedNupkgFile)"
+        Exclude="@(RidAgnosticNupkgToPublishFile);@(RuntimeNupkgFile)" />
+
+      <RidAgnosticSymbolNupkgToIgnoreFile
+        Include="@(RidAgnosticNupkgToIgnoreFile -> '%(RootDir)%(Directory)%(Filename).symbols.nupkg')" />
+
+      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
+      <SymbolNupkgToPublishFile Include="@(DownloadedSymbolNupkgFile)" Exclude="@(RidAgnosticSymbolNupkgToIgnoreFile)" />
+
+      <!-- Filter out duplicate nupkgs/symbols.nupkgs, but other artifacts are fine. -->
+      <UploadToBlobStorageFile
+        Include="@(DownloadedArtifactFile)"
+        Exclude="@(RidAgnosticNupkgToIgnoreFile);@(RidAgnosticSymbolNupkgToIgnoreFile)" />
+
+      <!-- Nupkgs to include in dotnet/versions update. -->
+      <ShippedNuGetPackage Include="@(NupkgToPublishFile)" />
     </ItemGroup>
   </Target>
 
+  <Target Name="CreateChecksums"
+          DependsOnTargets="FindDownloadedArtifacts">
+    <ItemGroup>
+      <ArtifactsForGeneratingChecksums
+        Include="@(UploadToBlobStorageFile)"
+        DestinationPath="%(FullPath)$(ChecksumExtension)" />
+      
+      <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums -> '%(DestinationPath)')" />
+    </ItemGroup>
+
+    <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
+  </Target>
+
+  <!-- Publish to Azure blob storage. -->
   <Target Name="PublishToAzure"
-          Condition="'$(Finalize)' != 'true'"
-          DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers;GatherPublishToAzureChecksums">
-    <MSBuild Targets="%(Project.PublishTarget)"
-             Projects="%(Project.Identity)"
-             Properties="%(Project.AdditionalProperties)"
-             BuildInParallel="true" />
-  </Target>
-
-  <Target Name="EnsureUniqueItemsToUpload">
-    <ItemGroup>
-      <DedupItems Include="@(ItemsToPublish->Distinct())" />
-    </ItemGroup>
-    <PropertyGroup>
-      <CountOld>@(ItemsToPublish->Count())</CountOld>
-      <CountNew>@(DedupItems->Count())</CountNew>
-      <_HasDups Condition="'$(CountOld)' != '$(CountNew)'">true</_HasDups>
-    </PropertyGroup>
-    <Message Importance="High" Condition="'$(_HasDups)' != ''" Text="ItemsToPublish: '@(ItemsToPublish)'"/>
-    <Error Condition="'$(_HasDups)' != ''" Text="Duplicate Items Present in ItemsToPublish" />
-  </Target>
+          DependsOnTargets="
+            UploadToAzure;
+            UploadChecksumsToAzure" />
 
   <Target Name="UploadToAzure"
-          DependsOnTargets="EnsureUniqueItemsToUpload"
-          Condition="'$(ItemsToPublish)' != ''">
+          DependsOnTargets="
+            FindDownloadedArtifacts;
+            SignPackages;
+            GetProductVersions">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
-    <Error Condition="'$(RelativeBlobPath)' == ''" Text="Missing required property 'RelativeBlobPath'" />
-    <Error Condition="!HasTrailingSlash('$(RelativeBlobPath)')" Text="RelativeBlobPath is expected to have a trailing '/' - '$(RelativeBlobPath)'" />
 
     <ItemGroup>
-      <ItemsToPublish Include="$(ItemsToPublish)" />
-      <ItemsToPublish>
-        <RelativeBlobPath>$(RelativeBlobPath)%(Filename)%(Extension)</RelativeBlobPath>
-      </ItemsToPublish>
+      <FileToPublish
+        Include="@(UploadToBlobStorageFile)" 
+        RelativeBlobPath="$(BinariesRelativePath)%(Filename)%(Extension)" />
     </ItemGroup>
 
-    <Message Text="Uploading files to $(AzureAccountName)/$(ContainerName)/$(RelativeBlobPath)" />
+    <Message Text="Uploading files to $(AzureAccountName)/$(ContainerName)/$(BinariesRelativePath)" />
 
     <UploadToAzure AccountName="$(AzureAccountName)"
                    AccountKey="$(AzureAccessToken)"
                    ContainerName="$(ContainerName)"
-                   Items="@(ItemsToPublish)"
+                   Items="@(FileToPublish)"
                    Overwrite="false" />
   </Target>
 
   <Target Name="UploadChecksumsToAzure"
-          Condition="'$(ItemsToPublish)' != ''">
+          DependsOnTargets="
+            FindDownloadedArtifacts;
+            GetProductVersions;
+            CreateChecksums">
     <Error Condition="'$(ChecksumAzureAccessToken)' == ''" Text="Missing required property 'ChecksumAzureAccessToken'" />
     <Error Condition="'$(ChecksumAzureAccountName)' == ''" Text="Missing required property 'ChecksumAzureAccountName'" />
     <Error Condition="'$(ChecksumContainerName)' == ''" Text="Missing required property 'ChecksumContainerName'" />
-    <Error Condition="'$(RelativeBlobPath)' == ''" Text="Missing required property 'RelativeBlobPath'" />
 
     <ItemGroup>
-      <ItemsToPublish Include="$(ItemsToPublish)" />
-      <ItemsToPublish>
-        <RelativeBlobPath>$(RelativeBlobPath)/%(Filename)%(Extension)</RelativeBlobPath>
-      </ItemsToPublish>
+      <ChecksumToPublish
+        Include="@(GeneratedChecksumFile)"
+        RelativeBlobPath="$(BinariesRelativePath)%(Filename)%(Extension)" />
     </ItemGroup>
 
-    <Message Text="Uploading checksum files to $(ChecksumAzureAccountName)/$(ChecksumContainerName)/$(RelativeBlobPath)" />
+    <Message Text="Uploading checksum files to $(ChecksumAzureAccountName)/$(ChecksumContainerName)/$(BinariesRelativePath)" />
 
     <UploadToAzure AccountName="$(ChecksumAzureAccountName)"
                    AccountKey="$(ChecksumAzureAccessToken)"
                    ContainerName="$(ChecksumContainerName)"
-                   Items="@(ItemsToPublish)"
+                   Items="@(ChecksumToPublish)"
                    Overwrite="false" />
   </Target>
 
@@ -150,13 +169,13 @@
   </Target>
 
   <Target Name="FinalizeBuildInAzure"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;
-                            GetLatestCommitHash">
+          DependsOnTargets="
+            GetProductVersions;
+            GetLatestCommitHash">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
     <Error Condition="'$(LatestCommit)' == ''" Text="Missing required property 'LatestCommit'" />
-    <Error Condition="'@(PublishRid)' == ''" Text="Missing required item 'PublishRid'" />
 
     <Message Importance="High" Text="Finalizing Build" />
     <!-- Ensure all publish pieces are present and then publish to Azure Latest container -->
@@ -191,58 +210,20 @@
                    ForcePublish="true" />
   </Target>
 
-  <Target Name="PublishCoreHostPackages"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignPackages;DoPushCoreHostPackagesToAzure"
-          Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
-    <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
-    <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
+  <Target Name="PublishNuGetPackages"
+          DependsOnTargets="
+            FindDownloadedArtifacts;
+            SignPackages;
+            DoPushNuGetPackagesToAzure"
+          Condition="'@(_MissingBlobNames)' == ''">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
     <Message Condition="'$(WindowsSdkDir)' == ''" Text="Windows SDK not found.  Symbols packages will not be signed." />
   </Target>
 
-  <Target Name="DownloadCoreHostPackages">
-    <ListAzureBlobs AccountName="$(AzureAccountName)"
-                      AccountKey="$(AzureAccessToken)"
-                      ContainerName="$(ContainerName)"
-                      FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)/">
-      <Output TaskParameter="BlobNames" ItemName="_BlobList" />
-    </ListAzureBlobs>
-    <ItemGroup>
-      <_CoreHostPackages Include="%(_BlobList.Identity)" />
-    </ItemGroup>
-    <PropertyGroup>
-      <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
-      <!-- The SignFiles target needs OutDir to be defined -->
-      <OutDir>$(DownloadDirectory)</OutDir>
-    </PropertyGroup>
-    <MakeDir Directories="$(DownloadDirectory)"
-             Condition="!Exists('$(DownloadDirectory)')" />
-    <DownloadFromAzure AccountName="$(AzureAccountName)"
-                           AccountKey="$(AzureAccessToken)"
-                           ContainerName="$(ContainerName)"
-                           BlobNames="@(_CoreHostPackages)"
-                           BlobNamePrefix="Runtime/$(SharedFrameworkNugetVersion)/"
-                           DownloadDirectory="$(DownloadDirectory)" />
-    <ItemGroup>
-      <_DownloadedAssets Include="@(_CoreHostPackages->'$(DownloadDirectory)%(Filename)%(Extension)')" />
-      <_DownloadedPackages Include="%(_DownloadedAssets.Identity)"
-                           Condition="$([System.String]::new('%(_DownloadedAssets.Identity)').EndsWith('.nupkg'))" />
-      <_DownloadedSymbolsPackages Include="%(_DownloadedPackages.Identity)"
-                                 Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.symbols.nupkg'))" />
-      <_DownloadedStandardPackages Include="@(_DownloadedPackages)"
-                                  Exclude="@(_DownloadedSymbolsPackages)"
-                                  Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.nupkg'))" />
-
-      <!-- Exclude SVG files from BAR manifest: https://github.com/dotnet/arcade/issues/1842. -->
-      <_DownloadedAssets Condition="$([System.String]::new('%(_DownloadedAssets.Identity)').EndsWith('.svg'))">
-        <ExcludeFromManifest>true</ExcludeFromManifest>
-      </_DownloadedAssets>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="RunPublishSymbols">
+  <Target Name="RunPublishSymbols"
+          Condition="'$(SkipPublishSymbols)' != 'true'">
     <ItemGroup>
       <SymbolServerConfig
         Include="msdl"
@@ -274,41 +255,25 @@
       Properties="DownloadDirectory=$(DownloadDirectory)" />
   </Target>
 
-  <Target Name="SetupPublishSymbols">
+  <Target Name="SetupPublishSymbols"
+          DependsOnTargets="FindDownloadedArtifacts">
     <PropertyGroup>
       <SymbolExpirationInDays>180</SymbolExpirationInDays>
     </PropertyGroup>
 
     <ItemGroup>
       <SymbolPackagesToPublish
-        Include="$(DownloadDirectory)**\*.symbols.nupkg"
-        Exclude="$(DownloadDirectory)**\*freebsd*.nupkg" />
+        Include="@(DownloadedSymbolNupkgFile)"
+        Exclude="@(RidAgnosticSymbolNupkgToIgnoreFile)" />
     </ItemGroup>
 
     <Message Importance="High" Text="Publishing symbol packages to '$(SymbolServerPath)': @(SymbolPackagesToPublish)"/>
   </Target>
 
-  <Target Name="DoPushCoreHostPackagesToFeed">
-    <Error Condition="'@(_DownloadedSymbolsPackages)' != '' and '$(NuGetSymbolsFeedUrl)' == ''" Text="Missing required property NuGetSymbolsFeedUrl" />
-
-    <Message Text="Pushing CoreHost packages to $(NuGetFeedUrl)" />
-    <PropertyGroup>
-      <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(NuGetFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
-      <NuGetPushSymbolsCommand>$(DotnetToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
-    </PropertyGroup>
-
-    <ExecWithRetriesForNuGetPush Command="$(NuGetPushCommand) %(_DownloadedStandardPackages.Identity)"
-                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
-
-    <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
-    <ExecWithRetriesForNuGetPush Condition="'@(_DownloadedSymbolsPackages)' != ''"
-                                 Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)"
-                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
-  </Target>
-
-  <Target Name="DoPushCoreHostPackagesToAzure"
-          DependsOnTargets="PublishToAzureBlobFeed;PublishFilesToAzureBlobFeed"
-          Condition="'$(OfficialPublish)' == 'true'"/>
+  <Target Name="DoPushNuGetPackagesToAzure"
+          DependsOnTargets="
+            PublishToAzureBlobFeed;
+            PublishFilesToAzureBlobFeed" />
 
   <Target Name="PublishToAzureBlobFeed">
     <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
@@ -317,11 +282,13 @@
       <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
       <AssetManifestFilePath>$(BUILD_SOURCESDIRECTORY)/artifacts/log/AssetManifest/Manifest.xml</AssetManifestFilePath>
     </PropertyGroup>
+
     <ItemGroup>
       <ItemsToPush Remove="@(ItemsToPush)" />
-      <ItemsToPush Include="@(_DownloadedStandardPackages)"/>
-      <ItemsToPush Include="@(_DownloadedSymbolsPackages)"/>
+      <ItemsToPush Include="@(NupkgToPublishFile)" />
+      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
     </ItemGroup>
+
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
@@ -334,36 +301,40 @@
                     AssetManifestPath="$(AssetManifestFilePath)"
                     />
   </Target>
-  
-  <Target Name="PublishFilesToAzureBlobFeed">
-  <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
-  <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
-  <PropertyGroup>
-    <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
-    <AssetManifestFilePath>$(BUILD_SOURCESDIRECTORY)/artifacts/log/AssetManifest/Manifest_Installers.xml</AssetManifestFilePath>
-  </PropertyGroup>
-  <ItemGroup>
-    <ItemsToPush Remove="@(ItemsToPush)" />
-    <ItemsToPush Include="@(_DownloadedAssets)"
-                 Exclude="@(_DownloadedPackages)" />
-    <ItemsToPush>
-        <RelativeBlobPath>assets/core-setup/$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
-    </ItemsToPush>
-  </ItemGroup>
-  <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
-                  AccountKey="$(TransportFeedAccessToken)"
-                  ItemsToPush="@(ItemsToPush)"
-                  PublishFlatContainer="true"
-                  Overwrite="$(OverwriteOnPublish)" 
-                  ManifestBuildData="Location=$(ExpectedFeedUrl)"
-                  ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
-                  ManifestBranch="$(BUILD_SOURCEBRANCH)"
-                  ManifestBuildId="$(BUILD_BUILDNUMBER)"
-                  ManifestCommit="$(BUILD_SOURCEVERSION)" 
-                  AssetManifestPath="$(AssetManifestFilePath)"
-                  />
-</Target>
 
-  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="PublishFilesToAzureBlobFeed"
+          DependsOnTargets="
+            CreateChecksums;
+            GetProductVersions">
+    <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
+    <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
+    <PropertyGroup>
+      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
+      <AssetManifestFilePath>$(BUILD_SOURCESDIRECTORY)/artifacts/log/AssetManifest/Manifest_Installers.xml</AssetManifestFilePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ItemsToPush Remove="@(ItemsToPush)" />
+      <ItemsToPush
+        Include="@(UploadToBlobStorageFile)"
+        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)" />
+      <ItemsToPush>
+        <RelativeBlobPath>assets/core-setup/$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPush>
+    </ItemGroup>
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(TransportFeedAccessToken)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="true"
+                    Overwrite="$(OverwriteOnPublish)" 
+                    ManifestBuildData="Location=$(ExpectedFeedUrl)"
+                    ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
+                    ManifestBranch="$(BUILD_SOURCEBRANCH)"
+                    ManifestBuildId="$(BUILD_BUILDNUMBER)"
+                    ManifestCommit="$(BUILD_SOURCEVERSION)" 
+                    AssetManifestPath="$(AssetManifestFilePath)"
+                    />
+  </Target>
+
 </Project>

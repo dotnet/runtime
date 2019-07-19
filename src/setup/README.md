@@ -33,8 +33,8 @@ Daily Builds
 [What build version has the CoreFX/CoreCLR commits I want?](Documentation/project-docs/how-to-track-changes.md)
 
 <!--
-  To update this table, run 'build.sh/cmd -- /t:RegenerateReadmeTable'. See the
-  RegenerateReadmeTable target in build.proj to add or remove rows or columns,
+  To update this table, run 'build.sh/cmd /p:Subset=RegenerateReadmeTable'. See
+  'tools-local/regenerate-readme-table.proj' to add or remove rows or columns,
   and add links below to fill out the table's contents.
 -->
 <!-- BEGIN generated table -->

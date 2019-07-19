@@ -1,0 +1,193 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <PackagePlatform>AnyCPU</PackagePlatform>
+
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
+    <OutputPath>$(PackageOutputPath)</OutputPath>
+    
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(RuntimeIdentifier)</PackageTargetRuntime>
+
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+
+    <BuildRuntimePackages>true</BuildRuntimePackages>
+    <BuildLineupPackage>true</BuildLineupPackage>
+
+    <PackProjectDependencies>true</PackProjectDependencies>
+
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Prevent unintended Microsoft.NETCore.Platforms package downgrade. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <ImportNuGetBuildTasksPackTargetsFromSdk>false</ImportNuGetBuildTasksPackTargetsFromSdk>
+
+    <!-- Tell NuGet where the assets file is. I think the intermediate output path got more complex with Arcade. -->
+    <RestoreOutputPath>$(BaseIntermediateOutputPath)</RestoreOutputPath>
+    <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
+
+    <!--
+      Disable ResolveAssemblyReference cache. The packaging projects run in parallel and use MSBuild
+      tasks calling various targets, many of which use ResolveReferences. The parallel writes to the
+      cache conflict and cause build failures. Disable the cache to avoid this.
+
+      In the long term, the "base" project build (depproj as of writing) should lay out the files or
+      metadata in a way the other projects can consume. Gathering the information ahead of time
+      removes the benefit of a cache.
+    -->
+    <DisableRarCache>true</DisableRarCache>
+
+    <RestoreAllBuildRids>true</RestoreAllBuildRids>
+  </PropertyGroup>
+
+  <!-- Most packages need the host to be built first. -->
+  <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
+    <OrderProjectReference Include="@(CorehostProjectToBuild)" />
+    <!-- Pkgproj requires its depproj crossgen outputs to be signed.-->
+    <OrderProjectReference
+      Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
+      Include="$(RepoRoot)signing\SignBinaries.proj" />
+  </ItemGroup>
+
+  <!-- In *.builds projects, the current phase's name is the same as the project name. -->
+  <PropertyGroup>
+    <BuildPhase>$(MSBuildProjectName)</BuildPhase>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <!-- WindowsDesktop packs currently depend on non-source-built App package. -->
+    <ProjectExclusions Include="windowsdesktop\**\*.*proj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeRuntimeJson>true</IncludeRuntimeJson>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(PackageTargetRid.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageTargetRid.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <Import Project="$(PackagingToolsDir)packaging-tools.props" />
+
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
+    <!--
+      we don't want any analyzers by ResolveNuGetPackageAssets
+      null-refs when this isn't set and an analyzer is in the packages
+    -->
+    <Language>unused</Language>
+    <NuGetTargetMoniker>$(NETCoreAppFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NETCoreAppFramework)</NuGetTargetMonikerShort>
+    <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
+    <CrossGenOutputPath>$(CrossGenRootPath)$(MSBuildProjectName)\</CrossGenOutputPath>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <RidSpecificAssets Condition="'$(RuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(PackageTargetFramework)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NETCoreAppFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Add required legal files to packages -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
+  </PropertyGroup>
+
+  <Import Project="$(RIDPropsFile)" />
+
+  <ItemGroup>
+    <_buildingOnRID Include="$(PackageRID)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">
+      <Platform>$(Platform)</Platform>
+    </_buildingOnRID>
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="@(_buildingOnRID)"/>
+    <!-- Include Unofficial Build RIDs in runtime.json's but do not include in the platform manifest -->
+    <BuildRID Include="@(UnofficialBuildRID)" Exclude="@(_buildingOnRID)">
+      <ExcludeFromPlatformManifest>true</ExcludeFromPlatformManifest>
+    </BuildRID>
+    <BuildRID Include="@(_buildingOnRID)"/>
+
+    <RestoreBuildRID Include="@(BuildRID)" Exclude="@(UnofficialBuildRID)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      By default, lineup and runtime packages are built by the same project. Allow overriding so
+      a project can depend on another to produce runtime packages with a different base ID.
+    -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildProjectFullPath)</RuntimeProjectFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">x64</Platform>
+      <BuildRID>%(Identity)</BuildRID>
+      <PackageTargetRuntime>%(BuildRID)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(BuildRID);RuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <RuntimeProject Include="@(_project->'$(RuntimeProjectFile)')" />
+
+    <!--
+      Pack projects need package IDs like "Microsoft.NETCore.App.Host.Runtime.<rid>". The package
+      tooling statically uses the MSBuild project name as the package ID, allowing for a prefix, but
+      not a suffix. Set BaseId as a non-overridable global to force the desired ID in a way that the
+      rest of the packaging tooling automatically respects.
+
+      Force IdPrefix to '' to allow using the well-supported PackageTargetRuntime without adding the
+      undesired 'runtime.<rid>.' prefix to the package ID.
+    -->
+    <RidSpecificPackProject
+      Include="@(_project->'$(RuntimeProjectFile)')"
+      BaseId="$(MSBuildProjectName).%(BuildRID)"
+      AdditionalProperties="%(AdditionalProperties);BaseId=%(BaseId);IdPrefix=" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- During NuGet restore, grab assets for all applicable RIDs. -->
+    <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
+    <!-- When resolving assets to pack, use the target runtime (if any). -->
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+  </PropertyGroup>
+
+</Project>

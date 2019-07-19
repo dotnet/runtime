@@ -1,0 +1,129 @@
+<Project>
+
+  <!--
+    This file defines the list of projects to build and divides them into subsets. In ordinary
+    situations, you should perform a full build by running 'build.cmd' or './build.sh'. This ensures
+    the projects are sequenced correctly so the outputs and test results are what you would expect.
+
+    If you know you only want to run a subset of the build, however, use the Subset property.
+
+    Syntax:
+
+      (build.cmd/sh) /p:Subset=<desired subset name 1>(-<desired subset name N>)*
+
+      - For a description of each subset, use '/p:Subset=help'.
+      - Subset names are case insensitive.
+      - 'Subset' is case insensitive. (That is, '/p:subset' works.)
+      - Order doesn't affect the result.
+
+    Examples:
+
+      ./build.sh /p:Subset=CoreHost
+
+        This builds only the .NET Core Host.
+
+      ./build.sh /p:Subset=CoreHost-Managed
+
+        This builds the CoreHost and also the Managed (e.g. Microsoft.Extensions.DependencyModel)
+        projects. A '-' is the delimiter between multiple subsets to build.
+
+      ./build.sh -test /p:Subset=Test
+
+        This builds and executes the test projects. (The '-test' argument is an Arcade SDK argument
+        that indicates tests should be run. Otherwise, they'll only be built.)
+
+    Quirks:
+
+      This command looks useful, but doesn't work as expected:
+      
+        ./build.sh -test /p:Subset=CoreHost-Test    # (Doesn't work!)
+
+      Intuitively, this should build the host, build the tests, then run the tests on the freshly
+      built host. What actually happens is the tests run on a previously built host. This is because
+      the depproj, pkgproj, and installer subsets process the host artifacts, and those didn't
+      rebuild because those subsets were disabled.
+
+      You can get around this limitation by running the corehost subset, manually copying host
+      artifacts to the test layout, then running the test subset.
+  -->
+
+  <PropertyGroup>
+    <SubsetToLower>$(Subset.ToLowerInvariant())</SubsetToLower>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="CoreHost"
+      Description="The .NET Core Host projects. This includes all the native code in Core-Setup." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('corehost'))">
+    <CorehostProjectToBuild Include="$(RepoRoot)src\corehost\build.proj" SignPhase="Binaries" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="Managed"
+      Description="The managed .NET projects. This includes PlatformAbstractions, DependencyModel, and HostModel." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('managed'))">
+    <ManagedProjectToBuild Include="$(RepoRoot)src\managed\**\*.csproj" SignPhase="Binaries" />
+    <ManagedProjectToBuild Include="$(RepoRoot)src\pkg\packaging\pack-managed.proj" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="depproj"
+      Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('depproj'))">
+    <DepprojProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.depproj" SignPhase="Binaries" />
+    <ProjectToBuild Include="@(DepprojProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="pkgproj"
+      Description="The packaging projects. These produce NETCoreApp and WindowsDesktop assets: NuGet packages, installers, zips, and Linux packages." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('pkgproj'))">
+    <PkgprojProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="Installer"
+      Description="Generates additional installers. This produces the shared frameworks and their installers." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('installer'))">
+    <InstallerProjectToBuild Include="$(RepoRoot)src\pkg\packaging\installers.proj" />
+    <ProjectToBuild Include="@(InstallerProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="Test"
+      Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('test'))">
+    <TestProjectToBuild Include="$(RepoRoot)src\test\BundleTests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(RepoRoot)src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(RepoRoot)src\test\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <TestProjectToBuild Include="$(RepoRoot)src\test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
+    <TestProjectToBuild Include="$(RepoRoot)src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
+    <ProjectToBuild Include="@(TestProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
+      Include="RegenerateReadmeTable"
+      Description="Regenerates the table of asset links in the README.md file."
+      OnDemand="true"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(SubsetToLower.Contains('regeneratereadmetable'))">
+    <ProjectToBuild Include="$(RepoRoot)tools-local\regenerate-readme-table.proj" />
+  </ItemGroup>
+
+</Project>

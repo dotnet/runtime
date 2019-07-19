@@ -1,154 +1,174 @@
 parameters:
-  DependsOn: {}
-  _PublishType: {}
+  DependsOn: []
+  PublishRidAgnosticPackagesFromJobName: ''
 jobs:
-  - job: Finalize_Publish
-    displayName: Finalize_Publish
-    # Run after all dependent legs are executed
-    dependsOn: ${{ parameters.DependsOn }}
-    pool:
-      # Use a hosted pool when possible.
-      ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        name: Hosted VS2017
-      ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: NetCoreInternal-Int-Pool
-        queue: buildpool.windows.10.amd64.vs2017
-    # Double the default timeout. Publishing is subject to huge delays due to contention on the dotnet-core blob feed
-    timeoutInMinutes: 120
-    workspace:
-      clean: all
-    variables:
-      _PublishType: ${{ parameters._PublishType}}
 
-      # Disable MSBuild node reuse in case this build is running on a persistent agent.
-      # Use environment variable rather than /nr:false to make sure internal Execs that run MSBuild
-      # commands also disable node reuse.
-      MSBUILDDISABLENODEREUSE: 1
-    steps:
-
-    # Initialize tooling
-    - script: build.cmd
-        -- /t:BuildTraversalBuildDependencies
-      displayName: Initialize tooling
-      condition: succeeded()
-
-    - task: MicroBuildSigningPlugin@2
-      displayName: Install MicroBuild plugin for Signing
-      inputs:
-        signType: $(SignType)
-        zipSources: false
-        feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-      continueOnError: false
-      condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
-
-    - task: MSBuild@1
-      displayName: Publish (no PublishType)
-      inputs: 
-        solution: $(Build.SourcesDirectory)\publish\publish.proj
-        platform: x64
-        configuration: Release
-        msbuildVersion: 15.0
-        msbuildArchitecture: x64
-        msbuildArguments: '/p:Finalize=true 
-        /p:OfficialPublish=true 
-        /p:PublishType=nopublishtype 
-        /p:SignType=$(SignType) 
-        /p:StabilizePackageVersion=$(IsStable) 
-        /p:TargetArchitecture=x64
-        $(_BlobFeedArgs) 
-        $(_CommonPublishArgs) 
-        $(_NugetFeedArgs) 
-        $(_SymbolServerArgs) 
-        /bl:$(Build.SourcesDirectory)\finalizepublish.binlog
-        /nr:false'
-      condition: and(succeeded(), eq(variables._PublishType, 'nopublishtype'))
-
-    - task: CopyFiles@2
-      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: |
-          *.log
-          *.binlog
-        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: CopyFiles@2
-      displayName: Copy Manifest file
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/artifacts/log/AssetManifest'
-        TargetFolder: '$(Build.StagingDirectory)/AssetManifests'
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact BuildLogs
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-        ArtifactName: Finalize_Publish
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Push Asset Manifests
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)/AssetManifests'
-        PublishLocation: Container
-        ArtifactName: AssetManifests
-      continueOnError: true
-      condition: succeededOrFailed()
-
-  - job: Finalize_Publish_Versions
-    displayName: Finalize_Publish_Versions
-    dependsOn: 
-    - Finalize_Publish
-    pool:
+- job: Finalize_Publish
+  displayName: Finalize_Publish
+  # Run after all dependent legs are executed
+  dependsOn: ${{ parameters.DependsOn }}
+  pool:
+    # Use a hosted pool when possible.
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
       name: Hosted VS2017
-    steps:
-    # Initialize tooling
-    - script: build.cmd -- /t:BuildTraversalBuildDependencies
-      displayName: Initialize tooling
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      name: NetCoreInternal-Int-Pool
+      queue: buildpool.windows.10.amd64.vs2017
+  # Double the default timeout. Publishing is subject to huge delays due to contention on the dotnet-core blob feed
+  timeoutInMinutes: 120
+  workspace:
+    clean: all
+  variables:
+  # Only get the secret variable groups if the def has the official name. Reduce dev build def risk.
+  - ${{ if eq(variables['Build.DefinitionName'], 'dotnet-core-setup') }}:
+    # Variable groups containing official build publish info.
+    - group: DotNet-Blob-Feed
+    - group: DotNet-Symbol-Server-Pats
+    # Used for publishing individual leg assets to azure blob storage
+    - group: DotNet-DotNetCli-Storage
+    # Used for dotnet/versions update
+    - group: DotNet-Versions-Publish
 
-    - powershell: |
-        $prefix = "refs/heads/"
-        $branch = "$(Build.SourceBranch)"
-        $branchName = $branch
-        if ($branchName.StartsWith($prefix))
-        {
-          $branchName = $branchName.Substring($prefix.Length)
-        }
-        Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
-        Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
-      displayName: Find true SourceBranchName
+    # Blob storage publish (installers and checksums)
+  - name: _AzureAccountName
+    value: $[ coalesce(variables.AzureAccountName, 'dotnetcli') ]
+  - name: _ContainerName
+    value: $[ coalesce(variables.ContainerName, 'dotnet') ]
+  - name: _AzureAccessToken
+    value: $[ coalesce(variables.AzureAccessToken, '$(dotnetcli-storage-key)') ]
+  - name: _ChecksumAzureAccountName
+    value: $[ coalesce(variables.ChecksumAzureAccountName, 'dotnetclichecksums') ]
+  - name: _ChecksumContainerName
+    value: $[ coalesce(variables.ChecksumContainerName, 'dotnet') ]
+  - name: _ChecksumAzureAccessToken
+    value: $[ coalesce(variables.ChecksumAzureAccessToken, '$(dotnetclichecksums-storage-key)') ]
+  - name: _CommonPublishArgs
+    value: >-
+      /p:AzureAccountName=$(_AzureAccountName)
+      /p:ContainerName=$(_ContainerName)
+      /p:AzureAccessToken=$(_AzureAccessToken)
+      /p:ChecksumAzureAccountName=$(_ChecksumAzureAccountName)
+      /p:ChecksumContainerName=$(_ChecksumContainerName)
+      /p:ChecksumAzureAccessToken=$(_ChecksumAzureAccessToken)
 
-    - task: MSBuild@1
-      displayName: Publish (versions)
-      inputs: 
-        solution: $(Build.SourcesDirectory)\publish\publish-type.proj
-        platform: x64
-        configuration: Release
-        msbuildVersion: 15.0
-        msbuildArchitecture: x64
-        msbuildArguments: >-
-          /p:PublishType=versions
-          $(_DotNetVersionsArgs)
-          $(_CommonPublishArgs)
-          /bl:$(Build.SourcesDirectory)\publishversions.binlog
+  # Blob feed publish
+  - name: _PublishBlobFeedUrl
+    value: $[ coalesce(variables.PublishBlobFeedUrl, 'https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json') ]
+  - name: _TransportFeedAccessToken
+    value: $[ coalesce(variables.TransportFeedAccessToken, '$(dotnetfeed-storage-access-key-1)') ]
+  - name: _BlobFeedArgs
+    value: >-
+      /p:PackagesUrl=$(_PublishBlobFeedUrl)
+      /p:SymbolPackagesUrl=$(_PublishBlobFeedUrl)
+      /p:TransportFeedAccessToken=$(_TransportFeedAccessToken)
 
-    - task: CopyFiles@2
-      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: |
-          *.log
-          *.binlog
-        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-      continueOnError: true
-      condition: succeededOrFailed()
+  # Symbol Server update
+  - name: _MicrosoftSymbolServerPat
+    value: $[ coalesce(variables.MicrosoftSymbolServerPat, '$(microsoft-symbol-server-pat)') ]
+  - name: _SymwebSymbolServerPat
+    value: $[ coalesce(variables.SymwebSymbolServerPat, '$(symweb-symbol-server-pat)') ]
+  - name: _SymbolServerArgs
+    value: >-
+      /p:MicrosoftSymbolServerPat=$(_MicrosoftSymbolServerPat)
+      /p:SymwebSymbolServerPat=$(_SymwebSymbolServerPat)
 
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact BuildLogs
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-        ArtifactName: Finalize_Publish_Versions
-      condition: succeededOrFailed()
+  # dotnet/versions update
+  - name: _GitHubUser
+    value: $[ coalesce(variables.GitHubUser, 'dotnet-build-bot') ]
+  - name: _GitHubEmail
+    value: $[ coalesce(variables.GitHubEmail, 'dotnet-build-bot@microsoft.com') ]
+  - name: _GitHubAuthToken
+    value: $[ coalesce(variables.GitHubAuthToken, '$(AccessToken-dotnet-build-bot-public-repo)') ]
+  - name: _VersionsRepoOwner
+    value: $[ coalesce(variables.VersionsRepoOwner, 'dotnet') ]
+  - name: _VersionsRepo
+    value: $[ coalesce(variables.VersionsRepo, 'versions') ]
+  - name: _DotNetVersionsArgs
+    value: >-
+      /p:GitHubUser=$(_GitHubUser)
+      /p:GitHubEmail=$(_GitHubEmail)
+      /p:GitHubAuthToken=$(_GitHubAuthToken)
+      /p:VersionsRepoOwner=$(_VersionsRepoOwner)
+      /p:VersionsRepo=$(_VersionsRepo)
+      /p:VersionsRepoPath=build-info/dotnet/core-setup/$(FullBranchName)
+
+  steps:
+
+  - task: MicroBuildSigningPlugin@2
+    displayName: Install MicroBuild plugin for Signing
+    inputs:
+      signType: $(SignType)
+      zipSources: false
+      feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+    continueOnError: false
+    condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+  - task: DownloadBuildArtifacts@0
+    displayName: Download Artifacts
+    inputs:
+      artifactName: Artifacts
+      downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
+
+  - powershell: |
+      $prefix = "refs/heads/"
+      $branch = "$(Build.SourceBranch)"
+      $branchName = $branch
+      if ($branchName.StartsWith($prefix))
+      {
+        $branchName = $branchName.Substring($prefix.Length)
+      }
+      Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+      Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+    displayName: Find true SourceBranchName
+
+  - script: >-
+      build.cmd -ci
+      -projects $(Build.SourcesDirectory)\publish\publish.proj
+      -warnAsError 0
+      /p:Configuration=Release
+      /p:Finalize=true
+      /p:PublishRidAgnosticPackagesFromJobName=${{ parameters.PublishRidAgnosticPackagesFromJobName }}
+      /p:SignType=$(SignType)
+      /p:DotNetSignType=$(SignType)
+      /p:TargetArchitecture=x64
+      $(_BlobFeedArgs)
+      $(_CommonPublishArgs)
+      $(_SymbolServerArgs)
+      $(_DotNetVersionsArgs)
+      /bl:$(Build.SourcesDirectory)\finalizepublish.binlog
+    displayName: Publish
+
+  - task: CopyFiles@2
+    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+        **/*.log
+        **/*.binlog
+      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+    continueOnError: true
+    condition: succeededOrFailed()
+
+  - task: CopyFiles@2
+    displayName: Copy Manifest file
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/artifacts/log/AssetManifest'
+      TargetFolder: '$(Build.StagingDirectory)/AssetManifests'
+    continueOnError: true
+    condition: succeededOrFailed()
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact BuildLogs
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+      ArtifactName: Logs-Finalize_Publish
+    condition: succeededOrFailed()
+
+  - task: PublishBuildArtifacts@1
+    displayName: Push Asset Manifests
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)/AssetManifests'
+      PublishLocation: Container
+      ArtifactName: AssetManifests
+    continueOnError: true
+    condition: succeededOrFailed()

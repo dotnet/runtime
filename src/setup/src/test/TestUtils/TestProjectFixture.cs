@@ -36,9 +36,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
-            Framework = framework ?? Environment.GetEnvironmentVariable("MNA_TFM");
-
             RepoDirProvider = repoDirectoriesProvider;
+
+            Framework = framework ?? RepoDirProvider.GetTestContextVariable("MNA_TFM");
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
@@ -79,28 +79,35 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            EnsureDirectoryBuildProps(TestArtifact.TestArtifactsPath);
+            EnsureDirectoryBuildFiles(TestArtifact.TestArtifactsPath);
             return sourceTestProject.Copy();
         }
 
-        private void EnsureDirectoryBuildProps(string testArtifactDirectory)
+        private void EnsureDirectoryBuildFiles(string testArtifactDirectory)
         {
-            string directoryBuildPropsPath = Path.Combine(testArtifactDirectory, "Directory.Build.props");
             Directory.CreateDirectory(testArtifactDirectory);
 
-            for(int i = 0; i < 3 && !File.Exists(directoryBuildPropsPath); i++)
+            // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
+            // the repo's root Directory.Build.*.
+            EnsureTestProjectsFileContent(testArtifactDirectory, "props");
+            EnsureTestProjectsFileContent(testArtifactDirectory, "targets");
+        }
+
+        private void EnsureTestProjectsFileContent(string dir, string type) => EnsureFileWithContent(
+            Path.Combine(dir, $"Directory.Build.{type}"),
+            string.Join(
+                Environment.NewLine,
+                "<Project>",
+                $"  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.{type}))\\TestProjects.{type}\" />",
+                "</Project>"));
+
+        private void EnsureFileWithContent(string path, string content)
+        {
+            for(int i = 0; i < 3 && !File.Exists(path); i++)
             {
                 try
                 {
-                    StringBuilder propsFile = new StringBuilder();
-
-                    propsFile.AppendLine("<Project>");
-                    propsFile.AppendLine("  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.props))\\TestProjects.props\" />");
-                    propsFile.AppendLine("</Project>");
-
-                    // write an empty Directory.Build.props to ensure that msbuild doesn't pick up
-                    // the repo's root Directory.Build.props.
-                    File.WriteAllText(directoryBuildPropsPath, propsFile.ToString());
+                    File.WriteAllText(path, content);
                 }
                 catch (IOException)
                 {}
@@ -134,7 +141,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var buildArgs = new List<string>
             {
-                "--no-restore"
+                "--no-restore",
+                "/bl:BuildProject.binlog"
             };
 
             if (runtime != null)
@@ -149,6 +157,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 buildArgs.Add(framework);
             }
 
+            buildArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
@@ -253,7 +262,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var publishArgs = new List<string>
             {
-                "--no-restore"
+                "--no-restore",
+                "/bl:PublishProject.binlog"
             };
 
             if (runtime != null)
@@ -281,6 +291,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add(outputDirectory);
             }
 
+            publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             dotnet.Publish(publishArgs.ToArray())

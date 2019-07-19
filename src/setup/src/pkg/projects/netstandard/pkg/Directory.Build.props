@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <IsFrameworkPackage>true</IsFrameworkPackage>
+    <ShortFrameworkName>netstandard</ShortFrameworkName>
+    <ProductBrandPrefix>Microsoft .NET Standard</ProductBrandPrefix>
+
+    <ProductBandVersion>2.1</ProductBandVersion>
+    <ProductionVersion>$(ProductBandVersion).0</ProductionVersion>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <FrameworkListName>.NET Standard 2.1</FrameworkListName>
+    <FrameworkListTargetFrameworkIdentifier>.NETStandard</FrameworkListTargetFrameworkIdentifier>
+    <FrameworkListTargetFrameworkVersion>2.1</FrameworkListTargetFrameworkVersion>
+    <FrameworkListFrameworkName>NETStandard.Library</FrameworkListFrameworkName>
+  </PropertyGroup>
+
+  <!-- Redistribute package content from other nuget packages. -->
+  <ItemGroup>
+    <ProjectReference Include="..\src\netstandard.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">RuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
