@@ -84,7 +84,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async void WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
@@ -97,7 +97,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async void WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
             using (CharArrayTextWriter ctw = NewTextWriter)
             {

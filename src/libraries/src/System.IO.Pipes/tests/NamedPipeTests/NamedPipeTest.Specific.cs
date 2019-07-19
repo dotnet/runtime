@@ -606,7 +606,7 @@ namespace System.IO.Pipes.Tests
 
         [Theory]
         [MemberData(nameof(GetCancellationTokens))]
-        public async void ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
+        public async Task ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
         {
             string pipeName = GetUniquePipeName();
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
@@ -642,7 +642,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [MemberData(nameof(GetCancellationTokens))]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix ignores MaxNumberOfServerInstances and second client also connects.
-        public async void ClientConnectAsync_With_Cancellation_Throws_Timeout_When_Pipe_Busy(CancellationToken cancellationToken)
+        public async Task ClientConnectAsync_With_Cancellation_Throws_Timeout_When_Pipe_Busy(CancellationToken cancellationToken)
         {
             string pipeName = GetUniquePipeName();
 
