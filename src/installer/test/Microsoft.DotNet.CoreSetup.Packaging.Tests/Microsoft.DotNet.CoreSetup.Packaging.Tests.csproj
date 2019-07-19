@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>

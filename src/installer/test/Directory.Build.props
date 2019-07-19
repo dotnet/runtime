@@ -6,6 +6,7 @@
     <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
     <TestRestorePackagesPath>$(ObjDir)TestPackageCache\</TestRestorePackagesPath>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
+    <TestInfraTargetFramework>netcoreapp3.0</TestInfraTargetFramework>
   </PropertyGroup>
 
 </Project>

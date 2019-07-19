@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Microsoft.NET.HostModel.Bundle Tests</Description>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>Microsoft.NET.HostModel.Bundle.Tests</AssemblyName>
     <PackageId>Microsoft.NET.HostModel.Bundle.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
