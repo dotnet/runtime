@@ -17,13 +17,9 @@ namespace bundle
     class manifest_t
     {
     public:
-        manifest_t()
-            :files()
-        {}
+        std::vector<file_entry_t> files;
 
-        std::list<file_entry_t*> files;
-
-        static manifest_t* read(FILE* host, int32_t num_files);
+        static manifest_t read(FILE* host, int32_t num_files);
     };
 }
 #endif // __MANIFEST_H__

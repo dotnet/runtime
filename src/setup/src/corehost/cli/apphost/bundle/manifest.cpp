@@ -10,19 +10,13 @@
 
 using namespace bundle;
 
-manifest_t* manifest_t::read(FILE* stream, int32_t num_files)
+manifest_t manifest_t::read(FILE* stream, int32_t num_files)
 {
-    manifest_t* manifest = new manifest_t();
+    manifest_t manifest;
 
     for (int32_t i = 0; i < num_files; i++)
     {
-        file_entry_t* entry = file_entry_t::read(stream);
-        if (entry == nullptr)
-        {
-            return nullptr;
-        }
-
-        manifest->files.push_back(entry);
+        manifest.files.emplace_back(file_entry_t::read(stream));
     }
 
     return manifest;

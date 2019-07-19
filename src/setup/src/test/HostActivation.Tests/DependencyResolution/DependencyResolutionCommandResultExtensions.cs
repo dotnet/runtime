@@ -12,12 +12,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public static class DependencyResolutionCommandResultExtensions
     {
+        // App asset resolution extensions
         public const string TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
         public const string NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
 
         public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
-            string propertyValue = GetMockPropertyValue(assertion, propertyName);
+            string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
 
             foreach (string value in values)
             {
@@ -30,7 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         public static AndConstraint<CommandResultAssertions> NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
-            string propertyValue = GetMockPropertyValue(assertion, propertyName);
+            string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
 
             foreach (string value in values)
             {
@@ -61,9 +62,88 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        private static string GetMockPropertyValue(CommandResultAssertions assertion, string propertyName)
+        // Component asset resolution extensions
+        private const string assemblies = "assemblies";
+        private const string native_search_paths = "native_search_paths";
+
+        public static AndConstraint<CommandResultAssertions> HaveSuccessfullyResolvedComponentDependencies(this CommandResultAssertions assertion)
         {
-            string propertyHeader = $"mock property[{propertyName}] = ";
+            return assertion.HaveStdOutContaining("corehost_resolve_component_dependencies:Success");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyContaining(
+            this CommandResultAssertions assertion,
+            string propertyName,
+            params string[] values)
+        {
+            string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
+
+            foreach (string value in values)
+            {
+                Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
+                    .FailWith("The resolved {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            }
+
+            return new AndConstraint<CommandResultAssertions>(assertion);
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyContaining(
+            this CommandResultAssertions assertion,
+            string propertyName,
+            params string[] values)
+        {
+            string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
+
+            foreach (string value in values)
+            {
+                Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
+                    .FailWith("The resolved {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            }
+
+            return new AndConstraint<CommandResultAssertions>(assertion);
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyAssembly(
+            this CommandResultAssertions assertion,
+            string assemblyPath,
+            TestApp app = null)
+        {
+            return assertion.HaveResolvedComponentDependencyContaining(assemblies, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyAssembly(
+            this CommandResultAssertions assertion,
+            string assemblyPath,
+            TestApp app = null)
+        {
+            return assertion.NotHaveResolvedComponentDependencyContaining(assemblies, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyNativeLibraryPath(
+            this CommandResultAssertions assertion,
+            string path,
+            TestApp app = null)
+        {
+            return assertion.HaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyNativeLibraryPath(
+            this CommandResultAssertions assertion,
+            string path,
+            TestApp app = null)
+        {
+            return assertion.NotHaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
+        }
+
+
+        private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
+            GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");
+
+        private static string GetComponentMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
+            GetMockPropertyValue(assertion, $"corehost_resolve_component_dependencies {propertyName}:");
+
+        private static string GetMockPropertyValue(CommandResultAssertions assertion, string propertyHeader)
+        {
             string stdout = assertion.Result.StdOut;
             int i = stdout.IndexOf(propertyHeader);
             if (i >= 0)
@@ -81,6 +161,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         private static string[] RelativePathsToAbsoluteAppPaths(string relativePaths, TestApp app)
         {
+            if (string.IsNullOrEmpty(relativePaths))
+            {
+                return Array.Empty<string>();
+            }
+
             List<string> paths = new List<string>();
             foreach (string relativePath in relativePaths.Split(';'))
             {
