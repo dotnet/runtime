@@ -592,12 +592,11 @@ namespace BINDER_SPACE
 #endif // FEATURE_VERSIONING_LOG
 
 
-                hr = BindByName(pApplicationContext,
+                IF_FAIL_GO(BindByName(pApplicationContext,
                                       pAssemblyName,
                                       BIND_CACHE_FAILURES,
                                       excludeAppPaths,
-                                      &bindResult);
-                IF_FAIL_GO(hr);
+                                      &bindResult));
             }
             else
             {
@@ -615,7 +614,7 @@ namespace BINDER_SPACE
                 BOOL fDoNgenExplicitBind = fNgenExplicitBind;
                 
                 // Only use explicit ngen binding in the new coreclr path-based binding model
-                if(!pApplicationContext->IsTpaListProvided())
+                if (!pApplicationContext->IsTpaListProvided())
                 {
                     fDoNgenExplicitBind = FALSE;
                 }
@@ -708,10 +707,10 @@ namespace BINDER_SPACE
         fExplicitBindToNativeImage = FALSE;
 #endif // FEATURE_NI_BIND_FALLBACK
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
-                                                   FALSE /* fInspectionOnly */,
-                                                   TRUE /* fIsInGAC */,
-                                                   fExplicitBindToNativeImage,
-                                                   &pSystemAssembly));
+                                               FALSE /* fInspectionOnly */,
+                                               TRUE /* fIsInGAC */,
+                                               fExplicitBindToNativeImage,
+                                               &pSystemAssembly));
         
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -948,7 +947,7 @@ namespace BINDER_SPACE
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
         }
 
-       IF_FAIL_GO(BindLocked(pApplicationContext,
+        IF_FAIL_GO(BindLocked(pApplicationContext,
                               pAssemblyName,
                               dwBindFlags,
                               excludeAppPaths,
@@ -976,6 +975,7 @@ namespace BINDER_SPACE
                     goto LogExit;
                 }
             }
+
             hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
         }
     LogExit:
@@ -1089,7 +1089,7 @@ namespace BINDER_SPACE
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
             else
             {
-                // Can't give higher serciving than already bound
+                // Can't give higher version than already bound
                 IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext));
             }
             
@@ -1109,7 +1109,7 @@ namespace BINDER_SPACE
                 hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
                 if (FAILED(hr))
                 {
-                    pBindResult->SetNoResult();                    
+                    pBindResult->SetNoResult();
                 }
             }
         }
@@ -1287,7 +1287,7 @@ namespace BINDER_SPACE
     }
     
     /*
-     * BindByTpaList is the entry-point for the custom binding algorithm on the Phone.
+     * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
      * Platform assemblies are specified as a list of files.  This list is the only set of
      * assemblies that we will load as platform.  They can be specified as IL or NIs.
      *
@@ -1321,10 +1321,10 @@ namespace BINDER_SPACE
             //
             
             hr = BindSatelliteResourceByResourceRoots(pApplicationContext, 
-                                                            pApplicationContext->GetPlatformResourceRoots(), 
-                                                            pRequestedAssemblyName, 
-                                                            fInspectionOnly, 
-                                                            pBindResult);
+                                                      pApplicationContext->GetPlatformResourceRoots(), 
+                                                      pRequestedAssemblyName, 
+                                                      fInspectionOnly, 
+                                                      pBindResult);
             
             // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
             // back to application resource lookup to handle case where a user creates resources with the same
@@ -1356,13 +1356,11 @@ namespace BINDER_SPACE
                 {
                     SString fileName(pTpaEntry->m_wszNIFileName);
 
-                    // A GetAssembly overload perhaps, or just another parameter to the existing method
                     hr = GetAssembly(fileName,
-                                        fInspectionOnly,
-                                        TRUE, /* fIsInGAC */
-                                        TRUE /* fExplicitBindToNativeImage */,
-                                        &pTPAAssembly
-                                        );
+                                     fInspectionOnly,
+                                     TRUE,  // fIsInGAC
+                                     TRUE,  // fExplicitBindToNativeImage
+                                     &pTPAAssembly);
                 }
                 else
                 {
@@ -1370,10 +1368,10 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszILFileName);
                     
                     hr = GetAssembly(fileName,
-                                        fInspectionOnly,
-                                        TRUE, /* fIsInGAC */
-                                        FALSE /* fExplicitBindToNativeImage */,
-                                        &pTPAAssembly);
+                                     fInspectionOnly,
+                                     TRUE,  // fIsInGAC
+                                     FALSE, // fExplicitBindToNativeImage
+                                     &pTPAAssembly);
                 }
 
                 // On file not found, simply fall back to app path probing
@@ -1390,7 +1388,7 @@ namespace BINDER_SPACE
                     }
                     else
                     {
-                        // We found the assembly on TPA but it didnt match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
+                        // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
                         fPartialMatchOnTpa = true;
                     }
@@ -1425,23 +1423,19 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".ni.dll"));
                                 hr = GetAssembly(fileName,
-                                    fInspectionOnly,
-                                    FALSE, /* fIsInGAC */
-                                    TRUE /* fExplicitBindToNativeImage */,
-                                    &pAssembly);
+                                                 fInspectionOnly,
+                                                 FALSE, // fIsInGAC
+                                                 TRUE,  // fExplicitBindToNativeImage
+                                                 &pAssembly);
                             }
                             else
                             {
-                                if (FAILED(hr))
-                                {
-                                    fileName.Append(W(".dll"));
-
-                                    hr = GetAssembly(fileName,
-                                        fInspectionOnly,
-                                        FALSE, /* fIsInGAC */
-                                        FALSE /* fExplicitBindToNativeImage */,
-                                        &pAssembly);
-                                }
+                                fileName.Append(W(".dll"));
+                                hr = GetAssembly(fileName,
+                                                 fInspectionOnly,
+                                                 FALSE, // fIsInGAC
+                                                 FALSE, // fExplicitBindToNativeImage
+                                                 &pAssembly);
                             }
                         }
 
@@ -1454,23 +1448,19 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".ni.exe"));
                                 hr = GetAssembly(fileName,
-                                    fInspectionOnly,
-                                    FALSE, /* fIsInGAC */
-                                    TRUE /* fExplicitBindToNativeImage */,
-                                    &pAssembly);
+                                                 fInspectionOnly,
+                                                 FALSE, // fIsInGAC
+                                                 TRUE,  // fExplicitBindToNativeImage
+                                                 &pAssembly);
                             }
                             else
                             {
-                                if (FAILED(hr))
-                                {
-                                    fileName.Append(W(".exe"));
-
-                                    hr = GetAssembly(fileName,
-                                        fInspectionOnly,
-                                        FALSE, /* fIsInGAC */
-                                        FALSE /* fExplicitBindToNativeImage */,
-                                        &pAssembly);
-                                }
+                                fileName.Append(W(".exe"));
+                                hr = GetAssembly(fileName,
+                                                 fInspectionOnly,
+                                                 FALSE, // fIsInGAC
+                                                 FALSE, // fExplicitBindToNativeImage
+                                                 &pAssembly);
                             }
                         }
 
@@ -1511,7 +1501,7 @@ namespace BINDER_SPACE
                             }
                             else
                             {
-                                // We didnt see this assembly on TPA - so simply bind to the app instance.
+                                // We didn't see this assembly on TPA - so simply bind to the app instance.
                                 pBindResult->SetResult(pAssembly);
                                 GO_WITH_HRESULT(S_OK);
                             }
@@ -1613,7 +1603,7 @@ namespace BINDER_SPACE
             }
 
             BINDER_LOG_ENTER(W("BinderAcquireImport"));
-            if(pNativePEImage)
+            if (pNativePEImage)
                 hr = BinderAcquireImport(pNativePEImage, &pIMetaDataAssemblyImport, dwPAFlags, TRUE);
             else
                 hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
@@ -1650,7 +1640,7 @@ namespace BINDER_SPACE
             IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));
         }
 
-       // Initialize assembly object
+        // Initialize assembly object
         IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
                                    PeKind,
                                    pPEImage,
@@ -1819,8 +1809,8 @@ namespace BINDER_SPACE
 #endif //CROSSGEN_COMPILE
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
-                                                       /* in */ AssemblyName       *pAssemblyName,
+HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
+                                                      /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ IAssemblyName      *pIAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)

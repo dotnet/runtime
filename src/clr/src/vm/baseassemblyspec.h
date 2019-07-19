@@ -111,7 +111,6 @@ public:
     BOOL HasPublicKey() const;
     BOOL HasPublicKeyToken() const;
     BOOL IsMscorlibSatellite();
-    BOOL IsMscorlibDebugSatellite();
     BOOL IsMscorlib();
 
     //
