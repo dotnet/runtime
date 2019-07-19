@@ -46,11 +46,36 @@ g_get_current_time (GTimeVal *result)
 void
 g_usleep (gulong microseconds)
 {
-	struct timespec req, rem;
+#ifdef HAVE_CLOCK_NANOSLEEP
+	struct timespec target;
+
+	/*
+	 * Use clock_nanosleep () with absolute time to prevent time drifting problems
+	 * when nanosleep () is interrupted by signals.
+	 */
+	int ret = clock_gettime (CLOCK_MONOTONIC, &target);
+	g_assert (ret == 0);
+
+	target.tv_sec += microseconds / 1000000;
+	target.tv_nsec += (microseconds % 1000000) * 1000;
+	if (target.tv_nsec >= 1000000000) {
+		target.tv_nsec -= 1000000000;
+		target.tv_sec ++;
+	}
+
+	do {
+		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+		if (ret != 0 && ret != EINTR)
+			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
+	} while (ret == EINTR);
+
+#else
+	struct timespec rem, req;
 
 	req.tv_sec = microseconds / 1000000;
 	req.tv_nsec = (microseconds % 1000000) * 1000;
-	
+
 	while (nanosleep (&req, &rem) == -1 && errno == EINTR)
 		req = rem;
+#endif
 }
