@@ -510,23 +510,11 @@ void InitGSCookie()
 
     GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef FEATURE_PAL
-    // On Unix, the GS cookie is stored in a read only data segment
-    DWORD newProtection = PAGE_READWRITE;
-#else // FEATURE_PAL
-    DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !FEATURE_PAL
-
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
+    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_EXECUTE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
-
-#ifdef FEATURE_PAL
-    // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
-    oldProtection = PAGE_READONLY;
-#endif // FEATURE_PAL
 
 #ifndef FEATURE_PAL
     // The GSCookie cannot be in a writeable page
