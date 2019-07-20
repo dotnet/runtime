@@ -2194,6 +2194,69 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public async Task PostAsyncDuplex_RequestContentExceptionAfterResponseEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnResponseStreamRead()
+        {
+            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            {
+                Http2LoopbackConnection connection;
+                using (HttpClient client = CreateHttpClient())
+                {
+                    var duplexContent = new DuplexContent();
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, server.Address);
+                    request.Version = new Version(2, 0);
+                    request.Content = duplexContent;
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                    connection = await server.EstablishConnectionAsync();
+
+                    // Client should have sent the request headers, and the request stream should now be available
+                    Stream requestStream = await duplexContent.WaitForStreamAsync();
+
+                    // Flush the content stream. Otherwise, the request headers are not guaranteed to be sent.
+                    await requestStream.FlushAsync();
+
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                    // Send data to the server, even before we've received response headers.
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Send response headers
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    HttpResponseMessage response = await responseTask;
+                    Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                    // Send some data back and forth
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Send data on response stream and complete it, but don't read it on the client yet
+                    await connection.SendResponseDataAsync(streamId, contentBytes, endStream: true);
+
+                    // Pingpong to ensure it's processed by client
+                    await connection.PingPong();
+
+                    // Throw an exception from the request content.
+                    Exception e = new ArithmeticException();
+                    duplexContent.Fail(e);
+
+                    // Client should set RST_STREAM.
+                    await connection.ReadRstStreamAsync(streamId);
+
+                    // Trying to read on the response stream should fail now, and client should ignore any data received
+                    await Assert.ThrowsAsync<IOException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
+                }
+
+                // On handler dispose, client should shutdown the connection without sending additional frames.
+                await connection.WaitForClientDisconnectAsync();
+            }
+        }
+
         [OuterLoop("Uses Task.Delay")]
         [Fact]
         public async Task PostAsyncDuplex_CancelledBeforeResponseHeadersReceived_ResetsStream()
@@ -2313,7 +2376,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamRead()
+        public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
             byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
 
@@ -2371,6 +2434,145 @@ namespace System.Net.Http.Functional.Tests
 
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
+                }
+
+                // On handler dispose, client should shutdown the connection without sending additional frames.
+                await connection.WaitForClientDisconnectAsync();
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [Fact]
+        public async Task PostAsyncDuplex_DisposeResponseBodyAfterEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
+        {
+            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            {
+                Http2LoopbackConnection connection;
+                using (HttpClient client = CreateHttpClient())
+                {
+                    var duplexContent = new DuplexContent();
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, server.Address);
+                    request.Version = new Version(2, 0);
+                    request.Content = duplexContent;
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                    connection = await server.EstablishConnectionAsync();
+
+                    // Client should have sent the request headers, and the request stream should now be available
+                    Stream requestStream = await duplexContent.WaitForStreamAsync();
+
+                    // Flush the content stream. Otherwise, the request headers are not guaranteed to be sent.
+                    await requestStream.FlushAsync();
+
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                    // Send data to the server, even before we've received response headers.
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Send response headers
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    HttpResponseMessage response = await responseTask;
+                    Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                    // Send some data back and forth
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Send data on response stream and completed it, but don't read it on the client yet
+                    await connection.SendResponseDataAsync(streamId, contentBytes, endStream: true);
+
+                    // Pingpong to ensure it's processed by client
+                    await connection.PingPong();
+
+                    // Dispose the response stream.
+                    responseStream.Dispose();
+
+                    // Trying to read on the response stream should fail now, and client should ignore any data received
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
+
+                    // Cancellation on the request body may not propagate immediately. So wait a brief time to try to ensure it propagates.
+                    await Task.Delay(500);
+
+                    // Attempting to write on the request body should now fail with OperationCanceledException.
+                    Exception e = await Assert.ThrowsAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+
+                    // Propagate the exception to the request stream serialization task.
+                    // This allows the request processing to complete.
+                    duplexContent.Fail(e);
+
+                    // Client should set RST_STREAM.
+                    await connection.ReadRstStreamAsync(streamId);
+                }
+
+                // On handler dispose, client should shutdown the connection without sending additional frames.
+                await connection.WaitForClientDisconnectAsync();
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [Fact]
+        public async Task PostAsyncDuplex_FinishRequestBodyAndDisposeResponseBodyAfterEndReceivedButBeforeConsumed_DoesNotResetStream()
+        {
+            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            {
+                Http2LoopbackConnection connection;
+                using (HttpClient client = CreateHttpClient())
+                {
+                    var duplexContent = new DuplexContent();
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, server.Address);
+                    request.Version = new Version(2, 0);
+                    request.Content = duplexContent;
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                    connection = await server.EstablishConnectionAsync();
+
+                    // Client should have sent the request headers, and the request stream should now be available
+                    Stream requestStream = await duplexContent.WaitForStreamAsync();
+
+                    // Flush the content stream. Otherwise, the request headers are not guaranteed to be sent.
+                    await requestStream.FlushAsync();
+
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                    // Send data to the server, even before we've received response headers.
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Send response headers
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    HttpResponseMessage response = await responseTask;
+                    Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                    // Send some data back and forth
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+                    await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+
+                    // Complete request stream.
+                    await SendAndReceiveRequestEOFAsync(duplexContent, requestStream, connection, streamId);
+
+                    // Send data on response stream and completed it, but don't read it on the client yet
+                    await connection.SendResponseDataAsync(streamId, contentBytes, endStream: true);
+
+                    // Pingpong to ensure it's processed by client
+                    await connection.PingPong();
+
+
+                    // Dispose the response stream.
+                    responseStream.Dispose();
+
+                    // Trying to read on the response stream should fail now, and client should ignore any data received
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
+
+                    // Client should NOT send RST_STREAM. The stream was completed succesfully, but the remaining response data was discarded.
                 }
 
                 // On handler dispose, client should shutdown the connection without sending additional frames.
