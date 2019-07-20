@@ -162,7 +162,7 @@ namespace System.Net.Http
                             CheckForCompletion();
                         }
 
-                        CancelResponseBody();
+                        Cancel();
 
                         throw;
                     }
@@ -240,39 +240,32 @@ namespace System.Net.Http
                 }
             }
 
-            private void CancelRequestBody()
+            private void Cancel()
             {
-                CancellationTokenSource requestBodyCancellationSource;
+                if (NetEventSource.IsEnabled) Trace("");
+
+                CancellationTokenSource requestBodyCancellationSource = null;
+                bool signalWaiter = false;
 
                 lock (SyncObject)
                 {
-                    if (_requestCompletionState != StreamCompletionState.InProgress)
+                    if (_requestCompletionState == StreamCompletionState.InProgress)
                     {
-                        return;
+                        requestBodyCancellationSource = _requestBodyCancellationSource;
+                        Debug.Assert(requestBodyCancellationSource != null);
                     }
 
-                    requestBodyCancellationSource = _requestBodyCancellationSource;
-                }
-
-                if (NetEventSource.IsEnabled) Trace($"Canceling sending request body.");
-                requestBodyCancellationSource.Cancel();
-
-                // When cancellation propagates, SendRequestBodyAsync will set _responseCompletionState to Failed
-            }
-
-            public void CancelResponseBody()
-            {
-                bool signalWaiter;
-
-                lock (SyncObject)
-                {
-                    if (_responseCompletionState != StreamCompletionState.InProgress)
+                    if (_responseCompletionState == StreamCompletionState.InProgress)
                     {
-                        return;
+                        _responseCompletionState = StreamCompletionState.Failed;
+                        CheckForCompletion();
                     }
 
-                    _responseCompletionState = StreamCompletionState.Failed;
-                    CheckForCompletion();
+                    // Discard any remaining buffered response data
+                    if (_responseBuffer.ActiveLength != 0)
+                    {
+                        _responseBuffer.Discard(_responseBuffer.ActiveLength);
+                    }
 
                     _responseProtocolState = ResponseProtocolState.Aborted;
 
@@ -280,12 +273,16 @@ namespace System.Net.Http
                     _hasWaiter = false;
                 }
 
+                if (requestBodyCancellationSource != null)
+                {
+                    // When cancellation propagates, SendRequestBodyAsync will set _responseCompletionState to Failed
+                    requestBodyCancellationSource.Cancel();
+                }
+
                 if (signalWaiter)
                 {
                     _waitSource.SetResult(true);
                 }
-
-                CancelRequestBody();
             }
 
             public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
@@ -581,8 +578,7 @@ namespace System.Net.Http
                     _canRetry = canRetry;
                 }
 
-                CancelRequestBody();
-                CancelResponseBody();
+                Cancel();
             }
 
             private void CheckResponseBodyState()
@@ -599,12 +595,10 @@ namespace System.Net.Http
                     throw new IOException(SR.net_http_request_aborted, _resetException);
                 }
 
-                if (_responseCompletionState == StreamCompletionState.Failed)
+                if (_responseProtocolState == ResponseProtocolState.Aborted)
                 {
                     throw new IOException(SR.net_http_request_aborted);
                 }
-
-                Debug.Assert(_responseProtocolState != ResponseProtocolState.Aborted);
             }
 
             // Determine if we have enough data to process up to complete final response headers.
@@ -653,8 +647,7 @@ namespace System.Net.Http
                 }
                 catch
                 {
-                    CancelRequestBody();
-                    CancelResponseBody();
+                    Cancel();
                     throw;
                 }
 
@@ -840,8 +833,21 @@ namespace System.Net.Http
 
             private void CloseResponseBody()
             {
+                // Check if the response body has been fully consumed.
+                bool fullyConsumed = false;
+                lock (SyncObject)
+                {
+                    if (_responseBuffer.ActiveLength == 0 && _responseProtocolState == ResponseProtocolState.Complete)
+                    {
+                        fullyConsumed = true;
+                    }
+                }
+
                 // If the response body isn't completed, cancel it now.
-                CancelResponseBody();
+                if (!fullyConsumed)
+                {
+                    Cancel();
+                }
 
                 _responseBuffer.Dispose();
             }
