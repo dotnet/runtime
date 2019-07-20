@@ -12,6 +12,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -321,10 +322,10 @@ namespace System.Collections.Concurrent
 
             //deferred allocating in MoveNext() with initial value 0, to avoid false sharing
             //we also use the fact that: (_currentChunkSize==null) means MoveNext is never called on this enumerator 
-            protected SharedInt? _currentChunkSize;
+            protected StrongBox<int>? _currentChunkSize;
 
             //deferring allocation in MoveNext() with initial value -1, to avoid false sharing
-            protected SharedInt? _localOffset;
+            protected StrongBox<int>? _localOffset;
 
             private const int CHUNK_DOUBLING_RATE = 3; // Double the chunk size every this many grabs
             private int _doublingCountdown; // Number of grabs remaining until chunk size doubles
@@ -425,8 +426,8 @@ namespace System.Collections.Concurrent
                 if (_localOffset == null)
                 {
                     Debug.Assert(_currentChunkSize == null);
-                    _localOffset = new SharedInt(-1);
-                    _currentChunkSize = new SharedInt(0);
+                    _localOffset = new StrongBox<int>(-1);
+                    _currentChunkSize = new StrongBox<int>(0);
                     _doublingCountdown = CHUNK_DOUBLING_RATE;
                 }
                 Debug.Assert(_currentChunkSize != null);
@@ -940,10 +941,8 @@ namespace System.Collections.Concurrent
                         _localList = new KeyValuePair<long, TSource>[_maxChunkSize];
                     }
 
-#pragma warning disable 0420 // TODO: https://github.com/dotnet/corefx/issues/35022
                     // make the actual call to the enumerable that grabs a chunk
                     return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize!.Value);
-#pragma warning restore 0420
                 }
 
                 /// <summary>
