@@ -11,8 +11,6 @@ set(CLR_DEFINES_CHECKED_INIT            DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Che
 set(CLR_DEFINES_RELEASE_INIT            NDEBUG URTBLDENV_FRIENDLY=Retail)
 set(CLR_DEFINES_RELWITHDEBINFO_INIT     NDEBUG URTBLDENV_FRIENDLY=Retail)
 
-include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
-
 #----------------------------------------
 # Detect and set platform variable names
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
@@ -112,6 +110,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
   endif()
   set(CLR_CMAKE_PLATFORM_SUNOS 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+
+# "configureoptimization.cmake" must be included after CLR_CMAKE_PLATFORM_UNIX has been set.
+include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
 #--------------------------------------------
 # This repo builds two set of binaries
