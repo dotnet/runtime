@@ -1448,7 +1448,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 _ASSERTE(curPc == GetControlPC(m_crawl.pRD));
             }
 
-            // this call also updates the appdomain if the explicit frame is a ContextTransitionFrame
             m_crawl.GotoNextFrame();
         }
     }
@@ -2473,8 +2472,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // pushed on the stack after the frame is running
         _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
                  ((TADDR)GetRegdisplaySP(m_crawl.pRD) < dac_cast<TADDR>(m_crawl.pFrame)) ||
-                 (m_crawl.pFrame->GetVTablePtr() == FaultingExceptionFrame::GetMethodFrameVPtr()) ||
-                 (m_crawl.pFrame->GetVTablePtr() == ContextTransitionFrame::GetMethodFrameVPtr()));
+                 (m_crawl.pFrame->GetVTablePtr() == FaultingExceptionFrame::GetMethodFrameVPtr()));
 #endif // !defined(ELIMINATE_FEF)
 
         // Get rid of the frame (actually, it isn't really popped)
@@ -3066,9 +3064,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     LOG((LF_GCROOTS, LL_EVERYTHING, "STACKWALK: CheckForSkippedFrames\n"));
 
     // We might have skipped past some Frames.
-    // This happens with InlinedCallFrames and if we unwound
-    // out of a finally in managed code or for ContextTransitionFrames
-    // that are inserted into the managed call stack.
+    // This happens with InlinedCallFrames.
     while ( (m_crawl.pFrame != FRAME_TOP) &&
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )

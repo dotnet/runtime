@@ -136,7 +136,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
 void DispatchCallDebuggerWrapper(
     CallDescrData *   pCallDescrData,
-    ContextTransitionFrame* pFrame,
     BOOL fCriticalCall
 )
 {
@@ -151,7 +150,7 @@ void DispatchCallDebuggerWrapper(
         BOOL fCriticalCall;
     } param;
 
-    param.pFrame = pFrame;
+    param.pFrame = NULL;
     param.pCallDescrData = pCallDescrData;
     param.fCriticalCall = fCriticalCall;
 
@@ -218,7 +217,6 @@ void * DispatchCallSimple(
     {
         DispatchCallDebuggerWrapper(
             &callDescrData,
-            NULL,
             dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
     }
     else
@@ -235,8 +233,7 @@ void * DispatchCallSimple(
 // Returns the return value or the exception object if one was thrown.
 void DispatchCall(
                     CallDescrData * pCallDescrData,
-                    OBJECTREF *pRefException,
-                    ContextTransitionFrame* pFrame /* = NULL */
+                    OBJECTREF *pRefException
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                     , CorruptionSeverity *pSeverity /*= NULL*/
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
@@ -266,7 +263,6 @@ void DispatchCall(
     EX_TRY
     {
         DispatchCallDebuggerWrapper(pCallDescrData,
-                                    pFrame,
                                     FALSE);
     }
     EX_CATCH

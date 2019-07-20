@@ -69,8 +69,7 @@ void CallDescrWorkerWithHandler(
 
 void DispatchCall(
                 CallDescrData *   pCallDescrData,
-                OBJECTREF *             pRefException,
-                ContextTransitionFrame* pFrame = NULL
+                OBJECTREF *             pRefException
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                 , CorruptionSeverity *  pSeverity = NULL
 #endif // FEATURE_CORRUPTING_EXCEPTIONS

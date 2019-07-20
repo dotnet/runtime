@@ -165,10 +165,6 @@ void  Thread::SetFrame(Frame *pFrame)
         pWalk = m_pFrame;
         while (fExist && pWalk != pFrame && pWalk != (Frame*)-1)
         {
-            if (pWalk->GetVTablePtr() == ContextTransitionFrame::GetMethodFrameVPtr())
-            {
-                _ASSERTE (((ContextTransitionFrame *)pWalk)->GetReturnDomain() == m_pDomain);
-            }
             pWalk = pWalk->m_Next;
         }
     }
@@ -7309,22 +7305,6 @@ void Thread::ClearContext()
 #endif //FEATURE_COMINTEROP
 }
 
-void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, ContextTransitionFrame* pFrame)
-{
-    CONTRACTL
-    {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACTL_END;
-
-    // pEx is NULL means that the exception is CLRLastThrownObjectException
-    CLRLastThrownObjectException lastThrown;
-    Exception* pException = pExOrig ? pExOrig : &lastThrown;
-    COMPlusThrow(CLRException::GetThrowableFromException(pException));
-}
-
-
 BOOL Thread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
@@ -7508,10 +7488,6 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
         else
         {
             // Setting up the unwind_and_continue_handler ensures that C++ exceptions do not leak out.
-            // An example is when Thread1 in Default AppDomain creates AppDomain2, enters it, creates
-            // another thread T2 and T2 throws OOM exception (that goes unhandled). At the transition
-            // boundary, END_DOMAIN_TRANSITION will catch it and invoke RaiseCrossContextException
-            // that will rethrow the OOM as a C++ exception. 
             //
             // Without unwind_and_continue_handler below, the exception will fly up the stack to
             // this point, where it will be rethrown and thus leak out. 
