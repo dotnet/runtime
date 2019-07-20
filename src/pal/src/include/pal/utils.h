@@ -182,8 +182,6 @@ void UTIL_SetLastErrorFromMach(kern_return_t MachReturn);
 
 #endif //HAVE_VM_ALLOCATE
 
-BOOL IsRunningOnMojaveHardenedRuntime();
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
