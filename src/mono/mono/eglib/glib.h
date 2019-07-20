@@ -415,6 +415,32 @@ gint    g_ascii_xdigit_value (gchar c);
 gboolean g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen);
 gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
 
+static inline
+gboolean g_ascii_equal (const char *s1, gsize len1, const char *s2, gsize len2)
+{
+    return len1 == len2 && (s1 == s2 || memcmp (s1, s2, len1) == 0);
+}
+
+static inline
+gboolean g_asciiz_equal (const char *s1, const char *s2)
+{
+    return s1 == s2 || strcmp (s1, s2) == 0;
+}
+
+static inline
+gboolean
+g_ascii_equal_caseinsensitive (const char *s1, gsize len1, const char *s2, gsize len2)
+{
+    return len1 == len2 && (s1 == s2 || g_ascii_strncasecmp (s1, s2, len1) == 0);
+}
+
+static inline
+gboolean
+g_asciiz_equal_caseinsensitive (const char *s1, const char *s2)
+{
+    return s1 == s2 || g_ascii_strcasecmp (s1, s2) == 0;
+}
+
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
 #define g_strcasecmp _stricmp
