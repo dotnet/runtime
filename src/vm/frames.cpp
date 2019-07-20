@@ -1522,18 +1522,11 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Find ComMethodFrame, noting any ContextTransitionFrame along the way
+    // Find ComMethodFrame
 
     while ((pCurFrame != FRAME_TOP) && 
            (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr()))
     {
-        if (pCurFrame->GetVTablePtr() == ContextTransitionFrame::GetMethodFrameVPtr())
-        {
-            // If there is a context transition before we find a ComMethodFrame, do nothing.  Expect that 
-            // the AD transition code will perform the corresponding work after it pops its context 
-            // transition frame and before it rethrows the exception.
-            return;
-        }
         pCurFrame = pCurFrame->PtrNextFrame();
     }
 
@@ -1956,26 +1949,6 @@ void UnmanagedToManagedFrame::ExceptionUnwind()
 }
 
 #endif // !DACCESS_COMPILE
-
-void ContextTransitionFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Don't check app domains here - m_LastThrownObjectInParentContext is in the parent frame's app domain
-    (*fn)(dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(ContextTransitionFrame, this, m_LastThrownObjectInParentContext)), sc, 0);
-    LOG((LF_GC, INFO3, "    " FMT_ADDR "\n", DBG_ADDR(m_LastThrownObjectInParentContext) ));
-    
-    // don't need to worry about the object moving as it is stored in a weak handle
-    // but do need to report it so it doesn't get collected if the only reference to
-    // it is in this frame. So only do something if are in promotion phase. And if are
-    // in reloc phase this could cause invalid refs as the object may have been moved.
-    if (! sc->promotion)
-        return;
-        
-    // The dac only cares about strong references at the moment.  Since this is always
-    // in a weak ref, we don't report it here.
-}
-
 
 PCODE UnmanagedToManagedFrame::GetReturnAddress()
 {

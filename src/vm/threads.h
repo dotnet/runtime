@@ -162,7 +162,6 @@ class     ThreadLocalIBCInfo;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
-class     ContextTransitionFrame;
 enum      BinderMethodID : int;
 class     CRWLock;
 struct    LockEntry;
@@ -1042,8 +1041,6 @@ class Thread: public IUnknown
     friend void         ThreadBaseObject::SetDelegate(OBJECTREF delegate);
 
     friend void CallFinalizerOnThreadObject(Object *obj);
-
-    friend class ContextTransitionFrame;  // To set m_dwBeginLockCount
 
     // Debug and Profiler caches ThreadHandle.
     friend class Debugger;                  // void Debugger::ThreadStarted(Thread* pRuntimeThread, BOOL fAttaching);
@@ -2349,8 +2346,6 @@ public:
     }
 
 public:
-
-    void DECLSPEC_NORETURN RaiseCrossContextException(Exception* pEx, ContextTransitionFrame* pFrame);
 
     // ClearContext are to be called only during shutdown
     void ClearContext();

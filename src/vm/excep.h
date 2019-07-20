@@ -871,9 +871,6 @@ enum ExceptionNotificationHandlerType
     FirstChanceExceptionHandler = 0x2
 };
 
-// Defined in Frames.h
-// class ContextTransitionFrame;
-
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {

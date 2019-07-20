@@ -13217,8 +13217,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         // The construction of the COM->CLR path ensures that our corresponding ComMethodFrame
         // should be present further up the stack. Normally, the ComMethodFrame in question is
         // simply the next stack frame; however, there are situations where there may be other
-        // stack frames present (such as an optional ContextTransitionFrame if we switched
-        // AppDomains, or an inlined stack frame from a QCall in the IL stub).
+        // stack frames present (such as an inlined stack frame from a QCall in the IL stub).
         while (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr())
         {
             pCurFrame = pCurFrame->PtrNextFrame();

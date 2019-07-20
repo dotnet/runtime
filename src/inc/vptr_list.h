@@ -57,7 +57,7 @@ VPTR_CLASS(ComMethodFrame)
 VPTR_CLASS(ComPlusMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
-VPTR_CLASS(ContextTransitionFrame)
+
 #ifdef FEATURE_INTERPRETER
 VPTR_CLASS(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
