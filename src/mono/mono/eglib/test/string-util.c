@@ -624,12 +624,12 @@ test_ascii_strncasecmp (void)
 		return FAILED ("Should have been 0");
 	
 	n = g_ascii_strncasecmp ("423", "123", 1);
-	if (n != 3)
-		return FAILED ("Should have been 3, got %d", n);
+	if (n <= 0)
+		return FAILED ("Should have been > 0, got %d", n);
 
 	n = g_ascii_strncasecmp ("123", "423", 1);
-	if (n != -3)
-		return FAILED ("Should have been -3, got %d", n);
+	if (n >= 0)
+		return FAILED ("Should have been < 0, got %d", n);
 
 	n = g_ascii_strncasecmp ("1", "1", 10);
 	if (n != 0)
