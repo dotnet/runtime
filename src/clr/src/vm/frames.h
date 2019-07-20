@@ -115,9 +115,6 @@
 //    |                           transition through N/Direct
 #endif
 //    |
-//    +-ContextTransitionFrame  - this frame is used to mark an appdomain transition
-//    |
-//    |
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 //    +-ProtectByRefsFrame
@@ -255,7 +252,6 @@ FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 FRAME_TYPE_NAME(InlinedCallFrame)
-FRAME_TYPE_NAME(ContextTransitionFrame)
 FRAME_TYPE_NAME(TailCallFrame)
 FRAME_TYPE_NAME(ExceptionFilterFrame)
 #if defined(_DEBUG)
@@ -3085,63 +3081,6 @@ public:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(InlinedCallFrame)
-};
-
-//------------------------------------------------------------------------
-// This frame is used to mark a Context/AppDomain Transition
-//------------------------------------------------------------------------
-
-class ContextTransitionFrame : public Frame
-{
-private:
-    PTR_Object  m_LastThrownObjectInParentContext;                                        
-    ULONG_PTR   m_LockCount;            // Number of locks the thread takes
-                                        // before the transition.
-    VPTR_VTABLE_CLASS(ContextTransitionFrame, Frame)
-
-public:
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-    OBJECTREF GetLastThrownObjectInParentContext()
-    {
-        return ObjectToOBJECTREF(m_LastThrownObjectInParentContext);
-    }
-
-    void SetLastThrownObjectInParentContext(OBJECTREF lastThrownObject)
-    {
-        m_LastThrownObjectInParentContext = OBJECTREFToObject(lastThrownObject);
-    }
-
-    void SetLockCount(DWORD lockCount)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_LockCount = lockCount;
-    }
-    DWORD GetLockCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (DWORD) m_LockCount;
-    }
-
-
-    // Let debugger know that we're transitioning between AppDomains.
-    ETransitionType GetTransitionType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TT_AppDomain;
-    }
-
-#ifndef DACCESS_COMPILE
-    ContextTransitionFrame()
-    : m_LastThrownObjectInParentContext(NULL)
-    , m_LockCount(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-#endif
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_DTOR(ContextTransitionFrame)
 };
 
 // TODO [DAVBR]: For the full fix for VsWhidbey 450273, this
