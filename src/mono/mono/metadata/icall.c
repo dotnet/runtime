@@ -7412,34 +7412,35 @@ ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static MonoArray *
+static MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
-	MonoArray *names;
+	MonoArrayHandle names;
 	MonoDomain *domain;
-	MonoString *str;
+	MonoStringHandle str;
 	gchar **e, **parts;
 	int n;
 
-	error_init (error);
 	n = 0;
 	for (e = environ; *e != 0; ++ e)
 		++ n;
 
 	domain = mono_domain_get ();
-	names = mono_array_new_checked (domain, mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL);
+	names = mono_array_new_handle (domain, mono_defaults.string_class, n, error);
+	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
+	str = MONO_HANDLE_NEW (MonoString, NULL);
 	n = 0;
 	for (e = environ; *e != 0; ++ e) {
 		parts = g_strsplit (*e, "=", 2);
 		if (*parts != 0) {
-			str = mono_string_new_checked (domain, *parts, error);
+			MonoString *s = mono_string_new_checked (domain, *parts, error);
+			MONO_HANDLE_ASSIGN_RAW (str, s);
 			if (!is_ok (error)) {
 				g_strfreev (parts);
-				return NULL;
+				return NULL_HANDLE_ARRAY;
 			}
-			mono_array_setref_internal (names, n, str);
+			mono_array_handle_setref (names, n, str);
 		}
 
 		g_strfreev (parts);
@@ -7451,13 +7452,10 @@ mono_icall_get_environment_variable_names (MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-MonoArray *
-ves_icall_System_Environment_GetEnvironmentVariableNames (void)
+MonoArrayHandle
+ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoArray *result = mono_icall_get_environment_variable_names (error);
-	mono_error_set_pending_exception (error);
-	return result;
+	return mono_icall_get_environment_variable_names (error);
 }
 
 void
@@ -7554,16 +7552,15 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-static MonoArray *
-mono_icall_get_logical_drives (void)
+static MonoArrayHandle
+mono_icall_get_logical_drives (MonoError *error)
 {
-	ERROR_DECL (error);
 	gunichar2 buf [256], *ptr, *dname;
 	gunichar2 *u16;
 	guint initial_size = 127, size = 128;
 	gint ndrives;
-	MonoArray *result;
-	MonoString *drivestr;
+	MonoArrayHandle result;
+	MonoStringHandle drivestr;
 	MonoDomain *domain = mono_domain_get ();
 	gint len;
 
@@ -7590,20 +7587,23 @@ mono_icall_get_logical_drives (void)
 	} while (*dname);
 
 	dname = ptr;
-	result = mono_array_new_checked (domain, mono_defaults.string_class, ndrives, error);
-	if (mono_error_set_pending_exception (error))
-		goto leave;
+	result = mono_array_new_handle (domain, mono_defaults.string_class, ndrives, error);
+	goto_if_nok (error, leave);
 
+	drivestr = MONO_HANDLE_NEW (MonoString, NULL);
 	ndrives = 0;
 	do {
 		len = 0;
 		u16 = dname;
-		while (*u16) { u16++; len ++; }
-		drivestr = mono_string_new_utf16_checked (domain, dname, len, error);
-		if (mono_error_set_pending_exception (error))
-			goto leave;
+		while (*u16) {
+			u16++; len ++;
+		}
+		MonoString *s = mono_string_new_utf16_checked (domain, dname, len, error);
+		goto_if_nok (error, leave);
+		MONO_HANDLE_ASSIGN_RAW (drivestr, s);
 
-		mono_array_setref_internal (result, ndrives++, drivestr);
+		mono_array_handle_setref (result, ndrives, drivestr);
+		ndrives ++;
 		while (*dname++);
 	} while (*dname);
 
@@ -7615,10 +7615,10 @@ leave:
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
-MonoArray *
-ves_icall_System_Environment_GetLogicalDrives (void)
+MonoArrayHandle
+ves_icall_System_Environment_GetLogicalDrivesInternal (MonoError *error)
 {
-	return mono_icall_get_logical_drives ();
+	return mono_icall_get_logical_drives (error);
 }
 
 MonoStringHandle

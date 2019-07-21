@@ -32,19 +32,16 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 #endif
 
 #if !HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS
-MonoArray *
-mono_icall_get_logical_drives (void)
+MonoArrayHandle
+mono_icall_get_logical_drives (MonoError *error)
 {
-	ERROR_DECL (error);
-
 	g_unsupported_api ("GetLogicalDriveStrings");
 
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
-	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
-	return NULL;
+	return NULL_HANDLE_ARRAY;
 }
 #endif
 

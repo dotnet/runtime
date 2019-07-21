@@ -73,8 +73,6 @@ typedef enum {
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
-ICALL_EXPORT MonoArray* ves_icall_System_Environment_GetEnvironmentVariableNames (void);
-ICALL_EXPORT MonoArray* ves_icall_System_Environment_GetLogicalDrives (void);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Buffer_BlockCopyInternal (MonoArray*, gint32, MonoArray*, gint32, gint32);

@@ -94,18 +94,17 @@ mono_icall_is_64bit_os (void)
 #endif
 }
 
-MonoArray *
+MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
-	MonoArray *names;
+	MonoArrayHandle names;
 	MonoDomain *domain;
-	MonoString *str;
+	MonoStringHandle str;
 	WCHAR* env_strings;
 	WCHAR* env_string;
 	WCHAR* equal_str;
 	int n = 0;
 
-	error_init (error);
 	env_strings = GetEnvironmentStrings();
 
 	if (env_strings) {
@@ -121,21 +120,23 @@ mono_icall_get_environment_variable_names (MonoError *error)
 	}
 
 	domain = mono_domain_get ();
-	names = mono_array_new_checked (domain, mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL);
+	names = mono_array_new_handle (domain, mono_defaults.string_class, n, error);
+	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	if (env_strings) {
 		n = 0;
+		str = MONO_HANDLE_NEW (MonoString, NULL);
 		env_string = env_strings;
 		while (*env_string != '\0') {
 			/* weird case that MS seems to skip */
 			if (*env_string != '=') {
 				equal_str = wcschr(env_string, '=');
 				g_assert(equal_str);
-				str = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
+				MonoString *s = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
 				goto_if_nok (error, cleanup);
+				MONO_HANDLE_ASSIGN_RAW (str, s);
 
-				mono_array_setref_internal (names, n, str);
+				mono_array_handle_setref (names, n, str);
 				n++;
 			}
 			while (*env_string != '\0')
@@ -149,7 +150,7 @@ cleanup:
 	if (env_strings)
 		FreeEnvironmentStrings (env_strings);
 	if (!is_ok (error))
-		return NULL;
+		return NULL_HANDLE_ARRAY;
 	return names;
 }
 
