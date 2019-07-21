@@ -1305,9 +1305,8 @@ assemblybuilderaccess_can_save (guint32 access)
  * of the helper hash table and the basic metadata streams.
  */
 void
-mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
+mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoError *error)
 {
-	ERROR_DECL (error);
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
 	MonoDomain *domain = mono_object_domain (assemblyb);
@@ -1324,12 +1323,10 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
 	assembly->assembly.basedir = mono_string_to_utf8_checked_internal (assemblyb->dir, error);
-	if (mono_error_set_pending_exception (error))
-		return;
+	return_if_nok (error);
 	if (assemblyb->culture) {
 		assembly->assembly.aname.culture = mono_string_to_utf8_checked_internal (assemblyb->culture, error);
-		if (mono_error_set_pending_exception (error))
-			return;
+		return_if_nok (error);
 	} else
 		assembly->assembly.aname.culture = g_strdup ("");
 
@@ -1362,8 +1359,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->domain = domain;
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
-	if (mono_error_set_pending_exception (error))
-		return;
+	return_if_nok (error);
 	image = mono_dynamic_image_create (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
@@ -4441,7 +4437,7 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 }
 
 void
-mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
+mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoError *error)
 {
 	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit, so System.Reflection.Emit is not supported.");
 }
@@ -4596,9 +4592,11 @@ ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, Mono
 #endif
 
 void
-ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
+ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error)
 {
-	mono_reflection_dynimage_basic_init (assemblyb);
+	uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, assemblyb), TRUE);
+	mono_reflection_dynimage_basic_init (MONO_HANDLE_RAW (assemblyb), error);
+	mono_gchandle_free_internal (gchandle);
 }
 
 void

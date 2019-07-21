@@ -2810,7 +2810,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 
 	assemblyb = mb->assemblyb;
 
-	mono_reflection_dynimage_basic_init (assemblyb);
+	mono_reflection_dynimage_basic_init (assemblyb, error);
+	return_val_if_nok (error, FALSE);
 	assembly = mb->dynamic_image;
 
 	assembly->pe_kind = assemblyb->pe_kind;

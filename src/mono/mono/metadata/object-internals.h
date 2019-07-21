@@ -2197,10 +2197,6 @@ void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb);
 
 ICALL_EXPORT
-void
-ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb);
-
-ICALL_EXPORT
 MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);
 
