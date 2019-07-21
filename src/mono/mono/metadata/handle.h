@@ -443,6 +443,8 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 #define MONO_HANDLE_DOMAIN(HANDLE) MONO_HANDLE_SUPPRESS (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)))))
 
+#define mono_handle_domain(handle) MONO_HANDLE_DOMAIN ((handle))
+
 /* Given an object and a MonoClassField, return the value (must be non-object)
  * of the field.  It's the caller's responsibility to check that the object is
  * of the correct class. */
@@ -541,10 +543,14 @@ mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_
 uintptr_t
 mono_array_handle_length (MonoArrayHandle arr);
 
+#define mono_array_handle_setref(array,index,value) MONO_HANDLE_ARRAY_SETREF ((array), (index), (value))
+
 void
 mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index);
 
 #define mono_handle_class(o) MONO_HANDLE_SUPPRESS (mono_object_class (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (o))))
+
+#define mono_handle_vtable(o) MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (o))->vtable)
 
 /* Local handles to global GC handles and back */
 

@@ -85,7 +85,6 @@ ICALL_EXPORT MonoBoolean ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const g
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
-ICALL_EXPORT MonoBoolean ves_icall_System_ValueType_Equals (MonoObject* this_obj, MonoObject* that, MonoArray** fields);
 ICALL_EXPORT MonoObject* ves_icall_InternalExecute (MonoReflectionMethod*, MonoObject*, MonoArray*, MonoArray**);
 ICALL_EXPORT MonoObject* ves_icall_InternalInvoke (MonoReflectionMethod*, MonoObject*, MonoArray*, MonoException**);
 ICALL_EXPORT MonoObject* ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionField* rfield);
@@ -162,7 +161,6 @@ ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
 #if ENABLE_NETCORE
 ICALL_EXPORT gint64 ves_icall_System_Environment_get_TickCount64 (void);
 #endif
-ICALL_EXPORT gint32 ves_icall_System_ValueType_InternalGetHashCode (MonoObject*, MonoArray**);
 ICALL_EXPORT gint64 ves_icall_System_DateTime_GetSystemTimeAsFileTime (void);
 ICALL_EXPORT gint64 ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
