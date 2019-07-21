@@ -29,6 +29,13 @@ namespace System.CodeDom.Tests
             Assert.Equal(new string(' ', 4), IndentedTextWriter.DefaultTabString);
         }
 
+        [Fact]
+        public void Ctor_NullWriter_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("writer", () => new IndentedTextWriter(null));
+            Assert.Throws<ArgumentNullException>("writer", () => new IndentedTextWriter(null, "TabString"));
+        }
+
         [Theory]
         [InlineData(42)]
         [InlineData(4)]

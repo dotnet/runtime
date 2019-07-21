@@ -22,6 +22,11 @@ namespace System.CodeDom.Compiler
 
         public IndentedTextWriter(TextWriter writer, string tabString) : base(CultureInfo.InvariantCulture)
         {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             _writer = writer;
             _tabString = tabString;
             _indentLevel = 0;
