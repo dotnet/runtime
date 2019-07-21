@@ -47,6 +47,7 @@ internal static partial class Interop
             btrfs = 0x9123683E,
             ceph = 0x00C36400,
             cgroupfs = 0x0027E0EB,
+            cgroup2fs = 0x63677270,
             cifs = 0xFF534D42,
             coda = 0x73757245,
             coherent = 0x012FF7B7,
@@ -231,7 +232,6 @@ internal static partial class Interop
                 case "bpf_fs":
                 case "btrfs":
                 case "btrfs_test":
-                case "cgroup2fs":
                 case "coh":
                 case "daxfs":
                 case "drvfs":
@@ -384,6 +384,7 @@ internal static partial class Interop
                 case "binfmt_misc":
                 case "cgroup":
                 case "cgroupfs":
+                case "cgroup2fs":
                 case "configfs":
                 case "cramfs":
                 case "cramfs-wend":
