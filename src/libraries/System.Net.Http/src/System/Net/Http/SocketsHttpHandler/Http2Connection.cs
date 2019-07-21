@@ -1121,7 +1121,7 @@ namespace System.Net.Http
                     (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
 
                 // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
-                Memory<byte> writeBuffer = await StartWriteAsync(totalSize).ConfigureAwait(false);
+                Memory<byte> writeBuffer = await StartWriteAsync(totalSize, cancellationToken).ConfigureAwait(false);
                 if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(flags)}={flags}, {nameof(totalSize)}={totalSize}");
 
                 FrameHeader frameHeader = new FrameHeader(current.Length, FrameType.Headers, flags, streamId);
