@@ -82,6 +82,17 @@ jobs:
       displayNameArgs: R2R
 
 #
+# Crossgen-comparison jobs
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: crossgen-comparison-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_arm
+    helixQueueGroup: ci
+
+#
 # Formatting
 #
 - template: /eng/platform-matrix.yml
