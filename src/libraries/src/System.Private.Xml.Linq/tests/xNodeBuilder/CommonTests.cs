@@ -3351,7 +3351,7 @@ namespace CoreXml.Test.XLinq
             public partial class TCCData : BridgeHelpers
             {
                 //[Variation(Id = 1, Desc = "WriteCData with null", Priority = 1)]
-                public void CData_1()
+                private void CData_1()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3364,7 +3364,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 2, Desc = "WriteCData with String.Empty", Priority = 1)]
-                public void CData_2()
+                private void CData_2()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3377,7 +3377,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 3, Desc = "WriteCData Sanity test", Priority = 0)]
-                public void CData_3()
+                private void CData_3()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3390,7 +3390,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 4, Desc = "WriteCData with valid surrogate pair", Priority = 1)]
-                public void CData_4()
+                private void CData_4()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3427,7 +3427,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Priority = 2)]
-                public void CData_6()
+                private void CData_6()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3440,7 +3440,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 7, Desc = "WriteCData with <![CDATA[", Priority = 2)]
-                public void CData_7()
+                private void CData_7()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3452,7 +3452,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root><![CDATA[<![CDATA[]]></Root>")) throw new TestException(TestResult.Failed, "");
                 }
                 //[Variation(Id = 8, Desc = "CData state machine", Priority = 2)]
-                public void CData_8()
+                private void CData_8()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3465,7 +3465,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 9, Desc = "WriteCData with invalid surrogate pair", Priority = 1)]
-                public void CData_9()
+                private void CData_9()
                 {
                     XCData xa = new XCData("\uD812");
                     XElement doc = new XElement("root");
@@ -3486,7 +3486,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 10, Desc = "WriteCData after root element")]
-                public void CData_10()
+                private void CData_10()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -3508,7 +3508,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 11, Desc = "Call WriteCData twice - that should write two CData blocks", Priority = 1)]
-                public void CData_11()
+                private void CData_11()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3525,7 +3525,7 @@ namespace CoreXml.Test.XLinq
             public partial class TCComment : BridgeHelpers
             {
                 //[Variation(Id = 1, Desc = "Sanity test for WriteComment", Priority = 0)]
-                public void comment_1()
+                private void comment_1()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3538,7 +3538,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 2, Desc = "Comment value = String.Empty", Priority = 0)]
-                public void comment_2()
+                private void comment_2()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3551,7 +3551,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 3, Desc = "Comment value = null", Priority = 0)]
-                public void comment_3()
+                private void comment_3()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3564,7 +3564,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 4, Desc = "WriteComment with valid surrogate pair", Priority = 1)]
-                public void comment_4()
+                private void comment_4()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -3577,7 +3577,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 5, Desc = "WriteComment with invalid surrogate pair", Priority = 1)]
-                public void comment_5()
+                private void comment_5()
                 {
                     XComment xa = new XComment("\uD812");
                     XElement doc = new XElement("root");
@@ -4022,7 +4022,7 @@ namespace CoreXml.Test.XLinq
             public partial class TCPI : BridgeHelpers
             {
                 //[Variation(Id = 1, Desc = "Sanity test for WritePI", Priority = 0)]
-                public void pi_1()
+                private void pi_1()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -4035,7 +4035,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 2, Desc = "PI text value = null", Priority = 1)]
-                public void pi_2()
+                private void pi_2()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -4048,7 +4048,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 3, Desc = "PI text value = String.Empty", Priority = 1)]
-                public void pi_3()
+                private void pi_3()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -4061,7 +4061,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 4, Desc = "PI name = null should error", Priority = 1)]
-                public void pi_4()
+                private void pi_4()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4082,7 +4082,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 5, Desc = "PI name = String.Empty should error", Priority = 1)]
-                public void pi_5()
+                private void pi_5()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4103,7 +4103,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 6, Desc = "WritePI with xmlns as the name value")]
-                public void pi_6()
+                private void pi_6()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -4117,7 +4117,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 7, Desc = "WritePI with XmL as the name value")]
-                public void pi_7()
+                private void pi_7()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4140,7 +4140,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 8, Desc = "WritePI before XmlDecl", Priority = 1)]
-                public void pi_8()
+                private void pi_8()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4161,7 +4161,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 9, Desc = "WritePI (after StartDocument) with name = 'xml' text = 'version = 1.0' should error", Priority = 1)]
-                public void pi_9()
+                private void pi_9()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4182,7 +4182,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 10, Desc = "WritePI (before StartDocument) with name = 'xml' text = 'version = 1.0' should error", Priority = 1)]
-                public void pi_10()
+                private void pi_10()
                 {
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
@@ -4227,7 +4227,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Priority = 1)]
-                public void pi_12()
+                private void pi_12()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -4240,7 +4240,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 13, Desc = "WritePI with invalid surrogate pair", Priority = 1)]
-                public void pi_13()
+                private void pi_13()
                 {
                     XProcessingInstruction xa = new XProcessingInstruction("pi", "\uD812");
                     XElement doc = new XElement("root");

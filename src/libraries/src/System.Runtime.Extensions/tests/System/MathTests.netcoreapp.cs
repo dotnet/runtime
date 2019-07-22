@@ -771,18 +771,21 @@ namespace System.Tests
             }
         }
 
+        [Theory]
         [MemberData(nameof(Round_Modes_TestData))]
         public static void Round_Double_Modes(double x, double expected, MidpointRounding mode)
         {
             Assert.Equal(expected, Math.Round(x, 0, mode));
         }
 
+        [Theory]
         [MemberData(nameof(Round_Modes_TestData))]
         public static void Round_Float_Modes(float x, float expected, MidpointRounding mode)
         {
             Assert.Equal(expected, MathF.Round(x, 0, mode));
         }
 
+        [Theory]
         [MemberData(nameof(Round_Modes_TestData))]
         public static void Round_Decimal_Modes(decimal x, decimal expected, MidpointRounding mode)
         {

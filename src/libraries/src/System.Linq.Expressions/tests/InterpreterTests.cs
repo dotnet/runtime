@@ -153,7 +153,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.Foo");
         }
 
-        public static void VerifyInstructions(this LambdaExpression expression, string expected)
+        internal static void VerifyInstructions(this LambdaExpression expression, string expected)
         {
             string actual = expression.GetInstructions();
 

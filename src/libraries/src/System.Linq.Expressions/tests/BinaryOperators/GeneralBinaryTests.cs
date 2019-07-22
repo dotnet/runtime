@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>(() => Expression.MakeBinary(type, Expression.Variable(typeof(object)), null, false, null, null));
         }
 
-        public static void CompileBinaryExpression(BinaryExpression expression, bool useInterpreter, bool expected)
+        internal static void CompileBinaryExpression(BinaryExpression expression, bool useInterpreter, bool expected)
         {
             Expression<Func<bool>> e = Expression.Lambda<Func<bool>>(expression, Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile(useInterpreter);
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(expected, f());
         }
 
-        public static bool CustomEquals(object a, object b)
+        internal static bool CustomEquals(object a, object b)
         {
             // Allow for NaN
             if (a is double && b is double)

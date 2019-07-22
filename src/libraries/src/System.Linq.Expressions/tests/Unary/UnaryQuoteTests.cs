@@ -569,6 +569,8 @@ namespace System.Linq.Expressions.Tests
 
         public static Expression<T> GetQuote<T>(Expression<T> e) => e;
 
+#pragma warning disable xUnit1013 // needs to be public for reflection-based test
         public static void Nop() { }
+#pragma warning restore xUnit1013
     }
 }

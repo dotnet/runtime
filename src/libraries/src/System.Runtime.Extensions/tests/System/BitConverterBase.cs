@@ -5,11 +5,12 @@
 using Xunit;
 using System.Collections.Generic;
 
+#pragma warning disable xUnit1013 // https://github.com/xunit/xunit/issues/1973
+
 namespace System.Tests
 {
     public abstract class BitConverterBase
     {
-
         [Theory]
         [InlineData(true, new byte[] { 0x01 })]
         [InlineData(false, new byte[] { 0x00 })]

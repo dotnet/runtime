@@ -183,6 +183,7 @@ namespace System.Tests
             }
         }
 
+        [Fact]
         public void EnvironmentVariablesAreHashtable()
         {
             // On NetFX, the type returned was always Hashtable
