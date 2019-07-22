@@ -15,7 +15,7 @@ namespace HttpStress
         private readonly Task _clientTask;
 
         // TOCONSIDER: configuration class to avoid threading so many parameters
-        public StressClient(string serverUri, (string name, Func<RequestContext, Task> operation)[] clientOperations, int concurrentRequests,
+        public StressClient(Uri serverUri, (string name, Func<RequestContext, Task> operation)[] clientOperations, int concurrentRequests,
                                 int maxContentLength, int maxRequestParameters, int maxRequestLineSize,
                                 int randomSeed, double cancellationProbability, double http2Probability,
                                 int? connectionLifetime, TimeSpan displayInterval)
@@ -36,7 +36,7 @@ namespace HttpStress
 
                 string contentSource = string.Concat(Enumerable.Repeat("1234567890", maxContentLength / 10));
 
-                using (var client = new HttpClient(handler) { BaseAddress = new Uri(serverUri) })
+                using (var client = new HttpClient(handler) { BaseAddress = serverUri })
                 {
                     // Track all successes and failures
                     long total = 0;
