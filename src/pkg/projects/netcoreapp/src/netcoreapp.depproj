@@ -7,10 +7,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
     <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
-    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Targets" Version="$(MicrosoftNETCoreTargetsPackageVersion)" />
     <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryPackageVersion)" />
+  </ItemGroup>
+
+  <!-- This tool is a prebuilt not buildable from source. -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
