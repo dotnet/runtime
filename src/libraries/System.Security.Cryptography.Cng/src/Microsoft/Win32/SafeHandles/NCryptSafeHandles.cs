@@ -239,16 +239,9 @@ namespace Microsoft.Win32.SafeHandles
             bool addedRef = false;
             T duplicate = new T();
 
-            // We need to do this operation in a CER, since we need to make sure that if the AddRef occurs
-            // that the duplicated handle will always point back to the Holder, otherwise the Holder will leak
-            // since it will never have its ref count reduced to zero.
-            try { }
-            finally
-            {
-                Holder.DangerousAddRef(ref addedRef);
-                duplicate.SetHandle(Holder.DangerousGetHandle());
-                duplicate.Holder = Holder;              // Transitions to OwnershipState.Duplicate
-            }
+            Holder.DangerousAddRef(ref addedRef);
+            duplicate.SetHandle(Holder.DangerousGetHandle());
+            duplicate.Holder = Holder;              // Transitions to OwnershipState.Duplicate
 
             return duplicate;
         }
@@ -272,34 +265,27 @@ namespace Microsoft.Win32.SafeHandles
             T holder = new T();
             T duplicate = new T();
 
-            // We need to do this operation in a CER in order to ensure that everybody's state stays consistent
-            // with the current view of the world.  If the state of the various handles gets out of sync, then
-            // we'll end up leaking since reference counts will not be set up properly.
-            try { }
-            finally
+            // Setup a holder safe handle to ref count the native handle
+            holder._ownershipState = OwnershipState.Holder;
+            holder.SetHandle(DangerousGetHandle());
+            GC.SuppressFinalize(holder);
+
+
+            // Move the parent handle to the Holder
+            if (_parentHandle != null)
             {
-                // Setup a holder safe handle to ref count the native handle
-                holder._ownershipState = OwnershipState.Holder;
-                holder.SetHandle(DangerousGetHandle());
-                GC.SuppressFinalize(holder);
-
-
-                // Move the parent handle to the Holder
-                if (_parentHandle != null)
-                {
-                    holder._parentHandle = _parentHandle;
-                    _parentHandle = null;
-                }
-
-                // Transition into the duplicate state, referencing the holder. The initial reference count
-                // on the holder will refer to the original handle so there is no need to AddRef here.
-                Holder = holder;        // Transitions to OwnershipState.Duplicate
-
-                // The duplicate handle will also reference the holder
-                holder.DangerousAddRef(ref addRef);
-                duplicate.SetHandle(holder.DangerousGetHandle());
-                duplicate.Holder = holder;  // Transitions to OwnershipState.Duplicate
+                holder._parentHandle = _parentHandle;
+                _parentHandle = null;
             }
+
+            // Transition into the duplicate state, referencing the holder. The initial reference count
+            // on the holder will refer to the original handle so there is no need to AddRef here.
+            Holder = holder;        // Transitions to OwnershipState.Duplicate
+
+            // The duplicate handle will also reference the holder
+            holder.DangerousAddRef(ref addRef);
+            duplicate.SetHandle(holder.DangerousGetHandle());
+            duplicate.Holder = holder;  // Transitions to OwnershipState.Duplicate
 
             return duplicate;
         }
