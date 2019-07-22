@@ -226,23 +226,18 @@ namespace System.IO.Pipes
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try { }
-            finally
+            if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle))
             {
-                if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle))
-                {
-                    execHelper._mustRevert = true;
-                }
-                else
-                {
-                    execHelper._impersonateErrorCode = Marshal.GetLastWin32Error();
-                }
-
+                execHelper._mustRevert = true;
+            }
+            else
+            {
+                execHelper._impersonateErrorCode = Marshal.GetLastWin32Error();
             }
 
             if (execHelper._mustRevert)
-            { // impersonate passed so run user code
+            {
+                // impersonate passed so run user code
                 execHelper._userCode();
             }
         }
