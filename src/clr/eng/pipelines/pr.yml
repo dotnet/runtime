@@ -107,6 +107,17 @@ jobs:
       displayNameArgs: CoreFX
 
 #
+# Crossgen-comparison jobs
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: crossgen-comparison-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    helixQueueGroup: pr
+
+#
 # Release test builds
 #
 - template: /eng/platform-matrix.yml
@@ -127,3 +138,4 @@ jobs:
     jobTemplate: format-job.yml
     platforms:
     - Linux_x64
+
