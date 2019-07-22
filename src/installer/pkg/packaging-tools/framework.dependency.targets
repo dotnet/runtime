@@ -168,8 +168,13 @@
     <ItemGroup>
       <CrossgenToolPackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
       <CrossgenToolPackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
-      <CrossgenToolPackageReference Include="Microsoft.DiaSymReader.Native" Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
       <CrossgenToolPackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" Version="$(MicrosoftTargetingPackPrivateWinRTPackageVersion)" />
+
+      <!-- This tool is a prebuilt not buildable from source. -->
+      <CrossgenToolPackageReference
+        Condition="'$(DotNetBuildFromSource)' != 'true'"
+        Include="Microsoft.DiaSymReader.Native"
+        Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
 
       <!--
         If any tool packages are missing, add them with ExcludeAssets=All. Be careful not to modify
@@ -249,6 +254,14 @@
 
     <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
       <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <!--
+      DiaSymReader can't be built from source, so use an unrelated default directory in that case.
+      This is used as the working directory for crossgen calls.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
     </PropertyGroup>
 
     <ItemGroup>
