@@ -393,10 +393,6 @@
 ##  System.Reflection.Tests
 ####################################################################
 
-# Runtime crashes
--nomethod System.Reflection.Tests.AssemblyTests.CreateInstance
--nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
-
 # Expected to throw FileLoadException, but we aren't
 # https://github.com/mono/mono/issues/15021
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
