@@ -171,7 +171,7 @@ Breaking Change Rules
 &#10003; **Allowed**
 * Adding an abstract member to a public type when there are _no accessible_ (`public` or `protected`) constructors, or the type is `sealed`
 
-* Moving a member onto a class higher in the hierarchy tree of the type from which it was removed
+* Moving a method onto a class higher in the hierarchy tree of the type from which it was removed
 
 * Increasing the visibility of a member that is not `virtual`
 
@@ -196,6 +196,8 @@ Breaking Change Rules
 
     This will break existing clients that were bound to the previous overload. For example, if you have a class that has a single version of a method that accepts a `uint`, an existing consumer will 
 successfully bind to that overload, if simply passing an `int` value. However, if you add an overload that accepts an `int`, recompiling or via late-binding the application will now bind to the new overload. If different behavior results, then this is a breaking change.
+
+* Moving an exposed field onto a class higher in the hierarchy tree of the type from which it was removed
 
 * Removing or renaming a member, including a getter or setter from a property or enum members
 
