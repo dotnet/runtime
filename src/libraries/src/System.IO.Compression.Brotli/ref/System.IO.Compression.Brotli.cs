@@ -9,12 +9,16 @@ namespace System.IO.Compression
 {
     public partial struct BrotliDecoder : System.IDisposable
     {
+        private object _dummy;
+        private int _dummyPrimitive;
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial struct BrotliEncoder : System.IDisposable
     {
+        private object _dummy;
+        private int _dummyPrimitive;
         public BrotliEncoder(int quality, int window) { throw null; }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
