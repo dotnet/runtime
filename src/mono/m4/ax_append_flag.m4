@@ -51,6 +51,10 @@
 
 #serial 7
 
+m4_ifndef([AS_VAR_APPEND],
+  [m4_define([AS_VAR_APPEND],
+      [$1=$$1$2])])
+
 AC_DEFUN([AX_APPEND_FLAG],
 [dnl
 AC_PREREQ(2.63)dnl for _AC_LANG_PREFIX and AS_VAR_SET_IF
