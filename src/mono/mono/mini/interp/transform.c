@@ -582,7 +582,7 @@ can_store (int st_value, int vt_value)
 	do { \
 		(td)->stack_capacity *= 2; \
 		(td)->stack = (StackInfo*)realloc ((td)->stack, (td)->stack_capacity * sizeof (td->stack [0])); \
-		(td)->sp = (td)->stack + sppos; \
+		(td)->sp = (td)->stack + (sppos); \
 	} while (0);
 
 #define PUSH_SIMPLE_TYPE(td, ty) \
@@ -608,6 +608,27 @@ can_store (int st_value, int vt_value)
 			REALLOC_STACK(td, sp_height); \
 		SET_TYPE((td)->sp - 1, ty, k); \
 	} while (0)
+
+static void
+move_stack (TransformData *td, int start, int amount)
+{
+	int sp_height = td->sp - td->stack;
+	int to_move = sp_height - start;
+
+	td->sp += amount;
+	sp_height += amount;
+	if (amount > 0) {
+		if (sp_height > td->max_stack_height)
+			td->max_stack_height = sp_height;
+		if (sp_height > td->stack_capacity)
+			REALLOC_STACK (td, sp_height);
+	} else {
+		g_assert (td->sp >= td->stack);
+	}
+
+	if (to_move > 0)
+		memmove (td->stack + start + amount, td->stack + start, to_move * sizeof (StackInfo));
+}
 
 #define PUSH_VT(td, size) \
 	do { \
@@ -4143,8 +4164,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto_if_nok (error, exit);
 			}
 
-			td->sp -= csignature->param_count;
 			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
+				td->sp -= csignature->param_count;
 #if SIZEOF_VOID_P == 8
 				if (mono_class_is_magic_int (klass) && td->sp [0].type == STACK_TYPE_I4)
 					interp_add_ins (td, MINT_CONV_I8_I4);
@@ -4172,22 +4193,46 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
 						!m_class_has_weak_fields (klass)) {
-					if (!m_class_is_valuetype (klass))
-						interp_add_ins (td, MINT_NEWOBJ_FAST);
-					else if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
-						interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
-					else
-						interp_add_ins (td, MINT_NEWOBJ_VT_FAST);
-
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
-					td->last_ins->data [1] = csignature->param_count;
-
 					if (!m_class_is_valuetype (klass)) {
+						InterpInst *newobj_fast = interp_add_ins (td, MINT_NEWOBJ_FAST);
+
+						newobj_fast->data [1] = csignature->param_count;
+
 						MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 						goto_if_nok (error, exit);
-						td->last_ins->data [2] = get_data_item_index (td, vtable);
-					} else if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
-						td->last_ins->data [2] = mono_class_value_size (klass, NULL);
+						newobj_fast->data [2] = get_data_item_index (td, vtable);
+
+						move_stack (td, (td->sp - td->stack) - csignature->param_count, 2);
+
+						StackInfo *tmp_sp = td->sp - csignature->param_count - 2;
+						SET_TYPE (tmp_sp, STACK_TYPE_O, klass);
+						SET_TYPE (tmp_sp + 1, STACK_TYPE_O, klass);
+
+						if ((mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m)) {
+							MonoMethodHeader *mheader = interp_method_get_header (m, error);
+							goto_if_nok (error, exit);
+
+							if (interp_inline_method (td, m, mheader, error)) {
+								newobj_fast->data [0] = 0xffff;
+								break;
+							}
+						}
+						// If inlining failed we need to restore the stack
+						move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
+						// Set the method to be executed as part of newobj instruction
+						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					} else {
+						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
+							interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
+						else
+							interp_add_ins (td, MINT_NEWOBJ_VT_FAST);
+
+						td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+						td->last_ins->data [1] = csignature->param_count;
+
+						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
+							td->last_ins->data [2] = mono_class_value_size (klass, NULL);
+						}
 					}
 				} else {
 					interp_add_ins (td, MINT_NEWOBJ);
@@ -4195,6 +4240,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				}
 				goto_if_nok (error, exit);
 
+				td->sp -= csignature->param_count;
 				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
 					vt_res_size = mono_class_value_size (klass, NULL);
 					PUSH_VT (td, vt_res_size);
