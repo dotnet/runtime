@@ -7,13 +7,8 @@ using System;
 using System.CommandLine;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Security;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Text;
 using System.Net;
-using System.Net.Sockets;
 using HttpStress;
 
 /// <summary>
@@ -22,14 +17,14 @@ using HttpStress;
 public class Program
 {
     [Flags]
-    enum RunMode { Server = 1, Client = 2, Both = 3 }; 
+    enum RunMode { server = 1, client = 2, both = 3 }; 
 
     public static void Main(string[] args)
     {
         var cmd = new RootCommand();
         cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
-        cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<string>("serverUri", "https://localhost:5001") });
-        cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both") { Argument = new Argument<RunMode>("runMode", RunMode.Both)});
+        cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<Uri>("serverUri", new Uri("https://localhost:5001")) });
+        cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both)});
         cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
         cmd.AddOption(new Option("-maxRequestLineSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8192) });
         cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
@@ -58,7 +53,7 @@ public class Program
 
         Run(
             runMode                 : cmdline.ValueForOption<RunMode>("-runMode"),
-            serverUri               : cmdline.ValueForOption<string>("-serverUri"),
+            serverUri               : cmdline.ValueForOption<Uri>("-serverUri"),
             httpSys                 : cmdline.ValueForOption<bool>("-httpSys"),
             concurrentRequests      : cmdline.ValueForOption<int>("-n"),
             maxContentLength        : cmdline.ValueForOption<int>("-maxContentLength"),
@@ -75,8 +70,14 @@ public class Program
             displayIntervalSeconds  : cmdline.ValueForOption<int>("-displayInterval"));
     }
 
-    private static void Run(RunMode runMode, string serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestLineSize, Version httpVersion, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
+    private static void Run(RunMode runMode, Uri serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestLineSize, Version httpVersion, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
     {
+
+        if (serverUri.Scheme != "https")
+        {
+            Console.Error.WriteLine("Server uri must be https.");
+            return;
+        }
 
         (string name, Func<RequestContext, Task> op)[] clientOperations = ClientOperations.Operations;
 
@@ -105,21 +106,22 @@ public class Program
             return;
         }
 
-        if ((runMode & RunMode.Both) == 0)
+        if ((runMode & RunMode.both) == 0)
         {
             Console.Error.WriteLine("Must specify a valid run mode");
             return;
         }
 
-        if (runMode.HasFlag(RunMode.Server))
+        if (runMode.HasFlag(RunMode.server))
         {
             // Start the Kestrel web server in-proc.
             Console.WriteLine($"Starting {(httpSys ? "http.sys" : "Kestrel")} server.");
-            var server = new Server(serverUri, httpSys, maxContentLength, logPath, aspnetLog);
+            var server = new StressServer(serverUri, httpSys, maxContentLength, logPath, aspnetLog);
             maxRequestLineSize = server.MaxRequestLineSize;
+            Console.WriteLine($"Server started at {server.ServerUri}");
         }
 
-        if (runMode.HasFlag(RunMode.Client))
+        if (runMode.HasFlag(RunMode.client))
         {
             // Start the client.
             Console.WriteLine($"Starting {concurrentRequests} client workers.");

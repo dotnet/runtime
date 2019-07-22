@@ -15,6 +15,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,22 +23,17 @@ using Microsoft.Extensions.Primitives;
 
 namespace HttpStress
 {
-    public class Server : IDisposable
+    public class StressServer : IDisposable
     {
         private EventListener _eventListener;
         private readonly IWebHost _webHost;
 
-        public string ServerUri { get; }
+        public Uri ServerUri { get; }
         public int MaxRequestLineSize { get; private set; } = -1;
 
-        public Server(string serverUri, bool httpSys, int maxContentLength, string logPath, bool enableAspNetLogs)
+        public StressServer(Uri serverUri, bool httpSys, int maxContentLength, string logPath, bool enableAspNetLogs)
         {
-            var uri = new Uri(serverUri);
-            var hostName = uri.Host;
-            var httpsPort = uri.Port;
-
-            string contentSource = string.Concat(Enumerable.Repeat("1234567890", maxContentLength / 10));
-
+            ServerUri = serverUri;
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
             if (httpSys)
@@ -51,7 +47,7 @@ namespace HttpStress
                 host = host.UseHttpSys(hso =>
                 {
                     MaxRequestLineSize = 8192;
-                    hso.UrlPrefixes.Add(ServerUri);
+                    hso.UrlPrefixes.Add(ServerUri.ToString());
                     hso.Authentication.Schemes = Microsoft.AspNetCore.Server.HttpSys.AuthenticationSchemes.None;
                     hso.Authentication.AllowAnonymous = true;
                     hso.MaxConnections = null;
@@ -64,12 +60,12 @@ namespace HttpStress
                 host = host.UseKestrel(ko =>
                 {
                     MaxRequestLineSize = ko.Limits.MaxRequestLineSize;
-                    ko.ListenLocalhost(httpsPort, listenOptions =>
+                    ko.ListenLocalhost(serverUri.Port, listenOptions =>
                     {
                         // Create self-signed cert for server.
                         using (RSA rsa = RSA.Create())
                         {
-                            var certReq = new CertificateRequest($"CN={hostName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                            var certReq = new CertificateRequest($"CN={ServerUri.Host}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                             certReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
                             certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
                             certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
@@ -92,95 +88,7 @@ namespace HttpStress
                 {
                     var head = new[] { "HEAD" };
                     app.UseRouting();
-                    app.UseEndpoints(endpoints =>
-                    {
-                        endpoints.MapGet("/", async context =>
-                        {
-                        // Get requests just send back the requested content.
-                        await context.Response.WriteAsync(contentSource);
-                        });
-                        endpoints.MapGet("/slow", async context =>
-                        {
-                        // Sends back the content a character at a time.
-                        for (int i = 0; i < contentSource.Length; i++)
-                            {
-                                await context.Response.WriteAsync(contentSource[i].ToString());
-                                await context.Response.Body.FlushAsync();
-                            }
-                        });
-                        endpoints.MapGet("/headers", async context =>
-                        {
-                        // Get request but with a bunch of extra headers
-                        for (int i = 0; i < 20; i++)
-                            {
-                                context.Response.Headers.Add(
-                                    "CustomHeader" + i,
-                                    new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
-                            }
-                            await context.Response.WriteAsync(contentSource);
-                            if (context.Response.SupportsTrailers())
-                            {
-                                for (int i = 0; i < 10; i++)
-                                {
-                                    context.Response.AppendTrailer(
-                                        "CustomTrailer" + i,
-                                        new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
-                                }
-                            }
-                        });
-                        endpoints.MapGet("/variables", async context =>
-                        {
-                            string queryString = context.Request.QueryString.Value;
-                            NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
-
-                            StringBuilder sb = new StringBuilder();
-                            for (int i = 0; i < nameValueCollection.Count; i++)
-                            {
-                                sb.Append(nameValueCollection[$"Var{i}"]);
-                            }
-
-                            await context.Response.WriteAsync(sb.ToString());
-                        });
-                        endpoints.MapGet("/abort", async context =>
-                        {
-                        // Server writes some content, then aborts the connection
-                        await context.Response.WriteAsync(contentSource.Substring(0, contentSource.Length / 2));
-                            context.Abort();
-                        });
-                        endpoints.MapPost("/", async context =>
-                        {
-                        // Post echos back the requested content, first buffering it all server-side, then sending it all back.
-                        var s = new MemoryStream();
-                            await context.Request.Body.CopyToAsync(s);
-                            s.Position = 0;
-                            await s.CopyToAsync(context.Response.Body);
-                        });
-                        endpoints.MapPost("/duplex", async context =>
-                        {
-                        // Echos back the requested content in a full duplex manner.
-                        await context.Request.Body.CopyToAsync(context.Response.Body);
-                        });
-                        endpoints.MapPost("/duplexSlow", async context =>
-                        {
-                        // Echos back the requested content in a full duplex manner, but one byte at a time.
-                        var buffer = new byte[1];
-                            while ((await context.Request.Body.ReadAsync(buffer)) != 0)
-                            {
-                                await context.Response.Body.WriteAsync(buffer);
-                            }
-                        });
-                        endpoints.MapMethods("/", head, context =>
-                        {
-                        // Just set the max content length on the response.
-                        context.Response.Headers.ContentLength = maxContentLength;
-                            return Task.CompletedTask;
-                        });
-                        endpoints.MapPut("/", async context =>
-                        {
-                        // Read the full request but don't send back a response body.
-                        await context.Request.Body.CopyToAsync(Stream.Null);
-                        });
-                    });
+                    app.UseEndpoints(e => MapRoutes(e, maxContentLength));
                 });
 
             // Handle command-line arguments.
@@ -188,6 +96,112 @@ namespace HttpStress
                 logPath == null ? null :
                 new HttpEventListener(logPath != "console" ? new StreamWriter(logPath) { AutoFlush = true } : null);
 
+            SetUpJustInTimeLogging();
+
+            _webHost = host.Build();
+            _webHost.Start();
+        }
+
+        private void MapRoutes(IEndpointRouteBuilder endpoints, int maxContentLength)
+        {
+            string contentSource = string.Concat(Enumerable.Repeat("1234567890", maxContentLength / 10));
+            var head = new[] { "HEAD" };
+
+            endpoints.MapGet("/", async context =>
+            {
+                // Get requests just send back the requested content.
+                await context.Response.WriteAsync(contentSource);
+            });
+            endpoints.MapGet("/slow", async context =>
+            {
+                // Sends back the content a character at a time.
+                for (int i = 0; i < contentSource.Length; i++)
+                {
+                    await context.Response.WriteAsync(contentSource[i].ToString());
+                    await context.Response.Body.FlushAsync();
+                }
+            });
+            endpoints.MapGet("/headers", async context =>
+            {
+                // Get request but with a bunch of extra headers
+                for (int i = 0; i < 20; i++)
+                {
+                    context.Response.Headers.Add(
+                        "CustomHeader" + i,
+                        new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
+                }
+                await context.Response.WriteAsync(contentSource);
+                if (context.Response.SupportsTrailers())
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        context.Response.AppendTrailer(
+                            "CustomTrailer" + i,
+                            new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
+                    }
+                }
+            });
+            endpoints.MapGet("/variables", async context =>
+            {
+                string queryString = context.Request.QueryString.Value;
+                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < nameValueCollection.Count; i++)
+                {
+                    sb.Append(nameValueCollection[$"Var{i}"]);
+                }
+
+                await context.Response.WriteAsync(sb.ToString());
+            });
+            endpoints.MapGet("/abort", async context =>
+            {
+                // Server writes some content, then aborts the connection
+                await context.Response.WriteAsync(contentSource.Substring(0, contentSource.Length / 2));
+                context.Abort();
+            });
+            endpoints.MapPost("/", async context =>
+            {
+                // Post echos back the requested content, first buffering it all server-side, then sending it all back.
+                var s = new MemoryStream();
+                await context.Request.Body.CopyToAsync(s);
+                s.Position = 0;
+                await s.CopyToAsync(context.Response.Body);
+            });
+            endpoints.MapPost("/duplex", async context =>
+            {
+                // Echos back the requested content in a full duplex manner.
+                await context.Request.Body.CopyToAsync(context.Response.Body);
+            });
+            endpoints.MapPost("/duplexSlow", async context =>
+            {
+                // Echos back the requested content in a full duplex manner, but one byte at a time.
+                var buffer = new byte[1];
+                while ((await context.Request.Body.ReadAsync(buffer)) != 0)
+                {
+                    await context.Response.Body.WriteAsync(buffer);
+                }
+            });
+            endpoints.MapMethods("/", head, context =>
+            {
+                // Just set the max content length on the response.
+                context.Response.Headers.ContentLength = maxContentLength;
+                return Task.CompletedTask;
+            });
+            endpoints.MapPut("/", async context =>
+            {
+                // Read the full request but don't send back a response body.
+                await context.Request.Body.CopyToAsync(Stream.Null);
+            });
+        }
+
+        public void Dispose()
+        {
+            _webHost.Dispose(); _eventListener?.Dispose();
+        }
+
+        private void SetUpJustInTimeLogging()
+        {
             if (_eventListener == null)
             {
                 // If no command-line requested logging, enable the user to press 'L' to enable logging to the console
@@ -198,6 +212,7 @@ namespace HttpStress
                     {
                         if (Console.ReadKey(intercept: true).Key == ConsoleKey.L)
                         {
+                            Console.WriteLine("Enabling console event logger");
                             _eventListener = new HttpEventListener();
                             break;
                         }
@@ -205,9 +220,6 @@ namespace HttpStress
                 })
                 { IsBackground = true }.Start();
             }
-
-            _webHost = host.Build();
-            _webHost.Start();
         }
 
         /// <summary>EventListener that dumps HTTP events out to either the console or a stream writer.</summary>
@@ -256,11 +268,6 @@ namespace HttpStress
                     }
                 }
             }
-        }
-
-        public void Dispose()
-        {
-            _webHost.Dispose(); _eventListener.Dispose();
         }
     }
 }
