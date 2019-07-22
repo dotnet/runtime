@@ -12,6 +12,7 @@ namespace System.SpanTests
         /// This is a simple sanity test to check that GC reporting for Span is not completely broken, it is not meant to be
         /// comprehensive.
         /// </summary>
+        [Theory]
         [InlineData(100_000, 10_000)]
         [InlineData(100, 100)]
         [OuterLoop]
