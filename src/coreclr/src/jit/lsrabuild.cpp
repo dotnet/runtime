@@ -2877,11 +2877,6 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
     int      srcCount = 0;
     GenTree* op1      = node->gtOp1;
     GenTree* op2      = node->gtGetOp2IfPresent();
-    if (node->IsReverseOp() && (op2 != nullptr))
-    {
-        srcCount += BuildOperandUses(op2, candidates);
-        op2 = nullptr;
-    }
     if (op1 != nullptr)
     {
         srcCount += BuildOperandUses(op1, candidates);
