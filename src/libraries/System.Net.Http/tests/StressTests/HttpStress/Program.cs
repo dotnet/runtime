@@ -78,7 +78,7 @@ public class Program
     private static void Run(RunMode runMode, string serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestLineSize, Version httpVersion, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
     {
 
-        (string name, Func<ClientOperations.RequestContext, Task> op)[] clientOperations = ClientOperations.Operations;
+        (string name, Func<RequestContext, Task> op)[] clientOperations = ClientOperations.Operations;
 
         Console.WriteLine("       .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
         Console.WriteLine("    ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
