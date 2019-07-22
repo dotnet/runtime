@@ -705,74 +705,74 @@ namespace System.Linq.Expressions.Tests
 
         #region Generic helpers
 
-        public static void CheckGenericArrayLengthTestHelper<T>(bool useInterpreter)
+        private static void CheckGenericArrayLengthTestHelper<T>(bool useInterpreter)
         {
             CheckGenericArrayLengthExpression<T>(GenerateGenericArray<T>(0), useInterpreter);
             CheckGenericArrayLengthExpression<T>(GenerateGenericArray<T>(1), useInterpreter);
             CheckGenericArrayLengthExpression<T>(GenerateGenericArray<T>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericArrayLengthTestHelper<T>(bool useInterpreter)
+        private static void CheckExceptionGenericArrayLengthTestHelper<T>(bool useInterpreter)
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericArrayLengthExpression<T>(null, useInterpreter));
         }
 
-        public static void CheckGenericWithClassRestrictionArrayLengthTestHelper<Tc>(bool useInterpreter) where Tc : class
+        private static void CheckGenericWithClassRestrictionArrayLengthTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
             CheckGenericWithClassRestrictionArrayLengthExpression<Tc>(GenerateGenericWithClassRestrictionArray<Tc>(0), useInterpreter);
             CheckGenericWithClassRestrictionArrayLengthExpression<Tc>(GenerateGenericWithClassRestrictionArray<Tc>(1), useInterpreter);
             CheckGenericWithClassRestrictionArrayLengthExpression<Tc>(GenerateGenericWithClassRestrictionArray<Tc>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassRestrictionArrayLengthTestHelper<Tc>(bool useInterpreter) where Tc : class
+        private static void CheckExceptionGenericWithClassRestrictionArrayLengthTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithClassRestrictionArrayLengthExpression<Tc>(null, useInterpreter));
         }
 
-        public static void CheckGenericWithClassAndNewRestrictionArrayLengthTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionArrayLengthTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             CheckGenericWithClassAndNewRestrictionArrayLengthExpression<Tcn>(GenerateGenericWithClassAndNewRestrictionArray<Tcn>(0), useInterpreter);
             CheckGenericWithClassAndNewRestrictionArrayLengthExpression<Tcn>(GenerateGenericWithClassAndNewRestrictionArray<Tcn>(1), useInterpreter);
             CheckGenericWithClassAndNewRestrictionArrayLengthExpression<Tcn>(GenerateGenericWithClassAndNewRestrictionArray<Tcn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassAndNewRestrictionArrayLengthTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
+        private static void CheckExceptionGenericWithClassAndNewRestrictionArrayLengthTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithClassAndNewRestrictionArrayLengthExpression<Tcn>(null, useInterpreter));
         }
 
-        public static void CheckGenericWithSubClassRestrictionArrayLengthTestHelper<TC>(bool useInterpreter) where TC : C
+        private static void CheckGenericWithSubClassRestrictionArrayLengthTestHelper<TC>(bool useInterpreter) where TC : C
         {
             CheckGenericWithSubClassRestrictionArrayLengthExpression<TC>(GenerateGenericWithSubClassRestrictionArray<TC>(0), useInterpreter);
             CheckGenericWithSubClassRestrictionArrayLengthExpression<TC>(GenerateGenericWithSubClassRestrictionArray<TC>(1), useInterpreter);
             CheckGenericWithSubClassRestrictionArrayLengthExpression<TC>(GenerateGenericWithSubClassRestrictionArray<TC>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassRestrictionArrayLengthTestHelper<TC>(bool useInterpreter) where TC : C
+        private static void CheckExceptionGenericWithSubClassRestrictionArrayLengthTestHelper<TC>(bool useInterpreter) where TC : C
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithSubClassRestrictionArrayLengthExpression<TC>(null, useInterpreter));
         }
 
-        public static void CheckGenericWithSubClassAndNewRestrictionArrayLengthTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionArrayLengthTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             CheckGenericWithSubClassAndNewRestrictionArrayLengthExpression<TCn>(GenerateGenericWithSubClassAndNewRestrictionArray<TCn>(0), useInterpreter);
             CheckGenericWithSubClassAndNewRestrictionArrayLengthExpression<TCn>(GenerateGenericWithSubClassAndNewRestrictionArray<TCn>(1), useInterpreter);
             CheckGenericWithSubClassAndNewRestrictionArrayLengthExpression<TCn>(GenerateGenericWithSubClassAndNewRestrictionArray<TCn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayLengthTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
+        private static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayLengthTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithSubClassAndNewRestrictionArrayLengthExpression<TCn>(null, useInterpreter));
         }
 
-        public static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(0), useInterpreter);
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(1), useInterpreter);
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(null, useInterpreter));
         }

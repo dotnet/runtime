@@ -43,7 +43,7 @@ namespace System.Tests
         /// <param name="actual">The value to be compared against</param>
         /// <param name="allowedVariance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(double expected, double actual, double variance)
+        private static void AssertEqual(double expected, double actual, double variance)
         {
             if (double.IsNaN(expected))
             {

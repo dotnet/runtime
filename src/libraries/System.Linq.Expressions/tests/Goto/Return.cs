@@ -289,7 +289,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => exp.Compile(useInterpreter));
         }
 
+#pragma warning disable xUnit1013 // needs to be public for reflection-based test
         public static void DoNothing()
+#pragma warning restore xUnit1013
         {
         }
 

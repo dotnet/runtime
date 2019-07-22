@@ -24,7 +24,9 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(v);
         }
 
+#pragma warning disable xUnit1013 // needs to be public for reflection-based test
         public void Add(ref int i)
+#pragma warning restore xUnit1013
         {
         }
 
@@ -217,7 +219,7 @@ namespace System.Linq.Expressions.Tests
             return type;
         }
 
-        public static void TestUserDefinedMathOperators<X, Y>()
+        private static void TestUserDefinedMathOperators<X, Y>()
         {
             ParameterExpression x = Expression.Parameter(typeof(X), "x");
             ParameterExpression y = Expression.Parameter(typeof(Y), "y");
@@ -252,7 +254,7 @@ namespace System.Linq.Expressions.Tests
             AssertIsOp(Expression.NegateChecked(x, nnX.GetMethod("op_OnesComplement")), "op_OnesComplement");
         }
 
-        public static void TestUserDefinedComparisonOperators<X, Y>()
+        private static void TestUserDefinedComparisonOperators<X, Y>()
         {
             ParameterExpression x = Expression.Parameter(typeof(X), "x");
             ParameterExpression y = Expression.Parameter(typeof(Y), "y");
@@ -289,7 +291,7 @@ namespace System.Linq.Expressions.Tests
             AssertIsOp(Expression.NotEqual(x, y, true, nnX.GetMethod("op_Equality")), "op_Equality");
         }
 
-        public static void TestUserDefinedBitwiseOperators<X, Y>()
+        private static void TestUserDefinedBitwiseOperators<X, Y>()
         {
             ParameterExpression x = Expression.Parameter(typeof(X), "x");
             ParameterExpression y = Expression.Parameter(typeof(Y), "y");
@@ -308,7 +310,7 @@ namespace System.Linq.Expressions.Tests
             AssertIsOp(Expression.Not(x, nnX.GetMethod("op_UnaryNegation")), "op_UnaryNegation");
         }
 
-        public static void TestUserDefinedLogicalOperators<X, Y>()
+        private static void TestUserDefinedLogicalOperators<X, Y>()
         {
             ParameterExpression x = Expression.Parameter(typeof(X), "x");
             ParameterExpression y = Expression.Parameter(typeof(Y), "y");
@@ -327,13 +329,13 @@ namespace System.Linq.Expressions.Tests
             AssertIsOp(Expression.Not(x, nnX.GetMethod("op_UnaryNegation")), "op_UnaryNegation");
         }
 
-        public static void AssertIsOp(BinaryExpression b, string opName)
+        private static void AssertIsOp(BinaryExpression b, string opName)
         {
             Assert.NotNull(b.Method);
             Assert.Equal(opName, b.Method.Name);
         }
 
-        public static void AssertIsOp(UnaryExpression u, string opName)
+        private static void AssertIsOp(UnaryExpression u, string opName)
         {
             Assert.NotNull(u.Method);
             Assert.Equal(opName, u.Method.Name);
@@ -349,7 +351,7 @@ namespace System.Linq.Expressions.Tests
             TestUserDefinedCoercion<M?, N?>();
         }
 
-        public static void TestUserDefinedCoercion<X, Y>()
+        private static void TestUserDefinedCoercion<X, Y>()
         {
             ParameterExpression x = Expression.Parameter(typeof(X), "x");
             ParameterExpression y = Expression.Parameter(typeof(Y), "y");
@@ -376,7 +378,7 @@ namespace System.Linq.Expressions.Tests
             AssertIsCoercion(Expression.Convert(y, typeof(X), nnY.GetMethod("Bar")), "Bar", typeof(X));
         }
 
-        public static void AssertIsCoercion(UnaryExpression u, string opName, Type expected)
+        private static void AssertIsCoercion(UnaryExpression u, string opName, Type expected)
         {
             Debug.WriteLine("Convert: {0} -> {1}", u.Operand.Type, u.Type);
             Assert.NotNull(u.Method);

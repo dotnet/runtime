@@ -157,6 +157,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(20, Assert.Throws<IntegralException>(spinThenThrow).Number);
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void NoBreakToLabelInfiniteLoop(bool useInterpreter)
         {
             // Have an error condition so the otherwise-infinite loop can complete.

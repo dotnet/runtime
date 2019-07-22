@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Generic helpers
 
-        public static void CheckNullableGenericWithStructRestrictionConstantHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckNullableGenericWithStructRestrictionConstantHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             foreach (Ts? value in new Ts?[] { null, default(Ts), new Ts() })
             {
