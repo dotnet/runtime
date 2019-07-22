@@ -129,6 +129,7 @@ def build_argument_parser():
 
     framework_parser = subparsers.add_parser('crossgen_framework', description=framework_parser_description)
     framework_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
+    framework_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     framework_parser.add_argument('--core_root', dest='core_root', required=True)
     framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
     framework_parser.set_defaults(func=crossgen_framework)
@@ -358,7 +359,7 @@ class CrossGenRunner:
         """
             Runs a subprocess "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePerfMap {debugging_files_dirname} /in {il_filename}" on Unix
             or "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePdb {debugging_files_dirname} /in {il_filename}" on Windows
-            and returns returncode, stdour, stderr.
+            and returns returncode, stdout, stderr.
         """
         args = self._build_args_create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
         return self._run_with_args(args)
@@ -535,8 +536,13 @@ def add_ni_extension(filename):
 
 def crossgen_framework(args):
     global g_Framework_Assemblies
-    platform_assemblies_paths = [args.core_root]
+
+    il_corelib_filename = args.il_corelib_filename
     ni_files_dirname, debugging_files_dirname = create_output_folders()
+    ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
+    platform_assemblies_paths = [args.core_root]
+    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     for assembly_name in g_Framework_Assemblies:
         il_filename = os.path.join(args.core_root, assembly_name)
