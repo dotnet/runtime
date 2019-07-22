@@ -685,20 +685,16 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         buildInternalIntRegisterDefForNode(blkNode, blkSizeRegMask);
     }
 
-    if (!dstAddr->isContained() && !blkNode->IsReverseOp())
+    if (!dstAddr->isContained())
     {
         srcCount++;
         BuildUse(dstAddr, dstAddrRegMask);
     }
+
     if ((srcAddrOrFill != nullptr) && !srcAddrOrFill->isContained())
     {
         srcCount++;
         BuildUse(srcAddrOrFill, sourceRegMask);
-    }
-    if (!dstAddr->isContained() && blkNode->IsReverseOp())
-    {
-        srcCount++;
-        BuildUse(dstAddr, dstAddrRegMask);
     }
 
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
