@@ -122,6 +122,16 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             Assert.Contains(".dll", platformManifestContent);
         }
 
+        public string ReadEntryContent(string entry)
+        {
+            return ReadEntryContent(_reader.GetEntry(entry));
+        }
+
+        public XDocument ReadEntryXDocument(string entry)
+        {
+            return ReadEntryXDocument(_reader.GetEntry(entry));
+        }
+
         private void IsFrameworkPack()
         {
             Assert.Empty(_reader.GetPackageDependencies());

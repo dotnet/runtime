@@ -20,23 +20,26 @@ namespace Microsoft.DotNet.Build.Tasks
         public ITaskItem[] Files { get; set; }
 
         /// <summary>
-        /// A list of assembly names with Profile classifications. A Profile="%(Profile)" attribute
-        /// is set in the framework list for the matching Files item if %(Profile) contains text.
+        /// A list of assembly names with classification info such as Profile. A
+        /// Profile="%(Profile)" attribute is included in the framework list for the matching Files
+        /// item if %(Profile) contains text.
         ///
-        /// If *any* FileProfiles are passed:
+        /// If *any* FileClassifications are passed:
         ///
         ///   *Every* file that ends up listed in the framework list must have a matching
-        ///   FileProfile, even if %(Profile) is not set.
+        ///   FileClassification.
         ///
-        ///   Additionally, every FileProfile must find exactly one File.
+        ///   Additionally, every FileClassification must find exactly one File.
         ///
         /// This task fails if the conditions aren't met. This ensures the classification doesn't
         /// become out of date when the list of files changes.
         ///
         /// %(Identity): Assembly name (including ".dll").
         /// %(Profile): List of profiles that apply, semicolon-delimited.
+        /// %(ReferencedByDefault): Empty (default) or "true"/"false". Indicates whether this file
+        ///   should be referenced by default when the SDK uses this framework.
         /// </summary>
-        public ITaskItem[] FileProfiles { get; set; }
+        public ITaskItem[] FileClassifications { get; set; }
 
         [Required]
         public string TargetFile { get; set; }
@@ -59,13 +62,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var frameworkManifest = new XElement("FileList", rootAttributes);
 
-            Dictionary<string, string> fileProfileLookup = FileProfiles
+            Dictionary<string, ITaskItem> fileClassLookup = FileClassifications
                 ?.ToDictionary(
                     item => item.ItemSpec,
-                    item => item.GetMetadata("Profile"),
+                    item => item,
                     StringComparer.OrdinalIgnoreCase);
 
-            var usedFileProfiles = new HashSet<string>();
+            var usedFileClasses = new HashSet<string>();
 
             foreach (var f in Files
                 .Where(IsTargetPathIncluded)
@@ -157,31 +160,40 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 element.Add(new XAttribute("FileVersion", f.FileVersion));
 
-                if (fileProfileLookup != null)
+                if (fileClassLookup != null)
                 {
-                    if (fileProfileLookup.TryGetValue(f.Filename, out string profile))
+                    if (fileClassLookup.TryGetValue(f.Filename, out ITaskItem classItem))
                     {
+                        string profile = classItem.GetMetadata("Profile");
+
                         if (!string.IsNullOrEmpty(profile))
                         {
                             element.Add(new XAttribute("Profile", profile));
                         }
 
-                        usedFileProfiles.Add(f.Filename);
+                        string referencedByDefault = classItem.GetMetadata("ReferencedByDefault");
+
+                        if (!string.IsNullOrEmpty(referencedByDefault))
+                        {
+                            element.Add(new XAttribute("ReferencedByDefault", referencedByDefault));
+                        }
+
+                        usedFileClasses.Add(f.Filename);
                     }
                     else
                     {
-                        Log.LogError($"File matches no profile classification: {f.Filename}");
+                        Log.LogError($"File matches no classification: {f.Filename}");
                     }
                 }
 
                 frameworkManifest.Add(element);
             }
 
-            foreach (var unused in fileProfileLookup
-                ?.Keys.Except(usedFileProfiles).OrderBy(p => p)
+            foreach (var unused in fileClassLookup
+                ?.Keys.Except(usedFileClasses).OrderBy(p => p)
                 ?? Enumerable.Empty<string>())
             {
-                Log.LogError($"Profile classification matches no files: {unused}");
+                Log.LogError($"Classification matches no files: {unused}");
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(TargetFile));
