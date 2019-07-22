@@ -30,7 +30,7 @@ namespace System.DirectoryServices.Tests
 
                 using (DirectoryEntry de = schema.GetDirectoryEntry())
                 {
-                    Assert.True("CN=Schema".Equals(de.Name, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal("CN=Schema", de.Name, StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.Tests
 
                 using (DirectoryEntry de = orgClass.GetDirectoryEntry())
                 {
-                    Assert.True("CN=Organization".Equals(de.Name, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal("CN=Organization", de.Name, StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace System.DirectoryServices.Tests
 
                 using (DirectoryEntry de = adsp.GetDirectoryEntry())
                 {
-                    Assert.True("CN=Object-Class".Equals(de.Name, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal("CN=Object-Class", de.Name, StringComparer.OrdinalIgnoreCase);
                 }
 
                 Assert.Equal(ActiveDirectorySyntax.Oid, adsp.Syntax);
@@ -123,7 +123,7 @@ namespace System.DirectoryServices.Tests
                 {
                     // we expect to get top only entries
                     string s  = (string) child.Properties["objectClass"][0];
-                    Assert.True(s.Equals("top", StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal(s, "top", StringComparer.OrdinalIgnoreCase);
                     newTopClassCount += 1;
                 }
 
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.Tests
                 using (ActiveDirectorySchema schema = forest.Schema)
                 using (ActiveDirectorySchemaClass  adsc = schema.FindClass("top"))
                 {
-                    Assert.True("top".Equals(adsc.CommonName, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal("top", adsc.CommonName, StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
