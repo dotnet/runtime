@@ -456,9 +456,6 @@
 # https://github.com/mono/mono/issues/15076
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
 
-# throws a NRE
-# https://github.com/mono/mono/issues/15077
--nomethod System.Reflection.Tests.GetTypeTests.GetType
 
 # Assertion expects false, but we return true
 # https://github.com/mono/mono/issues/15080
