@@ -21,9 +21,6 @@ init_rid_plat()
         __rid_plat=""
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-            if [[ "$ID" == "centos" ]]; then
-                ID="rhel"
-            fi
             if [[ "$ID" == "rhel" ]]; then
                 # remove the last version number
                 VERSION_ID=${VERSION_ID%.*}
