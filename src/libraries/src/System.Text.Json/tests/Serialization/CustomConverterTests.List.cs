@@ -233,6 +233,9 @@ namespace System.Text.Json.Serialization.Tests
 
             string jsonSerialized = JsonSerializer.Serialize(list, options);
             Assert.Equal(json, jsonSerialized);
+
+            jsonSerialized = JsonSerializer.Serialize(contraVariantList, options);
+            Assert.Equal(json, jsonSerialized);
         }
     }
 }
