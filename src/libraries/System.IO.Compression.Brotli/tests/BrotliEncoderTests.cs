@@ -67,7 +67,7 @@ namespace System.IO.Compression.Tests
             Assert.False(BrotliDecoder.TryDecompress(source, destination, out int bytesWritten), "TryDecompress completed successfully but should have failed due to too short of a destination array");
             Assert.Equal(0, bytesWritten);
 
-            BrotliDecoder decoder;
+            BrotliDecoder decoder = default;
             var result = decoder.Decompress(source, destination, out int bytesConsumed, out bytesWritten);
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, bytesConsumed);
@@ -89,7 +89,7 @@ namespace System.IO.Compression.Tests
             Assert.False(BrotliDecoder.TryDecompress(source, destination, out int bytesWritten), "TryDecompress completed successfully but should have failed due to too short of a source array");
             Assert.Equal(0, bytesWritten);
 
-            BrotliDecoder decoder;
+            BrotliDecoder decoder = default;
             var result = decoder.Decompress(source, destination, out int bytesConsumed, out bytesWritten);
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, bytesConsumed);
@@ -112,7 +112,7 @@ namespace System.IO.Compression.Tests
             Assert.False(BrotliEncoder.TryCompress(source, destination, out int bytesWritten), "TryCompress completed successfully but should have failed due to too short of a destination array");
             Assert.Equal(0, bytesWritten);
 
-            BrotliEncoder encoder;
+            BrotliEncoder encoder = default;
             var result = encoder.Compress(source, destination, out int bytesConsumed, out bytesWritten, false);
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, bytesConsumed);
@@ -140,7 +140,7 @@ namespace System.IO.Compression.Tests
             // The only byte written should be the Brotli end of stream byte which varies based on the window/quality
             Assert.Equal(1, bytesWritten);
 
-            BrotliEncoder encoder;
+            BrotliEncoder encoder = default;
             var result = encoder.Compress(source, destination, out int bytesConsumed, out bytesWritten, false);
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, bytesConsumed);
@@ -160,8 +160,8 @@ namespace System.IO.Compression.Tests
         {
             int chunkSize = 100;
             int totalSize = 20000;
-            BrotliEncoder encoder;
-            BrotliDecoder decoder;
+            BrotliEncoder encoder = default;
+            BrotliDecoder decoder = default;
             for (int i = 0; i < totalSize; i += chunkSize)
             {
                 byte[] uncompressed = new byte[chunkSize];
@@ -354,7 +354,7 @@ namespace System.IO.Compression.Tests
 
         private static void Compress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            BrotliEncoder encoder;
+            BrotliEncoder encoder = default;
             while (!input.IsEmpty && !output.IsEmpty)
             {
                 encoder.Compress(input, output, out int bytesConsumed, out int written, isFinalBlock: false);
@@ -366,7 +366,7 @@ namespace System.IO.Compression.Tests
 
         private static void Decompress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            BrotliDecoder decoder;
+            BrotliDecoder decoder = default;
             while (!input.IsEmpty && !output.IsEmpty)
             {
                 decoder.Decompress(input, output, out int bytesConsumed, out int written);
