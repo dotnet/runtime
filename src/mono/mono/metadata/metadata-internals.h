@@ -1195,13 +1195,11 @@ mono_image_get_alc (MonoImage *image)
 #endif
 }
 
-#ifdef ENABLE_NETCORE
 static inline
 MonoAssemblyLoadContext *
 mono_assembly_get_alc (MonoAssembly *assm)
 {
-	return assm->image->alc;
+	return mono_image_get_alc (assm->image);
 }
-#endif
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

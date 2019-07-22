@@ -349,9 +349,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 };
 #endif
 
-/*
- * keeps track of loaded assemblies
- */
+/* keeps track of loaded assemblies, excluding dynamic ones */
 static GList *loaded_assemblies = NULL;
 static MonoAssembly *corlib;
 

@@ -31,9 +31,7 @@ mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error);
 #ifdef ENABLE_NETCORE
 void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs);
-#endif
 
-#ifdef ENABLE_NETCORE
 void
 mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain);
 
