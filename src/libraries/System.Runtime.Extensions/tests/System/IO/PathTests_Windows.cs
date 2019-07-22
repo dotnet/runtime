@@ -14,6 +14,7 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public partial class PathTests_Windows : PathTestsBase
     {
+        [Fact]
         public void GetDirectoryName_DevicePath()
         {
             if (PathFeatures.IsUsingLegacyPathNormalization())

@@ -867,7 +867,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on Start Element, no namespace")]
-                public void TestReadEndElement3()
+                private void TestReadEndElement3()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM);
@@ -883,7 +883,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on Empty Element, no namespace", Priority = 0)]
-                public void TestReadEndElement4()
+                private void TestReadEndElement4()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_EMPTY_ELEM);
@@ -899,7 +899,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on regular Element, with namespace", Priority = 0)]
-                public void TestReadEndElement5()
+                private void TestReadEndElement5()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
@@ -916,7 +916,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on Empty Tag, with namespace", Priority = 0)]
-                public void TestReadEndElement6()
+                private void TestReadEndElement6()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_EMPTY_ELEM_NS);
@@ -932,7 +932,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on CDATA")]
-                public void TestReadEndElement7()
+                private void TestReadEndElement7()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.CDATA);
@@ -948,7 +948,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on Text")]
-                public void TestReadEndElement9()
+                private void TestReadEndElement9()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Text);
@@ -964,7 +964,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on ProcessingInstruction")]
-                public void TestReadEndElement10()
+                private void TestReadEndElement10()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.ProcessingInstruction);
@@ -980,7 +980,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on Comment")]
-                public void TestReadEndElement11()
+                private void TestReadEndElement11()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Comment);
@@ -996,7 +996,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on XmlDeclaration")]
-                public void TestReadEndElement13()
+                private void TestReadEndElement13()
                 {
                     XmlReader DataReader = GetReader();
                     try
@@ -1011,7 +1011,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on EntityReference")]
-                public void TestTextReadEndElement1()
+                private void TestTextReadEndElement1()
                 {
                     XmlReader DataReader = GetReader();
                     try
@@ -1026,7 +1026,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation("ReadEndElement on EndEntity")]
-                public void TestTextReadEndElement2()
+                private void TestTextReadEndElement2()
                 {
                     XmlReader DataReader = GetReader();
                     try

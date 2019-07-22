@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}</ProjectGuid>
-    <!-- This project uses a different test harness. -->
-    <DisableXUnitAnalyzer>true</DisableXUnitAnalyzer>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

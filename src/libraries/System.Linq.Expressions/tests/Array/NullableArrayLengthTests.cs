@@ -410,14 +410,14 @@ namespace System.Linq.Expressions.Tests
 
         #region Generic helpers
 
-        public static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(0), useInterpreter);
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(1), useInterpreter);
             CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             Assert.Throws<NullReferenceException>(() => CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(null, useInterpreter));
         }

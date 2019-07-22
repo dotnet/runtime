@@ -6,8 +6,6 @@
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <!-- TODO: Should be enabled after all fixes are applied. -->
-    <DisableXUnitAnalyzer>true</DisableXUnitAnalyzer>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

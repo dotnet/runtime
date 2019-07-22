@@ -1067,14 +1067,14 @@ namespace System.Linq.Expressions.Tests
 
         #region Generic helpers
 
-        public static void CheckGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
+        private static void CheckGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
         {
             CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), useInterpreter);
             CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), useInterpreter);
             CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
+        private static void CheckExceptionGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
         {
             // null arrays
             CheckExceptionGenericArrayArrayIndex<T>(null, -1, useInterpreter);
@@ -1090,14 +1090,14 @@ namespace System.Linq.Expressions.Tests
             CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
+        private static void CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
             CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), useInterpreter);
             CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), useInterpreter);
             CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
+        private static void CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
             // null arrays
             CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, -1, useInterpreter);
@@ -1113,14 +1113,14 @@ namespace System.Linq.Expressions.Tests
             CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), useInterpreter);
             CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), useInterpreter);
             CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
+        private static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             // null arrays
             CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, -1, useInterpreter);
@@ -1136,14 +1136,14 @@ namespace System.Linq.Expressions.Tests
             CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
+        private static void CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
         {
             CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), useInterpreter);
             CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), useInterpreter);
             CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
+        private static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
         {
             // null arrays
             CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, -1, useInterpreter);
@@ -1159,14 +1159,14 @@ namespace System.Linq.Expressions.Tests
             CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), useInterpreter);
             CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), useInterpreter);
             CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
+        private static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             // null arrays
             CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, -1, useInterpreter);

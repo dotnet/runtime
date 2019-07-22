@@ -392,7 +392,7 @@ namespace System.Linq.Expressions.Tests
                 appendInnerLambdas: true);
         }
 
-        public static void VerifyIL(this LambdaExpression expression, string expected, bool appendInnerLambdas = false)
+        internal static void VerifyIL(this LambdaExpression expression, string expected, bool appendInnerLambdas = false)
         {
             string actual = expression.GetIL(appendInnerLambdas);
 

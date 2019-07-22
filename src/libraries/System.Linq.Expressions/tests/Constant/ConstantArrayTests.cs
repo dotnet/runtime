@@ -359,7 +359,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Generic helpers
 
-        public static void CheckGenericWithStructRestrictionArrayConstantHelper<Ts>(bool useInterpreter) where Ts : struct
+        private static void CheckGenericWithStructRestrictionArrayConstantHelper<Ts>(bool useInterpreter) where Ts : struct
         {
             foreach (Ts[] value in new Ts[][] { null, new Ts[0], new Ts[] { default(Ts), new Ts() }, new Ts[100] })
             {
@@ -367,7 +367,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void CheckGenericArrayHelper<T>(bool useInterpreter)
+        private static void CheckGenericArrayHelper<T>(bool useInterpreter)
         {
             foreach (T[] value in new T[][] { null, new T[0], new T[] { default(T) }, new T[100] })
             {
@@ -375,7 +375,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void CheckGenericWithClassRestrictionArrayHelper<Tc>(bool useInterpreter) where Tc : class
+        private static void CheckGenericWithClassRestrictionArrayHelper<Tc>(bool useInterpreter) where Tc : class
         {
             foreach (Tc[] value in new Tc[][] { null, new Tc[0], new Tc[] { null, default(Tc) }, new Tc[100] })
             {
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void CheckGenericWithClassAndNewRestrictionArrayHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionArrayHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             foreach (Tcn[] value in new Tcn[][] { null, new Tcn[0], new Tcn[] { null, default(Tcn), new Tcn() }, new Tcn[100] })
             {
@@ -391,7 +391,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void CheckGenericWithSubClassRestrictionHelper<TC>(bool useInterpreter) where TC : C
+        private static void CheckGenericWithSubClassRestrictionHelper<TC>(bool useInterpreter) where TC : C
         {
             foreach (TC[] value in new TC[][] { null, new TC[0], new TC[] { null, default(TC), (TC)new C() }, new TC[100] })
             {
@@ -399,7 +399,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static void CheckGenericWithSubClassAndNewRestrictionHelper<TCn>(bool useInterpreter) where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             foreach (TCn[] value in new TCn[][] { null, new TCn[0], new TCn[] { null, default(TCn), new TCn(), (TCn)new C() }, new TCn[100] })
             {

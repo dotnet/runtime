@@ -267,18 +267,20 @@ namespace System.Linq.Expressions.Tests
         }
 #endif
 
+        [Fact]
         public void WriteOnlyInnerProperty()
         {
             MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
             PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.WriteonlyInnerProperty));
-            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MemberBind(property, bind));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.MemberBind(property, bind));
         }
 
+        [Fact]
         public void StaticWriteOnlyInnerProperty()
         {
             MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
             PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.StaticWriteonlyInnerProperty));
-            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MemberBind(property, bind));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.MemberBind(property, bind));
         }
     }
 }
