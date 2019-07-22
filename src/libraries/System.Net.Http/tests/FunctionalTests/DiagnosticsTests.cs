@@ -1091,6 +1091,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
+        [Theory]
         [InlineData(true, false)]
         [InlineData(false, true)]
         public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue, bool isInstrumentationEnabled)
