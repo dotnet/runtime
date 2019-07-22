@@ -297,7 +297,7 @@
 
     <CreateFrameworkListFile
       Files="@(File)"
-      FileProfiles="@(FrameworkListFileProfile)"
+      FileClassifications="@(FrameworkListFileClass)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)" />

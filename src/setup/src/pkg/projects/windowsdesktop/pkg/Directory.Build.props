@@ -19,48 +19,48 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <FrameworkListFileProfile Include="Accessibility.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="Microsoft.Win32.Registry.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="Microsoft.Win32.SystemEvents.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="PresentationCore.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.Aero.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.Aero2.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.AeroLite.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.Classic.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.Luna.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework.Royale.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="ReachFramework.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="System.CodeDom.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Configuration.ConfigurationManager.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Design.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Drawing.Common.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Drawing.Design.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Drawing.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.IO.Packaging.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Printing.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="System.Resources.Extensions.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.AccessControl.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Cryptography.Cng.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Cryptography.Pkcs.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Cryptography.ProtectedData.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Cryptography.Xml.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Permissions.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Security.Principal.Windows.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Windows.Controls.Ribbon.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="System.Windows.Extensions.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Windows.Forms.Design.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Windows.Forms.Design.Editors.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Windows.Forms.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Windows.Input.Manipulations.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="System.Windows.Presentation.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="System.Xaml.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="UIAutomationClient.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="UIAutomationClientSideProviders.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="UIAutomationProvider.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="UIAutomationTypes.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="WindowsBase.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="WindowsFormsIntegration.dll" />
+    <FrameworkListFileClass Include="Accessibility.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="Microsoft.Win32.Registry.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="Microsoft.Win32.SystemEvents.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="PresentationCore.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.Aero.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.Aero2.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.AeroLite.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.Classic.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.Luna.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.Royale.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="ReachFramework.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="System.CodeDom.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Configuration.ConfigurationManager.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Design.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Drawing.Common.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Drawing.Design.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Drawing.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.IO.Packaging.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Printing.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="System.Resources.Extensions.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.AccessControl.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Cryptography.Cng.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Cryptography.Pkcs.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Cryptography.ProtectedData.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Cryptography.Xml.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Permissions.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Security.Principal.Windows.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Windows.Controls.Ribbon.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="System.Windows.Extensions.dll" Profile="WindowsForms;WPF" />
+    <FrameworkListFileClass Include="System.Windows.Forms.Design.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Windows.Forms.Design.Editors.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Windows.Forms.dll" Profile="WindowsForms" />
+    <FrameworkListFileClass Include="System.Windows.Input.Manipulations.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="System.Windows.Presentation.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="System.Xaml.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="UIAutomationClient.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="UIAutomationClientSideProviders.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="UIAutomationProvider.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="UIAutomationTypes.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="WindowsBase.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="WindowsFormsIntegration.dll" />
   </ItemGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
