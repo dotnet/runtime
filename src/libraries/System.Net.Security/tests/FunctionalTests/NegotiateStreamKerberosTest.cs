@@ -152,10 +152,10 @@ namespace System.Net.Security.Tests
                     Assert.Equal(expectedAuthenticationType, auth.RemoteIdentity.AuthenticationType);
                     Assert.Equal(serverSPN, auth.RemoteIdentity.Name);
 
-                    Assert.Equal(true, auth.IsAuthenticated);
-                    Assert.Equal(true, auth.IsEncrypted);
+                    Assert.True(auth.IsAuthenticated);
+                    Assert.True(auth.IsEncrypted);
                     Assert.Equal(mutuallyAuthenticated, auth.IsMutuallyAuthenticated);
-                    Assert.Equal(true, auth.IsSigned);
+                    Assert.True(auth.IsSigned);
 
                     // Send a message to the server. Encode the test data into a byte array.
                     byte[] message = Encoding.UTF8.GetBytes("Hello from the client.");

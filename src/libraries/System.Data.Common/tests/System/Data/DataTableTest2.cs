@@ -748,12 +748,12 @@ namespace System.Data.Tests
             dtParent = DataProvider.CreateParentDataTable();
 
             // Checking HasErrors default 
-            Assert.Equal(false, dtParent.HasErrors);
+            Assert.False(dtParent.HasErrors);
 
             // Checking HasErrors Get 
             dtParent.Rows[0].RowError = "Error on row 0";
             dtParent.Rows[2].RowError = "Error on row 2";
-            Assert.Equal(true, dtParent.HasErrors);
+            Assert.True(dtParent.HasErrors);
         }
 
         [Fact]
@@ -915,15 +915,15 @@ namespace System.Data.Tests
             _eventRaised = false;
             dt.OnColumnChanged_Test();
             // OnColumnChanged Event 1
-            Assert.Equal(false, _eventRaised);
+            Assert.False(_eventRaised);
             _eventRaised = false;
             _eventValues = false;
             dt.ColumnChanged += new DataColumnChangeEventHandler(OnColumnChanged_Handler);
             dt.OnColumnChanged_Test();
             // OnColumnChanged Event 2
-            Assert.Equal(true, _eventRaised);
+            Assert.True(_eventRaised);
             // OnColumnChanged Values
-            Assert.Equal(true, _eventValues);
+            Assert.True(_eventValues);
             dt.ColumnChanged -= new DataColumnChangeEventHandler(OnColumnChanged_Handler);
         }
 
@@ -949,15 +949,15 @@ namespace System.Data.Tests
             _eventRaised = false;
             dt.OnColumnChanging_Test();
             // OnColumnChanging Event 1
-            Assert.Equal(false, _eventRaised);
+            Assert.False(_eventRaised);
             _eventRaised = false;
             _eventValues = false;
             dt.ColumnChanging += new DataColumnChangeEventHandler(OnColumnChanging_Handler);
             dt.OnColumnChanging_Test();
             // OnColumnChanging Event 2
-            Assert.Equal(true, _eventRaised);
+            Assert.True(_eventRaised);
             // OnColumnChanging Values
-            Assert.Equal(true, _eventValues);
+            Assert.True(_eventValues);
             dt.ColumnChanging -= new DataColumnChangeEventHandler(OnColumnChanging_Handler);
         }
 
@@ -1088,24 +1088,24 @@ namespace System.Data.Tests
             _EventTriggered = false;
             // RowChanged - 1
             dt.Rows[0][1] = "NewValue";
-            Assert.Equal(true, _EventTriggered);
+            Assert.True(_EventTriggered);
 
             _EventTriggered = false;
             // RowChanged - 2
             dt.Rows[0].BeginEdit();
             dt.Rows[0][1] = "NewValue";
-            Assert.Equal(false, _EventTriggered);
+            Assert.False(_EventTriggered);
 
             _EventTriggered = false;
             // RowChanged - 3
             dt.Rows[0].EndEdit();
-            Assert.Equal(true, _EventTriggered);
+            Assert.True(_EventTriggered);
 
             _EventTriggered = false;
             dt.RowChanged -= new DataRowChangeEventHandler(Row_Changed);
             // RowChanged - 4
             dt.Rows[0][1] = "NewValue A";
-            Assert.Equal(false, _EventTriggered);
+            Assert.False(_EventTriggered);
         }
 
         private void Row_Changed(object sender, DataRowChangeEventArgs e)
@@ -1123,24 +1123,24 @@ namespace System.Data.Tests
             _EventTriggered = false;
             // RowChanging - 1
             dt.Rows[0][1] = "NewValue";
-            Assert.Equal(true, _EventTriggered);
+            Assert.True(_EventTriggered);
 
             _EventTriggered = false;
             // RowChanging - 2
             dt.Rows[0].BeginEdit();
             dt.Rows[0][1] = "NewValue";
-            Assert.Equal(false, _EventTriggered);
+            Assert.False(_EventTriggered);
 
             _EventTriggered = false;
             // RowChanging - 3
             dt.Rows[0].EndEdit();
-            Assert.Equal(true, _EventTriggered);
+            Assert.True(_EventTriggered);
 
             _EventTriggered = false;
             dt.RowChanging -= new DataRowChangeEventHandler(Row_Changing);
             // RowChanging - 4
             dt.Rows[0][1] = "NewValue A";
-            Assert.Equal(false, _EventTriggered);
+            Assert.False(_EventTriggered);
         }
 
         private void Row_Changing(object sender, DataRowChangeEventArgs e)

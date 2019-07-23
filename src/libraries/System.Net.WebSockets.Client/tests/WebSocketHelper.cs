@@ -40,7 +40,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(message.Length, recvRet.Count);
                 Assert.Equal(type, recvRet.MessageType);
-                Assert.Equal(true, recvRet.EndOfMessage);
+                Assert.True(recvRet.EndOfMessage);
                 Assert.Null(recvRet.CloseStatus);
                 Assert.Null(recvRet.CloseStatusDescription);
 

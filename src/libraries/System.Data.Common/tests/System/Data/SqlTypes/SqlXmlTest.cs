@@ -142,7 +142,7 @@ namespace System.Data.Tests.SqlTypes
 
             XmlReader xrdr = xmlSql.CreateReader();
 
-            Assert.Equal(false, xrdr.Read());
+            Assert.False(xrdr.Read());
         }
 
         [Fact]
@@ -156,7 +156,7 @@ namespace System.Data.Tests.SqlTypes
 
             XmlReader xrdr = xmlSql.CreateReader();
 
-            Assert.Equal(false, xrdr.Read());
+            Assert.False(xrdr.Read());
         }
 
         [Fact]

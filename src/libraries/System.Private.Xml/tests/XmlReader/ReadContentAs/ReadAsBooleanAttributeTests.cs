@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='0'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAsBoolean());
+            Assert.False(reader.ReadContentAsBoolean());
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  1  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAsBoolean());
+            Assert.True(reader.ReadContentAsBoolean());
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='0'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)false, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' 1 '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)true, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' false '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)false, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' true '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)true, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  0  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)false, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  1  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAs(typeof(bool), null));
+            Assert.Equal((object)true, reader.ReadContentAs(typeof(bool), null));
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' 1 '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAsBoolean());
+            Assert.True(reader.ReadContentAsBoolean());
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' false '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAsBoolean());
+            Assert.False(reader.ReadContentAsBoolean());
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' true '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(true, reader.ReadContentAsBoolean());
+            Assert.True(reader.ReadContentAsBoolean());
         }
 
         [Fact]
@@ -113,7 +113,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  0  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(false, reader.ReadContentAsBoolean());
+            Assert.False(reader.ReadContentAsBoolean());
         }
     }
 }

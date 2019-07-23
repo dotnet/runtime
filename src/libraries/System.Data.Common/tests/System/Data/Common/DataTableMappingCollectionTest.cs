@@ -56,12 +56,12 @@ namespace System.Data.Tests.Common
             int t = _tableMapCollection.Add(_tabs[0]);
             Assert.Equal(0, t);
             bool eq1 = _tabs[0].Equals(_tableMapCollection[0]);
-            Assert.Equal(true, eq1);
+            Assert.True(eq1);
             Assert.Equal(1, _tableMapCollection.Count);
             DataTableMapping tab2;
             tab2 = _tableMapCollection.Add("sourceEmployees", "dataSetEmployees");
             bool eq2 = tab2.Equals(_tableMapCollection[1]);
-            Assert.Equal(true, eq2);
+            Assert.True(eq2);
             Assert.Equal(2, _tableMapCollection.Count);
         }
 
@@ -84,13 +84,13 @@ namespace System.Data.Tests.Common
             Assert.Equal(6, _tableMapCollection.Count);
             bool eq;
             eq = _tabs[0].Equals(_tableMapCollection[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tabs[1].Equals(_tableMapCollection[2]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tabs[0].Equals(_tableMapCollection[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tabs[1].Equals(_tableMapCollection[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -114,23 +114,23 @@ namespace System.Data.Tests.Common
             _tableMapCollection.AddRange(_tabs);
             bool eq;
             eq = _tableMapCollection.Contains(_tabs[0]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tableMapCollection.Contains(_tabs[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tableMapCollection.Contains(tab1);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(_tabs[0].SourceTable);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tableMapCollection.Contains(_tabs[1].SourceTable);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tableMapCollection.Contains(tab1.SourceTable);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _tableMapCollection.Contains(_tabs[0].DataSetTable);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(_tabs[1].DataSetTable);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(tab1.DataSetTable);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < 5; i++)
             {
                 eq = _tableMapCollection[i].Equals(tabcops[i]);
-                Assert.Equal(true, eq);
+                Assert.True(eq);
             }
             tabcops = null;
             tabcops = new DataTableMapping[7];
@@ -151,12 +151,12 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < 5; i++)
             {
                 eq = _tableMapCollection[i].Equals(tabcops[i + 2]);
-                Assert.Equal(true, eq);
+                Assert.True(eq);
             }
             eq = _tableMapCollection[0].Equals(tabcops[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection[0].Equals(tabcops[1]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -168,31 +168,31 @@ namespace System.Data.Tests.Common
             DataTableMappingCollection copy1;
             copy1 = _tableMapCollection;
 
-            //			Assert.Equal(false, tableMapCollection.Equals(collect2));
-            Assert.Equal(true, _tableMapCollection.Equals(copy1));
-            //			Assert.Equal(false, collect2.Equals(tableMapCollection));
-            Assert.Equal(true, copy1.Equals(_tableMapCollection));
-            //			Assert.Equal(false, collect2.Equals(copy1));
-            Assert.Equal(true, copy1.Equals(_tableMapCollection));
-            Assert.Equal(true, _tableMapCollection.Equals(_tableMapCollection));
-            //			Assert.Equal(true, collect2.Equals(collect2));
-            Assert.Equal(true, copy1.Equals(copy1));
+            //			Assert.False(tableMapCollection.Equals(collect2));
+            Assert.True(_tableMapCollection.Equals(copy1));
+            //			Assert.False(collect2.Equals(tableMapCollection));
+            Assert.True(copy1.Equals(_tableMapCollection));
+            //			Assert.False(collect2.Equals(copy1));
+            Assert.True(copy1.Equals(_tableMapCollection));
+            Assert.True(_tableMapCollection.Equals(_tableMapCollection));
+            //			Assert.True(collect2.Equals(collect2));
+            Assert.True(copy1.Equals(copy1));
 
-            //			Assert.Equal(false, Object.Equals(collect2, tableMapCollection));
-            Assert.Equal(true, object.Equals(copy1, _tableMapCollection));
-            //			Assert.Equal(false, Object.Equals(tableMapCollection, collect2));
-            Assert.Equal(true, object.Equals(_tableMapCollection, copy1));
-            //			Assert.Equal(false, Object.Equals(copy1, collect2));
-            Assert.Equal(true, object.Equals(_tableMapCollection, copy1));
-            Assert.Equal(true, object.Equals(_tableMapCollection, _tableMapCollection));
-            //			Assert.Equal(true, Object.Equals(collect2, collect2));
-            Assert.Equal(true, object.Equals(copy1, copy1));
-            //			Assert.Equal(false, Object.Equals(tableMapCollection, collect2));
-            Assert.Equal(true, object.Equals(_tableMapCollection, copy1));
-            //			Assert.Equal(false, Object.Equals(collect2, tableMapCollection));
-            Assert.Equal(true, object.Equals(copy1, _tableMapCollection));
-            //			Assert.Equal(false, Object.Equals(collect2, copy1));
-            Assert.Equal(true, object.Equals(copy1, _tableMapCollection));
+            //			Assert.False(Object.Equals(collect2, tableMapCollection));
+            Assert.True(object.Equals(copy1, _tableMapCollection));
+            //			Assert.False(Object.Equals(tableMapCollection, collect2));
+            Assert.True(object.Equals(_tableMapCollection, copy1));
+            //			Assert.False(Object.Equals(copy1, collect2));
+            Assert.True(object.Equals(_tableMapCollection, copy1));
+            Assert.True(object.Equals(_tableMapCollection, _tableMapCollection));
+            //			Assert.True(Object.Equals(collect2, collect2));
+            Assert.True(object.Equals(copy1, copy1));
+            //			Assert.False(Object.Equals(tableMapCollection, collect2));
+            Assert.True(object.Equals(_tableMapCollection, copy1));
+            //			Assert.False(Object.Equals(collect2, tableMapCollection));
+            Assert.True(object.Equals(copy1, _tableMapCollection));
+            //			Assert.False(Object.Equals(collect2, copy1));
+            Assert.True(object.Equals(copy1, _tableMapCollection));
         }
 
         [Fact]
@@ -203,17 +203,17 @@ namespace System.Data.Tests.Common
             DataTableMapping tab1;
             tab1 = _tableMapCollection.GetByDataSetTable("dataSetCustomers");
             eq = (tab1.DataSetTable.Equals("dataSetCustomers") && tab1.SourceTable.Equals("sourceCustomers"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             tab1 = _tableMapCollection.GetByDataSetTable("dataSetEmployees");
             eq = (tab1.DataSetTable.Equals("dataSetEmployees") && tab1.SourceTable.Equals("sourceEmployees"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             tab1 = _tableMapCollection.GetByDataSetTable("datasetcustomers");
             eq = (tab1.DataSetTable.Equals("dataSetCustomers") && tab1.SourceTable.Equals("sourceCustomers"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             tab1 = _tableMapCollection.GetByDataSetTable("datasetemployees");
             eq = (tab1.DataSetTable.Equals("dataSetEmployees") && tab1.SourceTable.Equals("sourceEmployees"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
         }
 
         [Fact]
@@ -224,16 +224,16 @@ namespace System.Data.Tests.Common
             DataTableMapping tab1;
             tab1 = DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMapCollection, "sourceCustomers", "dataSetCustomers", MissingMappingAction.Passthrough);
             eq = (tab1.DataSetTable.Equals("dataSetCustomers") && tab1.SourceTable.Equals("sourceCustomers"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             tab1 = DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMapCollection, "sourceEmployees", "dataSetEmployees", MissingMappingAction.Passthrough);
             eq = (tab1.DataSetTable.Equals("dataSetEmployees") && tab1.SourceTable.Equals("sourceEmployees"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             tab1 = DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMapCollection, "sourceData", "dataSetData", MissingMappingAction.Passthrough);
             eq = (tab1.DataSetTable.Equals("sourceData") && tab1.SourceTable.Equals("dataSetData"));
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(tab1);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             tab1 = DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMapCollection, "sourceData", "dataSetData", MissingMappingAction.Ignore);
             Assert.Null(tab1);
         }
@@ -321,15 +321,15 @@ namespace System.Data.Tests.Common
             bool eq;
             _tableMapCollection.RemoveAt(0);
             eq = _tableMapCollection.Contains(_tabs[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(_tabs[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             _tableMapCollection.RemoveAt("sourceEmployees");
             eq = _tableMapCollection.Contains(_tabs[1]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _tableMapCollection.Contains(_tabs[2]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
         }
 
         [Fact]

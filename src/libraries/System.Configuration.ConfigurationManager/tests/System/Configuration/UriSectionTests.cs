@@ -46,7 +46,7 @@ namespace System.ConfigurationTests
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");
                 Assert.Equal(UriIdnScope.All, uriSection.Idn.Enabled);
-                Assert.Equal(true, uriSection.IriParsing.Enabled);
+                Assert.True(uriSection.IriParsing.Enabled);
             }
         }
 

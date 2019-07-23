@@ -135,7 +135,7 @@ namespace System.Runtime.Loader.Tests
                 }
             }
 
-            Assert.Equal(true, fDynamicAssemblyFound);
+            Assert.True(fDynamicAssemblyFound);
         }
     }
 }

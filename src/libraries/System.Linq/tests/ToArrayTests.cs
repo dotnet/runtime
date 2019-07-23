@@ -33,7 +33,7 @@ namespace System.Linq.Tests
 
             // .NET Core returns the instance as an optimization.
             // see https://github.com/dotnet/corefx/pull/2401.
-            Action<object, object> assertSame = (objA, objB) => Assert.Equal(true, ReferenceEquals(objA, objB));
+            Action<object, object> assertSame = (objA, objB) => Assert.True(ReferenceEquals(objA, objB));
 
 
             assertSame(emptySourceArray.ToArray(), emptySourceArray.ToArray());
@@ -219,7 +219,7 @@ namespace System.Linq.Tests
         {
             // .NET Core returns the instance as an optimization.
             // see https://github.com/dotnet/corefx/pull/2401.
-            Assert.Equal(true, ReferenceEquals(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray()));
+            Assert.True(ReferenceEquals(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray()));
             
             var array = new int[0];
             Assert.NotSame(array, array.ToArray());

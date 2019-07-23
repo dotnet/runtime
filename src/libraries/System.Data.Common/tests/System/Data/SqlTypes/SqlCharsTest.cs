@@ -227,7 +227,7 @@ namespace System.Data.Tests.SqlTypes
             {
                 Assert.Equal(typeof(SqlNullValueException), ex.GetType());
             }
-            Assert.Equal(true, chars.IsNull);
+            Assert.True(chars.IsNull);
         }
 
         [Fact]

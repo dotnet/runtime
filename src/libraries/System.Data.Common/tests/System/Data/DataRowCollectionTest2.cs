@@ -158,7 +158,7 @@ namespace System.Data.Tests
             Assert.Equal("1-String2", dt.Rows[0]["String2"]);
             Assert.Equal(new DateTime(2005, 1, 1, 0, 0, 0, 0), dt.Rows[0]["ParentDateTime"]);
             Assert.Equal(1.534, dt.Rows[0]["ParentDouble"]);
-            Assert.Equal(true, dt.Rows[0]["ParentBool"]);
+            Assert.Equal((object)true, dt.Rows[0]["ParentBool"]);
         }
 
         [Fact]
@@ -267,8 +267,8 @@ namespace System.Data.Tests
             DataTable dt = DataProvider.CreateParentDataTable();
             dt.PrimaryKey = new DataColumn[] { dt.Columns[0] };
 
-            Assert.Equal(true, dt.Rows.Contains(1));
-            Assert.Equal(false, dt.Rows.Contains(10));
+            Assert.True(dt.Rows.Contains(1));
+            Assert.False(dt.Rows.Contains(10));
         }
 
         [Fact]
@@ -277,7 +277,7 @@ namespace System.Data.Tests
             Assert.Throws<MissingPrimaryKeyException>(() =>
            {
                DataTable dt = DataProvider.CreateParentDataTable();
-               Assert.Equal(false, dt.Rows.Contains(1));
+               Assert.False(dt.Rows.Contains(1));
            });
         }
 
@@ -292,11 +292,11 @@ namespace System.Data.Tests
             arr[0] = 1;
             arr[1] = "1-String1";
 
-            Assert.Equal(true, dt.Rows.Contains(arr));
+            Assert.True(dt.Rows.Contains(arr));
 
             arr[0] = 8;
 
-            Assert.Equal(false, dt.Rows.Contains(arr));
+            Assert.False(dt.Rows.Contains(arr));
         }
 
         [Fact]
@@ -311,7 +311,7 @@ namespace System.Data.Tests
                object[] arr = new object[1];
                arr[0] = 1;
 
-               Assert.Equal(false, dt.Rows.Contains(arr));
+               Assert.False(dt.Rows.Contains(arr));
            });
         }
 

@@ -34,8 +34,8 @@ namespace System.Security.Cryptography.Dsa.Tests
             Assert.Equal(new CngAlgorithm("DSA"), key.Algorithm);
             Assert.Equal(CngAlgorithmGroup.Dsa, key.AlgorithmGroup);
             Assert.Equal(CngExportPolicies.None, key.ExportPolicy);
-            Assert.Equal(true, key.IsEphemeral);
-            Assert.Equal(false, key.IsMachineKey);
+            Assert.True(key.IsEphemeral);
+            Assert.False(key.IsMachineKey);
             Assert.Null(key.KeyName);
             Assert.Equal(CngKeyUsages.AllUsages, key.KeyUsage);
             Assert.Equal(IntPtr.Zero, key.ParentWindowHandle);

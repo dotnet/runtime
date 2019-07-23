@@ -275,7 +275,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.True(FileSystem.EOF(fileNumber));
             FileSystem.FileClose(fileNumber);
 
-            Assert.Equal(true, _bool);
+            Assert.True(_bool);
             Assert.Equal((byte)1, _byte);
             Assert.Equal((char)2, _char);
             Assert.Equal((decimal)3, _decimal);
@@ -342,7 +342,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.True(FileSystem.EOF(fileNumber));
             FileSystem.FileClose(fileNumber);
 
-            Assert.Equal(true, _bool);
+            Assert.Equal((object)true, _bool);
             Assert.Equal((byte)1, _byte);
             Assert.Equal((char)2, _char);
             Assert.Equal((decimal)3, _decimal);
@@ -471,7 +471,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.True(FileSystem.EOF(fileNumber));
             FileSystem.FileClose(fileNumber);
 
-            Assert.Equal(true, _bool);
+            Assert.True(_bool);
             Assert.Equal((byte)1, _byte);
             Assert.Equal((char)2, _char);
             Assert.Equal((decimal)3, _decimal);
@@ -529,7 +529,7 @@ namespace Microsoft.VisualBasic.Tests
                 Assert.True(FileSystem.EOF(fileNumber));
 
                 Assert.Equal(DBNull.Value, _dbnull);
-                Assert.Equal(true, _bool);
+                Assert.Equal((object)true, _bool);
                 Assert.Equal((short)1, _byte);
                 Assert.Equal("\u0002", _char);
                 Assert.Equal((short)3, _decimal);

@@ -180,11 +180,11 @@ namespace System.Data.Tests
             tbcol.AddRange(_tables);
             DataTable tbl = null;
             /* checking for a recently input table, expecting true */
-            Assert.Equal(true, tbcol.CanRemove(_tables[0]));
+            Assert.True(tbcol.CanRemove(_tables[0]));
             /* trying to check with a null reference, expecting false */
-            Assert.Equal(false, tbcol.CanRemove(tbl));
+            Assert.False(tbcol.CanRemove(tbl));
             /* trying to check with a table that does not exist in collection, expecting false */
-            Assert.Equal(false, tbcol.CanRemove(new DataTable("newTable")));
+            Assert.False(tbcol.CanRemove(new DataTable("newTable")));
         }
 
         [Fact]
@@ -242,11 +242,11 @@ namespace System.Data.Tests
             tbcol.AddRange(_tables);
             string tblname = "";
             /* checking for a recently input table, expecting true */
-            Assert.Equal(true, tbcol.Contains(_tables[0].TableName));
+            Assert.True(tbcol.Contains(_tables[0].TableName));
             /* trying to check with an empty string, expecting false */
-            Assert.Equal(false, tbcol.Contains(tblname));
+            Assert.False(tbcol.Contains(tblname));
             /* trying to check for a table that donot exist, expecting false */
-            Assert.Equal(false, tbcol.Contains("InvalidTableName"));
+            Assert.False(tbcol.Contains("InvalidTableName"));
         }
 
         [Fact]
@@ -287,16 +287,16 @@ namespace System.Data.Tests
             tbcol2.Add(_tables[1]);
             tbcol3 = tbcol1;
 
-            Assert.Equal(true, tbcol1.Equals(tbcol1));
-            Assert.Equal(true, tbcol1.Equals(tbcol3));
-            Assert.Equal(true, tbcol3.Equals(tbcol1));
+            Assert.True(tbcol1.Equals(tbcol1));
+            Assert.True(tbcol1.Equals(tbcol3));
+            Assert.True(tbcol3.Equals(tbcol1));
 
-            Assert.Equal(false, tbcol1.Equals(tbcol2));
-            Assert.Equal(false, tbcol2.Equals(tbcol1));
+            Assert.False(tbcol1.Equals(tbcol2));
+            Assert.False(tbcol2.Equals(tbcol1));
 
-            Assert.Equal(true, object.Equals(tbcol1, tbcol3));
-            Assert.Equal(true, object.Equals(tbcol1, tbcol1));
-            Assert.Equal(false, object.Equals(tbcol1, tbcol2));
+            Assert.True(object.Equals(tbcol1, tbcol3));
+            Assert.True(object.Equals(tbcol1, tbcol1));
+            Assert.False(object.Equals(tbcol1, tbcol2));
         }
         [Fact]
         public void IndexOf()

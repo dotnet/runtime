@@ -65,7 +65,7 @@ namespace BasicEventSourceTests
                     Assert.Equal(actid, LoudListener.LastEvent.RelatedActivityId);
                     Assert.Equal(3 /*4*/, LoudListener.LastEvent.Payload.Count);
                     Assert.Equal(IntPtr.Zero, (IntPtr)LoudListener.LastEvent.Payload[0]);
-                    Assert.Equal(true, (bool)LoudListener.LastEvent.Payload[1]);
+                    Assert.True((bool)LoudListener.LastEvent.Payload[1]);
                     Assert.Equal(MyLongEnum.LongVal1, (MyLongEnum)LoudListener.LastEvent.Payload[2]);
                     // Assert.Equal(9999999999999999999999999999m, (decimal)LoudListener.LastEvent.Payload[3]);
 
@@ -109,7 +109,7 @@ namespace BasicEventSourceTests
             Assert.Equal(30, LoudListener.LastEvent.EventId);
             Assert.Equal(3 /*4*/, LoudListener.LastEvent.Payload.Count);
             Assert.Equal(IntPtr.Zero, (IntPtr) LoudListener.LastEvent.Payload[0]);
-            Assert.Equal(true, (bool) LoudListener.LastEvent.Payload[1]);
+            Assert.True((bool) LoudListener.LastEvent.Payload[1]);
             Assert.Equal(MyLongEnum.LongVal1, (MyLongEnum) LoudListener.LastEvent.Payload[2]);
             // Assert.Equal(9999999999999999999999999999m, (decimal)LoudListener.LastEvent.Payload[3]);
         }

@@ -40,17 +40,17 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var handler = new WinHttpHandler();
 
             Assert.Equal(SslProtocols.None, handler.SslProtocols);
-            Assert.Equal(true, handler.AutomaticRedirection);
+            Assert.True(handler.AutomaticRedirection);
             Assert.Equal(50, handler.MaxAutomaticRedirections);
             Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
             Assert.Equal(CookieUsePolicy.UseInternalCookieStoreOnly, handler.CookieUsePolicy);
             Assert.Null(handler.CookieContainer);
             Assert.Null(handler.ServerCertificateValidationCallback);
-            Assert.Equal(false, handler.CheckCertificateRevocationList);
+            Assert.False(handler.CheckCertificateRevocationList);
             Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOption);
             X509Certificate2Collection certs = handler.ClientCertificates;
             Assert.True(certs.Count == 0);
-            Assert.Equal(false, handler.PreAuthenticate);
+            Assert.False(handler.PreAuthenticate);
             Assert.Null(handler.ServerCredentials);
             Assert.Equal(WindowsProxyUsePolicy.UseWinHttpProxy, handler.WindowsProxyUsePolicy);
             Assert.Null(handler.DefaultProxyCredentials);
@@ -118,7 +118,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(handler, delegate { handler.CheckCertificateRevocationList = false; });
 
-            Assert.Equal(false, APICallHistory.WinHttpOptionEnableSslRevocation.HasValue);
+            Assert.False(APICallHistory.WinHttpOptionEnableSslRevocation.HasValue);
         }
 
         [Fact]
@@ -205,7 +205,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 handler,
                 delegate { handler.CookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly; });
 
-            Assert.Equal(false, APICallHistory.WinHttpOptionDisableCookies.HasValue);
+            Assert.False(APICallHistory.WinHttpOptionDisableCookies.HasValue);
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     handler.CookieContainer = new CookieContainer();
                 });
 
-            Assert.Equal(true, APICallHistory.WinHttpOptionDisableCookies.HasValue);
+            Assert.True(APICallHistory.WinHttpOptionDisableCookies.HasValue);
         }
 
         [Fact]
@@ -718,7 +718,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(false, APICallHistory.RequestProxySettings.AccessType.HasValue);
+            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
         }
 
         [Fact]
@@ -736,7 +736,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(false, APICallHistory.RequestProxySettings.AccessType.HasValue);
+            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
         }
 
         [Fact]
@@ -754,7 +754,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(false, APICallHistory.RequestProxySettings.AccessType.HasValue);
+            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
         }
 
         [Fact]

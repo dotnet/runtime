@@ -570,7 +570,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(JsonTokenType.None, json.TokenType);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(0, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -582,7 +582,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(previous, current);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(0, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -594,7 +594,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(previous, current);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(0, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -611,7 +611,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(lastToken, json.TokenType);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -623,7 +623,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(lastToken, json.TokenType);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -635,7 +635,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(lastToken, json.TokenType);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.IsFinalBlock);
             Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
@@ -961,7 +961,7 @@ namespace System.Text.Json.Tests
             JsonTokenType prevTokenType = json.TokenType;
             int prevDepth = json.CurrentDepth;
             long prevConsumed = json.BytesConsumed;
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.ValueSequence.IsEmpty);
             ReadOnlySpan<byte> prevValue = json.ValueSpan;
 
@@ -979,7 +979,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(prevTokenType, json.TokenType);
             Assert.Equal(prevDepth, json.CurrentDepth);
             Assert.Equal(prevConsumed, json.BytesConsumed);
-            Assert.Equal(false, json.HasValueSequence);
+            Assert.False(json.HasValueSequence);
             Assert.True(json.ValueSequence.IsEmpty);
             Assert.True(json.ValueSpan.SequenceEqual(prevValue));
         }

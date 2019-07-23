@@ -23,7 +23,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanSeek property throws exception After Open() then Close()");
 
-                Assert.Equal(false, serialStream.CanSeek);
+                Assert.False(serialStream.CanSeek);
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanSeek property throws exception After Open() then BaseStream.Close()");
 
-                Assert.Equal(false, serialStream.CanSeek);
+                Assert.False(serialStream.CanSeek);
             }
         }
 
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
             {
                 com.Open();
                 Debug.WriteLine("Verifying CanSeek property returns true after a call to Open()");
-                Assert.Equal(false, com.BaseStream.CanSeek);
+                Assert.False(com.BaseStream.CanSeek);
             }
         }
 

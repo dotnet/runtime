@@ -228,7 +228,7 @@ namespace System.Data.Tests.SqlTypes
             {
                 Assert.Equal(typeof(SqlNullValueException), ex.GetType());
             }
-            Assert.Equal(true, bytes.IsNull);
+            Assert.True(bytes.IsNull);
         }
         [Fact]
         public void GetXsdTypeTest()

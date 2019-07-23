@@ -149,10 +149,10 @@ namespace System.Data.Tests
         {
             DataSet ds = getDataSet();
             ds.Relations.Add(ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
-            Assert.Equal(true, ds.Relations.CanRemove(ds.Relations[0]));
-            Assert.Equal(true, ds.Tables[0].ChildRelations.CanRemove(ds.Tables[0].ChildRelations[0]));
-            Assert.Equal(true, ds.Tables[1].ParentRelations.CanRemove(ds.Tables[1].ParentRelations[0]));
-            Assert.Equal(false, ds.Relations.CanRemove(null));
+            Assert.True(ds.Relations.CanRemove(ds.Relations[0]));
+            Assert.True(ds.Tables[0].ChildRelations.CanRemove(ds.Tables[0].ChildRelations[0]));
+            Assert.True(ds.Tables[1].ParentRelations.CanRemove(ds.Tables[1].ParentRelations[0]));
+            Assert.False(ds.Relations.CanRemove(null));
         }
         [Fact]
         public void CanRemove_DataRelation()
@@ -163,7 +163,7 @@ namespace System.Data.Tests
             DataRelation rel = new DataRelation("rel1",
                 ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
 
-            Assert.Equal(false, ds1.Relations.CanRemove(rel));
+            Assert.False(ds1.Relations.CanRemove(rel));
         }
 
         [Fact]
@@ -204,9 +204,9 @@ namespace System.Data.Tests
             DataSet ds = getDataSet();
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
 
-            Assert.Equal(true, ds.Relations.Contains("rel1"));
-            Assert.Equal(false, ds.Relations.Contains("RelL"));
-            Assert.Equal(false, ds.Relations.Contains("rel2"));
+            Assert.True(ds.Relations.Contains("rel1"));
+            Assert.False(ds.Relations.Contains("RelL"));
+            Assert.False(ds.Relations.Contains("rel2"));
         }
 
         [Fact]

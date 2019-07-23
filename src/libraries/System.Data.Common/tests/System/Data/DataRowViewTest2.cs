@@ -48,11 +48,11 @@ namespace System.Data.Tests
             Assert.Equal("1-String1", dt.Rows[0]["String1", DataRowVersion.Original]);
 
             // check IsEdit
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             // check IsEdit - change another row
             dv[1]["String1"] = "something";
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
         }
 
         [Fact]
@@ -70,17 +70,17 @@ namespace System.Data.Tests
             Assert.Equal("ChangeValue", dt.Rows[0]["String1", DataRowVersion.Proposed]);
 
             // check IsEdit
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             // check Proposed value
             drv.CancelEdit();
-            Assert.Equal(false, dt.Rows[0].HasVersion(DataRowVersion.Proposed));
+            Assert.False(dt.Rows[0].HasVersion(DataRowVersion.Proposed));
 
             // check current value
             Assert.Equal("1-String1", dt.Rows[0]["String1", DataRowVersion.Current]);
 
             // check IsEdit after cancel edit
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace System.Data.Tests
             DataView dvTmp2 = dvParent[3].CreateChildView(drel);
 
             // ChildView != null
-            Assert.Equal(true, dvTmp1 != null);
+            Assert.True(dvTmp1 != null);
 
             // Child view table = ChildTable
             Assert.Equal(dtChild, dvTmp1.Table);
@@ -112,7 +112,7 @@ namespace System.Data.Tests
 
             //the child dataview are different
             // Child DataViews different 
-            Assert.Equal(false, dvTmp1.Equals(dvTmp2));
+            Assert.False(dvTmp1.Equals(dvTmp2));
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace System.Data.Tests
             DataView dvTmp2 = dvParent[3].CreateChildView("ParentChild");
 
             // ChildView != null
-            Assert.Equal(true, dvTmp1 != null);
+            Assert.True(dvTmp1 != null);
 
             // Child view table = ChildTable
             Assert.Equal(dtChild, dvTmp1.Table);
@@ -144,7 +144,7 @@ namespace System.Data.Tests
 
             //the child dataview are different
             // Child DataViews different 
-            Assert.Equal(false, dvTmp1.Equals(dvTmp2));
+            Assert.False(dvTmp1.Equals(dvTmp2));
         }
 
         [Fact]
@@ -166,12 +166,12 @@ namespace System.Data.Tests
             // check that the DataRowView still has the same DataView
             dv.Table = null;
 
-            Assert.Equal(true, drv1.DataView == dv);
+            Assert.True(drv1.DataView == dv);
 
             //check that the DataRowView has a new DataView
             // check that the DataRowView has a new DataView
             dv = new DataView();
-            Assert.Equal(true, drv1.DataView.Equals(dv));
+            Assert.True(drv1.DataView.Equals(dv));
         }
 
         [Fact]
@@ -210,17 +210,17 @@ namespace System.Data.Tests
             //the row should be stay in edit mode event if changing other rows
             // check IsEdit - change another row
             dv[1]["String1"] = "something";
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             // check if has Proposed version
             drv.EndEdit();
-            Assert.Equal(false, dt.Rows[0].HasVersion(DataRowVersion.Proposed));
+            Assert.False(dt.Rows[0].HasVersion(DataRowVersion.Proposed));
 
             // check Current value
             Assert.Equal("ChangeValue", dt.Rows[0]["String1", DataRowVersion.Current]);
 
             // check IsEdit
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
         }
 
         [Fact]
@@ -245,23 +245,23 @@ namespace System.Data.Tests
             DataRowView drv = dv[0];
 
             // default value
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
 
             // after BeginEdit
             drv.BeginEdit();
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             // after CancelEdit
             drv.CancelEdit();
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
 
             // after BeginEdit again
             drv.BeginEdit();
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             // after EndEdit 
             drv.EndEdit();
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
         }
 
         [Fact]
@@ -273,11 +273,11 @@ namespace System.Data.Tests
             DataRowView drv = dv[0];
 
             // existing row
-            Assert.Equal(false, drv.IsNew);
+            Assert.False(drv.IsNew);
 
             // add new row
             drv = dv.AddNew();
-            Assert.Equal(true, drv.IsNew);
+            Assert.True(drv.IsNew);
         }
 
         [Fact]

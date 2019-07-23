@@ -27,7 +27,7 @@ namespace System.Dynamic.Tests
             Expression exp = BindingRestrictions.Empty.ToExpression();
             Assert.IsType<ConstantExpression>(exp);
             Assert.Equal(typeof(bool), exp.Type);
-            Assert.Equal(true, ((ConstantExpression)exp).Value);
+            Assert.Equal((object)true, ((ConstantExpression)exp).Value);
 
             // The above are implementation details that could reasonably change without error.
             // The below must still hold so that empty binding restrictions still allows everything.

@@ -337,7 +337,7 @@ namespace System.Net.Tests
         {
             using (var listener = new HttpListener())
             {
-                Assert.Equal(false, listener.UnsafeConnectionNtlmAuthentication);
+                Assert.False(listener.UnsafeConnectionNtlmAuthentication);
 
                 listener.UnsafeConnectionNtlmAuthentication = true;
                 Assert.True(listener.UnsafeConnectionNtlmAuthentication);

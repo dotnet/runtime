@@ -49,30 +49,30 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(false, serverIdentity.IsAuthenticated);
+                Assert.False(serverIdentity.IsAuthenticated);
                 Assert.Equal("", serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }
@@ -105,30 +105,30 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(true, serverIdentity.IsAuthenticated);
+                Assert.True(serverIdentity.IsAuthenticated);
                 Assert.Equal(targetName, serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }
@@ -165,32 +165,32 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(true, serverIdentity.IsAuthenticated);
+                Assert.True(serverIdentity.IsAuthenticated);
                 Assert.Equal(targetName, serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
                 // TODO #5241: Behavior difference:
-                Assert.Equal(false, clientIdentity.IsAuthenticated);
-                // On .NET Desktop: Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.False(clientIdentity.IsAuthenticated);
+                // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
             }

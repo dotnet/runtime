@@ -141,7 +141,7 @@ namespace System.ComponentModel.Tests
                 exceptionThrown = true;
             }
             //Check the exception was thrown
-            Assert.Equal(true, exceptionThrown);
+            Assert.True(exceptionThrown);
             //Check the context didn't change
             Assert.Equal(oldcontext, LicenseManager.CurrentContext);
             //Unlock it
@@ -167,18 +167,18 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(typeof(ArgumentException), e.GetType());
                 exceptionThrown = true;
             }
-            Assert.Equal(true, exceptionThrown);
+            Assert.True(exceptionThrown);
             //Unlock it
             LicenseManager.UnlockContext(lockObject);
 
             //** bool IsValid(Type);
-            Assert.Equal(true, LicenseManager.IsLicensed(typeof(UnlicensedObject)));
-            Assert.Equal(true, LicenseManager.IsLicensed(typeof(LicensedObject)));
-            Assert.Equal(false, LicenseManager.IsLicensed(typeof(InvalidLicensedObject)));
+            Assert.True(LicenseManager.IsLicensed(typeof(UnlicensedObject)));
+            Assert.True(LicenseManager.IsLicensed(typeof(LicensedObject)));
+            Assert.False(LicenseManager.IsLicensed(typeof(InvalidLicensedObject)));
 
-            Assert.Equal(true, LicenseManager.IsValid(typeof(UnlicensedObject)));
-            Assert.Equal(true, LicenseManager.IsValid(typeof(LicensedObject)));
-            Assert.Equal(false, LicenseManager.IsValid(typeof(InvalidLicensedObject)));
+            Assert.True(LicenseManager.IsValid(typeof(UnlicensedObject)));
+            Assert.True(LicenseManager.IsValid(typeof(LicensedObject)));
+            Assert.False(LicenseManager.IsValid(typeof(InvalidLicensedObject)));
 
             UnlicensedObject unlicensedObject = new UnlicensedObject();
             LicensedObject licensedObject = new LicensedObject();
@@ -186,15 +186,15 @@ namespace System.ComponentModel.Tests
 
             //** bool IsValid(Type, object, License);
             License license = null;
-            Assert.Equal(true, LicenseManager.IsValid(unlicensedObject.GetType(), unlicensedObject, out license));
+            Assert.True(LicenseManager.IsValid(unlicensedObject.GetType(), unlicensedObject, out license));
             Assert.Null(license);
 
             license = null;
-            Assert.Equal(true, LicenseManager.IsValid(licensedObject.GetType(), licensedObject, out license));
+            Assert.True(LicenseManager.IsValid(licensedObject.GetType(), licensedObject, out license));
             Assert.Equal("TestLicense", license.GetType().Name);
 
             license = null;
-            Assert.Equal(false, LicenseManager.IsValid(invalidLicensedObject.GetType(), invalidLicensedObject, out license));
+            Assert.False(LicenseManager.IsValid(invalidLicensedObject.GetType(), invalidLicensedObject, out license));
             Assert.Null(license);
 
             //** void Validate(Type);
@@ -214,7 +214,7 @@ namespace System.ComponentModel.Tests
                 exceptionThrown = true;
             }
             //Check the exception was thrown
-            Assert.Equal(true, exceptionThrown);
+            Assert.True(exceptionThrown);
 
             //** License Validate(Type, object);
             //Shouldn't throw exception, returns null license
@@ -238,7 +238,7 @@ namespace System.ComponentModel.Tests
                 exceptionThrown = true;
             }
             //Check the exception was thrown
-            Assert.Equal(true, exceptionThrown);
+            Assert.True(exceptionThrown);
             Assert.Null(license);
 
 
@@ -265,7 +265,7 @@ namespace System.ComponentModel.Tests
                 exceptionThrown = true;
             }
             //Check the exception was thrown
-            Assert.Equal(true, exceptionThrown);
+            Assert.True(exceptionThrown);
             //Test we can create DesignTime with A new DesignTimeContext 
             cwc = null;
             cwc = LicenseManager.CreateWithContext(typeof(DesigntimeLicensedObject),

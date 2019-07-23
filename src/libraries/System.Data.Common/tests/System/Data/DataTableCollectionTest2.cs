@@ -97,14 +97,14 @@ namespace System.Data.Tests
         {
             var ds = new DataSet();
             ds.Tables.Add();
-            Assert.Equal(true, ds.Tables.CanRemove(ds.Tables[0]));
+            Assert.True(ds.Tables.CanRemove(ds.Tables[0]));
         }
 
         [Fact]
         public void CanRemove_NullValue()
         {
             var ds = new DataSet();
-            Assert.Equal(false, ds.Tables.CanRemove(null));
+            Assert.False(ds.Tables.CanRemove(null));
         }
 
         [Fact]
@@ -113,7 +113,7 @@ namespace System.Data.Tests
             var ds = new DataSet();
             DataSet ds1 = new DataSet();
             ds1.Tables.Add();
-            Assert.Equal(false, ds.Tables.CanRemove(ds1.Tables[0]));
+            Assert.False(ds.Tables.CanRemove(ds1.Tables[0]));
         }
 
         [Fact]
@@ -125,15 +125,15 @@ namespace System.Data.Tests
 
             ds.Relations.Add("rel", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"], false);
 
-            Assert.Equal(false, ds.Tables.CanRemove(ds.Tables[0]));
-            Assert.Equal(false, ds.Tables.CanRemove(ds.Tables[1]));
+            Assert.False(ds.Tables.CanRemove(ds.Tables[0]));
+            Assert.False(ds.Tables.CanRemove(ds.Tables[1]));
         }
         [Fact]
         public void CanRemove_PartOfConstraint()
         {
             DataSet ds = DataProvider.CreateForeignConstraint();
-            Assert.Equal(false, ds.Tables.CanRemove(ds.Tables[0]));
-            Assert.Equal(false, ds.Tables.CanRemove(ds.Tables[1]));
+            Assert.False(ds.Tables.CanRemove(ds.Tables[0]));
+            Assert.False(ds.Tables.CanRemove(ds.Tables[1]));
         }
 
         [Fact]
@@ -183,13 +183,13 @@ namespace System.Data.Tests
             ds.Tables.Add("NewTable1");
             ds.Tables.Add("NewTable2");
 
-            Assert.Equal(true, ds.Tables.Contains("NewTable1"));
-            Assert.Equal(true, ds.Tables.Contains("NewTable2"));
-            Assert.Equal(false, ds.Tables.Contains("NewTable3"));
+            Assert.True(ds.Tables.Contains("NewTable1"));
+            Assert.True(ds.Tables.Contains("NewTable2"));
+            Assert.False(ds.Tables.Contains("NewTable3"));
 
             ds.Tables["NewTable1"].TableName = "Tbl1";
-            Assert.Equal(false, ds.Tables.Contains("NewTable1"));
-            Assert.Equal(true, ds.Tables.Contains("Tbl1"));
+            Assert.False(ds.Tables.Contains("NewTable1"));
+            Assert.True(ds.Tables.Contains("Tbl1"));
         }
 
         [Fact]

@@ -604,8 +604,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         obj.BinaryHexContent = Encoding.Unicode.GetBytes(str);
         var actual = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0"" encoding=""utf-8""?><TypeWithBinaryProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><BinaryHexContent>540068006500200071007500690063006B002000620072006F0077006E00200066006F00780020006A0075006D007000730020006F00760065007200200074006800650020006C0061007A007900200064006F0067002E00</BinaryHexContent><Base64Content>VABoAGUAIABxAHUAaQBjAGsAIABiAHIAbwB3AG4AIABmAG8AeAAgAGoAdQBtAHAAcwAgAG8AdgBlAHIAIAB0AGgAZQAgAGwAYQB6AHkAIABkAG8AZwAuAA==</Base64Content></TypeWithBinaryProperty>");
-        Assert.StrictEqual(true, Enumerable.SequenceEqual(obj.Base64Content, actual.Base64Content));
-        Assert.StrictEqual(true, Enumerable.SequenceEqual(obj.BinaryHexContent, actual.BinaryHexContent));
+        Assert.True(Enumerable.SequenceEqual(obj.Base64Content, actual.Base64Content));
+        Assert.True(Enumerable.SequenceEqual(obj.BinaryHexContent, actual.BinaryHexContent));
     }
 
     [Fact]

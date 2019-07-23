@@ -139,10 +139,10 @@ namespace System.Data.Tests
             DataView dv1, dv2, dv3;
             dv1 = new DataView();
             // AssertEquals ("test#01",null,dv1.Table);
-            Assert.Equal(true, dv1.AllowNew);
-            Assert.Equal(true, dv1.AllowEdit);
-            Assert.Equal(true, dv1.AllowDelete);
-            Assert.Equal(false, dv1.ApplyDefaultSort);
+            Assert.True(dv1.AllowNew);
+            Assert.True(dv1.AllowEdit);
+            Assert.True(dv1.AllowDelete);
+            Assert.False(dv1.ApplyDefaultSort);
             Assert.Equal(string.Empty, dv1.RowFilter);
             Assert.Equal(DataViewRowState.CurrentRows, dv1.RowStateFilter);
             Assert.Equal(string.Empty, dv1.Sort);
@@ -150,7 +150,7 @@ namespace System.Data.Tests
             dv2 = new DataView(_dataTable);
             Assert.Equal("itemTable", dv2.Table.TableName);
             Assert.Equal(string.Empty, dv2.Sort);
-            Assert.Equal(false, dv2.ApplyDefaultSort);
+            Assert.False(dv2.ApplyDefaultSort);
             Assert.Equal(_dataTable.Rows[0], dv2[0].Row);
 
             dv3 = new DataView(_dataTable, "", "itemId DESC", DataViewRowState.CurrentRows);
@@ -177,7 +177,7 @@ namespace System.Data.Tests
         [Fact]
         public void AllowNew()
         {
-            Assert.Equal(true, _dataView.AllowNew);
+            Assert.True(_dataView.AllowNew);
         }
 
         [Fact]
@@ -358,7 +358,7 @@ namespace System.Data.Tests
             try
             {
                 dataView.Sort = "itemId \tASC";
-                Assert.Equal(true, false);
+                Assert.True(false);
             }
             catch (IndexOutOfRangeException e)
             {
@@ -471,7 +471,7 @@ namespace System.Data.Tests
 
             Assert.Equal(2, table.Columns.Count);
             Assert.Equal(table, dv.Table);
-            Assert.Equal(true, _dvInitialized);
+            Assert.True(_dvInitialized);
         }
 
         [Fact]

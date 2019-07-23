@@ -21,12 +21,12 @@ namespace System.IO.Tests
             // Set to True
             test.IsReadOnly = true;
             test.Refresh();
-            Assert.Equal(true, test.IsReadOnly);
+            Assert.True(test.IsReadOnly);
 
             // Set To False
             test.IsReadOnly = false;
             test.Refresh();
-            Assert.Equal(false, test.IsReadOnly);
+            Assert.False(test.IsReadOnly);
         }
 
         [Theory]

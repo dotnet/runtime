@@ -267,7 +267,7 @@ namespace System.Runtime.Loader.Tests
             // Confirm assembly did not load from DefaultContext
             Assert.NotEqual(lcDefault, loadedContext);
             Assert.Equal(olc, loadedContext);
-            Assert.Equal(true, olc.LoadedFromContext);
+            Assert.True(olc.LoadedFromContext);
 
             // Now, do the same for an assembly that we explicitly had loaded in DefaultContext
             // in the caller of this method and ALSO loaded in the current load context. We should get it from our LoadContext,
@@ -280,7 +280,7 @@ namespace System.Runtime.Loader.Tests
             // Confirm assembly loaded from the intended LoadContext
             Assert.NotEqual(lcDefault, loadedContext);
             Assert.Equal(olc, loadedContext);
-            Assert.Equal(false, olc.LoadedFromContext);
+            Assert.False(olc.LoadedFromContext);
         }
     }
 }

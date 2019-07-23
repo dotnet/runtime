@@ -32,7 +32,7 @@ namespace System.Drawing.Drawing2D.Tests
             {
                 Assert.Equal(width, arrowCap.Width);
                 Assert.Equal(height, arrowCap.Height);
-                Assert.Equal(true, arrowCap.Filled);
+                Assert.True(arrowCap.Filled);
             }
         }
 

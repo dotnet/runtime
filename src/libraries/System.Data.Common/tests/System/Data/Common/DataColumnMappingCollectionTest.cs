@@ -59,12 +59,12 @@ namespace System.Data.Tests.Common
             int t = _columnMapCollection.Add(col1);
             Assert.Equal(0, t);
             bool eq1 = col1.Equals(_columnMapCollection[0]);
-            Assert.Equal(true, eq1);
+            Assert.True(eq1);
             Assert.Equal(1, _columnMapCollection.Count);
             DataColumnMapping col2;
             col2 = _columnMapCollection.Add("sourceID", "dataSetID");
             bool eq2 = col2.Equals(_columnMapCollection[1]);
-            Assert.Equal(true, eq2);
+            Assert.True(eq2);
             Assert.Equal(2, _columnMapCollection.Count);
         }
 
@@ -87,14 +87,14 @@ namespace System.Data.Tests.Common
             Assert.Equal(6, _columnMapCollection.Count);
             bool eq;
             eq = _cols[0].Equals(_columnMapCollection[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _cols[1].Equals(_columnMapCollection[2]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             eq = _cols[0].Equals(_columnMapCollection[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _cols[1].Equals(_columnMapCollection[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -118,28 +118,28 @@ namespace System.Data.Tests.Common
             _columnMapCollection.AddRange(_cols);
             bool eq;
             eq = _columnMapCollection.Contains(_cols[0]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _columnMapCollection.Contains(_cols[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             eq = _columnMapCollection.Contains(col1);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
 
             eq = _columnMapCollection.Contains(_cols[0].SourceColumn);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _columnMapCollection.Contains(_cols[1].SourceColumn);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             eq = _columnMapCollection.Contains(col1.SourceColumn);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             eq = _columnMapCollection.Contains(_cols[0].DataSetColumn);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _columnMapCollection.Contains(_cols[1].DataSetColumn);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
 
             eq = _columnMapCollection.Contains(col1.DataSetColumn);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -162,7 +162,7 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < 5; i++)
             {
                 eq = _columnMapCollection[i].Equals(colcops[i]);
-                Assert.Equal(true, eq);
+                Assert.True(eq);
             }
             colcops = null;
             colcops = new DataColumnMapping[7];
@@ -170,12 +170,12 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < 5; i++)
             {
                 eq = _columnMapCollection[i].Equals(colcops[i + 2]);
-                Assert.Equal(true, eq);
+                Assert.True(eq);
             }
             eq = _columnMapCollection[0].Equals(colcops[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _columnMapCollection[0].Equals(colcops[1]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
         }
 
         [Fact]
@@ -188,30 +188,30 @@ namespace System.Data.Tests.Common
             copy1 = _columnMapCollection;
 
             //			Assert.Equal (false, columnMapCollection.Equals(collect2));
-            Assert.Equal(true, _columnMapCollection.Equals(copy1));
+            Assert.True(_columnMapCollection.Equals(copy1));
             //			Assert.Equal (false, collect2.Equals(columnMapCollection));
-            Assert.Equal(true, copy1.Equals(_columnMapCollection));
+            Assert.True(copy1.Equals(_columnMapCollection));
             //			Assert.Equal (false, collect2.Equals(copy1));
-            Assert.Equal(true, copy1.Equals(_columnMapCollection));
-            Assert.Equal(true, _columnMapCollection.Equals(_columnMapCollection));
+            Assert.True(copy1.Equals(_columnMapCollection));
+            Assert.True(_columnMapCollection.Equals(_columnMapCollection));
             //			Assert.Equal (true, collect2.Equals(collect2));
-            Assert.Equal(true, copy1.Equals(copy1));
+            Assert.True(copy1.Equals(copy1));
 
             //			Assert.Equal (false, Object.Equals(collect2, columnMapCollection));
-            Assert.Equal(true, object.Equals(copy1, _columnMapCollection));
+            Assert.True(object.Equals(copy1, _columnMapCollection));
             //			Assert.Equal (false, Object.Equals(columnMapCollection, collect2));
-            Assert.Equal(true, object.Equals(_columnMapCollection, copy1));
+            Assert.True(object.Equals(_columnMapCollection, copy1));
             //			Assert.Equal (false, Object.Equals(copy1, collect2));
-            Assert.Equal(true, object.Equals(_columnMapCollection, copy1));
-            Assert.Equal(true, object.Equals(_columnMapCollection, _columnMapCollection));
+            Assert.True(object.Equals(_columnMapCollection, copy1));
+            Assert.True(object.Equals(_columnMapCollection, _columnMapCollection));
             //			Assert.Equal (true, Object.Equals(collect2, collect2));
-            Assert.Equal(true, object.Equals(copy1, copy1));
+            Assert.True(object.Equals(copy1, copy1));
             //			Assert.Equal (false, Object.Equals(columnMapCollection, collect2));
-            Assert.Equal(true, object.Equals(_columnMapCollection, copy1));
+            Assert.True(object.Equals(_columnMapCollection, copy1));
             //			Assert.Equal (false, Object.Equals(collect2, columnMapCollection));
-            Assert.Equal(true, object.Equals(copy1, _columnMapCollection));
+            Assert.True(object.Equals(copy1, _columnMapCollection));
             //			Assert.Equal (false, Object.Equals(collect2, copy1));
-            Assert.Equal(true, object.Equals(copy1, _columnMapCollection));
+            Assert.True(object.Equals(copy1, _columnMapCollection));
         }
 
         [Fact]
@@ -222,17 +222,17 @@ namespace System.Data.Tests.Common
             DataColumnMapping col1;
             col1 = _columnMapCollection.GetByDataSetColumn("dataSetName");
             eq = (col1.DataSetColumn.Equals("dataSetName") && col1.SourceColumn.Equals("sourceName"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             col1 = _columnMapCollection.GetByDataSetColumn("dataSetID");
             eq = (col1.DataSetColumn.Equals("dataSetID") && col1.SourceColumn.Equals("sourceID"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             col1 = _columnMapCollection.GetByDataSetColumn("datasetname");
             eq = (col1.DataSetColumn.Equals("dataSetName") && col1.SourceColumn.Equals("sourceName"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             col1 = _columnMapCollection.GetByDataSetColumn("datasetid");
             eq = (col1.DataSetColumn.Equals("dataSetID") && col1.SourceColumn.Equals("sourceID"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
         }
 
         [Fact]
@@ -251,16 +251,16 @@ namespace System.Data.Tests.Common
             DataColumnMapping col1;
             col1 = DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMapCollection, "sourceName", MissingMappingAction.Passthrough);
             eq = (col1.DataSetColumn.Equals("dataSetName") && col1.SourceColumn.Equals("sourceName"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             col1 = DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMapCollection, "sourceID", MissingMappingAction.Passthrough);
             eq = (col1.DataSetColumn.Equals("dataSetID") && col1.SourceColumn.Equals("sourceID"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             col1 = DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMapCollection, "sourceData", MissingMappingAction.Passthrough);
             eq = (col1.DataSetColumn.Equals("sourceData") && col1.SourceColumn.Equals("sourceData"));
-            Assert.Equal(true, eq);
+            Assert.True(eq);
             eq = _columnMapCollection.Contains(col1);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             col1 = DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMapCollection, "sourceData", MissingMappingAction.Ignore);
             Assert.Null(col1);
         }
@@ -387,15 +387,15 @@ namespace System.Data.Tests.Common
             bool eq;
             _columnMapCollection.RemoveAt(0);
             eq = _columnMapCollection.Contains(_cols[0]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _columnMapCollection.Contains(_cols[1]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
 
             _columnMapCollection.RemoveAt("sourceID");
             eq = _columnMapCollection.Contains(_cols[1]);
-            Assert.Equal(false, eq);
+            Assert.False(eq);
             eq = _columnMapCollection.Contains(_cols[2]);
-            Assert.Equal(true, eq);
+            Assert.True(eq);
         }
 
         [Fact]

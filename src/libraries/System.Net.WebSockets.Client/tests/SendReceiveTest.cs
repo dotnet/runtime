@@ -58,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
 
                 WebSocketReceiveResult recvResult = await ReceiveAsync(cws, receiveSegment, ctsDefault.Token);
-                Assert.Equal(false, recvResult.EndOfMessage);
+                Assert.False(recvResult.EndOfMessage);
 
                 while (recvResult.EndOfMessage == false)
                 {
@@ -99,7 +99,7 @@ namespace System.Net.WebSockets.Client.Tests
                         new ArraySegment<byte>(receiveBuffer, totalBytesReceived, receiveBuffer.Length - totalBytesReceived),
                         ctsDefault.Token);
 
-                    Assert.Equal(false, recvResult.EndOfMessage);
+                    Assert.False(recvResult.EndOfMessage);
                     Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalBytesReceived);
                     totalBytesReceived += recvResult.Count;
                 }
@@ -292,7 +292,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(message.Length, recvRet.Count);
                 Assert.Equal(WebSocketMessageType.Text, recvRet.MessageType);
-                Assert.Equal(true, recvRet.EndOfMessage);
+                Assert.True(recvRet.EndOfMessage);
                 Assert.Null(recvRet.CloseStatus);
                 Assert.Null(recvRet.CloseStatusDescription);
 
