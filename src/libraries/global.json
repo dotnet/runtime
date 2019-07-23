@@ -1,10 +1,10 @@
 {
   "sdk": {
-    "version": "3.0.100-preview7-012630",
+    "version": "3.0.100-preview7-012821",
     "rollforward": "major"
   },
   "tools": {
-    "dotnet": "3.0.100-preview7-012630"
+    "dotnet": "3.0.100-preview7-012821"
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19369.2",
