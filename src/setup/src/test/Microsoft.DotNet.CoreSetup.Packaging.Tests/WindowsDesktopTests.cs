@@ -27,12 +27,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 {
                     Assert.NotNull(tester);
 
-                    tester.HasOnlyTheseDataFiles(
-                        "data/FrameworkList.xml",
-                        "data/PlatformManifest.txt");
-
-                    tester.IsTargetingPack();
-                    tester.HasGoodPlatformManifest();
+                    tester.IsTargetingPackForPlatform();
                 }
                 else
                 {

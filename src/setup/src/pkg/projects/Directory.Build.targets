@@ -262,10 +262,29 @@
   <Target Name="IncludePlatformManifestFile"
           DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
           BeforeTargets="GetFiles">
-    <ItemGroup Condition="'$(PackageTargetRuntime)' == '' AND '$(PlatformManifestTargetPath)' != ''">
+    <!-- Create a copy with some per-pkgproj templates replaced. -->
+    <PropertyGroup>
+      <_platformManifestFileTemplateFile Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'">%(_depprojDataFile.Identity)</_platformManifestFileTemplateFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('$(_platformManifestFileTemplateFile)')">
+      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
+      <_filledPlatformManifestFileContent>$([System.IO.File]::ReadAllText('$(_platformManifestFileTemplateFile)')
+        .Replace("__PackageId__", "$(Id)"))
+      </_filledPlatformManifestFileContent>
+
+      <_filledPlatformManifestFile>$(IntermediateOutputPath)PlatformManifest.txt</_filledPlatformManifestFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_filledPlatformManifestFile)' != ''"
+      File="$(_filledPlatformManifestFile)"
+      Lines="$(_filledPlatformManifestFileContent)"
+      Overwrite="true" />
+
+    <ItemGroup Condition="'$(PlatformManifestTargetPath)' != ''">
       <File
-        Include="@(_depprojDataFile)"
-        Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'"
+        Include="$(_filledPlatformManifestFile)"
         TargetPath="$(PlatformManifestTargetPath)" />
     </ItemGroup>
   </Target>
