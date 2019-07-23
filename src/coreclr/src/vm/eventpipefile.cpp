@@ -77,7 +77,9 @@ DWORD GetFileMinVersion(EventPipeSerializationFormat format)
 }
 
 EventPipeFile::EventPipeFile(StreamWriter *pStreamWriter, EventPipeSerializationFormat format) :
-    FastSerializableObject(GetFileVersion(format), GetFileMinVersion(format), format >= EventPipeSerializationFormat::NetTraceV4)
+    FastSerializableObject(GetFileVersion(format), GetFileMinVersion(format), format >= EventPipeSerializationFormat::NetTraceV4),
+    m_pSerializer(nullptr),
+    m_pStreamWriter(pStreamWriter)
 {
     CONTRACTL
     {
@@ -107,22 +109,7 @@ EventPipeFile::EventPipeFile(StreamWriter *pStreamWriter, EventPipeSerialization
 
     m_samplingRateInNs = SampleProfiler::GetSamplingRate();
 
-    bool fSuccess = true;
-    if (m_format >= EventPipeSerializationFormat::NetTraceV4)
-    {
-        const char* pHeader = "Nettrace";
-        uint32_t bytesWritten = 0;
-        fSuccess = pStreamWriter->Write(pHeader, 8, bytesWritten) && bytesWritten == 8;
-    }
-    if (fSuccess)
-    {
-        // Create the file stream and write the FastSerialization header.
-        m_pSerializer = new FastSerializer(pStreamWriter);
-    }
-    else
-    {
-        m_pSerializer = nullptr;
-    }
+
 
     m_serializationLock.Init(LOCK_TYPE_DEFAULT);
 
@@ -138,8 +125,36 @@ EventPipeFile::EventPipeFile(StreamWriter *pStreamWriter, EventPipeSerialization
     QueryPerformanceCounter(&m_lastSortedTimestamp);
 #endif
 
-    // Write the first object to the file.
-    m_pSerializer->WriteObject(this);
+
+}
+
+void EventPipeFile::InitializeFile()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(m_pStreamWriter != nullptr);
+        PRECONDITION(m_pSerializer == nullptr);
+    }
+    CONTRACTL_END;
+
+    bool fSuccess = true;
+    if (m_format >= EventPipeSerializationFormat::NetTraceV4)
+    {
+        const char* pHeader = "Nettrace";
+        uint32_t bytesWritten = 0;
+        fSuccess = m_pStreamWriter->Write(pHeader, 8, bytesWritten) && bytesWritten == 8;
+    }
+    if (fSuccess)
+    {
+        // Create the file stream and write the FastSerialization header.
+        m_pSerializer = new FastSerializer(m_pStreamWriter);
+        
+        // Write the first object to the file.
+        m_pSerializer->WriteObject(this);
+    }
 }
 
 EventPipeFile::~EventPipeFile()
@@ -186,6 +201,7 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(!HasErrors());
     }
     CONTRACTL_END;
 
@@ -231,6 +247,7 @@ void EventPipeFile::WriteSequencePoint(EventPipeSequencePoint* pSequencePoint)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pSequencePoint != nullptr);
+        PRECONDITION(!HasErrors());
     }
     CONTRACTL_END;
 
@@ -261,8 +278,13 @@ void EventPipeFile::Flush(FlushFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(!HasErrors());
+        PRECONDITION(m_pMetadataBlock != nullptr);
+        PRECONDITION(m_pStackBlock != nullptr);
+        PRECONDITION(m_pBlock != nullptr);
     }
     CONTRACTL_END;
+
     // we write current blocks to the disk, whether they are full or not
     if ((m_pMetadataBlock->GetBytesWritten() != 0) && ((flags & FlushMetadataBlock) != 0))
     {
@@ -290,6 +312,7 @@ void EventPipeFile::WriteEnd()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(!HasErrors());
     }
     CONTRACTL_END;
 
@@ -312,6 +335,8 @@ void EventPipeFile::WriteEventToBlock(EventPipeEventInstance &instance,
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(m_pBlock != nullptr);
+        PRECONDITION(m_pMetadataBlock != nullptr);
     }
     CONTRACTL_END;
 
@@ -363,6 +388,7 @@ unsigned int EventPipeFile::GetMetadataId(EventPipeEvent &event)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(m_pMetadataIds != nullptr);
     }
     CONTRACTL_END;
 
@@ -384,6 +410,7 @@ void EventPipeFile::SaveMetadataId(EventPipeEvent &event, unsigned int metadataI
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(metadataId > 0);
+        PRECONDITION(m_pMetadataIds != nullptr);
     }
     CONTRACTL_END;
 
@@ -404,6 +431,7 @@ unsigned int EventPipeFile::GetStackId(EventPipeEventInstance &instance)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(m_format >= EventPipeSerializationFormat::NetTraceV4);
+        PRECONDITION(m_pStackBlock != nullptr);
     }
     CONTRACTL_END;
 

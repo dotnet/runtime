@@ -27,10 +27,6 @@ IpcStreamWriter::IpcStreamWriter(uint64_t id, IpcStream *pStream) : _pStream(pSt
 
     if (_pStream == nullptr)
         return;
-
-    DiagnosticsIpc::IpcMessage successResponse;
-    if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, id))
-        successResponse.Send(pStream);
 }
 
 IpcStreamWriter::~IpcStreamWriter()

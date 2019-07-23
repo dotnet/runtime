@@ -224,11 +224,10 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
     }
     CONTRACTL_END;
 
-    const EventPipeCollectTracingCommandPayload* payload = message.TryParsePayload<EventPipeCollectTracingCommandPayload>();
+    NewHolder<const EventPipeCollectTracingCommandPayload> payload = message.TryParsePayload<EventPipeCollectTracingCommandPayload>();
     if (payload == nullptr)
     {
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_BAD_ENCODING);
-        delete payload;
         delete pStream;
         return;
     }
@@ -246,8 +245,14 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
     if (sessionId == 0)
     {
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
-        delete payload;
         delete pStream;
+    }
+    else
+    {
+        DiagnosticsIpc::IpcMessage successResponse;
+        if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, sessionId))
+            successResponse.Send(pStream);
+        EventPipe::StartStreaming(sessionId);
     }
 }
 
