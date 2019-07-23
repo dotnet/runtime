@@ -215,8 +215,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal('a', ((char[])MyCharArray)[0]);
             Assert.Equal("Hello", ((string[])MyStringArray)[0]);
             Assert.Equal(3.3m, ((decimal[])MyDecimalArray)[0]);
-            Assert.Equal(false, ((bool[])MyBooleanFalseArray)[0]);
-            Assert.Equal(true, ((bool[])MyBooleanTrueArray)[0]);
+            Assert.False(((bool[])MyBooleanFalseArray)[0]);
+            Assert.True(((bool[])MyBooleanTrueArray)[0]);
             Assert.Equal(1.1f, ((float[])MySingleArray)[0]);
             Assert.Equal(2.2d, ((double[])MyDoubleArray)[0]);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), ((DateTime[])MyDateTimeArray)[0]);

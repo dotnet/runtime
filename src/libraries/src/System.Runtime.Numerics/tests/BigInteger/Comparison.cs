@@ -350,13 +350,13 @@ namespace System.Numerics.Tests
         private static void RunNegativeTests(Random random)
         {
             // BigInteger.Zero, 0
-            Assert.Equal(false, BigInteger.Zero.Equals((object)0));
+            Assert.False(BigInteger.Zero.Equals((object)0));
 
             // BigInteger.Zero, null
-            Assert.Equal(false, BigInteger.Zero.Equals((object)null));
+            Assert.False(BigInteger.Zero.Equals((object)null));
 
             // BigInteger.Zero, string
-            Assert.Equal(false, BigInteger.Zero.Equals((object)"0"));
+            Assert.False(BigInteger.Zero.Equals((object)"0"));
         }
 
         private static void IComparable_Invalid(string paramName)

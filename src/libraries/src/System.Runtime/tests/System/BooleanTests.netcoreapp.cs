@@ -39,7 +39,7 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => bool.Parse(value.AsSpan()));
 
                 Assert.False(bool.TryParse(value.AsSpan(), out bool result));
-                Assert.Equal(false, result);
+                Assert.False(result);
             }
         }
 

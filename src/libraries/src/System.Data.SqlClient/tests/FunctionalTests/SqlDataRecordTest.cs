@@ -43,7 +43,7 @@ namespace System.Data.SqlClient.Tests
             }
 
             record.SetBoolean(0, true);
-            Assert.Equal(true, record.GetBoolean(0));
+            Assert.True(record.GetBoolean(0));
 
             record.SetByte(1, 1);
             Assert.Equal(1, record.GetByte(1));

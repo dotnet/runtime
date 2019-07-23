@@ -502,7 +502,7 @@ namespace System.Net.Http.Tests
             // Connection collection has 1 value plus 'chunked'
             Assert.Equal(2, headers.TransferEncoding.Count);
             Assert.Equal(2, headers.GetValues("Transfer-Encoding").Count());
-            Assert.Equal(true, headers.TransferEncodingChunked);
+            Assert.True(headers.TransferEncodingChunked);
 
             // Note that 'chunked' is already in the collection, we add 'chunked' again here. Therefore the total 
             // number of headers is 4 (2x custom, 2x 'chunked').

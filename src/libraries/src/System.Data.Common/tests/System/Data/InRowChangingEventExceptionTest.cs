@@ -41,7 +41,7 @@ namespace System.Data.Tests
 
             //this event must be raised in order to test the exception
             // RowChanging - Event raised
-            Assert.Equal(true, _EventTriggered);
+            Assert.True(_EventTriggered);
         }
 
         private void Row_Changing(object sender, DataRowChangeEventArgs e)

@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.Equal(expected: CancellationToken.None, actual: dbo.CancellationToken);
                 Assert.Equal(expected: -1, actual: DataflowBlockOptions.Unbounded);
                 Assert.Equal(expected: @"{0} Id={1}", actual: dbo.NameFormat);
-                Assert.Equal(expected: true, actual: dbo.EnsureOrdered);
+                Assert.True(dbo.EnsureOrdered);
             };
 
             verifyBaseDefaults(new DataflowBlockOptions());
@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var gdbo = new GroupingDataflowBlockOptions();
             verifyBaseDefaults(gdbo);
             Assert.Equal(expected: DataflowBlockOptions.Unbounded, actual: gdbo.MaxNumberOfGroups);
-            Assert.Equal(expected: true, actual: gdbo.Greedy);
+            Assert.True(gdbo.Greedy);
         }
 
         [Fact]

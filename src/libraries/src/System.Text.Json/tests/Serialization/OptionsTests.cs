@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(options.Encoder);
             Assert.False(options.IgnoreNullValues);
             Assert.Equal(0, options.MaxDepth);
-            Assert.Equal(false, options.PropertyNameCaseInsensitive);
+            Assert.False(options.PropertyNameCaseInsensitive);
             Assert.Null(options.PropertyNamingPolicy);
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.False(options.WriteIndented);

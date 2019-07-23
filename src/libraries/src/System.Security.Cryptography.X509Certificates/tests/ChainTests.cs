@@ -823,7 +823,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                 chain.ChainPolicy.ExtraStore.Add(rootCert);
                 chain.ChainPolicy.VerificationTime = endEntityCert.NotAfter.AddDays(1);
 
-                Assert.Equal(false, chain.Build(endEntityCert));
+                Assert.False(chain.Build(endEntityCert));
 
                 Assert.Equal(3, chain.ChainElements.Count);
                 Assert.Equal(X509ChainStatusFlags.NotTimeValid, chain.ChainElements[0].AllStatusFlags());

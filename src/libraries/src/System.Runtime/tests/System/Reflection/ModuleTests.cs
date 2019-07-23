@@ -72,7 +72,7 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(int), complicatedAttribute.ConstructorArguments[0].ArgumentType);
             Assert.Equal(1, (int)complicatedAttribute.ConstructorArguments[0].Value);
             Assert.Equal(1, complicatedAttribute.NamedArguments.Count);
-            Assert.Equal(false, complicatedAttribute.NamedArguments[0].IsField);
+            Assert.False(complicatedAttribute.NamedArguments[0].IsField);
             Assert.Equal("Stuff", complicatedAttribute.NamedArguments[0].MemberName);
             Assert.Equal(typeof(ComplicatedAttribute).GetProperty("Stuff"), complicatedAttribute.NamedArguments[0].MemberInfo);
             Assert.Equal(typeof(int), complicatedAttribute.NamedArguments[0].TypedValue.ArgumentType);

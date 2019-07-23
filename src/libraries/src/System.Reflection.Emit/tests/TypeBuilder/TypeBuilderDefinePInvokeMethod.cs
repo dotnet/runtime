@@ -194,10 +194,10 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(p.EntrypointName, dia.EntryPoint);
             Assert.Equal(p.Charset, dia.CharSet);
             Assert.Equal(p.NativeCallConv, dia.CallingConvention);
-            Assert.Equal(false, dia.BestFitMapping);
-            Assert.Equal(false, dia.ExactSpelling);
-            Assert.Equal(true, dia.PreserveSig);  
-            Assert.Equal(false, dia.SetLastError);
+            Assert.False(dia.BestFitMapping);
+            Assert.False(dia.ExactSpelling);
+            Assert.True(dia.PreserveSig);  
+            Assert.False(dia.SetLastError);
 
             IList<Type> returnTypeOptMods = method.ReturnParameter.GetOptionalCustomModifiers();
             if (p.ReturnTypeOptMods == null)

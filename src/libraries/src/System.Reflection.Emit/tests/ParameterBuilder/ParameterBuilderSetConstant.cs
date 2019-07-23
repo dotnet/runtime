@@ -93,7 +93,7 @@ namespace System.Reflection.Emit.Tests
             parameter.SetConstant(valueToWrite);
 
             ParameterInfo createdParameter = GetCreatedParameter(type, "TestMethod", 1);
-            Assert.Equal(true, createdParameter.HasDefaultValue);
+            Assert.True(createdParameter.HasDefaultValue);
             Assert.Equal(expectedValueWhenRead, createdParameter.DefaultValue);
         }
 

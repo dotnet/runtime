@@ -562,7 +562,7 @@ namespace System.Data.Tests
             dt = DataProvider.CreateUniqueConstraint();
             dt.Constraints.CollectionChanged += new CollectionChangeEventHandler(Constraints_CollectionChanged);
             dt.Constraints.RemoveAt(0);
-            Assert.Equal(true, _collectionChanged);
+            Assert.True(_collectionChanged);
 
             ArrayList arr = new ArrayList(1);
             arr.Add(new IndexOutOfRangeException());

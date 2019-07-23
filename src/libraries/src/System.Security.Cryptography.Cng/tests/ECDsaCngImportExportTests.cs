@@ -18,8 +18,8 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(CngAlgorithm.ECDiffieHellmanP256, key.Algorithm);
                 Assert.Equal(CngAlgorithmGroup.ECDiffieHellman, key.AlgorithmGroup);
                 Assert.Equal(CngExportPolicies.None, key.ExportPolicy);
-                Assert.Equal(true, key.IsEphemeral);
-                Assert.Equal(false, key.IsMachineKey);
+                Assert.True(key.IsEphemeral);
+                Assert.False(key.IsMachineKey);
                 Assert.Null(key.KeyName);
                 Assert.Equal(0x100, key.KeySize);
                 Assert.Equal(CngKeyUsages.AllUsages, key.KeyUsage);

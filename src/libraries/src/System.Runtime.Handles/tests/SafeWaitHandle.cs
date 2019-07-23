@@ -12,15 +12,15 @@ public partial class SafeWaitHandle_4000_Tests
     public static void SafeWaitHandle_invalid()
     {
         SafeWaitHandle swh = new SafeWaitHandle(IntPtr.Zero, false);
-        Assert.Equal(false, swh.IsClosed);
-        Assert.Equal(true, swh.IsInvalid);
+        Assert.False(swh.IsClosed);
+        Assert.True(swh.IsInvalid);
     }
 
     [Fact]
     public static void SafeWaitHandle_valid()
     {
         SafeWaitHandle swh = new SafeWaitHandle(new IntPtr(1), true);
-        Assert.Equal(false, swh.IsClosed);
-        Assert.Equal(false, swh.IsInvalid);
+        Assert.False(swh.IsClosed);
+        Assert.False(swh.IsInvalid);
     }
 }

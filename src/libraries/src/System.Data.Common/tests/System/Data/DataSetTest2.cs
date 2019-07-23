@@ -76,17 +76,17 @@ namespace System.Data.Tests
             DataTable dt = new DataTable();
 
             // CaseSensitive - default value (false)
-            Assert.Equal(false, ds.CaseSensitive);
+            Assert.False(ds.CaseSensitive);
 
             ds.CaseSensitive = true;
 
             // CaseSensitive - get
-            Assert.Equal(true, ds.CaseSensitive);
+            Assert.True(ds.CaseSensitive);
 
             //add a datatable to a dataset
             ds.Tables.Add(dt);
             // DataTable CaseSensitive from DataSet - true
-            Assert.Equal(true, dt.CaseSensitive);
+            Assert.True(dt.CaseSensitive);
 
             ds.Tables.Clear();
             ds.CaseSensitive = false;
@@ -94,7 +94,7 @@ namespace System.Data.Tests
             ds.Tables.Add(dt);
 
             // DataTable CaseSensitive from DataSet - false
-            Assert.Equal(false, dt.CaseSensitive);
+            Assert.False(dt.CaseSensitive);
 
             //change DataSet CaseSensitive and check DataTables in it
             ds.Tables.Clear();
@@ -104,11 +104,11 @@ namespace System.Data.Tests
 
             // Change DataSet CaseSensitive - check Table - true
             ds.CaseSensitive = true;
-            Assert.Equal(true, dt.CaseSensitive);
+            Assert.True(dt.CaseSensitive);
 
             // Change DataSet CaseSensitive - check Table - false
             ds.CaseSensitive = false;
-            Assert.Equal(false, dt.CaseSensitive);
+            Assert.False(dt.CaseSensitive);
 
             //Add new table to DataSet with CaseSensitive,check the table case after adding it to DataSet
             ds.Tables.Clear();
@@ -118,7 +118,7 @@ namespace System.Data.Tests
             ds.Tables.Add(dt);
 
             // DataTable get case sensitive from DataSet - false
-            Assert.Equal(false, dt.CaseSensitive);
+            Assert.False(dt.CaseSensitive);
 
             ds.Tables.Clear();
             ds.CaseSensitive = false;
@@ -127,7 +127,7 @@ namespace System.Data.Tests
             ds.Tables.Add(dt);
 
             // DataTable get case sensitive from DataSet - true
-            Assert.Equal(true, dt.CaseSensitive);
+            Assert.True(dt.CaseSensitive);
 
             //Add new table to DataSet and change the DataTable CaseSensitive
             ds.Tables.Clear();
@@ -137,7 +137,7 @@ namespace System.Data.Tests
 
             // Add new table to DataSet and change the DataTable CaseSensitive - false
             dt.CaseSensitive = false;
-            Assert.Equal(false, dt.CaseSensitive);
+            Assert.False(dt.CaseSensitive);
 
             ds.Tables.Clear();
             ds.CaseSensitive = false;
@@ -146,7 +146,7 @@ namespace System.Data.Tests
 
             // Add new table to DataSet and change the DataTable CaseSensitive - true
             dt.CaseSensitive = true;
-            Assert.Equal(true, dt.CaseSensitive);
+            Assert.True(dt.CaseSensitive);
 
             //Add DataTable to Dataset, Change DataSet CaseSensitive, check DataTable
             ds.Tables.Clear();
@@ -157,7 +157,7 @@ namespace System.Data.Tests
 
             // Add DataTable to Dataset, Change DataSet CaseSensitive, check DataTable - true
             ds.CaseSensitive = false;
-            Assert.Equal(true, dt.CaseSensitive);
+            Assert.True(dt.CaseSensitive);
         }
 
         [Fact]
@@ -206,7 +206,7 @@ namespace System.Data.Tests
             Assert.Equal(DataProvider.GetDSSchema(ds), DataProvider.GetDSSchema(dsTarget));
 
             // Clone 2
-            Assert.Equal(false, dsTarget.GetXml() == ds.GetXml());
+            Assert.False(dsTarget.GetXml() == ds.GetXml());
         }
 
         [Fact]
@@ -229,7 +229,7 @@ namespace System.Data.Tests
             Assert.Equal(DataProvider.GetDSSchema(ds), DataProvider.GetDSSchema(dsTarget));
 
             // Copy 2
-            Assert.Equal(true, dsTarget.GetXml() == ds.GetXml());
+            Assert.True(dsTarget.GetXml() == ds.GetXml());
         }
 
         [Fact]
@@ -252,12 +252,12 @@ namespace System.Data.Tests
             var ds = new DataSet();
 
             // EnforceConstraints - default value (true)
-            Assert.Equal(true, ds.EnforceConstraints);
+            Assert.True(ds.EnforceConstraints);
 
             ds.EnforceConstraints = false;
 
             // EnforceConstraints - get
-            Assert.Equal(false, ds.EnforceConstraints);
+            Assert.False(ds.EnforceConstraints);
         }
 
         [Fact]
@@ -319,7 +319,7 @@ namespace System.Data.Tests
             ds.Tables[0].Rows.Add(dr);
 
             // GetChanges 2
-            Assert.Equal(true, ds.GetChanges() != null);
+            Assert.True(ds.GetChanges() != null);
 
             // GetChanges 3
             Assert.Equal(dr.ItemArray, ds.GetChanges().Tables[0].Rows[0].ItemArray);
@@ -492,14 +492,14 @@ namespace System.Data.Tests
             ds.Tables.Add(DataProvider.CreateParentDataTable());
 
             // HasChanges 1
-            Assert.Equal(false, ds.HasChanges());
+            Assert.False(ds.HasChanges());
 
             DataRow dr = ds.Tables[0].NewRow();
             dr[0] = 9;
             ds.Tables[0].Rows.Add(dr);
 
             // HasChanges 2
-            Assert.Equal(true, ds.HasChanges());
+            Assert.True(ds.HasChanges());
         }
 
         [Fact]
@@ -511,7 +511,7 @@ namespace System.Data.Tests
             ds.Tables.Add(DataProvider.CreateParentDataTable());
 
             // HasChanges 1
-            Assert.Equal(false, ds.HasChanges());
+            Assert.False(ds.HasChanges());
 
             //make some changes
 
@@ -528,16 +528,16 @@ namespace System.Data.Tests
             ds.Tables[0].Rows.Add(dr);
 
             // HasChanges Added
-            Assert.Equal(true, ds.HasChanges(DataRowState.Added));
+            Assert.True(ds.HasChanges(DataRowState.Added));
 
             // HasChanges Deleted
-            Assert.Equal(true, ds.HasChanges(DataRowState.Deleted));
+            Assert.True(ds.HasChanges(DataRowState.Deleted));
 
             // HasChanges Modified
-            Assert.Equal(true, ds.HasChanges(DataRowState.Modified));
+            Assert.True(ds.HasChanges(DataRowState.Modified));
 
             // HasChanges Unchanged
-            Assert.Equal(true, ds.HasChanges(DataRowState.Unchanged));
+            Assert.True(ds.HasChanges(DataRowState.Unchanged));
         }
 
         [Fact]
@@ -547,12 +547,12 @@ namespace System.Data.Tests
             ds.Tables.Add(DataProvider.CreateParentDataTable());
 
             // HasErrors - default
-            Assert.Equal(false, ds.HasErrors);
+            Assert.False(ds.HasErrors);
 
             ds.Tables[0].Rows[0].RowError = "ErrDesc";
 
             // HasErrors
-            Assert.Equal(true, ds.HasErrors);
+            Assert.True(ds.HasErrors);
         }
 
         #region test namespaces
@@ -914,7 +914,7 @@ namespace System.Data.Tests
             Assert.Equal("Element1_Id", ds.Relations["Element1_ChildElement1"].ParentColumns[0].ColumnName);
             Assert.Equal("ChildElement1", ds.Relations["Element1_ChildElement1"].ChildTable.TableName);
             Assert.Equal("Element1_Id", ds.Relations["Element1_ChildElement1"].ChildColumns[0].ColumnName);
-            Assert.Equal(true, ds.Relations["Element1_ChildElement1"].Nested);
+            Assert.True(ds.Relations["Element1_ChildElement1"].Nested);
 
             //Checking ForeignKeyConstraint
 
@@ -1051,7 +1051,7 @@ namespace System.Data.Tests
             ds2.Merge(ds1); //will raise MergeFailed event
 
             // MergeFailed event
-            Assert.Equal(true, _eventRaised);
+            Assert.True(_eventRaised);
         }
         private void Merge_Failed(object sender, MergeFailedEventArgs e)
         {
@@ -1129,7 +1129,7 @@ namespace System.Data.Tests
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(drArr, true, MissingSchemaAction.Ignore);
             // Merge true,Ignore - Column
-            Assert.Equal(false, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.False(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal(OldValue, dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1138,14 +1138,14 @@ namespace System.Data.Tests
             Assert.Equal(1, dsTarget1.Tables["Table1"].Select("ParentId=99").Length);
 
             // Merge true,Ignore - deleted row
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
+            Assert.True(dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
             #endregion
 
             #region "Merge(drArr,false,MissingSchemaAction.Ignore )"
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(drArr, false, MissingSchemaAction.Ignore);
             // Merge true,Ignore - Column
-            Assert.Equal(false, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.False(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal("NewValue", dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1161,7 +1161,7 @@ namespace System.Data.Tests
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(drArr, true, MissingSchemaAction.Add);
             // Merge true,Ignore - Column
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.True(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal(OldValue, dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1170,14 +1170,14 @@ namespace System.Data.Tests
             Assert.Equal(1, dsTarget1.Tables["Table1"].Select("ParentId=99").Length);
 
             // Merge true,Ignore - deleted row
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
+            Assert.True(dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
             #endregion
 
             #region "Merge(drArr,false,MissingSchemaAction.Add )"
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(drArr, false, MissingSchemaAction.Add);
             // Merge true,Ignore - Column
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.True(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal("NewValue", dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1248,7 +1248,7 @@ namespace System.Data.Tests
 
             //SomeTable - new table
             // Merge - new table
-            Assert.Equal(true, dsTarget.Tables["SomeTable"] != null);
+            Assert.True(dsTarget.Tables["SomeTable"] != null);
         }
 
         [Fact]
@@ -1345,10 +1345,10 @@ namespace System.Data.Tests
             DataSet dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(ds, false, MissingSchemaAction.Add);
             // Merge MissingSchemaAction.Add - Column
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.True(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge MissingSchemaAction.Add - Table
-            Assert.Equal(true, dsTarget1.Tables.Contains("NewTable"));
+            Assert.True(dsTarget1.Tables.Contains("NewTable"));
 
             //failed, should be success by MSDN Library documentation
             //		// Merge MissingSchemaAction.Add - PrimaryKey
@@ -1361,10 +1361,10 @@ namespace System.Data.Tests
             //		DataSet dsTarget2 = dsTarget.Copy();
             //		dsTarget2.Merge(ds,false,MissingSchemaAction.AddWithKey);
             //		// Merge MissingSchemaAction.AddWithKey - Column
-            //		Assert.Equal(true, dsTarget2.Tables["Table1"].Columns.Contains("NewColumn"));
+            //		Assert.True(dsTarget2.Tables["Table1"].Columns.Contains("NewColumn"));
             //
             //		// Merge MissingSchemaAction.AddWithKey - Table
-            //		Assert.Equal(true, dsTarget2.Tables.Contains("NewTable"));
+            //		Assert.True(dsTarget2.Tables.Contains("NewTable"));
             //
             //		// Merge MissingSchemaAction.AddWithKey - PrimaryKey
             //		Assert.Equal(dsTarget2.Tables["NewTable"].Columns["NewColumn1"], dsTarget2.Tables["NewTable"].PrimaryKey[0]);
@@ -1374,10 +1374,10 @@ namespace System.Data.Tests
             DataSet dsTarget4 = dsTarget.Copy();
             dsTarget4.Merge(ds, false, MissingSchemaAction.Ignore);
             // Merge MissingSchemaAction.Ignore - Column
-            Assert.Equal(false, dsTarget4.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.False(dsTarget4.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge MissingSchemaAction.Ignore - Table
-            Assert.Equal(false, dsTarget4.Tables.Contains("NewTable"));
+            Assert.False(dsTarget4.Tables.Contains("NewTable"));
             #endregion
         }
 
@@ -1768,7 +1768,7 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Relations[0].ChildColumns[0].ColumnName, ds.Relations[0].ChildColumns[0].ColumnName);
 
             // check allow null constraint
-            Assert.Equal(true, dsTarget.Tables["Parent"].Columns["ParentBool"].AllowDBNull);
+            Assert.True(dsTarget.Tables["Parent"].Columns["ParentBool"].AllowDBNull);
 
             // check Indentity column
             Assert.Equal(dsTarget.Tables["Parent"].Columns.Contains("Indentity"), ds.Tables["Parent"].Columns.Contains("Indentity"));
@@ -1780,10 +1780,10 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Tables["Parent"].Columns["Indentity"].AutoIncrement, ds.Tables["Parent"].Columns["Indentity"].AutoIncrement);
 
             // check Indentity column - DefaultValue
-            Assert.Equal(true, dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
+            Assert.True(dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
 
             // check remove colum
-            Assert.Equal(true, dsTarget.Tables["Child"].Columns.Contains("String2"));
+            Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
         }
 
         private void CompareResults_2(string Msg, DataSet ds, DataSet dsTarget)
@@ -1819,7 +1819,7 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Relations[0].ChildColumns[0].ColumnName, ds.Relations[0].ChildColumns[0].ColumnName);
 
             // check allow null constraint
-            Assert.Equal(true, dsTarget.Tables["Parent"].Columns["ParentBool"].AllowDBNull);
+            Assert.True(dsTarget.Tables["Parent"].Columns["ParentBool"].AllowDBNull);
 
             // check Indentity column
             Assert.Equal(dsTarget.Tables["Parent"].Columns.Contains("Indentity"), ds.Tables["Parent"].Columns.Contains("Indentity"));
@@ -1831,10 +1831,10 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Tables["Parent"].Columns["Indentity"].AutoIncrement, ds.Tables["Parent"].Columns["Indentity"].AutoIncrement);
 
             // check Indentity column - DefaultValue
-            Assert.Equal(true, dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
+            Assert.True(dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
 
             // check remove colum
-            Assert.Equal(true, dsTarget.Tables["Child"].Columns.Contains("String2"));
+            Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
             // Check Relation.Nested value
             DataSet orig = new DataSet();
 
@@ -1940,7 +1940,7 @@ namespace System.Data.Tests
             DataSet dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(dt, true, MissingSchemaAction.Ignore);
             // Merge true,Ignore - Column
-            Assert.Equal(false, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.False(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal(OldValue, dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1949,7 +1949,7 @@ namespace System.Data.Tests
             Assert.Equal(arrAddedRow, dsTarget1.Tables["Table1"].Select("ParentId=99")[0].ItemArray);
 
             // Merge true,Ignore - deleted row
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
+            Assert.True(dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
             #endregion
 
             #region "Merge(dt,false,MissingSchemaAction.Ignore )"
@@ -1957,7 +1957,7 @@ namespace System.Data.Tests
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(dt, false, MissingSchemaAction.Ignore);
             // Merge true,Ignore - Column
-            Assert.Equal(false, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.False(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Ignore - changed values
             Assert.Equal("NewValue", dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1973,7 +1973,7 @@ namespace System.Data.Tests
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(dt, true, MissingSchemaAction.Add);
             // Merge true,Add - Column
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.True(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Add - changed values
             Assert.Equal(OldValue, dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -1982,14 +1982,14 @@ namespace System.Data.Tests
             Assert.Equal(1, dsTarget1.Tables["Table1"].Select("ParentId=99").Length);
 
             // Merge true,Add - deleted row
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
+            Assert.True(dsTarget1.Tables["Table1"].Select("ParentId=2").Length > 0);
             #endregion
 
             #region "Merge(dt,false,MissingSchemaAction.Add  )"
             dsTarget1 = dsTarget.Copy();
             dsTarget1.Merge(dt, false, MissingSchemaAction.Add);
             // Merge true,Add - Column
-            Assert.Equal(true, dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
+            Assert.True(dsTarget1.Tables["Table1"].Columns.Contains("NewColumn"));
 
             // Merge true,Add - changed values
             Assert.Equal("NewValue", dsTarget1.Tables["Table1"].Select("ParentId=1")[0][1]);
@@ -2886,7 +2886,7 @@ namespace System.Data.Tests
             // DataSet ShouldSerializeRelations
             newDataSet ds = new newDataSet();
 
-            Assert.Equal(true, ds.testMethod());
+            Assert.True(ds.testMethod());
         }
 
         private class newDataSet : DataSet
@@ -2902,7 +2902,7 @@ namespace System.Data.Tests
             // DataSet ShouldSerializeTables
             newDataSet1 ds = new newDataSet1();
 
-            Assert.Equal(true, ds.testMethod());
+            Assert.True(ds.testMethod());
         }
 
         private class newDataSet1 : DataSet
@@ -2997,7 +2997,7 @@ namespace System.Data.Tests
 
             // ctor
             ds = new DataSet();
-            Assert.Equal(true, ds != null);
+            Assert.True(ds != null);
         }
 
         [Fact]
@@ -3007,7 +3007,7 @@ namespace System.Data.Tests
 
             // ctor
             ds = new DataSet("NewDataSet");
-            Assert.Equal(true, ds != null);
+            Assert.True(ds != null);
 
             // ctor - name
             Assert.Equal("NewDataSet", ds.DataSetName);
@@ -3022,7 +3022,7 @@ namespace System.Data.Tests
             pc = ds.ExtendedProperties;
 
             // Checking ExtendedProperties default
-            Assert.Equal(true, pc != null);
+            Assert.True(pc != null);
 
             // Checking ExtendedProperties count
             Assert.Equal(0, pc.Count);

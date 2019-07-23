@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 // Verify a couple properties
                 Assert.Equal(1, properties.Where(prop => prop.Name == "MyInt16").First().Value.GetInt32());
-                Assert.Equal(true, properties.Where(prop => prop.Name == "MyBooleanTrue").First().Value.GetBoolean());
+                Assert.True(properties.Where(prop => prop.Name == "MyBooleanTrue").First().Value.GetBoolean());
             }
         }
 

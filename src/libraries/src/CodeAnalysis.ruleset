@@ -47,7 +47,6 @@
     <Rule Id="xUnit1026" Action="None" />
     <Rule Id="xUnit2000" Action="None" />
     <Rule Id="xUnit2002" Action="None" />
-    <Rule Id="xUnit2004" Action="None" />
     <Rule Id="xUnit2005" Action="None" />
     <Rule Id="xUnit2006" Action="None" />
     <Rule Id="xUnit2007" Action="None" />

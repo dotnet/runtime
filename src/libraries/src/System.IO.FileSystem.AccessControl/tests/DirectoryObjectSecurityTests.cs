@@ -346,7 +346,7 @@ namespace System.Security.AccessControl
             customObjectSecurity.AddAccessRule(customAccessRuleReadWrite);
             bool result = customObjectSecurity.RemoveAccessRule(customAccessRuleWrite);
 
-            Assert.Equal(true, result);
+            Assert.True(result);
             AuthorizationRuleCollection ruleCollection = customObjectSecurity.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
             Assert.NotNull(ruleCollection);

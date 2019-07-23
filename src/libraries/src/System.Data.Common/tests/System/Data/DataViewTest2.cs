@@ -67,7 +67,7 @@ namespace System.Data.Tests
             Assert.Equal(dt.Rows.Count, CountTable + 1);
 
             // AddNew - new row != null
-            Assert.Equal(true, drv != null);
+            Assert.True(drv != null);
 
             // AddNew - check table
             Assert.Equal(dt, drv.Row.Table);
@@ -80,15 +80,15 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // AllowDelete - default value
-            Assert.Equal(true, dv.AllowDelete);
+            Assert.True(dv.AllowDelete);
 
             // AllowDelete - true
             dv.AllowDelete = true;
-            Assert.Equal(true, dv.AllowDelete);
+            Assert.True(dv.AllowDelete);
 
             // AllowDelete - false
             dv.AllowDelete = false;
-            Assert.Equal(false, dv.AllowDelete);
+            Assert.False(dv.AllowDelete);
 
             dv.AllowDelete = false;
             // AllowDelete false- Exception
@@ -111,15 +111,15 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // AllowEdit - default value
-            Assert.Equal(true, dv.AllowEdit);
+            Assert.True(dv.AllowEdit);
 
             // AllowEdit - true
             dv.AllowEdit = true;
-            Assert.Equal(true, dv.AllowEdit);
+            Assert.True(dv.AllowEdit);
 
             // AllowEdit - false
             dv.AllowEdit = false;
-            Assert.Equal(false, dv.AllowEdit);
+            Assert.False(dv.AllowEdit);
 
             dv.AllowEdit = false;
 
@@ -143,15 +143,15 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // AllowNew - default value
-            Assert.Equal(true, dv.AllowNew);
+            Assert.True(dv.AllowNew);
 
             // AllowNew - true
             dv.AllowNew = true;
-            Assert.Equal(true, dv.AllowNew);
+            Assert.True(dv.AllowNew);
 
             // AllowNew - false
             dv.AllowNew = false;
-            Assert.Equal(false, dv.AllowNew);
+            Assert.False(dv.AllowNew);
 
             // AllowNew - exception
             Assert.Throws<DataException>(() =>
@@ -174,15 +174,15 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // ApplyDefaultSort - default value
-            Assert.Equal(false, dv.ApplyDefaultSort);
+            Assert.False(dv.ApplyDefaultSort);
 
             // ApplyDefaultSort - true
             dv.ApplyDefaultSort = true;
-            Assert.Equal(true, dv.ApplyDefaultSort);
+            Assert.True(dv.ApplyDefaultSort);
 
             // ApplyDefaultSort - false
             dv.ApplyDefaultSort = false;
-            Assert.Equal(false, dv.ApplyDefaultSort);
+            Assert.False(dv.ApplyDefaultSort);
         }
 
         [Fact]
@@ -308,7 +308,7 @@ namespace System.Data.Tests
                 Succeed = (int)dvArr[i]["ChildId"] == (int)drExpected[i]["ChildId"];
                 if (!Succeed) break;
             }
-            Assert.Equal(true, Succeed);
+            Assert.True(Succeed);
         }
 
         [Fact]
@@ -353,7 +353,7 @@ namespace System.Data.Tests
                 Succeed = (int)dvArr[i]["ChildId"] == (int)drExpected[i]["ChildId"];
                 if (!Succeed) break;
             }
-            Assert.Equal(true, Succeed);
+            Assert.True(Succeed);
         }
 
         //Activate This Construntor to log All To Standard output
@@ -467,7 +467,7 @@ namespace System.Data.Tests
 
             // GetEnumerator != null
             ienm = dv.GetEnumerator();
-            Assert.Equal(true, ienm != null);
+            Assert.True(ienm != null);
 
             int i = 0;
             while (ienm.MoveNext())
@@ -512,7 +512,7 @@ namespace System.Data.Tests
             _evProp = null;
             // change value - Event raised
             dv[1]["String1"] = "something";
-            Assert.Equal(true, _evProp != null);
+            Assert.True(_evProp != null);
             // change value - ListChangedType
             Assert.Equal(ListChangedType.ItemChanged, _evProp.lstType);
             // change value - NewIndex
@@ -524,7 +524,7 @@ namespace System.Data.Tests
             _evProp = null;
             // Add New  - Event raised
             dv.AddNew();
-            Assert.Equal(true, _evProp != null);
+            Assert.True(_evProp != null);
             // Add New  - ListChangedType
             Assert.Equal(ListChangedType.ItemAdded, _evProp.lstType);
             // Add New  - NewIndex
@@ -536,7 +536,7 @@ namespace System.Data.Tests
             _evProp = null;
             // sort  - Event raised
             dv.Sort = "ParentId Desc";
-            Assert.Equal(true, _evProp != null);
+            Assert.True(_evProp != null);
             // sort - ListChangedType
             Assert.Equal(ListChangedType.Reset, _evProp.lstType);
             // sort - NewIndex
@@ -564,7 +564,7 @@ namespace System.Data.Tests
             // ListChangedType.Reset
             dt.AcceptChanges();
 
-            Assert.Equal(true, _evProp != null);
+            Assert.True(_evProp != null);
             // AcceptChanges - should emit ListChangedType.Reset
             Assert.Equal(ListChangedType.Reset, _evProp.lstType);
         }
@@ -582,7 +582,7 @@ namespace System.Data.Tests
             // Clears DataTable
             dt.Clear();
 
-            Assert.Equal(true, _evProp != null);
+            Assert.True(_evProp != null);
             // Clear DataTable - should emit ListChangedType.Reset
             Assert.Equal(ListChangedType.Reset, _evProp.lstType);
             // Clear DataTable - should clear view count
@@ -637,7 +637,7 @@ namespace System.Data.Tests
                 Succeed = al.Contains(drvResult[i].Row);
                 if (!Succeed) break;
             }
-            Assert.Equal(true, Succeed);
+            Assert.True(Succeed);
             //-------------------------------------------------------------
 
             //-------------------------------------------------------------
@@ -661,7 +661,7 @@ namespace System.Data.Tests
                 Succeed = al.Contains(drvResult[i].Row);
                 if (!Succeed) break;
             }
-            Assert.Equal(true, Succeed);
+            Assert.True(Succeed);
             //-------------------------------------------------------------
 
             //EvaluateException
@@ -722,31 +722,31 @@ namespace System.Data.Tests
             dv.RowStateFilter = DataViewRowState.Added;
             drResult = GetResultRows(dt, DataRowState.Added);
             // Added
-            Assert.Equal(true, CompareSortedRowsByParentId(dv, drResult));
+            Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
             //---------- CurrentRows -------- 
             dv.RowStateFilter = DataViewRowState.CurrentRows;
             drResult = GetResultRows(dt, DataRowState.Unchanged | DataRowState.Added | DataRowState.Modified);
             // CurrentRows
-            Assert.Equal(true, CompareSortedRowsByParentId(dv, drResult));
+            Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
             //---------- ModifiedCurrent -------- 
             dv.RowStateFilter = DataViewRowState.ModifiedCurrent;
             drResult = GetResultRows(dt, DataRowState.Modified);
             // ModifiedCurrent
-            Assert.Equal(true, CompareSortedRowsByParentId(dv, drResult));
+            Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
             //---------- ModifiedOriginal -------- 
             dv.RowStateFilter = DataViewRowState.ModifiedOriginal;
             drResult = GetResultRows(dt, DataRowState.Modified);
             // ModifiedOriginal
-            Assert.Equal(true, CompareSortedRowsByParentId(dv, drResult));
+            Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
             //---------- Deleted -------- 
             dv.RowStateFilter = DataViewRowState.Deleted;
             drResult = GetResultRows(dt, DataRowState.Deleted);
             // Deleted
-            Assert.Equal(true, CompareSortedRowsByParentId(dv, drResult));
+            Assert.True(CompareSortedRowsByParentId(dv, drResult));
             /*
 					//---------- OriginalRows -------- 
 					dv.RowStateFilter = DataViewRowState.OriginalRows ;
@@ -826,27 +826,27 @@ namespace System.Data.Tests
             dv.Sort = "ParentId";
             drArrTable = dt.Select("", "ParentId");
             // sort = ParentId
-            Assert.Equal(true, CompareSortedRowsByParentAndChildId(dv, drArrTable));
+            Assert.True(CompareSortedRowsByParentAndChildId(dv, drArrTable));
 
             dv.Sort = "ChildId";
             drArrTable = dt.Select("", "ChildId");
             // sort = ChildId
-            Assert.Equal(true, CompareSortedRowsByParentAndChildId(dv, drArrTable));
+            Assert.True(CompareSortedRowsByParentAndChildId(dv, drArrTable));
 
             dv.Sort = "ParentId Desc, ChildId";
             drArrTable = dt.Select("", "ParentId Desc, ChildId");
             // sort = ParentId Desc, ChildId
-            Assert.Equal(true, CompareSortedRowsByParentAndChildId(dv, drArrTable));
+            Assert.True(CompareSortedRowsByParentAndChildId(dv, drArrTable));
 
             dv.Sort = "ChildId Asc, ParentId";
             drArrTable = dt.Select("", "ChildId Asc, ParentId");
             // sort = ChildId Asc, ParentId
-            Assert.Equal(true, CompareSortedRowsByParentAndChildId(dv, drArrTable));
+            Assert.True(CompareSortedRowsByParentAndChildId(dv, drArrTable));
 
             dv.Sort = "ChildId Asc, ChildId Desc";
             drArrTable = dt.Select("", "ChildId Asc, ChildId Desc");
             // sort = ChildId Asc, ChildId Desc
-            Assert.Equal(true, CompareSortedRowsByParentAndChildId(dv, drArrTable));
+            Assert.True(CompareSortedRowsByParentAndChildId(dv, drArrTable));
 
             // IndexOutOfRangeException - 1
             Assert.Throws<IndexOutOfRangeException>(() =>
@@ -914,7 +914,7 @@ namespace System.Data.Tests
             dv = new DataView();
 
             // ctor
-            Assert.Equal(false, dv == null);
+            Assert.False(dv == null);
         }
 
         [Fact]
@@ -925,7 +925,7 @@ namespace System.Data.Tests
 
             // ctor
             dv = new DataView(dt);
-            Assert.Equal(false, dv == null);
+            Assert.False(dv == null);
 
             // ctor - table
             Assert.Equal(dt, dv.Table);
@@ -965,7 +965,7 @@ namespace System.Data.Tests
 
             // ctor
             dv = new DataView(dt, "CustomerId > 100", "Age", DataViewRowState.Added);
-            Assert.Equal(false, dv == null);
+            Assert.False(dv == null);
 
             // ctor - table
             Assert.Equal(dt, dv.Table);

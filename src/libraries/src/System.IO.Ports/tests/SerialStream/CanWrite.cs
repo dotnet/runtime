@@ -24,7 +24,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanWrite property throws exception After Open() then Close()");
 
-                Assert.Equal(false, serialStream.CanWrite);
+                Assert.False(serialStream.CanWrite);
             }
         }
 
@@ -39,7 +39,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanWrite property throws exception After Open() then BaseStream.Close()");
 
-                Assert.Equal(false, serialStream.CanWrite);
+                Assert.False(serialStream.CanWrite);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanWrite property returns true after a call to Open()");
 
-                Assert.Equal(true, com.BaseStream.CanWrite);
+                Assert.True(com.BaseStream.CanWrite);
             }
         }
         #endregion

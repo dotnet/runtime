@@ -109,12 +109,12 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
             DataRowView drv = dv[0];
             dt.Rows[0].BeginEdit();
-            Assert.Equal(true, drv.IsEdit);
+            Assert.True(drv.IsEdit);
 
             drv = dv.AddNew();
             drv.Row["col"] = "test";
             drv.Row.CancelEdit();
-            Assert.Equal(false, drv.IsEdit);
+            Assert.False(drv.IsEdit);
         }
 
         [Fact]
