@@ -71,6 +71,10 @@ namespace System.Net.Http
             private bool _hasWaiter;
 
             private CancellationTokenSource _requestBodyCancellationSource;
+
+            // This is a linked token combining the above source and the user-supplied token to SendRequestBodyAsync
+            private CancellationToken _requestBodyCancellationToken;
+
             private TaskCompletionSource<bool> _expect100ContinueWaiter;
 
             private int _headerBudgetRemaining;
@@ -99,6 +103,16 @@ namespace System.Net.Http
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
+                if (_request.Content == null)
+                {
+                    _requestCompletionState = StreamCompletionState.Completed;
+                }
+                else
+                {
+                    // Create this here because it can be canceled before SendRequestBodyAsync is even called.
+                    _requestBodyCancellationSource = new CancellationTokenSource();
+                }
+
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
@@ -119,52 +133,55 @@ namespace System.Net.Http
 
             public async Task SendRequestBodyAsync(CancellationToken cancellationToken)
             {
-                if (_request.Content != null)
+                if (_request.Content == null)
                 {
-                    if (NetEventSource.IsEnabled)
-                        Trace($"{_request.Content}");
+                    Debug.Assert(_requestCompletionState == StreamCompletionState.Completed);
+                    return;
+                }
 
-                    // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
-                    // and similiar situations where we need to cancel the request body (see CancelRequestBody).
-                    _requestBodyCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationToken.None);
-                    cancellationToken = _requestBodyCancellationSource.Token;
+                if (NetEventSource.IsEnabled) Trace($"{_request.Content}");
 
-                    try
+                Debug.Assert(_requestBodyCancellationSource != null);
+
+                // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
+                // and similiar situations where we need to cancel the request body (see Cancel method).
+                _requestBodyCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token;
+
+                try
+                {
+                    bool sendRequestContent = true;
+                    if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
                     {
-                        bool sendRequestContent = true;
-                        if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
-                        {
-                            sendRequestContent = await WaitFor100ContinueAsync(cancellationToken).ConfigureAwait(false);
-                        }
-
-                        if (sendRequestContent)
-                        {
-                            using (Http2WriteStream writeStream = new Http2WriteStream(this))
-                            {
-                                await _request.Content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
-                            }
-                        }
-
-                        await _connection.SendEndStreamAsync(_streamId, cancellationToken).ConfigureAwait(false);
-
-                        if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
+                        sendRequestContent = await WaitFor100ContinueAsync(_requestBodyCancellationToken).ConfigureAwait(false);
                     }
-                    catch (Exception e)
+
+                    if (sendRequestContent)
                     {
-                        if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
-
-                        lock (SyncObject)
+                        using (Http2WriteStream writeStream = new Http2WriteStream(this))
                         {
-                            Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
-
-                            _requestCompletionState = StreamCompletionState.Failed;
-                            CheckForCompletion();
+                            await _request.Content.CopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
                         }
-
-                        Cancel();
-
-                        throw;
                     }
+
+                    await _connection.SendEndStreamAsync(_streamId, _requestBodyCancellationToken).ConfigureAwait(false);
+
+                    if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
+                }
+                catch (Exception e)
+                {
+                    if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
+
+                    lock (SyncObject)
+                    {
+                        Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
+
+                        _requestCompletionState = StreamCompletionState.Failed;
+                        CheckForCompletion();
+                    }
+
+                    Cancel();
+
+                    throw;
                 }
 
                 lock (SyncObject)
@@ -810,9 +827,9 @@ namespace System.Net.Http
                 CancellationTokenSource customCancellationSource = null;
                 if (!cancellationToken.CanBeCanceled)
                 {
-                    cancellationToken = _requestBodyCancellationSource.Token;
+                    cancellationToken = _requestBodyCancellationToken;
                 }
-                else if (cancellationToken != _requestBodyCancellationSource.Token)
+                else if (cancellationToken != _requestBodyCancellationToken)
                 {
                     // User passed a custom CancellationToken.
                     // We can't tell if it includes our Token or not, so assume it doesn't.
