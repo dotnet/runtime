@@ -21,8 +21,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var1()
         {
             try
@@ -44,8 +43,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var2()
         {
             try
@@ -67,8 +65,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var3()
         {
             try
@@ -90,8 +87,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var4()
         {
             try
@@ -113,8 +109,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null, Evidence = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var5()
         {
             /*try
@@ -136,8 +131,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null, Evidence = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var6()
         {
             /*try
@@ -159,8 +153,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var7()
         {
             try
@@ -182,8 +175,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var8()
         {
             try
@@ -205,8 +197,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var9()
         {
             try
@@ -228,8 +219,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var10()
         {
             try
@@ -251,8 +241,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var11()
         {
             try
@@ -274,8 +263,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var12()
         {
             try
@@ -297,8 +285,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var13()
         {
             try
@@ -320,8 +307,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var14()
         {
             try
@@ -1590,8 +1576,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Calling with a closed reader, should throw exception")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader2()
         {
 #pragma warning disable 0618
@@ -1617,8 +1602,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Verify Reader isn""t closed after Load")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader3()
         {
             bool fTEST_FAIL = false;
@@ -1653,8 +1637,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Verify position of node in Reader is at EOF after Load")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader4()
         {
             bool fTEST_FAIL = false;
@@ -1689,8 +1672,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with reader position at EOF, should throw exception")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader5()
         {
             bool fTEST_FAIL = false;
@@ -1721,8 +1703,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with NULL reader, should throw System.ArgumentNullException")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader6()
         {
 #pragma warning disable 0618
@@ -2362,8 +2343,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call without loading")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TransformStrStr9()
         {
 #pragma warning disable 0618
