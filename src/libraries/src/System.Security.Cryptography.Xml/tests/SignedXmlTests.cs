@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.NotNull(signedXml.EncryptedXml);
 
             Assert.Equal(0, signedXml.KeyInfo.Count);
-            Assert.Equal(null, signedXml.KeyInfo.Id);
+            Assert.Null(signedXml.KeyInfo.Id);
 
             // TODO: Expand
             Assert.NotNull(signedXml.Signature);

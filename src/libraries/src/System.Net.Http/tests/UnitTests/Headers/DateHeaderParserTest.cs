@@ -74,7 +74,7 @@ namespace System.Net.Http.Tests
             object result = null;
             int newIndex = startIndex;
             Assert.False(parser.TryParseValue(input, null, ref newIndex, out result));
-            Assert.Equal(null, result);
+            Assert.Null(result);
             Assert.Equal(startIndex, newIndex);
         }
         #endregion

@@ -262,7 +262,7 @@ namespace System.Data.Tests.Common
             eq = _columnMapCollection.Contains(col1);
             Assert.Equal(false, eq);
             col1 = DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMapCollection, "sourceData", MissingMappingAction.Ignore);
-            Assert.Equal(null, col1);
+            Assert.Null(col1);
         }
 
         [Fact]

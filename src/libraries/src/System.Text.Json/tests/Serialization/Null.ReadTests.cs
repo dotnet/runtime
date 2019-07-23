@@ -69,10 +69,10 @@ namespace System.Text.Json.Serialization.Tests
         public static void DefaultIgnoreNullValuesOnRead()
         {
             TestClassWithInitializedProperties obj = JsonSerializer.Deserialize<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json);
-            Assert.Equal(null, obj.MyString);
-            Assert.Equal(null, obj.MyInt);
-            Assert.Equal(null, obj.MyIntArray);
-            Assert.Equal(null, obj.MyIntList);
+            Assert.Null(obj.MyString);
+            Assert.Null(obj.MyInt);
+            Assert.Null(obj.MyIntArray);
+            Assert.Null(obj.MyIntList);
         }
 
         [Fact]

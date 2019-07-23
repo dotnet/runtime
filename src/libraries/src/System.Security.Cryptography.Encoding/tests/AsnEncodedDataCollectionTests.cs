@@ -155,9 +155,9 @@ namespace System.Security.Cryptography.Encoding.Tests
 
             AsnEncodedData[] dumped = new AsnEncodedData[c.Count + 3];
             c.CopyTo(dumped, 2);
-            Assert.Equal(null, dumped[0]);
-            Assert.Equal(null, dumped[1]);
-            Assert.Equal(null, dumped[dumped.Length - 1]);
+            Assert.Null(dumped[0]);
+            Assert.Null(dumped[1]);
+            Assert.Null(dumped[dumped.Length - 1]);
             Assert.Equal<AsnEncodedData>(expected, dumped.Skip(2).Take(c.Count));
         }
 

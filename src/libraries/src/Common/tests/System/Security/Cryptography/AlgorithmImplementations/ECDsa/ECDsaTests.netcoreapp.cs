@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             using (ec = ECDsaFactory.Create(curveDef.Curve))
             {
                 param = ec.ExportExplicitParameters(true);
-                Assert.NotEqual(null, param.D);
+                Assert.NotNull(param.D);
                 using (newEc = ECDsaFactory.Create())
                 {
                     newEc.ImportParameters(param);

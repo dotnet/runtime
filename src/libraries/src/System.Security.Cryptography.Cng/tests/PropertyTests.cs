@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(CngPropertyOptions.CustomProperty, p2.Options);
 
                 // This one is odd. CNG keys can have properties with zero length but CngKey.GetProperty() transforms this into null.
-                Assert.Equal(null, p2.GetValue());
+                Assert.Null(p2.GetValue());
             }
         }
 

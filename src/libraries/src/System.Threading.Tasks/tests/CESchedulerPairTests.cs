@@ -412,7 +412,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             // Validate that CESP does not implement IDisposable
-            Assert.Equal(null, new ConcurrentExclusiveSchedulerPair() as IDisposable);
+            Assert.Null(new ConcurrentExclusiveSchedulerPair() as IDisposable);
         }
 
         /// <summary>

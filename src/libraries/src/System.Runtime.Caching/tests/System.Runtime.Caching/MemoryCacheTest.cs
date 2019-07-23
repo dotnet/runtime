@@ -1082,11 +1082,11 @@ namespace MonoTests.System.Runtime.Caching
 
                     if (sw.ElapsedMilliseconds < SlidingExpirationThresholdMSec)
                     {
-                        Assert.NotEqual(null, item);
+                        Assert.NotNull(item);
                     }
                     else
                     {
-                        // for the sake of simplicity skip an inversed assert here (Assert.Equal(null, item)) 
+                        // for the sake of simplicity skip an inversed assert here (Assert.Null(item)) 
                         // (to avoid further complicating the test as we would need to address a few more subtle timing cases)
                     }
                 }

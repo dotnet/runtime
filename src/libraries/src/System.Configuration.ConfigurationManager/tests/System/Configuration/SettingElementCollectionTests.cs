@@ -33,7 +33,7 @@ namespace System.Configuration
             collection.Add(settingElement);
             collection.Remove(settingElement);
             var retrievedElement = collection.Get("TestElementName");
-            Assert.Equal(null, retrievedElement);
+            Assert.Null(retrievedElement);
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace System.Configuration
             collection.Add(settingElement);
             collection.Clear();
             var retrievedElement = collection.Get("TestElementName");
-            Assert.Equal(null, retrievedElement);
+            Assert.Null(retrievedElement);
         }
     }
 }

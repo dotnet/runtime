@@ -88,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Null(handler.Credentials);
                 Assert.Equal(50, handler.MaxAutomaticRedirections);
                 Assert.NotNull(handler.Properties);
-                Assert.Equal(null, handler.Proxy);
+                Assert.Null(handler.Proxy);
                 Assert.True(handler.SupportsAutomaticDecompression);
                 Assert.True(handler.UseCookies);
                 Assert.False(handler.UseDefaultCredentials);

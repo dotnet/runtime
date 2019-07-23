@@ -210,7 +210,7 @@ namespace System.Net.Mail.Tests
             string input = "=?utf-99?B?SGkgw5wgQm9i?=";
             _message.Subject = input;
 
-            Assert.Equal(null, _message.SubjectEncoding);
+            Assert.Null(_message.SubjectEncoding);
 
             _message.PrepareHeaders(true, false);
 
@@ -226,7 +226,7 @@ namespace System.Net.Mail.Tests
             string input = "=?utf-8?B?SGkgw5.wgQm9i?="; // Extra . in the middle
             _message.Subject = input;
 
-            Assert.Equal(null, _message.SubjectEncoding);
+            Assert.Null(_message.SubjectEncoding);
 
             _message.PrepareHeaders(true, false);
 

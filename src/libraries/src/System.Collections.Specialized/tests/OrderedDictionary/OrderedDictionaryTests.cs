@@ -250,7 +250,7 @@ namespace System.Collections.Specialized.Tests
                 d["test" + i] = 1337;
             }
 
-            Assert.Equal(null, d["asdasd"]);
+            Assert.Null(d["asdasd"]);
             Assert.Throws<ArgumentNullException>(() => { var a = d[null]; });
             Assert.Throws<ArgumentNullException>(() => { d[null] = 1337; });
         }
@@ -342,7 +342,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(37, d[(object)13]);
             Assert.Throws<NotSupportedException>(() => { d["foo"] = "moooooooooaaah"; });
             Assert.Throws<NotSupportedException>(() => { d["asdasd"] = "moooooooooaaah"; });
-            Assert.Equal(null, d["asdasd"]);
+            Assert.Null(d["asdasd"]);
             Assert.Throws<ArgumentNullException>(() => { var a = d[null]; });
         }
 

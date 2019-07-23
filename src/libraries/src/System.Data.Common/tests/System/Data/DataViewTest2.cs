@@ -889,7 +889,7 @@ namespace System.Data.Tests
             DataView dv = new DataView();
 
             // DataTable=null
-            Assert.Equal(null, dv.Table);
+            Assert.Null(dv.Table);
 
             // DataException - bind to table with no name
             Assert.Throws<DataException>(() =>
@@ -904,7 +904,7 @@ namespace System.Data.Tests
 
             // assign null to DataTable
             dv.Table = null;
-            Assert.Equal(null, dv.Table);
+            Assert.Null(dv.Table);
         }
 
         [Fact]

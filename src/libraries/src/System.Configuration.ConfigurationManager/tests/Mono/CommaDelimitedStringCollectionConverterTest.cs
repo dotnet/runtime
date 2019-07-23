@@ -105,7 +105,7 @@ namespace MonoTests.System.Configuration
         {
             CommaDelimitedStringCollectionConverter cv = new CommaDelimitedStringCollectionConverter();
 
-            Assert.Equal(null, cv.ConvertTo(null, null, null, typeof(string)));
+            Assert.Null(cv.ConvertTo(null, null, null, typeof(string)));
         }
 
         [Fact]

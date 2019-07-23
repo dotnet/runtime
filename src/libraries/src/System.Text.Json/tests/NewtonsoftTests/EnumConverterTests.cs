@@ -265,7 +265,7 @@ namespace System.Text.Json.Tests
             EnumClass enumClass = JsonSerializer.Deserialize<EnumClass>(json);
             Assert.Equal(StoreColor.Red, enumClass.StoreColor);
             Assert.Equal(StoreColor.White, enumClass.NullableStoreColor1);
-            Assert.Equal(null, enumClass.NullableStoreColor2);
+            Assert.Null(enumClass.NullableStoreColor2);
         }
 
         [Fact]

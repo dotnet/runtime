@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "index",
                 () => cms.RemoveSignature(-1));
 
-            Assert.Equal(null, ex.ActualValue);
+            Assert.Null(ex.ActualValue);
             Assert.Single(cms.SignerInfos);
             Assert.Single(cms.Certificates);
 
@@ -338,7 +338,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "index",
                 () => cms.RemoveSignature(1));
 
-            Assert.Equal(null, ex.ActualValue);
+            Assert.Null(ex.ActualValue);
 
             Assert.Single(cms.SignerInfos);
             Assert.Single(cms.Certificates);

@@ -41,7 +41,7 @@ namespace System.Collections.Tests
 
             FooKey nullKey = CreateKey(101);
             dictBase.Add(nullKey, null);
-            Assert.Equal(null, dictBase[nullKey]);
+            Assert.Null(dictBase[nullKey]);
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(CreateValue(i), dictBase[CreateKey(i)]);
             }
-            Assert.Equal(null, dictBase[new FooKey()]);
+            Assert.Null(dictBase[new FooKey()]);
         }
 
         [Fact]
@@ -131,7 +131,7 @@ namespace System.Collections.Tests
 
             dictBase[nonExistentKey] = null;
             Assert.Equal(101, dictBase.Count); // Should add a key/value pair if the key 
-            Assert.Equal(null, dictBase[nonExistentKey]);
+            Assert.Null(dictBase[nonExistentKey]);
         }
 
         [Fact]

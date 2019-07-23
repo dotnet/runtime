@@ -115,7 +115,7 @@ namespace System.Net.Http.Tests
             int newIndex = index;
             Assert.False(parser.TryParseValue(source, null, ref newIndex, out result),
                 string.Format("TryParse returned true. Input: '{0}', Index: {1}", source, index));
-            Assert.Equal(null, result);
+            Assert.Null(result);
             Assert.Equal(index, newIndex);
         }
         #endregion

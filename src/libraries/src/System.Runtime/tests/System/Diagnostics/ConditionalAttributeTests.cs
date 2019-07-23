@@ -13,7 +13,7 @@ namespace System.Tests
         public static void Ctor()
         {
             var attribute0 = new ConditionalAttribute(null);
-            Assert.Equal(null, attribute0.ConditionString);
+            Assert.Null(attribute0.ConditionString);
 
             var attribute = new ConditionalAttribute("CONDITION");
             Assert.Equal("CONDITION", attribute.ConditionString);

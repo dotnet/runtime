@@ -34,7 +34,7 @@ namespace System.Buffers.Tests
 
             {
                 ArrayBufferWriter<T> output = default;
-                Assert.Equal(null, output);
+                Assert.Null(output);
             }
         }
 

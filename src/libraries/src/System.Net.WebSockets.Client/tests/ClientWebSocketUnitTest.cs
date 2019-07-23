@@ -152,11 +152,11 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (var cws = new ClientWebSocket())
             {
-                Assert.Equal(null, cws.CloseStatus);
-                Assert.Equal(null, cws.CloseStatusDescription);
-                Assert.NotEqual(null, cws.Options);
+                Assert.Null(cws.CloseStatus);
+                Assert.Null(cws.CloseStatusDescription);
+                Assert.NotNull(cws.Options);
                 Assert.Equal(WebSocketState.None, cws.State);
-                Assert.Equal(null, cws.SubProtocol);
+                Assert.Null(cws.SubProtocol);
                 Assert.Equal("System.Net.WebSockets.ClientWebSocket", cws.ToString());
             }
         }
@@ -243,11 +243,11 @@ namespace System.Net.WebSockets.Client.Tests
             var cws = new ClientWebSocket();
             cws.Dispose();
 
-            Assert.Equal(null, cws.CloseStatus);
-            Assert.Equal(null, cws.CloseStatusDescription);
-            Assert.NotEqual(null, cws.Options);
+            Assert.Null(cws.CloseStatus);
+            Assert.Null(cws.CloseStatusDescription);
+            Assert.NotNull(cws.Options);
             Assert.Equal(WebSocketState.Closed, cws.State);
-            Assert.Equal(null, cws.SubProtocol);
+            Assert.Null(cws.SubProtocol);
             Assert.Equal("System.Net.WebSockets.ClientWebSocket", cws.ToString());
         }
     }

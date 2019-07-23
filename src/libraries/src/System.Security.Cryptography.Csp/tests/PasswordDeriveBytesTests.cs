@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             using (var pdb = new PasswordDeriveBytes(TestPassword, null))
             {
                 Assert.Equal(DefaultIterationCount, pdb.IterationCount);
-                Assert.Equal(null, pdb.Salt);
+                Assert.Null(pdb.Salt);
                 Assert.Equal("SHA1", pdb.HashName);
             }
         }

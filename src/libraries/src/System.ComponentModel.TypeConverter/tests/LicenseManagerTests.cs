@@ -187,7 +187,7 @@ namespace System.ComponentModel.Tests
             //** bool IsValid(Type, object, License);
             License license = null;
             Assert.Equal(true, LicenseManager.IsValid(unlicensedObject.GetType(), unlicensedObject, out license));
-            Assert.Equal(null, license);
+            Assert.Null(license);
 
             license = null;
             Assert.Equal(true, LicenseManager.IsValid(licensedObject.GetType(), licensedObject, out license));
@@ -195,7 +195,7 @@ namespace System.ComponentModel.Tests
 
             license = null;
             Assert.Equal(false, LicenseManager.IsValid(invalidLicensedObject.GetType(), invalidLicensedObject, out license));
-            Assert.Equal(null, license);
+            Assert.Null(license);
 
             //** void Validate(Type);
             //Shouldn't throw exception
@@ -219,7 +219,7 @@ namespace System.ComponentModel.Tests
             //** License Validate(Type, object);
             //Shouldn't throw exception, returns null license
             license = LicenseManager.Validate(typeof(UnlicensedObject), unlicensedObject);
-            Assert.Equal(null, license);
+            Assert.Null(license);
 
             //Shouldn't throw exception, returns TestLicense license
             license = LicenseManager.Validate(typeof(LicensedObject), licensedObject);
@@ -239,7 +239,7 @@ namespace System.ComponentModel.Tests
             }
             //Check the exception was thrown
             Assert.Equal(true, exceptionThrown);
-            Assert.Equal(null, license);
+            Assert.Null(license);
 
 
             //** object CreateWithContext (Type, LicenseContext);

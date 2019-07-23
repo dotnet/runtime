@@ -431,8 +431,8 @@ namespace System.Net.Tests
 
                 Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
-                Assert.Equal(null, exception.InnerException);
-                Assert.Equal(null, exception.Response);
+                Assert.Null(exception.InnerException);
+                Assert.Null(exception.Response);
 
                 return Task.FromResult<object>(null);
             });
@@ -537,7 +537,7 @@ namespace System.Net.Tests
             request.TransferEncoding = TransferEncoding;
             Assert.Equal(TransferEncoding, request.TransferEncoding);
             request.TransferEncoding = null;
-            Assert.Equal(null, request.TransferEncoding);
+            Assert.Null(request.TransferEncoding);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -667,7 +667,7 @@ namespace System.Net.Tests
             request.Connection = Connection;
             Assert.Equal(Connection, request.Connection);
             request.Connection = null;
-            Assert.Equal(null, request.Connection);
+            Assert.Null(request.Connection);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -686,7 +686,7 @@ namespace System.Net.Tests
             request.Expect = Expect;
             Assert.Equal(Expect, request.Expect);
             request.Expect = null;
-            Assert.Equal(null, request.Expect);
+            Assert.Null(request.Expect);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1027,7 +1027,7 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.Credentials = _explicitCredential;
             request.UseDefaultCredentials = false;
-            Assert.Equal(null, request.Credentials);
+            Assert.Null(request.Credentials);
         }
 
         [OuterLoop]

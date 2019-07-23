@@ -225,7 +225,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             LongestConstructorShortestWithAttribute item = container.GetExportedValue<LongestConstructorShortestWithAttribute>();
             Assert.Equal(10, item.IntArg);
-            Assert.Equal(null, item.StringArg);
+            Assert.Null(item.StringArg);
         }
 
         [Fact]

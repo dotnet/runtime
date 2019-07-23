@@ -377,7 +377,7 @@ namespace System.Data.Tests
 
             /*foreach (DataRow dr in arr)
 					{
-						Assert.Equal(null, dr["ChildId"]);
+						Assert.Null(dr["ChildId"]);
 					}*/
 
             Assert.Equal(4, arr.Length);
