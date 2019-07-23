@@ -31,6 +31,8 @@ typedef enum {
 	MONO_ANAME_EQ_MASK = 0x7
 } MonoAssemblyNameEqFlags;
 
+G_ENUM_FUNCTIONS (MonoAssemblyNameEqFlags);
+
 void
 mono_assembly_name_free_internal (MonoAssemblyName *aname);
 
