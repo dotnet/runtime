@@ -163,8 +163,6 @@ namespace System.Net.Http
                         }
                     }
 
-                    await _connection.SendEndStreamAsync(_streamId, _requestBodyCancellationToken).ConfigureAwait(false);
-
                     if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
                 }
                 catch (Exception e)
@@ -184,6 +182,9 @@ namespace System.Net.Http
                     throw;
                 }
 
+                // Before we send the EndStream, mark the request as completed.
+                // This avoids races where the server may close the connection after finishing all requests
+                // and we get an OnReset callback before the request is marked as completed.
                 lock (SyncObject)
                 {
                     Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
@@ -191,6 +192,10 @@ namespace System.Net.Http
                     _requestCompletionState = StreamCompletionState.Completed;
                     CheckForCompletion();
                 }
+
+                // Send EndStream asynchronously and without cancellation.
+                // If this fails, it means that the connection is aborting and we will be reset.
+                _connection.LogExceptions(_connection.SendEndStreamAsync(_streamId));
             }
 
             // Delay sending request body if we sent Expect: 100-continue.
