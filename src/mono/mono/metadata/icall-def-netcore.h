@@ -373,6 +373,7 @@ HANDLES(MARSHAL_42, "copy_to_unmanaged_fixed", ves_icall_System_Runtime_InteropS
 ICALL_TYPE(ALC, "System.Runtime.Loader.AssemblyLoadContext", ALC_2)
 HANDLES(ALC_2, "InternalInitializeNativeALC", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC, gpointer, 3, (gpointer, MonoBoolean, MonoBoolean))
 HANDLES(ALC_1, "InternalLoadFile", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile, MonoReflectionAssembly, 3, (gpointer, MonoString, MonoStackCrawlMark_ptr))
+HANDLES(ALC_3, "InternalLoadFromStream", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFromStream, MonoReflectionAssembly, 5, (gpointer, gpointer, gint32, gpointer, gint32))
 
 ICALL_TYPE(RUNIMPORT, "System.Runtime.RuntimeImports", RUNIMPORT_1)
 NOHANDLES(ICALL(RUNIMPORT_1, "RhBulkMoveWithWriteBarrier", ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier))
