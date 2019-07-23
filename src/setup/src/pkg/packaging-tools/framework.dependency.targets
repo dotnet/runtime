@@ -110,7 +110,18 @@
   <Target Name="GenerateFileVersionProps"
           Condition="'$(FrameworkPackageName)' != ''"
           DependsOnTargets="SetupGenerateFileVersionProps">
+    <!--
+      Building the full platform manifest gathers information from the packages of all known RIDs,
+      which we can't do while building from source because the entire product needs to build on a
+      single machine (single RID) without access to prebuilts.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <BuildFullPlatformManifest Condition="'$(BuildFullPlatformManifest)' == ''">false</BuildFullPlatformManifest>
+    </PropertyGroup>
+
     <PropertyGroup>
+      <BuildFullPlatformManifest Condition="'$(BuildFullPlatformManifest)' == ''">true</BuildFullPlatformManifest>
+
       <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
           restore all of those dependencies and gather the prospective content of the RID-specific Core.App
           packages.  This is needed so that we have a complete platform manifest in the shipping version of

@@ -1,6 +1,5 @@
 parameters:
   additionalMSBuildArguments: ''
-  buildFullPlatformManifest: false
   displayName: ''
   publishRidAgnosticPackages: false
   skipTests: $(SkipTests)
@@ -34,7 +33,6 @@ jobs:
         /p:TargetArchitecture=${{ parameters.targetArchitecture }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
-        /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)
