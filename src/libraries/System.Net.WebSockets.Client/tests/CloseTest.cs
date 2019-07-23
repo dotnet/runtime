@@ -187,8 +187,8 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(message.Length, recvResult.Count);
                 segmentRecv = new ArraySegment<byte>(segmentRecv.Array, 0, recvResult.Count);
                 Assert.Equal(message, WebSocketData.GetTextFromBuffer(segmentRecv));
-                Assert.Equal(null, recvResult.CloseStatus);
-                Assert.Equal(null, recvResult.CloseStatusDescription);
+                Assert.Null(recvResult.CloseStatus);
+                Assert.Null(recvResult.CloseStatusDescription);
 
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
 

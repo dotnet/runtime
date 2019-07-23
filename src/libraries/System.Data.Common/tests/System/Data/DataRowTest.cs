@@ -375,7 +375,7 @@ namespace System.Data.Tests
         private void NullTest(string message, DataTable dt, int row, int column)
         {
             object val = dt.Rows[row].ItemArray[column];
-            Assert.Equal(null, val);
+            Assert.Null(val);
         }
 
         // tests item at row, column in table to be 

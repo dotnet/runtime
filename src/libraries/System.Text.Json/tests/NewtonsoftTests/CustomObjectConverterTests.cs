@@ -92,7 +92,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(1, deserialized.DecimalRange.Last);
             Assert.Equal(int.MinValue, deserialized.IntRange.First);
             Assert.Equal(int.MaxValue, deserialized.IntRange.Last);
-            Assert.Equal(null, deserialized.NullDecimalRange);
+            Assert.Null(deserialized.NullDecimalRange);
             Assert.Equal(2010, deserialized.Year);
         }
 
@@ -136,7 +136,7 @@ namespace System.Text.Json.Tests
             ByteArrayClass byteArrayClass = JsonSerializer.Deserialize<ByteArrayClass>(json);
 
             Assert.Equal(s_testData, byteArrayClass.ByteArray);
-            Assert.Equal(null, byteArrayClass.NullByteArray);
+            Assert.Null(byteArrayClass.NullByteArray);
         }
 
         private static readonly byte[] s_testData = Encoding.UTF8.GetBytes("This is some test data!!!");

@@ -121,7 +121,7 @@ namespace System.Net.Mail.Tests
         public void BodyAndEncodingTest()
         {
             MailMessage msg = new MailMessage("from@example.com", "to@example.com");
-            Assert.Equal(null, msg.BodyEncoding);
+            Assert.Null(msg.BodyEncoding);
             msg.Body = "test";
             Assert.Equal(Encoding.ASCII, msg.BodyEncoding);
             msg.Body = "test\u3067\u3059";
@@ -135,9 +135,9 @@ namespace System.Net.Mail.Tests
         public void SubjectAndEncodingTest()
         {
             MailMessage msg = new MailMessage("from@example.com", "to@example.com");
-            Assert.Equal(null, msg.SubjectEncoding);
+            Assert.Null(msg.SubjectEncoding);
             msg.Subject = "test";
-            Assert.Equal(null, msg.SubjectEncoding);
+            Assert.Null(msg.SubjectEncoding);
             msg.Subject = "test\u3067\u3059";
             Assert.Equal(Encoding.UTF8.CodePage, msg.SubjectEncoding.CodePage);
             msg.SubjectEncoding = null;

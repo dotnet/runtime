@@ -201,18 +201,18 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 CmsRecipient[] dumped = new CmsRecipient[c.Count + 3];
                 c.CopyTo(dumped, 2);
-                Assert.Equal(null, dumped[0]);
-                Assert.Equal(null, dumped[1]);
-                Assert.Equal(null, dumped[dumped.Length - 1]);
+                Assert.Null(dumped[0]);
+                Assert.Null(dumped[1]);
+                Assert.Null(dumped[dumped.Length - 1]);
                 Assert.Equal<CmsRecipient>(expected, dumped.Skip(2).Take(c.Count));
             }
 
             {
                 CmsRecipient[] dumped = new CmsRecipient[c.Count + 3];
                 ((ICollection)c).CopyTo(dumped, 2);
-                Assert.Equal(null, dumped[0]);
-                Assert.Equal(null, dumped[1]);
-                Assert.Equal(null, dumped[dumped.Length - 1]);
+                Assert.Null(dumped[0]);
+                Assert.Null(dumped[1]);
+                Assert.Null(dumped[dumped.Length - 1]);
                 Assert.Equal<CmsRecipient>(expected, dumped.Skip(2).Take(c.Count));
             }
         }

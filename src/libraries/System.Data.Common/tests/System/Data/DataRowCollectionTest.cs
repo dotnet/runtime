@@ -899,7 +899,7 @@ namespace System.Data.Tests
 
             try
             {
-                Assert.Equal(null, dt.Rows.Find(new object[] { null }));
+                Assert.Null(dt.Rows.Find(new object[] { null }));
             }
             catch (IndexOutOfRangeException)
             {
@@ -919,7 +919,7 @@ namespace System.Data.Tests
 
             try
             {
-                Assert.Equal(null, dt.Rows.Find((object)null));
+                Assert.Null(dt.Rows.Find((object)null));
             }
             catch (IndexOutOfRangeException)
             {

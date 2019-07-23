@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("id", ConvertToCamelCase("ID"));
             Assert.Equal("i", ConvertToCamelCase("I"));
             Assert.Equal("", ConvertToCamelCase(""));
-            Assert.Equal(null, ConvertToCamelCase(null));
+            Assert.Null(ConvertToCamelCase(null));
             Assert.Equal("person", ConvertToCamelCase("Person"));
             Assert.Equal("iPhone", ConvertToCamelCase("iPhone"));
             Assert.Equal("iPhone", ConvertToCamelCase("IPhone"));

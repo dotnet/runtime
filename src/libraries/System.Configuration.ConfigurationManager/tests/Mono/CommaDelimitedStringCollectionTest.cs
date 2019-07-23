@@ -63,7 +63,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal("1,2,3", c.ToString());
 
             c.Clear();
-            Assert.Equal(null, c.ToString());
+            Assert.Null(c.ToString());
 
             string[] foo = new string[3];
             foo[0] = "1";

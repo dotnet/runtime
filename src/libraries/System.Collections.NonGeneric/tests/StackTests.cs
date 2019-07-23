@@ -444,9 +444,9 @@ namespace System.Collections.Tests
                 stack2.Push(-1);
                 stack2.Push(null);
 
-                Assert.Equal(null, stack2.Pop());
+                Assert.Null(stack2.Pop());
                 Assert.Equal(-1, stack2.Pop());
-                Assert.Equal(null, stack2.Pop());
+                Assert.Null(stack2.Pop());
             });
         }
 

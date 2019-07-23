@@ -118,7 +118,7 @@ namespace System.Diagnostics.Tests
                 // File name should be the full path to the local kernelbase.dll, not the relative path or the path to the system .dll
                 Assert.Equal(Path.GetFullPath("kernelbase.dll"), fvi.FileName);
                 // FileDescription should be null in the local kernelbase.dll
-                Assert.Equal(null, fvi.FileDescription);
+                Assert.Null(fvi.FileDescription);
             }
             finally
             {

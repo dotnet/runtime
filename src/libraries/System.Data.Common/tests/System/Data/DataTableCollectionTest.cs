@@ -270,8 +270,8 @@ namespace System.Data.Tests
             /* copying with in an array */
             DataTable[] array1 = new DataTable[6];
             tbcol.CopyTo(array1, 2);
-            Assert.Equal(null, array1[0]);
-            Assert.Equal(null, array1[1]);
+            Assert.Null(array1[0]);
+            Assert.Null(array1[1]);
             Assert.Equal("Table1", array1[2].TableName);
             Assert.Equal("Table2", array1[3].TableName);
             Assert.Equal("Table3", array1[4].TableName);

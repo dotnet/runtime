@@ -93,7 +93,7 @@ namespace MonoTests.System.Configuration
         {
             TypeNameConverter cv = new TypeNameConverter();
 
-            Assert.Equal(null, cv.ConvertTo(null, null, null, typeof(string)));
+            Assert.Null(cv.ConvertTo(null, null, null, typeof(string)));
         }
 
         [Fact]

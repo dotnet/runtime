@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Tests
 
             var visitedArgs = (MethodCallExpression)new VisitorArgs().Visit(expr);
             Assert.NotSame(expr, visitedArgs);
-            Assert.Same(null, visitedArgs.Object);
+            Assert.Null(visitedArgs.Object);
             Assert.NotSame(arguments, visitedArgs.Arguments);
         }
 

@@ -104,7 +104,7 @@ namespace System.ComponentModel.Composition
 
             var export = container.GetExport<SimpleMetadataExporterWithNullReferenceValue, ISimpleMetadataView>();
 
-            Assert.Equal(null, export.Metadata.String);
+            Assert.Null(export.Metadata.String);
             Assert.Equal(42, export.Metadata.Int);
             Assert.Equal(42.0f, export.Metadata.Float);
             Assert.Equal(SimpleEnum.First, export.Metadata.Enum);
@@ -661,7 +661,7 @@ namespace System.ComponentModel.Composition
             var exports = container.GetExports<OptionalFooIsInt, IMetadataView>();
             Assert.Equal(1, exports.Count());
             var export = exports.Single();
-            Assert.Equal(null, export.Metadata.OptionalFoo);
+            Assert.Null(export.Metadata.OptionalFoo);
         }
 
         #endregion

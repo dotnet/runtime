@@ -58,7 +58,7 @@ namespace System.Data.Tests
 
             // AcceptChanges
             ds.AcceptChanges();
-            Assert.Equal(null, dtP.GetChanges());
+            Assert.Null(dtP.GetChanges());
 
             //read only exception
             dtP.Columns[0].ReadOnly = true;
@@ -312,7 +312,7 @@ namespace System.Data.Tests
             ds.Tables.Add(DataProvider.CreateParentDataTable());
 
             // GetChanges 1
-            Assert.Equal(null, ds.GetChanges());
+            Assert.Null(ds.GetChanges());
 
             DataRow dr = ds.Tables[0].NewRow();
             dr[0] = 9;
@@ -336,7 +336,7 @@ namespace System.Data.Tests
             ds.Tables.Add(DataProvider.CreateParentDataTable());
 
             // GetChanges 1
-            Assert.Equal(null, ds.GetChanges());
+            Assert.Null(ds.GetChanges());
 
             //make some changes
 

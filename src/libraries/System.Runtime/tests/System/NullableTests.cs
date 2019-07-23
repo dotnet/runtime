@@ -18,7 +18,7 @@ namespace System.Tests
             Assert.False(n.HasValue);
             Assert.Throws<InvalidOperationException>(() => n.Value);
             Assert.Throws<InvalidOperationException>(() => (int)n);
-            Assert.Equal(null, n);
+            Assert.Null(n);
             Assert.NotEqual(7, n);
             Assert.Equal(0, n.GetHashCode());
             Assert.Equal("", n.ToString());
@@ -29,7 +29,7 @@ namespace System.Tests
             Assert.True(n.HasValue);
             Assert.Equal(42, n.Value);
             Assert.Equal(42, (int)n);
-            Assert.NotEqual(null, n);
+            Assert.NotNull(n);
             Assert.NotEqual(7, n);
             Assert.Equal(42, n);
             Assert.Equal(42.GetHashCode(), n.GetHashCode());

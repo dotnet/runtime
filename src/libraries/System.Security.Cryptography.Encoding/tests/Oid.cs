@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal("BOGUS", oid.Value);
 
             oid.Value = null;
-            Assert.Equal(null, oid.Value);
+            Assert.Null(oid.Value);
         }
 
         [Fact]

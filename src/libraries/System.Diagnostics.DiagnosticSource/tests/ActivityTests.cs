@@ -222,7 +222,7 @@ namespace System.Diagnostics.Tests
         public void StartStop()
         {
             var activity = new Activity("activity");
-            Assert.Equal(null, Activity.Current);
+            Assert.Null(Activity.Current);
             activity.Start();
             Assert.Equal(activity, Activity.Current);
             Assert.Null(activity.Parent);
@@ -231,7 +231,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(default(DateTime), activity.StartTimeUtc);
 
             activity.Stop();
-            Assert.Equal(null, Activity.Current);
+            Assert.Null(Activity.Current);
         }
 
         /// <summary>
@@ -1044,7 +1044,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(parent, Activity.Current);
 
             parent.Stop();
-            Assert.Equal(null, Activity.Current);
+            Assert.Null(Activity.Current);
         }
 
         /// <summary>
@@ -1059,7 +1059,7 @@ namespace System.Diagnostics.Tests
             child.Start();
 
             parent.Stop();
-            Assert.Equal(null, Activity.Current);
+            Assert.Null(Activity.Current);
         }
 
         /// <summary>

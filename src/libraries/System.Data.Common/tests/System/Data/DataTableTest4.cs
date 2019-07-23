@@ -784,7 +784,7 @@ namespace System.Data.Tests
             //Test Schema 
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
-            Assert.Equal(null, table.DataSet);
+            Assert.Null(table.DataSet);
             Assert.Equal(3, table.Columns.Count);
             Assert.Equal(false, table.CaseSensitive);
             Assert.Equal("ChildTable", table.TableName);
@@ -1845,7 +1845,7 @@ namespace System.Data.Tests
             }
 
             Assert.Equal(XmlReadMode.DiffGram, mode);
-            Assert.Equal(null, table.DataSet);
+            Assert.Null(table.DataSet);
             Assert.Equal(1, table.Columns.Count);
             Assert.Equal(typeof(string), table.Columns[0].DataType);
             Assert.Equal(3, table.Rows.Count);
@@ -1973,7 +1973,7 @@ namespace System.Data.Tests
             XmlReadMode mode = table1.ReadXml(_tempFile);
 
             Assert.Equal(XmlReadMode.DiffGram, mode);
-            Assert.Equal(null, table1.DataSet);
+            Assert.Null(table1.DataSet);
             Assert.Equal("ParentTable", table1.TableName);
             Assert.Equal(3, table1.Columns.Count);
             Assert.Equal(typeof(int), table1.Columns[0].DataType);

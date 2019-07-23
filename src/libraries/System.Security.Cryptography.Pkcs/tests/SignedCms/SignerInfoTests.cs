@@ -485,7 +485,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "childIndex",
                 () => signer.RemoveCounterSignature(-1));
 
-            Assert.Equal(null, ex.ActualValue);
+            Assert.Null(ex.ActualValue);
         }
 
         [Fact]

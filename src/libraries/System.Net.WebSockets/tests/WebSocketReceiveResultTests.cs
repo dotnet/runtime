@@ -28,8 +28,8 @@ namespace System.Net.WebSockets.Tests
                 Assert.Equal(count, wsrr.Count);
                 Assert.Equal(messageType, wsrr.MessageType);
                 Assert.Equal(endOfMessage, wsrr.EndOfMessage);
-                Assert.Equal(null, wsrr.CloseStatus);
-                Assert.Equal(null, wsrr.CloseStatusDescription);
+                Assert.Null(wsrr.CloseStatus);
+                Assert.Null(wsrr.CloseStatusDescription);
             }
 
             wsrr = new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeStatusDescription);

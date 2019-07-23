@@ -181,36 +181,36 @@ namespace System.Memory.Tests
 
             SequencePosition c1 = buffer.Start;
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
             
             Assert.False(buffer.TryGet(ref c1, out memory, true));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, true));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
 
             c1 = buffer.End;
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
             
             Assert.False(buffer.TryGet(ref c1, out memory, true));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, true));
-            Assert.Equal(null, c1.GetObject());
+            Assert.Null(c1.GetObject());
             Assert.True(memory.IsEmpty);
         }
 

@@ -42,7 +42,7 @@ namespace System.Net.Http.Tests
 
             // After getting the calculated content length, set it to null.
             _headers.ContentLength = null;
-            Assert.Equal(null, _headers.ContentLength);
+            Assert.Null(_headers.ContentLength);
             Assert.False(_headers.Contains(KnownHeaders.ContentLength.Name));
 
             _headers.ContentLength = 27;
@@ -61,7 +61,7 @@ namespace System.Net.Http.Tests
 
             // After explicitly setting the content length, set it to null.
             _headers.ContentLength = null;
-            Assert.Equal(null, _headers.ContentLength);
+            Assert.Null(_headers.ContentLength);
             Assert.False(_headers.Contains(KnownHeaders.ContentLength.Name));
 
             // Make sure the header gets serialized correctly

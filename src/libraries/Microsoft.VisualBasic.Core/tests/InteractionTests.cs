@@ -79,9 +79,9 @@ namespace Microsoft.VisualBasic.Tests
         public void Choose()
         {
             object[] x = { "Choice1", "Choice2", "Choice3", "Choice4", "Choice5", "Choice6" };
-            Assert.Equal(null, Interaction.Choose(5));
-            Assert.Equal(null, Interaction.Choose(0, x)); // < 1
-            Assert.Equal(null, Interaction.Choose(x.Length + 1, x)); // > UpperBound
+            Assert.Null(Interaction.Choose(5));
+            Assert.Null(Interaction.Choose(0, x)); // < 1
+            Assert.Null(Interaction.Choose(x.Length + 1, x)); // > UpperBound
             Assert.Equal(2, Interaction.Choose(2, 1, 2, 3));
             Assert.Equal("Choice3", Interaction.Choose(3, x[0], x[1], x[2]));
             for (int i = 1; i <= x.Length; i++)

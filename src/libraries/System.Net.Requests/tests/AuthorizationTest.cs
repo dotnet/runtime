@@ -30,7 +30,7 @@ namespace System.Net.Tests
         public void Ctor_TokenNullOrEmpty_ExpectMessageNull(string token)
         {
             Authorization authorization = new Authorization(token);
-            Assert.Equal(null, authorization.Message);
+            Assert.Null(authorization.Message);
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace System.Net.Tests
         public void Ctor_ConnectionGroupIdNullOrEmpty_ExpectConnectionGroupIdNull(string connectionGroupId)
         {
             Authorization authorization = new Authorization(null, true, connectionGroupId);
-            Assert.Equal(null, authorization.ConnectionGroupId);
+            Assert.Null(authorization.ConnectionGroupId);
         }
 
         [Theory]
@@ -49,7 +49,7 @@ namespace System.Net.Tests
         {
             Authorization authorization = new Authorization(null);
             authorization.ProtectionRealm = protectionRealm;
-            Assert.Equal(null, authorization.ProtectionRealm);
+            Assert.Null(authorization.ProtectionRealm);
         }
 
         [Fact]

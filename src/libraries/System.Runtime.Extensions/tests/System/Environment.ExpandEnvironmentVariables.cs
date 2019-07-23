@@ -76,7 +76,7 @@ namespace System.Tests
             for (int i = 0; i < count; i++)
             {
                 keys[i] = prefix + (i + 1);
-                Assert.Equal(null, Environment.GetEnvironmentVariable(keys[i]));
+                Assert.Null(Environment.GetEnvironmentVariable(keys[i]));
 
                 if (i < 3)
                 {

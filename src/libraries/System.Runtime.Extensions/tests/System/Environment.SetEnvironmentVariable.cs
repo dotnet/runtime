@@ -258,15 +258,15 @@ namespace System.Tests
                 // First set the value to something and then ensure that it can be deleted.
                 Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, string.Empty);
-                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Assert.Null(Environment.GetEnvironmentVariable(varName));
 
                 Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, null);
-                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Assert.Null(Environment.GetEnvironmentVariable(varName));
 
                 Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, NullString);
-                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Assert.Null(Environment.GetEnvironmentVariable(varName));
             });
         }
 
@@ -301,7 +301,7 @@ namespace System.Tests
             try
             {
                 Environment.SetEnvironmentVariable(varName, value);
-                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Assert.Null(Environment.GetEnvironmentVariable(varName));
             }
             finally
             {

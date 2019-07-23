@@ -26,8 +26,8 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpMethod.Get, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
-            Assert.Equal(null, rm.RequestUri);
+            Assert.Null(rm.Content);
+            Assert.Null(rm.RequestUri);
         }
 
         [Fact]
@@ -37,7 +37,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpMethod.Post, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
             Assert.Equal(new Uri("/relative", UriKind.Relative), rm.RequestUri);
         }
 
@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpMethod.Post, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
             Assert.Equal(new Uri("http://host/absolute/"), rm.RequestUri);
         }
 
@@ -57,10 +57,10 @@ namespace System.Net.Http.Functional.Tests
         {
             var rm = new HttpRequestMessage(HttpMethod.Put, (string)null);
 
-            Assert.Equal(null, rm.RequestUri);
+            Assert.Null(rm.RequestUri);
             Assert.Equal(HttpMethod.Put, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpMethod.Post, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
             Assert.Equal(uri, rm.RequestUri);
         }
 
@@ -83,7 +83,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpMethod.Post, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
             Assert.Equal(uri, rm.RequestUri);
         }
 
@@ -92,10 +92,10 @@ namespace System.Net.Http.Functional.Tests
         {
             var rm = new HttpRequestMessage(HttpMethod.Put, (Uri)null);
 
-            Assert.Equal(null, rm.RequestUri);
+            Assert.Null(rm.RequestUri);
             Assert.Equal(HttpMethod.Put, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(null, rm.Content);
+            Assert.Null(rm.Content);
         }
 
         [Fact]
