@@ -30,12 +30,6 @@ typedef enum {
 	CompareOptions_Ordinal=0x40000000
 } MonoCompareOptions;
 
-ICALL_EXPORT
-MonoBoolean ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData *this_obj, MonoString *name, gint32 calendar_index);
-
-ICALL_EXPORT
-void ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *this_obj, gint32 datetime_index);
-
 typedef struct NumberFormatEntryManaged NumberFormatEntryManaged;
 
 ICALL_EXPORT
@@ -46,15 +40,6 @@ ICALL_EXPORT
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
 
 ICALL_EXPORT
-MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint32 lcid);
-
-ICALL_EXPORT
-MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this_obj, MonoString *name);
-
-ICALL_EXPORT
-MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral, MonoBoolean specific, MonoBoolean installed);
-
-ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale);
 
 ICALL_EXPORT gint32
@@ -63,11 +48,6 @@ ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *st
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this_obj);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
- MonoString *name);
 
 ICALL_EXPORT gint32
 ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *source, gint32 sindex,

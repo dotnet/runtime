@@ -709,6 +709,8 @@ typedef struct {
 	MonoArray *GenitiveAbbreviatedMonthNames;
 } MonoCalendarData;
 
+TYPED_HANDLE_DECL (MonoCalendarData);
+
 typedef struct {
 	MonoObject obj;
 	MonoString *AMDesignator;
@@ -719,6 +721,8 @@ typedef struct {
 	guint32 FirstDayOfWeek;
 	guint32 CalendarWeekRule;
 } MonoCultureData;
+
+TYPED_HANDLE_DECL (MonoCultureData);
 
 typedef struct {
 	MonoObject obj;
@@ -744,6 +748,8 @@ typedef struct {
 	const void* text_info_data;
 } MonoCultureInfo;
 
+TYPED_HANDLE_DECL (MonoCultureInfo);
+
 typedef struct {
 	MonoObject obj;
 	gint32 geo_id;
@@ -757,7 +763,10 @@ typedef struct {
 	MonoString *currency_english_name;
 	MonoString *currency_native_name;
 } MonoRegionInfo;
-#endif
+
+TYPED_HANDLE_DECL (MonoRegionInfo);
+
+#endif /* !ENABLE_NETCORE */
 
 typedef struct {
 	MonoObject object;

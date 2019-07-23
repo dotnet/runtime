@@ -386,6 +386,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // handle->field = (type)value, for non-managed pointers
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
+// The value copy is needed in cases computing value causes a GC
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
 		TYPE __val = (VALUE);	\
 		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \

@@ -353,25 +353,25 @@ HANDLES(GC_9, "get_ephemeron_tombstone", ves_icall_System_GC_get_ephemeron_tombs
 HANDLES(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron_array, void, 1, (MonoObject))
 
 ICALL_TYPE(CALDATA, "System.Globalization.CalendarData", CALDATA_1)
-ICALL(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarData_fill_calendar_data)
+HANDLES(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarData_fill_calendar_data, MonoBoolean, 3, (MonoCalendarData, MonoString, gint32))
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_4)
 NOHANDLES(ICALL(COMPINF_4, "internal_compare_icall", ves_icall_System_Globalization_CompareInfo_internal_compare))
 NOHANDLES(ICALL(COMPINF_6, "internal_index_icall", ves_icall_System_Globalization_CompareInfo_internal_index))
 
 ICALL_TYPE(CULDATA, "System.Globalization.CultureData", CULDATA_1)
-ICALL(CULDATA_1, "fill_culture_data", ves_icall_System_Globalization_CultureData_fill_culture_data)
+HANDLES(CULDATA_1, "fill_culture_data", ves_icall_System_Globalization_CultureData_fill_culture_data, void, 2, (MonoCultureData, gint32))
 NOHANDLES(ICALL(CULDATA_2, "fill_number_data", ves_icall_System_Globalization_CultureData_fill_number_data))
 
 ICALL_TYPE(CULINF, "System.Globalization.CultureInfo", CULINF_5)
-ICALL(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid)
-ICALL(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name)
+HANDLES(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid, MonoBoolean, 2, (MonoCultureInfo, gint32))
+HANDLES(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name, MonoBoolean, 2, (MonoCultureInfo, MonoString))
 HANDLES(CULINF_7, "get_current_locale_name", ves_icall_System_Globalization_CultureInfo_get_current_locale_name, MonoString, 0, ())
-ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures)
+HANDLES(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures, MonoArray, 3, (MonoBoolean, MonoBoolean, MonoBoolean))
 //ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
 
 ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_2)
-ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name)
+HANDLES(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name, MonoBoolean, 2, (MonoRegionInfo, MonoString))
 
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 ICALL_TYPE(DEFLATESTREAM, "System.IO.Compression.DeflateStreamNative", DEFLATESTREAM_1)
