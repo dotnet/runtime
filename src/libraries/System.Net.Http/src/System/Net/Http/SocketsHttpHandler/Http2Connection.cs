@@ -1263,9 +1263,9 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendEndStreamAsync(int streamId, CancellationToken cancellationToken)
+        private async Task SendEndStreamAsync(int streamId)
         {
-            Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size, cancellationToken).ConfigureAwait(false);
+            Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace(streamId, "Started writing.");
 
             FrameHeader frameHeader = new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId);
