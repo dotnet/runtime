@@ -287,10 +287,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
 
-                if (_abortException == null)
-                {
-                    Abort(e);
-                }
+                Abort(e);
             }
         }
 
@@ -794,10 +791,6 @@ namespace System.Net.Http
                         LogExceptions(FlushAsync());
                     }
 
-                    // On cancel, we get TaskCanceledException here instead of OperationCanceledException.
-                    // For consistency, try to ensure we get OperationCanceledException when the cancellationToken has fired.
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     throw;
                 }
 
@@ -1199,9 +1192,9 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendEndStreamAsync(int streamId)
+        private async Task SendEndStreamAsync(int streamId, CancellationToken cancellationToken)
         {
-            Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
+            Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size, cancellationToken).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace(streamId, "Started writing.");
 
             FrameHeader frameHeader = new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId);
@@ -1313,6 +1306,8 @@ namespace System.Net.Http
 
         private void AbortStreams(Exception abortException)
         {
+            if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
+
             // Invalidate outside of lock to avoid race with HttpPool Dispose()
             // We should not try to grab pool lock while holding connection lock as on disposing pool,
             // we could hold pool lock while trying to grab connection lock in Dispose().
@@ -1322,8 +1317,6 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
-
                 // Set _lastStreamId to int.MaxValue to indicate that we are shutting down
                 // and we must assume all active streams have been processed by the server
                 _lastStreamId = int.MaxValue;
@@ -1639,7 +1632,7 @@ namespace System.Net.Http
             {
                 if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
                 {
-                    // We ran out of stream IDs or we raced condition between acquiring the connection from the pool and shutting down.
+                    // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
                     throw CreateRetryException();
@@ -1668,7 +1661,7 @@ namespace System.Net.Http
             {
                 if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
                 {
-                    Debug.Assert(false, "Stream not found in dictionary during RemoveStream???");
+                    Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
                 }
 
