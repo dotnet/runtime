@@ -75,6 +75,7 @@ public:
     EventPipeFile(StreamWriter *pStreamWriter, EventPipeSerializationFormat format);
     ~EventPipeFile();
 
+    void InitializeFile();
     EventPipeSerializationFormat GetSerializationFormat() const;
     void WriteEvent(EventPipeEventInstance &instance, ULONGLONG captureThreadId, unsigned int sequenceNumber, BOOL isSortedEvent);
     void WriteSequencePoint(EventPipeSequencePoint* pSequencePoint);
@@ -152,6 +153,8 @@ private:
 
     // The frequency of the timestamps used for this file.
     LARGE_INTEGER m_timeStampFrequency;
+
+    StreamWriter * const m_pStreamWriter;
 
     unsigned int m_pointerSize;
 
