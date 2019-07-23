@@ -42,7 +42,7 @@ namespace System.Configuration.Tests
         public void DefaultValueIsNull()
         {
             var Element = new SettingElement();
-            Assert.Equal(null, Element.Value.CurrentConfiguration);
+            Assert.Null(Element.Value.CurrentConfiguration);
         }
     
         [Fact]

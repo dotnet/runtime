@@ -63,7 +63,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writer.BytesCommitted);
             Assert.Equal(0, writer.BytesPending);
             Assert.Equal(0, writer.CurrentDepth);
-            Assert.Equal(null, writer.Options.Encoder);
+            Assert.Null(writer.Options.Encoder);
             Assert.Equal(formatted, writer.Options.Indented);
             Assert.Equal(skipValidation, writer.Options.SkipValidation);
             Assert.Equal(0, stream.Position);
@@ -73,7 +73,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writer.BytesCommitted);
             Assert.Equal(0, writer.BytesPending);
             Assert.Equal(0, writer.CurrentDepth);
-            Assert.Equal(null, writer.Options.Encoder);
+            Assert.Null(writer.Options.Encoder);
             Assert.Equal(formatted, writer.Options.Indented);
             Assert.Equal(skipValidation, writer.Options.SkipValidation);
             Assert.Equal(0, output.FormattedCount);
@@ -99,7 +99,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
-            Assert.Equal(null, writeToStream.Options.Encoder);
+            Assert.Null(writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -119,7 +119,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
-            Assert.Equal(null, writeToIBW.Options.Encoder);
+            Assert.Null(writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);
@@ -149,7 +149,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
-            Assert.Equal(null, writeToStream.Options.Encoder);
+            Assert.Null(writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -175,7 +175,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
-            Assert.Equal(null, writeToIBW.Options.Encoder);
+            Assert.Null(writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);
@@ -212,7 +212,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
-            Assert.Equal(null, writeToStream.Options.Encoder);
+            Assert.Null(writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -243,7 +243,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
-            Assert.Equal(null, writeToIBW.Options.Encoder);
+            Assert.Null(writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);

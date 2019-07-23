@@ -544,7 +544,7 @@ namespace System.Reflection.Tests
                 // Make sure the tricky corner case of a null/empty namespace is covered.
                 Assembly a = lc.LoadFromAssemblyPath(typeof(TopLevelType).Assembly.Location);
                 Type t = a.GetType("TopLevelType", throwOnError: true, ignoreCase: false);
-                Assert.Equal(null, t.Namespace);
+                Assert.Null(t.Namespace);
                 Assert.Equal("TopLevelType", t.Name);
             }
         }

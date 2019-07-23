@@ -105,7 +105,7 @@ namespace System.Net.Http.Tests
             Assert.False(parser.TryParseValue(input, null, ref newIndex, out result),
                 string.Format("TryParse returned true. Input: '{0}', AllowMultipleValues/Any: {1}", input,
                 supportsMultipleValues));
-            Assert.Equal(null, result);
+            Assert.Null(result);
             Assert.Equal(startIndex, newIndex);
         }
         #endregion

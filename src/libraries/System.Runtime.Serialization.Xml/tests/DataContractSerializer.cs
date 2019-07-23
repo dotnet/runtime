@@ -1867,7 +1867,7 @@ public static partial class DataContractSerializerTests
 
         TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcs.ReadObject(ms);
         Assert.StrictEqual("Foo", deserializedValue.Name);
-        Assert.StrictEqual(null, deserializedValue.MemberWithInvalidDataContract);
+        Assert.Null(deserializedValue.MemberWithInvalidDataContract);
     }
 
     [Fact]

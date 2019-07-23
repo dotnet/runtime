@@ -383,12 +383,12 @@ namespace Microsoft.VisualBasic.Tests
             IEnumerator enumerator = coll.GetEnumerator();
 
             // Index <= 0
-            Assert.Equal(null, enumerator.Current);
+            Assert.Null(enumerator.Current);
 
             // Index >= dictionary.Count
             while (enumerator.MoveNext())
                 ;
-            Assert.Equal(null, enumerator.Current);
+            Assert.Null(enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             // Current throws after resetting
@@ -396,7 +396,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.True(enumerator.MoveNext());
 
             enumerator.Reset();
-            Assert.Equal(null, enumerator.Current);
+            Assert.Null(enumerator.Current);
         }
 
         [Fact]

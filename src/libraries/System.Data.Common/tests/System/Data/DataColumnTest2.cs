@@ -338,7 +338,7 @@ namespace System.Data.Tests
 
             //Checking First Get
             // Table test1
-            Assert.Equal(null, dc.Table);
+            Assert.Null(dc.Table);
 
             DataTable dt = new DataTable();
             dt.Columns.Add(dc);

@@ -959,7 +959,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId2);
                 if (child1ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId2);
+                    Assert.Null(txId2);
                 }
             }
 
@@ -972,7 +972,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId4);
                 if (child2ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId4);
+                    Assert.Null(txId4);
                 }
             }
         }
@@ -1063,7 +1063,7 @@ namespace System.Transactions.Tests
 
                 if (scopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId1);
+                    Assert.Null(txId1);
                     Assert.Equal(txId1, txId2);
                     Assert.Equal(txId2, txId3);
                 }
@@ -1672,12 +1672,12 @@ namespace System.Transactions.Tests
         }
         private static void AssertTransactionNull()
         {
-            Assert.Equal(null, Transaction.Current);
+            Assert.Null(Transaction.Current);
         }
 
         private static void AssertTransactionNotNull()
         {
-            Assert.NotEqual(null, Transaction.Current);
+            Assert.NotNull(Transaction.Current);
         }
 
         private static string AssertAndGetCurrentTransactionId()

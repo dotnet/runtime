@@ -29,7 +29,7 @@ namespace System.Net.Mail.Tests
         public void ConstructorNullName()
         {
             Attachment attach = new Attachment(new MemoryStream(), null, "application/octet-stream");
-            Assert.Equal(null, attach.Name);
+            Assert.Null(attach.Name);
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.Net.Mail.Tests
             Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Equal("attachment-name", attach.Name);
             Attachment a2 = new Attachment(new MemoryStream(), new ContentType("image/jpeg"));
-            Assert.Equal(null, a2.Name);
+            Assert.Null(a2.Name);
             a2.Name = null; // nullable
         }
 

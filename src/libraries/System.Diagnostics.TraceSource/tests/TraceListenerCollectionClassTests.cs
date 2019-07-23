@@ -70,7 +70,7 @@ namespace System.Diagnostics.TraceSourceTests
             item.Name = "TestListener";
             list.Add(item);
             Assert.Equal(item, list["TestListener"]);
-            Assert.Equal(null, list["NO_EXIST"]);
+            Assert.Null(list["NO_EXIST"]);
         }
 
         [Fact]

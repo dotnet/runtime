@@ -42,7 +42,7 @@ namespace System.Xml.Tests
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader("<root></root>");
             nodeReader.Read();
             var namespaceResolver = nodeReader as IXmlNamespaceResolver;
-            Assert.Equal(null, namespaceResolver.LookupNamespace("prefix"));
+            Assert.Null(namespaceResolver.LookupNamespace("prefix"));
             Assert.Collection(namespaceResolver.GetNamespacesInScope(XmlNamespaceScope.All)
                 , kv => Assert.Equal(kv.Key, "xml"));
             Assert.Empty(namespaceResolver.GetNamespacesInScope(XmlNamespaceScope.Local));
@@ -66,7 +66,7 @@ namespace System.Xml.Tests
             Assert.True(nodeReader.Read());
             Assert.True(nodeReader.Read());
             Assert.True(nodeReader.Read());
-            Assert.Equal(null, nodeReader.LookupNamespace(string.Empty));
+            Assert.Null(nodeReader.LookupNamespace(string.Empty));
             namespaceResolver = nodeReader as IXmlNamespaceResolver;
             Assert.Equal(string.Empty, namespaceResolver.LookupNamespace(string.Empty));
 

@@ -51,7 +51,7 @@ namespace System.IO.Tests
             string curDir = Directory.GetCurrentDirectory();
             Assert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz")));
 
-            Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(curDir)));
+            Assert.Null(Path.GetDirectoryName(Path.GetPathRoot(curDir)));
         }
 
         [Fact]

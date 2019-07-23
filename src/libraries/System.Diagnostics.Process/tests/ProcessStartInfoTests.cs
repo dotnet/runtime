@@ -119,7 +119,7 @@ namespace System.Diagnostics.Tests
 
             stringout = null;
             Assert.False(environment.TryGetValue("NewKey99", out stringout));
-            Assert.Equal(null, stringout);
+            Assert.Null(stringout);
 
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() =>

@@ -22,8 +22,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, rm.StatusCode);
                 Assert.Equal("OK", rm.ReasonPhrase);
                 Assert.Equal(new Version(1, 1), rm.Version);
-                Assert.Equal(null, rm.Content);
-                Assert.Equal(null, rm.RequestMessage);
+                Assert.Null(rm.Content);
+                Assert.Null(rm.RequestMessage);
             }
         }
 
@@ -35,8 +35,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.Accepted, rm.StatusCode);
                 Assert.Equal("Accepted", rm.ReasonPhrase);
                 Assert.Equal(new Version(1, 1), rm.Version);
-                Assert.Equal(null, rm.Content);
-                Assert.Equal(null, rm.RequestMessage);
+                Assert.Null(rm.Content);
+                Assert.Null(rm.RequestMessage);
             }
         }
 

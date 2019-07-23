@@ -43,7 +43,7 @@ namespace MonoTests.System.Configuration
 
             s = new ConnectionStringSettings();
 
-            Assert.Equal(null, s.Name);
+            Assert.Null(s.Name);
             Assert.Equal("", s.ProviderName);
             Assert.Equal("", s.ConnectionString);
 

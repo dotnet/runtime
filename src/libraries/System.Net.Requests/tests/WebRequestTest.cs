@@ -50,7 +50,7 @@ namespace System.Net.Tests
         {
             IWebProxy proxy = WebRequest.DefaultWebProxy;
             proxy.Credentials = null;
-            Assert.Equal(null, proxy.Credentials);
+            Assert.Null(proxy.Credentials);
         }
 
         [Fact]

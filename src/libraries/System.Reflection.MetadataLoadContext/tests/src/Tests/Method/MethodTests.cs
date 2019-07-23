@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
             Type theT = t.GetGenericArguments()[0];
             Assert.Equal(typeof(bool).Project(), m.ReturnType);
             ParameterInfo rp = m.ReturnParameter;
-            Assert.Equal(null, rp.Name);
+            Assert.Null(rp.Name);
             Assert.Equal(typeof(bool).Project(), rp.ParameterType);
             Assert.Equal(m, rp.Member);
             Assert.Equal(-1, rp.Position);

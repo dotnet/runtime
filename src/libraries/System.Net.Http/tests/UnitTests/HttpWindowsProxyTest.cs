@@ -233,10 +233,10 @@ namespace System.Net.Http.Tests
                 Assert.True(HttpWindowsProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
-                Assert.Equal(null, p.GetProxy(new Uri(fooHttp)));
-                Assert.Equal(null, p.GetProxy(new Uri(fooHttps)));
-                Assert.Equal(null, p.GetProxy(new Uri(fooWs)));
-                Assert.Equal(null, p.GetProxy(new Uri(fooWss)));
+                Assert.Null(p.GetProxy(new Uri(fooHttp)));
+                Assert.Null(p.GetProxy(new Uri(fooHttps)));
+                Assert.Null(p.GetProxy(new Uri(fooWs)));
+                Assert.Null(p.GetProxy(new Uri(fooWss)));
                 return RemoteExecutor.SuccessExitCode;
             }, rawProxyString).Dispose();
         }

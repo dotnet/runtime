@@ -192,9 +192,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 CryptographicAttributeObject[] dumped = new CryptographicAttributeObject[c.Count + 3];
                 c.CopyTo(dumped, 2);
-                Assert.Equal(null, dumped[0]);
-                Assert.Equal(null, dumped[1]);
-                Assert.Equal(null, dumped[dumped.Length - 1]);
+                Assert.Null(dumped[0]);
+                Assert.Null(dumped[1]);
+                Assert.Null(dumped[dumped.Length - 1]);
                 for (int i = 0; i < expected.Count; i++)
                 {
                     Assert.Equal(expected[i], dumped[i + 2], s_CryptographicAttributeObjectComparer);
@@ -203,9 +203,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 CryptographicAttributeObject[] dumped = new CryptographicAttributeObject[c.Count + 3];
                 ((ICollection)c).CopyTo(dumped, 2);
-                Assert.Equal(null, dumped[0]);
-                Assert.Equal(null, dumped[1]);
-                Assert.Equal(null, dumped[dumped.Length - 1]);
+                Assert.Null(dumped[0]);
+                Assert.Null(dumped[1]);
+                Assert.Null(dumped[dumped.Length - 1]);
                 for (int i = 0; i < expected.Count; i++)
                 {
                     Assert.Equal(expected[i], dumped[i + 2], s_CryptographicAttributeObjectComparer);

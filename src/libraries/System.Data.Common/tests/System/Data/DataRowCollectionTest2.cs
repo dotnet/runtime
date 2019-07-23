@@ -80,7 +80,7 @@ namespace System.Data.Tests
             dt.PrimaryKey = new DataColumn[] { dt.Columns[0] };
             dt.Rows.RemoveAt(3);
             Assert.Equal(counter - 1, dt.Rows.Count);
-            Assert.Equal(null, dt.Rows.Find(4));
+            Assert.Null(dt.Rows.Find(4));
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace System.Data.Tests
             Assert.Equal(dt.Rows[0], dt.Rows.Find(1));
             dt.Rows.Remove(dt.Rows[0]);
             Assert.Equal(counter - 1, dt.Rows.Count);
-            Assert.Equal(null, dt.Rows.Find(1));
+            Assert.Null(dt.Rows.Find(1));
         }
 
         [Fact]
@@ -322,7 +322,7 @@ namespace System.Data.Tests
             dt.PrimaryKey = new DataColumn[] { dt.Columns[0] };
 
             Assert.Equal(dt.Rows[0], dt.Rows.Find(1));
-            Assert.Equal(null, dt.Rows.Find(10));
+            Assert.Null(dt.Rows.Find(10));
         }
 
         [Fact]
@@ -332,7 +332,7 @@ namespace System.Data.Tests
            {
                DataTable dt = DataProvider.CreateParentDataTable();
 
-               Assert.Equal(null, dt.Rows.Find(1));
+               Assert.Null(dt.Rows.Find(1));
            });
         }
 
@@ -351,7 +351,7 @@ namespace System.Data.Tests
 
             arr[0] = 8;
 
-            Assert.Equal(null, dt.Rows.Find(arr));
+            Assert.Null(dt.Rows.Find(arr));
         }
 
         [Fact]
@@ -366,7 +366,7 @@ namespace System.Data.Tests
                object[] arr = new object[1];
                arr[0] = 1;
 
-               Assert.Equal(null, dt.Rows.Find(arr));
+               Assert.Null(dt.Rows.Find(arr));
            });
         }
 

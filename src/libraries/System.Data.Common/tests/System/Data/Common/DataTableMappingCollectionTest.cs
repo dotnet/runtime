@@ -235,7 +235,7 @@ namespace System.Data.Tests.Common
             eq = _tableMapCollection.Contains(tab1);
             Assert.Equal(false, eq);
             tab1 = DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMapCollection, "sourceData", "dataSetData", MissingMappingAction.Ignore);
-            Assert.Equal(null, tab1);
+            Assert.Null(tab1);
         }
 
         [Fact]

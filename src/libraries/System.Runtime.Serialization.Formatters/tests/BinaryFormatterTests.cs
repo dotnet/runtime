@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             {
                 var result = (Version2ClassWithoutOptionalField)f.Deserialize(s);
                 Assert.NotNull(result);
-                Assert.Equal(null, result.Value);
+                Assert.Null(result.Value);
             }
         }
 
@@ -411,7 +411,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             f.Binder = new DelegateBinder { BindToTypeDelegate = (_, __) => typeof(Version2ClassWithOptionalField) };
             var result = (Version2ClassWithOptionalField)f.Deserialize(s);
             Assert.NotNull(result);
-            Assert.Equal(null, result.Value);
+            Assert.Null(result.Value);
         }
 
         [Fact]

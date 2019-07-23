@@ -39,8 +39,8 @@ namespace BasicEventSourceTests
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            Assert.Equal(null, wrEventSource.Target);
-            Assert.Equal(null, wrProvider.Target);
+            Assert.Null(wrEventSource.Target);
+            Assert.Null(wrProvider.Target);
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 

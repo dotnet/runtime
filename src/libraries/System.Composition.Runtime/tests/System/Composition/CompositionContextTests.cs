@@ -62,7 +62,7 @@ namespace System.Composition.Runtime.Tests
                     Assert.Equal(0, export1);
 
                     Assert.False(context.TryGetExport(typeof(int), out object export2));
-                    Assert.Equal(null, export2);
+                    Assert.Null(export2);
                 }
                 else
                 {
@@ -73,7 +73,7 @@ namespace System.Composition.Runtime.Tests
                     Assert.Equal(0, export1);
 
                     Assert.False(context.TryGetExport(typeof(int), contractName, out object export2));
-                    Assert.Equal(null, export2);
+                    Assert.Null(export2);
                 }
             }
         }

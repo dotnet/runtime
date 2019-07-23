@@ -186,7 +186,7 @@ namespace System.IO.Ports.Tests
                     callbackHandler.Callback, null);
                 callbackHandler.BeginReadAsyncResult = readAsyncResult;
 
-                Assert.Equal(null, readAsyncResult.AsyncState);
+                Assert.Null(readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously, "Should not have completed sync (read)");
                 Assert.False(readAsyncResult.IsCompleted, "Should not have completed yet");
 
@@ -204,10 +204,10 @@ namespace System.IO.Ports.Tests
                     elapsedTime += 10;
                 }
 
-                Assert.Equal(null, callbackReadAsyncResult.AsyncState);
+                Assert.Null(callbackReadAsyncResult.AsyncState);
                 Assert.False(callbackReadAsyncResult.CompletedSynchronously, "Should not have completed sync (cback)");
                 Assert.True(callbackReadAsyncResult.IsCompleted, "Should have completed (cback)");
-                Assert.Equal(null, readAsyncResult.AsyncState);
+                Assert.Null(readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously, "Should not have completed sync (read)");
                 Assert.True(readAsyncResult.IsCompleted, "Should have completed (read)");
             }
@@ -232,7 +232,7 @@ namespace System.IO.Ports.Tests
                     callbackHandler.Callback, null);
                 callbackHandler.BeginReadAsyncResult = readAsyncResult;
 
-                Assert.Equal(null, readAsyncResult.AsyncState);
+                Assert.Null(readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously);
                 Assert.False(readAsyncResult.IsCompleted);
 
@@ -250,10 +250,10 @@ namespace System.IO.Ports.Tests
                     elapsedTime += 10;
                 }
 
-                Assert.Equal(null, callbackReadAsyncResult.AsyncState);
+                Assert.Null(callbackReadAsyncResult.AsyncState);
                 Assert.False(callbackReadAsyncResult.CompletedSynchronously, "Should not have completed sync (cback)");
                 Assert.True(callbackReadAsyncResult.IsCompleted, "Should have completed (cback)");
-                Assert.Equal(null, readAsyncResult.AsyncState);
+                Assert.Null(readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously, "Should not have completed sync (read)");
                 Assert.True(readAsyncResult.IsCompleted, "Should have completed (read)");
             }

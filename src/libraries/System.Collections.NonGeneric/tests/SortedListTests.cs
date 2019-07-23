@@ -1403,7 +1403,7 @@ namespace System.Collections.Tests
                 Assert.Equal(2048, sortList2[101]);
 
                 sortList2[102] = null;
-                Assert.Equal(null, sortList2[102]);
+                Assert.Null(sortList2[102]);
             });
         }
 

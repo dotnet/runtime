@@ -63,10 +63,10 @@ namespace MonoTests.System.Data
             row["Column2"] = DBNull.Value;
 
             string s = row.Field<string>("Column1");
-            Assert.Equal(null, s);
+            Assert.Null(s);
 
             int? i = row.Field<int?>("Column2");
-            Assert.Equal(null, i);
+            Assert.Null(i);
         }
 
         [Fact]

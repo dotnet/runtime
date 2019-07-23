@@ -680,7 +680,7 @@ namespace System.Json.Tests
         public void ImplicitCast_String_NullString()
         {
             string toPrimitive = (JsonPrimitive)null;
-            Assert.Equal(null, toPrimitive);
+            Assert.Null(toPrimitive);
 
             JsonValue fromPrimitive = toPrimitive;
             Assert.Equal(new JsonPrimitive((string)null), toPrimitive);
