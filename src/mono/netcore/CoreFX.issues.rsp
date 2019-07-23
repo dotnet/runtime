@@ -160,12 +160,6 @@
 # Expected test Assertion fails https://github.com/mono/mono/issues/14951
 -nomethod System.Linq.Expressions.Tests.CallTests.MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException
 
-# flaky tests - Invalid IL code in (wrapper dynamic-method)
--nomethod System.Linq.Expressions.Tests.LambdaMultiplyNullableTests.LambdaMultiplyNullableFloatTest
--nomethod System.Linq.Expressions.Tests.LambdaMultiplyTests.LambdaMultiplyFloatTest
--nomethod System.Linq.Expressions.Tests.LambdaDivideTests.LambdaDivideFloatTest
--nomethod System.Linq.Expressions.Tests.OpAssign.AssignmentEquivalentsWithMemberAccess
-
 ####################################################################
 ##  System.Linq.Parallel.Tests
 ####################################################################
@@ -774,23 +768,6 @@
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncErrorTest
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncErrorTest
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncTest
-
-# System.InvalidProgramException : Invalid IL code in (wrapper dynamic-method) System.Text.RegularExpressions.CompiledRegexRunner:Go3 (System.Text.RegularExpressions.RegexRunner): IL_01af: nop
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.GetEnumerator_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Throws
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Throws
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.SyncRoot_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.IsSynchronized_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Throws
--nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestOpenConnection
--nomethod System.Data.SqlClient.Tests.ExceptionTest.ExceptionTests
--nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestExecuteReader
--nomethod System.Data.SqlClient.Tests.ExceptionTest.NamedPipeInvalidConnStringTest_ManagedSNI
--nomethod System.Data.SqlClient.Tests.SqlConnectionBasicTests.ConnectionTest
--nomethod System.Data.SqlClient.Tests.CloneTests.CloneSqlConnection
 
 ####################################################################
 ##  System.Diagnostics.StackTrace.Tests

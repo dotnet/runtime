@@ -4148,9 +4148,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	}
 	g_slist_free (mb->referenced_by);
 
-	/* ilgen is no longer needed */
-	mb->ilgen = NULL;
-
 	domain = mono_domain_get ();
 	mono_domain_lock (domain);
 	if (!domain->method_to_dyn_method)
