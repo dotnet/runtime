@@ -208,7 +208,11 @@ public:
     CLREvent *GetWaitEvent();
 
     // Enable a session in the event pipe.
-    void Enable();
+    // MUST be called AFTER sending the IPC response
+    // Side effects:
+    // - sends file header information for nettrace format
+    // - turns on IpcStreaming thread which flushes events to stream
+    void StartStreaming();
 
     // Disable a session in the event pipe.
     // side-effects: writes all buffers to stream/file

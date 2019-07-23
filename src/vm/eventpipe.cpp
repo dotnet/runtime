@@ -269,10 +269,27 @@ bool EventPipe::EnableInternal(
     // Enable the sample profiler
     SampleProfiler::Enable(pEventPipeProviderCallbackDataQueue);
 
-    // Enable the session.
-    pSession->Enable();
-
     return true;
+}
+
+void EventPipe::StartStreaming(EventPipeSessionID id)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder _crst(GetLock());
+
+    if (!IsSessionIdInCollection(id))
+        return;
+
+    EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
+
+    pSession->StartStreaming();
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
