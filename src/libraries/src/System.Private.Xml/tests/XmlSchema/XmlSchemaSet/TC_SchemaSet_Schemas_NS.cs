@@ -22,8 +22,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - Schemas with null on empty collection", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -37,8 +36,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v2 - Schemas with null on non empty collection without schemas without ns", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -53,8 +51,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - Schemas with null on non empty collection with schemas without ns", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v3()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -69,8 +66,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v4 - Schemas on non empty collection with existing ns, all members of ICollection")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v4()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -86,8 +82,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v5 - Schemas on non empty collection with existing ns, use in foreach")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v5()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -111,8 +106,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v6 - Schemas on non empty collection with null ns,call Schemas,Edit check all members of ICollection")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v6()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

@@ -21,8 +21,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Load File from a drive c:", Pri = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TempFiles1()
         {
             string childFile = Path.Combine(Directory.GetCurrentDirectory(), "child.xsl");
@@ -85,8 +84,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Bug 469775 - XSLT V2 : Exception thrown if xsl:preserve-space/xsl:strip-space is used and input document contains entities", Pri = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TempFiles2()
         {
             try
@@ -105,8 +103,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Bug 469770 - XslCompiledTransform failed to load embedded stylesheets when prefixes are defined outside of xsl:stylesheet element", Pri = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TempFiles3()
         {
             try
@@ -143,8 +140,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Bug 482971 - XslCompiledTransform cannot output numeric character reference after long output", Pri = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TempFiles4()
         {
             try

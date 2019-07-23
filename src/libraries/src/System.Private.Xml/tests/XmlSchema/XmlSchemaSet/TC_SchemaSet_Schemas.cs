@@ -22,8 +22,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - Schemas on empty collection, all members of ICollection")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -37,8 +36,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v2 - Schemas on non empty collection, all members of ICollection", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -53,8 +51,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - Schemas on non empty collection, use in foreach", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v3()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -78,8 +75,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v4 - Schemas on non empty collection,call Schemas,Edit check all members of ICollection")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v4()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

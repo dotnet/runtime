@@ -106,8 +106,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetParam for same parameter name")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -125,8 +124,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetParam for different parameter name")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -192,8 +190,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetExtensionObject for same namespace System.Xml.Tests")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -211,8 +208,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetExtensionObject for different namespace System.Xml.Tests")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -280,8 +276,7 @@ namespace System.Xml.Tests
         // Multiple Transform() using shared ArgumentList
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple transforms using shared ArgumentList")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);

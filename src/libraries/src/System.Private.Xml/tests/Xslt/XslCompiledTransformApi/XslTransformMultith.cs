@@ -76,8 +76,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Basic Test")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc1()
         {
             Load("xslt_multithreading_test.xsl", "foo.xml");
@@ -97,8 +96,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - QFE 505 Repro")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc2()
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
@@ -120,8 +118,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - AVTs")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc3()
         {
             Load("xslt_multith_AVTs.xsl", "xslt_multith_AVTs.xml");
@@ -141,8 +138,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - xsl:key")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc4()
         {
             Load("xslt_multith_keytest.xsl", "xslt_multith_keytest.xml");
@@ -162,8 +158,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - xsl:sort")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc5()
         {
             Load("xslt_multith_sorting.xsl", "xslt_multith_sorting.xml");
@@ -183,8 +178,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Attribute Sets")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc6()
         {
             Load("xslt_mutith_attribute_sets.xsl", "xslt_mutith_attribute_sets.xml");
@@ -204,8 +198,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Boolean Expression AND")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc7()
         {
             Load("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml");
@@ -225,8 +218,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Boolean Expression OR")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc8()
         {
             Load("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml");
@@ -246,8 +238,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - FormatNubmer function")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc9()
         {
             Load("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml");
@@ -267,8 +258,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Position() function")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc10()
         {
             Load("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml");
@@ -288,8 +278,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - preserve space")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc11()
         {
             Load("xslt_mutith_preserve_space.xsl", "xslt_mutith_preserve_space.xml");
@@ -309,8 +298,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - Variable nodeset")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc12()
         {
             Load("xslt_mutith_variable_nodeset.xsl", "xslt_mutith_variable_nodeset.xml");
@@ -375,8 +363,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Basic Test")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc1()
         {
             Load("xslt_multithreading_test.xsl", "foo.xml");
@@ -396,8 +383,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - QFE 505 Repro")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc2()
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
@@ -419,8 +405,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - AVTs")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc3()
         {
             Load("xslt_multith_AVTs.xsl", "xslt_multith_AVTs.xml");
@@ -440,8 +425,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - xsl:key")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc4()
         {
             Load("xslt_multith_keytest.xsl", "xslt_multith_keytest.xml");
@@ -461,8 +445,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - xsl:sort")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc5()
         {
             Load("xslt_multith_sorting.xsl", "xslt_multith_sorting.xml");
@@ -482,8 +465,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Attribute Sets")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc6()
         {
             Load("xslt_mutith_attribute_sets.xsl", "xslt_mutith_attribute_sets.xml");
@@ -503,8 +485,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Boolean Expression AND")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc7()
         {
             Load("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml");
@@ -524,8 +505,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Boolean Expression OR")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc8()
         {
             Load("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml");
@@ -545,8 +525,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - FormatNubmer function")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc9()
         {
             Load("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml");
@@ -566,8 +545,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Position() function")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc10()
         {
             Load("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml");
@@ -587,8 +565,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - preserve space")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc11()
         {
             Load("xslt_mutith_preserve_space.xsl", "xslt_mutith_preserve_space.xml");
@@ -608,8 +585,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - Variable nodeset")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void proc12()
         {
             Load("xslt_mutith_variable_nodeset.xsl", "xslt_mutith_variable_nodeset.xml");

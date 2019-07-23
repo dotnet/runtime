@@ -125,8 +125,7 @@ namespace System.Xml.Tests
 
         //TEST DEFAULT VALUE FOR SCHEMA COMPILATION
         //[Variation(Desc = "v1- Test Default value of ProhibitDTD for Add(URL) of schema with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             Initialize();
@@ -145,8 +144,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v2- Test Default value of ProhibitDTD for Add(XmlReader) of schema with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             Initialize();
@@ -166,8 +164,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v3- Test Default value of ProhibitDTD for Add(URL) containing xs:import for schema with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v3()
         {
             Initialize();
@@ -187,8 +184,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v4- Test Default value of ProhibitDTD for Add(XmlReader) containing xs:import for scehma with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v4()
         {
             Initialize();
@@ -412,8 +408,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v14 - SchemaSet.Add(XmlReader) with pDTD False ,then a SchemaSet.Add(URL) for schema with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v14()
         {
             Initialize();
@@ -438,8 +433,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v15 - SchemaSet.Add(XmlReader) with pDTD True ,then a SchemaSet.Add(XmlReader) with pDTD False with DTD", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v15()
         {
             Initialize();
@@ -503,8 +497,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v21- Underlying XmlReader with ProhibitDTD=False and Create new Reader with ProhibitDTD=True", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v21()
         {
             Initialize();
@@ -561,8 +554,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v23- Underlying XmlReader with ProhibitDTD=True and Create new Reader with ProhibitDTD=False", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v23()
         {
             Initialize();
