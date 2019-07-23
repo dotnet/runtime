@@ -1090,6 +1090,7 @@ namespace System.Net.Http.Functional.Tests
             }, envVarValue, isInstrumentationEnabled.ToString()).Dispose();
         }
 
+        [ActiveIssue(39691)]
         [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(true, false)]
