@@ -139,7 +139,6 @@ stages:
   # Windows x64
   - template: /eng/jobs/windows-build.yml
     parameters:
-      buildFullPlatformManifest: true
       name: Windows_x64
       publishRidAgnosticPackages: true
       targetArchitecture: x64
@@ -147,7 +146,6 @@ stages:
   # Windows x86
   - template: /eng/jobs/windows-build.yml
     parameters:
-      buildFullPlatformManifest: true
       name: Windows_x86
       targetArchitecture: x86
 
