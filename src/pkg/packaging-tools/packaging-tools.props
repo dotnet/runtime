@@ -23,8 +23,11 @@
     <FrameworkPackType>runtime</FrameworkPackType>
     <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
 
-    <!-- Include a list of runtime files in the data dir. -->
+    <!-- Create a list of runtime files in the data dir using framework list infra. -->
     <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
+
+    <!-- Include manifests in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
     <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 

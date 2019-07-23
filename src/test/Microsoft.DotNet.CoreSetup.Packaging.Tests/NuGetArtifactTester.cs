@@ -62,6 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             return new NuGetArtifactTester(nupkgPath);
         }
 
+        public PackageIdentity Identity { get; }
         public NuGetVersion PackageVersion { get; }
 
         private readonly PackageArchiveReader _reader;
@@ -69,6 +70,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         public NuGetArtifactTester(string file)
         {
             _reader = new PackageArchiveReader(ZipFile.Open(file, ZipArchiveMode.Read));
+            Identity = _reader.NuspecReader.GetIdentity();
             PackageVersion = _reader.NuspecReader.GetVersion();
         }
 
@@ -88,6 +90,17 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             ContainsFrameworkList("FrameworkList.xml");
         }
 
+        public void IsTargetingPackForPlatform()
+        {
+            IsFrameworkPack();
+
+            HasOnlyTheseDataFiles(
+                "data/FrameworkList.xml",
+                "data/PlatformManifest.txt");
+
+            HasGoodPlatformManifest();
+        }
+
         public void IsAppHostPack()
         {
             IsRuntimeSpecificPack();
@@ -97,7 +110,11 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         {
             IsRuntimeSpecificPack();
 
-            HasOnlyTheseDataFiles("data/RuntimeList.xml");
+            HasOnlyTheseDataFiles(
+                "data/RuntimeList.xml",
+                "data/PlatformManifest.txt");
+
+            HasGoodPlatformManifest();
 
             ContainsFrameworkList("RuntimeList.xml");
         }
@@ -120,6 +137,18 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
 
             // Sanity: check if the manifest has some content.
             Assert.Contains(".dll", platformManifestContent);
+
+            // Check that the lines contain the package ID where they're supposed to.
+            foreach (var parts in platformManifestContent
+                .Split('\r', '\n')
+                .Select(line => line.Split("|"))
+                .Where(parts => parts.Length > 1))
+            {
+                Assert.True(
+                    parts[1] == Identity.Id,
+                    $"Platform manifest package id column '{parts[1]}' doesn't match " +
+                        $"actual package id '{Identity.Id}'");
+            }
         }
 
         public string ReadEntryContent(string entry)

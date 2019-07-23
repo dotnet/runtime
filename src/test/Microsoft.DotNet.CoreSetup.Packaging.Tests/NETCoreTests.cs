@@ -18,12 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 dirs,
                 "Microsoft.NETCore.App.Ref"))
             {
-                tester.HasOnlyTheseDataFiles(
-                    "data/FrameworkList.xml",
-                    "data/PlatformManifest.txt");
-
-                tester.IsTargetingPack();
-                tester.HasGoodPlatformManifest();
+                tester.IsTargetingPackForPlatform();
             }
         }
 
