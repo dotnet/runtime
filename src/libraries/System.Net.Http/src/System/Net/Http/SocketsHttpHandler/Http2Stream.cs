@@ -82,6 +82,7 @@ namespace System.Net.Http
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection, int streamId, int initialWindowSize)
             {
+                _request = request;
                 _connection = connection;
                 _streamId = streamId;
 
@@ -89,8 +90,6 @@ namespace System.Net.Http
                 _responseCompletionState = StreamCompletionState.InProgress;
 
                 _responseProtocolState = ResponseProtocolState.ExpectingStatus;
-
-                _request = request;
 
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
@@ -146,7 +145,7 @@ namespace System.Net.Http
                             }
                         }
 
-                        await _connection.SendEndStreamAsync(_streamId);
+                        await _connection.SendEndStreamAsync(_streamId, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
                     }
@@ -197,8 +196,7 @@ namespace System.Net.Http
                 using (var expect100Timer = new Timer(s =>
                 {
                     var thisRef = (Http2Stream)s;
-                    if (NetEventSource.IsEnabled)
-                        thisRef.Trace($"100-Continue timer expired.");
+                    if (NetEventSource.IsEnabled) thisRef.Trace($"100-Continue timer expired.");
                     thisRef._expect100ContinueWaiter?.TrySetResult(true);
                 }, this, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
                 {
@@ -221,7 +219,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                if (NetEventSource.IsEnabled) Trace($"Stream complete.");
+                if (NetEventSource.IsEnabled) Trace($"Stream complete. Request={_requestCompletionState}, Response={_responseCompletionState}.");
 
                 if (_resetException == null &&
                     (_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed))
@@ -233,11 +231,7 @@ namespace System.Net.Http
 
                 // Do cleanup.
                 _streamWindow.Dispose();
-
-                if (_requestBodyCancellationSource != null)
-                {
-                    _requestBodyCancellationSource.Dispose();
-                }
+                _requestBodyCancellationSource?.Dispose();
             }
 
             private void Cancel()
@@ -559,6 +553,15 @@ namespace System.Net.Http
 
                 lock (SyncObject)
                 {
+                    // If we've already finished, don't actually reset the stream.
+                    // Otherwise, any waiters that haven't executed yet will see the _resetException and throw.
+                    // This can happen, for example, when the server finishes the request and then closes the connection,
+                    // but the waiter hasn't woken up yet.
+                    if (_requestCompletionState == StreamCompletionState.Completed && _responseCompletionState == StreamCompletionState.Completed)
+                    {
+                        return;
+                    }
+
                     // It's possible we could be called twice, e.g. we receive a RST_STREAM and then the whole connection dies
                     // before we have a chance to process cancellation and tear everything down. Just ignore this.
                     if (_resetException != null)

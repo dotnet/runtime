@@ -2296,7 +2296,7 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(500);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
-                    Exception e = await Assert.ThrowsAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+                    Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
                     // Propagate the exception to the request stream serialization task.
                     // This allows the request processing to complete.
@@ -2362,7 +2362,7 @@ namespace System.Net.Http.Functional.Tests
                     await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
-                    Exception e = await Assert.ThrowsAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+                    Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
                     // Propagate the exception to the request stream serialization task.
                     // This allows the request processing to complete.
@@ -2426,7 +2426,7 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(500);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
-                    Exception e = await Assert.ThrowsAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+                    Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
                     // Propagate the exception to the request stream serialization task.
                     // This allows the request processing to complete.
@@ -2499,7 +2499,7 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(500);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
-                    Exception e = await Assert.ThrowsAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+                    Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
                     // Propagate the exception to the request stream serialization task.
                     // This allows the request processing to complete.
