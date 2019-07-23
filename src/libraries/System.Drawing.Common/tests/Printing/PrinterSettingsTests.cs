@@ -95,7 +95,7 @@ namespace System.Drawing.Printing.Tests
                 Collate = false
             };
 
-            Assert.Equal(false, printerSettings.Collate);
+            Assert.False(printerSettings.Collate);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -417,7 +417,7 @@ namespace System.Drawing.Printing.Tests
         public void IsDirectPrintingSupported_ImageFormatNotSupported_ReturnsExpected(ImageFormat imageFormat)
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(false, printerSettings.IsDirectPrintingSupported(imageFormat));
+            Assert.False(printerSettings.IsDirectPrintingSupported(imageFormat));
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
@@ -427,7 +427,7 @@ namespace System.Drawing.Printing.Tests
             using (var bitmap = new Bitmap(10, 10))
             {
                 var printerSettings = new PrinterSettings();
-                Assert.Equal(false, printerSettings.IsDirectPrintingSupported(bitmap));
+                Assert.False(printerSettings.IsDirectPrintingSupported(bitmap));
             }
         }
 

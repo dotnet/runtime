@@ -315,7 +315,7 @@ namespace System.ComponentModel.Composition
         public void GetMetadataView_IMetadataViewWithDefaultedBool()
         {
             var view = MetadataViewProvider.GetMetadataView<ITrans_MetadataViewWithDefaultedBool>(new Dictionary<string, object>());
-            Assert.Equal(false, view.MyBool);
+            Assert.False(view.MyBool);
         }
 
         [Fact]

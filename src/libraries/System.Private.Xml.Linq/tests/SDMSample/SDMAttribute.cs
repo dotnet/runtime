@@ -405,7 +405,7 @@ namespace XDocumentTests.SDMSample
         {
             string guid = "cd8d69ed-fef9-4283-aaf4-216463e4496f";
 
-            Assert.Equal(true, (bool?)new XAttribute("x", true));
+            Assert.True((bool?)new XAttribute("x", true));
             Assert.Equal(5, (int?)new XAttribute("x", 5));
             Assert.Equal(5u, (uint?)new XAttribute("x", 5));
             Assert.Equal(5L, (long?)new XAttribute("x", 5));

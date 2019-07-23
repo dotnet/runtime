@@ -124,10 +124,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3.3m, ((JsonElement)MyDecimal[0]).GetDecimal());
             Assert.IsType<JsonElement>(MyBooleanFalse[0]);
             Assert.Equal(JsonValueKind.False, ((JsonElement)MyBooleanFalse[0]).ValueKind);
-            Assert.Equal(false, ((JsonElement)MyBooleanFalse[0]).GetBoolean());
+            Assert.False(((JsonElement)MyBooleanFalse[0]).GetBoolean());
             Assert.IsType<JsonElement>(MyBooleanTrue[0]);
             Assert.Equal(JsonValueKind.True, ((JsonElement)MyBooleanTrue[0]).ValueKind);
-            Assert.Equal(true, ((JsonElement)MyBooleanTrue[0]).GetBoolean());
+            Assert.True(((JsonElement)MyBooleanTrue[0]).GetBoolean());
             Assert.IsType<JsonElement>(MySingle[0]);
             Assert.Equal(JsonValueKind.Number, ((JsonElement)MySingle[0]).ValueKind);
             Assert.Equal(1.1f, ((JsonElement)MySingle[0]).GetSingle());

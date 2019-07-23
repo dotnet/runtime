@@ -66,12 +66,12 @@ namespace System.Data.Tests
 
             fc2 = new ForeignKeyConstraint(dtParent.Columns[0], dtChild.Columns[1]);
             // different columnn
-            Assert.Equal(false, fc1.Equals(fc2));
+            Assert.False(fc1.Equals(fc2));
 
             //Two System.Data.ForeignKeyConstraint are equal if they constrain the same columns.
             // same column
             fc2 = new ForeignKeyConstraint(dtParent.Columns[0], dtChild.Columns[0]);
-            Assert.Equal(true, fc1.Equals(fc2));
+            Assert.True(fc1.Equals(fc2));
         }
 
         [Fact]
@@ -148,7 +148,7 @@ namespace System.Data.Tests
             //Update the parent 
 
             ds.Tables[0].Rows[0]["ParentId"] = 777;
-            Assert.Equal(true, ds.Tables[1].Select("ParentId=777").Length > 0);
+            Assert.True(ds.Tables[1].Select("ParentId=777").Length > 0);
             ds.Tables[0].RejectChanges();
             Assert.Equal(0, ds.Tables[1].Select("ParentId=777").Length);
         }
@@ -223,7 +223,7 @@ namespace System.Data.Tests
 
             fc = new ForeignKeyConstraint(new DataColumn[] { dtParent.Columns[0] }, new DataColumn[] { dtChild.Columns[0] });
             // Ctor
-            Assert.Equal(false, fc == null);
+            Assert.False(fc == null);
 
             // Child Table Constraints Count
             Assert.Equal(0, dtChild.Constraints.Count);
@@ -284,7 +284,7 @@ namespace System.Data.Tests
             fc = new ForeignKeyConstraint("myForeignKey", dtParent.Columns[0], dtChild.Columns[0]);
 
             // Ctor
-            Assert.Equal(false, fc == null);
+            Assert.False(fc == null);
 
             // Ctor - name
             Assert.Equal("myForeignKey", fc.ConstraintName);
@@ -300,7 +300,7 @@ namespace System.Data.Tests
             fc = new ForeignKeyConstraint("myForeignKey", new DataColumn[] { dtParent.Columns[0] }, new DataColumn[] { dtChild.Columns[0] });
 
             // Ctor
-            Assert.Equal(false, fc == null);
+            Assert.False(fc == null);
 
             // Ctor - name
             Assert.Equal("myForeignKey", fc.ConstraintName);
@@ -415,7 +415,7 @@ namespace System.Data.Tests
             PropertyCollection pc = fc.ExtendedProperties;
 
             // Checking ExtendedProperties default 
-            Assert.Equal(true, fc != null);
+            Assert.True(fc != null);
 
             // Checking ExtendedProperties count 
             Assert.Equal(0, pc.Count);

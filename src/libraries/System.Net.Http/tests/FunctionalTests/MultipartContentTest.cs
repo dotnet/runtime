@@ -308,7 +308,7 @@ namespace System.Net.Http.Functional.Tests
             using (Stream s = await mc.ReadAsStreamAsync())
             {
                 Assert.True(s.CanRead);
-                Assert.Equal(false, s.CanWrite);
+                Assert.False(s.CanWrite);
                 Assert.True(s.CanSeek);
 
                 AssertExtensions.Throws<ArgumentNullException>("buffer", null, () => s.Read(null, 0, 0));

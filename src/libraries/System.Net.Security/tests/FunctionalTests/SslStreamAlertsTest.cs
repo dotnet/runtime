@@ -140,11 +140,11 @@ namespace System.Net.Security.Tests
 
                 var buffer = new byte[1024];
 
-                Assert.Equal(true, client.CanWrite);
+                Assert.True(client.CanWrite);
 
                 await client.ShutdownAsync();
 
-                Assert.Equal(false, client.CanWrite);
+                Assert.False(client.CanWrite);
 
                 await Assert.ThrowsAsync<InvalidOperationException>(() => client.ShutdownAsync());
                 await Assert.ThrowsAsync<InvalidOperationException>(() => client.WriteAsync(buffer, 0, buffer.Length));

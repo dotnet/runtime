@@ -315,8 +315,8 @@ namespace BasicEventSourceTests
 
                     Thread.Sleep(1000);
 
-                    Assert.Equal(true, esNameHit);
-                    Assert.Equal(true, esName2Hit);
+                    Assert.True(esNameHit);
+                    Assert.True(esName2Hit);
                 }
             }
             finally
@@ -377,8 +377,8 @@ namespace BasicEventSourceTests
 
                     Thread.Sleep(1000);
 
-                    Assert.Equal(true, esNameHit);
-                    Assert.Equal(true, esName2Hit);
+                    Assert.True(esNameHit);
+                    Assert.True(esName2Hit);
                 }
             }
             finally

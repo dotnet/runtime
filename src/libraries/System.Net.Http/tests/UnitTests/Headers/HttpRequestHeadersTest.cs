@@ -1128,7 +1128,7 @@ namespace System.Net.Http.Tests
             // Connection collection has 2 values plus 'chunked'
             Assert.Equal(3, headers.TransferEncoding.Count);
             Assert.Equal(3, headers.GetValues("Transfer-Encoding").Count());
-            Assert.Equal(true, headers.TransferEncodingChunked);
+            Assert.True(headers.TransferEncodingChunked);
             Assert.Equal(new TransferCodingHeaderValue("custom1"), headers.TransferEncoding.ElementAt(0));
             Assert.Equal(new TransferCodingHeaderValue("custom2"), headers.TransferEncoding.ElementAt(1));
 

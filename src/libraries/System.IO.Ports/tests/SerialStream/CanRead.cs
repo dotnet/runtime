@@ -24,7 +24,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanRead property throws exception After Open() then Close()");
 
-                Assert.Equal(false, serialStream.CanRead);
+                Assert.False(serialStream.CanRead);
             }
         }
 
@@ -39,7 +39,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanRead property throws exception After Open() then BaseStream.Close()");
 
-                Assert.Equal(false, serialStream.CanRead);
+                Assert.False(serialStream.CanRead);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying CanRead property returns true after a call to Open()");
 
-                Assert.Equal(true, com.BaseStream.CanRead);
+                Assert.True(com.BaseStream.CanRead);
             }
         }
 

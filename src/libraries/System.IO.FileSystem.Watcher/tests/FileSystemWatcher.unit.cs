@@ -15,9 +15,9 @@ namespace System.IO.Tests
     {
         private static void ValidateDefaults(FileSystemWatcher watcher, string path, string filter)
         {
-            Assert.Equal(false, watcher.EnableRaisingEvents);
+            Assert.False(watcher.EnableRaisingEvents);
             Assert.Equal(filter, watcher.Filter);
-            Assert.Equal(false, watcher.IncludeSubdirectories);
+            Assert.False(watcher.IncludeSubdirectories);
             Assert.Equal(8192, watcher.InternalBufferSize);
             Assert.Equal(NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName, watcher.NotifyFilter);
             Assert.Equal(path, watcher.Path);
@@ -184,13 +184,13 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             {
                 FileSystemWatcher watcher = new FileSystemWatcher(testDirectory.Path);
-                Assert.Equal(false, watcher.EnableRaisingEvents);
+                Assert.False(watcher.EnableRaisingEvents);
 
                 watcher.EnableRaisingEvents = true;
-                Assert.Equal(true, watcher.EnableRaisingEvents);
+                Assert.True(watcher.EnableRaisingEvents);
 
                 watcher.EnableRaisingEvents = false;
-                Assert.Equal(false, watcher.EnableRaisingEvents);
+                Assert.False(watcher.EnableRaisingEvents);
             }
         }
 
@@ -252,13 +252,13 @@ namespace System.IO.Tests
         public void FileSystemWatcher_IncludeSubdirectories()
         {
             FileSystemWatcher watcher = new FileSystemWatcher();
-            Assert.Equal(false, watcher.IncludeSubdirectories);
+            Assert.False(watcher.IncludeSubdirectories);
 
             watcher.IncludeSubdirectories = true;
-            Assert.Equal(true, watcher.IncludeSubdirectories);
+            Assert.True(watcher.IncludeSubdirectories);
 
             watcher.IncludeSubdirectories = false;
-            Assert.Equal(false, watcher.IncludeSubdirectories);
+            Assert.False(watcher.IncludeSubdirectories);
         }
 
         [Fact]

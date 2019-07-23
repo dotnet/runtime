@@ -287,10 +287,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 Task<bool> secondSend = batch.SendAsync(3 + trial);
 
-                Assert.Equal(expected: true, actual: await firstSend);
-                Assert.Equal(expected: true, actual: await secondSend);
+                Assert.True(await firstSend);
+                Assert.True(await secondSend);
 
-                Assert.Equal(expected: true, actual: await batch.OutputAvailableAsync());
+                Assert.True(await batch.OutputAvailableAsync());
                 Assert.Equal(expected: 1, actual: batch.OutputCount);
                 int[] result = await batch.ReceiveAsync();
                 Assert.NotNull(result);

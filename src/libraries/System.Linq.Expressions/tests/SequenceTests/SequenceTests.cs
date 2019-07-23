@@ -1753,7 +1753,7 @@ namespace System.Linq.Expressions.Tests
             Func<object, bool> compiled = f.Compile(useInterpreter);
             Expression<Func<object, bool>> lambda = x => compiled(x);
             Func<object, bool> d = lambda.Compile(useInterpreter);
-            Assert.Equal(true, d(Type.Missing));
+            Assert.True(d(Type.Missing));
         }
 
         [Theory]

@@ -469,12 +469,12 @@ namespace System.Threading.Tasks.Tests
             token.Register(() => earlyEnlistedTokenSource.Cancel());
             tokenSource.Cancel();
 
-            Assert.Equal(true, earlyEnlistedTokenSource.IsCancellationRequested);
+            Assert.True(earlyEnlistedTokenSource.IsCancellationRequested);
 
 
             CancellationTokenSource lateEnlistedTokenSource = new CancellationTokenSource();
             token.Register(() => lateEnlistedTokenSource.Cancel());
-            Assert.Equal(true, lateEnlistedTokenSource.IsCancellationRequested);
+            Assert.True(lateEnlistedTokenSource.IsCancellationRequested);
         }
 
         /// <summary>

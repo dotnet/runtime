@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             Assert.Equal(15, si.MemberCount);
 
-            Assert.Equal(true, si.GetBoolean("bool"));
+            Assert.True(si.GetBoolean("bool"));
             Assert.Equal("hello", si.GetString("string"));
             Assert.Equal('a', si.GetChar("char"));
 
@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                         Assert.Equal(typeof(string), entry.ObjectType);
                         break;
                     case "bool":
-                        Assert.Equal(true, (bool)entry.Value);
+                        Assert.True((bool)entry.Value);
                         Assert.Equal(typeof(bool), entry.ObjectType);
                         break;
                 }

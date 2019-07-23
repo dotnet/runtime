@@ -144,7 +144,7 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp", fileName);
             IPGlobalStatisticsTable table = StringParsingHelpers.ParseIPv4GlobalStatisticsFromSnmpFile(fileName);
 
-            Assert.Equal(false, table.Forwarding);
+            Assert.False(table.Forwarding);
             Assert.Equal(64L, table.DefaultTtl);
             Assert.Equal(28121L, table.InReceives);
             Assert.Equal(0L, table.InHeaderErrors);

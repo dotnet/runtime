@@ -305,7 +305,7 @@ namespace System.Net.Tests
                 Assert.Equal(-1, sp.ConnectionLeaseTimeout);
                 Assert.Equal("http", sp.ConnectionName);
                 Assert.Equal(0, sp.CurrentConnections);
-                Assert.Equal(true, sp.Expect100Continue);
+                Assert.True(sp.Expect100Continue);
                 Assert.Equal(100000, sp.MaxIdleTime);
                 Assert.Equal(new Version(1, 1), sp.ProtocolVersion);
                 Assert.Equal(-1, sp.ReceiveBufferSize);

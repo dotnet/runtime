@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<object>(@"true");
             element = (JsonElement)obj;
             Assert.Equal(JsonValueKind.True, element.ValueKind);
-            Assert.Equal(true, element.GetBoolean());
+            Assert.True(element.GetBoolean());
 
             obj = JsonSerializer.Deserialize<object>(@"null");
             Assert.Null(obj);

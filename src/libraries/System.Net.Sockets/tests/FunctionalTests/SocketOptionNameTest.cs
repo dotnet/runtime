@@ -391,7 +391,7 @@ namespace System.Net.Sockets.Tests
             using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 Assert.Equal(1, (int)a.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse));
-                Assert.Equal(true, a.ExclusiveAddressUse);
+                Assert.True(a.ExclusiveAddressUse);
                 Assert.Equal(0, (int)a.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress));
             }
         }

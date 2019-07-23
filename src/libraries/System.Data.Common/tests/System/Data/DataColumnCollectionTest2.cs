@@ -223,18 +223,18 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateUniqueConstraint();
             DataColumn dummyCol = new DataColumn();
-            Assert.Equal(false, dt.Columns.CanRemove(null));
-            Assert.Equal(false, dt.Columns.CanRemove(dummyCol));
-            Assert.Equal(false, dt.Columns.CanRemove(dt.Columns[0]));
-            Assert.Equal(true, dt.Columns.CanRemove(dt.Columns[1]));
+            Assert.False(dt.Columns.CanRemove(null));
+            Assert.False(dt.Columns.CanRemove(dummyCol));
+            Assert.False(dt.Columns.CanRemove(dt.Columns[0]));
+            Assert.True(dt.Columns.CanRemove(dt.Columns[1]));
         }
         [Fact]
         public void TestCanRemove_ForigenConstraint()
         {
             DataSet ds = DataProvider.CreateForeignConstraint();
 
-            Assert.Equal(false, ds.Tables["child"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
-            Assert.Equal(false, ds.Tables["parent"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
+            Assert.False(ds.Tables["child"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
+            Assert.False(ds.Tables["parent"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
         }
         [Fact]
         public void TestCanRemove_ParentRelations()
@@ -248,8 +248,8 @@ namespace System.Data.Tests
 
             ds.Tables[1].ParentRelations.Add("name1", ds.Tables[0].Columns["col1"], ds.Tables[1].Columns["col1"], false);
 
-            Assert.Equal(false, ds.Tables[1].Columns.CanRemove(ds.Tables[1].Columns["col1"]));
-            Assert.Equal(false, ds.Tables[0].Columns.CanRemove(ds.Tables[0].Columns["col1"]));
+            Assert.False(ds.Tables[1].Columns.CanRemove(ds.Tables[1].Columns["col1"]));
+            Assert.False(ds.Tables[0].Columns.CanRemove(ds.Tables[0].Columns["col1"]));
         }
 
         [Fact]
@@ -259,7 +259,7 @@ namespace System.Data.Tests
             dt.Columns.Add("col1", typeof(string));
             dt.Columns.Add("col2", typeof(string), "sum(col1)");
 
-            Assert.Equal(false, dt.Columns.CanRemove(dt.Columns["col1"]));
+            Assert.False(dt.Columns.CanRemove(dt.Columns["col1"]));
         }
 
         [Fact]
@@ -313,18 +313,18 @@ namespace System.Data.Tests
         public void TestContains_ByColumnName()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
-            Assert.Equal(true, dt.Columns.Contains("ParentId"));
-            Assert.Equal(true, dt.Columns.Contains("String1"));
-            Assert.Equal(true, dt.Columns.Contains("ParentBool"));
+            Assert.True(dt.Columns.Contains("ParentId"));
+            Assert.True(dt.Columns.Contains("String1"));
+            Assert.True(dt.Columns.Contains("ParentBool"));
 
-            Assert.Equal(false, dt.Columns.Contains("ParentId1"));
+            Assert.False(dt.Columns.Contains("ParentId1"));
             dt.Columns.Remove("ParentId");
-            Assert.Equal(false, dt.Columns.Contains("ParentId"));
+            Assert.False(dt.Columns.Contains("ParentId"));
 
             dt.Columns["String1"].ColumnName = "Temp1";
 
-            Assert.Equal(false, dt.Columns.Contains("String1"));
-            Assert.Equal(true, dt.Columns.Contains("Temp1"));
+            Assert.False(dt.Columns.Contains("String1"));
+            Assert.True(dt.Columns.Contains("Temp1"));
         }
 
         [Fact]
@@ -399,7 +399,7 @@ namespace System.Data.Tests
             Assert.Equal(2, dt.Columns.Count);
 
             // Remove first column - check column removed
-            Assert.Equal(false, dt.Columns.Contains("Col_0"));
+            Assert.False(dt.Columns.Contains("Col_0"));
 
             // Remove first column - check column 0 data
             Assert.Equal(1, dt.Rows[0][0]);
@@ -416,7 +416,7 @@ namespace System.Data.Tests
             Assert.Equal(2, dt.Columns.Count);
 
             // Remove middle column - check column removed
-            Assert.Equal(false, dt.Columns.Contains("Col_1"));
+            Assert.False(dt.Columns.Contains("Col_1"));
 
             // Remove middle column - check column 0 data
             Assert.Equal(0, dt.Rows[0][0]);
@@ -433,7 +433,7 @@ namespace System.Data.Tests
             Assert.Equal(2, dt.Columns.Count);
 
             // Remove last column - check column removed
-            Assert.Equal(false, dt.Columns.Contains("Col_2"));
+            Assert.False(dt.Columns.Contains("Col_2"));
 
             // Remove last column - check column 0 data
             Assert.Equal(0, dt.Rows[0][0]);
@@ -728,7 +728,7 @@ namespace System.Data.Tests
 
             dt.Columns.Remove(dt.Columns[0].ColumnName);
             Assert.Equal(2, dt.Columns.Count);
-            Assert.Equal(false, dt.Columns.Contains("Col_0"));
+            Assert.False(dt.Columns.Contains("Col_0"));
             Assert.Equal(1, dt.Rows[0][0]);
             Assert.Equal(2, dt.Rows[0][1]);
 
@@ -740,7 +740,7 @@ namespace System.Data.Tests
 
             dt.Columns.Remove(dt.Columns[1].ColumnName);
             Assert.Equal(2, dt.Columns.Count);
-            Assert.Equal(false, dt.Columns.Contains("Col_1"));
+            Assert.False(dt.Columns.Contains("Col_1"));
             Assert.Equal(0, dt.Rows[0][0]);
             Assert.Equal(2, dt.Rows[0][1]);
 
@@ -752,7 +752,7 @@ namespace System.Data.Tests
             dt.Columns.Remove(dt.Columns[2].ColumnName);
 
             Assert.Equal(2, dt.Columns.Count);
-            Assert.Equal(false, dt.Columns.Contains("Col_2"));
+            Assert.False(dt.Columns.Contains("Col_2"));
             Assert.Equal(0, dt.Rows[0][0]);
             Assert.Equal(1, dt.Rows[0][1]);
 
@@ -784,7 +784,7 @@ namespace System.Data.Tests
             int originalColumnCount = dt.Columns.Count;
             dt.Columns.RemoveAt(0);
             Assert.Equal(originalColumnCount - 1, dt.Columns.Count);
-            Assert.Equal(true, _eventOccurred);
+            Assert.True(_eventOccurred);
 
             Assert.Throws<IndexOutOfRangeException>(() =>
             {

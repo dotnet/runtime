@@ -44,7 +44,7 @@ namespace System.Data.Tests
             dc.AutoIncrement = false;
 
             // Checking default value (True)
-            Assert.Equal(true, dc.AllowDBNull);
+            Assert.True(dc.AllowDBNull);
 
             // AllowDBNull=true - adding new row with null value
             dt.Rows.Add(dt.NewRow());
@@ -78,12 +78,12 @@ namespace System.Data.Tests
             dc = new DataColumn("ColName", typeof(string));
 
             // Checking default value (False)
-            Assert.Equal(false, dc.AutoIncrement);
+            Assert.False(dc.AutoIncrement);
 
             //Cheking Set
             dc.AutoIncrement = true;
             // Checking Get
-            Assert.Equal(true, dc.AutoIncrement);
+            Assert.True(dc.AutoIncrement);
         }
 
         [Fact]
@@ -197,7 +197,7 @@ namespace System.Data.Tests
             dc2 = new DataColumn();
             // #1
             // Equals 1
-            Assert.Equal(false, dc1.Equals(dc2));
+            Assert.False(dc1.Equals(dc2));
 
             dc1 = dc2;
             // #2
@@ -214,7 +214,7 @@ namespace System.Data.Tests
 
             pc = dc.ExtendedProperties;
             // Checking ExtendedProperties default 
-            Assert.Equal(true, pc != null);
+            Assert.True(pc != null);
 
             // Checking ExtendedProperties count 
             Assert.Equal(0, pc.Count);
@@ -321,13 +321,13 @@ namespace System.Data.Tests
 
             //Checking default value (false)
             // ReadOnly default
-            Assert.Equal(false, dc.ReadOnly);
+            Assert.False(dc.ReadOnly);
 
             //Cheking Set
             dc.ReadOnly = true;
             //Checking Get
             // ReadOnly Get/Set
-            Assert.Equal(true, dc.ReadOnly);
+            Assert.True(dc.ReadOnly);
         }
 
         [Fact]
@@ -376,14 +376,14 @@ namespace System.Data.Tests
             //Checking default value (false)
 
             // Unique default
-            Assert.Equal(false, dc.Unique);
+            Assert.False(dc.Unique);
 
             //Cheking Set
             dc.Unique = true;
 
             //Checking Get
             // Unique Get/Set
-            Assert.Equal(true, dc.Unique);
+            Assert.True(dc.Unique);
         }
 
         [Fact]
@@ -414,7 +414,7 @@ namespace System.Data.Tests
             dc = new DataColumn();
 
             // ctor
-            Assert.Equal(false, dc == null);
+            Assert.False(dc == null);
         }
 
         [Fact]
@@ -425,7 +425,7 @@ namespace System.Data.Tests
             dc = new DataColumn(sName);
 
             // ctor - object
-            Assert.Equal(false, dc == null);
+            Assert.False(dc == null);
 
             // ctor - ColName
             Assert.Equal(sName, dc.ColumnName);
@@ -446,7 +446,7 @@ namespace System.Data.Tests
                 typTest = Type.GetType(sType);
                 dc = new DataColumn("ColName", typTest);
                 // ctor - object
-                Assert.Equal(false, dc == null);
+                Assert.False(dc == null);
 
                 // ctor - ColName
                 Assert.Equal(typTest, dc.DataType);
@@ -460,7 +460,7 @@ namespace System.Data.Tests
             dc = new DataColumn("ColName", typeof(string), "Price * 1.18");
 
             // ctor - object
-            Assert.Equal(false, dc == null);
+            Assert.False(dc == null);
         }
 
         [Fact]
@@ -473,7 +473,7 @@ namespace System.Data.Tests
                 dc = null;
                 dc = new DataColumn("ColName", typeof(string), "Price * 1.18", (MappingType)i);
                 // Ctor #" + i.ToString());
-                Assert.Equal(false, dc == null);
+                Assert.False(dc == null);
             }
         }
 
