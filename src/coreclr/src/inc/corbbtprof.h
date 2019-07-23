@@ -275,6 +275,8 @@ enum SectionFormat
     SectionFormatInvalid                = -1
 };
 
+#include <pshpack1.h>
+
 struct CORBBTPROF_SECTION_TABLE_ENTRY
 {
     SectionFormat                  FormatID;
@@ -589,4 +591,7 @@ struct CORBBTPROF_BLOB_POOL_ENTRY
     DWORD                  cBuffer;
     BYTE                   buffer[0];  // actually 'cBuffer' in length
 };
+
+#include <poppack.h>
+
 #endif /* COR_BBTPROF_H_ */
