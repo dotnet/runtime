@@ -1323,8 +1323,7 @@ gint32
 ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoArrayHandleOut fields, MonoError *error)
 {
 	MonoClass *klass;
-	MonoObjectHandle *values = NULL;
-	MonoObject *o;
+	MonoClassField **unhandled = NULL;
 	int count = 0;
 	gint32 result = (int)(gsize)mono_defaults.int32_class;
 	MonoClassField* field;
@@ -1363,20 +1362,23 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 			break;
 		}
 		default:
-			if (!values)
-				values = g_newa (MonoObjectHandle, mono_class_num_fields (klass));
-			o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), field, MONO_HANDLE_RAW (this_obj), error);
-			return_val_if_nok (error, 0);
-			values [count++] = MONO_HANDLE_NEW (MonoObject, o);
+			if (!unhandled)
+				unhandled = g_newa (MonoClassField*, mono_class_num_fields (klass));
+			unhandled [count ++] = field;
 		}
 	}
 
-	if (values) {
+	if (unhandled) {
 		MonoArrayHandle fields_arr = mono_array_new_handle (mono_domain_get (), mono_defaults.object_class, count, error);
 		return_val_if_nok (error, 0);
 		MONO_HANDLE_ASSIGN (fields, fields_arr);
-		for (int i = 0; i < count; ++i)
-			mono_array_handle_setref (fields_arr, i, values [i]);
+		MonoObjectHandle h = MONO_HANDLE_NEW (MonoObject, NULL);
+		for (int i = 0; i < count; ++i) {
+			MonoObject *o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (this_obj), error);
+			return_val_if_nok (error, 0);
+			MONO_HANDLE_ASSIGN_RAW (h, o);
+			mono_array_handle_setref (fields_arr, i, h);
+		}
 	} else {
 		MONO_HANDLE_ASSIGN (fields, NULL_HANDLE);
 	}
@@ -1387,8 +1389,7 @@ MonoBoolean
 ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle that, MonoArrayHandleOut fields, MonoError *error)
 {
 	MonoClass *klass;
-	MonoObjectHandle *values = NULL;
-	MonoObject *o;
+	MonoClassField **unhandled = NULL;
 	MonoClassField* field;
 	gpointer iter;
 	int count = 0;
@@ -1523,14 +1524,9 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 			break;
 		}
 		default:
-			if (!values)
-				values = g_newa (MonoObjectHandle, mono_class_num_fields (klass) * 2);
-			o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), field, MONO_HANDLE_RAW (this_obj), error);
-			return_val_if_nok (error, 0);
-			values [count++] = MONO_HANDLE_NEW (MonoObject, o);
-			o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), field, MONO_HANDLE_RAW (that), error);
-			return_val_if_nok (error, 0);
-			values [count++] = MONO_HANDLE_NEW (MonoObject, o);
+			if (!unhandled)
+				unhandled = g_newa (MonoClassField*, mono_class_num_fields (klass));
+			unhandled [count ++] = field;
 		}
 
 #undef UNALIGNED_COMPARE
@@ -1540,12 +1536,22 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 			break;
 	}
 
-	if (values) {
-		MonoArrayHandle fields_arr = mono_array_new_handle (mono_domain_get (), mono_defaults.object_class, count, error);
+	if (unhandled) {
+		MonoArrayHandle fields_arr = mono_array_new_handle (mono_domain_get (), mono_defaults.object_class, count * 2, error);
 		return_val_if_nok (error, 0);
 		MONO_HANDLE_ASSIGN (fields, fields_arr);
-		for (int i = 0; i < count; ++i)
-			mono_array_handle_setref (fields_arr, i, values [i]);
+		MonoObjectHandle h = MONO_HANDLE_NEW (MonoObject, NULL);
+		for (int i = 0; i < count; ++i) {
+			MonoObject *o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (this_obj), error);
+			return_val_if_nok (error, FALSE);
+			MONO_HANDLE_ASSIGN_RAW (h, o);
+			mono_array_handle_setref (fields_arr, i * 2, h);
+
+			o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (that), error);
+			return_val_if_nok (error, FALSE);
+			MONO_HANDLE_ASSIGN_RAW (h, o);
+			mono_array_handle_setref (fields_arr, (i * 2) + 1, h);
+		}
 		return FALSE;
 	} else {
 		return TRUE;
