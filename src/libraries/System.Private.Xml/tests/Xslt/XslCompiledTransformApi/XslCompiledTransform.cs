@@ -89,8 +89,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(MethodInfo = null, ByteArray, TypeArray)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var1()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
@@ -111,8 +110,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(MethodInfo, ByteArray = null, TypeArray)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var2()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
@@ -143,8 +141,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(string = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var0()
         {
             try
@@ -164,8 +161,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var1()
         {
             try
@@ -185,8 +181,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var2()
         {
             try
@@ -206,8 +201,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var3()
         {
             try
@@ -227,8 +221,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var4()
         {
             try
@@ -248,8 +241,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var5()
         {
             try
@@ -269,8 +261,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var6()
         {
             try
@@ -290,8 +281,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var7()
         {
             try
@@ -314,8 +304,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var8()
         {
             try
@@ -338,8 +327,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var9()
         {
             try
@@ -361,8 +349,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var10()
         {
             try
@@ -384,8 +371,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var11()
         {
             try
@@ -407,8 +393,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var12()
         {
             try
@@ -430,8 +415,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var13()
         {
             try
@@ -453,8 +437,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Var14()
         {
             try
@@ -1713,8 +1696,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Regression case for bug 80768")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadNavigator4()
         {
             var e = Assert.ThrowsAny<XsltException>(() =>
@@ -1791,8 +1773,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Calling with a closed reader, should throw exception")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader2()
         {
             xslt = new XslCompiledTransform();
@@ -1818,8 +1799,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Verify Reader isn't closed after Load")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader3()
         {
             bool fTEST_FAIL = false;
@@ -1855,8 +1835,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Verify position of node in Reader is at EOF after Load")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader4()
         {
             bool fTEST_FAIL = false;
@@ -1891,8 +1870,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with reader position at EOF, should throw exception")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader5()
         {
             bool fTEST_FAIL = false;
@@ -1923,8 +1901,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load with NULL reader, should throw System.ArgumentNullException")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void LoadXmlReader6()
         {
             xslt = new XslCompiledTransform();
@@ -1964,8 +1941,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("bug 380138 NRE during XSLT compilation")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Bug380138()
         {
             string xsl = @"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -2302,8 +2278,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Bug382506 - Loading stylesheet from custom navigator with enableDebug = true causes ArgumentOutOfRangeException")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TransformGeneric8()
         {
             xslt = new XslCompiledTransform();
@@ -2340,8 +2315,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Bug349757 - document() function does not work when stylesheet was loaded from a stream or reader or constructed DOM")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TransformGeneric10()
         {
             xslt = new XslCompiledTransform();
@@ -2783,8 +2757,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call without loading")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TransformStrStr9()
         {
             xslt = new XslCompiledTransform();
@@ -3408,8 +3381,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug423641 - XslCompiledTransform.Load() [retail] throws a NullReferenceException when scripts are prohibited")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RegressionTest4()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
@@ -3419,8 +3391,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug423641 - XslCompiledTransform.Load() [debug] throws a NullReferenceException when scripts are prohibited")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RegressionTest5()
         {
             XslCompiledTransform xslt = new XslCompiledTransform(true);
@@ -3430,8 +3401,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug469781 - Replace shouldn't relax original type 'assertion failure'")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RegressionTest7()
         {
             string xslString = "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:user=\"urn:user\">"
@@ -3459,8 +3429,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug737816 - Dynamic method will have declaring type == null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RegressionTest8()
         {
             try

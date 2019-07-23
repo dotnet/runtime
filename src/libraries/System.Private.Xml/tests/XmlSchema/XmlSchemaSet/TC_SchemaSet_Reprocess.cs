@@ -50,8 +50,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - Reprocess: Reprocess with null", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -71,8 +70,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v2 - Reprocess: Schema not present in set", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -104,8 +102,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - Reprocess: Without changing any content of the schema", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v3()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -129,8 +126,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v4 - Reprocess: Insert a valid element", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v4()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -164,8 +160,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v5 - Reprocess: Insert a valid attribute", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v5()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -198,8 +193,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v6 - Reprocess: Insert an element with an invalid type", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v6()
         {
             try
@@ -237,8 +231,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v7 - Reprocess: Insert an attribute with an invalid type", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v7()
         {
             try
@@ -275,8 +268,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v8 - Reprocess: Change an import statement to unresolvable", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v8()
         {
             bWarningCallback = false;
@@ -320,8 +312,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v9 - Reprocess: Change an import statement added to import another schema", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v9()
         {
             bWarningCallback = false;
@@ -363,8 +354,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v10 - Reprocess: Add an invalid import statement, Import self", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v10()
         {
             bWarningCallback = false;
@@ -403,8 +393,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v11 - Reprocess: Change Include statement to unresolvable", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v11()
         {
             bWarningCallback = false;
@@ -444,8 +433,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v12 - Reprocess: Add invalid include statement", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v12()
         {
             bWarningCallback = false;
@@ -482,8 +470,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "Regression bug 346902 - Types should be removed of a schema when SchemaSet.Reprocess is called", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v50()
         {
             bWarningCallback = false;

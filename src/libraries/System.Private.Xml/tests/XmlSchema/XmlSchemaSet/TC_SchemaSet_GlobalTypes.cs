@@ -34,8 +34,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - GlobalTypes on empty collection")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -237,8 +236,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //REGRESSIONS
         //[Variation(Desc = "v100 - XmlSchemaSet: Components are not added to the global tabels if it is already compiled", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v100()
         {
             try

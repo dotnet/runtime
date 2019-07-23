@@ -41,8 +41,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - RemoveRecursive with null", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             try
@@ -60,8 +59,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v2 - RemoveRecursive with just added schema", Priority = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -84,8 +82,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - RemoveRecursive first added schema, check the rest")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v3()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -187,8 +184,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v6 - Remove: Add B(NONS) to a namespace, Add A(ns-a) which imports B, Remove B(ns-b) then A(ns-a)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v6()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -318,8 +314,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v9 - Import: B(ns-b) added, A(ns-a) imports B's NS", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v9()
         {
             try

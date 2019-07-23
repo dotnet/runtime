@@ -39,7 +39,6 @@
     <Rule Id="CA1821" Action="None" />
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
-    <Rule Id="xUnit1006" Action="None" />
     <Rule Id="xUnit1010" Action="None" />
     <Rule Id="xUnit1016" Action="None" />
     <Rule Id="xUnit1019" Action="None" />

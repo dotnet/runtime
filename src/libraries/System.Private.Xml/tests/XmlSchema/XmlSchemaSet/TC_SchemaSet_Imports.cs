@@ -83,8 +83,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - Import: Add A(ns-a) which imports B (no ns), then Add B(no ns) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v6()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -114,8 +113,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v4 - Import: Add A(ns-a) which improts B (no ns), then Add B to ns-b", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v7()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -143,8 +141,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v5 - Import: Add A(ns-a) which improts B (ns-b), then Add B(ns-b) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v8()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -171,8 +168,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v6 - Import: A(ns-a) imports B(ns-b) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v9()
         {
             bool found = false;
@@ -208,8 +204,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v7 - Import: A(ns-a) imports B(NO NS) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v10()
         {
             bool found = false;
@@ -252,8 +247,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v8 - Import: A(ns-a) imports B(ns-b) imports C (ns-a)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v11()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -271,8 +265,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v9 - Import: A(ns-a) imports B(ns-b) and C (ns-b)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v12()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -290,8 +283,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v10 - Import: A imports B and B and C, B imports C and D, C imports D and A", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v13()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -308,8 +300,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v11 - Import: A(ns-a) imports B(ns-b) and C (ns-b), B and C include each other", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v14()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -327,8 +318,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v12 - Import: A(ns-a) imports B(BOGUS) and C (ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v15()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -345,8 +335,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v13 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v16()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -366,8 +355,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v14 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v17()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -390,8 +378,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v15 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v18()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -414,8 +401,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v16 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v19()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -434,8 +420,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v17 - Import: A,B,C,D all import and reference each other for types", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v20()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -505,8 +490,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v100 - Import: Bug 105897", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v100()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -653,8 +637,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v103 - Import: Add A(ns-a) which imports B (no ns), then Add B(no ns) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v103()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -695,8 +678,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v104 - Import: Add A(ns-a) which improts B (no ns), then Add B to ns-b", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v104()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -735,8 +717,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v105 - Import: Add A(ns-a) which improts B (ns-b), then Add B(ns-b) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v105()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -775,8 +756,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v106 - Import: A(ns-a) imports B(ns-b) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v106()
         {
             bool found = false;
@@ -822,8 +802,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v107 - Import: A(ns-a) imports B(NO NS) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v107()
         {
             bool found = false;
@@ -885,8 +864,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v108 - Import: A(ns-a) imports B(ns-b) imports C (ns-a)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v108()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -909,8 +887,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v109 - Import: A(ns-a) imports B(ns-b) and C (ns-b)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v109()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -933,8 +910,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v110 - Import: A imports B and B and C, B imports C and D, C imports D and A", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v110()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -955,8 +931,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v111 - Import: A(ns-a) imports B(ns-b) and C (ns-b), B and C include each other", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v111()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -978,8 +953,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v112 - Import: A(ns-a) imports B(BOGUS) and C (ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v112()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1000,8 +974,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v113 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v113()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1025,8 +998,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v114 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v114()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1053,8 +1025,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v115 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v115()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1081,8 +1052,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v116 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v116()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1105,8 +1075,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v117 - Import: A,B,C,D all import and reference each other for types", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v117()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1213,8 +1182,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v120 - Import: Bug 105897", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v120()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1368,8 +1336,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v203 - Import: Add A(ns-a) which imports B (no ns), then Add B(no ns) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v203()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1410,8 +1377,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v204 - Import: Add A(ns-a) which improts B (no ns), then Add B to ns-b", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v204()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1450,8 +1416,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v205 - Import: Add A(ns-a) which improts B (ns-b), then Add B(ns-b) again", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v205()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1490,8 +1455,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v206 - Import: A(ns-a) imports B(ns-b) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v206()
         {
             bool found = false;
@@ -1538,8 +1502,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v207 - Import: A(ns-a) imports B(NO NS) imports C (ns-c)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v207()
         {
             bool found = false;
@@ -1600,8 +1563,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v208 - Import: A(ns-a) imports B(ns-b) imports C (ns-a)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v208()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1623,8 +1585,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v209 - Import: A(ns-a) imports B(ns-b) and C (ns-b)", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v209()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1646,8 +1607,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v210 - Import: A imports B and B and C, B imports C and D, C imports D and A", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v210()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1668,8 +1628,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v211 - Import: A(ns-a) imports B(ns-b) and C (ns-b), B and C include each other", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v211()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1691,8 +1650,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v212 - Import: A(ns-a) imports B(BOGUS) and C (ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v212()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1713,8 +1671,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v213 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v213()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1738,8 +1695,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v214 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v214()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1765,8 +1721,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v215 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v215()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1792,8 +1747,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v216 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v216()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1815,8 +1769,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v217 - Import: A,B,C,D all import and reference each other for types", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v217()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1923,8 +1876,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v220 - Import: Bug 105897", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v220()
         {
             XmlSchemaSet ss = new XmlSchemaSet();

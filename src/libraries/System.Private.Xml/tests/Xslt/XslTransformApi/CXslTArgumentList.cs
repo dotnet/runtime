@@ -31,8 +31,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam1()
         {
             m_xsltArg = new XsltArgumentList();
@@ -123,8 +122,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -140,8 +138,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is empty string")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam3()
         {
             m_xsltArg = new XsltArgumentList();
@@ -156,8 +153,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is non existent")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam4()
         {
             m_xsltArg = new XsltArgumentList();
@@ -172,8 +168,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Invalid Param name")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam5()
         {
             m_xsltArg = new XsltArgumentList();
@@ -188,8 +183,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very Long Param")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam6()
         {
             m_xsltArg = new XsltArgumentList();
@@ -203,8 +197,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI = null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam7()
         {
             m_xsltArg = new XsltArgumentList();
@@ -219,8 +212,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string - Bug 200998")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam8()
         {
             m_xsltArg = new XsltArgumentList();
@@ -234,8 +226,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI non-existent")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam9()
         {
             m_xsltArg = new XsltArgumentList();
@@ -266,8 +257,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam10()
         {
             m_xsltArg = new XsltArgumentList();
@@ -281,8 +271,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam12()
         {
             m_xsltArg = new XsltArgumentList();
@@ -350,8 +339,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam13()
         {
             m_xsltArg = new XsltArgumentList();
@@ -371,8 +359,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam14()
         {
             int i = 1;
@@ -405,8 +392,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call After Param has been removed")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -421,8 +407,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call multiple Times")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam16()
         {
             m_xsltArg = new XsltArgumentList();
@@ -445,8 +430,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using XSL namespace")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam17()
         {
             m_xsltArg = new XsltArgumentList();
@@ -463,8 +447,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Resolving conflicts with variables with different namespaces")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam18()
         {
             m_xsltArg = new XsltArgumentList();
@@ -489,8 +472,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace AND param = null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParam19()
         {
             m_xsltArg = new XsltArgumentList();
@@ -505,8 +487,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Data Types - Of type Double ")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void GetParamDoubles()
         {
             double d1 = double.PositiveInfinity;
@@ -658,8 +639,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param  = null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -677,8 +657,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is empty string")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam3()
         {
             m_xsltArg = new XsltArgumentList();
@@ -732,8 +711,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Invalid Param name")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam5()
         {
             m_xsltArg = new XsltArgumentList();
@@ -751,8 +729,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI = null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam6()
         {
             m_xsltArg = new XsltArgumentList();
@@ -891,8 +868,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Setting a param that already exists")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam11()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1078,8 +1054,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object is null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1398,8 +1373,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using Default XSLT namespace - Bug305503")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddParam21()
         {
             m_xsltArg = new XsltArgumentList();
@@ -2227,8 +2201,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("namespace System.Xml.Tests = null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject2()
         {
             MyObject obj = new MyObject(2, _output);
@@ -2247,8 +2220,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("namespace System.Xml.Tests is empty string - Bug 200998")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject3()
         {
             MyObject obj = new MyObject(3, _output);
@@ -2398,8 +2370,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Same Namespace different objects")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject7()
         {
             MyObject obj1 = new MyObject(1, _output);
@@ -2465,8 +2436,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Set a null object")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject9()
         {
             MyObject obj = new MyObject(9, _output);
@@ -2597,8 +2567,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add object many times")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject13()
         {
             MyObject obj = new MyObject(13, _output);
@@ -2953,8 +2922,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Objects in same NameSpace")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject24()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3149,8 +3117,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using Default XSLT namespace -  Bug305503")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void AddExtObject31()
         {
             MyObject obj = new MyObject(31, _output);
@@ -3273,8 +3240,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RemoveParam2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3397,8 +3363,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RemoveParam7()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3838,8 +3803,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using Default XSLT Namespace - Bug305503")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RemoveParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3893,8 +3857,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is null")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void RemoveExtObj2()
         {
             MyObject obj = new MyObject(2, _output);

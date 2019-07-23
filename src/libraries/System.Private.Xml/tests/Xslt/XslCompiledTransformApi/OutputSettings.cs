@@ -49,8 +49,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Verify the default value of the OutputSettings, expected null", Pri = 0)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void OS1()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();

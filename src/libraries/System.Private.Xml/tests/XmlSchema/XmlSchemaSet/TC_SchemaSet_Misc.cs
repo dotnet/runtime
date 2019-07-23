@@ -60,8 +60,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v1 - Bug110823 - SchemaSet.Add is holding onto some of the schema files after adding", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v1()
         {
             XmlSchemaSet xss = new XmlSchemaSet();
@@ -73,8 +72,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v2 - Bug115049 - XSD: content model validation for an invalid root element should be abandoned", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v2()
         {
             Initialize();
@@ -99,8 +97,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v4 - 243300 - We are not correctly handling xs:anyType as xsi:type in the instance", Priority = 2)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v4()
         {
             string xml = @"<a xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xsi:type='xsd:anyType'>1242<b/></a>";
@@ -172,8 +169,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v21 - Bug 319346 - Chameleon add of a schema into the xml namespace", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v20()
         {
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
@@ -199,8 +195,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v22 - Bug 338038 - Component should be additive into the Xml namespace", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v21()
         {
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
@@ -226,8 +221,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v23 - Bug 338038 - Conflicting components in custome xml namespace System.Xml.Tests be caught", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v22()
         {
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
@@ -250,8 +244,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v24 - Bug 338038 - Change type of xml:lang to decimal in custome xml namespace System.Xml.Tests", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v24()
         {
             string attName = "lang";
@@ -279,8 +272,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v25 - Bug 338038 - Conflicting definitions for xml attributes in two schemas", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v25()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -305,8 +297,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v26 - Bug 338038 - Change type of xml:lang to decimal and xml:base to short in two steps", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v26()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -335,8 +326,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v27 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v27()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -360,8 +350,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v28 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests, remove default ns schema", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v28()
         {
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
@@ -409,8 +398,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v100 - Bug 320502 - XmlSchemaSet: while throwing a warning for invalid externals we do not set the inner exception", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v100()
         {
             string xsd = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'><xs:include schemaLocation='bogus'/></xs:schema>";
@@ -425,8 +413,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v101 - Bug 339706 - XmlSchemaSet: Compile on the set fails when a compiled schema containing notation is already present", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v101()
         {
             string xsd1 = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'><xs:notation name='a' public='a'/></xs:schema>";
@@ -446,8 +433,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v102 - Bug 337850 - XmlSchemaSet: Type already declared error when redefined schema is added to the set before the redefining schema.", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v102()
         {
             Initialize();
@@ -520,8 +506,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v103 - Reference to a component from no namespace System.Xml.Tests an explicit import of no namespace System.Xml.Tests throw a validation warning", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v105()
         {
             Initialize();
@@ -535,8 +520,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v106 - Adding a compiled SoS(schema for schema) to a set causes type collision error", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v106()
         {
             Initialize();
@@ -569,8 +553,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v107 - XsdValidatingReader: InnerException not set on validation warning of a schemaLocation not loaded.", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v107()
         {
             string strXml = @"<root xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='a bug356711_a.xsd' xmlns:a='a'></root>";
@@ -596,8 +579,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v108 - XmlSchemaSet.Add() should not trust compiled state of the schema being added", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v108()
         {
             string strSchema1 = @"
@@ -684,8 +666,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v109 - 386243, Adding a chameleon schema against to no namespace throws unexpected warnings", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v109()
         {
             Initialize();
@@ -702,8 +683,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v110 - 386246,  ArgumentException 'item arleady added' error on a chameleon add done twice", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v110()
         {
             Initialize();
@@ -720,8 +700,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v111 - 380805,  Chameleon include compiled in one set added to another", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v111()
         {
             Initialize();
@@ -748,8 +727,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v112 - 382035,  schema set tables not cleared as expected on reprocess", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v112()
         {
             Initialize();
@@ -779,8 +757,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v113 - Set InnerException on XmlSchemaValidationException while parsing typed values", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v113()
         {
             string strXml = @"<root xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xs='http://www.w3.org/2001/XMLSchema' xsi:type='xs:int'>a</root>";
@@ -801,8 +778,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v114 - XmlSchemaSet: InnerException not set on parse errors during schema compilation", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v114()
         {
             string strXsd = @"<xs:schema elementFormDefault='qualified' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
@@ -829,8 +805,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v116 - 405327 NullReferenceExceptions while accessing obsolete properties in the SOM", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v116()
         {
 #pragma warning disable 0618
@@ -844,8 +819,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v117 - 398474 InnerException not set on XmlSchemaException, when xs:pattern has an invalid regular expression", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v117()
         {
             string strXsdv117 =
@@ -881,8 +855,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v118 - 424904 Not getting unhandled attributes on particle", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v118()
         {
             using (XmlReader r = new XmlTextReader(Path.Combine(TestData._Root, "Bug424904.xsd")))
@@ -903,8 +876,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v120 - 397633 line number and position not set on the validation error for an invalid xsi:type value", Priority = 1)]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v120()
         {
             using (XmlReader schemaReader = XmlReader.Create(Path.Combine(TestData._Root, "Bug397633.xsd")))
@@ -939,8 +911,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v120a.XmlDocument.Load non-validating reader.Expect IOE.")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v120a()
         {
             XmlReaderSettings readerSettings = new XmlReaderSettings();
@@ -963,8 +934,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "444196: XmlReader.MoveToNextAttribute returns incorrect results")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void v124()
         {
             Initialize();
@@ -1037,8 +1007,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_40561 Redefine Chameleon: Unexpected qualified name on local particle")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_40561()
         {
             Initialize();
@@ -1091,8 +1060,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_40509 Assert and NRE when validate the XML against the XSD")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_40509()
         {
             Initialize();
@@ -1118,8 +1086,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_40511 XmlSchemaSet::Compile throws XmlSchemaException for valid schema")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_40511()
         {
             Initialize();
@@ -1145,8 +1112,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_40495 Undefined ComplexType error when loading schemas from in memory strings")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_40495()
         {
             Initialize();
@@ -1208,8 +1174,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_64765 XmlSchemaValidationException.SourceObject is always null when using XPathNavigator.CheckValidity method")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_64765()
         {
             Initialize();
@@ -1264,8 +1229,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Dev10_40563 XmlSchemaSet: Assert Failure with Chk Build.")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void Dev10_40563()
         {
             Initialize();
@@ -1295,8 +1259,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "TFS_470020 Schema with substitution groups does not throw when content model is ambiguous")]
-        [InlineData()]
-        [Theory]
+        [Fact]
         public void TFS_470020()
         {
             Initialize();
