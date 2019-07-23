@@ -26,6 +26,8 @@ namespace System.Net.Http
         private ArrayBuffer _outgoingBuffer;
         private ArrayBuffer _headerBuffer;
 
+        private int _currentWriteSize;      // as passed to StartWriteAsync
+
         private readonly HPackDecoder _hpackDecoder;
 
         private readonly Dictionary<int, Http2Stream> _httpStreams;
@@ -720,7 +722,7 @@ namespace System.Net.Http
 
                 _outgoingBuffer.EnsureAvailableSpace(writeBytes);
                 Memory<byte> writeBuffer = _outgoingBuffer.AvailableMemory.Slice(0, writeBytes);
-                _outgoingBuffer.Commit(writeBytes);
+                _currentWriteSize = writeBytes;
 
                 return writeBuffer;
             }
@@ -744,12 +746,31 @@ namespace System.Net.Http
             // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
             Debug.Assert(_writerLock.CurrentCount == 0);
 
+            _outgoingBuffer.Commit(_currentWriteSize);
+            _lastPendingWriterShouldFlush |= (flush == FlushTiming.AfterPendingWrites);
+            EndWrite(forceFlush: (flush == FlushTiming.Now));
+        }
+
+        private void CancelWrite()
+        {
+            if (NetEventSource.IsEnabled) Trace("");
+
+            // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
+            Debug.Assert(_writerLock.CurrentCount == 0);
+
+            EndWrite(false);
+        }
+
+        private void EndWrite(bool forceFlush)
+        {
+            // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
+            Debug.Assert(_writerLock.CurrentCount == 0);
+
             try
             {
                 // We must flush if the caller requires it or if this or a recent frame wanted to be flushed
                 // once there were no more pending writers that themselves could have forced the flush.
-                _lastPendingWriterShouldFlush |= (flush == FlushTiming.AfterPendingWrites);
-                if (flush == FlushTiming.Now || (_pendingWriters == 0 && _lastPendingWriterShouldFlush))
+                if (forceFlush || (_pendingWriters == 0 && _lastPendingWriterShouldFlush))
                 {
                     Debug.Assert(_inProgressWrite == null);
                     if (_outgoingBuffer.ActiveLength > 0)
@@ -1066,83 +1087,133 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
         {
-            try
-            {
-                // Ensure we don't exceed the max concurrent streams setting.
-                await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
-                // We serialize usage of the header encoder and the header buffer separately from the
-                // write lock
-                await _headerSerializationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (ObjectDisposedException)
-            {
-                // We have race condition between receiving GOAWAY and processing requests.
-                // Throw a retryable request exception if this is not result of some other error.
-                // This will cause retry logic to kick in and perform another connection attempt.
-                // The user should never see this exception.  Same logic lives in AddStream.
-                if (_abortException != null)
-                {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
-                }
-
-                throw CreateRetryException();
-            }
-
+            // We serialize usage of the header encoder and the header buffer.
+            // This also ensures that new streams are always created in ascending order.
+            await _headerSerializationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 // Generate the entire header block, without framing, into the connection header buffer.
                 WriteHeaders(request);
 
-                Http2Stream http2Stream = AddStream(request);
-                int streamId = http2Stream.StreamId;
-
-                ReadOnlyMemory<byte> remaining = _headerBuffer.ActiveMemory;
-                Debug.Assert(remaining.Length > 0);
-
-                // Calculate the total number of bytes we're going to use (content + headers).
-                int frameCount = ((remaining.Length - 1) / FrameHeader.MaxLength) + 1;
-                int totalSize = remaining.Length + frameCount * FrameHeader.Size;
-
-                // Split into frames and send.
-                ReadOnlyMemory<byte> current;
-                (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
-
-                FrameFlags flags =
-                    (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
-                    (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
-
-                // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
-                Memory<byte> writeBuffer = await StartWriteAsync(totalSize, cancellationToken).ConfigureAwait(false);
-                if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(flags)}={flags}, {nameof(totalSize)}={totalSize}");
-
-                FrameHeader frameHeader = new FrameHeader(current.Length, FrameType.Headers, flags, streamId);
-                frameHeader.WriteTo(writeBuffer.Span);
-                writeBuffer = writeBuffer.Slice(FrameHeader.Size);
-
-                current.CopyTo(writeBuffer);
-                writeBuffer = writeBuffer.Slice(current.Length);
-
-                while (remaining.Length > 0)
+                try
                 {
+                    // Enforce MAX_CONCURRENT_STREAMS setting value.
+                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // We have race condition between shutting down and initiating new requests.
+                    // When we are shutting down the connection (e.g. due to receiving GOAWAY, etc)
+                    // we will wait until the stream count goes to 0, and then we will close the connetion
+                    // and perform clean up, including disposing _concurrentStreams.
+                    // So if we get ObjectDisposedException here, we must have shut down the connection.
+                    // Throw a retryable request exception if this is not result of some other error.
+                    // This will cause retry logic to kick in and perform another connection attempt.
+                    // The user should never see this exception.  See similar handling below.
+                    // Throw a retryable request exception if this is not result of some other error.
+                    // This will cause retry logic to kick in and perform another connection attempt.
+                    // The user should never see this exception.  See also below.
+                    if (_abortException != null)
+                    {
+                        throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
+                    }
+
+                    Debug.Assert(_disposed || _lastStreamId != -1);
+                    Debug.Assert(_httpStreams.Count == 0);
+                    throw CreateRetryException();
+                }
+
+                try
+                {
+                    // Allocate the next available stream ID.
+                    // Note that if we fail before sending the headers, we'll just skip this stream ID, which is fine.
+                    int streamId;
+                    lock (SyncObject)
+                    {
+                        if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
+                        {
+                            // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
+                            // Throw a retryable request exception. This will cause retry logic to kick in
+                            // and perform another connection attempt. The user should never see this exception.
+                            throw CreateRetryException();
+                        }
+
+                        streamId = _nextStream;
+
+                        // Client-initiated streams are always odd-numbered, so increase by 2.
+                        _nextStream += 2;
+                    }
+
+                    ReadOnlyMemory<byte> remaining = _headerBuffer.ActiveMemory;
+                    Debug.Assert(remaining.Length > 0);
+
+                    // Calculate the total number of bytes we're going to use (content + headers).
+                    int frameCount = ((remaining.Length - 1) / FrameHeader.MaxLength) + 1;
+                    int totalSize = remaining.Length + frameCount * FrameHeader.Size;
+
+                    // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
+                    Memory<byte> writeBuffer = await StartWriteAsync(totalSize, cancellationToken).ConfigureAwait(false);
+                    if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(totalSize)}={totalSize}");
+
+                    // Send the HEADERS frame.
+                    ReadOnlyMemory<byte> current;
                     (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
 
-                    flags = (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None);
+                    FrameFlags flags =
+                        (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
+                        (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
 
-                    frameHeader = new FrameHeader(current.Length, FrameType.Continuation, flags, streamId);
+                    FrameHeader frameHeader = new FrameHeader(current.Length, FrameType.Headers, flags, streamId);
                     frameHeader.WriteTo(writeBuffer.Span);
                     writeBuffer = writeBuffer.Slice(FrameHeader.Size);
 
                     current.CopyTo(writeBuffer);
                     writeBuffer = writeBuffer.Slice(current.Length);
+
+                    if (NetEventSource.IsEnabled) Trace(streamId, $"Wrote HEADERS frame. Length={current.Length}, flags={flags}");
+
+                    // Send CONTINUATION frames, if any.
+                    while (remaining.Length > 0)
+                    {
+                        (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
+
+                        flags = (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None);
+
+                        frameHeader = new FrameHeader(current.Length, FrameType.Continuation, flags, streamId);
+                        frameHeader.WriteTo(writeBuffer.Span);
+                        writeBuffer = writeBuffer.Slice(FrameHeader.Size);
+
+                        current.CopyTo(writeBuffer);
+                        writeBuffer = writeBuffer.Slice(current.Length);
+
+                        if (NetEventSource.IsEnabled) Trace(streamId, $"Wrote CONTINUATION frame. Length={current.Length}, flags={flags}");
+                    }
+
+                    Debug.Assert(writeBuffer.Length == 0);
+
+                    Http2Stream http2Stream;
+                    try
+                    {
+                        // We're about to write the HEADERS frame, so add the stream to the dictionary now.
+                        // The lifetime of the stream is now controlled by the stream itself and the connection.
+                        // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
+                        http2Stream = AddStream(streamId, request);
+                    }
+                    catch
+                    {
+                        CancelWrite();
+                        throw;
+                    }
+
+                    FinishWrite(mustFlush || (flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually);
+
+                    return http2Stream;
                 }
-
-                Debug.Assert(writeBuffer.Length == 0);
-
-                // If this is not the end of the stream, we can put off flushing the buffer
-                // since we know that there are going to be data frames (including end of data) following.
-                FinishWrite(mustFlush || (flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually);
-
-                return http2Stream;
+                catch
+                {
+                    _concurrentStreams.AdjustCredit(1);
+                    throw;
+                }
             }
             finally
             {
@@ -1626,23 +1697,17 @@ namespace System.Net.Http
             }
         }
 
-        private Http2Stream AddStream(HttpRequestMessage request)
+        private Http2Stream AddStream(int streamId, HttpRequestMessage request)
         {
             lock (SyncObject)
             {
-                if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
+                if (_disposed || _lastStreamId != -1)
                 {
-                    // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
+                    // The connection is shutting down.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
                     throw CreateRetryException();
                 }
-
-                int streamId = _nextStream;
-                if (NetEventSource.IsEnabled) Trace(streamId, $"request={request}");
-
-                // Client-initiated streams are always odd-numbered, so increase by 2.
-                _nextStream += 2;
 
                 Http2Stream http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
 
