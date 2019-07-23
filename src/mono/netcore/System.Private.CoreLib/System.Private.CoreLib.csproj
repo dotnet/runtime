@@ -17,6 +17,8 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <Configuration>Release</Configuration>
     <Platforms>x64;x86;arm;arm64</Platforms>
+
+    <Features>strict;nullablePublicOnly</Features>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsUnix)'=='' AND '$(TargetsOSX)'=='' AND '$(TargetsWindows)'==''">
@@ -103,7 +105,7 @@
   <!-- Assembly attributes -->
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <Description>$(AssemblyName)</Description>

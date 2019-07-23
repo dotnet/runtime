@@ -670,18 +670,6 @@
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
 ####################################################################
-##  System.Text.Json.Tests
-####################################################################
-
-# The JSON value is not in a supported DateTime format
--noclass System.Text.Json.Serialization.Tests.ObjectTests
--noclass System.Text.Json.Serialization.Tests.ArrayTests
--nomethod System.Text.Json.Serialization.Tests.DictionaryTests.DictionaryOfClasses
--nomethod System.Text.Json.Serialization.Tests.CacheTests.PropertyCacheWithMinInputsFirst
--nomethod System.Text.Json.Serialization.Tests.CacheTests.PropertyCacheWithMinInputsLast
--nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail
-
-####################################################################
 ##  System.Threading.Tests
 ####################################################################
 
@@ -1148,17 +1136,11 @@
 -nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
 
 # requires precise gc (to be ignored in dotnet/corefx, e.g. https://github.com/dotnet/corefx/pull/39176)
--nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
 -nomethod System.IO.Tests.FileStream_Dispose.Dispose_CallsVirtualDispose_TrueArg
--nomethod System.Tests.GCTests.ReRegisterForFinalize
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetEnumerator_CollectedItemsNotEnumerated
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.AddRemove_DropValue
--nomethod System.Tests.WeakReferenceTests.NonGeneric
--nomethod System.Tests.WeakReferenceTests.Generic
--nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
--nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.*
 -nomethod System.Net.Sockets.Tests.DisposedSocket.NonDisposedSocket_SafeHandlesCollected
+-nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
 
-# Flaky tests https://github.com/mono/mono/issues/15238
--nonamespace System.Security.Cryptography.Pkcs
+# CoreLib out of sync (https://github.com/dotnet/coreclr/pull/25617)
+-nomethod System.Threading.Tests.TimerConstructorTests.Timer_Constructor_NullCallback_Throws
+-nomethod System.Threading.Tests.TimerConstructorTests.Timer_Constructor_PeriodOutOfRange_Throws
+-nomethod System.Threading.Tests.TimerConstructorTests.Timer_Constructor_DueTimeOutOfRange_Throws
