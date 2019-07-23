@@ -67,6 +67,10 @@ public:
     // Get the session for the specified session ID.
     static EventPipeSession *GetSession(EventPipeSessionID id);
 
+    // start sending the required events down the pipe
+    // starting with file header info and then buffered events
+    static void StartStreaming(EventPipeSessionID id);
+
     // Specifies whether or not the event pipe is enabled.
     static bool Enabled()
     {

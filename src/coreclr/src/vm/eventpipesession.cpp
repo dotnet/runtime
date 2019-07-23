@@ -365,7 +365,7 @@ CLREvent *EventPipeSession::GetWaitEvent()
     return m_pBufferManager->GetWaitEvent();
 }
 
-void EventPipeSession::Enable()
+void EventPipeSession::StartStreaming()
 {
     CONTRACTL
     {
@@ -376,6 +376,8 @@ void EventPipeSession::Enable()
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
+
+    m_pFile->InitializeFile();
 
     if (m_SessionType == EventPipeSessionType::IpcStream)
         CreateIpcStreamingThread();

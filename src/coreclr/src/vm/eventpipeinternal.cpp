@@ -48,6 +48,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
             format,
             true,
             nullptr);
+        EventPipe::StartStreaming(sessionID);
     }
     END_QCALL;
 
