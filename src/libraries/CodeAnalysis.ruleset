@@ -61,7 +61,6 @@
     <Rule Id="CA2100" Action="None" /> <!-- Review SQL queries for security vulnerabilities -->
     <Rule Id="CA2101" Action="None" /> <!-- Specify marshaling for P/Invoke string arguments -->
     <Rule Id="CA2119" Action="None" /> <!-- Seal methods that satisfy private interfaces -->
-    <Rule Id="CA2200" Action="None" /> <!-- Rethrowing caught exception changes stack information -->
     <Rule Id="CA2207" Action="None" /> <!-- Initialize value type static fields inline -->
     <Rule Id="CA2208" Action="None" /> <!-- Instantiate exception arguments correctly -->
     <Rule Id="CA2211" Action="None" /> <!-- Non-constant fields should not be visible -->

@@ -564,7 +564,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -612,7 +612,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -1015,7 +1015,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -1077,7 +1077,7 @@ namespace System.ComponentModel
                             {
                                 return;
                             }
-                            throw coEx;
+                            throw;
                         }
                     }
 
@@ -1106,7 +1106,7 @@ namespace System.ComponentModel
                             }
                             else
                             {
-                                throw t;
+                                throw;
                             }
                         }
                     }

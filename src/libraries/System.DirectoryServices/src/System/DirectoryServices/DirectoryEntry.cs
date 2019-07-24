@@ -815,7 +815,7 @@ namespace System.DirectoryServices
                     }
                 }
 
-                throw e;
+                throw;
             }
 
             if (result is UnsafeNativeMethods.IAds)
@@ -853,7 +853,7 @@ namespace System.DirectoryServices
                     }
                 }
 
-                throw e;
+                throw;
             }
 
             return result;
@@ -886,7 +886,7 @@ namespace System.DirectoryServices
                     }
                 }
 
-                throw e;
+                throw;
             }
         }
 

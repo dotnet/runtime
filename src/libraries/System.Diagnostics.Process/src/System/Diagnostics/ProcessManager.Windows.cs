@@ -344,7 +344,7 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
             // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.

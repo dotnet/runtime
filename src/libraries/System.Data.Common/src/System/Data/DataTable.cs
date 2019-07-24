@@ -4438,7 +4438,7 @@ namespace System.Data
                     // deferred until after the row has been completely added.
                     if (action != DataRowAction.Add)
                     {
-                        throw exc;
+                        throw;
                     }
                     else
                     {
