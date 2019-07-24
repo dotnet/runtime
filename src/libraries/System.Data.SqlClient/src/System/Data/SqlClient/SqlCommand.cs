@@ -952,9 +952,11 @@ namespace System.Data.SqlClient
                 if (callback != null)
                 {
                     completion.Task.ContinueWith(
-                        (task,state) => ((AsyncCallback)state)(task),
-                        state: callback
-                    );
+                        (task, state) => ((AsyncCallback)state)(task),
+                        state: callback,
+                        CancellationToken.None,
+                        TaskContinuationOptions.DenyChildAttach,
+                        TaskScheduler.Default);
                 }
 
                 return completion.Task;
@@ -1298,9 +1300,11 @@ namespace System.Data.SqlClient
                 if (callback != null)
                 {
                     completion.Task.ContinueWith(
-                        (task,state) => ((AsyncCallback)state)(task),
-                        state: callback
-                    );
+                        (task, state) => ((AsyncCallback)state)(task),
+                        state: callback,
+                        CancellationToken.None,
+                        TaskContinuationOptions.DenyChildAttach,
+                        TaskScheduler.Default);
                 }
                 return completion.Task;
             }
@@ -1585,9 +1589,11 @@ namespace System.Data.SqlClient
                 if (callback != null)
                 {
                     completion.Task.ContinueWith(
-                        (task,state) => ((AsyncCallback)state)(task),
-                        state: callback
-                    );
+                        (task, state) => ((AsyncCallback)state)(task),
+                        state: callback,
+                        CancellationToken.None,
+                        TaskContinuationOptions.DenyChildAttach,
+                        TaskScheduler.Default);
                 }
                 return completion.Task;
             }

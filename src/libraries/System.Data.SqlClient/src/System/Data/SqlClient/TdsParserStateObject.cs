@@ -2257,7 +2257,7 @@ namespace System.Data.SqlClient
                                         DecrementPendingCallbacks(release: false);
                                     }
                                 }
-                            });
+                            }, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
                         }
                     }
                 }
@@ -2784,7 +2784,7 @@ namespace System.Data.SqlClient
 
                 // The safest thing to do is to ensure that the connection is broken and attempt to cancel the task
                 // This must be done from another thread to not block the callback thread                
-                Task.Factory.StartNew(() =>
+                Task.Run(() =>
                 {
                     _parser.State = TdsParserState.Broken;
                     _parser.Connection.BreakConnection();
