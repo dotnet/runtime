@@ -531,7 +531,7 @@ namespace System.Diagnostics
                         // Wait
                         try
                         {
-                            await Task.Delay(pollingIntervalMs, cancellationToken); // no need for ConfigureAwait(false) as we're in a Task.Run
+                            await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(false);
                             pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
                         }
                         catch (OperationCanceledException) { }

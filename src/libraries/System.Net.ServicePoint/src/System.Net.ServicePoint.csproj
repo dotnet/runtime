@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{AD68DD5E-DEBF-48A0-B619-FBF65F502BC3}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA5364</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

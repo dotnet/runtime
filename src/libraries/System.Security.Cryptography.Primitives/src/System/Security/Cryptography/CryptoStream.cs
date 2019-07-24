@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
             await semaphore.WaitAsync().ForceAsync();
             try
             {
-                return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true); // ConfigureAwait not needed as ForceAsync was used
+                return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
@@ -326,7 +326,7 @@ namespace System.Security.Cryptography
                 try
                 {
                     amountRead = useAsync ?
-                        await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken) : // ConfigureAwait not needed, as useAsync is only true if we're already on a TP thread
+                        await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken).ConfigureAwait(false) :
                         _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
 
                     int totalInput = _inputBufferIndex + amountRead;
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
             await semaphore.WaitAsync().ForceAsync();
             try
             {
-                await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true); // ConfigureAwait not needed due to earlier ForceAsync
+                await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
