@@ -21,7 +21,9 @@ namespace System.Net.Security
     //
     internal class NegoState
     {
-        private static readonly byte[] s_emptyMessage = new byte[0]; // used in reference comparisons
+#pragma warning disable CA1825 // used in reference comparison, requires unique object identity
+        private static readonly byte[] s_emptyMessage = new byte[0];
+#pragma warning restore CA1825
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
         private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 

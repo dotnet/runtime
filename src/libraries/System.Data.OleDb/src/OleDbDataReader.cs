@@ -311,7 +311,7 @@ namespace System.Data.OleDb
             {
                 _hasRows = false;
                 _visibleFieldCount = 0;
-                _metadata = new MetaData[0];
+                _metadata = Array.Empty<MetaData>();
             }
         }
 

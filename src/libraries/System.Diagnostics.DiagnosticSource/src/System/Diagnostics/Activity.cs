@@ -31,7 +31,9 @@ namespace System.Diagnostics
     /// </summary>
     public partial class Activity
     {
-        private static readonly IEnumerable<KeyValuePair<string, string>> s_emptyBaggageTags = new KeyValuePair<string, string>[0]; // Array.Empty<T>() doesn't exist in all configurations
+#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
+        private static readonly IEnumerable<KeyValuePair<string, string>> s_emptyBaggageTags = new KeyValuePair<string, string>[0];
+#pragma warning restore CA1825
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;

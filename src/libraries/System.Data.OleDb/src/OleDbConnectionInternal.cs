@@ -617,7 +617,7 @@ namespace System.Data.OleDb
         {
             if (null == restrictions)
             {
-                restrictions = new object[0];
+                restrictions = Array.Empty<object>();
             }
             DataTable dataTable = null;
             using (IDBSchemaRowsetWrapper wrapper = IDBSchemaRowset())
@@ -827,7 +827,7 @@ namespace System.Data.OleDb
 
             if (null == propertySets)
             {
-                propertySets = new Guid[0];
+                propertySets = Array.Empty<Guid>();
             }
             using (PropertyIDSet propidset = new PropertyIDSet(propertySets))
             {

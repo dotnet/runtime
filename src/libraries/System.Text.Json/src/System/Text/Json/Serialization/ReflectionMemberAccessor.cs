@@ -59,7 +59,7 @@ namespace System.Text.Json
                 Type.EmptyTypes,
                 modifiers: null);
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(new object[] { });
+            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }
@@ -82,7 +82,7 @@ namespace System.Text.Json
                 Type.EmptyTypes,
                 modifiers: null);
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(new object[] { });
+            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }

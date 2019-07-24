@@ -286,7 +286,7 @@ namespace System.Diagnostics.Eventing.Reader
                 return this.FormatDescription();
 
             // Copy the value IEnumerable to an array.
-            string[] theValues = new string[0];
+            string[] theValues = Array.Empty<string>();
             int i = 0;
             foreach (object o in values)
             {

@@ -685,7 +685,7 @@ namespace System.Data.OleDb
                     bindings.DangerousRelease();
                 }
             }
-            return ((null != value) ? value : new byte[0]);
+            return ((null != value) ? value : Array.Empty<byte>());
         }
         private void Value_ByRefBYTES(Byte[] value)
         {
