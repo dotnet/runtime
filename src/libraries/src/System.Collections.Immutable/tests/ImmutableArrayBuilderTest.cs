@@ -691,7 +691,7 @@ namespace System.Collections.Immutable.Tests
             var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(1);
-            Assert.Throws(typeof(ArgumentException), () => builder.Capacity = 1);
+            Assert.Throws<ArgumentException>(() => builder.Capacity = 1);
         }
 
         [Fact]

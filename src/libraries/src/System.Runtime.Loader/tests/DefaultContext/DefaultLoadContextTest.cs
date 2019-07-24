@@ -90,7 +90,7 @@ namespace System.Runtime.Loader.Tests
             var assemblyName = new AssemblyName(TestAssemblyName);
 
             // By default, the assembly should not be found in DefaultContext at all
-            Assert.Throws(typeof(FileNotFoundException), () => Assembly.Load(assemblyName));
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(assemblyName));
 
             // Create a secondary load context and wireup its resolving event
             SecondaryLoadContext slc = new SecondaryLoadContext();
@@ -179,8 +179,7 @@ namespace System.Runtime.Loader.Tests
         public static void LoadNonExistentInDefaultContext()
         {
             // Now, try to load an assembly that does not exist
-            Assert.Throws(typeof(FileNotFoundException), 
-                () => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("System.Runtime.Loader.NonExistent.Assembly")));
+            Assert.Throws<FileNotFoundException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("System.Runtime.Loader.NonExistent.Assembly")));
         }
 
         private void DefaultContextFallback()

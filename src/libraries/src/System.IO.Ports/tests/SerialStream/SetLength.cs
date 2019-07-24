@@ -14,8 +14,6 @@ namespace System.IO.Ports.Tests
         private const int DEFAULT_VALUE = 0;
         private const int BAD_VALUE = -1;
 
-        #region Test Cases
-
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void SetLength_Open_Close()
         {
@@ -27,7 +25,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying SetLength property throws exception After Open() then Close()");
 
-                Assert.Throws(typeof(NotSupportedException), () => serialStream.SetLength(DEFAULT_VALUE));
+                Assert.Throws<NotSupportedException>(() => serialStream.SetLength(DEFAULT_VALUE));
             }
         }
 
@@ -42,7 +40,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying SetLength property throws exception After Open() then BaseStream.Close()");
 
-                Assert.Throws(typeof(NotSupportedException), () => serialStream.SetLength(DEFAULT_VALUE));
+                Assert.Throws<NotSupportedException>(() => serialStream.SetLength(DEFAULT_VALUE));
             }
         }
 
@@ -54,7 +52,7 @@ namespace System.IO.Ports.Tests
                 com.Open();
                 Debug.WriteLine("Verifying SetLength method throws exception after a call to Open()");
 
-                Assert.Throws(typeof(NotSupportedException), () => com.BaseStream.SetLength(DEFAULT_VALUE));
+                Assert.Throws<NotSupportedException>(() => com.BaseStream.SetLength(DEFAULT_VALUE));
             }
         }
 
@@ -67,14 +65,8 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying SetLength method throws exception with a bad value after a call to Open()");
 
-                Assert.Throws(typeof(NotSupportedException), () => com.BaseStream.SetLength(BAD_VALUE));
+                Assert.Throws<NotSupportedException>(() => com.BaseStream.SetLength(BAD_VALUE));
             }
         }
-
-        #endregion
-
-        #region Verification for Test Cases
-
-        #endregion
     }
 }
