@@ -78,22 +78,22 @@
     <Rule Id="CA5372" Action="None" /> <!-- Use XmlReader For XPathDocument -->
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
-    <Rule Id="xUnit1010" Action="None" />
-    <Rule Id="xUnit1016" Action="None" />
-    <Rule Id="xUnit1019" Action="None" />
-    <Rule Id="xUnit1024" Action="None" />
-    <Rule Id="xUnit1025" Action="None" />
-    <Rule Id="xUnit1026" Action="None" />
-    <Rule Id="xUnit2000" Action="None" />
-    <Rule Id="xUnit2002" Action="None" />
-    <Rule Id="xUnit2005" Action="None" />
-    <Rule Id="xUnit2006" Action="None" />
-    <Rule Id="xUnit2007" Action="None" />
-    <Rule Id="xUnit2008" Action="None" />
-    <Rule Id="xUnit2009" Action="None" />
-    <Rule Id="xUnit2012" Action="None" />
-    <Rule Id="xUnit2013" Action="None" />
-    <Rule Id="xUnit2017" Action="None" />
-    <Rule Id="xUnit2018" Action="None" />
+    <Rule Id="xUnit1010" Action="None" /> <!-- The value is not convertible to the method parameter type -->
+    <Rule Id="xUnit1016" Action="None" /> <!-- MemberData must reference a public member -->
+    <Rule Id="xUnit1019" Action="None" /> <!-- MemberData must reference a member providing a valid data type -->
+    <Rule Id="xUnit1024" Action="None" /> <!-- Test methods cannot have overloads -->
+    <Rule Id="xUnit1025" Action="None" /> <!-- InlineData should be unique within the Theory it belongs to -->
+    <Rule Id="xUnit1026" Action="None" /> <!-- Theory methods should use all of their parameters -->
+    <Rule Id="xUnit2000" Action="None" /> <!-- Constants and literals should be the expected argument -->
+    <Rule Id="xUnit2002" Action="None" /> <!-- Do not use null check on value type -->
+    <Rule Id="xUnit2005" Action="None" /> <!-- Do not use identity check on value type -->
+    <Rule Id="xUnit2006" Action="None" /> <!-- Do not use invalid string equality check -->
+    <Rule Id="xUnit2007" Action="None" /> <!-- Do not use typeof expression to check the type -->
+    <Rule Id="xUnit2008" Action="None" /> <!-- Do not use boolean check to match on regular expressions -->
+    <Rule Id="xUnit2009" Action="None" /> <!-- Do not use boolean check to check for substrings -->
+    <Rule Id="xUnit2012" Action="None" /> <!-- Do not use Enumerable.Any() to check if a value exists in a collection -->
+    <Rule Id="xUnit2013" Action="None" /> <!-- Do not use equality check to check for collection size. -->
+    <Rule Id="xUnit2017" Action="None" /> <!-- Do not use Contains() to check if a value exists in a collection -->
+    <Rule Id="xUnit2018" Action="None" /> <!-- Do not compare an object's exact type to an abstract class or interface -->
   </Rules>
 </RuleSet>
