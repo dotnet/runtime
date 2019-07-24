@@ -895,10 +895,10 @@ namespace System.Data.Odbc
                             s = (string)Buffer.MarshalToManaged(0, ODBC32.SQL_C.WCHAR, ODBC32.SQL_NTS);
                             _dataCache[i] = decimal.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
                         }
-                        catch (OverflowException e)
+                        catch (OverflowException)
                         {
                             _dataCache[i] = s;
-                            throw e;
+                            throw;
                         }
                     }
                 }
