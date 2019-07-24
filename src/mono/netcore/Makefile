@@ -38,6 +38,9 @@ PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
 XUNIT_FLAGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
+ifeq ($(COREARCH), arm64)
+XUNIT_FLAGS = $(XUNIT_FLAGS) -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux_arm64.rsp
+endif
 TESTS_PLATFORM = Linux.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
 endif

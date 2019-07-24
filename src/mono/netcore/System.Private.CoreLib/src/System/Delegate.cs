@@ -339,6 +339,17 @@ namespace System
 				// Delegate covariance
 				if (!returnType.IsValueType && delReturnType.IsAssignableFrom (returnType))
 					returnMatch = true;
+				else
+				{
+					bool isDelArgEnum = delReturnType.IsEnum;
+					bool isArgEnum = returnType.IsEnum;
+					if (isArgEnum && isDelArgEnum)
+						returnMatch = Enum.GetUnderlyingType (delReturnType) == Enum.GetUnderlyingType (returnType);
+					else if (isDelArgEnum && Enum.GetUnderlyingType (delReturnType) == returnType)
+						returnMatch = true;
+					else if (isArgEnum && Enum.GetUnderlyingType (returnType) == delReturnType)
+						returnMatch = true;
+				}
 			}
 
 			return returnMatch;
