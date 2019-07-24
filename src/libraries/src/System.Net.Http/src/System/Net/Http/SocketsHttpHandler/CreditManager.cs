@@ -106,7 +106,7 @@ namespace System.Net.Http
             }
         }
 
-        public void Dispose(Exception abortException)
+        public void Dispose()
         {
             lock (SyncObject)
             {
@@ -121,9 +121,7 @@ namespace System.Net.Http
                 {
                     while (_waiters.TryDequeue(out Waiter waiter))
                     {
-                        waiter.TrySetException(abortException != null ? (Exception)
-                            new IOException(SR.net_http_request_aborted, abortException) :
-                            CreateObjectDisposedException(forActiveWaiter: true));
+                        waiter.TrySetException(CreateObjectDisposedException(forActiveWaiter: true));
                     }
                 }
             }
