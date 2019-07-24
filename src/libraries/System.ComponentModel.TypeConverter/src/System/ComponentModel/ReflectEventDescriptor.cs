@@ -160,7 +160,7 @@ namespace System.ComponentModel
                         if (coEx == CheckoutException.Canceled) {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                     changeService.OnComponentChanging(component, this);
                 }
@@ -431,7 +431,7 @@ namespace System.ComponentModel
                         if (coEx == CheckoutException.Canceled) {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                     changeService.OnComponentChanging(component, this);
                 }

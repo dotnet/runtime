@@ -434,7 +434,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (e is System.Runtime.InteropServices.COMException)
                         throw ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e);
                     else
-                        throw e;
+                        throw;
                 }
             }
 

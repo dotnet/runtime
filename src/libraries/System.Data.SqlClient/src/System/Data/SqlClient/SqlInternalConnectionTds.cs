@@ -393,7 +393,7 @@ namespace System.Data.SqlClient
                             || _timeout.MillisecondsRemaining < transientRetryIntervalInMilliSeconds
                             || !IsTransientError(sqlex))
                         {
-                            throw sqlex;
+                            throw;
                         }
                         else
                         {
