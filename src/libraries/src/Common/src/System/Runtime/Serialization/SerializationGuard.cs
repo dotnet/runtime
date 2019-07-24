@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         {
             ThrowIfDeserializationInProgressWithSwitchDel throwIfDeserializationInProgressDelegate = null;
             MethodInfo throwMethod = typeof(SerializationInfo).GetMethod("ThrowIfDeserializationInProgress",
-                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new Type[] { typeof(string), typeof(int).MakeByRefType() }, new ParameterModifier[0]);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new Type[] { typeof(string), typeof(int).MakeByRefType() }, Array.Empty<ParameterModifier>());
 
             if (throwMethod != null)
             {

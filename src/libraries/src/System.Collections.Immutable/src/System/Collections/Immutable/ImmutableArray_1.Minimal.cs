@@ -39,7 +39,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
         /// </summary>
+#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
+#pragma warning restore CA1825
 
         /// <summary>
         /// The backing field for this instance. References to this value should never be shared with outside code.
