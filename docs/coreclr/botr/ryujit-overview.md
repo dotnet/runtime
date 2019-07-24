@@ -70,27 +70,29 @@ For this snippet of code (extracted from [tests/src/JIT/CodeGenBringUpTests/DblR
 
 A stripped-down dump of the `GenTree` nodes just after they are imported looks like this:
 
-    ▌ stmtExpr  void  (top level) (IL 0x000...0x026)
-    │        ┌──▌ lclVar    double V00 arg0
-    │     ┌──▌ *         double
-    │     │  └──▌ dconst    double 2.00
-    │  ┌──▌ /         double
-    │  │  │  ┌──▌ mathFN    double sqrt
-    │  │  │  │  │     ┌──▌ lclVar    double V02 arg2
-    │  │  │  │  │  ┌──▌ *         double
-    │  │  │  │  │  │  │  ┌──▌ lclVar    double V00 arg0
-    │  │  │  │  │  │  └──▌ *         double
-    │  │  │  │  │  │     └──▌ dconst    double 4.00
-    │  │  │  │  └──▌ -         double
-    │  │  │  │     │       lclVar    double V01 arg1
-    │  │  │  │     └──▌ *         double
-    │  │  │  │        └──▌ lclVar    double V01 arg1
-    │  │  └──▌ +         double
-    │  │     └──▌ unary -   double
-    │  │        └──▌ lclVar    double V01 arg1
-    └──▌  =         double
-       └──▌ indir     double
-          └──▌ lclVar    byref  V03 arg3
+```
+▌  STMT      void  (IL 0x000...0x026)
+└──▌  ASG       double
+   ├──▌  IND       double
+   │  └──▌  LCL_VAR   byref  V03 arg3         
+   └──▌  DIV       double
+      ├──▌  ADD       double
+      │  ├──▌  NEG       double
+      │  │  └──▌  LCL_VAR   double V01 arg1         
+      │  └──▌  INTRINSIC double sqrt
+      │     └──▌  SUB       double
+      │        ├──▌  MUL       double
+      │        │  ├──▌  LCL_VAR   double V01 arg1         
+      │        │  └──▌  LCL_VAR   double V01 arg1         
+      │        └──▌  MUL       double
+      │           ├──▌  MUL       double
+      │           │  ├──▌  LCL_VAR   double V00 arg0         
+      │           │  └──▌  CNS_DBL   double 4.0000000000000000
+      │           └──▌  LCL_VAR   double V02 arg2         
+      └──▌  MUL       double
+         ├──▌  LCL_VAR   double V00 arg0         
+         └──▌  CNS_DBL   double 2.0000000000000000
+```         
 
 ## Types
 
@@ -246,139 +248,140 @@ As the JIT has evolved, changes have been made to improve the ability to reason 
 
 For our earlier example (Example of Post-Import IR), here is what the simplified dump looks like just prior to Rationalization (the $ annotations are value numbers).  Note that some common subexpressions have been computed into new temporary lclVars, and that computation has been inserted as a `GT_COMMA` (comma) node in the IR:
 
-    ▌  stmtExpr  void  (top level) (IL 0x000...0x026)
-    │        ┌──▌  lclVar    double V07 cse1          $185
-    │     ┌──▌  comma     double                      $185
-    │     │  │     ┌──▌  dconst    double 2.00        $143
-    │     │  │  ┌──▌  \*         double                $185
-    │     │  │  │  └──▌  lclVar   double V00 arg0 u:2 $80
-    │     │  └──▌  =         double                   $VN.Void
-    │     │     └──▌  lclVar    double V07 cse1       $185
-    │  ┌──▌  /         double                         $186
-    │  │  │  ┌──▌  unary -   double                   $84
-    │  │  │  │  └──▌  lclVar    double V01 arg1   u:2 $81
-    │  │  └──▌  +         double                      $184
-    │  │     │  ┌──▌  lclVar    double V06 cse0       $83
-    │  │     └──▌  comma     double                   $83
-    │  │        │  ┌──▌  mathFN    double sqrt        $83
-    │  │        │  │  │     ┌──▌  lclVar double V02 arg2 u:2 $82
-    │  │        │  │  │  ┌──▌  \*         double              $182
-    │  │        │  │  │  │  │  ┌──▌  dconst    double 4.00   $141
-    │  │        │  │  │  │  └──▌  \*         double           $181
-    │  │        │  │  │  │     └──▌  lclVar double V00 arg0 u:2 $80
-    │  │        │  │  └──▌  -         double                    $183
-    │  │        │  │     │  ┌──▌  lclVar    double V01 arg1 u:2 $81
-    │  │        │  │     └──▌  \*         double                 $180
-    │  │        │  │        └──▌  lclVar    double V01 arg1 u:2 $81
-    │  │        └──▌  =         double                          $VN.Void
-    │  │           └──▌  lclVar    double V06 cse0              $83
-    └──▌  =         double                                      $VN.Void
-       └──▌  indir     double $186
-          └──▌  lclVar    byref  V03 arg3        u:2 (last use) $c0
+```
+▌  STMT      void  (IL 0x000...0x026)
+└──▌  ASG       double $VN.Void
+   ├──▌  IND       double $146
+   │  └──▌  LCL_VAR   byref  V03 arg3         u:1 (last use) $c0
+   └──▌  DIV       double $146
+      ├──▌  ADD       double $144
+      │  ├──▌  COMMA     double $83
+      │  │  ├──▌  ASG       double $VN.Void
+      │  │  │  ├──▌  LCL_VAR   double V06 cse0          $83
+      │  │  │  └──▌  INTRINSIC double sqrt $83
+      │  │  │     └──▌  SUB       double $143
+      │  │  │        ├──▌  MUL       double $140
+      │  │  │        │  ├──▌  LCL_VAR   double V01 arg1         u:1 $81
+      │  │  │        │  └──▌  LCL_VAR   double V01 arg1         u:1 $81
+      │  │  │        └──▌  MUL       double $142
+      │  │  │           ├──▌  MUL       double $141
+      │  │  │           │  ├──▌  LCL_VAR   double V00 arg0         u:1 $80
+      │  │  │           │  └──▌  CNS_DBL   double 4.0000000000000000 $180
+      │  │  │           └──▌  LCL_VAR   double V02 arg2         u:1 $82
+      │  │  └──▌  LCL_VAR   double V06 cse0          $83
+      │  └──▌  COMMA     double $84
+      │     ├──▌  ASG       double $VN.Void
+      │     │  ├──▌  LCL_VAR   double V08 cse2          $84
+      │     │  └──▌  NEG       double $84
+      │     │     └──▌  LCL_VAR   double V01 arg1         u:1 $81
+      │     └──▌  LCL_VAR   double V08 cse2          $84
+      └──▌  COMMA     double $145
+         ├──▌  ASG       double $VN.Void
+         │  ├──▌  LCL_VAR   double V07 cse1          $145
+         │  └──▌  MUL       double $145
+         │     ├──▌  LCL_VAR   double V00 arg0         u:1 $80
+         │     └──▌  CNS_DBL   double 2.0000000000000000 $181
+         └──▌  LCL_VAR   double V07 cse1          $145
+```
 
 After rationalization, the nodes are presented in execution order, and the `GT_COMMA` (comma), `GT_ASG` (=), and `GT_STMT` nodes have been eliminated:
 
-    t0   = lclVar     double V01 arg1
-    t1   = lclVar     double V01 arg1
-           ┌──▌  t0   double
-           ├──▌  t1   double
-    t2   = \*          double
-    t3   = lclVar     double V00 arg0
-    t4   = dconst     double 4.00
-           ┌──▌  t3   double
-           ├──▌  t4   double
-    t5   = \*          double
-    t6   = lclVar     double V02 arg2
-           ┌──▌  t5   double
-           ├──▌  t6   double
-    t7   = \*          double
-           ┌──▌  t2   double
-           ├──▌  t7   double
-    t8   = -          double
-           ┌──▌  t8   double
-    t9   = mathFN     double sqrt
-           ┌──▌  t9   double
-           st.lclVar  double V06
-    t10  = lclVar     double V06
-    t11  = lclVar     double V01 arg1
-           ┌──▌  t11  double
-    t12  = unary -    double
-           ┌──▌  t10  double
-           ├──▌  t12  double
-    t13  = +          double
-    t14  = lclVar     double V00 arg0
-    t15  = dconst     double 2.00
-           ┌──▌  t14  double
-           ├──▌  t15  double
-    t16  = \*          double
-           ┌──▌  t16  double
-           st.lclVar  double V07
-    t18  = lclVar     double V07
-           ┌──▌  t17  double
-           ├──▌  t18  double
-    t19  = /          double
-    t20  = lclVar     byref  V03 arg3
-           ┌──▌  t20  double
-           storeIndir double
+```
+         IL_OFFSET void   IL offset: 0x0
+ t3 =    LCL_VAR   double V01 arg1         u:1 $81
+ t4 =    LCL_VAR   double V01 arg1         u:1 $81
+     ┌──▌  t3     double 
+     ├──▌  t4     double 
+ t5 = ▌  MUL       double $140
+ t7 =    LCL_VAR   double V00 arg0         u:1 $80
+ t6 =    CNS_DBL   double 4.0000000000000000 $180
+     ┌──▌  t7     double 
+     ├──▌  t6     double 
+ t8 = ▌  MUL       double $141
+ t9 =    LCL_VAR   double V02 arg2         u:1 $82
+     ┌──▌  t8     double 
+     ├──▌  t9     double 
+t10 = ▌  MUL       double $142
+     ┌──▌  t5     double 
+     ├──▌  t10    double 
+t11 = ▌  SUB       double $143
+     ┌──▌  t11    double 
+t12 = ▌  INTRINSIC double sqrt $83
+     ┌──▌  t12    double 
+      ▌  STORE_LCL_VAR double V06 cse0         
+t46 =    LCL_VAR   double V06 cse0          $83
+ t1 =    LCL_VAR   double V01 arg1         u:1 $81
+     ┌──▌  t1     double 
+ t2 = ▌  NEG       double $84
+     ┌──▌  t2     double 
+      ▌  STORE_LCL_VAR double V08 cse2         
+t56 =    LCL_VAR   double V08 cse2          $84
+     ┌──▌  t46    double 
+     ├──▌  t56    double 
+t13 = ▌  ADD       double $144
+t15 =    LCL_VAR   double V00 arg0         u:1 $80
+t14 =    CNS_DBL   double 2.0000000000000000 $181
+     ┌──▌  t15    double 
+     ├──▌  t14    double 
+t16 = ▌  MUL       double $145
+     ┌──▌  t16    double 
+      ▌  STORE_LCL_VAR double V07 cse1         
+t51 =    LCL_VAR   double V07 cse1          $145
+     ┌──▌  t13    double 
+     ├──▌  t51    double 
+t17 = ▌  DIV       double $146
+ t0 =    LCL_VAR   byref  V03 arg3         u:1 (last use) $c0
+     ┌──▌  t0     byref  
+     ├──▌  t17    double 
+      ▌  STOREIND  double
+```
 
 ## <a name="lowering"/>Lowering
 
 Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed.
 
-It accomplishes this in two passes.
+It does an execution-order traversal that performs context-dependent transformations such as
+* expanding switch statements (using a switch table or a series of conditional branches)
+* constructing addressing modes (LEA nodes)
+* determining the code generation strategy for block assignments (e.g. `GT_STORE_BLK`) which may become helper calls, unrolled loops, or an instruction like `rep stos`
+* generating machine specific instructions (e.g. generating the `BT` x86/64 instruction)
+* mark "contained" nodes - such a node does not generate any code and relies on its user to include the node's operation in its own codegen (e.g. memory operands, immediate operands)
+* mark "reg optional" nodes - despite the name, such a node may produce a value in a register but its user does not require a register and can consume the value directly from a memory location
 
-The first pass is an execution-order traversal that performs context-dependent transformations such as expanding switch statements (using a switch table or a series of conditional branches), constructing addressing modes, etc.  For example, this:
-
-    t0   = lclVar     ref    V00 arg0
-    t1   = lclVar     int    V03 loc1
-           ┌──▌  t1   int
-    t2   = cast       long <- int
-    t3   = const      long   2
-           ┌──▌  t2   long
-           ├──▌  t3   long
-    t4   = <<         long
-           ┌──▌  t0   ref
-           ├──▌  t4   long
-    t5   = +          byref
-    t6   = const      long   16
-           ┌──▌  t5   ref
-           ├──▌  t6   long
-    t7   = +          byref
-           ┌──▌  t7   ref
-    t8   = indir      int
+For example, this:
+```
+t47 =    LCL_VAR   ref    V00 arg0
+t48 =    LCL_VAR   int    V01 arg1
+     ┌──▌  t48    int    
+t51 = ▌  CAST      long <- int
+t52 =    CNS_INT   long   2
+     ┌──▌  t51    long   
+     ├──▌  t52    long   
+t53 = ▌  LSH       long
+t54 =    CNS_INT   long   16 Fseq[#FirstElem]
+     ┌──▌  t53    long   
+     ├──▌  t54    long   
+t55 = ▌  ADD       long
+     ┌──▌  t47    ref    
+     ├──▌  t55    long   
+t56 = ▌  ADD       byref
+     ┌──▌  t56    byref  
+t44 = ▌  IND       int
+```
 
 Is transformed into this, in which the addressing mode is explicit:
-
-    t0   = lclVar     ref    V00 arg0
-    t1   = lclVar     int    V03 loc1
-           ┌──▌  t1   int
-    t2   = cast       long <- int
-           ┌──▌  t0   ref
-           ├──▌  t2   long
-    t7   = lea(b+(i*4)+16) byref
-           ┌──▌  t7   ref
-    t8   = indir      int
-
-The next pass annotates the nodes with register requirements. This is done in an execution order traversal in order to ensure that each node's operands are visited prior to the node itself. This pass may also do some transformations that do not require the parent context, such as determining the code generation strategy for block assignments (e.g. `GT_COPYBLK`) which may become helper calls, unrolled loops, or an instruction like `rep stos`.
-
-The register requirements of a node are expressed by its `TreeNodeInfo` (`gtLsraInfo`) value.  For example, for the `copyBlk` node in this snippet:
-
-    t0   = const(h)   long   0xCA4000 static
-    t1   = &lclVar    byref  V04 loc4
-    t2   = const      int    34
-           ┌──▌  t0   long
-           ├──▌  t1   byref
-           ├──▌  t2   int
-           copyBlk    void
-
-The `TreeNodeInfo` would be as follows:
-
-    +<TreeNodeInfo @ 15 0=1 1i 1f
-          src=[allInt]
-          int=[rax rcx rdx rbx rbp rsi rdi r8-r15 mm0-mm5]
-          dst=[allInt] I>
-
-The “@ 15” is the location number of the node.  The “0=1” indicates that there are zero destination registers (because this defines only memory), and 1 source register (the address of lclVar V04).  The “1i” indicates that it requires 1 internal integer register (for copying the remainder after copying 16-byte sized chunks), the “1f” indicates that it requires 1 internal floating point register (for copying the two 16-byte chunks).  The src, int and dst fields are encoded masks that indicate the register constraints for the source, internal and destination registers, respectively.
+```
+t47 =    LCL_VAR   ref    V00 arg0
+t48 =    LCL_VAR   int    V01 arg1
+     ┌──▌  t48    int    
+t51 = ▌  CAST      long <- int
+     ┌──▌  t47    ref    
+     ├──▌  t51    long   
+t79 = ▌  LEA(b+(i*4)+16) byref 
+     ┌──▌  t79    byref  
+t44 = ▌  IND       int
+```
+After all nodes are lowered, liveness is run in preparation for register allocation.
 
 ## <a name="reg-alloc"/>Register allocation
 
@@ -386,6 +389,35 @@ The RyuJIT register allocator uses a Linear Scan algorithm, with an approach sim
 
 * `Intervals` (representing live ranges of variables or tree expressions) and `RegRecords` (representing physical registers), both of which derive from `Referenceable`.
 * `RefPositions`, which represent uses or defs (or variants thereof, such as ExposedUses) of either `Intervals` or physical registers.
+
+`LinearScan::buildIntervals()` traverses the entire method building RefPositions and Intervals as required. For example, for the `STORE_BLK` node in this snippet:
+```
+t67 =    CNS_INT(h) long   0x2b5acef2c50 static Fseq[s1]
+     ┌──▌  t67    long   
+ t0 = ▌  IND       ref
+ t1 =    CNS_INT   long   8 Fseq[#FirstElem]
+     ┌──▌  t0     ref    
+     ├──▌  t1     long   
+ t2 = ▌  ADD       byref
+     ┌──▌  t2     byref  
+ t3 = ▌  IND       struct
+t31 =    LCL_VAR_ADDR byref  V08 tmp1
+     ┌──▌  t31    byref  
+     ├──▌  t3     struct 
+      ▌  STORE_BLK(40) struct (copy) (Unroll)
+```
+the following RefPositions are generated:
+```
+N027 (???,???) [000085] -A-XG-------              ▌  STORE_BLK(40) struct (copy) (Unroll) REG NA
+Interval 16: int RefPositions {} physReg:NA Preferences=[allInt]
+<RefPosition #40  @27  RefTypeDef <Ivl:16 internal> STORE_BLK BB01 regmask=[allInt] minReg=1>
+Interval 17: float RefPositions {} physReg:NA Preferences=[allFloat]
+<RefPosition #41  @27  RefTypeDef <Ivl:17 internal> STORE_BLK BB01 regmask=[allFloat] minReg=1>
+<RefPosition #42  @27  RefTypeUse <Ivl:15> BB01 regmask=[allInt] minReg=1 last>
+<RefPosition #43  @27  RefTypeUse <Ivl:16 internal> STORE_BLK BB01 regmask=[allInt] minReg=1 last>
+<RefPosition #44  @27  RefTypeUse <Ivl:17 internal> STORE_BLK BB01 regmask=[allFloat] minReg=1 last>
+```
+The “@ 27” is the location number of the node. “internal” indicates a register that is internal to the node (in this case 2 internal registers are needed, one float (XMM on XARCH) and one int, as temporaries for copying). “regmask” indicates the register constraints for the `RefPosition`.
 
 ### Notable features of RyuJIT LinearScan
 
@@ -396,7 +428,7 @@ Unlike most register allocators, LSRA performs register allocation on an IR (Int
 It is the job of the `Lowering` phase to transform the IR such that:
 * The nodes are in `LIR` form (i.e. all expression trees have been linearized, and the execution order of the nodes within a BasicBlock is specified by the `gtNext` and `gtPrev` links)
 * All contained nodes are identified (`gtFlags` has the `GTF_CONTAINED` bit set)
-* All nodes for which a register is optional are identified (`gtLsraInfo.regOptional` is `true`)
+* All nodes for which a register is optional are identified (`RefPosition::regOptional` is `true`)
   * This is used for x86 and x64 on operands that can be directly consumed from memory if no register is allocated.
 * All unused values (nodes that produce a result that is not consumed) are identified (gtLIRFlags has the LIR::Flags::UnusedValue bit set)
   * Since tree temps (the values produced by nodes and consumed by their parent) are expected to be single-def, single-use (SDSU), normally the live range can be determined to end at the use. If there is no use, the register allocator doesn't know where the live range ends.
@@ -488,10 +520,6 @@ Ordering:
   * The `gtPrev` of the first node (`gtStmtList`) is always null.
   * The `gtNext` of the last node (`gtStmtExpr`) is always null.
 
-TreeNodeInfo:
-
-* The `TreeNodeInfo` (`gtLsraInfo`) is set during the Lowering phase, and communicates the register requirements of the node, including the number and types of registers used as sources, destinations and internal registers. Currently only a single destination per node is supported.
-
 ## LclVar phase-dependent properties
 
 LclVar ref counts track the number of uses and weighted used of a local in the jit IR. There are two sequences of phases over which ref counts are valid,
@@ -565,38 +593,59 @@ Full instructions for dumping the compilation of some managed code can be found 
 
 ## Reading expression trees
 
-It takes some time to learn to “read” the expression trees, which are printed with the children indented from the parent, and, for binary operators, with the first operand below the parent and the second operand above.
+Expression trees are displayed using a pre-order traversal, with the subtrees of a node being displayed under the node in operand order (e.g. `gtOp1`, `gtOp2`). This is similar to the way trees are displayed in tyical user interfaces (e.g. folder trees). Note that the operand order may be different from the actual execution order, determined by `GTF_REVERSE_OPS` or other means. The operand order usually follows the order in high level languages so that the typical infix, left to right expression `a - b` becomes prefix, top to bottom tree:
+```
+▌  SUB       double
+├──▌  LCL_VAR   double V03 a
+└──▌  LCL_VAR   double V02 b
+```
+Assignments are displayed like all other binary operators, with `dest = src` becoming:
+```
+▌  ASG       double
+├──▌  LCL_VAR   double V03 dest
+└──▌  LCL_VAR   double V02 src
+```
+Calls initially display in source order - `Order(1, 2, 3, 4)` is:
+```
+[000004] --C-G-------              *  CALL      void   Program.Order
+[000000] ------------ arg0         +--*  CNS_INT   int    1
+[000001] ------------ arg1         +--*  CNS_INT   int    2
+[000002] ------------ arg2         +--*  CNS_INT   int    3
+[000003] ------------ arg3         \--*  CNS_INT   int    4
+```
+but call morphing may change the order depending on the ABI so the above may become:
+```
+[000004] --CXG+------              *  CALL      void   Program.Order
+[000002] -----+------ arg2 on STK  +--*  CNS_INT   int    3
+[000003] -----+------ arg3 on STK  +--*  CNS_INT   int    4
+[000000] -----+------ arg0 in ecx  +--*  CNS_INT   int    1
+[000001] -----+------ arg1 in edx  \--*  CNS_INT   int    2
+```
+where the node labels (e.g. arg0) help identifying the call arguments after reordering.
 
-Here is an example dump
-
-    [000027] ------------             ▌  stmtExpr  void  (top level) (IL 0x010...  ???)
-    [000026] --C-G-------             └──▌  return    double
-    [000024] --C-G-------                └──▌  call      double BringUpTest.DblSqrt
-    [000021] ------------                   │     ┌──▌  lclVar    double V02 arg2
-    [000022] ------------                   │  ┌──▌  -         double
-    [000020] ------------                   │  │  └──▌  lclVar    double V03 loc0
-    [000023] ------------ arg0              └──▌  *         double
-    [000017] ------------                      │     ┌──▌  lclVar    double V01 arg1
-    [000018] ------------                      │  ┌──▌  -         double
-    [000016] ------------                      │  │  └──▌  lclVar    double V03 loc0
-    [000019] ------------                      └──▌  *         double
-    [000013] ------------                         │     ┌──▌  lclVar    double V00 arg0
-    [000014] ------------                         │  ┌──▌  -         double
-    [000012] ------------                         │  │  └──▌  lclVar    double V03 loc0
-    [000015] ------------                         └──▌  *         double
-    [000011] ------------                            └──▌  lclVar    double V03 loc0
-
-The tree nodes are indented to represent the parent-child relationship. Binary operators print first the right hand side, then the operator node itself, then the left hand side. This scheme makes sense if you look at the dump “sideways” (lean your head to the left). Oriented this way, the left hand side operator is actually on the left side, and the right hand operator is on the right side so you can almost visualize the tree if you look at it sideways. The indentation level is also there as a backup.
+Here is a full dump of an entire statement:
+```
+[000026] ------------              ▌  STMT      void  (IL 0x010...  ???)
+[000025] --C-G-------              └──▌  RETURN    double
+[000023] --C-G-------                 └──▌  CALL      double C.DblSqrt
+[000022] ------------ arg0               └──▌  MUL       double
+[000018] ------------                       ├──▌  MUL       double
+[000014] ------------                       │  ├──▌  MUL       double
+[000010] ------------                       │  │  ├──▌  LCL_VAR   double V03 loc0
+[000013] ------------                       │  │  └──▌  SUB       double
+[000011] ------------                       │  │     ├──▌  LCL_VAR   double V03 loc0
+[000012] ------------                       │  │     └──▌  LCL_VAR   double V00 arg0
+[000017] ------------                       │  └──▌  SUB       double
+[000015] ------------                       │     ├──▌  LCL_VAR   double V03 loc0
+[000016] ------------                       │     └──▌  LCL_VAR   double V01 arg1
+[000021] ------------                       └──▌  SUB       double
+[000019] ------------                          ├──▌  LCL_VAR   double V03 loc0
+[000020] ------------                          └──▌  LCL_VAR   double V02 arg2
+```
 
 Tree nodes are identified by their `gtTreeID`. This field only exists in DEBUG builds, but is quite useful for debugging, since all tree nodes are created from the routine `gtNewNode` (in [src/jit/gentree.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/gentree.cpp)). If you find a bad tree and wish to understand how it got corrupted, you can place a conditional breakpoint at the end of `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
 The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when `COMPlus_JitDumpAscii=0` is specified), to make it a bit easier to read.
-
-    N037 (  0,  0) [000391] ----------L- arg0 SETUP  │  ┌──▌  argPlace  ref    REG NA $1c1
-    N041 (  2,  8) [000389] ------------             │  │     ┌──▌  const(h) long 0xB410A098 REG rcx $240
-    N043 (  4, 10) [000390] ----G-------             │  │  ┌──▌  indir     ref    REG rcx $1c1
-    N045 (  4, 10) [000488] ----G------- arg0 in rcx │  ├──▌  putarg_reg ref    REG rcx
-    N049 ( 18, 16) [000269] --C-G-------             └──▌  call void System.Diagnostics.TraceInternal.Fail $VN.Void
 
 ## Variable naming
 
