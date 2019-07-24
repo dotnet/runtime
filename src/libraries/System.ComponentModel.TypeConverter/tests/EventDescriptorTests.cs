@@ -35,7 +35,7 @@ namespace System.ComponentModel.Tests
             eventDescriptor.RemoveEventHandler(component, eventHandler);
 
             // component.Event should now have no handler => raising it should throw a NullReferenceException
-            Assert.Throws(typeof(NullReferenceException), () => component.RaiseEvent());
+            Assert.Throws<NullReferenceException>(() => component.RaiseEvent());
         }
 
         [Fact]

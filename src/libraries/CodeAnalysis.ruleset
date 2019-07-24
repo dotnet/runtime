@@ -95,7 +95,6 @@
     <Rule Id="xUnit2009" Action="None" />
     <Rule Id="xUnit2012" Action="None" />
     <Rule Id="xUnit2013" Action="None" />
-    <Rule Id="xUnit2015" Action="None" />
     <Rule Id="xUnit2017" Action="None" />
     <Rule Id="xUnit2018" Action="None" />
   </Rules>
