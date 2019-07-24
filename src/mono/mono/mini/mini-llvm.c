@@ -7516,7 +7516,8 @@ emit_method_inner (EmitContext *ctx)
 	 *  (1) a call (so it's a leaf method)
 	 *  (2) and no loops
 	 * we can skip the GC safepoint on method entry. */
-	gboolean requires_safepoint = cfg->has_calls;
+	gboolean requires_safepoint;
+	requires_safepoint = cfg->has_calls;
 	if (!requires_safepoint) {
 		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
 			if (bb->loop_body_start || (bb->flags & BB_EXCEPTION_HANDLER)) {
@@ -9342,7 +9343,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	for (int i = 0; i < size; i++) {
 		LLVMTypeRef lookup_type = NULL;
 
-		lookup_type = g_hash_table_lookup (module->got_idx_to_type, GINT_TO_POINTER (i));
+		lookup_type = (LLVMTypeRef) g_hash_table_lookup (module->got_idx_to_type, GINT_TO_POINTER (i));
 
 		if (!lookup_type)
 			lookup_type = module->ptr_type;

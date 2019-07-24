@@ -13531,7 +13531,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		LLVMModuleFlags flags = 0;
+		LLVMModuleFlags flags = (LLVMModuleFlags)0;
 #ifdef EMIT_DWARF_INFO
 		flags = LLVM_MODULE_FLAG_DWARF;
 #endif
