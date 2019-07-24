@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Text;
@@ -43,45 +44,68 @@ namespace Microsoft.NET.HostModel.AppHost
 
             BinaryUtils.CopyFile(appHostSourceFilePath, appHostDestinationFilePath);
 
-            // Re-write the destination apphost with the proper contents.
-            bool appHostIsPEImage = false;
-            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationFilePath))
+            try
             {
-                using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
+                // Re-write the destination apphost with the proper contents.
+                bool appHostIsPEImage = false;
+                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationFilePath))
                 {
-                    BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
-
-                    appHostIsPEImage = BinaryUtils.IsPEImage(accessor);
-
-                    if (windowsGraphicalUserInterface)
+                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
                     {
-                        if (!appHostIsPEImage)
-                        {
-                            throw new AppHostNotPEFileException();
-                        }
+                        BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
 
-                        BinaryUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
+                        appHostIsPEImage = BinaryUtils.IsPEImage(accessor);
+
+                        if (windowsGraphicalUserInterface)
+                        {
+                            if (!appHostIsPEImage)
+                            {
+                                throw new AppHostNotPEFileException();
+                            }
+
+                            BinaryUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
+                        }
                     }
                 }
-            }
 
-            if (assemblyToCopyResorcesFrom != null && appHostIsPEImage)
+                if (assemblyToCopyResorcesFrom != null && appHostIsPEImage)
+                {
+                    if (ResourceUpdater.IsSupportedOS())
+                    {
+                        // Copy resources from managed dll to the apphost
+                        new ResourceUpdater(appHostDestinationFilePath)
+                            .AddResourcesFromPEImage(assemblyToCopyResorcesFrom)
+                            .Update();
+                    }
+                    else
+                    {
+                        throw new AppHostCustomizationUnsupportedOSException();
+                    }
+                }
+
+                // Memory-mapped write does not updating last write time
+                File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
+            }
+            catch (Exception ex)
             {
-                if (ResourceUpdater.IsSupportedOS())
+                FailedToDeleteApphostException failedToDeleteApphostException = null;
+                // Delete the destination file so we don't leave an unmodified apphost
+                try
                 {
-                    // Copy resources from managed dll to the apphost
-                    new ResourceUpdater(appHostDestinationFilePath)
-                        .AddResourcesFromPEImage(assemblyToCopyResorcesFrom)
-                        .Update();
+                    File.Delete(appHostDestinationFilePath);
                 }
-                else 
+                catch (Exception failedToDeleteEx) when (failedToDeleteEx is IOException || failedToDeleteEx is UnauthorizedAccessException)
                 {
-                    throw new AppHostCustomizationUnsupportedOSException();
+                    failedToDeleteApphostException = new FailedToDeleteApphostException(failedToDeleteEx.Message);
                 }
-            }
 
-            // Memory-mapped write does not updating last write time
-            File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
+                if (failedToDeleteApphostException != null)
+                {
+                    throw new AggregateException(ex, failedToDeleteApphostException);
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
