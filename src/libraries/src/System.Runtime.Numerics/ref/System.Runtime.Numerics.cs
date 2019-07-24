@@ -10,6 +10,7 @@ namespace System.Numerics
     public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
         public BigInteger(byte[] value) { throw null; }
         public BigInteger(decimal value) { throw null; }
