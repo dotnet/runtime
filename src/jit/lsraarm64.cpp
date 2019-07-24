@@ -90,7 +90,6 @@ int LinearScan::BuildNode(GenTree* tree)
             LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->gtLclNum];
             if (isCandidateVar(varDsc))
             {
-                INDEBUG(dumpNodeInfo(tree, dstCandidates, 0, 1));
                 return 0;
             }
             srcCount = 0;
@@ -757,7 +756,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount());
-    INDEBUG(dumpNodeInfo(tree, dstCandidates, srcCount, dstCount));
     return srcCount;
 }
 
