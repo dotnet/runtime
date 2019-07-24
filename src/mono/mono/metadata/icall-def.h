@@ -267,7 +267,7 @@ ICALL_TYPE(TRACEL, "System.Diagnostics.DefaultTraceListener", TRACEL_1)
 HANDLES(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString, void, 1, (const_gunichar2_ptr))
 
 ICALL_TYPE(FILEV, "System.Diagnostics.FileVersionInfo", FILEV_1)
-ICALL(FILEV_1, "GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal)
+HANDLES(FILEV_1, "GetVersionInfo_icall", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal, void, 3, (MonoObject, const_gunichar2_ptr, int))
 
 ICALL_TYPE(PERFCTR, "System.Diagnostics.PerformanceCounter", PERFCTR_1)
 NOHANDLES(ICALL(PERFCTR_1, "FreeData", mono_perfcounter_free_data))
@@ -289,13 +289,12 @@ HANDLES(PERFCTRCAT_8, "InstanceExistsInternal_icall", mono_perfcounter_instance_
 ICALL_TYPE(PROCESS, "System.Diagnostics.Process", PROCESS_1)
 HANDLES(PROCESS_1, "CreateProcess_internal", ves_icall_System_Diagnostics_Process_CreateProcess_internal,
 	MonoBoolean, 5, (MonoW32ProcessStartInfo, gpointer, gpointer, gpointer, MonoW32ProcessInfo_ref))
-ICALL(PROCESS_4, "GetModules_internal(intptr)", ves_icall_System_Diagnostics_Process_GetModules_internal)
-ICALL(PROCESS_5H, "GetProcessData", ves_icall_System_Diagnostics_Process_GetProcessData)
-ICALL(PROCESS_6, "GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal)
-ICALL(PROCESS_7, "GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal)
-ICALL(PROCESS_10, "ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal)
-HANDLES(PROCESS_13, "ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)",
-	ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal, MonoBoolean, 2, (MonoW32ProcessStartInfo, MonoW32ProcessInfo_ref))
+HANDLES(PROCESS_4, "GetModules_icall", ves_icall_System_Diagnostics_Process_GetModules_internal, MonoArray, 2, (MonoObject, HANDLE))
+NOHANDLES(ICALL(PROCESS_5H, "GetProcessData", ves_icall_System_Diagnostics_Process_GetProcessData))
+HANDLES(PROCESS_6, "GetProcess_internal", ves_icall_System_Diagnostics_Process_GetProcess_internal, gpointer, 1, (guint32))
+HANDLES(PROCESS_7, "GetProcesses_internal", ves_icall_System_Diagnostics_Process_GetProcesses_internal, MonoArray, 0, ())
+HANDLES(PROCESS_10, "ProcessName_icall", ves_icall_System_Diagnostics_Process_ProcessName_internal, MonoString, 1, (HANDLE))
+HANDLES(PROCESS_13, "ShellExecuteEx_internal", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal, MonoBoolean, 2, (MonoW32ProcessStartInfo, MonoW32ProcessInfo_ref))
 
 ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", ves_icall_System_Diagnostics_Stopwatch_GetTimestamp)

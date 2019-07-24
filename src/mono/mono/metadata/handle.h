@@ -358,6 +358,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		MONO_OBJECT_SETREF_INTERNAL (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, __val); \
 	} while (0)
 
+// handle->field = value for managed pointer
 #define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {			\
 		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
 		do {							\

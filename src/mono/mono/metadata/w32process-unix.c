@@ -86,6 +86,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-threads-coop.h>
 #include "object-internals.h"
 #include "icall-decl.h"
 
@@ -728,7 +729,7 @@ get_process_foreach_callback (MonoW32Handle *handle_data, gpointer user_data)
 }
 
 HANDLE
-ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
+ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError *error)
 {
 	GetProcessForeachData foreach_data;
 	gpointer handle;
@@ -2223,35 +2224,44 @@ exit:
 }
 
 /* Returns an array of pids */
-MonoArray *
-ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
+MonoArrayHandle
+ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoArray *procs;
-	gpointer *pidarray;
-	int i, count;
+	int count = 0;
+	guint32 *raw = 0;
+	gpointer *pidarray = 0;
+	MonoArrayHandle procs = NULL_HANDLE_ARRAY;
+
+	// FIXME mono_process_list should probably return array of int
+	// as all of the users of the elements truncate to that.
 
 	MONO_ENTER_GC_SAFE;
 	pidarray = mono_process_list (&count);
 	MONO_EXIT_GC_SAFE;
 	if (!pidarray) {
 		mono_error_set_not_supported (error, "This system does not support EnumProcesses");
-		mono_error_set_pending_exception (error);
-		return NULL;
+		goto exit;
 	}
-	procs = mono_array_new_checked (mono_domain_get (), mono_get_int32_class (), count, error);
-	if (mono_error_set_pending_exception (error)) {
-		g_free (pidarray);
-		return NULL;
+	procs = mono_array_new_handle (mono_domain_get (), mono_get_int32_class (), count, error);
+	if (!is_ok (error)) {
+		procs = NULL_HANDLE_ARRAY;
+		goto exit;
 	}
-	if (sizeof (guint32) == sizeof (gpointer)) {
-		memcpy (mono_array_addr_internal (procs, guint32, 0), pidarray, count * sizeof (gint32));
-	} else {
-		for (i = 0; i < count; ++i)
-			*(mono_array_addr_internal (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
-	}
-	g_free (pidarray);
 
+	MONO_ENTER_NO_SAFEPOINTS;
+
+	raw = mono_array_addr_internal (MONO_HANDLE_RAW (procs), guint32, 0);
+	if (sizeof (guint32) == sizeof (gpointer)) {
+		memcpy (raw, pidarray, count * sizeof (gint32));
+	} else {
+		for (int i = 0; i < count; ++i)
+			raw [i] = GPOINTER_TO_UINT (pidarray [i]);
+	}
+
+	MONO_EXIT_NO_SAFEPOINTS;
+
+exit:
+	g_free (pidarray);
 	return procs;
 }
 
@@ -3342,7 +3352,7 @@ big_up (gconstpointer datablock, guint32 size)
 #endif
 
 gboolean
-mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
+mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
 {
 	gpointer file_map;
 	gpointer versioninfo;

@@ -38,6 +38,7 @@
 #include "w32process.h"
 #include "w32semaphore.h"
 #include "w32socket.h"
+#include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */
 typedef enum {
@@ -160,6 +161,7 @@ ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
 ICALL_EXPORT gint64 ves_icall_System_Environment_get_TickCount64 (void);
 #endif
 ICALL_EXPORT gint64 ves_icall_System_DateTime_GetSystemTimeAsFileTime (void);
+ICALL_EXPORT gint64 ves_icall_System_Diagnostics_Process_GetProcessData (int, gint32, MonoProcessError*);
 ICALL_EXPORT gint64 ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
 ICALL_EXPORT gint64 ves_icall_System_Threading_Timer_GetTimeMonotonic (void);
