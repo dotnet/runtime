@@ -19,7 +19,8 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 "NETStandard.Library.Ref"))
             {
                 tester.HasOnlyTheseDataFiles(
-                    "data/FrameworkList.xml");
+                    "data/FrameworkList.xml",
+                    "data/PackageOverrides.txt");
 
                 tester.IsTargetingPack();
 

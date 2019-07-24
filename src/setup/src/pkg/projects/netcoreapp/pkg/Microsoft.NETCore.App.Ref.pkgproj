@@ -1,2 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- File contents are copied from https://github.com/dotnet/sdk/blob/ec2f3741092f164daeb023e7caa4364c810461e2/src/Tasks/Common/targets/Microsoft.NET.DefaultPackageConflictOverrides.targets#L15 -->
+    <File Include="PackageOverrides.txt" TargetPath="data/" />
+  </ItemGroup>
+
 </Project>
