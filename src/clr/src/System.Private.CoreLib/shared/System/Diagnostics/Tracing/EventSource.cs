@@ -5519,7 +5519,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return new ulong[0];
+                return Array.Empty<ulong>();
             }
 
             // We create an array indexed by the channel id for fast look up.
