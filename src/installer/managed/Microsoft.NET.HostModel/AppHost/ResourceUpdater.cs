@@ -21,7 +21,7 @@ namespace Microsoft.NET.HostModel
             // Native methods for updating resources
             //
 
-            [DllImport(nameof(Kernel32), SetLastError=true)]
+            [DllImport(nameof(Kernel32), CharSet = CharSet.Unicode, SetLastError=true)]
             public static extern SafeUpdateHandle BeginUpdateResource(string pFileName,
                                                                       [MarshalAs(UnmanagedType.Bool)]bool bDeleteExistingResources);
 
@@ -71,7 +71,7 @@ namespace Microsoft.NET.HostModel
                 LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020
             }
 
-            [DllImport(nameof(Kernel32), SetLastError=true)]
+            [DllImport(nameof(Kernel32), CharSet = CharSet.Unicode, SetLastError=true)]
             public static extern IntPtr LoadLibraryEx(string lpFileName,
                                                       IntPtr hReservedNull,
                                                       LoadLibraryFlags dwFlags);
