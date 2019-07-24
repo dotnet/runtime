@@ -2687,8 +2687,6 @@ namespace System.Net.Http.Functional.Tests
                 // We should not reach retry limit without failing.
                 Assert.NotEqual(0, maxCount);
 
-                var headers = new HttpHeaderData[] { new HttpHeaderData("x-last", "done") };
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader : true, headers: headers);
                 try
                 {
                     await connection.SendGoAway(streamId);

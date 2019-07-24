@@ -758,7 +758,7 @@ namespace System.Net.Http
             // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
             Debug.Assert(_writerLock.CurrentCount == 0);
 
-            EndWrite(false);
+            EndWrite(forceFlush: false);
         }
 
         private void EndWrite(bool forceFlush)
