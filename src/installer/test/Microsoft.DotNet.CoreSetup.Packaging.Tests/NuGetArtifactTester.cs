@@ -94,10 +94,6 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         {
             IsFrameworkPack();
 
-            HasOnlyTheseDataFiles(
-                "data/FrameworkList.xml",
-                "data/PlatformManifest.txt");
-
             HasGoodPlatformManifest();
         }
 
