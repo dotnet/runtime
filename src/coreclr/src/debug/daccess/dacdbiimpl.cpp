@@ -1003,13 +1003,19 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
     if (!success)
         ThrowHR(E_FAIL);
 
-    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
 #ifdef FEATURE_REJIT
     CodeVersionManager * pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
+    ILCodeVersion ilVersion;
     NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(dac_cast<PTR_MethodDesc>(pMethodDesc), (PCODE)startAddr);
     if (!nativeCodeVersion.IsNull())
     {
-        const InstrumentedILOffsetMapping * pRejitMapping = nativeCodeVersion.GetILCodeVersion().GetInstrumentedILMap();
+        ilVersion = nativeCodeVersion.GetILCodeVersion();
+    }
+
+    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
+    if (!ilVersion.IsNull() && !ilVersion.IsDefaultVersion())
+    {
+        const InstrumentedILOffsetMapping * pRejitMapping = ilVersion.GetInstrumentedILMap();
         ComposeMapping(pRejitMapping, mapCopy, &entryCount);
     }
     else
