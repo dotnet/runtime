@@ -30,7 +30,7 @@ namespace System.Collections.Specialized.Tests
                 DictionaryEntry entry = (DictionaryEntry)enumerator.Current;
                 Assert.Equal(key, entry.Key);
 
-                Assert.False(key.Any(c => char.IsUpper(c)));
+                Assert.DoesNotContain(key, c => char.IsUpper(c));
                 Assert.True(stringDictionary.ContainsKey(key));
             }
         }

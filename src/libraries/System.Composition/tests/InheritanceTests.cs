@@ -199,7 +199,7 @@ namespace System.Composition.Lightweight.UnitTests
             var c = CreateContainer(typeof(ABHandler));
             var handlers = c.GetExports<Lazy<IHandler, HandlerMetadata>>().ToArray();
             Assert.Equal(1, handlers.Length);
-            Assert.True(handlers.Any(h => h.Metadata.HandledMessage == "B"));
+            Assert.Contains(handlers, h => h.Metadata.HandledMessage == "B");
         }
 
         public class BaseVirtualExporter

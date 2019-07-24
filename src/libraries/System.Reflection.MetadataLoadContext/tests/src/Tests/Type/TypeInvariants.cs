@@ -490,7 +490,7 @@ namespace System.Reflection.Tests
             {
                 Assert.True(declaringType.IsTypeDefinition());
                 Type[] nestedTypes = declaringType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
-                Assert.True(nestedTypes.Any(nt => object.ReferenceEquals(nt, type)));
+                Assert.Contains(nestedTypes, nt => object.ReferenceEquals(nt, type));
             }
 
             Assert.Equal<Type>(type.GetTypeInfo().GenericTypeParameters, type.GetGenericArguments());
