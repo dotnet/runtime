@@ -32,7 +32,6 @@
     <Rule Id="CA1305" Action="None" /> <!-- Specify IFormatProvider -->
     <Rule Id="CA1307" Action="None" /> <!-- Specify StringComparison -->
     <Rule Id="CA1308" Action="None" /> <!-- Normalize strings to upper case -->
-    <Rule Id="CA1507" Action="None" /> <!-- Use nameof to express symbol names -->
     <Rule Id="CA1707" Action="None" /> <!-- Identifers should not contain underscores -->
     <Rule Id="CA1710" Action="None" /> <!-- Identifers should have correct suffix -->
     <Rule Id="CA1712" Action="None" /> <!-- Do not prefix enum values with type name -->
