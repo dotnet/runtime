@@ -83,7 +83,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Async");
+                CheckReadOnly(nameof(Async));
                 _useAsync = value;
             }
         }
@@ -97,7 +97,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NameTable");
+                CheckReadOnly(nameof(NameTable));
                 _nameTable = value;
             }
         }
@@ -113,7 +113,7 @@ namespace System.Xml
         {
             set
             {
-                CheckReadOnly("XmlResolver");
+                CheckReadOnly(nameof(XmlResolver));
                 _xmlResolver = value;
                 IsXmlResolverSet = true;
             }
@@ -144,7 +144,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("LineNumberOffset");
+                CheckReadOnly(nameof(LineNumberOffset));
                 _lineNumberOffset = value;
             }
         }
@@ -157,7 +157,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("LinePositionOffset");
+                CheckReadOnly(nameof(LinePositionOffset));
                 _linePositionOffset = value;
             }
         }
@@ -171,7 +171,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ConformanceLevel");
+                CheckReadOnly(nameof(ConformanceLevel));
 
                 if ((uint)value > (uint)ConformanceLevel.Document)
                 {
@@ -189,7 +189,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CheckCharacters");
+                CheckReadOnly(nameof(CheckCharacters));
                 _checkCharacters = value;
             }
         }
@@ -202,7 +202,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("MaxCharactersInDocument");
+                CheckReadOnly(nameof(MaxCharactersInDocument));
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -219,7 +219,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("MaxCharactersFromEntities");
+                CheckReadOnly(nameof(MaxCharactersFromEntities));
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -237,7 +237,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("IgnoreWhitespace");
+                CheckReadOnly(nameof(IgnoreWhitespace));
                 _ignoreWhitespace = value;
             }
         }
@@ -250,7 +250,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("IgnoreProcessingInstructions");
+                CheckReadOnly(nameof(IgnoreProcessingInstructions));
                 _ignorePIs = value;
             }
         }
@@ -263,7 +263,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("IgnoreComments");
+                CheckReadOnly(nameof(IgnoreComments));
                 _ignoreComments = value;
             }
         }
@@ -277,7 +277,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ProhibitDtd");
+                CheckReadOnly(nameof(ProhibitDtd));
                 _dtdProcessing = value ? DtdProcessing.Prohibit : DtdProcessing.Parse;
             }
         }
@@ -290,7 +290,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DtdProcessing");
+                CheckReadOnly(nameof(DtdProcessing));
 
                 if ((uint)value > (uint)DtdProcessing.Parse)
                 {
@@ -308,7 +308,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CloseInput");
+                CheckReadOnly(nameof(CloseInput));
                 _closeInput = value;
             }
         }
@@ -321,7 +321,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ValidationType");
+                CheckReadOnly(nameof(ValidationType));
 
                 // This introduces a dependency on the validation readers and along with that
                 // on XmlSchema and so on. For AOT builds this brings in a LOT of code
@@ -345,7 +345,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ValidationFlags");
+                CheckReadOnly(nameof(ValidationFlags));
 
                 if ((uint)value > (uint)(XmlSchemaValidationFlags.ProcessInlineSchema | XmlSchemaValidationFlags.ProcessSchemaLocation |
                                            XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints |
@@ -369,7 +369,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Schemas");
+                CheckReadOnly(nameof(Schemas));
                 _schemas = value;
             }
         }
@@ -378,12 +378,12 @@ namespace System.Xml
         {
             add
             {
-                CheckReadOnly("ValidationEventHandler");
+                CheckReadOnly(nameof(ValidationEventHandler));
                 _valEventHandler += value;
             }
             remove
             {
-                CheckReadOnly("ValidationEventHandler");
+                CheckReadOnly(nameof(ValidationEventHandler));
                 _valEventHandler -= value;
             }
         }
@@ -393,7 +393,7 @@ namespace System.Xml
         //
         public void Reset()
         {
-            CheckReadOnly("Reset");
+            CheckReadOnly(nameof(Reset));
             Initialize();
         }
 

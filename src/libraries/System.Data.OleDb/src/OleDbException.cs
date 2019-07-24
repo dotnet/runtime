@@ -40,7 +40,7 @@ namespace System.Data.OleDb
         {
             if (null == si)
             {
-                throw new ArgumentNullException("si");
+                throw new ArgumentNullException(nameof(si));
             }
             si.AddValue("oledbErrors", oledbErrors, typeof(OleDbErrorCollection));
             base.GetObjectData(si, context);

@@ -157,7 +157,7 @@ namespace System.Text.Json
                 converter = factory.GetConverterInternal(typeToConvert, this);
                 if (converter == null || converter.TypeToConvert == null)
                 {
-                    throw new ArgumentNullException("typeToConvert");
+                    throw new ArgumentNullException(nameof(typeToConvert));
                 }
             }
 
