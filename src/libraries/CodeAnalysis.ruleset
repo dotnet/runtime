@@ -54,7 +54,6 @@
     <Rule Id="CA1816" Action="None" /> <!-- Dispose methods should call SuppressFinalize -->
     <Rule Id="CA1819" Action="None" /> <!-- Properties should not return arrays -->
     <Rule Id="CA1820" Action="None" /> <!-- Test for empty strings using string length -->
-    <Rule Id="CA1821" Action="None" /> <!-- Remove empty finalizers --> <!-- Disable analyzer warning 1821 until https://github.com/dotnet/roslyn-analyzers/issues/1804 is resolved -->
     <Rule Id="CA1822" Action="None" /> <!-- Mark members as static -->
     <Rule Id="CA1823" Action="None" /> <!-- Avoid unused private fields -->
     <Rule Id="CA1825" Action="None" /> <!-- Avoid zero-length array allocations. -->
