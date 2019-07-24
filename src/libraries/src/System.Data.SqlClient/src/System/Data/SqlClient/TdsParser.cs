@@ -1108,7 +1108,7 @@ namespace System.Data.SqlClient
                     var connHandler = _connHandler;
                     Action<Action> wrapCloseAction = closeAction =>
                     {
-                        Task.Factory.StartNew(() =>
+                        Task.Run(() =>
                         {
                             connHandler._parserLock.Wait(canReleaseFromAnyThread: false);
                             connHandler.ThreadHasParserLockForClose = true;

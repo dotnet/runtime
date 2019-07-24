@@ -216,7 +216,7 @@ namespace System.Data.SqlClient
                     {
                         completion.TrySetException(exc());
                     }
-                });
+                }, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
             }
         }
     }

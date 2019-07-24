@@ -1846,7 +1846,7 @@ namespace System.Data.SqlClient
                                 onSuccess: state => ((TaskCompletionSource<object>)state).SetResult(null)
                             );
                         }
-                    }, ctoken); // We do not need to propagate exception, etc, from reconnect task, we just need to wait for it to finish.
+                    }, ctoken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default); // We do not need to propagate exception, etc, from reconnect task, we just need to wait for it to finish.
                     return tcs.Task;
                 }
                 else
