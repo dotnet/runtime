@@ -46,9 +46,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-win32.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process-win32-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32socket-win32.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>

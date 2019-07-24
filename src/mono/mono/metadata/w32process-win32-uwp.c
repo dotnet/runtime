@@ -18,7 +18,6 @@
 #include <mono/metadata/object-internals.h>
 #include "mono/metadata/w32process.h"
 #include "mono/metadata/w32process-internals.h"
-#include "mono/metadata/w32process-win32-internals.h"
 #include "icall-decl.h"
 
 MonoArrayHandle
