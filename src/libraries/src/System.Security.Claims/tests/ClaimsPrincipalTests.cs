@@ -43,7 +43,7 @@ namespace System.Security.Claims
 
             Assert.NotNull(cp.Claims);
             Assert.Equal(1, cp.Claims.Count());
-            Assert.True(cp.Claims.Any(claim => claim.Type == "claim_type" && claim.Value == "claim_value"));
+            Assert.Contains(cp.Claims, claim => claim.Type == "claim_type" && claim.Value == "claim_value");
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Security.Claims
 
             Assert.NotNull(cp.Claims);
             Assert.Equal(1, cp.Claims.Count());
-            Assert.True(cp.Claims.Any(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "NonClaimsIdentity_Name"));
+            Assert.Contains(cp.Claims, claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "NonClaimsIdentity_Name");
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace System.Security.Claims
 
             Assert.NotNull(cp.Claims);
             Assert.Equal(1, cp.Claims.Count());
-            Assert.True(cp.Claims.Any(claim => claim.Type == "claim_type" && claim.Value == "claim_value"), "#7");
+            Assert.Contains(cp.Claims, claim => claim.Type == "claim_type" && claim.Value == "claim_value");
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace System.Security.Claims
 
             Assert.NotNull(cp.Claims);
             Assert.Equal(1, cp.Claims.Count());
-            Assert.True(cp.Claims.Any(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "NonClaimsIdentity_Name"));
+            Assert.Contains(cp.Claims, claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "NonClaimsIdentity_Name");
         }
 
         [Fact]
@@ -153,7 +153,7 @@ namespace System.Security.Claims
 
             Assert.Equal(baseId1, cp.Identity);
 
-            Assert.True(cp.Claims.Any(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name"));
+            Assert.Contains(cp.Claims, claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name");
 
             Assert.Equal(baseId2.Claims.First(), cp.Claims.First());
         }
@@ -185,8 +185,8 @@ namespace System.Security.Claims
 
             Assert.Equal(baseId1, cp.Identity);
 
-            Assert.True(cp.Claims.Any(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name2"));
-            Assert.True(cp.Claims.Any(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name3"));
+            Assert.Contains(cp.Claims, claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name2");
+            Assert.Contains(cp.Claims, claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.Value == "generic_name3");
 
             Assert.Equal(baseId2.Claims.First(), cp.Claims.First());
             Assert.Equal(baseId3.Claims.Last(), cp.Claims.Last());

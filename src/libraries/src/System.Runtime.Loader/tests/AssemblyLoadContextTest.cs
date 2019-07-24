@@ -54,7 +54,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
-            Assert.True(asm.DefinedTypes.Any(t => t.Name == "TestClass"));
+            Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }       
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
-            Assert.True(asm.DefinedTypes.Any(t => t.Name == "TestClass"));
+            Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
         [Fact]

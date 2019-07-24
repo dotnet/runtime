@@ -244,13 +244,11 @@ namespace System.Security.AccessControl
             Assert.NotNull(ruleCollection);
             List<CustomAuditRule> existingRules = ruleCollection.Cast<CustomAuditRule>().ToList();
             Assert.True(existingRules.Count > 0);
-            Assert.True(
-                existingRules.Any(
-                    x => x.AccessMaskValue == ReadAccessMask &&
-                    x.AuditFlags == AuditFlags.Success &&
-                    x.IdentityReference == Helpers.s_LocalSystemNTAccount
-                    )
-                );
+            Assert.Contains(existingRules, x =>
+                x.AccessMaskValue == ReadAccessMask &&
+                x.AuditFlags == AuditFlags.Success &&
+                x.IdentityReference == Helpers.s_LocalSystemNTAccount
+            );
         }
 
         [Fact]

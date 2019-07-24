@@ -31,7 +31,7 @@ namespace System.Xml.XmlResolver.Tests
             Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());
             foreach (string uriString in expectedUris)
             {
-                Assert.True(resolver.PreloadedUris.Any(u => u.OriginalString.Equals(uriString)));
+                Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));
             }
         }
 
@@ -43,7 +43,7 @@ namespace System.Xml.XmlResolver.Tests
             Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());
             foreach (string uriString in expectedUris)
             {
-                Assert.True(resolver.PreloadedUris.Any(u => u.OriginalString.Equals(uriString)));
+                Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));
             }
         }
 
@@ -62,7 +62,7 @@ namespace System.Xml.XmlResolver.Tests
             Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());            
             foreach (string uriString in expectedUris)
             {
-                Assert.True(resolver.PreloadedUris.Any(u => u.OriginalString.Equals(uriString)));
+                Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Xml.XmlResolver.Tests
             Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());
             foreach (string uriString in expectedUris)
             {
-                Assert.True(resolver.PreloadedUris.Any(u => u.OriginalString.Equals(uriString)));
+                Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));
             }
         }
 
@@ -94,7 +94,7 @@ namespace System.Xml.XmlResolver.Tests
             Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());
             foreach (string uriString in expectedUris)
             {
-                Assert.True(resolver.PreloadedUris.Any(u => u.OriginalString.Equals(uriString)));
+                Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));
             }
         }
     }
