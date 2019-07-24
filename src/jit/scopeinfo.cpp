@@ -925,10 +925,9 @@ void CodeGen::siInit()
         {
             siLatestTrackedScopes = new (compiler->getAllocator(CMK_SiScope)) siScope* [scopeCount] {};
         }
-
-        compiler->compResetScopeLists();
     }
 #endif // USING_SCOPE_INFO
+    compiler->compResetScopeLists();
 }
 
 /*****************************************************************************
