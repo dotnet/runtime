@@ -149,7 +149,7 @@ namespace System.Data.OleDb
         //   the return value gets marked as an output parameter.
         static private OleDbParameter[] DeriveParametersFromStoredProcedure(OleDbConnection connection, OleDbCommand command)
         {
-            OleDbParameter[] plist = new OleDbParameter[0];
+            OleDbParameter[] plist = Array.Empty<OleDbParameter>();
 
             if (connection.SupportSchemaRowset(OleDbSchemaGuid.Procedure_Parameters))
             {

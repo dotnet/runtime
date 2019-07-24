@@ -22,7 +22,9 @@ namespace System.Text.Encodings.Web
     public abstract class TextEncoder
     {
         // Fast cache for Ascii
-        private static readonly byte[] s_noEscape = new byte[] { }; // Should not be Array.Empty<byte> since used as a singleton for comparison.
+#pragma warning disable CA1825 // should not be Array.Empty<byte> as this is used as a singleton for comparisons
+        private static readonly byte[] s_noEscape = new byte[] { };
+#pragma warning restore CA1825
         private byte[][] _asciiEscape = new byte[0x80][];
         
         // The following pragma disables a warning complaining about non-CLS compliant members being abstract, 

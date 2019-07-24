@@ -437,7 +437,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return result;
                 }
             }
-            return new KeyValuePair<string, object>[0];
+            return Array.Empty<KeyValuePair<string, object>>();
         }
 
         [Serializable]
