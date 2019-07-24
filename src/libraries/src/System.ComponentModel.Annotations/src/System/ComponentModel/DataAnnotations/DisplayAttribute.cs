@@ -18,11 +18,11 @@ namespace System.ComponentModel.DataAnnotations
     {
         #region Member Fields
 
-        private readonly LocalizableString _description = new LocalizableString("Description");
-        private readonly LocalizableString _groupName = new LocalizableString("GroupName");
-        private readonly LocalizableString _name = new LocalizableString("Name");
-        private readonly LocalizableString _prompt = new LocalizableString("Prompt");
-        private readonly LocalizableString _shortName = new LocalizableString("ShortName");
+        private readonly LocalizableString _description = new LocalizableString(nameof(Description));
+        private readonly LocalizableString _groupName = new LocalizableString(nameof(GroupName));
+        private readonly LocalizableString _name = new LocalizableString(nameof(Name));
+        private readonly LocalizableString _prompt = new LocalizableString(nameof(Prompt));
+        private readonly LocalizableString _shortName = new LocalizableString(nameof(ShortName));
         private bool? _autoGenerateField;
         private bool? _autoGenerateFilter;
         private int? _order;

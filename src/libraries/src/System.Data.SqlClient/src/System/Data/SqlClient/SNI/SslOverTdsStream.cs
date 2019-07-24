@@ -91,11 +91,11 @@ namespace System.Data.SqlClient.SNI
         {
             if (_encapsulate)
             {
-                return await ReadInternalEncapsulate(buffer, offset, count, token, async);
+                return await ReadInternalEncapsulate(buffer, offset, count, token, async).ConfigureAwait(false);
             }
             else if (async)
             {
-                return await ReadInternalAsync(buffer, offset, count, token);
+                return await ReadInternalAsync(buffer, offset, count, token).ConfigureAwait(false);
             }
             else
             {
@@ -114,7 +114,7 @@ namespace System.Data.SqlClient.SNI
                 while (readBytes < TdsEnums.HEADER_LEN)
                 {
                     readBytes += (async ?
-                        await ReadInternalAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token) :
+                        await ReadInternalAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false) :
                         ReadInternalSync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes)
                    );
                 }
@@ -129,7 +129,7 @@ namespace System.Data.SqlClient.SNI
             }
             
             readBytes = (async ?
-                await ReadInternalAsync(packetData, 0, count, token) :
+                await ReadInternalAsync(packetData, 0, count, token).ConfigureAwait(false) :
                 ReadInternalSync(packetData, 0, count)
             );
 

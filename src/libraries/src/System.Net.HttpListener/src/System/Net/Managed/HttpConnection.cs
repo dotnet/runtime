@@ -81,6 +81,7 @@ namespace System.Net
             }
             else
             {
+#pragma warning disable CA5359
                 _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
@@ -98,6 +99,7 @@ namespace System.Net
                     _clientCertErrors = new int[] { (int)e };
                     return true;
                 });
+#pragma warning restore CA5359
 
                 _stream = _sslStream;
             }
