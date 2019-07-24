@@ -9012,62 +9012,6 @@ void RegRecord::tinyDump()
     printf("<Reg:%-3s> ", getRegName(regNum));
 }
 
-void LinearScan::dumpNodeInfo(GenTree* node, regMaskTP dstCandidates, int srcCount, int dstCount)
-{
-    if (!VERBOSE)
-    {
-        return;
-    }
-    // This is formatted like the old dump to make diffs easier. TODO-Cleanup: improve.
-    int       internalIntCount   = 0;
-    int       internalFloatCount = 0;
-    regMaskTP internalCandidates = RBM_NONE;
-    for (int i = 0; i < internalCount; i++)
-    {
-        RefPosition* def = internalDefs[i];
-        if (def->getInterval()->registerType == TYP_INT)
-        {
-            internalIntCount++;
-        }
-        else
-        {
-            internalFloatCount++;
-        }
-        internalCandidates |= def->registerAssignment;
-    }
-    if (dstCandidates == RBM_NONE)
-    {
-        dstCandidates = varTypeIsFloating(node) ? allRegs(TYP_FLOAT) : allRegs(TYP_INT);
-    }
-    if (internalCandidates == RBM_NONE)
-    {
-        internalCandidates = allRegs(TYP_INT);
-    }
-    printf("    +<TreeNodeInfo %d=%d %di %df", dstCount, srcCount, internalIntCount, internalFloatCount);
-    printf(" src=");
-    dumpRegMask(varTypeIsFloating(node) ? allRegs(TYP_FLOAT) : allRegs(TYP_INT));
-    printf(" int=");
-    dumpRegMask(internalCandidates);
-    printf(" dst=");
-    dumpRegMask(dstCandidates);
-    if (node->IsUnusedValue())
-    {
-        printf(" L");
-    }
-    printf(" I");
-    if (pendingDelayFree)
-    {
-        printf(" D");
-    }
-    if (setInternalRegsDelayFree)
-    {
-        printf(" ID");
-    }
-    printf(">");
-    node->dumpLIRFlags();
-    printf("\n  consume= %d produce=%d\n", srcCount, dstCount);
-}
-
 void LinearScan::dumpDefList()
 {
     if (!VERBOSE)
