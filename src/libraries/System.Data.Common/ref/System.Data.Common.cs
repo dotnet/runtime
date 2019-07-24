@@ -3334,6 +3334,7 @@ namespace System.Data.SqlTypes
     public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public static readonly int BinarySort;
         public static readonly int BinarySort2;
         public static readonly int IgnoreCase;

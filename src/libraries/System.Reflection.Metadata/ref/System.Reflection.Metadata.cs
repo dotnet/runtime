@@ -85,6 +85,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ArrayShape
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ArrayShape(int rank, System.Collections.Immutable.ImmutableArray<int> sizes, System.Collections.Immutable.ImmutableArray<int> lowerBounds) { throw null; }
         public System.Collections.Immutable.ImmutableArray<int> LowerBounds { get { throw null; } }
         public int Rank { get { throw null; } }
@@ -122,6 +123,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct AssemblyFile
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool ContainsMetadata { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle HashValue { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -161,6 +163,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct AssemblyReference
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Culture { get { throw null; } }
         public System.Reflection.AssemblyFlags Flags { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle HashValue { get { throw null; } }
@@ -169,7 +172,7 @@ namespace System.Reflection.Metadata
         public System.Version Version { get { throw null; } }
 #if !NETSTANDARD11
         public System.Reflection.AssemblyName GetAssemblyName() { throw null; }
-#endif        
+#endif
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     public readonly partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
@@ -196,6 +199,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.AssemblyReferenceHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -206,6 +210,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct Blob
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool IsDefault { get { throw null; } }
         public int Length { get { throw null; } }
         public System.ArraySegment<byte> GetBytes() { throw null; }
@@ -357,6 +362,7 @@ namespace System.Reflection.Metadata
     public partial struct BlobWriter
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public BlobWriter(byte[] buffer) { throw null; }
         public BlobWriter(byte[] buffer, int start, int count) { throw null; }
         public BlobWriter(int size) { throw null; }
@@ -412,6 +418,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct Constant
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.ConstantTypeCode TypeCode { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Value { get { throw null; } }
@@ -451,6 +458,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomAttribute
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.EntityHandle Constructor { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Value { get { throw null; } }
@@ -473,6 +481,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.CustomAttributeHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomAttributeHandle>.GetEnumerator() { throw null; }
@@ -480,6 +489,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.CustomAttributeHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -495,6 +505,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomAttributeNamedArgument<TType>
     {
         private readonly TType _Type_k__BackingField;
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public CustomAttributeNamedArgument(string name, System.Reflection.Metadata.CustomAttributeNamedArgumentKind kind, TType type, object value) { throw null; }
         public System.Reflection.Metadata.CustomAttributeNamedArgumentKind Kind { get { throw null; } }
@@ -505,6 +516,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomAttributeTypedArgument<TType>
     {
         private readonly TType _Type_k__BackingField;
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public CustomAttributeTypedArgument(TType type, object value) { throw null; }
         public TType Type { get { throw null; } }
@@ -520,6 +532,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomDebugInformation
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.GuidHandle Kind { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Value { get { throw null; } }
@@ -541,6 +554,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.CustomDebugInformationHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.CustomDebugInformationHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomDebugInformationHandle>.GetEnumerator() { throw null; }
@@ -548,6 +562,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.CustomDebugInformationHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -565,6 +580,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct DeclarativeSecurityAttribute
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.DeclarativeSecurityAction Action { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PermissionSet { get { throw null; } }
@@ -586,6 +602,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct DeclarativeSecurityAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>.GetEnumerator() { throw null; }
@@ -593,6 +610,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.DeclarativeSecurityAttributeHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -603,6 +621,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct Document
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.BlobHandle Hash { get { throw null; } }
         public System.Reflection.Metadata.GuidHandle HashAlgorithm { get { throw null; } }
         public System.Reflection.Metadata.GuidHandle Language { get { throw null; } }
@@ -625,6 +644,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct DocumentHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DocumentHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DocumentHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.DocumentHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.DocumentHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DocumentHandle>.GetEnumerator() { throw null; }
@@ -632,6 +652,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.DocumentHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.DocumentHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -669,6 +690,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct EventAccessors
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.MethodDefinitionHandle Adder { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Raiser { get { throw null; } }
@@ -677,6 +699,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct EventDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.EventAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Type { get { throw null; } }
@@ -700,6 +723,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct EventDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.EventDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.EventDefinitionHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.EventDefinitionHandle>.GetEnumerator() { throw null; }
@@ -707,6 +731,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.EventDefinitionHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -735,6 +760,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ExportedType
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Implementation { get { throw null; } }
         public bool IsForwarder { get { throw null; } }
@@ -777,6 +803,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct FieldDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.FieldAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
@@ -805,6 +832,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct FieldDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.FieldDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.FieldDefinitionHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.FieldDefinitionHandle>.GetEnumerator() { throw null; }
@@ -812,6 +840,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.FieldDefinitionHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -822,6 +851,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct GenericParameter
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.GenericParameterAttributes Attributes { get { throw null; } }
         public int Index { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -832,6 +862,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct GenericParameterConstraint
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.GenericParameterHandle Parameter { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Type { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
@@ -1267,6 +1298,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ImportScope
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.BlobHandle ImportsBlob { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.ImportDefinitionCollection GetImports() { throw null; }
@@ -1274,6 +1306,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ImportScopeCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.ImportScopeHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportScopeHandle>.GetEnumerator() { throw null; }
@@ -1281,6 +1314,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.ImportScopeHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1305,6 +1339,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct InterfaceImplementation
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.EntityHandle Interface { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
@@ -1325,6 +1360,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct InterfaceImplementationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.InterfaceImplementationHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.InterfaceImplementationHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.InterfaceImplementationHandle>.GetEnumerator() { throw null; }
@@ -1332,6 +1368,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.InterfaceImplementationHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1361,6 +1398,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalConstant
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
     }
@@ -1381,6 +1419,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalConstantHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalConstantHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalConstantHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalConstantHandle>.GetEnumerator() { throw null; }
@@ -1388,6 +1427,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.LocalConstantHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1398,6 +1438,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalScope
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int EndOffset { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeHandle ImportScope { get { throw null; } }
         public int Length { get { throw null; } }
@@ -1424,6 +1465,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalScopeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalScopeHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalScopeHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalScopeHandle>.GetEnumerator() { throw null; }
@@ -1431,6 +1473,7 @@ namespace System.Reflection.Metadata
         public partial struct ChildrenEnumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.LocalScopeHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1440,6 +1483,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.LocalScopeHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1450,6 +1494,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalVariable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.LocalVariableAttributes Attributes { get { throw null; } }
         public int Index { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -1477,6 +1522,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct LocalVariableHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalVariableHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalVariableHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalVariableHandle>.GetEnumerator() { throw null; }
@@ -1484,6 +1530,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.LocalVariableHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1494,6 +1541,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ManifestResource
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.ManifestResourceAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Implementation { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -1534,6 +1582,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MemberReference
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
@@ -1684,7 +1733,7 @@ namespace System.Reflection.Metadata
         public unsafe static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbImage(byte* start, int size) { throw null; }
         public static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbImage(System.Collections.Immutable.ImmutableArray<byte> image) { throw null; }
         public static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbStream(System.IO.Stream stream, System.Reflection.Metadata.MetadataStreamOptions options = System.Reflection.Metadata.MetadataStreamOptions.Default, int size = 0) { throw null; }
-        public System.Reflection.Metadata.MetadataReader GetMetadataReader(System.Reflection.Metadata.MetadataReaderOptions options = System.Reflection.Metadata.MetadataReaderOptions.ApplyWindowsRuntimeProjections, System.Reflection.Metadata.MetadataStringDecoder utf8Decoder = null) { throw null; }
+        public System.Reflection.Metadata.MetadataReader GetMetadataReader(System.Reflection.Metadata.MetadataReaderOptions options = System.Reflection.Metadata.MetadataReaderOptions.Default, System.Reflection.Metadata.MetadataStringDecoder utf8Decoder = null) { throw null; }
     }
     [System.FlagsAttribute]
     public enum MetadataStreamOptions
@@ -1728,6 +1777,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodDebugInformation
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.DocumentHandle Document { get { throw null; } }
         public System.Reflection.Metadata.StandaloneSignatureHandle LocalSignature { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle SequencePointsBlob { get { throw null; } }
@@ -1752,6 +1802,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MethodDebugInformationHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.MethodDebugInformationHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDebugInformationHandle>.GetEnumerator() { throw null; }
@@ -1759,6 +1810,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.MethodDebugInformationHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1769,6 +1821,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public System.Reflection.MethodImplAttributes ImplAttributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -1800,6 +1853,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.MethodDefinitionHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDefinitionHandle>.GetEnumerator() { throw null; }
@@ -1807,6 +1861,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.MethodDefinitionHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -1817,6 +1872,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodImplementation
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.EntityHandle MethodBody { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle MethodDeclaration { get { throw null; } }
         public System.Reflection.Metadata.TypeDefinitionHandle Type { get { throw null; } }
@@ -1863,6 +1919,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodSignature<TType>
     {
         private readonly TType _ReturnType_k__BackingField;
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public MethodSignature(System.Reflection.Metadata.SignatureHeader header, TType returnType, int requiredParameterCount, int genericParameterCount, System.Collections.Immutable.ImmutableArray<TType> parameterTypes) { throw null; }
         public int GenericParameterCount { get { throw null; } }
@@ -1874,6 +1931,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MethodSpecification
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.EntityHandle Method { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<TType> DecodeSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
@@ -1920,6 +1978,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ModuleReference
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
@@ -1961,6 +2020,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct Parameter
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.ParameterAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public int SequenceNumber { get { throw null; } }
@@ -1985,6 +2045,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ParameterHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ParameterHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ParameterHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ParameterHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.ParameterHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ParameterHandle>.GetEnumerator() { throw null; }
@@ -1992,6 +2053,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.ParameterHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.ParameterHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -2047,6 +2109,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct PropertyAccessors
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.MethodDefinitionHandle Getter { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Setter { get { throw null; } }
@@ -2054,6 +2117,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct PropertyDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.PropertyAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
@@ -2079,6 +2143,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct PropertyDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.PropertyDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.PropertyDefinitionHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.PropertyDefinitionHandle>.GetEnumerator() { throw null; }
@@ -2086,6 +2151,7 @@ namespace System.Reflection.Metadata
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.PropertyDefinitionHandle Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -2096,6 +2162,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ReservedBlob<THandle> where THandle : struct
     {
         private readonly THandle _Handle_k__BackingField;
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.Blob Content { get { throw null; } }
         public THandle Handle { get { throw null; } }
@@ -2242,6 +2309,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct StandaloneSignature
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<TType> DecodeLocalSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
         public System.Reflection.Metadata.MethodSignature<TType> DecodeMethodSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
@@ -2282,6 +2350,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle BaseType { get { throw null; } }
         public bool IsNested { get { throw null; } }
@@ -2343,6 +2412,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeReference
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Namespace { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle ResolutionScope { get { throw null; } }
@@ -2381,6 +2451,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeSpecification
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
         public TType DecodeSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
@@ -2529,6 +2600,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ExceptionRegionEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasSmallFormat { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder Add(System.Reflection.Metadata.ExceptionRegionKind kind, int tryOffset, int tryLength, int handlerOffset, int handlerLength, System.Reflection.Metadata.EntityHandle catchType = default(System.Reflection.Metadata.EntityHandle), int filterOffset = 0) { throw null; }
@@ -2824,6 +2896,7 @@ namespace System.Reflection.Metadata.Ecma335
         public readonly partial struct MethodBody
         {
             private readonly object _dummy;
+            private readonly int _dummyPrimitive;
             public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder ExceptionRegions { get { throw null; } }
             public System.Reflection.Metadata.Blob Instructions { get { throw null; } }
             public int Offset { get { throw null; } }
@@ -2832,6 +2905,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct MethodSignatureEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public MethodSignatureEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasVarArgs { get { throw null; } }
@@ -2865,6 +2939,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ParametersEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ParametersEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs = false) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasVarArgs { get { throw null; } }
@@ -2918,6 +2993,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct SignatureDecoder<TType, TGenericContext>
     {
         private readonly TGenericContext _genericContext;
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public SignatureDecoder(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, System.Reflection.Metadata.MetadataReader metadataReader, TGenericContext genericContext) { throw null; }
         public TType DecodeFieldSignature(ref System.Reflection.Metadata.BlobReader blobReader) { throw null; }
@@ -3047,6 +3123,7 @@ namespace System.Reflection.PortableExecutable
     public readonly partial struct CodeViewDebugDirectoryData
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Age { get { throw null; } }
         public System.Guid Guid { get { throw null; } }
         public string Path { get { throw null; } }
@@ -3325,6 +3402,7 @@ namespace System.Reflection.PortableExecutable
     public readonly partial struct PEMemoryBlock
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Length { get { throw null; } }
         public unsafe byte* Pointer { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<byte> GetContent() { throw null; }
@@ -3422,6 +3500,7 @@ namespace System.Reflection.PortableExecutable
     public readonly partial struct SectionHeader
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public string Name { get { throw null; } }
         public ushort NumberOfLineNumbers { get { throw null; } }
         public ushort NumberOfRelocations { get { throw null; } }
