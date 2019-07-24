@@ -214,6 +214,33 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = true;
         }
 
+        public async Task ReadRstStreamAsync(int streamId)
+        {
+            Frame frame = await ReadFrameAsync(Timeout);
+            
+            if (frame == null)
+            {
+                throw new Exception($"Expected RST_STREAM, saw EOF");
+            }
+
+            if (frame.Type != FrameType.RstStream)
+            {
+                throw new Exception($"Expected RST_STREAM, saw {frame.Type}");
+            }
+
+            if (frame.StreamId != streamId)
+            {
+                throw new Exception($"Expected RST_STREAM on stream {streamId}, actual streamId={frame.StreamId}");
+            }
+        }
+
+        // Wait for the client to close the connection, e.g. after the HttpClient is disposed.
+        public async Task WaitForClientDisconnectAsync()
+        {
+            Frame frame = await ReadFrameAsync(Timeout);
+            Assert.Null(frame);
+        }
+
         public void ShutdownSend()
         {
             _connectionSocket.Shutdown(SocketShutdown.Send);
