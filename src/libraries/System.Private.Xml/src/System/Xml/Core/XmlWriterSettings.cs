@@ -375,7 +375,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DoNotEscapeUriAttributes");
+                CheckReadOnly(nameof(DoNotEscapeUriAttributes));
                 _doNotEscapeUriAttributes = value;
             }
         }
@@ -388,7 +388,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("MergeCDataSections");
+                CheckReadOnly(nameof(MergeCDataSections));
                 _mergeCDataSections = value;
             }
         }
@@ -402,7 +402,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("MediaType");
+                CheckReadOnly(nameof(MediaType));
                 _mediaType = value;
             }
         }
@@ -416,7 +416,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DocTypeSystem");
+                CheckReadOnly(nameof(DocTypeSystem));
                 _docTypeSystem = value;
             }
         }
@@ -430,7 +430,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DocTypePublic");
+                CheckReadOnly(nameof(DocTypePublic));
                 _docTypePublic = value;
             }
         }
@@ -444,7 +444,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Standalone");
+                CheckReadOnly(nameof(Standalone));
                 _standalone = value;
             }
         }
@@ -458,7 +458,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("AutoXmlDeclaration");
+                CheckReadOnly(nameof(AutoXmlDeclaration));
                 _autoXmlDecl = value;
             }
         }
