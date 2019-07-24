@@ -19,6 +19,10 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 "Microsoft.NETCore.App.Ref"))
             {
                 tester.IsTargetingPackForPlatform();
+                tester.HasOnlyTheseDataFiles(
+                    "data/FrameworkList.xml",
+                    "data/PackageOverrides.txt",
+                    "data/PlatformManifest.txt");
             }
         }
 
