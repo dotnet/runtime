@@ -371,6 +371,7 @@ namespace System.Security.Cryptography.X509Certificates
     public partial struct X509ChainStatus
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.Security.Cryptography.X509Certificates.X509ChainStatusFlags Status { get { throw null; } set { } }
         public string StatusInformation { get { throw null; } set { } }
     }

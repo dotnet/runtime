@@ -247,6 +247,8 @@ namespace System.IO.Enumeration
 {
     public ref partial struct FileSystemEntry
     {
+        private object _dummy;
+        private int _dummyPrimitive;
         public System.IO.FileAttributes Attributes { get { throw null; } }
         public System.DateTimeOffset CreationTimeUtc { get { throw null; } }
         public System.ReadOnlySpan<char> Directory { get { throw null; } }
