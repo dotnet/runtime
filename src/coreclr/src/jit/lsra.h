@@ -885,7 +885,6 @@ private:
     }
 
     // Dump support
-    void dumpNodeInfo(GenTree* node, regMaskTP dstCandidates, int srcCount, int dstCount);
     void dumpDefList();
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
