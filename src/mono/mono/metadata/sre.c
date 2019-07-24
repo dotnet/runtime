@@ -4034,11 +4034,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 
 	error_init (error);
 
-	if (mono_runtime_is_shutting_down ()) {
-		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
-		return FALSE;
-	}
-
 	if (!(queue = dynamic_method_queue)) {
 		mono_loader_lock ();
 		if (!(queue = dynamic_method_queue))
