@@ -39,7 +39,6 @@ namespace System.Tests
         [Theory]
         [InlineData((byte)234, (byte)234, 0)]
         [InlineData((byte)234, byte.MinValue, 1)]
-        [InlineData((byte)234, (byte)0, 1)]
         [InlineData((byte)234, (byte)123, 1)]
         [InlineData((byte)234, (byte)235, -1)]
         [InlineData((byte)234, byte.MaxValue, -1)]

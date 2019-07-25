@@ -150,7 +150,6 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("12x", false)]
         [InlineData("123", true)]
         [InlineData('1', true)]
-        [InlineData('a', false)]
         [InlineData("&O123", true)]
         [InlineData("&H123", true)]
         public void IsNumeric(object value, bool expected)

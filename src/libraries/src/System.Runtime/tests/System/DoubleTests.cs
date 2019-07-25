@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+
+#pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
 
 namespace System.Tests
 {

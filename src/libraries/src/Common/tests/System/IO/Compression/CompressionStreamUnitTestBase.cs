@@ -565,7 +565,7 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(false)]
         [InlineData(true)]
         public virtual void Write_ArgumentValidation(bool useAsync)
         {
@@ -586,7 +586,7 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(false)]
         [InlineData(true)]
         public virtual void Read_ArgumentValidation(bool useAsync)
         {

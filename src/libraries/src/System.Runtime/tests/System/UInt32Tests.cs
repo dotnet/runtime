@@ -40,7 +40,6 @@ namespace System.Tests
         [Theory]
         [InlineData((uint)234, (uint)234, 0)]
         [InlineData((uint)234, uint.MinValue, 1)]
-        [InlineData((uint)234, (uint)0, 1)]
         [InlineData((uint)234, (uint)123, 1)]
         [InlineData((uint)234, (uint)456, -1)]
         [InlineData((uint)234, uint.MaxValue, -1)]

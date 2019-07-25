@@ -108,8 +108,6 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(@"this", true, false)] //CData_Text
         [InlineData(@"&amp;", true, false)] //EntityReference
         [InlineData(@"<?xml-stylesheet type='text / xsl' href='style.xsl'?>", true, false)] //EntityReference
-        [InlineData(@"<?xml-stylesheet type='text / xsl' href='style.xsl'?>", true, false)] //EntityReference
-
         public static void ExtraData(string arbitraryData, bool checkSignatureSucceeds, bool loadThrows)
         {
             string xml = $@"<?xml version=""1.0"" encoding=""UTF-8""?>

@@ -80,7 +80,6 @@
     <Rule Id="xUnit1010" Action="None" /> <!-- The value is not convertible to the method parameter type -->
     <Rule Id="xUnit1019" Action="None" /> <!-- MemberData must reference a member providing a valid data type -->
     <Rule Id="xUnit1024" Action="None" /> <!-- Test methods cannot have overloads -->
-    <Rule Id="xUnit1025" Action="None" /> <!-- InlineData should be unique within the Theory it belongs to -->
     <Rule Id="xUnit1026" Action="None" /> <!-- Theory methods should use all of their parameters -->
     <Rule Id="xUnit2000" Action="None" /> <!-- Constants and literals should be the expected argument -->
     <Rule Id="xUnit2002" Action="None" /> <!-- Do not use null check on value type -->

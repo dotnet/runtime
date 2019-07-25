@@ -873,7 +873,6 @@ namespace System.Tests
         [InlineData(3155378976000000000)]
         [InlineData(long.MaxValue)]
         [InlineData(3155378976000000000 | ((long)DateTimeKind.Utc << 62))]
-        [InlineData(long.MaxValue | ((long)DateTimeKind.Utc << 62))]
         public void FromBinary_OutOfRangeTicks_ThrowsArgumentException(long dateData)
         {
             AssertExtensions.Throws<ArgumentException>("dateData", () => DateTime.FromBinary(dateData));

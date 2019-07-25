@@ -71,9 +71,9 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(float.MinValue, -1.0f)]
         [InlineData(float.MinValue, 0.0f)]
         [InlineData(1.0f, float.MinValue)]
-        [InlineData(1.0f, float.MinValue)]
+        [InlineData(1.0f, float.MaxValue)]
         [InlineData(-1.0f, float.MinValue)]
-        [InlineData(-1.0f, float.MinValue)]
+        [InlineData(-1.0f, float.MaxValue)]
         public void DivideTestSizeFloat(float dimension, float divisor)
         {
             SizeF size = new SizeF(dimension, dimension);

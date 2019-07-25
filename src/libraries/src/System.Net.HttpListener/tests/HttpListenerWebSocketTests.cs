@@ -71,7 +71,6 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Close)]
         [InlineData(WebSocketMessageType.Text - 1)]
-        [InlineData(WebSocketMessageType.Binary + 1)]
         public async Task SendAsync_InvalidMessageType_ThrowsArgumentNullException(WebSocketMessageType messageType)
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();

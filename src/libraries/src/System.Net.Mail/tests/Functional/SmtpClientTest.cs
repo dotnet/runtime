@@ -49,7 +49,6 @@ namespace System.Net.Mail.Tests
         [Theory]
         [InlineData(SmtpDeliveryMethod.SpecifiedPickupDirectory)]
         [InlineData(SmtpDeliveryMethod.PickupDirectoryFromIis)]
-        [InlineData(SmtpDeliveryMethod.PickupDirectoryFromIis)]
         public void DeliveryMethodTest(SmtpDeliveryMethod method)
         {
             Smtp.DeliveryMethod = method;

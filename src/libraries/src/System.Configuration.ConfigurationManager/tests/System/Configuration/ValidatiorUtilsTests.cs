@@ -40,11 +40,9 @@ namespace System.ConfigurationTests
             // Exclusive out of range
             InlineData(2, 1, 1, 1, true, false, null),
             InlineData(3, 1, 2, 1, true, false, null),
-            InlineData(3, 1, 2, 1, true, false, null),
             // Not exclusive out of range
             InlineData(2, 1, 1, 1, false, true, "Validation_scalar_range_violation_not_equal"),
             InlineData(3, 1, 2, 1, false, true, "Validation_scalar_range_violation_not_in_range"),
-            InlineData(3, 1, 2, 1, false, true, "Validation_scalar_range_violation_not_in_range")
             ]
         public void ValidateIntScalar(int value, int min, int max, int resolution, bool exclusiveRange, bool shouldThrow, string message)
         {

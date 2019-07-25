@@ -169,7 +169,6 @@ namespace System.Text.Tests
         [InlineData(new char[] { '\ud83d', '\ude32' }, OperationStatus.Done, 0x1F632, 2)] // supplementary value (U+1F632 ASTONISHED FACE)
         [InlineData(new char[] { '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
         [InlineData(new char[] { '\udc00', '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
-        [InlineData(new char[] { '\udc00', '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
         [InlineData(new char[] { '\ud800' }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // high surrogate at end of buffer
         [InlineData(new char[] { '\ud800', '\ud800' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone high surrogate
         [InlineData(new char[] { '\ud800', '\u1234' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone high surrogate

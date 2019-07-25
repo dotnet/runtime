@@ -109,13 +109,11 @@ namespace System.ComponentModel.Tests
         [InlineData("Font")]
         [InlineData("Format")]
         [InlineData("Key")]
-        [InlineData("Format")]
         [InlineData("Layout")]
         [InlineData("List")]
         [InlineData("Mouse")]
         [InlineData("Position")]
         [InlineData("Scale")]
-        [InlineData("Position")]
         [InlineData("Text")]
         [InlineData("WindowStyle")]
         public void GetLocalizedString_InvokeValueExists_ReturnsNonEmpty(string value)
