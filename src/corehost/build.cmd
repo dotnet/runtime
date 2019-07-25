@@ -52,6 +52,11 @@ set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
   for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
+if not exist "%_VSCOMNTOOLS%" (
+	if exist %_VSWHERE% (
+		for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath -Prerelease`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+	)
+)
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
