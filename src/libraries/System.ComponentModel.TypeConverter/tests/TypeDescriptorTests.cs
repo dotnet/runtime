@@ -50,7 +50,7 @@ namespace System.ComponentModel.Tests
             var component = TypeDescriptor.CreateInstance(null, typeof(DescriptorTestComponent), new[] { expectedString.GetType() }, new[] { expectedString });
 
             Assert.NotNull(component);
-            Assert.IsType(typeof(DescriptorTestComponent), component);
+            Assert.IsType<DescriptorTestComponent>(component);
             Assert.Equal(expectedString, (component as DescriptorTestComponent).StringProperty);
         }
 

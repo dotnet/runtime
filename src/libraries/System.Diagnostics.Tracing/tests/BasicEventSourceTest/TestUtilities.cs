@@ -72,7 +72,7 @@ namespace BasicEventSourceTests
             // EventListener will return the boxed value of the nullable, which will either be a value or null object reference
             else if (wrappedValue != null)
             {
-                Assert.IsType(typeof(T), wrappedValue);
+                Assert.IsType<T>(wrappedValue);
                 return (T?)wrappedValue;
             }
 

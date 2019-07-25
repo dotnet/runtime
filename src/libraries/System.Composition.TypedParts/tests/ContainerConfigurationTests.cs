@@ -329,7 +329,7 @@ namespace System.Composition.Hosting.Tests
                 .CreateContainer();
 
             DerivedFromBaseWithImport export = container.GetExport<DerivedFromBaseWithImport>();
-            Assert.IsAssignableFrom(typeof(Imported), export.Imported);
+            Assert.IsAssignableFrom<Imported>(export.Imported);
         }
 
         public class Imported { }

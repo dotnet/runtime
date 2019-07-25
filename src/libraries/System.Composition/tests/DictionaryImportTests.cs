@@ -76,8 +76,8 @@ namespace System.Composition.UnitTests
 
             var consumer = container.GetExport<Consumer>();
 
-            Assert.IsAssignableFrom(typeof(ValueA), consumer.Values["A"]);
-            Assert.IsAssignableFrom(typeof(ValueB), consumer.Values["B"]);
+            Assert.IsAssignableFrom<ValueA>(consumer.Values["A"]);
+            Assert.IsAssignableFrom<ValueB>(consumer.Values["B"]);
             Assert.Equal(2, consumer.Values.Count());
         }
 

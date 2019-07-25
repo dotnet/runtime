@@ -86,7 +86,6 @@
     <Rule Id="xUnit2002" Action="None" /> <!-- Do not use null check on value type -->
     <Rule Id="xUnit2005" Action="None" /> <!-- Do not use identity check on value type -->
     <Rule Id="xUnit2006" Action="None" /> <!-- Do not use invalid string equality check -->
-    <Rule Id="xUnit2007" Action="None" /> <!-- Do not use typeof expression to check the type -->
     <Rule Id="xUnit2009" Action="None" /> <!-- Do not use boolean check to check for substrings -->
     <Rule Id="xUnit2013" Action="None" /> <!-- Do not use equality check to check for collection size. -->
     <Rule Id="xUnit2017" Action="None" /> <!-- Do not use Contains() to check if a value exists in a collection -->

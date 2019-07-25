@@ -41,7 +41,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(A), typeof(BLazy));
             var x = cc.GetExport<BLazy>();
-            Assert.IsAssignableFrom(typeof(A), x.A.Value);
+            Assert.IsAssignableFrom<A>(x.A.Value);
         }
 
         [Fact]
