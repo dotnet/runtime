@@ -21,7 +21,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidatePropertyNameAndDepth(ReadOnlySpan<byte> utf8PropertyName)
         {
-            if (utf8PropertyName.Length > JsonConstants.MaxTokenSize || CurrentDepth >= JsonConstants.MaxWriterDepth)
+            if (utf8PropertyName.Length > JsonConstants.MaxUnescapedTokenSize || CurrentDepth >= JsonConstants.MaxWriterDepth)
                 ThrowHelper.ThrowInvalidOperationOrArgumentException(utf8PropertyName, _currentDepth);
         }
 

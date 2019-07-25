@@ -594,7 +594,7 @@ namespace System.Text.Json
 
         private void WriteStartHelper(ReadOnlySpan<byte> utf8PropertyName, byte token)
         {
-            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             ValidateDepth();
 

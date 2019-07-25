@@ -27,7 +27,7 @@ namespace System.Text.Json
 
         private void WriteNumberHelper(ReadOnlySpan<byte> utf8PropertyName, ulong value)
         {
-            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteNumberByOptions(utf8PropertyName, value);
 

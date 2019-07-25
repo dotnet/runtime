@@ -66,20 +66,20 @@ namespace System.Text.Json
 
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
             {
                 ThrowArgumentException(SR.Format(SR.PropertyNameTooLarge, propertyName.Length));
             }
             else
             {
-                Debug.Assert(value.Length > JsonConstants.MaxTokenSize);
+                Debug.Assert(value.Length > JsonConstants.MaxUnescapedTokenSize);
                 ThrowArgumentException(SR.Format(SR.ValueTooLarge, value.Length));
             }
         }
 
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<char> value)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
             {
                 ThrowArgumentException(SR.Format(SR.PropertyNameTooLarge, propertyName.Length));
             }
@@ -98,7 +98,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(value.Length > JsonConstants.MaxTokenSize);
+                Debug.Assert(value.Length > JsonConstants.MaxUnescapedTokenSize);
                 ThrowArgumentException(SR.Format(SR.ValueTooLarge, value.Length));
             }
         }
