@@ -169,6 +169,10 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
 
+                    // Cancel the stream before we set _requestCompletionState below.
+                    // Otherwise, a response stream reader may race with the actual Cancel.
+                    Cancel();
+
                     lock (SyncObject)
                     {
                         Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
@@ -176,8 +180,6 @@ namespace System.Net.Http
                         _requestCompletionState = StreamCompletionState.Failed;
                         CheckForCompletion();
                     }
-
-                    Cancel();
 
                     throw;
                 }
@@ -291,7 +293,7 @@ namespace System.Net.Http
 
                 if (requestBodyCancellationSource != null)
                 {
-                    // When cancellation propagates, SendRequestBodyAsync will set _responseCompletionState to Failed
+                    // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
                     requestBodyCancellationSource.Cancel();
                 }
 
