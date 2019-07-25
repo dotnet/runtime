@@ -12,7 +12,7 @@ namespace System.Linq.Parallel.Tests
     {
         private const int DuplicateFactor = 4;
 
-        private static IEnumerable<int> RightCounts(int leftCount)
+        public static IEnumerable<int> RightCounts(int leftCount)
         {
             int upperBound = Math.Max(DuplicateFactor, leftCount);
             return new[] { 0, 1, upperBound, upperBound * 2 }.Distinct();

@@ -71,13 +71,13 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<OverflowException>(() => DateType.FromString(value));
         }
 
-        private static IEnumerable<object[]> FromObject_TestData()
+        public static IEnumerable<object[]> FromObject_TestData()
         {
             // null.
             yield return new object[] { null, default(DateTime) };
         }
 
-        private static IEnumerable<object[]> FromObject_NotSupported_TestData()
+        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             // byte.
             yield return new object[] { byte.MinValue, default(DateTime) };
@@ -171,22 +171,22 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { false, default(DateTime) };
         }
 
-        private static IEnumerable<object[]> FromObject_Invalid_TestData()
+        public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromObject_Overflow_TestData()
+        public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_TestData()
+        public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { "12:00:00 AM", new DateTime(0) };
         }
 
-        private static IEnumerable<object[]> FromString_NotSupported_TestData()
+        public static IEnumerable<object[]> FromString_NotSupported_TestData()
         {
             yield return new object[] { null, default(DateTime) };
             yield return new object[] { "-1", default(DateTime) };
@@ -199,7 +199,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "&o0", default(DateTime) };
         }
 
-        private static IEnumerable<object[]> FromString_Invalid_TestData()
+        public static IEnumerable<object[]> FromString_Invalid_TestData()
         {
             yield return new object[] { "" };
             yield return new object[] { "&" };
@@ -210,7 +210,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "invalid" };
         }
 
-        private static IEnumerable<object[]> FromString_Overflow_TestData()
+        public static IEnumerable<object[]> FromString_Overflow_TestData()
         {
             yield break;
         }

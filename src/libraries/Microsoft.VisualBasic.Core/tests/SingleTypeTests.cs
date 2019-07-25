@@ -86,7 +86,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<OverflowException>(() => SingleType.FromString(value));
         }
 
-        private static IEnumerable<object[]> FromObject_TestData()
+        public static IEnumerable<object[]> FromObject_TestData()
         {
             // byte.
             yield return new object[] { byte.MinValue, (float)0 };
@@ -167,7 +167,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { null, (float)0 };
         }
 
-        private static IEnumerable<object[]> FromObject_NotSupported_TestData()
+        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             // sbyte.
             yield return new object[] { sbyte.MinValue, (float)(-128) };
@@ -206,7 +206,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (ULongEnum)ulong.MaxValue, (float)ulong.MaxValue };
         }
 
-        private static IEnumerable<object[]> FromObject_Invalid_TestData()
+        public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
             // char.
             yield return new object[] { char.MinValue };
@@ -220,12 +220,12 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new object() };
         }
 
-        private static IEnumerable<object[]> FromObject_Overflow_TestData()
+        public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_TestData()
+        public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { null, (float)0 };
             yield return new object[] { "-1", (float)(-1) };
@@ -240,18 +240,18 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { double.NaN.ToString(), float.NaN };
         }
 
-        private static IEnumerable<object[]> FromString_Other_TestData()
+        public static IEnumerable<object[]> FromString_Other_TestData()
         {
             yield return new object[] { double.PositiveInfinity.ToString(), float.PositiveInfinity };
             yield return new object[] { double.NegativeInfinity.ToString(), float.NegativeInfinity };
         }
 
-        private static IEnumerable<object[]> FromString_NotSupported_TestData()
+        public static IEnumerable<object[]> FromString_NotSupported_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_Invalid_TestData()
+        public static IEnumerable<object[]> FromString_Invalid_TestData()
         {
             yield return new object[] { "" };
             yield return new object[] { "&" };
@@ -262,7 +262,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "invalid" };
         }
 
-        private static IEnumerable<object[]> FromString_Overflow_TestData()
+        public static IEnumerable<object[]> FromString_Overflow_TestData()
         {
             yield return new object[] { "1844674407370955161618446744073709551616" };
         }

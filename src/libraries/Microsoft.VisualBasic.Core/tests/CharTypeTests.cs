@@ -70,7 +70,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<OverflowException>(() => CharType.FromString(value));
         }
 
-        private static IEnumerable<object[]> FromObject_TestData()
+        public static IEnumerable<object[]> FromObject_TestData()
         {
             // char.
             yield return new object[] { char.MinValue, char.MinValue };
@@ -81,12 +81,12 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { null, char.MinValue };
         }
 
-        private static IEnumerable<object[]> FromObject_NotSupported_TestData()
+        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromObject_Invalid_TestData()
+        public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
             yield return new object[] { byte.MinValue };
             yield return new object[] { (byte)1 };
@@ -181,12 +181,12 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new object() };
         }
 
-        private static IEnumerable<object[]> FromObject_Overflow_TestData()
+        public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_TestData()
+        public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { null, char.MinValue };
             yield return new object[] { "", char.MinValue };
@@ -209,17 +209,17 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "1844674407370955161618446744073709551616", '1' };
         }
 
-        private static IEnumerable<object[]> FromString_NotSupported_TestData()
+        public static IEnumerable<object[]> FromString_NotSupported_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_Invalid_TestData()
+        public static IEnumerable<object[]> FromString_Invalid_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_Overflow_TestData()
+        public static IEnumerable<object[]> FromString_Overflow_TestData()
         {
             yield break;
         }

@@ -35,7 +35,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<MissingMemberException>(() => Interaction.CallByName(instance, methodName, useCallType, args));
         }
 
-        private static IEnumerable<object[]> CallByName_TestData()
+        public static IEnumerable<object[]> CallByName_TestData()
         {
             yield return new object[] { new Class(), "Method", CallType.Method, new object[] { 1, 2 }, null, 3 };
             yield return new object[] { new Class(), "Method", CallType.Get, new object[] { 2, 3 }, null, 5 };
@@ -45,14 +45,14 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { new Class(), "Item", CallType.Let, new object[] { 4, 5 }, new Func<object, object>(obj => ((Class)obj).Value), 9 };
         }
 
-        private static IEnumerable<object[]> CallByName_ArgumentException_TestData()
+        public static IEnumerable<object[]> CallByName_ArgumentException_TestData()
         {
             yield return new object[] { null, null, default(CallType), new object[0] };
             yield return new object[] { new Class(), "Method", default(CallType), new object[] { 1, 2 } };
             yield return new object[] { new Class(), "Method", (CallType)int.MaxValue, new object[] { 1, 2 } };
         }
 
-        private static IEnumerable<object[]> CallByName_MissingMemberException_TestData()
+        public static IEnumerable<object[]> CallByName_MissingMemberException_TestData()
         {
             yield return new object[] { new Class(), "Method", CallType.Method, new object[0] };
             yield return new object[] { new Class(), "Q", CallType.Get, new object[0] };
@@ -105,7 +105,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Interaction.IIf(expression, truePart, falsePart));
         }
 
-        private static IEnumerable<object[]> IIf_TestData()
+        public static IEnumerable<object[]> IIf_TestData()
         {
             yield return new object[] { false, 1, null, null };
             yield return new object[] { true, 1, null, 1 };

@@ -150,7 +150,7 @@ namespace System.Linq.Parallel.Tests
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().Any(null));
         }
 
-        private static IEnumerable<int> InfiniteEnumerable()
+        public static IEnumerable<int> InfiniteEnumerable()
         {
             while (true) yield return 0;
         }

@@ -70,7 +70,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<OverflowException>(() => ByteType.FromString(value));
         }
 
-        private static IEnumerable<object[]> FromObject_TestData()
+        public static IEnumerable<object[]> FromObject_TestData()
         {
             // byte.
             yield return new object[] { byte.MinValue, byte.MinValue };
@@ -118,7 +118,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { null, byte.MinValue };
         }
 
-        private static IEnumerable<object[]> FromObject_NotSupported_TestData()
+        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             // sbyte.
             yield return new object[] { (sbyte)0, byte.MinValue };
@@ -147,7 +147,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (ULongEnum)1, (byte)1 };
         }
 
-        private static IEnumerable<object[]> FromObject_Invalid_TestData()
+        public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
             // char.
             yield return new object[] { char.MinValue };
@@ -165,13 +165,13 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (UShortEnum)ushort.MaxValue };
         }
 
-        private static IEnumerable<object[]> FromObject_Overflow_TestData()
+        public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
             yield return new object[] { short.MaxValue };
             yield return new object[] { (ShortEnum)short.MaxValue };
         }
 
-        private static IEnumerable<object[]> FromString_TestData()
+        public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { null, byte.MinValue };
             yield return new object[] { "0", byte.MinValue };
@@ -184,12 +184,12 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { 1.1.ToString(), (byte)1 };
         }
 
-        private static IEnumerable<object[]> FromString_NotSupported_TestData()
+        public static IEnumerable<object[]> FromString_NotSupported_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_Invalid_TestData()
+        public static IEnumerable<object[]> FromString_Invalid_TestData()
         {
             yield return new object[] { "" };
             yield return new object[] { "&" };
@@ -200,7 +200,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "invalid" };
         }
 
-        private static IEnumerable<object[]> FromString_Overflow_TestData()
+        public static IEnumerable<object[]> FromString_Overflow_TestData()
         {
             yield return new object[] { "256" };
         }

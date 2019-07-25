@@ -70,7 +70,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<OverflowException>(() => LongType.FromString(value));
         }
 
-        private static IEnumerable<object[]> FromObject_TestData()
+        public static IEnumerable<object[]> FromObject_TestData()
         {
             // byte.
             yield return new object[] { byte.MinValue, (long)0 };
@@ -139,7 +139,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { null, (long)0 };
         }
 
-        private static IEnumerable<object[]> FromObject_NotSupported_TestData()
+        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             // sbyte.
             yield return new object[] { sbyte.MinValue, (long)(-128) };
@@ -176,7 +176,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (ULongEnum)1, (long)1 };
         }
 
-        private static IEnumerable<object[]> FromObject_Invalid_TestData()
+        public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
             // char.
             yield return new object[] { char.MinValue };
@@ -194,7 +194,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (ULongEnum)ulong.MaxValue };
         }
 
-        private static IEnumerable<object[]> FromObject_Overflow_TestData()
+        public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
             yield return new object[] { float.MinValue };
             yield return new object[] { float.MaxValue };
@@ -210,7 +210,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { decimal.MaxValue };
         }
 
-        private static IEnumerable<object[]> FromString_TestData()
+        public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { null, (long)0 };
             yield return new object[] { "-1", (long)(-1) };
@@ -224,12 +224,12 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { 1.1.ToString(), (long)1 };
         }
 
-        private static IEnumerable<object[]> FromString_NotSupported_TestData()
+        public static IEnumerable<object[]> FromString_NotSupported_TestData()
         {
             yield break;
         }
 
-        private static IEnumerable<object[]> FromString_Invalid_TestData()
+        public static IEnumerable<object[]> FromString_Invalid_TestData()
         {
             yield return new object[] { "" };
             yield return new object[] { "&" };
@@ -243,7 +243,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { double.NaN.ToString() };
         }
 
-        private static IEnumerable<object[]> FromString_Overflow_TestData()
+        public static IEnumerable<object[]> FromString_Overflow_TestData()
         {
             yield break;
         }

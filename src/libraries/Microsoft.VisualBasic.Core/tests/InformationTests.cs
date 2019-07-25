@@ -182,7 +182,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Information.TypeName(expression));
         }
 
-        private static IEnumerable<object[]> TypeName_TestData()
+        public static IEnumerable<object[]> TypeName_TestData()
         {
             yield return new object[] { null, "Nothing" };
             yield return new object[] { new object(), "Object" };

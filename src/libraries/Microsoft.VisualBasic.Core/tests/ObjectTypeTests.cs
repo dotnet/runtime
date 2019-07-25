@@ -17,7 +17,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.AddObj(x, y));
         }
 
-        private static IEnumerable<object[]> AddObj_TestData()
+        public static IEnumerable<object[]> AddObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -31,7 +31,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.BitAndObj(x, y));
         }
 
-        private static IEnumerable<object[]> BitAndObj_TestData()
+        public static IEnumerable<object[]> BitAndObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -45,7 +45,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.BitOrObj(x, y));
         }
 
-        private static IEnumerable<object[]> BitOrObj_TestData()
+        public static IEnumerable<object[]> BitOrObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -59,7 +59,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.BitXorObj(x, y));
         }
 
-        private static IEnumerable<object[]> BitXorObj_TestData()
+        public static IEnumerable<object[]> BitXorObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -73,7 +73,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.DivObj(x, y));
         }
 
-        private static IEnumerable<object[]> DivObj_TestData()
+        public static IEnumerable<object[]> DivObj_TestData()
         {
             yield return new object[] { null, null, double.NaN };
             yield return new object[] { 0, 0, double.NaN };
@@ -87,7 +87,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.IDivObj(x, y));
         }
 
-        private static IEnumerable<object[]> IDivObj_TestData()
+        public static IEnumerable<object[]> IDivObj_TestData()
         {
             yield return new object[] { 0, 1, 0 };
             // Add more...
@@ -100,7 +100,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<DivideByZeroException>(() => ObjectType.IDivObj(x, y));
         }
 
-        private static IEnumerable<object[]> IDivObj_DivideByZero_TestData()
+        public static IEnumerable<object[]> IDivObj_DivideByZero_TestData()
         {
             yield return new object[] { null, null };
             yield return new object[] { 0, 0 };
@@ -114,7 +114,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.ModObj(x, y));
         }
 
-        private static IEnumerable<object[]> ModObj_TestData()
+        public static IEnumerable<object[]> ModObj_TestData()
         {
             yield return new object[] { 0, 1, 0 };
             // Add more...
@@ -127,7 +127,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<DivideByZeroException>(() => ObjectType.ModObj(x, y));
         }
 
-        private static IEnumerable<object[]> ModObj_DivideByZero_TestData()
+        public static IEnumerable<object[]> ModObj_DivideByZero_TestData()
         {
             yield return new object[] { null, null };
             yield return new object[] { 0, 0 };
@@ -141,7 +141,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.MulObj(x, y));
         }
 
-        private static IEnumerable<object[]> MulObj_TestData()
+        public static IEnumerable<object[]> MulObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -155,7 +155,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.NegObj(obj));
         }
 
-        private static IEnumerable<object[]> NegObj_TestData()
+        public static IEnumerable<object[]> NegObj_TestData()
         {
             yield return new object[] { null, 0 };
             yield return new object[] { 0, 0 };
@@ -169,7 +169,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.NotObj(obj));
         }
 
-        private static IEnumerable<object[]> NotObj_TestData()
+        public static IEnumerable<object[]> NotObj_TestData()
         {
             yield return new object[] { null, -1 };
             yield return new object[] { 0, -1 };
@@ -183,7 +183,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.PlusObj(obj));
         }
 
-        private static IEnumerable<object[]> PlusObj_TestData()
+        public static IEnumerable<object[]> PlusObj_TestData()
         {
             yield return new object[] { null, 0 };
             yield return new object[] { 0, 0 };
@@ -197,7 +197,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.PowObj(x, y));
         }
 
-        private static IEnumerable<object[]> PowObj_TestData()
+        public static IEnumerable<object[]> PowObj_TestData()
         {
             yield return new object[] { null, null, 1.0 };
             yield return new object[] { 0, 0, 1.0 };
@@ -211,7 +211,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.ShiftLeftObj(obj, amount));
         }
 
-        private static IEnumerable<object[]> ShiftLeftObj_TestData()
+        public static IEnumerable<object[]> ShiftLeftObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -225,7 +225,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.ShiftRightObj(obj, amount));
         }
 
-        private static IEnumerable<object[]> ShiftRightObj_TestData()
+        public static IEnumerable<object[]> ShiftRightObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -239,7 +239,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.StrCatObj(x, y));
         }
 
-        private static IEnumerable<object[]> StrCatObj_TestData()
+        public static IEnumerable<object[]> StrCatObj_TestData()
         {
             yield return new object[] { null, null, "" };
             yield return new object[] { 0, 0, "00" };
@@ -253,7 +253,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.SubObj(x, y));
         }
 
-        private static IEnumerable<object[]> SubObj_TestData()
+        public static IEnumerable<object[]> SubObj_TestData()
         {
             yield return new object[] { null, null, 0 };
             yield return new object[] { 0, 0, 0 };
@@ -267,7 +267,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.XorObj(x, y));
         }
 
-        private static IEnumerable<object[]> XorObj_TestData()
+        public static IEnumerable<object[]> XorObj_TestData()
         {
             yield return new object[] { null, null, false };
             yield return new object[] { 0, 0, false };
@@ -281,7 +281,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.GetObjectValuePrimitive(obj));
         }
 
-        private static IEnumerable<object[]> GetObjectValuePrimitive_TestData()
+        public static IEnumerable<object[]> GetObjectValuePrimitive_TestData()
         {
             yield return new object[] { null, null };
             yield return new object[] { 0, 0 };
@@ -296,7 +296,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expectedTextCompare, ObjectType.LikeObj(left, right, CompareMethod.Text));
         }
 
-        private static IEnumerable<object[]> LikeObj_TestData()
+        public static IEnumerable<object[]> LikeObj_TestData()
         {
             yield return new object[] { null, null, true, true };
             yield return new object[] { new char[0], null, true, true };
@@ -318,7 +318,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<NullReferenceException>(() => ObjectType.LikeObj(left, right, CompareMethod.Text));
         }
 
-        private static IEnumerable<object[]> LikeObj_NullReference_TestData()
+        public static IEnumerable<object[]> LikeObj_NullReference_TestData()
         {
             yield return new object[] { null, new[] { '*' } };
             yield return new object[] { null, "*" };
@@ -331,7 +331,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, ObjectType.ObjTst(x, y, textCompare));
         }
 
-        private static IEnumerable<object[]> ObjTst_TestData()
+        public static IEnumerable<object[]> ObjTst_TestData()
         {
             yield return new object[] { null, null, 0, 0 };
             yield return new object[] { null, "", 0, 0 };
