@@ -174,7 +174,7 @@ namespace HttpStress
                     }
 
                     // Start N workers, each of which sits in a loop making requests.
-                    Task[] tasks = Enumerable.Range(0, concurrentRequests - 1).Select(RunWorker).ToArray();
+                    Task[] tasks = Enumerable.Range(0, concurrentRequests).Select(RunWorker).ToArray();
                     await Task.WhenAll(tasks);
                 }
             }
