@@ -88,20 +88,14 @@ namespace Microsoft.NET.HostModel.AppHost
             }
             catch (Exception ex)
             {
-                FailedToDeleteApphostException failedToDeleteApphostException = null;
                 // Delete the destination file so we don't leave an unmodified apphost
                 try
                 {
                     File.Delete(appHostDestinationFilePath);
                 }
-                catch (Exception failedToDeleteEx) when (failedToDeleteEx is IOException || failedToDeleteEx is UnauthorizedAccessException)
+                catch (Exception failedToDeleteEx)
                 {
-                    failedToDeleteApphostException = new FailedToDeleteApphostException(failedToDeleteEx.Message);
-                }
-
-                if (failedToDeleteApphostException != null)
-                {
-                    throw new AggregateException(ex, failedToDeleteApphostException);
+                    throw new AggregateException(ex, failedToDeleteEx);
                 }
 
                 throw;
