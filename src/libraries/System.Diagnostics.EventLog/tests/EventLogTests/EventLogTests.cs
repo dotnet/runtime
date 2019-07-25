@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -349,7 +350,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetEventLogEntriesTest()
         {
@@ -358,6 +359,14 @@ namespace System.Diagnostics.Tests
                 // Accessing eventlog properties should not throw.
                 Assert.True(Helpers.RetryOnWin7(() => eventLog.Entries.Count) >= 0);
             }
+        }
+
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void GetEventLogContainsSecurityLogTest()
+        {
+            EventLog[] eventlogs = EventLog.GetEventLogs();
+            Assert.True(eventlogs.Select(t => t.Log).Contains("Security", StringComparer.OrdinalIgnoreCase));
         }
     }
 }
