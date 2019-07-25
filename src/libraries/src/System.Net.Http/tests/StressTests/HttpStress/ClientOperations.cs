@@ -118,7 +118,7 @@ namespace HttpStress
 
         public void PopulateWithRandomHeaders(HttpRequestHeaders headers)
         {
-            int numHeaders = _random.Next(maxValue: 100);
+            int numHeaders = _random.Next(100);
 
             for (int i = 0; i < numHeaders; i++)
             {
