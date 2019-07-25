@@ -1881,10 +1881,15 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 }
 #endif
 
+// Unusal function:
+//  - MonoError is optional -- failure is usually not interesting, except the documented failure mode for managed callers.
+//  - name16 only used on Windows.
+//  - name8 is either constant, or g_free'able -- this function always takes ownership and never copies.
+//
 gsize
 mono_thread_set_name (MonoInternalThread *this_obj,
-			MonoString *name,
-			MonoSetThreadNameFlags flags, MonoError *error)
+		      const char* name8, size_t name8_length, const gunichar2* name16,
+		      MonoSetThreadNameFlags flags, MonoError *error)
 {
 	MonoNativeThreadId tid = 0;
 
@@ -1892,21 +1897,11 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 	// It is not exactly thread safe but no use of it could be.
 	gsize name_generation;
 
-	// FIXME lots of temporary stuff here.
-	// Callers will pass utf8 and on Windows utf16.
+	const gboolean constant = !!(flags & MonoSetThreadNameFlag_Constant);
 
-	const gunichar2* name16 = NULL;
-	gint32 name16_length = 0;
-	long name8_length = 0;
-	const char* name8 = NULL;
-
-	if (name) {
-		name16 = mono_string_chars_internal (name);
-		name16_length = mono_string_length_internal (name);
-		name8 = name16 ? g_utf16_to_utf8 (name16, name16_length, NULL, &name8_length, NULL) : NULL;
-	}
-
-	const gboolean constant = FALSE; // !!(flags & MonoSetThreadNameFlag_Constant)
+#if HOST_WIN32 // On Windows, if name8 is supplied, then name16 must be also.
+	g_assert (!name8 || name16);
+#endif
 
 	LOCK_THREAD (this_obj);
 
@@ -1917,7 +1912,8 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 	} else if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
 		UNLOCK_THREAD (this_obj);
 		
-		mono_error_set_invalid_operation (error, "%s", "Thread.Name can only be set once.");
+		if (error)
+			mono_error_set_invalid_operation (error, "%s", "Thread.Name can only be set once.");
 
 		if (!constant)
 			g_free ((char*)name8);
@@ -1955,13 +1951,14 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 }
 
 void 
-ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
+ves_icall_System_Threading_Thread_SetName_icall (MonoInternalThreadHandle thread_handle, const gunichar2* name16, gint32 name16_length, MonoError* error)
 {
-	// FIXME This function churning.
+	long name8_length = 0;
 
-	ERROR_DECL (error);
-	mono_thread_set_name (this_obj, name, MonoSetThreadNameFlag_Permanent, error);
-	mono_error_set_pending_exception (error);
+	char* name8 = name16 ? g_utf16_to_utf8 (name16, name16_length, NULL, &name8_length, NULL) : NULL;
+
+	mono_thread_set_name (mono_internal_thread_handle_ptr (thread_handle),
+		name8, (gint32)name8_length, name16, MonoSetThreadNameFlag_Permanent, error);
 }
 
 #ifndef ENABLE_NETCORE
