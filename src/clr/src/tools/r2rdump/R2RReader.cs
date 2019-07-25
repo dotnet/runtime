@@ -757,7 +757,7 @@ namespace R2RDump
                     continue;
                 }
 
-                var debugInfo = new DebugInfo(Image, offset, Machine);
+                var debugInfo = new DebugInfo(Image, offset, Machine, Options.Normalize);
                 _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
             }
         }
