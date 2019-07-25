@@ -3501,6 +3501,56 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 	return FALSE;
 }
 
+/**
+ * mono_class_is_gparam_with_nonblittable_parent:
+ * \param klass  a generic parameter
+ *
+ * \returns TRUE if \p klass is definitely not blittable.
+ *
+ * A parameter is definitely not blittable if it has the IL 'reference'
+ * constraint, or if it has a class specified as a parent.  If it has an IL
+ * 'valuetype' constraint or no constraint at all or only interfaces as
+ * constraints, we return FALSE because the parameter may be instantiated both
+ * with blittable and non-blittable types.
+ *
+ * If the paramter is a generic sharing parameter, we look at its gshared_constraint->blittable bit.
+ */
+static gboolean
+mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
+{
+	MonoType *type = m_class_get_byval_arg (klass);
+	g_assert (mono_type_is_generic_parameter (type));
+	MonoGenericParam *gparam = type->data.generic_param;
+	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0)
+		return TRUE;
+	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0)
+		return FALSE;
+
+	if (gparam->gshared_constraint) {
+		MonoClass *constraint_class = mono_class_from_mono_type_internal (gparam->gshared_constraint);
+		return !m_class_is_blittable (constraint_class);
+	}
+
+	if (mono_generic_param_owner (gparam)->is_anonymous)
+		return FALSE;
+
+	/* We could have:  T : U,  U : Base.  So have to follow the constraints. */
+	MonoClass *parent_class = mono_generic_param_get_base_type (klass);
+	g_assert (!MONO_CLASS_IS_INTERFACE_INTERNAL (parent_class));
+	/* Parent can only be: System.Object, System.ValueType or some specific base class.
+	 *
+	 * If the parent_class is ValueType, the valuetype constraint would be set, above, so
+	 * we wouldn't get here.
+	 *
+	 * If there was a reference constraint, the parent_class would be System.Object,
+	 * but we would have returned early above.
+	 *
+	 * So if we get here, there is either no base class constraint at all,
+	 * in which case parent_class would be set to System.Object, or there is none at all.
+	 */
+	return parent_class != mono_defaults.object_class;
+}
+
 /*
  * mono_class_layout_fields:
  * @class: a class
@@ -3612,6 +3662,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			continue;
 		if (blittable) {
 			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
+				blittable = FALSE;
+			} else if (mono_type_is_generic_parameter (field->type) &&
+				   mono_class_is_gparam_with_nonblittable_parent (mono_class_from_mono_type_internal (field->type))) {
 				blittable = FALSE;
 			} else {
 				MonoClass *field_class = mono_class_from_mono_type_internal (field->type);

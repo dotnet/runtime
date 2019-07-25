@@ -7300,6 +7300,11 @@ mono_type_is_pointer (MonoType *type)
 mono_bool
 mono_type_is_reference (MonoType *type)
 {
+	/* NOTE: changing this function to return TRUE more often may have
+	 * consequences for generic sharing in the AOT compiler.  In
+	 * particular, returning TRUE for generic parameters with a 'class'
+	 * constraint may cause crashes.
+	 */
 	return (type && (((type->type == MONO_TYPE_STRING) ||
 		(type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
 		(type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY)) ||

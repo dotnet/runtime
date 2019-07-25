@@ -4065,6 +4065,8 @@ mono_generic_param_get_base_type (MonoClass *klass)
 
 	MonoGenericParam *gparam = type->data.generic_param;
 
+	g_assert (gparam->owner && !gparam->owner->is_anonymous);
+
 	MonoClass **constraints = mono_generic_container_get_param_info (gparam->owner, gparam->num)->constraints;
 
 	MonoClass *base_class = mono_defaults.object_class;

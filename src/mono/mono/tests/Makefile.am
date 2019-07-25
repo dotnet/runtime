@@ -537,6 +537,7 @@ TESTS_CS_SRC=		\
 	generic-stack-traces2.2.cs	\
 	bug-472600.2.cs	\
 	recursive-generics.2.cs	\
+	recursive-generics.3.cs	\
 	bug-473482.2.cs	\
 	bug-473999.2.cs	\
 	bug-479763.2.cs	\
