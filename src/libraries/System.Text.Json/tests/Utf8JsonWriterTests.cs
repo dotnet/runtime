@@ -17,6 +17,10 @@ namespace System.Text.Json.Tests
 {
     public class Utf8JsonWriterTests
     {
+        private const int MaxExpansionFactorWhileEscaping = 6;
+        private const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
+        private const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
+
         public static bool IsX64 { get; } = IntPtr.Size >= 8;
 
         [Theory]
@@ -1605,6 +1609,11 @@ namespace System.Text.Json.Tests
             Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartArray(JsonEncodedText.Encode("name")));
         }
 
+        // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
@@ -1618,8 +1627,8 @@ namespace System.Text.Json.Tests
 
             try
             {
-                key = new byte[1_000_000_000];
-                keyChars = new char[1_000_000_000];
+                key = new byte[MaxUnescapedTokenSize + 1];
+                keyChars = new char[MaxUnescapedTokenSize + 1];
             }
             catch (OutOfMemoryException)
             {
@@ -1641,6 +1650,11 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartArray(key));
         }
 
+        // NOTE: WritingTooLargePropertyStandalone test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
@@ -1654,8 +1668,8 @@ namespace System.Text.Json.Tests
 
             try
             {
-                key = new byte[1_000_000_000];
-                keyChars = new char[1_000_000_000];
+                key = new byte[MaxUnescapedTokenSize + 1];
+                keyChars = new char[MaxUnescapedTokenSize + 1];
             }
             catch (OutOfMemoryException)
             {
@@ -4358,6 +4372,11 @@ namespace System.Text.Json.Tests
             }
         }
 
+        // NOTE: WriteLargeKeyOrValue test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
@@ -4371,8 +4390,8 @@ namespace System.Text.Json.Tests
 
             try
             {
-                key = new byte[1_000_000_001];
-                value = new byte[1_000_000_001];
+                key = new byte[MaxUnescapedTokenSize + 1];
+                value = new byte[MaxUnescapedTokenSize + 1];
             }
             catch (OutOfMemoryException)
             {
@@ -4400,6 +4419,11 @@ namespace System.Text.Json.Tests
             }
         }
 
+        // NOTE: WriteLargeKeyValue test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
@@ -4415,8 +4439,8 @@ namespace System.Text.Json.Tests
 
             try
             {
-                key = new byte[1_000_000_001];
-                value = new byte[1_000_000_001];
+                key = new byte[MaxUnescapedTokenSize + 1];
+                value = new byte[MaxUnescapedTokenSize + 1];
             }
             catch (OutOfMemoryException)
             {
@@ -4424,9 +4448,41 @@ namespace System.Text.Json.Tests
             }
 
             WriteTooLargeHelper(options, key, value);
-            WriteTooLargeHelper(options, key.Slice(0, 1_000_000_000), value);
-            WriteTooLargeHelper(options, key, value.Slice(0, 1_000_000_000));
+            WriteTooLargeHelper(options, key.Slice(0, MaxUnescapedTokenSize), value);
+            WriteTooLargeHelper(options, key, value.Slice(0, MaxUnescapedTokenSize));
             WriteTooLargeHelper(options, key.Slice(0, 10_000_000 / 3), value.Slice(0, 10_000_000 / 3), noThrow: true);
+        }
+
+        // NOTE: WriteLargeKeyEscapedValue test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void WriteLargeKeyEscapedValue(bool formatted, bool skipValidation)
+        {
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            Span<byte> key;
+            Span<byte> value;
+
+            try
+            {
+                // Since the byte values are 0 they will be escaped and size > MaxUnescapedTokenSize but < MaxEscapedTokenSize.
+                key = new byte[MaxUnescapedTokenSize / 2];
+                value = new byte[MaxUnescapedTokenSize / 2];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            WriteTooLargeHelper(options, key, value, noThrow: true);
         }
 
         [Theory]

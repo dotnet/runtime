@@ -34,14 +34,14 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateProperty(ReadOnlySpan<byte> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
                 ThrowHelper.ThrowArgumentException_PropertyNameTooLarge(propertyName.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateValue(ReadOnlySpan<byte> value)
         {
-            if (value.Length > JsonConstants.MaxTokenSize)
+            if (value.Length > JsonConstants.MaxUnescapedTokenSize)
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(value.Length);
         }
 
@@ -95,21 +95,21 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidatePropertyAndValue(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || value.Length > JsonConstants.MaxTokenSize)
+            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || value.Length > JsonConstants.MaxUnescapedTokenSize)
                 ThrowHelper.ThrowArgumentException(propertyName, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidatePropertyAndValue(ReadOnlySpan<byte> propertyName, ReadOnlySpan<char> value)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize || value.Length > JsonConstants.MaxCharacterTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || value.Length > JsonConstants.MaxCharacterTokenSize)
                 ThrowHelper.ThrowArgumentException(propertyName, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidatePropertyAndValue(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize || value.Length > JsonConstants.MaxTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || value.Length > JsonConstants.MaxUnescapedTokenSize)
                 ThrowHelper.ThrowArgumentException(propertyName, value);
         }
 
@@ -130,7 +130,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidatePropertyAndBytes(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> bytes)
         {
-            if (propertyName.Length > JsonConstants.MaxTokenSize || bytes.Length > JsonConstants.MaxBase46ValueTokenSize)
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || bytes.Length > JsonConstants.MaxBase46ValueTokenSize)
                 ThrowHelper.ThrowArgumentException(propertyName, bytes);
         }
 

@@ -23,7 +23,7 @@ namespace System.Text.Json
 
         private void WriteBase64StringHelper(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes)
         {
-            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             JsonWriterHelper.ValidateBytes(bytes);
 

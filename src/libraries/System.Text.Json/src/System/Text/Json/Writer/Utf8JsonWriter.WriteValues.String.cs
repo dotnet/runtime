@@ -21,7 +21,7 @@ namespace System.Text.Json
 
         private void WriteStringValueHelper(ReadOnlySpan<byte> utf8Value)
         {
-            Debug.Assert(utf8Value.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(utf8Value.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8Value);
 
