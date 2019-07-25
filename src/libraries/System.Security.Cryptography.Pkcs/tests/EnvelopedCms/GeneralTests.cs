@@ -19,6 +19,29 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
 
         [Fact]
+        public static void DefaultEncryptionAlgorithm()
+        {
+            EnvelopedCms cms1 = new EnvelopedCms();
+            EnvelopedCms cms2 = new EnvelopedCms(new ContentInfo(Array.Empty<byte>()));
+
+            string[] supportedAlgorithms;
+
+            // net48 changes the default to AES-256-CBC, older versions (and quirk) are
+            // DES3-EDE-CBC
+            if (PlatformDetection.IsFullFramework)
+            {
+                supportedAlgorithms = new[] { Oids.TripleDesCbc, Oids.Aes256 };
+            }
+            else
+            {
+                supportedAlgorithms = new[] { Oids.Aes256 };
+            }
+
+            Assert.Contains(cms1.ContentEncryptionAlgorithm.Oid.Value, supportedAlgorithms);
+            Assert.Contains(cms2.ContentEncryptionAlgorithm.Oid.Value, supportedAlgorithms);
+        }
+
+        [Fact]
         public static void DecodeVersion0_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -59,7 +82,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static void DecodeRecipients3_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
-            EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, KeyAgreeRecipientInfoTests.TripleDesAlgId);
             CmsRecipientCollection recipients = new CmsRecipientCollection();
             foreach (X509Certificate2 cert in s_certs)
             {
