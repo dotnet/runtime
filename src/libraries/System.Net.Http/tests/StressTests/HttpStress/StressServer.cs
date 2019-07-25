@@ -145,6 +145,21 @@ namespace HttpStress
                     }
                 }
             });
+            endpoints.MapGet("/echoHeaders", async context =>
+            {
+                foreach(KeyValuePair<string, StringValues> header in context.Request.Headers)
+                {
+                    // skip pseudo-headers surfaced by kestrel
+                    if (header.Key.StartsWith(':')) continue;
+
+                    // kestrel seems to not be splitting comma separated header values, handle here
+                    string[] values = header.Value.SelectMany(v => v.Split(',')).Select(x => x.Trim()).ToArray();
+                    context.Response.Headers.Add(header.Key, new StringValues(values));
+                }
+
+                await context.Response.WriteAsync("ok");
+
+            });
             endpoints.MapGet("/variables", async context =>
             {
                 string queryString = context.Request.QueryString.Value;
