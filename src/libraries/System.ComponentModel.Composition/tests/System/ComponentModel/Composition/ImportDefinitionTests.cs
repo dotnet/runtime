@@ -172,7 +172,7 @@ namespace System.ComponentModel.Composition
             {
                 var item = new ImportDefinition(e.Input, "", ImportCardinality.ExactlyOne, false, false);
 
-                Assert.True(Regex.IsMatch(item.ToString(), e.Output));
+                Assert.Matches(e.Output, item.ToString());
             }
         }
 
@@ -190,7 +190,7 @@ namespace System.ComponentModel.Composition
             {
                 var item = new DerivedImportDefinition(e.Input);
 
-                Assert.True(Regex.IsMatch(item.ToString(), e.Output));
+                Assert.Matches(e.Output, item.ToString());
             }
         }
 
