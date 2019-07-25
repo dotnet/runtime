@@ -13,6 +13,6 @@ namespace System.Threading.Channels
     }
     public abstract partial class ChannelReader<T>
     {
-        public virtual System.Collections.Generic.IAsyncEnumerable<T> ReadAllAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Collections.Generic.IAsyncEnumerable<T> ReadAllAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
 }

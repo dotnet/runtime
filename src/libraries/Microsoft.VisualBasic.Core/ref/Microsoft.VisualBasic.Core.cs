@@ -9,12 +9,12 @@ namespace Microsoft.VisualBasic
 {
     public enum AppWinStyle : short
     {
-        Hide = 0,
-        MaximizedFocus = 3,
-        MinimizedFocus = 2,
-        MinimizedNoFocus = 6,
-        NormalFocus = 1,
-        NormalNoFocus = 4,
+        Hide = (short)0,
+        NormalFocus = (short)1,
+        MinimizedFocus = (short)2,
+        MaximizedFocus = (short)3,
+        NormalNoFocus = (short)4,
+        MinimizedNoFocus = (short)6,
     }
     public enum CallType
     {
@@ -74,109 +74,109 @@ namespace Microsoft.VisualBasic
     public sealed partial class Constants
     {
         internal Constants() { }
-        public const MsgBoxResult vbAbort = MsgBoxResult.Abort;
-        public const MsgBoxStyle vbAbortRetryIgnore = MsgBoxStyle.AbortRetryIgnore;
-        public const MsgBoxStyle vbApplicationModal = MsgBoxStyle.ApplicationModal;
-        public const FileAttribute vbArchive = FileAttribute.Archive;
-        public const VariantType vbArray = VariantType.Array;
+        public const Microsoft.VisualBasic.MsgBoxResult vbAbort = Microsoft.VisualBasic.MsgBoxResult.Abort;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbAbortRetryIgnore = Microsoft.VisualBasic.MsgBoxStyle.AbortRetryIgnore;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbApplicationModal = Microsoft.VisualBasic.MsgBoxStyle.ApplicationModal;
+        public const Microsoft.VisualBasic.FileAttribute vbArchive = Microsoft.VisualBasic.FileAttribute.Archive;
+        public const Microsoft.VisualBasic.VariantType vbArray = Microsoft.VisualBasic.VariantType.Array;
         public const string vbBack = "\b";
         public const Microsoft.VisualBasic.CompareMethod vbBinaryCompare = Microsoft.VisualBasic.CompareMethod.Binary;
-        public const VariantType vbBoolean = VariantType.Boolean;
-        public const VariantType vbByte = VariantType.Byte;
-        public const MsgBoxResult vbCancel = MsgBoxResult.Cancel;
+        public const Microsoft.VisualBasic.VariantType vbBoolean = Microsoft.VisualBasic.VariantType.Boolean;
+        public const Microsoft.VisualBasic.VariantType vbByte = Microsoft.VisualBasic.VariantType.Byte;
+        public const Microsoft.VisualBasic.MsgBoxResult vbCancel = Microsoft.VisualBasic.MsgBoxResult.Cancel;
         public const string vbCr = "\r";
-        public const MsgBoxStyle vbCritical = MsgBoxStyle.Critical;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbCritical = Microsoft.VisualBasic.MsgBoxStyle.Critical;
         public const string vbCrLf = "\r\n";
-        public const VariantType vbCurrency = VariantType.Currency;
-        public const VariantType vbDate = VariantType.Date;
-        public const VariantType vbDecimal = VariantType.Decimal;
-        public const MsgBoxStyle vbDefaultButton1 = MsgBoxStyle.ApplicationModal;
-        public const MsgBoxStyle vbDefaultButton2 = MsgBoxStyle.DefaultButton2;
-        public const MsgBoxStyle vbDefaultButton3 = MsgBoxStyle.DefaultButton3;
-        public const FileAttribute vbDirectory = FileAttribute.Directory;
-        public const VariantType vbDouble = VariantType.Double;
-        public const VariantType vbEmpty = VariantType.Empty;
-        public const MsgBoxStyle vbExclamation = MsgBoxStyle.Exclamation;
-        public const TriState vbFalse = TriState.False;
-        public const FirstWeekOfYear vbFirstFourDays = FirstWeekOfYear.FirstFourDays;
-        public const FirstWeekOfYear vbFirstFullWeek = FirstWeekOfYear.FirstFullWeek;
-        public const FirstWeekOfYear vbFirstJan1 = FirstWeekOfYear.Jan1;
+        public const Microsoft.VisualBasic.VariantType vbCurrency = Microsoft.VisualBasic.VariantType.Currency;
+        public const Microsoft.VisualBasic.VariantType vbDate = Microsoft.VisualBasic.VariantType.Date;
+        public const Microsoft.VisualBasic.VariantType vbDecimal = Microsoft.VisualBasic.VariantType.Decimal;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbDefaultButton1 = Microsoft.VisualBasic.MsgBoxStyle.ApplicationModal;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbDefaultButton2 = Microsoft.VisualBasic.MsgBoxStyle.DefaultButton2;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbDefaultButton3 = Microsoft.VisualBasic.MsgBoxStyle.DefaultButton3;
+        public const Microsoft.VisualBasic.FileAttribute vbDirectory = Microsoft.VisualBasic.FileAttribute.Directory;
+        public const Microsoft.VisualBasic.VariantType vbDouble = Microsoft.VisualBasic.VariantType.Double;
+        public const Microsoft.VisualBasic.VariantType vbEmpty = Microsoft.VisualBasic.VariantType.Empty;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbExclamation = Microsoft.VisualBasic.MsgBoxStyle.Exclamation;
+        public const Microsoft.VisualBasic.TriState vbFalse = Microsoft.VisualBasic.TriState.False;
+        public const Microsoft.VisualBasic.FirstWeekOfYear vbFirstFourDays = Microsoft.VisualBasic.FirstWeekOfYear.FirstFourDays;
+        public const Microsoft.VisualBasic.FirstWeekOfYear vbFirstFullWeek = Microsoft.VisualBasic.FirstWeekOfYear.FirstFullWeek;
+        public const Microsoft.VisualBasic.FirstWeekOfYear vbFirstJan1 = Microsoft.VisualBasic.FirstWeekOfYear.Jan1;
         public const string vbFormFeed = "\f";
-        public const FirstDayOfWeek vbFriday = FirstDayOfWeek.Friday;
-        public const DateFormat vbGeneralDate = DateFormat.GeneralDate;
-        public const CallType vbGet = CallType.Get;
-        public const AppWinStyle vbHide = AppWinStyle.Hide;
-        public const FileAttribute vbHidden = FileAttribute.Hidden;
-        public const VbStrConv vbHiragana = VbStrConv.Hiragana;
-        public const MsgBoxStyle vbInformation = MsgBoxStyle.Information;
-        public const MsgBoxResult vbIgnore = MsgBoxResult.Ignore;
-        public const VariantType vbInteger = VariantType.Integer;
-        public const VbStrConv vbKatakana = VbStrConv.Katakana;
-        public const CallType vbLet = CallType.Let;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbFriday = Microsoft.VisualBasic.FirstDayOfWeek.Friday;
+        public const Microsoft.VisualBasic.DateFormat vbGeneralDate = Microsoft.VisualBasic.DateFormat.GeneralDate;
+        public const Microsoft.VisualBasic.CallType vbGet = Microsoft.VisualBasic.CallType.Get;
+        public const Microsoft.VisualBasic.FileAttribute vbHidden = Microsoft.VisualBasic.FileAttribute.Hidden;
+        public const Microsoft.VisualBasic.AppWinStyle vbHide = Microsoft.VisualBasic.AppWinStyle.Hide;
+        public const Microsoft.VisualBasic.VbStrConv vbHiragana = Microsoft.VisualBasic.VbStrConv.Hiragana;
+        public const Microsoft.VisualBasic.MsgBoxResult vbIgnore = Microsoft.VisualBasic.MsgBoxResult.Ignore;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbInformation = Microsoft.VisualBasic.MsgBoxStyle.Information;
+        public const Microsoft.VisualBasic.VariantType vbInteger = Microsoft.VisualBasic.VariantType.Integer;
+        public const Microsoft.VisualBasic.VbStrConv vbKatakana = Microsoft.VisualBasic.VbStrConv.Katakana;
+        public const Microsoft.VisualBasic.CallType vbLet = Microsoft.VisualBasic.CallType.Let;
         public const string vbLf = "\n";
-        public const VbStrConv vbLinguisticCasing = VbStrConv.LinguisticCasing;
-        public const VariantType vbLong = VariantType.Long;
-        public const DateFormat vbLongDate = DateFormat.LongDate;
-        public const DateFormat vbLongTime = DateFormat.LongTime;
-        public const VbStrConv vbLowerCase = VbStrConv.Lowercase;
-        public const CallType vbMethod = CallType.Method;
-        public const AppWinStyle vbMaximizedFocus = AppWinStyle.MaximizedFocus;
-        public const AppWinStyle vbMinimizedFocus = AppWinStyle.MinimizedFocus;
-        public const AppWinStyle vbMinimizedNoFocus = AppWinStyle.MinimizedNoFocus;
-        public const FirstDayOfWeek vbMonday = FirstDayOfWeek.Monday;
-        public const MsgBoxStyle vbMsgBoxHelp = MsgBoxStyle.MsgBoxHelp;
-        public const MsgBoxStyle vbMsgBoxRight = MsgBoxStyle.MsgBoxRight;
-        public const MsgBoxStyle vbMsgBoxRtlReading = MsgBoxStyle.MsgBoxRtlReading;
-        public const MsgBoxStyle vbMsgBoxSetForeground = MsgBoxStyle.MsgBoxSetForeground;
+        public const Microsoft.VisualBasic.VbStrConv vbLinguisticCasing = Microsoft.VisualBasic.VbStrConv.LinguisticCasing;
+        public const Microsoft.VisualBasic.VariantType vbLong = Microsoft.VisualBasic.VariantType.Long;
+        public const Microsoft.VisualBasic.DateFormat vbLongDate = Microsoft.VisualBasic.DateFormat.LongDate;
+        public const Microsoft.VisualBasic.DateFormat vbLongTime = Microsoft.VisualBasic.DateFormat.LongTime;
+        public const Microsoft.VisualBasic.VbStrConv vbLowerCase = Microsoft.VisualBasic.VbStrConv.Lowercase;
+        public const Microsoft.VisualBasic.AppWinStyle vbMaximizedFocus = Microsoft.VisualBasic.AppWinStyle.MaximizedFocus;
+        public const Microsoft.VisualBasic.CallType vbMethod = Microsoft.VisualBasic.CallType.Method;
+        public const Microsoft.VisualBasic.AppWinStyle vbMinimizedFocus = Microsoft.VisualBasic.AppWinStyle.MinimizedFocus;
+        public const Microsoft.VisualBasic.AppWinStyle vbMinimizedNoFocus = Microsoft.VisualBasic.AppWinStyle.MinimizedNoFocus;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbMonday = Microsoft.VisualBasic.FirstDayOfWeek.Monday;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxHelp = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxHelp;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxRight = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxRight;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxRtlReading = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxRtlReading;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxSetForeground = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxSetForeground;
         [System.ObsoleteAttribute("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")]
-        public const VbStrConv vbNarrow = VbStrConv.Narrow;
+        public const Microsoft.VisualBasic.VbStrConv vbNarrow = Microsoft.VisualBasic.VbStrConv.Narrow;
         public const string vbNewLine = "\r\n";
-        public const MsgBoxResult vbNo = MsgBoxResult.No;
-        public const FileAttribute vbNormal = FileAttribute.Normal;
-        public const AppWinStyle vbNormalFocus = AppWinStyle.NormalFocus;
-        public const AppWinStyle vbNormalNoFocus = AppWinStyle.NormalNoFocus;
-        public const VariantType vbNull = VariantType.Null;
+        public const Microsoft.VisualBasic.MsgBoxResult vbNo = Microsoft.VisualBasic.MsgBoxResult.No;
+        public const Microsoft.VisualBasic.FileAttribute vbNormal = Microsoft.VisualBasic.FileAttribute.Normal;
+        public const Microsoft.VisualBasic.AppWinStyle vbNormalFocus = Microsoft.VisualBasic.AppWinStyle.NormalFocus;
+        public const Microsoft.VisualBasic.AppWinStyle vbNormalNoFocus = Microsoft.VisualBasic.AppWinStyle.NormalNoFocus;
+        public const Microsoft.VisualBasic.VariantType vbNull = Microsoft.VisualBasic.VariantType.Null;
         public const string vbNullChar = "\0";
         public const string vbNullString = null;
-        public const VariantType vbObject = VariantType.Object;
-        public const int vbObjectError = unchecked((int)0x80040000);
-        public const MsgBoxResult vbOK = MsgBoxResult.Ok;
-        public const MsgBoxStyle vbOKCancel = MsgBoxStyle.OkCancel;
-        public const MsgBoxStyle vbOKOnly = MsgBoxStyle.ApplicationModal;
-        public const VbStrConv vbProperCase = VbStrConv.ProperCase;
-        public const MsgBoxStyle vbQuestion = MsgBoxStyle.Question;
-        public const FileAttribute vbReadOnly = FileAttribute.ReadOnly;
-        public const MsgBoxResult vbRetry = MsgBoxResult.Retry;
-        public const MsgBoxStyle vbRetryCancel = MsgBoxStyle.RetryCancel;
-        public const FirstDayOfWeek vbSaturday = FirstDayOfWeek.Saturday;
-        public const CallType vbSet = CallType.Set;
-        public const DateFormat vbShortDate = DateFormat.ShortDate;
-        public const DateFormat vbShortTime = DateFormat.ShortTime;
-        public const VbStrConv vbSimplifiedChinese = VbStrConv.SimplifiedChinese;
-        public const VariantType vbSingle = VariantType.Single;
-        public const VariantType vbString = VariantType.String;
-        public const FirstDayOfWeek vbSunday = FirstDayOfWeek.Sunday;
-        public const FileAttribute vbSystem = FileAttribute.System;
-        public const MsgBoxStyle vbSystemModal = MsgBoxStyle.SystemModal;
+        public const Microsoft.VisualBasic.VariantType vbObject = Microsoft.VisualBasic.VariantType.Object;
+        public const int vbObjectError = -2147221504;
+        public const Microsoft.VisualBasic.MsgBoxResult vbOK = Microsoft.VisualBasic.MsgBoxResult.Ok;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbOKCancel = Microsoft.VisualBasic.MsgBoxStyle.OkCancel;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbOKOnly = Microsoft.VisualBasic.MsgBoxStyle.ApplicationModal;
+        public const Microsoft.VisualBasic.VbStrConv vbProperCase = Microsoft.VisualBasic.VbStrConv.ProperCase;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbQuestion = Microsoft.VisualBasic.MsgBoxStyle.Question;
+        public const Microsoft.VisualBasic.FileAttribute vbReadOnly = Microsoft.VisualBasic.FileAttribute.ReadOnly;
+        public const Microsoft.VisualBasic.MsgBoxResult vbRetry = Microsoft.VisualBasic.MsgBoxResult.Retry;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbRetryCancel = Microsoft.VisualBasic.MsgBoxStyle.RetryCancel;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbSaturday = Microsoft.VisualBasic.FirstDayOfWeek.Saturday;
+        public const Microsoft.VisualBasic.CallType vbSet = Microsoft.VisualBasic.CallType.Set;
+        public const Microsoft.VisualBasic.DateFormat vbShortDate = Microsoft.VisualBasic.DateFormat.ShortDate;
+        public const Microsoft.VisualBasic.DateFormat vbShortTime = Microsoft.VisualBasic.DateFormat.ShortTime;
+        public const Microsoft.VisualBasic.VbStrConv vbSimplifiedChinese = Microsoft.VisualBasic.VbStrConv.SimplifiedChinese;
+        public const Microsoft.VisualBasic.VariantType vbSingle = Microsoft.VisualBasic.VariantType.Single;
+        public const Microsoft.VisualBasic.VariantType vbString = Microsoft.VisualBasic.VariantType.String;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbSunday = Microsoft.VisualBasic.FirstDayOfWeek.Sunday;
+        public const Microsoft.VisualBasic.FileAttribute vbSystem = Microsoft.VisualBasic.FileAttribute.System;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbSystemModal = Microsoft.VisualBasic.MsgBoxStyle.SystemModal;
         public const string vbTab = "\t";
         public const Microsoft.VisualBasic.CompareMethod vbTextCompare = Microsoft.VisualBasic.CompareMethod.Text;
-        public const FirstDayOfWeek vbThursday = FirstDayOfWeek.Thursday;
-        public const VbStrConv vbTraditionalChinese = VbStrConv.TraditionalChinese;
-        public const TriState vbTrue = TriState.True;
-        public const FirstDayOfWeek vbTuesday = FirstDayOfWeek.Tuesday;
-        public const VbStrConv vbUpperCase = VbStrConv.Uppercase;
-        public const TriState vbUseDefault = TriState.UseDefault;
-        public const VariantType vbUserDefinedType = VariantType.UserDefinedType;
-        public const FirstWeekOfYear vbUseSystem = FirstWeekOfYear.System;
-        public const FirstDayOfWeek vbUseSystemDayOfWeek = FirstDayOfWeek.System;
-        public const VariantType vbVariant = VariantType.Variant;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbThursday = Microsoft.VisualBasic.FirstDayOfWeek.Thursday;
+        public const Microsoft.VisualBasic.VbStrConv vbTraditionalChinese = Microsoft.VisualBasic.VbStrConv.TraditionalChinese;
+        public const Microsoft.VisualBasic.TriState vbTrue = Microsoft.VisualBasic.TriState.True;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbTuesday = Microsoft.VisualBasic.FirstDayOfWeek.Tuesday;
+        public const Microsoft.VisualBasic.VbStrConv vbUpperCase = Microsoft.VisualBasic.VbStrConv.Uppercase;
+        public const Microsoft.VisualBasic.TriState vbUseDefault = Microsoft.VisualBasic.TriState.UseDefault;
+        public const Microsoft.VisualBasic.VariantType vbUserDefinedType = Microsoft.VisualBasic.VariantType.UserDefinedType;
+        public const Microsoft.VisualBasic.FirstWeekOfYear vbUseSystem = Microsoft.VisualBasic.FirstWeekOfYear.System;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbUseSystemDayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.System;
+        public const Microsoft.VisualBasic.VariantType vbVariant = Microsoft.VisualBasic.VariantType.Variant;
         public const string vbVerticalTab = "\v";
-        public const FileAttribute vbVolume = FileAttribute.Volume;
-        public const FirstDayOfWeek vbWednesday = FirstDayOfWeek.Wednesday;
-        public const VbStrConv vbWide = VbStrConv.Wide;
-        public const MsgBoxResult vbYes = MsgBoxResult.Yes;
-        public const MsgBoxStyle vbYesNo = MsgBoxStyle.YesNo;
-        public const MsgBoxStyle vbYesNoCancel = MsgBoxStyle.YesNoCancel;
+        public const Microsoft.VisualBasic.FileAttribute vbVolume = Microsoft.VisualBasic.FileAttribute.Volume;
+        public const Microsoft.VisualBasic.FirstDayOfWeek vbWednesday = Microsoft.VisualBasic.FirstDayOfWeek.Wednesday;
+        public const Microsoft.VisualBasic.VbStrConv vbWide = Microsoft.VisualBasic.VbStrConv.Wide;
+        public const Microsoft.VisualBasic.MsgBoxResult vbYes = Microsoft.VisualBasic.MsgBoxResult.Yes;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbYesNo = Microsoft.VisualBasic.MsgBoxStyle.YesNo;
+        public const Microsoft.VisualBasic.MsgBoxStyle vbYesNoCancel = Microsoft.VisualBasic.MsgBoxStyle.YesNoCancel;
     }
     public sealed partial class ControlChars
     {
@@ -196,216 +196,216 @@ namespace Microsoft.VisualBasic
     public sealed partial class Conversion
     {
         internal Conversion() { }
-        public static TargetType CTypeDynamic<TargetType>(object Expression) { throw null; }
         public static object CTypeDynamic(object Expression, System.Type TargetType) { throw null; }
+        public static TargetType CTypeDynamic<TargetType>(object Expression) { throw null; }
         public static string ErrorToString() { throw null; }
         public static string ErrorToString(int ErrorNumber) { throw null; }
+        public static decimal Fix(decimal Number) { throw null; }
+        public static double Fix(double Number) { throw null; }
+        public static short Fix(short Number) { throw null; }
         public static int Fix(int Number) { throw null; }
         public static long Fix(long Number) { throw null; }
-        public static double Fix(double Number) { throw null; }
-        public static float Fix(float Number) { throw null; }
-        public static decimal Fix(decimal Number) { throw null; }
         public static object Fix(object Number) { throw null; }
-        public static short Fix(short Number) { throw null; }
-        public static string Hex(object Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Hex(ulong Number) { throw null; }
-        public static string Hex(long Number) { throw null; }
-        public static string Hex(int Number) { throw null; }
-        public static string Hex(short Number) { throw null; }
+        public static float Fix(float Number) { throw null; }
         public static string Hex(byte Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Hex(uint Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Hex(ushort Number) { throw null; }
-        [System.CLSCompliant(false)]
+        public static string Hex(short Number) { throw null; }
+        public static string Hex(int Number) { throw null; }
+        public static string Hex(long Number) { throw null; }
+        public static string Hex(object Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static string Hex(sbyte Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Hex(ushort Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Hex(uint Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Hex(ulong Number) { throw null; }
+        public static decimal Int(decimal Number) { throw null; }
+        public static double Int(double Number) { throw null; }
         public static short Int(short Number) { throw null; }
         public static int Int(int Number) { throw null; }
-        public static object Int(object Number) { throw null; }
-        public static double Int(double Number) { throw null; }
-        public static float Int(float Number) { throw null; }
         public static long Int(long Number) { throw null; }
-        public static decimal Int(decimal Number) { throw null; }
-        public static string Oct(object Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Oct(ulong Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Oct(uint Number) { throw null; }
-        public static string Oct(long Number) { throw null; }
-        public static string Oct(short Number) { throw null; }
+        public static object Int(object Number) { throw null; }
+        public static float Int(float Number) { throw null; }
         public static string Oct(byte Number) { throw null; }
-        [System.CLSCompliant(false)]
-        public static string Oct(sbyte Number) { throw null; }
+        public static string Oct(short Number) { throw null; }
         public static string Oct(int Number) { throw null; }
-        [System.CLSCompliant(false)]
+        public static string Oct(long Number) { throw null; }
+        public static string Oct(object Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Oct(sbyte Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static string Oct(ushort Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Oct(uint Number) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Oct(ulong Number) { throw null; }
         public static string Str(object Number) { throw null; }
-        public static double Val(string InputStr) { throw null; }
         public static int Val(char Expression) { throw null; }
         public static double Val(object Expression) { throw null; }
+        public static double Val(string InputStr) { throw null; }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class DateAndTime
     {
         internal DateAndTime() { }
-        public static System.DateTime DateAdd(DateInterval Interval, double Number, System.DateTime DateValue) { throw null; }
-        public static System.DateTime DateAdd(string Interval, double Number, object DateValue) { throw null; }
-        public static long DateDiff(DateInterval Interval, System.DateTime Date1, System.DateTime Date2, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
-        public static long DateDiff(string Interval, object Date1, object Date2, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
-        public static int DatePart(DateInterval Interval, System.DateTime DateValue, FirstDayOfWeek FirstDayOfWeekValue = FirstDayOfWeek.Sunday, FirstWeekOfYear FirstWeekOfYearValue = FirstWeekOfYear.Jan1) { throw null; }
-        public static int DatePart(string Interval, object DateValue, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
-        public static System.DateTime DateSerial(int Year, int Month, int Day) { throw null; }
         public static string DateString { get { throw null; } set { } }
+        public static System.DateTime Now { get { throw null; } }
+        public static System.DateTime TimeOfDay { get { throw null; } set { } }
+        public static double Timer { get { throw null; } }
+        public static string TimeString { get { throw null; } set { } }
+        public static System.DateTime Today { get { throw null; } set { } }
+        public static System.DateTime DateAdd(Microsoft.VisualBasic.DateInterval Interval, double Number, System.DateTime DateValue) { throw null; }
+        public static System.DateTime DateAdd(string Interval, double Number, object DateValue) { throw null; }
+        public static long DateDiff(Microsoft.VisualBasic.DateInterval Interval, System.DateTime Date1, System.DateTime Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static long DateDiff(string Interval, object Date1, object Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static int DatePart(Microsoft.VisualBasic.DateInterval Interval, System.DateTime DateValue, Microsoft.VisualBasic.FirstDayOfWeek FirstDayOfWeekValue = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear FirstWeekOfYearValue = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static int DatePart(string Interval, object DateValue, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static System.DateTime DateSerial(int Year, int Month, int Day) { throw null; }
         public static System.DateTime DateValue(string StringDate) { throw null; }
         public static int Day(System.DateTime DateValue) { throw null; }
         public static int Hour(System.DateTime TimeValue) { throw null; }
         public static int Minute(System.DateTime TimeValue) { throw null; }
         public static int Month(System.DateTime DateValue) { throw null; }
         public static string MonthName(int Month, bool Abbreviate = false) { throw null; }
-        public static System.DateTime Now { get { throw null; } }
         public static int Second(System.DateTime TimeValue) { throw null; }
-        public static System.DateTime TimeOfDay { get { throw null; } set { } }
-        public static double Timer { get { throw null; } }
         public static System.DateTime TimeSerial(int Hour, int Minute, int Second) { throw null; }
-        public static string TimeString { get { throw null; } set { } }
         public static System.DateTime TimeValue(string StringTime) { throw null; }
-        public static System.DateTime Today { get { throw null; } set { } }
-        public static int Weekday(System.DateTime DateValue, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday) { throw null; }
-        public static string WeekdayName(int Weekday, bool Abbreviate = false, FirstDayOfWeek FirstDayOfWeekValue = FirstDayOfWeek.System) { throw null; }
+        public static int Weekday(System.DateTime DateValue, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday) { throw null; }
+        public static string WeekdayName(int Weekday, bool Abbreviate = false, Microsoft.VisualBasic.FirstDayOfWeek FirstDayOfWeekValue = Microsoft.VisualBasic.FirstDayOfWeek.System) { throw null; }
         public static int Year(System.DateTime DateValue) { throw null; }
     }
     public enum DateFormat
     {
         GeneralDate = 0,
         LongDate = 1,
-        LongTime = 3,
         ShortDate = 2,
+        LongTime = 3,
         ShortTime = 4,
     }
     public enum DateInterval
     {
+        Year = 0,
+        Quarter = 1,
+        Month = 2,
         DayOfYear = 3,
         Day = 4,
+        WeekOfYear = 5,
+        Weekday = 6,
         Hour = 7,
         Minute = 8,
-        Month = 2,
-        Quarter = 1,
         Second = 9,
-        Weekday = 6,
-        WeekOfYear = 5,
-        Year = 0,
     }
     public enum DueDate
     {
-        BegOfPeriod = 1,
         EndOfPeriod = 0,
+        BegOfPeriod = 1,
     }
     public sealed partial class ErrObject
     {
         internal ErrObject() { }
-        public void Clear() { }
         public string Description { get { throw null; } set { } }
         public int Erl { get { throw null; } }
-        public System.Exception GetException() { throw null; }
         public int LastDllError { get { throw null; } }
         public int Number { get { throw null; } set { } }
+        public void Clear() { }
+        public System.Exception GetException() { throw null; }
         public void Raise(int Number, object Source = null, object Description = null, object HelpFile = null, object HelpContext = null) { }
     }
-    [System.Flags]
+    [System.FlagsAttribute]
     public enum FileAttribute
     {
-        Archive = 32,
-        Directory = 16,
-        Hidden = 2,
         Normal = 0,
         ReadOnly = 1,
+        Hidden = 2,
         System = 4,
         Volume = 8,
+        Directory = 16,
+        Archive = 32,
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
-    public sealed class FileSystem
+    public sealed partial class FileSystem
     {
         internal FileSystem() { }
-        public static void ChDir(string Path){ throw null; }
-        public static void ChDrive(char Drive){ throw null; }
-        public static void ChDrive(string Drive){ throw null; }
-        public static string CurDir(){ throw null; }
-        public static string CurDir(char Drive){ throw null; }
-        public static string Dir(){ throw null; }
-        public static string Dir(string PathName, FileAttribute Attributes = FileAttribute.Normal){ throw null; }
-        public static bool EOF(int FileNumber){ throw null; }
-        public static OpenMode FileAttr(int FileNumber){ throw null; }
+        public static void ChDir(string Path) { }
+        public static void ChDrive(char Drive) { }
+        public static void ChDrive(string Drive) { }
+        public static string CurDir() { throw null; }
+        public static string CurDir(char Drive) { throw null; }
+        public static string Dir() { throw null; }
+        public static string Dir(string PathName, Microsoft.VisualBasic.FileAttribute Attributes = Microsoft.VisualBasic.FileAttribute.Normal) { throw null; }
+        public static bool EOF(int FileNumber) { throw null; }
+        public static Microsoft.VisualBasic.OpenMode FileAttr(int FileNumber) { throw null; }
         public static void FileClose(params int[] FileNumbers) { }
         public static void FileCopy(string Source, string Destination) { }
-        public static System.DateTime FileDateTime(string PathName){ throw null; }
-        public static void FileGet(int FileNumber, ref bool Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref byte Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref char Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref decimal Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref double Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref float Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref int Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref long Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref short Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref string Value, long RecordNumber = -1, bool StringIsFixedLength = false) { }
-        public static void FileGet(int FileNumber, ref System.Array Value, long RecordNumber = -1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
-        public static void FileGet(int FileNumber, ref System.DateTime Value, long RecordNumber = -1) { }
-        public static void FileGet(int FileNumber, ref System.ValueType Value, long RecordNumber = -1) { }
-        public static void FileGetObject(int FileNumber, ref object Value, long RecordNumber = -1) { }
+        public static System.DateTime FileDateTime(string PathName) { throw null; }
+        public static void FileGet(int FileNumber, ref System.Array Value, long RecordNumber = (long)-1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
+        public static void FileGet(int FileNumber, ref bool Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref byte Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref char Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref System.DateTime Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref decimal Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref double Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref short Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref int Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref long Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref float Value, long RecordNumber = (long)-1) { }
+        public static void FileGet(int FileNumber, ref string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
+        public static void FileGet(int FileNumber, ref System.ValueType Value, long RecordNumber = (long)-1) { }
+        public static void FileGetObject(int FileNumber, ref object Value, long RecordNumber = (long)-1) { }
         public static long FileLen(string PathName) { throw null; }
-        public static void FileOpen(int FileNumber, string FileName, OpenMode Mode, OpenAccess Access = OpenAccess.Default, OpenShare Share = OpenShare.Default, int RecordLength = -1) { }
-        public static void FilePut(int FileNumber, bool Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, byte Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, char Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, decimal Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, double Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, float Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, int Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, long Value, long RecordNumber = -1) { }
+        public static void FileOpen(int FileNumber, string FileName, Microsoft.VisualBasic.OpenMode Mode, Microsoft.VisualBasic.OpenAccess Access = Microsoft.VisualBasic.OpenAccess.Default, Microsoft.VisualBasic.OpenShare Share = Microsoft.VisualBasic.OpenShare.Default, int RecordLength = -1) { }
+        public static void FilePut(int FileNumber, System.Array Value, long RecordNumber = (long)-1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
+        public static void FilePut(int FileNumber, bool Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, byte Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, char Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, System.DateTime Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, decimal Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, double Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, short Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, int Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, long Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, float Value, long RecordNumber = (long)-1) { }
+        public static void FilePut(int FileNumber, string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
+        public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = (long)-1) { }
         [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static void FilePut(object FileNumber, object Value, object RecordNumber/* = -1*/) { }
-        public static void FilePut(int FileNumber, short Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, string Value, long RecordNumber = -1, bool StringIsFixedLength = false) { }
-        public static void FilePut(int FileNumber, System.Array Value, long RecordNumber = -1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
-        public static void FilePut(int FileNumber, System.DateTime Value, long RecordNumber = -1) { }
-        public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = -1) { }
-        public static void FilePutObject(int FileNumber, object Value, long RecordNumber = -1) { }
+        public static void FilePut(object FileNumber, object Value, object RecordNumber) { }
+        public static void FilePutObject(int FileNumber, object Value, long RecordNumber = (long)-1) { }
         public static void FileWidth(int FileNumber, int RecordWidth) { }
-        public static int FreeFile(){ throw null; }
-        public static FileAttribute GetAttr(string PathName){ throw null; }
+        public static int FreeFile() { throw null; }
+        public static Microsoft.VisualBasic.FileAttribute GetAttr(string PathName) { throw null; }
         public static void Input(int FileNumber, ref bool Value) { }
         public static void Input(int FileNumber, ref byte Value) { }
         public static void Input(int FileNumber, ref char Value) { }
+        public static void Input(int FileNumber, ref System.DateTime Value) { }
         public static void Input(int FileNumber, ref decimal Value) { }
         public static void Input(int FileNumber, ref double Value) { }
-        public static void Input(int FileNumber, ref float Value) { }
+        public static void Input(int FileNumber, ref short Value) { }
         public static void Input(int FileNumber, ref int Value) { }
         public static void Input(int FileNumber, ref long Value) { }
         public static void Input(int FileNumber, ref object Value) { }
-        public static void Input(int FileNumber, ref short Value) { }
+        public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
-        public static void Input(int FileNumber, ref System.DateTime Value) { }
-        public static string InputString(int FileNumber, int CharCount){ throw null; }
+        public static string InputString(int FileNumber, int CharCount) { throw null; }
         public static void Kill(string PathName) { }
-        public static string LineInput(int FileNumber){ throw null; }
-        public static long Loc(int FileNumber){ throw null; }
-        public static void Lock(int FileNumber){ throw null; }
-        public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
+        public static string LineInput(int FileNumber) { throw null; }
+        public static long Loc(int FileNumber) { throw null; }
+        public static void Lock(int FileNumber) { }
         public static void Lock(int FileNumber, long Record) { }
-        public static long LOF(int FileNumber){ throw null; }
+        public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
+        public static long LOF(int FileNumber) { throw null; }
         public static void MkDir(string Path) { }
         public static void Print(int FileNumber, params object[] Output) { }
         public static void PrintLine(int FileNumber, params object[] Output) { }
         public static void Rename(string OldPath, string NewPath) { }
         public static void Reset() { }
         public static void RmDir(string Path) { }
-        public static void Seek(int FileNumber, long Position) { }
         public static long Seek(int FileNumber) { throw null; }
-        public static void SetAttr(string PathName, FileAttribute Attributes) { }
-        public static SpcInfo SPC(short Count){ throw null; }
-        public static TabInfo TAB(){ throw null; }
-        public static TabInfo TAB(short Column){ throw null; }
+        public static void Seek(int FileNumber, long Position) { }
+        public static void SetAttr(string PathName, Microsoft.VisualBasic.FileAttribute Attributes) { }
+        public static Microsoft.VisualBasic.SpcInfo SPC(short Count) { throw null; }
+        public static Microsoft.VisualBasic.TabInfo TAB() { throw null; }
+        public static Microsoft.VisualBasic.TabInfo TAB(short Column) { throw null; }
         public static void Unlock(int FileNumber) { }
         public static void Unlock(int FileNumber, long Record) { }
         public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
@@ -413,40 +413,40 @@ namespace Microsoft.VisualBasic
         public static void WriteLine(int FileNumber, params object[] Output) { }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
-    public sealed class Financial
+    public sealed partial class Financial
     {
         internal Financial() { }
-        public static double DDB(double Cost, double Salvage, double Life, double Period, double Factor = 2.0) { throw null; }
-        public static double FV(double Rate, double NPer, double Pmt, double PV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
-        public static double IPmt(double Rate, double Per, double NPer, double PV, double FV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
+        public static double DDB(double Cost, double Salvage, double Life, double Period, double Factor = 2) { throw null; }
+        public static double FV(double Rate, double NPer, double Pmt, double PV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
+        public static double IPmt(double Rate, double Per, double NPer, double PV, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
         public static double IRR(ref double[] ValueArray, double Guess = 0.1) { throw null; }
         public static double MIRR(ref double[] ValueArray, double FinanceRate, double ReinvestRate) { throw null; }
-        public static double NPer(double Rate, double Pmt, double PV, double FV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
+        public static double NPer(double Rate, double Pmt, double PV, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
         public static double NPV(double Rate, ref double[] ValueArray) { throw null; }
-        public static double Pmt(double Rate, double NPer, double PV, double FV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
-        public static double PPmt(double Rate, double Per, double NPer, double PV, double FV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
-        public static double PV(double Rate, double NPer, double Pmt, double FV = 0, DueDate Due = DueDate.EndOfPeriod) { throw null; }
-        public static double Rate(double NPer, double Pmt, double PV, double FV = 0, DueDate Due = DueDate.EndOfPeriod, double Guess = 0.1) { throw null; }
+        public static double Pmt(double Rate, double NPer, double PV, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
+        public static double PPmt(double Rate, double Per, double NPer, double PV, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
+        public static double PV(double Rate, double NPer, double Pmt, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod) { throw null; }
+        public static double Rate(double NPer, double Pmt, double PV, double FV = 0, Microsoft.VisualBasic.DueDate Due = Microsoft.VisualBasic.DueDate.EndOfPeriod, double Guess = 0.1) { throw null; }
         public static double SLN(double Cost, double Salvage, double Life) { throw null; }
         public static double SYD(double Cost, double Salvage, double Life, double Period) { throw null; }
     }
     public enum FirstDayOfWeek
     {
-        Friday = 6,
-        Monday = 2,
-        Saturday = 7,
-        Sunday = 1,
         System = 0,
-        Thursday = 5,
+        Sunday = 1,
+        Monday = 2,
         Tuesday = 3,
         Wednesday = 4,
+        Thursday = 5,
+        Friday = 6,
+        Saturday = 7,
     }
     public enum FirstWeekOfYear
     {
+        System = 0,
+        Jan1 = 1,
         FirstFourDays = 2,
         FirstFullWeek = 3,
-        Jan1 = 1,
-        System = 0,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -458,7 +458,7 @@ namespace Microsoft.VisualBasic
     public sealed partial class Information
     {
         internal Information() { }
-        public static ErrObject Err() { throw null; }
+        public static Microsoft.VisualBasic.ErrObject Err() { throw null; }
         public static bool IsArray(object VarName) { throw null; }
         public static bool IsDate(object Expression) { throw null; }
         public static bool IsDBNull(object Expression) { throw null; }
@@ -480,7 +480,7 @@ namespace Microsoft.VisualBasic
     {
         internal Interaction() { }
         public static void Beep() { }
-        public static object CallByName(object ObjectRef, string ProcName, CallType UseCallType, params object[] Args) { throw null; }
+        public static object CallByName(object ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object[] Args) { throw null; }
         public static object Choose(double Index, params object[] Choice) { throw null; }
         public static object CreateObject(string ProgId, string ServerName = "") { throw null; }
         public static object IIf(bool Expression, object TruePart, object FalsePart) { throw null; }
@@ -489,36 +489,36 @@ namespace Microsoft.VisualBasic
     }
     public enum MsgBoxResult
     {
-        Abort = 3,
-        Cancel = 2,
-        Ignore = 5,
         Ok = 1,
+        Cancel = 2,
+        Abort = 3,
         Retry = 4,
-        No = 7,
+        Ignore = 5,
         Yes = 6,
+        No = 7,
     }
     [System.FlagsAttribute]
     public enum MsgBoxStyle
     {
-        AbortRetryIgnore = 2,
         ApplicationModal = 0,
-        Critical = 16,
         DefaultButton1 = 0,
-        DefaultButton2 = 256,
-        DefaultButton3 = 512,
+        OkOnly = 0,
+        OkCancel = 1,
+        AbortRetryIgnore = 2,
+        YesNoCancel = 3,
+        YesNo = 4,
+        RetryCancel = 5,
+        Critical = 16,
+        Question = 32,
         Exclamation = 48,
         Information = 64,
+        DefaultButton2 = 256,
+        DefaultButton3 = 512,
+        SystemModal = 4096,
         MsgBoxHelp = 16384,
+        MsgBoxSetForeground = 65536,
         MsgBoxRight = 524288,
         MsgBoxRtlReading = 1048576,
-        MsgBoxSetForeground = 65536,
-        OkCancel = 1,
-        OkOnly = 0,
-        Question = 32,
-        RetryCancel = 5,
-        SystemModal = 4096,
-        YesNo = 4,
-        YesNoCancel = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -534,27 +534,27 @@ namespace Microsoft.VisualBasic
     {
         Default = -1,
         Read = 1,
-        ReadWrite = 3,
         Write = 2,
+        ReadWrite = 3,
     }
     public enum OpenMode
     {
-        Append = 8,
-        Binary = 32,
         Input = 1,
         Output = 2,
         Random = 4,
+        Append = 8,
+        Binary = 32,
     }
     public enum OpenShare
     {
         Default = -1,
-        LockRead = 2,
         LockReadWrite = 0,
         LockWrite = 1,
-        Shared = 3
+        LockRead = 2,
+        Shared = 3,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public struct SpcInfo
+    public partial struct SpcInfo
     {
         public short Count;
     }
@@ -568,17 +568,17 @@ namespace Microsoft.VisualBasic
         public static int AscW(string String) { throw null; }
         public static char Chr(int CharCode) { throw null; }
         public static char ChrW(int CharCode) { throw null; }
-        public static string[] Filter(object[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute]Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string[] Filter(string[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute]Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string[] Filter(object[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string[] Filter(string[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string Format(object Expression, string Style = "") { throw null; }
-        public static string FormatCurrency(object Expression, int NumDigitsAfterDecimal = -1, TriState IncludeLeadingDigit = TriState.UseDefault, TriState UseParensForNegativeNumbers = TriState.UseDefault, TriState GroupDigits = TriState.UseDefault) { throw null; }
-        public static string FormatDateTime(System.DateTime Expression, DateFormat NamedFormat = DateFormat.GeneralDate) { throw null; }
-        public static string FormatNumber(object Expression, int NumDigitsAfterDecimal = -1, TriState IncludeLeadingDigit = TriState.UseDefault, TriState UseParensForNegativeNumbers = TriState.UseDefault, TriState GroupDigits = TriState.UseDefault) { throw null; }
-        public static string FormatPercent(object Expression, int NumDigitsAfterDecimal = -1, TriState IncludeLeadingDigit = TriState.UseDefault, TriState UseParensForNegativeNumbers = TriState.UseDefault, TriState GroupDigits = TriState.UseDefault) { throw null; }
+        public static string FormatCurrency(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
+        public static string FormatDateTime(System.DateTime Expression, Microsoft.VisualBasic.DateFormat NamedFormat = Microsoft.VisualBasic.DateFormat.GeneralDate) { throw null; }
+        public static string FormatNumber(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
+        public static string FormatPercent(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
         public static char GetChar(string str, int Index) { throw null; }
-        public static int InStr(int StartPos, string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute]Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int InStr(string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute]Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int InStrRev(string StringCheck, string StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute]Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStr(int StartPos, string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStr(string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStrRev(string StringCheck, string StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string Join(object[] SourceArray, string Delimiter = " ") { throw null; }
         public static string Join(string[] SourceArray, string Delimiter = " ") { throw null; }
         public static char LCase(char Value) { throw null; }
@@ -608,13 +608,13 @@ namespace Microsoft.VisualBasic
         public static string LTrim(string str) { throw null; }
         public static string Mid(string str, int Start) { throw null; }
         public static string Mid(string str, int Start, int Length) { throw null; }
-        public static string Replace(string Expression, string Find, string Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static string Replace(string Expression, string Find, string Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string Right(string str, int Length) { throw null; }
         public static string RSet(string Source, int Length) { throw null; }
         public static string RTrim(string str) { throw null; }
         public static string Space(int Number) { throw null; }
-        public static string[] Split(string Expression, string Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
-        public static int StrComp(string String1, string String2, CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static string[] Split(string Expression, string Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int StrComp(string String1, string String2, Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string StrConv(string str, Microsoft.VisualBasic.VbStrConv Conversion, int LocaleID = 0) { throw null; }
         public static string StrDup(int Number, char Character) { throw null; }
         public static object StrDup(int Number, object Character) { throw null; }
@@ -625,15 +625,15 @@ namespace Microsoft.VisualBasic
         public static string UCase(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public struct TabInfo
+    public partial struct TabInfo
     {
         public short Column;
     }
     public enum TriState
     {
-        False = 0,
-        True = -1,
         UseDefault = -2,
+        True = -1,
+        False = 0,
     }
     public enum VariantType
     {
@@ -684,17 +684,17 @@ namespace Microsoft.VisualBasic
     [System.FlagsAttribute]
     public enum VbStrConv
     {
-        Hiragana = 32,
-        Katakana = 16,
-        LinguisticCasing = 1024,
-        Lowercase = 2,
-        Narrow = 8,
         None = 0,
+        Uppercase = 1,
+        Lowercase = 2,
         ProperCase = 3,
+        Wide = 4,
+        Narrow = 8,
+        Katakana = 16,
+        Hiragana = 32,
         SimplifiedChinese = 256,
         TraditionalChinese = 512,
-        Uppercase = 1,
-        Wide = 4,
+        LinguisticCasing = 1024,
     }
 }
 namespace Microsoft.VisualBasic.ApplicationServices
@@ -702,14 +702,14 @@ namespace Microsoft.VisualBasic.ApplicationServices
     public partial class ApplicationBase
     {
         public ApplicationBase() { }
-        public void ChangeCulture(string cultureName) { throw null; }
-        public void ChangeUICulture(string cultureName) { throw null; }
         public System.Globalization.CultureInfo Culture { get { throw null; } }
-        public string GetEnvironmentVariable(string name) { throw null; }
-        public AssemblyInfo Info { get { throw null; } }
+        public Microsoft.VisualBasic.ApplicationServices.AssemblyInfo Info { get { throw null; } }
         public System.Globalization.CultureInfo UICulture { get { throw null; } }
+        public void ChangeCulture(string cultureName) { }
+        public void ChangeUICulture(string cultureName) { }
+        public string GetEnvironmentVariable(string name) { throw null; }
     }
-    public class AssemblyInfo
+    public partial class AssemblyInfo
     {
         public AssemblyInfo(System.Reflection.Assembly currentAssembly) { }
         public string AssemblyName { get { throw null; } }
@@ -725,7 +725,7 @@ namespace Microsoft.VisualBasic.ApplicationServices
         public System.Version Version { get { throw null; } }
         public long WorkingSet { get { throw null; } }
     }
-    public class ConsoleApplicationBase : ApplicationBase
+    public partial class ConsoleApplicationBase : Microsoft.VisualBasic.ApplicationServices.ApplicationBase
     {
         public ConsoleApplicationBase() { }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> CommandLineArgs { get { throw null; } }
@@ -757,8 +757,8 @@ namespace Microsoft.VisualBasic.ApplicationServices
         public System.Security.Principal.IPrincipal CurrentPrincipal { get { throw null; } set { } }
         protected virtual System.Security.Principal.IPrincipal InternalPrincipal { get { throw null; } set { } }
         public bool IsAuthenticated { get { throw null; } }
-        public bool IsInRole(string role) { throw null; }
         public string Name { get { throw null; } }
+        public bool IsInRole(string role) { throw null; }
     }
 }
 namespace Microsoft.VisualBasic.CompilerServices
@@ -914,7 +914,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal LateBinding() { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateCall(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { throw null; }
+        public static void LateCall(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public static object LateGet(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { throw null; }
@@ -923,16 +923,16 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object LateIndexGet(object o, object[] args, string[] paramnames) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateIndexSet(object o, object[] args, string[] paramnames) { throw null; }
+        public static void LateIndexSet(object o, object[] args, string[] paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateIndexSetComplex(object o, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { throw null; }
+        public static void LateIndexSetComplex(object o, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSet(object o, System.Type objType, string name, object[] args, string[] paramnames) { throw null; }
+        public static void LateSet(object o, System.Type objType, string name, object[] args, string[] paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSetComplex(object o, System.Type objType, string name, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { throw null; }
+        public static void LateSetComplex(object o, System.Type objType, string name, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class LikeOperator
@@ -1016,7 +1016,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object DivObj(object o1, object o2) { throw null; }
         public static object GetObjectValuePrimitive(object o) { throw null; }
         public static object IDivObj(object o1, object o2) { throw null; }
-        public static bool LikeObj(object vLeft, object vRight, CompareMethod CompareOption) { throw null; }
+        public static bool LikeObj(object vLeft, object vRight, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
         public static object ModObj(object o1, object o2) { throw null; }
         public static object MulObj(object o1, object o2) { throw null; }
         public static object NegObj(object obj) { throw null; }
@@ -1134,7 +1134,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static string FromShort(short Value) { throw null; }
         public static string FromSingle(float Value) { throw null; }
         public static string FromSingle(float Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static void MidStmtStr(ref string sDest, int StartPosition, int MaxInsertLength, string sInsert) { throw null; }
+        public static void MidStmtStr(ref string sDest, int StartPosition, int MaxInsertLength, string sInsert) { }
         public static int StrCmp(string sLeft, string sRight, bool TextCompare) { throw null; }
         public static bool StrLike(string Source, string Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
         public static bool StrLikeBinary(string Source, string Pattern) { throw null; }
@@ -1150,7 +1150,7 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Versioned
     {
         internal Versioned() { }
-        public static object CallByName(object Instance, string MethodName, CallType UseCallType, params object[] Arguments) { throw null; }
+        public static object CallByName(object Instance, string MethodName, Microsoft.VisualBasic.CallType UseCallType, params object[] Arguments) { throw null; }
         public static bool IsNumeric(object Expression) { throw null; }
         public static string SystemTypeName(string VbName) { throw null; }
         public static string TypeName(object Expression) { throw null; }
@@ -1170,28 +1170,28 @@ namespace Microsoft.VisualBasic.Devices
         public System.DateTime LocalTime { get { throw null; } }
         public int TickCount { get { throw null; } }
     }
-    public partial class Computer : ServerComputer
+    public partial class Computer : Microsoft.VisualBasic.Devices.ServerComputer
     {
         public Computer() { }
-        public Audio Audio { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Audio Audio { get { throw null; } }
         public Microsoft.VisualBasic.MyServices.ClipboardProxy Clipboard { get { throw null; } }
-        public Keyboard Keyboard { get { throw null; } }
-        public Mouse Mouse { get { throw null; } }
-        public Ports Ports { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Keyboard Keyboard { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Mouse Mouse { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Ports Ports { get { throw null; } }
     }
     public partial class ComputerInfo
     {
         public ComputerInfo() { }
-        [System.CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public ulong AvailablePhysicalMemory { get { throw null; } }
-        [System.CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public ulong AvailableVirtualMemory { get { throw null; } }
         public System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
         public string OSPlatform { get { throw null; } }
         public string OSVersion { get { throw null; } }
-        [System.CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public ulong TotalPhysicalMemory { get { throw null; } }
-        [System.CLSCompliant(false)]
+        [System.CLSCompliantAttribute(false)]
         public ulong TotalVirtualMemory { get { throw null; } }
     }
     public partial class Keyboard
@@ -1218,11 +1218,11 @@ namespace Microsoft.VisualBasic.Devices
     public partial class ServerComputer
     {
         public ServerComputer() { }
-        public Clock Clock { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Clock Clock { get { throw null; } }
         public Microsoft.VisualBasic.MyServices.FileSystemProxy FileSystem { get { throw null; } }
-        public ComputerInfo Info { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.ComputerInfo Info { get { throw null; } }
         public string Name { get { throw null; } }
-        public Network Network { get { throw null; } }
+        public Microsoft.VisualBasic.Devices.Network Network { get { throw null; } }
         public Microsoft.VisualBasic.MyServices.RegistryProxy Registry { get { throw null; } }
     }
 }
@@ -1241,17 +1241,18 @@ namespace Microsoft.VisualBasic.FileIO
     public partial class FileSystem
     {
         public FileSystem() { }
+        public static string CurrentDirectory { get { throw null; } set { } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
         public static string CombinePath(string baseDirectory, string relativePath) { throw null; }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
-        public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void CopyFile(string sourceFileName, string destinationFileName) { }
-        public static void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public static void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void CreateDirectory(string directory) { }
-        public static string CurrentDirectory { get { throw null; } set { } }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption onDirectoryNotEmpty) { }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
@@ -1259,7 +1260,6 @@ namespace Microsoft.VisualBasic.FileIO
         public static void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public static void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
         public static bool DirectoryExists(string directory) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
         public static bool FileExists(string file) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType, params string[] fileWildcards) { throw null; }
@@ -1274,13 +1274,13 @@ namespace Microsoft.VisualBasic.FileIO
         public static string GetParentPath(string path) { throw null; }
         public static string GetTempFileName() { throw null; }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
-        public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void MoveFile(string sourceFileName, string destinationFileName) { }
-        public static void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public static void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file) { throw null; }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params int[] fieldWidths) { throw null; }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params string[] delimiters) { throw null; }
@@ -1345,13 +1345,8 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
-        ~TextFieldParser() { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public void Close() { }
         public string[] CommentTokens { get { throw null; } set { } }
         public string[] Delimiters { get { throw null; } set { } }
-        protected virtual void Dispose(bool disposing) { }
-        void System.IDisposable.Dispose() { }
         public bool EndOfData { get { throw null; } }
         public string ErrorLine { get { throw null; } }
         public long ErrorLineNumber { get { throw null; } }
@@ -1360,6 +1355,12 @@ namespace Microsoft.VisualBasic.FileIO
         public bool HasFieldsEnclosedInQuotes { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public long LineNumber { get { throw null; } }
+        public Microsoft.VisualBasic.FileIO.FieldType TextFieldType { get { throw null; } set { } }
+        public bool TrimWhiteSpace { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        public void Close() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~TextFieldParser() { }
         public string PeekChars(int numberOfChars) { throw null; }
         public string[] ReadFields() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1368,8 +1369,7 @@ namespace Microsoft.VisualBasic.FileIO
         public string ReadToEnd() { throw null; }
         public void SetDelimiters(params string[] delimiters) { }
         public void SetFieldWidths(params int[] fieldWidths) { }
-        public Microsoft.VisualBasic.FileIO.FieldType TextFieldType { get { throw null; } set { } }
-        public bool TrimWhiteSpace { get { throw null; } set { } }
+        void System.IDisposable.Dispose() { }
     }
     public enum UICancelOption
     {
@@ -1393,17 +1393,19 @@ namespace Microsoft.VisualBasic.MyServices
     public partial class FileSystemProxy
     {
         internal FileSystemProxy() { }
+        public string CurrentDirectory { get { throw null; } set { } }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
+        public Microsoft.VisualBasic.MyServices.SpecialDirectoriesProxy SpecialDirectories { get { throw null; } }
         public string CombinePath(string baseDirectory, string relativePath) { throw null; }
         public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
-        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public void CopyFile(string sourceFileName, string destinationFileName) { }
-        public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public void CreateDirectory(string directory) { }
-        public string CurrentDirectory { get { throw null; } set { } }
         public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption onDirectoryNotEmpty) { }
         public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
@@ -1411,28 +1413,27 @@ namespace Microsoft.VisualBasic.MyServices
         public void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
         public bool DirectoryExists(string directory) { throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
         public bool FileExists(string file) { throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, FileIO.SearchOption searchType) { throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, FileIO.SearchOption searchType, params string[] fileWildcards) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType, params string[] fileWildcards) { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> GetDirectories(string directory) { throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetDirectories(string directory, FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetDirectories(string directory, Microsoft.VisualBasic.FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
         public System.IO.DirectoryInfo GetDirectoryInfo(string directory) { throw null; }
         public System.IO.DriveInfo GetDriveInfo(string drive) { throw null; }
         public System.IO.FileInfo GetFileInfo(string file) { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> GetFiles(string directory) { throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetFiles(string directory, FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetFiles(string directory, Microsoft.VisualBasic.FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
         public string GetName(string path) { throw null; }
         public string GetParentPath(string path) { throw null; }
         public string GetTempFileName() { throw null; }
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
-        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public void MoveFile(string sourceFileName, string destinationFileName) { }
-        public void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file) { throw null; }
         public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params int[] fieldWidths) { throw null; }
         public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params string[] delimiters) { throw null; }
@@ -1445,7 +1446,6 @@ namespace Microsoft.VisualBasic.MyServices
         public string ReadAllText(string file, System.Text.Encoding encoding) { throw null; }
         public void RenameDirectory(string directory, string newName) { }
         public void RenameFile(string file, string newName) { }
-        public SpecialDirectoriesProxy SpecialDirectories { get { throw null; } }
         public void WriteAllBytes(string file, byte[] data, bool append) { }
         public void WriteAllText(string file, string text, bool append) { }
         public void WriteAllText(string file, string text, bool append, System.Text.Encoding encoding) { }
@@ -1465,8 +1465,8 @@ namespace Microsoft.VisualBasic.MyServices
         public string MyDocuments { get { throw null; } }
         public string MyMusic { get { throw null; } }
         public string MyPictures { get { throw null; } }
-        public string Programs { get { throw null; } }
         public string ProgramFiles { get { throw null; } }
+        public string Programs { get { throw null; } }
         public string Temp { get { throw null; } }
     }
 }

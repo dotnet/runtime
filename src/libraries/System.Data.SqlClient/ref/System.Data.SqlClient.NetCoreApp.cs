@@ -26,8 +26,8 @@ namespace System.Data.SqlClient
     }
     public enum PoolBlockingPeriod
     {
-        AlwaysBlock = 1,
         Auto = 0,
+        AlwaysBlock = 1,
         NeverBlock = 2,
     }
     public sealed partial class SqlConnectionStringBuilder : System.Data.Common.DbConnectionStringBuilder
