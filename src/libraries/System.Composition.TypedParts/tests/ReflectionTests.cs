@@ -76,12 +76,12 @@ namespace System.Composition.TypedParts.Tests
         {
             CompositionContext cc = CreateContainer(typeof(A), typeof(B), typeof(C), typeof(D));
             D d = cc.GetExport<D>();
-            Assert.IsAssignableFrom(typeof(A), d.A);
-            Assert.IsAssignableFrom(typeof(B), d.B);
-            Assert.IsAssignableFrom(typeof(A), d.B.A);
-            Assert.IsAssignableFrom(typeof(C), d.C);
-            Assert.IsAssignableFrom(typeof(A), d.C.A);
-            Assert.IsAssignableFrom(typeof(B), d.C.B);
+            Assert.IsAssignableFrom<A>(d.A);
+            Assert.IsAssignableFrom<B>(d.B);
+            Assert.IsAssignableFrom<A>(d.B.A);
+            Assert.IsAssignableFrom<C>(d.C);
+            Assert.IsAssignableFrom<A>(d.C.A);
+            Assert.IsAssignableFrom<B>(d.C.B);
         }
 
         private static CompositionContext CreateContainer(params Type[] types)

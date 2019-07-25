@@ -92,7 +92,7 @@ namespace System.Composition.UnitTests
         {
             var c = CreateContainer(typeof(Presenter), typeof(Controller));
             var ctrl = c.GetExport<Controller>();
-            Assert.IsAssignableFrom(typeof(Presenter), ctrl.Presenter);
+            Assert.IsAssignableFrom<Presenter>(ctrl.Presenter);
         }
     }
 }

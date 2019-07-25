@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         public void Calendar_Get_InvariantInfo()
         {
             CultureInfo cultureInfo = CultureInfo.InvariantCulture;
-            Assert.IsType(typeof(GregorianCalendar), cultureInfo.Calendar);
+            Assert.IsType<GregorianCalendar>(cultureInfo.Calendar);
             Assert.Same(cultureInfo.Calendar, cultureInfo.Calendar);
         }
         
@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
         {
             CultureInfo cultureInfo = CultureInfo.InvariantCulture;
             Assert.Equal(1, cultureInfo.OptionalCalendars.Length);
-            Assert.IsType(typeof(GregorianCalendar), cultureInfo.OptionalCalendars[0]);
+            Assert.IsType<GregorianCalendar>(cultureInfo.OptionalCalendars[0]);
         }
     }
 }

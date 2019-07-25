@@ -46,7 +46,7 @@ namespace System.Composition.UnitTests
         {
             var container = CreateContainer(typeof(UnfairRule));
             var rule = container.GetExport<IRule>();
-            Assert.IsAssignableFrom(typeof(UnfairRule), rule);
+            Assert.IsAssignableFrom<UnfairRule>(rule);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace System.Composition.UnitTests
         {
             var container = CreateContainer(new ConventionBuilder(), typeof(UnfairRule));
             var rule = container.GetExport<IRule>();
-            Assert.IsAssignableFrom(typeof(UnfairRule), rule);
+            Assert.IsAssignableFrom<UnfairRule>(rule);
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace System.Composition.UnitTests
         {
             var container = CreateContainer(typeof(HomeController), typeof(CloudBus));
             var hc = container.GetExport<HomeController>();
-            Assert.IsAssignableFrom(typeof(CloudBus), hc.Bus);
+            Assert.IsAssignableFrom<CloudBus>(hc.Bus);
         }
 
         private class CustomImportAttribute : ImportAttribute { }

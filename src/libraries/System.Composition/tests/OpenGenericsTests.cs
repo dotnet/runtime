@@ -70,7 +70,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(BasicRepository<>));
             var r = cc.GetExport<IRepository<string>>();
-            Assert.IsAssignableFrom(typeof(BasicRepository<string>), r);
+            Assert.IsAssignableFrom<BasicRepository<string>>(r);
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace System.Composition.UnitTests
             var cc = CreateContainer(typeof(BasicRepository<>));
             var r = cc.GetExport<IRepository<string>>();
             var r2 = cc.GetExport<IRepository<int>>();
-            Assert.IsAssignableFrom(typeof(BasicRepository<int>), r2);
+            Assert.IsAssignableFrom<BasicRepository<int>>(r2);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(RepositoryProperty<>));
             var r = cc.GetExport<IRepository<string>>();
-            Assert.IsAssignableFrom(typeof(BasicRepository<string>), r);
+            Assert.IsAssignableFrom<BasicRepository<string>>(r);
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(FirstAndSecond<>));
             var first = cc.GetExport<IFirst<string>>();
-            Assert.IsAssignableFrom(typeof(FirstAndSecond<string>), first);
+            Assert.IsAssignableFrom<FirstAndSecond<string>>(first);
         }
 
         // In future, the set of allowable generic type mappings will be expanded (see
@@ -151,7 +151,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(ExportSelf<>));
             var es = cc.GetExport<ExportSelf<string>>();
-            Assert.IsAssignableFrom(typeof(ExportSelf<string>), es);
+            Assert.IsAssignableFrom<ExportSelf<string>>(es);
         }
 
         [Fact]
@@ -160,7 +160,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(ExportsBase<>));
             var es = cc.GetExport<SomeGenericType<string>>();
-            Assert.IsAssignableFrom(typeof(ExportsBase<string>), es);
+            Assert.IsAssignableFrom<ExportsBase<string>>(es);
         }
     }
 }

@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Same(alg, pk.Key);
                 Assert.Equal(2048, alg.KeySize);
 
-                Assert.IsAssignableFrom(typeof(RSA), alg);
+                Assert.IsAssignableFrom<RSA>(alg);
                 VerifyKey_RSA( /* cert */ null, (RSA)alg);
             }
         }
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Same(alg, pk.Key);
                 Assert.Equal(1024, alg.KeySize);
 
-                Assert.IsAssignableFrom(typeof(DSA), alg);
+                Assert.IsAssignableFrom<DSA>(alg);
                 VerifyKey_DSA((DSA)alg);
             }
         }

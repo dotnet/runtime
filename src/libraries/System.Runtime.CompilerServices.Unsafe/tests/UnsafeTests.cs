@@ -376,7 +376,7 @@ namespace System.Runtime.CompilerServices
         {
             // Verify that As does not perform type checks
             object o = new object();
-            Assert.IsType(typeof(object), Unsafe.As<string>(o));
+            Assert.IsType<object>(Unsafe.As<string>(o));
         }
 
         [Fact]
