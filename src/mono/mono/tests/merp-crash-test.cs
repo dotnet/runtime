@@ -292,7 +292,7 @@ class C
 		}
 	}
 
-	public static void Main (string [] args)
+	public static int Main (string [] args)
 	{
 		if (args.Length == 0) {
 			string processExe = Diag.Process.GetCurrentProcess ().MainModule.FileName;
@@ -330,7 +330,7 @@ class C
 			}
 
 			if (failure_count > 0)
-				return;
+				return 1;
 
 			Console.WriteLine ("\n\n##################");
 			Console.WriteLine ("Merp Stress Test:");
@@ -351,9 +351,10 @@ class C
 			}
 			Console.WriteLine ("Ending crash stress test. No failures caught.\n");
 
-			return;
+			return 0;
 		} else {
 			CrashWithMerp (Convert.ToInt32 (args [0]));
+			return 0;
 		}
 	}
 }
