@@ -13,6 +13,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class KeyAgreeRecipientInfoTests
     {
+        internal static readonly AlgorithmIdentifier TripleDesAlgId =
+            new AlgorithmIdentifier(new Oid(Oids.TripleDesCbc, null));
+
         public static bool SupportsDiffieHellman => PlatformDetection.IsWindows;
         public static bool DoesNotSupportDiffieHellman => !SupportsDiffieHellman;
 
@@ -354,7 +357,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         private static KeyAgreeRecipientInfo EncodeKeyAgreel(SubjectIdentifierType type = SubjectIdentifierType.IssuerAndSerialNumber)
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
-            EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, TripleDesAlgId);
             using (X509Certificate2 cert = Certificates.DHKeyAgree1.GetCertificate())
             {
                 CmsRecipient cmsRecipient = new CmsRecipient(type, cert);
