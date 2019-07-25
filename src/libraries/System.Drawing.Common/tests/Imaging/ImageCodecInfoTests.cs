@@ -96,7 +96,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(format.Guid, codecInfo.FormatID);
             Assert.Contains(CodecName, codecInfo.CodecName);
             Assert.Equal(DllName, codecInfo.DllName);
-            Assert.True(extRegex.IsMatch(codecInfo.FilenameExtension));
+            Assert.Matches(extRegex, codecInfo.FilenameExtension);
             Assert.Equal(Flags, codecInfo.Flags);
             Assert.Contains(FormatDescription, codecInfo.FormatDescription);
             Assert.Contains(MimeType, codecInfo.MimeType);

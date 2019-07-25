@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tests
 
                     var traceparent = startRequest.Headers["traceparent"];
                     Assert.NotNull(traceparent);
-                    Assert.True(Regex.IsMatch(traceparent, "^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$"));
+                    Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
                     Assert.Null(startRequest.Headers["tracestate"]);
                     Assert.Null(startRequest.Headers["Request-Id"]);
                 }
@@ -216,7 +216,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("some=state", tracestate);
                     Assert.Equal("k=v", correlationContext);
                     Assert.True(traceparent.StartsWith($"00-{parent.TraceId.ToHexString()}-"));
-                    Assert.True(Regex.IsMatch(traceparent, "^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$"));
+                    Assert.Matches("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$", traceparent);
                     Assert.Null(startRequest.Headers["Request-Id"]);
                 }
             }

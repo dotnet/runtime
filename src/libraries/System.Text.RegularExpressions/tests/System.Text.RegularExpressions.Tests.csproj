@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);xUnit2008</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
