@@ -262,7 +262,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        private static IEnumerable<Labeled<Func<int, int, IEnumerable<int>>>> Expanders()
+        public static IEnumerable<Labeled<Func<int, int, IEnumerable<int>>>> Expanders()
         {
             yield return Labeled.Label("Array", (Func<int, int, IEnumerable<int>>)((start, count) => Enumerable.Range(start * count, count).ToArray()));
             yield return Labeled.Label("Enumerable.Range", (Func<int, int, IEnumerable<int>>)((start, count) => Enumerable.Range(start * count, count)));

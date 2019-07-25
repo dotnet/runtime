@@ -43,7 +43,7 @@ namespace System.Runtime.Tests
             return false;
         }
 
-        private static IEnumerable<object[]> NullableMetadataTypesTestData()
+        public static IEnumerable<object[]> NullableMetadataTypesTestData()
         {
             yield return new object[] { typeof(string) };
             yield return new object[] { typeof(Dictionary<,>) };

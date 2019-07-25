@@ -220,7 +220,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        internal static IEnumerable<object[]> Alpn_TestData()
+        public static IEnumerable<object[]> Alpn_TestData()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {

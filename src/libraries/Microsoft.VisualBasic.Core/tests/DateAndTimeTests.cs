@@ -25,7 +25,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => DateAndTime.DateAdd(interval, number, dateValue));
         }
 
-        private static IEnumerable<object[]> DateAdd_DateInterval_TestData()
+        public static IEnumerable<object[]> DateAdd_DateInterval_TestData()
         {
             var now = DateTime.UtcNow;
             var calendar = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar;
@@ -111,7 +111,7 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { DateInterval.Second, -2.0, DateTime.MaxValue, DateTime.MaxValue.AddSeconds(-2) };
         }
 
-        private static IEnumerable<object[]> DateAdd_DateInterval_ArgumentOutOfRangeException_TestData()
+        public static IEnumerable<object[]> DateAdd_DateInterval_ArgumentOutOfRangeException_TestData()
         {
             yield return new object[] { DateInterval.Year, 2.0, DateTime.MaxValue };
             yield return new object[] { DateInterval.Year, -2.0, DateTime.MinValue };
@@ -137,7 +137,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => DateAndTime.DateAdd(interval, number, dateValue));
         }
 
-        private static IEnumerable<object[]> DateAdd_StringInterval_TestData()
+        public static IEnumerable<object[]> DateAdd_StringInterval_TestData()
         {
             var now = DateTime.UtcNow;
             var calendar = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar;
@@ -223,7 +223,7 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { "S", -2.0, DateTime.MaxValue, DateTime.MaxValue.AddSeconds(-2) };
         }
 
-        private static IEnumerable<object[]> DateAdd_StringInterval_ArgumentOutOfRangeException_TestData()
+        public static IEnumerable<object[]> DateAdd_StringInterval_ArgumentOutOfRangeException_TestData()
         {
             yield return new object[] { "YYYY", 2.0, DateTime.MaxValue };
             yield return new object[] { "YYYY", -2.0, DateTime.MinValue };
@@ -242,7 +242,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, DateAndTime.DateDiff(interval, dateTime1, dateTime2));
         }
 
-        private static IEnumerable<object[]> DateDiff_DateInterval_TestData()
+        public static IEnumerable<object[]> DateDiff_DateInterval_TestData()
         {
             var now = DateTime.UtcNow;
 
@@ -282,7 +282,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, DateAndTime.DateDiff(interval, dateTime1, dateTime2));
         }
 
-        private static IEnumerable<object[]> DateDiff_StringInterval_TestData()
+        public static IEnumerable<object[]> DateDiff_StringInterval_TestData()
         {
             var now = DateTime.UtcNow;
 
@@ -322,7 +322,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, DateAndTime.DatePart(interval, dateValue));
         }
 
-        private static IEnumerable<object[]> DatePart_DateInterval_TestData()
+        public static IEnumerable<object[]> DatePart_DateInterval_TestData()
         {
             var now = DateTime.UtcNow;
             var calendar = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar;
@@ -342,7 +342,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, DateAndTime.DatePart(interval, dateValue));
         }
 
-        private static IEnumerable<object[]> DatePart_StringInterval_TestData()
+        public static IEnumerable<object[]> DatePart_StringInterval_TestData()
         {
             var now = DateTime.UtcNow;
             var calendar = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar;

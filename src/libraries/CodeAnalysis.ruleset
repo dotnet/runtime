@@ -78,7 +78,6 @@
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
     <Rule Id="xUnit1010" Action="None" /> <!-- The value is not convertible to the method parameter type -->
-    <Rule Id="xUnit1016" Action="None" /> <!-- MemberData must reference a public member -->
     <Rule Id="xUnit1019" Action="None" /> <!-- MemberData must reference a member providing a valid data type -->
     <Rule Id="xUnit1024" Action="None" /> <!-- Test methods cannot have overloads -->
     <Rule Id="xUnit1025" Action="None" /> <!-- InlineData should be unique within the Theory it belongs to -->

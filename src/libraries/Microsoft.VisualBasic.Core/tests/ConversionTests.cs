@@ -107,19 +107,19 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Conversion.CTypeDynamic<T>(expression));
         }
 
-        private static IEnumerable<object[]> CTypeDynamic_Byte_TestData() => ConversionsTests.ToByte_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_SByte_TestData() => ConversionsTests.ToSByte_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_UShort_TestData() => ConversionsTests.ToUShort_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Short_TestData() => ConversionsTests.ToShort_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_UInteger_TestData() => ConversionsTests.ToUInteger_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Integer_TestData() => ConversionsTests.ToInteger_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_ULong_TestData() => ConversionsTests.ToULong_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Long_TestData() => ConversionsTests.ToLong_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Single_TestData() => ConversionsTests.ToSingle_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Double_TestData() => ConversionsTests.ToDouble_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Decimal_TestData() => ConversionsTests.ToDecimal_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_Char_TestData() => ConversionsTests.ToChar_Object_TestData();
-        private static IEnumerable<object[]> CTypeDynamic_String_TestData() => ConversionsTests.ToString_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Byte_TestData() => ConversionsTests.ToByte_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_SByte_TestData() => ConversionsTests.ToSByte_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_UShort_TestData() => ConversionsTests.ToUShort_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Short_TestData() => ConversionsTests.ToShort_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_UInteger_TestData() => ConversionsTests.ToUInteger_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Integer_TestData() => ConversionsTests.ToInteger_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_ULong_TestData() => ConversionsTests.ToULong_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Long_TestData() => ConversionsTests.ToLong_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Single_TestData() => ConversionsTests.ToSingle_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Double_TestData() => ConversionsTests.ToDouble_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Decimal_TestData() => ConversionsTests.ToDecimal_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_Char_TestData() => ConversionsTests.ToChar_Object_TestData();
+        public static IEnumerable<object[]> CTypeDynamic_String_TestData() => ConversionsTests.ToString_Object_TestData();
 
         [Theory]
         [InlineData(null, null)]
@@ -207,37 +207,37 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Conversion.Fix(value));
         }
 
-        private static IEnumerable<object[]> Fix_Short_TestData()
+        public static IEnumerable<object[]> Fix_Short_TestData()
         {
             yield return new object[] { (short)0, (short)0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Fix_Integer_TestData()
+        public static IEnumerable<object[]> Fix_Integer_TestData()
         {
             yield return new object[] { 0, 0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Fix_Long_TestData()
+        public static IEnumerable<object[]> Fix_Long_TestData()
         {
             yield return new object[] { 0L, 0L };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Fix_Single_TestData()
+        public static IEnumerable<object[]> Fix_Single_TestData()
         {
             yield return new object[] { 0.0f, 0.0f };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Fix_Double_TestData()
+        public static IEnumerable<object[]> Fix_Double_TestData()
         {
             yield return new object[] { 0.0, 0.0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Fix_Decimal_TestData()
+        public static IEnumerable<object[]> Fix_Decimal_TestData()
         {
             yield return new object[] { (decimal)0, (decimal)0 };
             // Add more...
@@ -337,22 +337,22 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Conversion.Hex(value));
         }
 
-        private static IEnumerable<object[]> Hex_Byte_TestData()
+        public static IEnumerable<object[]> Hex_Byte_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_SByte_TestData()
+        public static IEnumerable<object[]> Hex_SByte_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_UShort_TestData()
+        public static IEnumerable<object[]> Hex_UShort_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Short_TestData()
+        public static IEnumerable<object[]> Hex_Short_TestData()
         {
             yield return new object[] { short.MinValue, "8000" };
             yield return new object[] { (short)-1, "FFFF" };
@@ -361,37 +361,37 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { short.MaxValue, "7FFF" };
         }
 
-        private static IEnumerable<object[]> Hex_UInteger_TestData()
+        public static IEnumerable<object[]> Hex_UInteger_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Integer_TestData()
+        public static IEnumerable<object[]> Hex_Integer_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_ULong_TestData()
+        public static IEnumerable<object[]> Hex_ULong_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Long_TestData()
+        public static IEnumerable<object[]> Hex_Long_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Single_TestData()
+        public static IEnumerable<object[]> Hex_Single_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Double_TestData()
+        public static IEnumerable<object[]> Hex_Double_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Hex_Decimal_TestData()
+        public static IEnumerable<object[]> Hex_Decimal_TestData()
         {
             yield break; // Add more...
         }
@@ -450,37 +450,37 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Conversion.Int(value));
         }
 
-        private static IEnumerable<object[]> Int_Short_TestData()
+        public static IEnumerable<object[]> Int_Short_TestData()
         {
             yield return new object[] { (short)0, (short)0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Int_Integer_TestData()
+        public static IEnumerable<object[]> Int_Integer_TestData()
         {
             yield return new object[] { 0, 0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Int_Long_TestData()
+        public static IEnumerable<object[]> Int_Long_TestData()
         {
             yield return new object[] { 0L, 0L };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Int_Single_TestData()
+        public static IEnumerable<object[]> Int_Single_TestData()
         {
             yield return new object[] { 0.0f, 0.0f };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Int_Double_TestData()
+        public static IEnumerable<object[]> Int_Double_TestData()
         {
             yield return new object[] { 0.0, 0.0 };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Int_Decimal_TestData()
+        public static IEnumerable<object[]> Int_Decimal_TestData()
         {
             yield return new object[] { (decimal)0, (decimal)0 };
             // Add more...
@@ -580,22 +580,22 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Conversion.Oct(value));
         }
 
-        private static IEnumerable<object[]> Oct_Byte_TestData()
+        public static IEnumerable<object[]> Oct_Byte_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_SByte_TestData()
+        public static IEnumerable<object[]> Oct_SByte_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_UShort_TestData()
+        public static IEnumerable<object[]> Oct_UShort_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Short_TestData()
+        public static IEnumerable<object[]> Oct_Short_TestData()
         {
             yield return new object[] { short.MinValue, "100000" };
             yield return new object[] { (short)-1, "177777" };
@@ -604,37 +604,37 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { short.MaxValue, "77777" };
         }
 
-        private static IEnumerable<object[]> Oct_UInteger_TestData()
+        public static IEnumerable<object[]> Oct_UInteger_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Integer_TestData()
+        public static IEnumerable<object[]> Oct_Integer_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_ULong_TestData()
+        public static IEnumerable<object[]> Oct_ULong_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Long_TestData()
+        public static IEnumerable<object[]> Oct_Long_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Single_TestData()
+        public static IEnumerable<object[]> Oct_Single_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Double_TestData()
+        public static IEnumerable<object[]> Oct_Double_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Oct_Decimal_TestData()
+        public static IEnumerable<object[]> Oct_Decimal_TestData()
         {
             yield break; // Add more...
         }
@@ -653,7 +653,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentNullException>(() => Conversion.Str(value));
         }
 
-        private static IEnumerable<object[]> Str_TestData()
+        public static IEnumerable<object[]> Str_TestData()
         {
             yield return new object[] { 0, " 0" };
             yield return new object[] { 1, " 1" };
@@ -726,24 +726,24 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<OverflowException>(() => Conversion.Val(value));
         }
 
-        private static IEnumerable<object[]> Val_Object_TestData()
+        public static IEnumerable<object[]> Val_Object_TestData()
         {
             yield return new object[] { 0, "0" };
             yield return new object[] { 1, " 1" };
             // Add more...
         }
 
-        private static IEnumerable<object[]> Val_Object_ArgumentException_TestData()
+        public static IEnumerable<object[]> Val_Object_ArgumentException_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Val_Object_OverflowException_TestData()
+        public static IEnumerable<object[]> Val_Object_OverflowException_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Val_Char_TestData()
+        public static IEnumerable<object[]> Val_Char_TestData()
         {
             yield return new object[] { (char)0, 0 };
             yield return new object[] { '0', 0 };
@@ -760,17 +760,17 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { char.MaxValue, 0 };
         }
 
-        private static IEnumerable<object[]> Val_Char_ArgumentException_TestData()
+        public static IEnumerable<object[]> Val_Char_ArgumentException_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Val_Char_OverflowException_TestData()
+        public static IEnumerable<object[]> Val_Char_OverflowException_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Val_String_TestData()
+        public static IEnumerable<object[]> Val_String_TestData()
         {
             yield return new object[] { null, 0.0 };
             yield return new object[] { "", 0.0 };
@@ -780,12 +780,12 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { "1e-3", 1.0e-3 };
         }
 
-        private static IEnumerable<object[]> Val_String_ArgumentException_TestData()
+        public static IEnumerable<object[]> Val_String_ArgumentException_TestData()
         {
             yield break; // Add more...
         }
 
-        private static IEnumerable<object[]> Val_String_OverflowException_TestData()
+        public static IEnumerable<object[]> Val_String_OverflowException_TestData()
         {
             yield break; // Add more...
         }

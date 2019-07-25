@@ -27,7 +27,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expectedTextCompare, LikeOperator.LikeString(source, pattern, CompareMethod.Text));
         }
 
-        private static IEnumerable<object[]> LikeObject_TestData()
+        public static IEnumerable<object[]> LikeObject_TestData()
         {
             yield return new object[] { null, new[] { '*' }, true, true };
             yield return new object[] { new char[0], null, true, true };
@@ -35,7 +35,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new[] { 'A', '3' }, "a#", false, true };
         }
 
-        private static IEnumerable<object[]> LikeString_TestData()
+        public static IEnumerable<object[]> LikeString_TestData()
         {
             yield return new object[] { null, null, true, true };
             yield return new object[] { null, "*", true, true };
