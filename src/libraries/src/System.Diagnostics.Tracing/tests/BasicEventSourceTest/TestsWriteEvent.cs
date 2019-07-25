@@ -341,7 +341,7 @@ namespace BasicEventSourceTests
                                 Assert.Equal(logger.Name, evts[0].ProviderName);
                                 Assert.Equal("EventSourceMessage", evts[0].EventName);
                                 string errorMsg = evts[0].PayloadString(0, "message");
-                                Assert.True(Regex.IsMatch(errorMsg, "called with 1.*defined with 3"));
+                                Assert.Matches("called with 1.*defined with 3", errorMsg);
                             }
 
                             int eventIdx = evts.Count - 1;
