@@ -63,7 +63,6 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            InlineData(@" C:\dir/baz", @" C:\dir"),
             InlineData(@" C:\dir/baz", @" C:\dir")]
         public void GetDirectoryName_SkipSpaces(string path, string expected)
         {

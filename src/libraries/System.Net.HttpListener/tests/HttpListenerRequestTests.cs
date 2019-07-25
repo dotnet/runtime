@@ -33,7 +33,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
-        [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: ", new string[] { "" })]
         [InlineData("Unknown-Header: ", null)]
         public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[] expected)
@@ -134,7 +133,6 @@ namespace System.Net.Tests
         [InlineData("PUT", "Content-Length: 1", 1, true)]
         [InlineData("PUT", "Content-Length: 1\nContent-Length: 1", 1, true)]
         [InlineData("POST", "Transfer-Encoding: chunked", -1, true)]
-        [InlineData("PUT", "Transfer-Encoding: chunked", -1, true)]
         [InlineData("PUT", "Transfer-Encoding: chunked", -1, true)]
         [InlineData("PUT", "Content-Length: 10\nTransfer-Encoding: chunked", -1, true)]
         [InlineData("PUT", "Transfer-Encoding: chunked\nContent-Length: 10", -1, true)]

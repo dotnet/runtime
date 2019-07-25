@@ -832,7 +832,6 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("", "", -1, CompareMethod.Text, new string[] { "" })]
         [InlineData("ABC", ",", -1, CompareMethod.Text, new string[] { "ABC" })]
         [InlineData("A,,BC", ",", -1, CompareMethod.Text, new string[] { "A", "", "BC" })]
-        [InlineData("A,,BC", ",", -1, CompareMethod.Text, new string[] { "A", "", "BC" })]
         [InlineData("ABC", "b", -1, CompareMethod.Text, new string[] { "A", "C" })]
         [InlineData("ABC", "b", -1, CompareMethod.Binary, new string[] { "ABC" })]
         [InlineData("A, B, C", ", ", -1, CompareMethod.Text, new string[] { "A", "B", "C" })]

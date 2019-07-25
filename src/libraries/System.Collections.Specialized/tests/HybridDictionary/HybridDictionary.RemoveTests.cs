@@ -11,7 +11,7 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(0, true)]
         [InlineData(0, false)]
-        [InlineData(0, true)]
+        [InlineData(5, true)]
         [InlineData(5, false)]
         [InlineData(50, true)]
         [InlineData(50, false)]

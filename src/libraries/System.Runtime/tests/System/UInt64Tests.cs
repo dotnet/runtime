@@ -40,7 +40,6 @@ namespace System.Tests
         [Theory]
         [InlineData((ulong)234, (ulong)234, 0)]
         [InlineData((ulong)234, ulong.MinValue, 1)]
-        [InlineData((ulong)234, (ulong)0, 1)]
         [InlineData((ulong)234, (ulong)123, 1)]
         [InlineData((ulong)234, (ulong)456, -1)]
         [InlineData((ulong)234, ulong.MaxValue, -1)]

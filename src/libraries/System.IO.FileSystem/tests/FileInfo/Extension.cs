@@ -13,7 +13,6 @@ namespace System.IO.Tests
         [InlineData("filename", "")]
         [InlineData("foo.bar.fkl;fkds92-509450-4359.$#%()#%().%#(%)_#(%_)", ".cool")]
         [InlineData("filename", ".$#@$_)+_)!@@!!@##&_$)#_")]
-        [InlineData("filename", ".$#@$_)+_)!@@!!@##&_$)#_")]
         public void ValidExtensions(string fileName, string extension)
         {
             string path = Path.Combine(TestDirectory, fileName + extension);

@@ -13,7 +13,6 @@ namespace System.Text.Tests
         [InlineData(1)]
         [InlineData(8)]
         [InlineData(10)]
-        [InlineData(715827881)]
         [InlineData((int.MaxValue - 2) / 3)]
         public void GetMaxByteCount(int charCount)
         {

@@ -39,7 +39,6 @@ namespace System.Tests
         [Theory]
         [InlineData((ushort)234, (ushort)234, 0)]
         [InlineData((ushort)234, ushort.MinValue, 1)]
-        [InlineData((ushort)234, (ushort)0, 1)]
         [InlineData((ushort)234, (ushort)123, 1)]
         [InlineData((ushort)234, (ushort)456, -1)]
         [InlineData((ushort)234, ushort.MaxValue, -1)]
