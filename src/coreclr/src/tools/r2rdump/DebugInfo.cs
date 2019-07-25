@@ -21,10 +21,12 @@ namespace R2RDump
         private List<DebugInfoBoundsEntry> _boundsList = new List<DebugInfoBoundsEntry>();
         private List<NativeVarInfo> _variablesList = new List<NativeVarInfo>();
         private Machine _machine;
+        private bool _normalize;
 
-        public DebugInfo(byte[] image, int offset, Machine machine)
+        public DebugInfo(byte[] image, int offset, Machine machine, bool normalize)
         {
             _machine = machine;
+            _normalize = normalize;
 
             // Get the id of the runtime function from the NativeArray
             uint lookback = 0;
@@ -229,7 +231,36 @@ namespace R2RDump
                 }
 
                 entry.VariableLocation = varLoc;
-                _variablesList.Add(entry);
+                _variablesList.Add(entry);                
+            }
+
+            if (_normalize)
+            {
+                _variablesList.Sort(CompareNativeVarInfo);
+            }
+        }
+        
+        private static int CompareNativeVarInfo(NativeVarInfo left, NativeVarInfo right)
+        {
+            if (left.VariableNumber < right.VariableNumber)
+            {
+                return -1;
+            }
+            else if (left.VariableNumber > right.VariableNumber)
+            {
+                return 1;
+            }
+            else if (left.StartOffset < right.StartOffset)
+            {
+                return -1;
+            }
+            else if (left.StartOffset > right.StartOffset)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
             }
         }
 
