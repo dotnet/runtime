@@ -10,6 +10,7 @@ namespace System.Diagnostics
     public partial class Activity
     {
         public Activity(string operationName) { }
+        public System.Diagnostics.ActivityTraceFlags ActivityTraceFlags { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Baggage { get { throw null; } }
         public static System.Diagnostics.Activity Current
         {
@@ -44,13 +45,12 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Tags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
         public string TraceStateString { get { throw null; } set { } }
-        public System.Diagnostics.ActivityTraceFlags ActivityTraceFlags { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string value) { throw null; }
         public string GetBaggageItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
-        public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
+        public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags activityTraceFlags = System.Diagnostics.ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }
         public System.Diagnostics.Activity SetStartTime(System.DateTime startTimeUtc) { throw null; }
         public System.Diagnostics.Activity Start() { throw null; }
@@ -58,8 +58,8 @@ namespace System.Diagnostics
     }
     public enum ActivityIdFormat
     {
-        Hierarchical = 1,
         Unknown = 0,
+        Hierarchical = 1,
         W3C = 2,
     }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
@@ -81,6 +81,12 @@ namespace System.Diagnostics
         public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.FlagsAttribute]
+    public enum ActivityTraceFlags
+    {
+        None = 0,
+        Recorded = 1,
+    }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     [System.Security.SecuritySafeCriticalAttribute]
 #endif
@@ -99,12 +105,6 @@ namespace System.Diagnostics
         public static bool operator !=(System.Diagnostics.ActivityTraceId traceId1, System.Diagnostics.ActivityTraceId traceId2) { throw null; }
         public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
-    }
-    [System.FlagsAttribute]
-    public enum ActivityTraceFlags
-    {
-        None = 0,
-        Recorded = 1,
     }
     public partial class DiagnosticListener
     {

@@ -193,11 +193,11 @@ namespace System.Net.Http
         public HttpResponseMessage(System.Net.HttpStatusCode statusCode) { }
         public System.Net.Http.HttpContent Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpResponseHeaders Headers { get { throw null; } }
-        public System.Net.Http.Headers.HttpResponseHeaders TrailingHeaders { get { throw null; } }
         public bool IsSuccessStatusCode { get { throw null; } }
         public string ReasonPhrase { get { throw null; } set { } }
         public System.Net.Http.HttpRequestMessage RequestMessage { get { throw null; } set { } }
         public System.Net.HttpStatusCode StatusCode { get { throw null; } set { } }
+        public System.Net.Http.Headers.HttpResponseHeaders TrailingHeaders { get { throw null; } }
         public System.Version Version { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }

@@ -20,6 +20,13 @@ namespace System.Net.Security
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
+    public sealed partial class CipherSuitesPolicy
+    {
+        [System.CLSCompliantAttribute(false)]
+        public CipherSuitesPolicy(System.Collections.Generic.IEnumerable<System.Net.Security.TlsCipherSuite> allowedCipherSuites) { }
+        [System.CLSCompliantAttribute(false)]
+        public System.Collections.Generic.IEnumerable<System.Net.Security.TlsCipherSuite> AllowedCipherSuites { get { throw null; } }
+    }
     public enum EncryptionPolicy
     {
         RequireEncryption = 0,
@@ -214,13 +221,6 @@ namespace System.Net.Security
         public override void Write(byte[] buffer, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-    }
-    public sealed class CipherSuitesPolicy
-    {
-        [System.CLSCompliantAttribute(false)]
-        public CipherSuitesPolicy(System.Collections.Generic.IEnumerable<System.Net.Security.TlsCipherSuite> allowedCipherSuites) { }
-        [System.CLSCompliantAttribute(false)]
-        public System.Collections.Generic.IEnumerable<System.Net.Security.TlsCipherSuite> AllowedCipherSuites { get; }
     }
     [System.CLSCompliantAttribute(false)]
     public enum TlsCipherSuite : ushort
