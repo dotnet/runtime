@@ -189,7 +189,7 @@
             </summary>
             <typeparam name="T">The type of reference.</typeparam>
             <param name="source">The reference to subtract the offset from.</param>
-            <param name="bytesOffset">The offset to subtract.</param>
+            <param name="byteOffset">The offset to subtract.</param>
             <returns>A new reference that reflects the subraction of byte offset from pointer.</returns>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.ByteOffset``1(``0@,``0@)">
