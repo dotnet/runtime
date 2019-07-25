@@ -667,6 +667,12 @@ namespace System.Diagnostics
                     handle.Close();
                     logs.Add(log);
                 }
+                else if (Marshal.GetLastWin32Error() != Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    // This api should return the list of all event logs present on the system even if the current user can't open the log.
+                    // Windows returns ERROR_INVALID_PARAMETER for special keys which were added in RS5+ but do not represent actual event logs.
+                    logs.Add(log);
+                }
             }
 
             return logs.ToArray();
