@@ -309,21 +309,64 @@ namespace System.Threading.Tests
                                 Assert.Equal(0, WaitHandle.WaitAny(waitHandles, 0));
                                 AssertExtensions.Throws<AbandonedMutexException, bool>(
                                     () => m.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                AssertExtensions.Throws<AbandonedMutexException, bool>(
+                                    () => m2.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                break;
+                            }
+
+                            if (waitCount != 1 && isNotAbandonedWaitObjectSignaled && notAbandonedWaitIndex != 0)
+                            {
+                                ame =
+                                    Assert.Throws<AbandonedMutexException>(() =>
+                                    {
+                                        ThreadTestHelpers.WaitForCondition(() =>
+                                        {
+                                            // Actually expecting an exception from WaitAny(), but there may be a delay before
+                                            // the mutex is actually released and abandoned. If there is no exception, the
+                                            // WaitAny() must have succeeded due to the event being signaled.
+                                            int r = WaitHandle.WaitAny(waitHandles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                                            Assert.Equal(notAbandonedWaitIndex, r);
+                                            return false;
+                                        });
+                                    });
                             }
                             else
                             {
                                 ame =
                                     AssertExtensions.Throws<AbandonedMutexException, int>(
                                         () => WaitHandle.WaitAny(waitHandles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
-                                Assert.Equal(waitCount != 1 && notAbandonedWaitIndex == 0 ? 1 : 0, ame.MutexIndex);
-                                Assert.Equal(m, ame.Mutex);
                             }
 
-                            if (m2 != null)
+                            // Due to a potential delay in abandoning mutexes, either mutex may have been seen to be
+                            // abandoned first
+                            Assert.True(ame.Mutex == m || (m2 != null && ame.Mutex == m2));
+                            int mIndex = waitCount != 1 && notAbandonedWaitIndex == 0 ? 1 : 0;
+                            int m2Index = waitCount != 1 && notAbandonedWaitIndex == 2 ? 1 : 2;
+                            if (ame.Mutex == m)
+                            {
+                                Assert.Equal(mIndex, ame.MutexIndex);
+                            }
+                            else
+                            {
+                                Assert.True(m2Index < notAbandonedWaitIndex);
+                                Assert.Equal(m2Index, ame.MutexIndex);
+                            }
+
+                            // Verify that the other mutex also gets abandoned
+                            if (ame.MutexIndex == mIndex)
+                            {
+                                if (m2 != null)
+                                {
+                                    AssertExtensions.Throws<AbandonedMutexException, bool>(
+                                        () => m2.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                }
+                            }
+                            else
                             {
                                 AssertExtensions.Throws<AbandonedMutexException, bool>(
-                                    () => m2.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                    () => m.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
                             }
+
                             break;
 
                         case WaitHandleWaitType.WaitAll:
