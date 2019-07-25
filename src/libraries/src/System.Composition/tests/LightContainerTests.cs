@@ -59,7 +59,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(A));
             var x = cc.GetExport<IA>();
-            Assert.IsAssignableFrom(typeof(A), x);
+            Assert.IsAssignableFrom<A>(x);
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace System.Composition.UnitTests
         {
             var cc = CreateContainer(typeof(A), typeof(B));
             var x = cc.GetExport<B>();
-            Assert.IsAssignableFrom(typeof(A), x.A);
+            Assert.IsAssignableFrom<A>(x.A);
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace System.Composition.UnitTests
             rb.ForType<HasPropertyA>().ImportProperty(a => a.A).Export();
             var cc = CreateContainer(rb, typeof(HasPropertyA), typeof(A));
             var x = cc.GetExport<HasPropertyA>();
-            Assert.IsAssignableFrom(typeof(A), x.A);
+            Assert.IsAssignableFrom<A>(x.A);
         }
 
         [Fact]

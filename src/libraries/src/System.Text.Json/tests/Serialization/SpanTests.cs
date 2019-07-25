@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void Read(Type classType, byte[] data)
         {
             object obj = JsonSerializer.Deserialize(data, classType);
-            Assert.IsAssignableFrom(typeof(ITestClass), obj);
+            Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
         }
 
@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
                 stream,
                 classType).Result;
 
-            Assert.IsAssignableFrom(typeof(ITestClass), obj);
+            Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
 
             // Try again with a smaller initial buffer size to ensure we handle incomplete data
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Tests
                 classType,
                 new JsonSerializerOptions { DefaultBufferSize = 5 }).Result;
 
-            Assert.IsAssignableFrom(typeof(ITestClass), obj);
+            Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
         }
 

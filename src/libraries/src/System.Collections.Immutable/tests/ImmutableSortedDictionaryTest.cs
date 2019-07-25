@@ -107,7 +107,7 @@ namespace System.Collections.Immutable.Tests
         {
             var sortedMap = Empty<int, GenericParameterHelper>().AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper(n))));
             var unsortedMap = sortedMap.ToImmutableDictionary();
-            Assert.IsAssignableFrom(typeof(ImmutableDictionary<int, GenericParameterHelper>), unsortedMap);
+            Assert.IsAssignableFrom<ImmutableDictionary<int, GenericParameterHelper>>(unsortedMap);
             Assert.Equal(sortedMap.Count, unsortedMap.Count);
             Assert.Equal<KeyValuePair<int, GenericParameterHelper>>(sortedMap.ToList(), unsortedMap.ToList());
         }

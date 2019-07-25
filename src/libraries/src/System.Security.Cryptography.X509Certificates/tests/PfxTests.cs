@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 AsymmetricAlgorithm alg = c.PrivateKey;
                 Assert.NotNull(alg);
                 Assert.Same(alg, c.PrivateKey);
-                Assert.IsAssignableFrom(typeof(RSA), alg);
+                Assert.IsAssignableFrom<RSA>(alg);
                 VerifyPrivateKey((RSA)alg);
 
                 // Currently unable to set PrivateKey

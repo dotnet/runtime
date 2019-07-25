@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
             // Valid case
             object obj = CryptoConfig.CreateFromName(className, "Hello");
             Assert.NotNull(obj);
-            Assert.IsType(typeof(ClassWithCtorArguments), obj);
+            Assert.IsType<ClassWithCtorArguments>(obj);
 
             ClassWithCtorArguments ctorObj = (ClassWithCtorArguments)obj;
             Assert.Equal("Hello", ctorObj.MyString);
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         {
             object obj = CryptoConfig.CreateFromName(name);
             Assert.NotNull(obj);
-            Assert.IsType(typeof(TExpected), obj);
+            Assert.IsType<TExpected>(obj);
         }
 
         public class ClassWithCtorArguments

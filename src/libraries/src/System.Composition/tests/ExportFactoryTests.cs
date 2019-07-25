@@ -137,7 +137,7 @@ namespace System.Composition.UnitTests
             var cc = CreateContainer(typeof(A), typeof(UseExportFactory));
             var bef = cc.GetExport<UseExportFactory>();
             var a = bef.AFactory.CreateExport();
-            Assert.IsAssignableFrom(typeof(A), a.Value);
+            Assert.IsAssignableFrom<A>(a.Value);
             Assert.False(((A)a.Value).IsDisposed);
             a.Dispose();
             Assert.True(((A)a.Value).IsDisposed);
