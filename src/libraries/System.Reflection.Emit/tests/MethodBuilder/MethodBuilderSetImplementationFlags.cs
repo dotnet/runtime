@@ -9,12 +9,9 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderSetImplementationFlags
     {
         [Theory]
-        [InlineData(MethodImplAttributes.CodeTypeMask)]
         [InlineData(MethodImplAttributes.ForwardRef)]
         [InlineData(MethodImplAttributes.IL)]
         [InlineData(MethodImplAttributes.InternalCall)]
-        [InlineData(MethodImplAttributes.Managed)]
-        [InlineData(MethodImplAttributes.ManagedMask)]
         [InlineData(MethodImplAttributes.Native)]
         [InlineData(MethodImplAttributes.NoInlining)]
         [InlineData(MethodImplAttributes.OPTIL)]

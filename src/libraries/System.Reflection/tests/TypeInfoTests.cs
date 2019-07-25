@@ -75,7 +75,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_field), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_readonlyField), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_volatileField), true, typeof(string), false)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_SubClass.s_arrayField), true,  typeof(string[]), false)]
         public void DeclaredFields(Type type, string name, bool exists, Type fieldType, bool isPrivate)
         {
             IEnumerable<string> fields = type.GetTypeInfo().DeclaredFields.Select(fieldInfo => fieldInfo.Name);
@@ -1214,7 +1213,6 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(TI_BaseClass), true)]
         [InlineData(typeof(TI_SubClass), true)]
-        [InlineData(typeof(TI_BaseClass), true)]
         [InlineData(typeof(TI_NonGenericInterface1), true)]
         [InlineData(typeof(TI_ClassWithInterface1), true)]
         public void IsPublic(Type type, bool expected)
@@ -1264,7 +1262,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), true)]
         [InlineData(typeof(TI_NonGenericInterface1), true)]
         [InlineData(typeof(PublicEnum), true)]
-        [InlineData(typeof(TI_BaseClass), true)]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), true)]
         public void IsVisible(Type type, bool expected)
         {
@@ -1275,7 +1272,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), "System.Reflection.Tests")]
         [InlineData(typeof(TI_NonGenericInterface1), "System.Reflection.Tests")]
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
-        [InlineData(typeof(TI_BaseClass), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
         [InlineData(typeof(int), "System")]
         public void Namespace(Type type, string expected)

@@ -197,7 +197,7 @@ namespace System.IO.Compression
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
-        [InlineData(true, false)]
+        [InlineData(true, true)]
         public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
         {
             var ms = new MemoryStream();
@@ -227,7 +227,7 @@ namespace System.IO.Compression
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
-        [InlineData(true, false)]
+        [InlineData(true, true)]
         public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
         {
             using (var gs = derived ?

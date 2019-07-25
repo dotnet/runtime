@@ -549,9 +549,7 @@ namespace System.Tests
         [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.Ordinal, -1)]
         [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.Ordinal, -1)]
         [InlineData("Hello", 0, "Hello", 0, 0, StringComparison.Ordinal, 0)]
-        [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.Ordinal, 0)]
         [InlineData("Hello", 0, "Hello", 0, 3, StringComparison.Ordinal, 0)]
-        [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.Ordinal, 0)]
         [InlineData("Hello", 0, "He" + SoftHyphen + "llo", 0, 5, StringComparison.Ordinal, -1)]
         [InlineData("Hello", 0, "-=<Hello>=-", 3, 5, StringComparison.Ordinal, 0)]
         [InlineData("\uD83D\uDD53Hello\uD83D\uDD50", 1, "\uD83D\uDD53Hello\uD83D\uDD54", 1, 7, StringComparison.Ordinal, 0)] // Surrogate split
@@ -2642,8 +2640,6 @@ namespace System.Tests
         [InlineData("Hello", 'l', 3, 0, -1)]
         [InlineData("Hello", 'l', 0, 2, -1)]
         [InlineData("Hello", 'l', 0, 3, 2)]
-        [InlineData("Hello", 'l', 4, 1, -1)]
-        [InlineData("Hello", 'x', 1, 4, -1)]
         [InlineData("Hello", 'o', 5, 0, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'e', 0, 3, 2)]
         // For some reason, this is failing on *nix with ordinal comparisons.
@@ -3841,13 +3837,9 @@ namespace System.Tests
         [InlineData("Hello", 'l', 1, 2, -1)]
         [InlineData("Hello", 'l', 0, 1, -1)]
         [InlineData("Hello", 'x', 3, 4, -1)]
-        [InlineData("Hello", 'l', 3, 4, 3)]
-        [InlineData("Hello", 'l', 1, 2, -1)]
         [InlineData("Hello", 'l', 1, 0, -1)]
         [InlineData("Hello", 'l', 4, 2, 3)]
         [InlineData("Hello", 'l', 4, 3, 3)]
-        [InlineData("Hello", 'l', 0, 1, -1)]
-        [InlineData("Hello", 'x', 3, 4, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'H', 2, 3, 0)]
         [InlineData("", 'H', 0, 0, -1)]
         public static void LastIndexOf_SingleLetter(string s, char value, int startIndex, int count, int expected)

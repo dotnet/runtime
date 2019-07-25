@@ -51,7 +51,7 @@ namespace System.Text.Json.Tests
         [InlineData("1e-6", true)]
         [InlineData("-1e6", false)]
         [InlineData("-1e6", true)]
-        [InlineData("-1e+6", true)]
+        [InlineData("-1e+6", false)]
         [InlineData("-1e+6", true)]
         [InlineData("-1e-6", false)]
         [InlineData("-1e-6", true)]

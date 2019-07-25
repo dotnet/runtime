@@ -1884,14 +1884,6 @@ namespace System.Xml.Tests
         [InlineData(TransformType.Stream, DocType.XPathDocument)]
         [InlineData(TransformType.Writer, DocType.XPathDocument)]
         [InlineData(TransformType.TextWriter, DocType.XPathDocument)]
-        [InlineData(TransformType.Reader, DocType.XPathDocument)]
-        [InlineData(TransformType.Writer, DocType.XPathDocument)]
-        [InlineData(TransformType.Stream, DocType.XPathDocument)]
-        [InlineData(TransformType.TextWriter, DocType.XPathDocument)]
-        [InlineData(TransformType.Reader, DocType.XPathDocument)]
-        [InlineData(TransformType.Writer, DocType.XPathDocument)]
-        [InlineData(TransformType.Stream, DocType.XPathDocument)]
-        [InlineData(TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
         public void TransformGeneric4(TransformType transformType, DocType docType)
         {

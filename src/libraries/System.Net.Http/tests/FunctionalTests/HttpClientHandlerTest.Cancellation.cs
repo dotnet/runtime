@@ -226,8 +226,8 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(CancellationMode.CancelPendingRequests, false)]
-        [InlineData(CancellationMode.DisposeHttpClient, true)]
-        [InlineData(CancellationMode.CancelPendingRequests, false)]
+        [InlineData(CancellationMode.DisposeHttpClient, false)]
+        [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {

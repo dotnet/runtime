@@ -503,10 +503,10 @@ namespace System.Diagnostics.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35539)]
         [InlineData(100, 100)] // run multiple times to stress it further
-        [InlineData(100, 100)]
-        [InlineData(100, 100)]
-        [InlineData(100, 100)]
-        [InlineData(100, 100)]
+        [InlineData(100, 101)]
+        [InlineData(100, 102)]
+        [InlineData(100, 103)]
+        [InlineData(100, 104)]
         public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
             // No listeners have been created yet

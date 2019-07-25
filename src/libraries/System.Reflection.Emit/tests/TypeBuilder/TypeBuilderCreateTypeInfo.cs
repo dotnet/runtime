@@ -12,11 +12,8 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.Abstract)]
         [InlineData(TypeAttributes.AnsiClass)]
         [InlineData(TypeAttributes.AutoClass)]
-        [InlineData(TypeAttributes.AutoLayout)]
         [InlineData(TypeAttributes.BeforeFieldInit)]
-        [InlineData(TypeAttributes.Class)]
         [InlineData(TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract)]
-        [InlineData(TypeAttributes.NotPublic)]
         [InlineData(TypeAttributes.Public)]
         [InlineData(TypeAttributes.Sealed)]
         [InlineData(TypeAttributes.SequentialLayout)]
@@ -64,7 +61,6 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.NestedPrivate, typeof(ArgumentException))]
         [InlineData(TypeAttributes.NestedPublic, typeof(ArgumentException))]
         [InlineData(TypeAttributes.RTSpecialName, typeof(ArgumentException))]
-        [InlineData(TypeAttributes.VisibilityMask, typeof(ArgumentException))]
         public void CreateType_InvalidTypeAttributes_Throws(TypeAttributes attributes, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => Helpers.DynamicType(attributes));

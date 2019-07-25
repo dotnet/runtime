@@ -395,7 +395,6 @@ namespace System.Net.Tests
         [InlineData("http://localhost:9200")]
         [InlineData("http://localhost/path")]
         [InlineData("http://::/")]
-        [InlineData("http://::/")]
         public void Add_InvalidPrefix_ThrowsArgumentException(string uriPrefix)
         {
             var listener = new HttpListener();

@@ -2197,8 +2197,6 @@ namespace System.Transactions.Tests
         [InlineData(true, true, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.EnlistDuringPrepareRequired, true)]
         [InlineData(true, true, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.None, true)]
         [InlineData(true, false, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.EnlistDuringPrepareRequired, true)]
-        [InlineData(true, false, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.EnlistDuringPrepareRequired, true)]
-        [InlineData(false, true, EnlistmentOptions.None, EnlistmentOptions.None, false)]
         [InlineData(false, true, EnlistmentOptions.None, EnlistmentOptions.None, false)]
         [InlineData(true, true, EnlistmentOptions.None, EnlistmentOptions.EnlistDuringPrepareRequired, false)]
         [InlineData(true, true, EnlistmentOptions.None, EnlistmentOptions.None, false)]

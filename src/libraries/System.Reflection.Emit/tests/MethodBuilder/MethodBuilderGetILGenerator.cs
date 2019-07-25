@@ -52,7 +52,6 @@ namespace System.Reflection.Emit.Tests
         [InlineData(MethodAttributes.MemberAccessMask)]
         [InlineData(MethodAttributes.NewSlot)]
         [InlineData(MethodAttributes.Private)]
-        [InlineData(MethodAttributes.PrivateScope)]
         [InlineData(MethodAttributes.Public)]
         [InlineData(MethodAttributes.RequireSecObject)]
         [InlineData(MethodAttributes.ReuseSlot)]
@@ -61,7 +60,6 @@ namespace System.Reflection.Emit.Tests
         [InlineData(MethodAttributes.Static)]
         [InlineData(MethodAttributes.UnmanagedExport)]
         [InlineData(MethodAttributes.Virtual)]
-        [InlineData(MethodAttributes.VtableLayoutMask)]
         [InlineData(MethodAttributes.Assembly | MethodAttributes.CheckAccessOnOverride |
                 MethodAttributes.FamORAssem | MethodAttributes.Final |
                 MethodAttributes.HasSecurity | MethodAttributes.HideBySig | MethodAttributes.MemberAccessMask |

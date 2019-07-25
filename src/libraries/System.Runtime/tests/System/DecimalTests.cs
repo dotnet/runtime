@@ -150,7 +150,6 @@ namespace System.Tests
         [InlineData(new int[] { 0, 0, 0 })]
         [InlineData(new int[] { 0, 0, 0, 0, 0 })]
         [InlineData(new int[] { 0, 0, 0, 1 })]
-        [InlineData(new int[] { 0, 0, 0, 0x00001 })]
         [InlineData(new int[] { 0, 0, 0, 0x1D0000 })]
         [InlineData(new int[] { 0, 0, 0, unchecked((int)0x40000000) })]
         public void Ctor_InvalidBits_ThrowsArgumentException(int[] bits)

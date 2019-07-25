@@ -46,7 +46,6 @@ namespace System.CodeDom.Tests
 		[InlineData(CodeRegionMode.None - 1)]
 		[InlineData(CodeRegionMode.None)]
 		[InlineData(CodeRegionMode.Start | CodeRegionMode.End)]
-		[InlineData(CodeRegionMode.End + 1)]
 		public void Value_Set_Get_ReturnsExpected(CodeRegionMode value)
 		{
 			var region = new CodeRegionDirective();

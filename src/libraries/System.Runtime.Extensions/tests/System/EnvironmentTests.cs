@@ -335,8 +335,7 @@ namespace System.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
-        [InlineData(Environment.SpecialFolder.Personal, Environment.SpecialFolderOption.None)]
-        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)]
+        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)] // MyDocuments == Personal
         [InlineData(Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolderOption.None)]
         [InlineData(Environment.SpecialFolder.CommonTemplates, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)]
