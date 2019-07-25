@@ -1519,9 +1519,7 @@ def setup_core_root(host_os,
                     test_native_bin_location,
                     product_location,
                     test_location,
-                    core_root,
-                    is_corefx=False,
-                    generate_layout=True):
+                    core_root):
     """ Setup the core root
 
     Args:
@@ -1531,12 +1529,6 @@ def setup_core_root(host_os,
         coreclr_repo_location(str)  : coreclr repo location
         product_location(str)       : Product location
         core_root(str)              : Location for core_root
-        is_corefx                   : Building corefx core_root
-
-    Optional Args:
-        is_corefx(Bool)             : Pass if planning on running corex
-                                    : tests
-
     """
     global g_verbose
 
@@ -1710,67 +1702,6 @@ def setup_core_root(host_os,
     copy_tree(product_location, core_root)
     print("---------------------------------------------------------------------")
     print("")
-
-    if is_corefx:
-        corefx_utility_setup = os.path.join(coreclr_repo_location,
-                                            "src",
-                                            "Common",
-                                            "CoreFX",
-                                            "TestFileSetup",
-                                            "CoreFX.TestUtils.TestFileSetup.csproj")
-
-        os.environ["__BuildLogRootName"] = "Tests_GenerateTestHost"
-        msbuild_command = [dotnetcli_location,
-                           "msbuild",
-                           os.path.join(coreclr_repo_location, "tests", "runtest.proj"),
-                           "/p:GenerateRuntimeLayout=true"]
-
-        sys.stdout.flush() # flush output before creating sub-process
-        proc = subprocess.Popen(msbuild_command)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            print("Error: generating test host failed.")
-            return False
-
-        os.environ["__BuildLogRootName"] = ""
-
-        msbuild_command = [dotnetcli_location,
-                           "msbuild",
-                           "/t:Restore",
-                           corefx_utility_setup]
-
-        sys.stdout.flush() # flush output before creating sub-process
-        proc = subprocess.Popen(msbuild_command)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            print("Error: msbuild failed.")
-            return False
-
-        corefx_logpath = os.path.join(coreclr_repo_location, 
-                                      "bin", 
-                                      "tests", 
-                                      "%s.%s.%s" % (host_os, arch, build_type), 
-                                      "CoreFX",
-                                      "CoreFXTestUtilities")
-
-        msbuild_command = [dotnetcli_location,
-                           "msbuild",
-                           "/p:Configuration=%s" % build_type,
-                           "/p:OSGroup=%s" % host_os,
-                           "/p:Platform=%s" % arch,
-                           "/p:OutputPath=%s" % corefx_logpath,
-                           corefx_utility_setup]
-
-        sys.stdout.flush() # flush output before creating sub-process
-        proc = subprocess.Popen(msbuild_command)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            print("Error: msbuild failed.")
-            return False
-
     print("Core_Root setup.")
     print("")
 
