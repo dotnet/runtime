@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the http://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace System.Data.OleDb
 {
@@ -269,6 +272,7 @@ namespace System.Data.OleDb
     public delegate void OleDbInfoMessageEventHandler(object sender, System.Data.OleDb.OleDbInfoMessageEventArgs e);
     public enum OleDbLiteral
     {
+        Invalid = 0,
         Binary_Literal = 1,
         Catalog_Name = 2,
         Catalog_Separator = 3,
@@ -276,30 +280,29 @@ namespace System.Data.OleDb
         Column_Alias = 5,
         Column_Name = 6,
         Correlation_Name = 7,
-        Cube_Name = 21,
         Cursor_Name = 8,
-        Dimension_Name = 22,
         Escape_Percent_Prefix = 9,
-        Escape_Percent_Suffix = 29,
         Escape_Underscore_Prefix = 10,
-        Escape_Underscore_Suffix = 30,
-        Hierarchy_Name = 23,
         Index_Name = 11,
-        Invalid = 0,
-        Level_Name = 24,
         Like_Percent = 12,
         Like_Underscore = 13,
-        Member_Name = 25,
         Procedure_Name = 14,
-        Property_Name = 26,
         Quote_Prefix = 15,
-        Quote_Suffix = 28,
         Schema_Name = 16,
-        Schema_Separator = 27,
         Table_Name = 17,
         Text_Command = 18,
         User_Name = 19,
         View_Name = 20,
+        Cube_Name = 21,
+        Dimension_Name = 22,
+        Hierarchy_Name = 23,
+        Level_Name = 24,
+        Member_Name = 25,
+        Property_Name = 26,
+        Schema_Separator = 27,
+        Quote_Suffix = 28,
+        Escape_Percent_Suffix = 29,
+        Escape_Underscore_Suffix = 30,
     }
     public static partial class OleDbMetaDataCollectionNames
     {
@@ -357,15 +360,15 @@ namespace System.Data.OleDb
     {
         internal OleDbParameterCollection() { }
         public override int Count { get { throw null; } }
+        public override bool IsFixedSize { get { throw null; } }
+        public override bool IsReadOnly { get { throw null; } }
+        public override bool IsSynchronized { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.OleDb.OleDbParameter this[int index] { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.OleDb.OleDbParameter this[string parameterName] { get { throw null; } set { } }
-        public override bool IsFixedSize { get { throw null; } }
-        public override bool IsReadOnly { get { throw null; } }
-        public override bool IsSynchronized { get { throw null; } }
         public override object SyncRoot { get { throw null; } }
         public System.Data.OleDb.OleDbParameter Add(System.Data.OleDb.OleDbParameter value) { throw null; }
         public override int Add(object value) { throw null; }
@@ -399,13 +402,13 @@ namespace System.Data.OleDb
     }
     public sealed partial class OleDbRowUpdatedEventArgs : System.Data.Common.RowUpdatedEventArgs
     {
-        public OleDbRowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base(default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
+        public OleDbRowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
         public new System.Data.OleDb.OleDbCommand Command { get { throw null; } }
     }
     public delegate void OleDbRowUpdatedEventHandler(object sender, System.Data.OleDb.OleDbRowUpdatedEventArgs e);
     public sealed partial class OleDbRowUpdatingEventArgs : System.Data.Common.RowUpdatingEventArgs
     {
-        public OleDbRowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base(default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
+        public OleDbRowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
         protected override System.Data.IDbCommand BaseCommand { get { throw null; } set { } }
         public new System.Data.OleDb.OleDbCommand Command { get { throw null; } set { } }
     }
@@ -465,42 +468,42 @@ namespace System.Data.OleDb
     }
     public enum OleDbType
     {
-        BigInt = 20,
-        Binary = 128,
-        Boolean = 11,
-        BSTR = 8,
-        Char = 129,
+        Empty = 0,
+        SmallInt = 2,
+        Integer = 3,
+        Single = 4,
+        Double = 5,
         Currency = 6,
         Date = 7,
+        BSTR = 8,
+        IDispatch = 9,
+        Error = 10,
+        Boolean = 11,
+        Variant = 12,
+        IUnknown = 13,
+        Decimal = 14,
+        TinyInt = 16,
+        UnsignedTinyInt = 17,
+        UnsignedSmallInt = 18,
+        UnsignedInt = 19,
+        BigInt = 20,
+        UnsignedBigInt = 21,
+        Filetime = 64,
+        Guid = 72,
+        Binary = 128,
+        Char = 129,
+        WChar = 130,
+        Numeric = 131,
         DBDate = 133,
         DBTime = 134,
         DBTimeStamp = 135,
-        Decimal = 14,
-        Double = 5,
-        Empty = 0,
-        Error = 10,
-        Filetime = 64,
-        Guid = 72,
-        IDispatch = 9,
-        Integer = 3,
-        IUnknown = 13,
-        LongVarBinary = 205,
-        LongVarChar = 201,
-        LongVarWChar = 203,
-        Numeric = 131,
         PropVariant = 138,
-        Single = 4,
-        SmallInt = 2,
-        TinyInt = 16,
-        UnsignedBigInt = 21,
-        UnsignedInt = 19,
-        UnsignedSmallInt = 18,
-        UnsignedTinyInt = 17,
-        VarBinary = 204,
-        VarChar = 200,
-        Variant = 12,
         VarNumeric = 139,
+        VarChar = 200,
+        LongVarChar = 201,
         VarWChar = 202,
-        WChar = 130,
+        LongVarWChar = 203,
+        VarBinary = 204,
+        LongVarBinary = 205,
     }
 }

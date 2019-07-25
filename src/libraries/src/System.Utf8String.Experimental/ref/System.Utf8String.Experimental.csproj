@@ -5,7 +5,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
-    <Compile Include="System.Utf8String.cs" />
+    <Compile Include="System.Utf8String.Experimental.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />

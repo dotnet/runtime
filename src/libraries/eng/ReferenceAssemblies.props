@@ -20,6 +20,9 @@
 
     <!-- We base calls from constructors with null literals. -->
     <NoWarn>$(NoWarn);CS8625</NoWarn>
+
+    <!-- We dont need to add null annotation within the ref for explicit interface methods. -->
+    <NoWarn>$(NoWarn);CS8617</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true'">
