@@ -114,7 +114,7 @@ to run all the tests (consult the scripts for proper usage). Or, run a single te
 ## Other corefx build considerations
 
 To build for Linux arm32, you need to make sure to build using clang 5 (the default is clang 3.9).
-You might need to pass `/p:BuildNativeCompiler=--clang5.0` to the corefx build sjcripts.
+You might need to pass `/p:BuildNativeCompiler=--clang5.0` to the corefx build scripts.
 
 ## Running a single CoreFX test assembly
 
@@ -172,28 +172,8 @@ Here is an example test file:
 https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview8.19326.15/Linux.arm64/netcoreapp/tests/AnyOS.AnyCPU.Release/CoreFx.Private.TestUtilities.Tests.zip
 ```
 
-=========================
-
-TBD: The following describes some automation for running CoreFX tests from a similar, but older system.
-These instructions currently do not work (but perhaps should be revived to work).
-
-For Windows:
-
-3. `.\tests\runtest.cmd <arch> <build_type> corefxtests|corefxtestsall` -- this runs the CoreFX tests
-
-For Linux and macOS:
-
-3. `./tests/runtest.sh --corefxtests|--corefxtestsall --testHostDir=<path_to_testhost> --coreclr-src=<path_to_coreclr_root>`
-
-where:
-+ `<path_to_testhost>` - path to the CoreCLR test host built in step 2.
-+ `<path_to_coreclr_root>` - path to root of CoreCLR clone. Required to build the TestFileSetup tool for CoreFX testing.
-
-The set of tests run are based on the `corefxtests` or `corefxtestsall` arguments, as follows:
-+ CoreFXTests - runs all tests defined in the dotnet/coreclr repo in `tests\CoreFX\CoreFX.issues.json`, or the test list specified with the optional argument `CoreFXTestList`.
-+ CoreFXTestsAll - runs all tests available, ignoring exclusions. The full list of tests is found at the URL in the dotnet/coreclr repo at `.\tests\CoreFX`: one of `CoreFXTestListURL.txt`, `CoreFXTestListURL_Linux.txt`, or `CoreFXTestListURL_OSX.txt`, based on platform.
-
-=========================
+There is no automated way to download, unpack, and run all the tests. If you wish to run all the tests, one of the methods in the "Building CoreFX against CoreCLR"
+section should be used instead, if possible.
 
 # CoreFX test exclusions
 
