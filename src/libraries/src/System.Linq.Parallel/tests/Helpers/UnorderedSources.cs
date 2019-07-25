@@ -229,7 +229,7 @@ namespace System.Linq.Parallel.Tests
             yield return new object[] { Labeled.Label("ThrowOnFirstEnumeration", Enumerables<int>.ThrowOnEnumeration().AsParallel()), 8 };
         }
 
-        private static IEnumerable<Labeled<ParallelQuery<int>>> LabeledRanges(int start, int count)
+        public static IEnumerable<Labeled<ParallelQuery<int>>> LabeledRanges(int start, int count)
         {
             yield return Labeled.Label("ParallelEnumerable.Range", ParallelEnumerable.Range(start, count));
             yield return Labeled.Label("Enumerable.Range", Enumerable.Range(start, count).AsParallel());

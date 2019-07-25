@@ -34,7 +34,7 @@ namespace Microsoft.VisualBasic.ApplicationServices.Tests
             Assert.Equal(assemblyName.Version, assemblyInfo.Version);
         }
 
-        private static IEnumerable<object[]> AssemblyProperties_TestData()
+        public static IEnumerable<object[]> AssemblyProperties_TestData()
         {
             yield return new object[] { typeof(object).Assembly };
             yield return new object[] { Assembly.GetExecutingAssembly() };

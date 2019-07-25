@@ -11,7 +11,7 @@ namespace System.Linq.Parallel.Tests
 {
     public static class PlinqModesTests
     {
-        private static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> EasyUnorderedQueries(int count)
+        public static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> EasyUnorderedQueries(int count)
         {
             yield return Labeled.Label<Action<UsedTaskTracker, ParallelQuery<int>>>("TakeWhile+Select+ToArray",
                 (verifier, query) => query.TakeWhile(x => true).Select(x => verifier.AddCurrent(x)).ToArray());
@@ -49,13 +49,13 @@ namespace System.Linq.Parallel.Tests
                 (verifier, query) => query.Where(x => true).Select(x => verifier.AddCurrent(x)).OrderBy(x => x).Take(count).Enumerate());
         }
 
-        private static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> EasyOrderedQueries(int count)
+        public static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> EasyOrderedQueries(int count)
         {
             yield return Labeled.Label<Action<UsedTaskTracker, ParallelQuery<int>>>("Where+Select+Concat(AsOrdered+Where)+ToList",
                 (verifier, query) => query.Where(x => true).Select(x => verifier.AddCurrent(x)).Concat(Enumerable.Range(0, count).AsParallel().AsOrdered().Where(x => true)).ToList());
         }
 
-        private static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> HardQueries(int count)
+        public static IEnumerable<Labeled<Action<UsedTaskTracker, ParallelQuery<int>>>> HardQueries(int count)
         {
             yield return Labeled.Label<Action<UsedTaskTracker, ParallelQuery<int>>>("Select+Where+TakeWhile+ToArray",
                 (verifier, query) => query.Select(x => verifier.AddCurrent(x)).Where(x => true).TakeWhile((x, i) => true).ToArray());

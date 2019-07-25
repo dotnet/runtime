@@ -109,7 +109,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             }
         }
 
-        private static IEnumerable<object[]> LateCall_TestData()
+        public static IEnumerable<object[]> LateCall_TestData()
         {
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { }, new string[] { }, new bool[] { }, new Func<object, object>(_ => StaticClass.Value), 1 };
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { 2, 3 }, new string[] { }, new bool[] { }, new Func<object, object>(_ => StaticClass.Value), 2 };
@@ -119,7 +119,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new InstanceClass(), typeof(InstanceClass), "M", new object[] { 4, 5 }, new string[] { "a", "b" }, new bool[] { }, new Func<object, object>(obj => ((InstanceClass)obj).Value), 5 };
         }
 
-        private static IEnumerable<object[]> LateGet_TestData()
+        public static IEnumerable<object[]> LateGet_TestData()
         {
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { }, new string[] { }, new bool[] { }, 1 };
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { 2, 3 }, new string[] { }, new bool[] { }, 2 };
@@ -129,7 +129,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new InstanceClass(), typeof(InstanceClass), "M", new object[] { 4, 5 }, new string[] { "a", "b" }, new bool[] { }, 5 };
         }
 
-        private static IEnumerable<object[]> LateSet_TestData()
+        public static IEnumerable<object[]> LateSet_TestData()
         {
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { 2, 3 }, new string[] { }, new Func<object, object>(_ => StaticClass.Value), 2 };
             yield return new object[] { null, typeof(StaticClass), "M", new object[] { 4, 5 }, new string[] { "a" }, new Func<object, object>(_ => StaticClass.Value), 5 };
@@ -138,7 +138,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new InstanceClass(), typeof(InstanceClass), "P", new object[] { 6 }, new string[] { }, new Func<object, object>(obj => ((InstanceClass)obj).Value), 6 };
         }
 
-        private static IEnumerable<object[]> LateSetComplex_TestData()
+        public static IEnumerable<object[]> LateSetComplex_TestData()
         {
             yield return new object[] { new InstanceClass(), typeof(InstanceClass), "P", new object[] { 1 }, new string[] { }, false, false };
             yield return new object[] { new InstanceClass(), typeof(InstanceClass), "Q", new object[] { 2 }, new string[] { }, true, false };
@@ -146,7 +146,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new InstanceStruct(), typeof(InstanceStruct), "Q", new object[] { 4 }, new string[] { }, true, true };
         }
 
-        private static IEnumerable<object[]> LateIndexGet_TestData()
+        public static IEnumerable<object[]> LateIndexGet_TestData()
         {
             yield return new object[] { new InstanceClass(), new object[] { 1 }, new string[] { }, 2 };
             yield return new object[] { new InstanceClass(), new object[] { 2, 3 }, new string[] { }, 5 };
@@ -154,20 +154,20 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new InstanceStruct(), new object[] { 5, 6 }, new string[] { }, 11 };
         }
 
-        private static IEnumerable<object[]> LateIndexSet_TestData()
+        public static IEnumerable<object[]> LateIndexSet_TestData()
         {
             yield return new object[] { new InstanceClass(), new object[] { 1, 2, 3 }, new string[] { }, new Func<object, object>(obj => ((InstanceClass)obj).Value), 6 };
             yield return new object[] { new InstanceStruct(), new object[] { 4, 5, 6 }, new string[] { }, new Func<object, object>(obj => ((InstanceStruct)obj).Value), 15 };
         }
 
-        private static IEnumerable<object[]> LateIndexSet_MissingMember_TestData()
+        public static IEnumerable<object[]> LateIndexSet_MissingMember_TestData()
         {
             yield return new object[] { new StaticClass(), new object[] { 1 }, new string[] { } };
             yield return new object[] { new InstanceClass(), new object[] { 2, 3 }, new string[] { } };
             yield return new object[] { new InstanceStruct(), new object[] { 5, 6 }, new string[] { } };
         }
 
-        private static IEnumerable<object[]> LateIndexSetComplex_TestData()
+        public static IEnumerable<object[]> LateIndexSetComplex_TestData()
         {
             yield return new object[] { new InstanceClass(), new object[] { 1, 2, 3 }, new string[] { "x", "y" }, false, false };
             yield return new object[] { new InstanceClass(), new object[] { 4, 5 }, new string[] { "i" }, true, false };

@@ -23,7 +23,7 @@ namespace System.Linq.Parallel.Tests
 
         private static readonly Labeled<Operation> Failing = Label("ThrowOnFirstEnumeration", (start, count, source) => Enumerables<int>.ThrowOnEnumeration().AsParallel());
 
-        private static IEnumerable<Labeled<Operation>> UnorderedRangeSources()
+        public static IEnumerable<Labeled<Operation>> UnorderedRangeSources()
         {
             // The difference between this and the existing sources is more control is needed over the range creation.
             // Specifically, start/count won't be known until the nesting level is resolved at runtime.
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel.Tests
             // yield return Label("ReadOnlyCollection", (start, count, ignore) => new System.Collections.ReadOnlyCollection<int>(Enumerable.Range(start, count).ToList()).AsParallel());
         }
 
-        private static IEnumerable<Labeled<Operation>> RangeSources()
+        public static IEnumerable<Labeled<Operation>> RangeSources()
         {
             foreach (Labeled<Operation> source in UnorderedRangeSources())
             {
@@ -49,7 +49,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        private static IEnumerable<Labeled<Operation>> OrderOperators()
+        public static IEnumerable<Labeled<Operation>> OrderOperators()
         {
             yield return Label("OrderBy", (start, count, source) => source(start, count).OrderBy(x => x));
             yield return Label("OrderByDescending", (start, count, source) => source(start, count).OrderByDescending(x => -x));
@@ -57,7 +57,7 @@ namespace System.Linq.Parallel.Tests
             yield return Label("ThenByDescending", (start, count, source) => source(start, count).OrderBy(x => 0).ThenByDescending(x => -x));
         }
 
-        private static IEnumerable<Labeled<Operation>> ReverseOrderOperators()
+        public static IEnumerable<Labeled<Operation>> ReverseOrderOperators()
         {
             yield return Label("OrderBy-Reversed", (start, count, source) => source(start, count).OrderBy(x => x, ReverseComparer.Instance));
             yield return Label("OrderByDescending-Reversed", (start, count, source) => source(start, count).OrderByDescending(x => -x, ReverseComparer.Instance));
@@ -136,7 +136,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        private static IEnumerable<Labeled<Operation>> SkipTakeOperations()
+        public static IEnumerable<Labeled<Operation>> SkipTakeOperations()
         {
             // Take/Skip-based operations require ordered input, or will disobey
             // the [start, start + count) convention expected in tests.
@@ -244,7 +244,7 @@ namespace System.Linq.Parallel.Tests
             yield return new object[] { Labeled.Label<Func<ParallelQuery<int>, Action, ParallelQuery<int>>>("Where-Index", (source, cancel) => source.Where((x, index) => { cancel(); return true; })) };
         }
 
-        private static IEnumerable<Labeled<Operation>> BinaryOperations(Labeled<Operation> otherSource)
+        public static IEnumerable<Labeled<Operation>> BinaryOperations(Labeled<Operation> otherSource)
         {
             string label = otherSource.ToString();
             Operation other = otherSource.Item;
