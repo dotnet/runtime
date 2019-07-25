@@ -54,7 +54,7 @@ REM ============================================================================
 
 set __DotNetToolDir=%__ThisScriptPath%..\Tools
 set __DotNetCmd=%__ThisScriptPath%..\dotnet.cmd
-set __PackageDir=%__ThisScriptPath%..\Packages
+set __PackageDir=%__ThisScriptPath%..\.packages
 set __CsprojPath=%__ThisScriptPath%\src\Common\stress_dependencies\stress_dependencies.csproj
 
 REM Check if dotnet cli exists
