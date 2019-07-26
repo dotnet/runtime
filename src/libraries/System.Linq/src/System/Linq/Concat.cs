@@ -113,8 +113,8 @@ namespace System.Linq
             /// otherwise, <c>false</c>.
             /// </summary>
             /// <remarks>
-            /// This flag allows us to determine in O(1) time whether we can preallocate for <see cref="ToArray"/>
-            /// and <see cref="M:System.Linq.Enumerable.ConcatIterator`1.ToList"/>, and whether we can get the count of the iterator cheaply.
+            /// This flag allows us to determine in O(1) time whether we can preallocate for ToArray/ToList,
+            /// and whether we can get the count of the iterator cheaply.
             /// </remarks>
             private readonly bool _hasOnlyCollections;
 

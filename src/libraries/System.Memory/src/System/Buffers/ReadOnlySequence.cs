@@ -111,7 +111,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the <see cref="T:T[]"/>.
+        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the array.
         /// </summary>
         public ReadOnlySequence(T[] array)
         {
@@ -125,7 +125,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the <see cref="T:T[]"/>, start and index.
+        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the array, start, and index.
         /// </summary>
         public ReadOnlySequence(T[] array, int start, int length)
         {

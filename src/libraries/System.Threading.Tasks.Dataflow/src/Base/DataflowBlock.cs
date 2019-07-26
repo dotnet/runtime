@@ -227,7 +227,7 @@ namespace System.Threading.Tasks.Dataflow
         #endregion
 
         #region Post and SendAsync
-        /// <summary>Posts an item to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1"/>.</summary>
+        /// <summary>Posts an item to the <see cref="System.Threading.Tasks.Dataflow.ITargetBlock{T}"/>.</summary>
         /// <typeparam name="TInput">Specifies the type of data accepted by the target block.</typeparam>
         /// <param name="target">The target block.</param>
         /// <param name="item">The item being offered to the target.</param>
@@ -235,11 +235,11 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// This method will return once the target block has decided to accept or decline the item,
         /// but unless otherwise dictated by special semantics of the target block, it does not wait
-        /// for the item to actually be processed (for example, <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1"/>
+        /// for the item to actually be processed (for example, <see cref="System.Threading.Tasks.Dataflow.ActionBlock{T}"/>
         /// will return from Post as soon as it has stored the posted item into its input queue).  From the perspective
         /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages, 
         /// or for blocks that may do more processing in their Post implementation, consider using
-        ///  <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync">SendAsync</see>, 
+        /// <see cref="System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync{TInput}(ITargetBlock{TInput}, TInput)">SendAsync</see>, 
         /// which will return immediately and will enable the target to postpone the posted message and later consume it 
         /// after SendAsync returns.
         /// </remarks>
@@ -766,7 +766,7 @@ namespace System.Threading.Tasks.Dataflow
         #region TryReceive, ReceiveAsync, and Receive
         #region TryReceive
         /// <summary>
-        /// Attempts to synchronously receive an item from the <see cref="T:System.Threading.Tasks.Dataflow.ISourceBlock`1"/>.
+        /// Attempts to synchronously receive an item from the <see cref="System.Threading.Tasks.Dataflow.ISourceBlock{T}"/>.
         /// </summary>
         /// <param name="source">The source from which to receive.</param>
         /// <param name="item">The item received from the source.</param>
@@ -2716,7 +2716,7 @@ namespace System.Threading.Tasks.Dataflow
         /// Gets a target block that synchronously accepts all messages offered to it and drops them.
         /// </summary>
         /// <typeparam name="TInput">The type of the messages this block can accept.</typeparam>
-        /// <returns>A <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1"/> that accepts and subsequently drops all offered messages.</returns>
+        /// <returns>A <see cref="System.Threading.Tasks.Dataflow.ITargetBlock{T}"/> that accepts and subsequently drops all offered messages.</returns>
         public static ITargetBlock<TInput> NullTarget<TInput>()
         {
             return new NullTargetBlock<TInput>();
