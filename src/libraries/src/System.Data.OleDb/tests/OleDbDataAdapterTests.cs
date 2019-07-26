@@ -144,7 +144,7 @@ namespace System.Data.OleDb.Tests
                         }
                         else
                         {
-                            Assert.NotNull(adapter.Fill(ds, tableName));
+                            Assert.InRange(adapter.Fill(ds, tableName), 0, int.MaxValue);
                         }
                     }
                 };

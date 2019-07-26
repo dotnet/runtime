@@ -99,7 +99,6 @@ namespace System.Diagnostics.Tests
                             foreach (var keyword in providerMetadata.Keywords)
                             {
                                 Assert.NotEmpty(keyword.Name);
-                                Assert.NotNull(keyword.Value);
                             }
                             foreach (var logLink in providerMetadata.LogLinks)
                             {

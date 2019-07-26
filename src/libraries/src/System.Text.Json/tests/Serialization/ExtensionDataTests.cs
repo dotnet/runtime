@@ -42,7 +42,6 @@ namespace System.Text.Json.Serialization.Tests
             void Verify()
             {
                 Assert.NotNull(obj.MyOverflow);
-                Assert.NotNull(obj.MyOverflow["MyIntMissing"]);
                 Assert.Equal(1, obj.MyInt);
                 Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
 

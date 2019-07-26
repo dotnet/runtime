@@ -74,7 +74,6 @@ namespace System.Configuration.Tests
                     }
                 }
             };
-            Assert.NotNull(Element.GetHashCode());
         }
     }
 }

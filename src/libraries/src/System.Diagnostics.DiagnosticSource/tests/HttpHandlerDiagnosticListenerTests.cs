@@ -315,7 +315,7 @@ namespace System.Diagnostics.Tests
                 HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
                 Assert.Equal(startRequest, stopRequest);
                 HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
-                Assert.NotNull(status);
+                Assert.Equal(HttpStatusCode.OK, status);
 
                 WebHeaderCollection headers = ReadPublicProperty<WebHeaderCollection>(stopEvent.Value, "Headers");
                 Assert.NotNull(headers);

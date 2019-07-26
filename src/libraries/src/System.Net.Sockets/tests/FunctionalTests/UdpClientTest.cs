@@ -618,7 +618,6 @@ namespace System.Net.Sockets.Tests
                 }
 
                 UdpReceiveResult result = await receiver.ReceiveAsync();
-                Assert.NotNull(result);
                 Assert.NotNull(result.RemoteEndPoint);
                 Assert.NotNull(result.Buffer);
                 Assert.InRange(result.Buffer.Length, 1, int.MaxValue);
@@ -639,7 +638,6 @@ namespace System.Net.Sockets.Tests
                 }
 
                 UdpReceiveResult result = await receiver.ReceiveAsync();
-                Assert.NotNull(result);
                 Assert.NotNull(result.RemoteEndPoint);
                 Assert.NotNull(result.Buffer);
                 Assert.InRange(result.Buffer.Length, 1, int.MaxValue);
