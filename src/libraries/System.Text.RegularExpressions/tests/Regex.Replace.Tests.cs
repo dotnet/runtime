@@ -224,6 +224,25 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Same(input, Regex.Replace(input, "no-match", new MatchEvaluator(MatchEvaluator1)));
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.RightToLeft)]
+        public void Replace_MatchEvaluatorReturnsNullOrEmpty(RegexOptions options)
+        {
+            string result = Regex.Replace("abcde", @"[abcd]", (Match match) => {
+                return match.Value switch
+                {
+                    "a" => "x",
+                    "b" => null,
+                    "c" => "",
+                    "d" => "y",
+                    _ => throw new InvalidOperationException()
+                };
+            }, options);
+
+            Assert.Equal("xye", result);
+        }
+
         [Fact]
         public void Replace_Invalid()
         {
