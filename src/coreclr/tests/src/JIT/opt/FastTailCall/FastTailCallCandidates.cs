@@ -63,6 +63,8 @@ public class FastTailCallCandidates
         CheckOutput(CallerHFACaseCalleeOnly(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0));
         CheckOutput(CallerHFaCaseCalleeStackArgs(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0));
         CheckOutput(DoubleCountRetBuffCaller(1));
+        CheckOutput(Struct32CallerWrapper());
+        CheckOutput(Struct32CallerWrapperCalleeHasStack(2));
 
         return s_ret_value;
 
@@ -1152,6 +1154,228 @@ public class FastTailCallCandidates
                 return 112;
             }
         }
+    }
+
+    /// <summary>
+    /// Decision to fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will fast tail call.
+    ///
+    /// The caller uses 2 integer registers 32 bytes of stack (3 args)
+    /// The callee uses 3 integer registers, 0 bytes of stack (3 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 113 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32Caller(StructSizeThirtyTwo one, long two, long three)
+    {
+        if (two % 2 == 1)
+        {
+            return Struct32Callee(two, two, three);
+        }
+        else
+        {
+            return Struct32Callee(three, two, three);
+        }
+    }
+
+    /// <summary>
+    /// Decision to fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will fast tail call.
+    ///
+    /// The caller uses 2 integer registers 32 bytes of stack (3 args)
+    /// The callee uses 3 integer registers, 0 bytes of stack (3 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 113 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32Callee(long one, long two, long three)
+    {
+        int count = 0;
+        for (int i = 0; i < three * 100; ++i)
+        {
+            if (i % 10 == 0)
+            {
+                ++count;
+            }
+        }
+
+        if (count == 30)
+        {
+            return 84;
+        }
+        else
+        {
+            return 85;
+        }
+    }
+
+    /// <summary>
+    /// Decision to fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will fast tail call.
+    ///
+    /// The caller uses 2 integer registers 32 bytes of stack (3 args)
+    /// The callee uses 3 integer registers, 0 bytes of stack (3 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 113 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32CallerWrapper()
+    {
+        int ret = Struct32Caller(new StructSizeThirtyTwo(1, 2, 3, 4), 2, 3);
+
+        if (ret != 84)
+        {
+            return 113;
+        }
+
+        return 100;
+    }
+
+    /// <summary>
+    /// Decision to not fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will not fast tail call.
+    ///
+    /// The caller uses 6 integer registers 56 bytes of stack (10 args)
+    /// The callee uses 6 integer registers, 32 bytes of stack (10 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 114 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32CallerCalleeHasStackSpace(StructSizeThirtyTwo one,    // stack slot 1, 2, 3, 4
+                                                        long two, 
+                                                        long three,
+                                                        long four,
+                                                        long five,
+                                                        long six,
+                                                        long seven,
+                                                        long eight,                 // stack slot 6
+                                                        long nine,                  // stack slot 7
+                                                        long ten)                   // stack slot 8
+    {
+        int count = 0;
+        for (int i = 0; i < two * 100; ++i)
+        {
+            if (i % 10 == 0)
+            {
+                ++count;
+            }
+        }
+
+        if (count == 20)
+        {
+            return Struct32CalleeWithStack(one.a, 
+                                           one.b, 
+                                           one.c,
+                                           one.d,
+                                           two,
+                                           three,
+                                           four,        // stack slot 1
+                                           five,        // stack slot 2
+                                           six,         // stack slot 3
+                                           seven);      // stack slot 4
+        }
+        else
+        {
+            return Struct32CalleeWithStack(one.a, 
+                                           one.b, 
+                                           one.c,
+                                           one.d,
+                                           two,
+                                           three,
+                                           four,        // stack slot 1
+                                           five,        // stack slot 2
+                                           six,         // stack slot 3
+                                           seven);      // stack slot 4
+        }
+    }
+
+    /// <summary>
+    /// Decision to not fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will not fast tail call.
+    ///
+    /// The caller uses 6 integer registers 56 bytes of stack (3 args)
+    /// The callee uses 6 integer registers, 32 bytes of stack (3 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 113 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32CalleeWithStack(long one, 
+                                              long two, 
+                                              long three,
+                                              long four,
+                                              long five,
+                                              long six,
+                                              long seven,
+                                              long eight,
+                                              long nine,
+                                              long ten)
+    {
+        int count = 0;
+        for (int i = 0; i < one * 100; ++i)
+        {
+            if (i % 10 == 0)
+            {
+                ++count;
+            }
+        }
+
+        if (count == 10)
+        {
+            return 84;
+        }
+        else
+        {
+            return 85;
+        }
+    }
+
+    /// <summary>
+    /// Decision to not fast tail call
+    /// </summary>
+    ///
+    /// On x64 linux this will not fast tail call.
+    ///
+    /// The caller uses 6 integer registers 56 bytes of stack (3 args)
+    /// The callee uses 6 integer registers, 32 bytes of stack (3 args)
+    ///
+    /// Return 100 is a pass.
+    /// Return 113 is a failure.
+    ///
+    /// </remarks>
+    public static int Struct32CallerWrapperCalleeHasStack(int two)
+    {
+        int ret = Struct32CallerCalleeHasStackSpace(new StructSizeThirtyTwo(1, 2, 3, 4),
+                                                    5, 
+                                                    6,
+                                                    7,
+                                                    8,
+                                                    9,
+                                                    10,
+                                                    11,
+                                                    12,
+                                                    13);
+
+        if (ret != 84)
+        {
+            return 114;
+        }
+
+        return 100;
     }
 
     ////////////////////////////////////////////////////////////////////////////
