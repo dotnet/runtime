@@ -86,15 +86,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(Type classType, PropertyInfo propertyInfo)
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(Type classTypeAttributeIsOn, PropertyInfo propertyInfo, Type typeToConvert)
         {
-            string location = classType.ToString();
+            string location = classTypeAttributeIsOn.ToString();
+
             if (propertyInfo != null)
             {
-                location += $".{propertyInfo.ToString()}";
+                location += $".{propertyInfo.Name}";
             }
 
-            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeNotCompatible, location));
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeNotCompatible, location, typeToConvert));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
