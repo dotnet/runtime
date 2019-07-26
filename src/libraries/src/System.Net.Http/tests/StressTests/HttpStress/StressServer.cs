@@ -33,9 +33,8 @@ namespace HttpStress
         private readonly IWebHost _webHost;
 
         public Uri ServerUri { get; }
-        public int MaxRequestLineSize { get; private set; } = -1;
 
-        public StressServer(Uri serverUri, bool httpSys, int maxContentLength, string logPath, bool enableAspNetLogs)
+        public StressServer(Uri serverUri, bool httpSys, int maxContentLength, int maxRequestUriSize, string logPath, bool enableAspNetLogs)
         {
             ServerUri = serverUri;
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
@@ -50,7 +49,6 @@ namespace HttpStress
                 // 3. Register the cert, e.g. netsh http add sslcert ipport=[::1]:5001 certhash=THUMBPRINTFROMABOVE appid="{some-guid}"
                 host = host.UseHttpSys(hso =>
                 {
-                    MaxRequestLineSize = 8192;
                     hso.UrlPrefixes.Add(ServerUri.ToString());
                     hso.Authentication.Schemes = Microsoft.AspNetCore.Server.HttpSys.AuthenticationSchemes.None;
                     hso.Authentication.AllowAnonymous = true;
@@ -63,7 +61,9 @@ namespace HttpStress
                 // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
                 host = host.UseKestrel(ko =>
                 {
-                    MaxRequestLineSize = ko.Limits.MaxRequestLineSize - 10;
+                    // conservative estimation based on https://github.com/aspnet/AspNetCore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
+                    ko.Limits.MaxRequestLineSize = Math.Max(ko.Limits.MaxRequestLineSize, maxRequestUriSize + 100);
+
                     ko.ListenLocalhost(serverUri.Port, listenOptions =>
                     {
                         // Create self-signed cert for server.
