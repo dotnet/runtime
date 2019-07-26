@@ -263,7 +263,7 @@ namespace System.IO.Packaging
                         // Make sure that the current node read is an Element 
                         if (reader.NodeType == XmlNodeType.Element
                             && (reader.Depth == 0)
-                            && (string.CompareOrdinal(s_relationshipsTagName, reader.LocalName) == 0)
+                            && (string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0)
                             && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
                         {
                             ThrowIfXmlBaseAttributeIsPresent(reader);
@@ -287,14 +287,14 @@ namespace System.IO.Packaging
 
                                 if (reader.NodeType == XmlNodeType.Element
                                     && (reader.Depth == 1)
-                                    && (string.CompareOrdinal(s_relationshipTagName, reader.LocalName) == 0)
+                                    && (string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
                                     && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
                                 {
                                     ThrowIfXmlBaseAttributeIsPresent(reader);
 
                                     int expectedAttributesCount = 3;
 
-                                    string targetModeAttributeValue = reader.GetAttribute(s_targetModeAttributeName);
+                                    string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
                                     if (targetModeAttributeValue != null)
                                         expectedAttributesCount++;
 
@@ -314,7 +314,7 @@ namespace System.IO.Packaging
                                     }
                                 }
                                 else
-                                    if (!(string.CompareOrdinal(s_relationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
+                                    if (!(string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
                                     throw new XmlException(SR.UnknownTagEncountered, null, reader.LineNumber, reader.LinePosition);
                             }
                         }
@@ -330,7 +330,7 @@ namespace System.IO.Packaging
         {
             // Attribute : TargetMode
 
-            string targetModeAttributeValue = reader.GetAttribute(s_targetModeAttributeName);
+            string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
 
             //If the TargetMode attribute is missing in the underlying markup then we assume it to be internal
             TargetMode relationshipTargetMode = TargetMode.Internal;
@@ -343,33 +343,33 @@ namespace System.IO.Packaging
                 }
                 catch (ArgumentNullException argNullEx)
                 {
-                    ThrowForInvalidAttributeValue(reader, s_targetModeAttributeName, argNullEx);
+                    ThrowForInvalidAttributeValue(reader, TargetModeAttributeName, argNullEx);
                 }
                 catch (ArgumentException argEx)
                 {
                     //if the targetModeAttributeValue is not Internal|External then Argument Exception will be thrown.
-                    ThrowForInvalidAttributeValue(reader, s_targetModeAttributeName, argEx);
+                    ThrowForInvalidAttributeValue(reader, TargetModeAttributeName, argEx);
                 }
             }
 
             // Attribute : Target
             // create a new PackageRelationship
-            string targetAttributeValue = reader.GetAttribute(s_targetAttributeName);
+            string targetAttributeValue = reader.GetAttribute(TargetAttributeName);
             if (string.IsNullOrEmpty(targetAttributeValue))
-                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_targetAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TargetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             Uri targetUri = new Uri(targetAttributeValue, DotNetRelativeOrAbsolute);
 
             // Attribute : Type
-            string typeAttributeValue = reader.GetAttribute(s_typeAttributeName);
+            string typeAttributeValue = reader.GetAttribute(TypeAttributeName);
             if (string.IsNullOrEmpty(typeAttributeValue))
-                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_typeAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TypeAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Attribute : Id
             // Get the Id attribute (required attribute).
-            string idAttributeValue = reader.GetAttribute(s_idAttributeName);
+            string idAttributeValue = reader.GetAttribute(IdAttributeName);
             if (string.IsNullOrEmpty(idAttributeValue))
-                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_idAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, IdAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Add the relationship to the collection
             Add(targetUri, relationshipTargetMode, typeAttributeValue, idAttributeValue, parsing: true);
@@ -385,10 +385,10 @@ namespace System.IO.Packaging
             //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
             reader.MoveToContent();
 
-            if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(s_relationshipTagName, reader.LocalName) == 0)
+            if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
                 return;
             else
-                throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, s_relationshipTagName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, RelationshipTagName), null, reader.LineNumber, reader.LinePosition);
         }
 
 
@@ -477,7 +477,7 @@ namespace System.IO.Packaging
                     writer.WriteStartDocument();
 
                     // start outer Relationships tag
-                    writer.WriteStartElement(s_relationshipsTagName, PackagingUtilities.RelationshipNamespaceUri);
+                    writer.WriteStartElement(RelationshipsTagName, PackagingUtilities.RelationshipNamespaceUri);
 
                     // Write Relationship elements.
                     WriteRelationshipsAsXml(
@@ -503,10 +503,10 @@ namespace System.IO.Packaging
         {
             foreach (PackageRelationship relationship in relationships)
             {
-                writer.WriteStartElement(s_relationshipTagName);
+                writer.WriteStartElement(RelationshipTagName);
 
                 // Write RelationshipType attribute.
-                writer.WriteAttributeString(s_typeAttributeName, relationship.RelationshipType);
+                writer.WriteAttributeString(TypeAttributeName, relationship.RelationshipType);
 
                 // Write Target attribute.
                 // We would like to persist the uri as passed in by the user and so we use the
@@ -516,14 +516,14 @@ namespace System.IO.Packaging
                 // the string can be converted to a valid Uri. 
                 // Also, we are just using it here to persist the information and we are not
                 // resolving or fetching a resource based on this Uri.
-                writer.WriteAttributeString(s_targetAttributeName, relationship.TargetUri.OriginalString);
+                writer.WriteAttributeString(TargetAttributeName, relationship.TargetUri.OriginalString);
 
                 // TargetMode is optional attribute in the markup and its default value is TargetMode="Internal" 
                 if (alwaysWriteTargetModeAttribute || relationship.TargetMode == TargetMode.External)
-                    writer.WriteAttributeString(s_targetModeAttributeName, relationship.TargetMode.ToString());
+                    writer.WriteAttributeString(TargetModeAttributeName, relationship.TargetMode.ToString());
 
                 // Write Id attribute.
-                writer.WriteAttributeString(s_idAttributeName, relationship.Id);
+                writer.WriteAttributeString(IdAttributeName, relationship.Id);
 
                 writer.WriteEndElement();
             }
@@ -581,10 +581,10 @@ namespace System.IO.Packaging
         //Throws an exception if the xml:base attribute is present in the Relationships XML
         private void ThrowIfXmlBaseAttributeIsPresent(XmlCompatibilityReader reader)
         {
-            string xmlBaseAttributeValue = reader.GetAttribute(s_xmlBaseAttributeName);
+            string xmlBaseAttributeValue = reader.GetAttribute(XmlBaseAttributeName);
 
             if (xmlBaseAttributeValue != null)
-                throw new XmlException(SR.Format(SR.InvalidXmlBaseAttributePresent, s_xmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.InvalidXmlBaseAttributePresent, XmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
         }
 
         //Throws an XML exception if the attribute value is invalid
@@ -609,7 +609,7 @@ namespace System.IO.Packaging
         private string GenerateRelationshipId()
         {
             // The timestamp consists of the first 8 hex octets of the GUID.
-            return string.Concat("R", Guid.NewGuid().ToString("N").Substring(0, s_timestampLength));
+            return string.Concat("R", Guid.NewGuid().ToString("N").Substring(0, TimestampLength));
         }
 
         // If 'id' is not of the xsd type ID or is not unique for this collection, throw an exception.
@@ -656,15 +656,15 @@ namespace System.IO.Packaging
         //------------------------------------------------------
         // segment that indicates a relationship part
 
-        private static readonly int s_timestampLength = 16;
+        private const int TimestampLength = 16;
 
-        private static readonly string s_relationshipsTagName = "Relationships";
-        private static readonly string s_relationshipTagName = "Relationship";
-        private static readonly string s_targetAttributeName = "Target";
-        private static readonly string s_typeAttributeName = "Type";
-        private static readonly string s_idAttributeName = "Id";
-        private static readonly string s_xmlBaseAttributeName = "xml:base";
-        private static readonly string s_targetModeAttributeName = "TargetMode";
+        private const string RelationshipsTagName = "Relationships";
+        private const string RelationshipTagName = "Relationship";
+        private const string TargetAttributeName = "Target";
+        private const string TypeAttributeName = "Type";
+        private const string IdAttributeName = "Id";
+        private const string XmlBaseAttributeName = "xml:base";
+        private const string TargetModeAttributeName = "TargetMode";
 
         private static readonly string[] s_relationshipKnownNamespaces
             = new string[] { PackagingUtilities.RelationshipNamespaceUri };

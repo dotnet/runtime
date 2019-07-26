@@ -225,7 +225,7 @@ namespace System.Data.Odbc
             get
             {
                 string parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : ADP.StrEmpty);
+                return ((null != parameterName) ? parameterName : string.Empty);
             }
             set
             {

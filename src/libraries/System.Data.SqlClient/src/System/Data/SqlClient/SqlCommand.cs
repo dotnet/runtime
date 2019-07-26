@@ -394,7 +394,7 @@ namespace System.Data.SqlClient
             get
             {
                 string value = _commandText;
-                return ((null != value) ? value : ADP.StrEmpty);
+                return ((null != value) ? value : string.Empty);
             }
             set
             {
@@ -2168,7 +2168,7 @@ namespace System.Data.SqlClient
                     {
                         p.SqlDbType = MetaType.GetSqlDbTypeFromOleDbType((short)r[colNames[(int)ProcParamsColIndex.DataType]],
                             ADP.IsNull(r[colNames[(int)ProcParamsColIndex.TypeName]]) ?
-                                ADP.StrEmpty :
+                                string.Empty :
                                 (string)r[colNames[(int)ProcParamsColIndex.TypeName]]);
                     }
 

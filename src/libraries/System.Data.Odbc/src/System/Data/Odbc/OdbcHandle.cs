@@ -197,7 +197,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                sqlState = ADP.StrEmpty;
+                sqlState = string.Empty;
             }
             return retcode;
         }
@@ -215,7 +215,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                sqlState = ADP.StrEmpty;
+                sqlState = string.Empty;
             }
             return retcode;
         }

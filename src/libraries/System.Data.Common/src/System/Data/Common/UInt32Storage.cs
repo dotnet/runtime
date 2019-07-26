@@ -9,12 +9,12 @@ namespace System.Data.Common
 {
     internal sealed class UInt32Storage : DataStorage
     {
-        private static readonly uint s_defaultValue = uint.MinValue;
+        private const uint DefaultValue = uint.MinValue;
 
         private uint[] _values;
 
         public UInt32Storage(DataColumn column)
-        : base(column, typeof(uint), s_defaultValue, StorageType.UInt32)
+        : base(column, typeof(uint), DefaultValue, StorageType.UInt32)
         {
         }
 
@@ -26,7 +26,7 @@ namespace System.Data.Common
                 switch (kind)
                 {
                     case AggregateType.Sum:
-                        ulong sum = s_defaultValue;
+                        ulong sum = DefaultValue;
                         foreach (int record in records)
                         {
                             if (HasValue(record))
@@ -42,7 +42,7 @@ namespace System.Data.Common
                         return _nullValue;
 
                     case AggregateType.Mean:
-                        long meanSum = s_defaultValue;
+                        long meanSum = DefaultValue;
                         int meanCount = 0;
                         foreach (int record in records)
                         {
@@ -165,7 +165,7 @@ namespace System.Data.Common
             uint valueNo1 = _values[recordNo1];
             uint valueNo2 = _values[recordNo2];
 
-            if (valueNo1 == s_defaultValue || valueNo2 == s_defaultValue)
+            if (valueNo1 == DefaultValue || valueNo2 == DefaultValue)
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
                 if (0 != bitCheck)
@@ -188,7 +188,7 @@ namespace System.Data.Common
             }
 
             uint valueNo1 = _values[recordNo];
-            if ((s_defaultValue == valueNo1) && !HasValue(recordNo))
+            if ((DefaultValue == valueNo1) && !HasValue(recordNo))
             {
                 return -1;
             }
@@ -221,7 +221,7 @@ namespace System.Data.Common
         public override object Get(int record)
         {
             uint value = _values[record];
-            if (!value.Equals(s_defaultValue))
+            if (!value.Equals(DefaultValue))
             {
                 return value;
             }
@@ -233,7 +233,7 @@ namespace System.Data.Common
             System.Diagnostics.Debug.Assert(null != value, "null value");
             if (_nullValue == value)
             {
-                _values[record] = s_defaultValue;
+                _values[record] = DefaultValue;
                 SetNullBit(record, true);
             }
             else

@@ -560,7 +560,7 @@ namespace System.IO.Packaging
                 _zipStreamManager = zipStreamManager;   //initialized in the ZipPackage constructor
                 // The extensions are stored in the default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
-                _defaultDictionary = new Dictionary<string, ContentType>(s_defaultDictionaryInitialSize, s_extensionEqualityComparer);
+                _defaultDictionary = new Dictionary<string, ContentType>(DefaultDictionaryInitialSize, s_extensionEqualityComparer);
 
                 // Identify the content type file or files before identifying parts and piece sequences.
                 // This is necessary because the name of the content type stream is not a part name and
@@ -582,7 +582,7 @@ namespace System.IO.Packaging
             {
                 get
                 {
-                    return s_contentTypesFile;
+                    return ContentTypesFile;
                 }
             }
             
@@ -666,7 +666,7 @@ namespace System.IO.Packaging
                     //Lazy init: Initialize when the first part is added.
                     if (!_contentTypeStreamExists)
                     {
-                        _contentTypeZipArchiveEntry = _zipArchive.CreateEntry(s_contentTypesFile, _cachedCompressionLevel);
+                        _contentTypeZipArchiveEntry = _zipArchive.CreateEntry(ContentTypesFile, _cachedCompressionLevel);
                         _contentTypeStreamExists = true;
                     }
                     else
@@ -688,7 +688,7 @@ namespace System.IO.Packaging
                             writer.WriteStartDocument();
 
                             // write root element tag - Types
-                            writer.WriteStartElement(s_typesTagName, s_typesNamespaceUri);
+                            writer.WriteStartElement(TypesTagName, TypesNamespaceUri);
 
                             // for each default entry
                             foreach (string key in _defaultDictionary.Keys)
@@ -722,7 +722,7 @@ namespace System.IO.Packaging
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
                 // in a normalized manner using the PartUriComparer
                 if (_overrideDictionary == null)
-                    _overrideDictionary = new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(s_overrideDictionaryInitialSize);
+                    _overrideDictionary = new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
             }
 
             private void ParseContentTypesFile(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)
@@ -754,8 +754,8 @@ namespace System.IO.Packaging
                     // Make sure that the current node read is an Element
                     if ((reader.NodeType == XmlNodeType.Element)
                         && (reader.Depth == 0)
-                        && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                        && (string.CompareOrdinal(reader.Name, s_typesTagName) == 0))
+                        && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
+                        && (string.CompareOrdinal(reader.Name, TypesTagName) == 0))
                     {
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
@@ -780,21 +780,21 @@ namespace System.IO.Packaging
                             // Currently we expect the Default and Override Tag at Depth 1
                             if (reader.NodeType == XmlNodeType.Element
                                 && reader.Depth == 1
-                                && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                                && (string.CompareOrdinal(reader.Name, s_defaultTagName) == 0))
+                                && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
+                                && (string.CompareOrdinal(reader.Name, DefaultTagName) == 0))
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
                             else
                                 if (reader.NodeType == XmlNodeType.Element
                                     && reader.Depth == 1
-                                    && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                                    && (string.CompareOrdinal(reader.Name, s_overrideTagName) == 0))
+                                    && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
+                                    && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
                                 {
                                     ProcessOverrideTagAttributes(reader);
                                 }
                                 else
-                                    if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, s_typesTagName) == 0)
+                                    if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
                                         continue;
                                     else
                                     {
@@ -821,7 +821,7 @@ namespace System.IO.Packaging
             {
                 foreach (ZipArchiveEntry zipFileInfo in zipFiles)
                 {
-                    if (zipFileInfo.Name.ToUpperInvariant().StartsWith(s_contentTypesFileUpperInvariant, StringComparison.Ordinal))
+                    if (zipFileInfo.Name.ToUpperInvariant().StartsWith(ContentTypesFileUpperInvariant, StringComparison.Ordinal))
                     {
                         // Atomic name.
                         if (zipFileInfo.Name.Length == ContentTypeFileName.Length)
@@ -854,21 +854,21 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string extensionAttributeValue = reader.GetAttribute(s_extensionAttributeName);
-                ValidateXmlAttribute(s_extensionAttributeName, extensionAttributeValue, s_defaultTagName, reader);
+                string extensionAttributeValue = reader.GetAttribute(ExtensionAttributeName);
+                ValidateXmlAttribute(ExtensionAttributeName, extensionAttributeValue, DefaultTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(s_contentTypeAttributeName);
-                ThrowIfXmlAttributeMissing(s_contentTypeAttributeName, contentTypeAttributeValue, s_defaultTagName, reader);
+                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, DefaultTagName, reader);
 
                 // The extensions are stored in the Default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 PackUriHelper.ValidatedPartUri temporaryUri = PackUriHelper.ValidatePartUri(
-                    new Uri(s_temporaryPartNameWithoutExtension + extensionAttributeValue, UriKind.Relative));
+                    new Uri(TemporaryPartNameWithoutExtension + extensionAttributeValue, UriKind.Relative));
                 _defaultDictionary.Add(temporaryUri.PartUriExtension, new ContentType(contentTypeAttributeValue));
 
                 //Skip the EndElement for Default Tag
                 if (!reader.IsEmptyElement)
-                    ProcessEndElement(reader, s_defaultTagName);
+                    ProcessEndElement(reader, DefaultTagName);
             }
 
             // Process the attributes for the Default tag
@@ -881,11 +881,11 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string partNameAttributeValue = reader.GetAttribute(s_partNameAttributeName);
-                ValidateXmlAttribute(s_partNameAttributeName, partNameAttributeValue, s_overrideTagName, reader);
+                string partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
+                ValidateXmlAttribute(PartNameAttributeName, partNameAttributeValue, OverrideTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(s_contentTypeAttributeName);
-                ThrowIfXmlAttributeMissing(s_contentTypeAttributeName, contentTypeAttributeValue, s_overrideTagName, reader);
+                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, OverrideTagName, reader);
 
                 PackUriHelper.ValidatedPartUri partUri = PackUriHelper.ValidatePartUri(new Uri(partNameAttributeValue, UriKind.Relative));
 
@@ -898,7 +898,7 @@ namespace System.IO.Packaging
 
                 //Skip the EndElement for Override Tag
                 if (!reader.IsEmptyElement)
-                    ProcessEndElement(reader, s_overrideTagName);
+                    ProcessEndElement(reader, OverrideTagName);
             }
 
             //If End element is present for Relationship then we process it
@@ -944,18 +944,18 @@ namespace System.IO.Packaging
 
             private void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
             {
-                xmlWriter.WriteStartElement(s_overrideTagName);
-                xmlWriter.WriteAttributeString(s_partNameAttributeName,
+                xmlWriter.WriteStartElement(OverrideTagName);
+                xmlWriter.WriteAttributeString(PartNameAttributeName,
                     partUri.PartUriString);
-                xmlWriter.WriteAttributeString(s_contentTypeAttributeName, contentType.ToString());
+                xmlWriter.WriteAttributeString(ContentTypeAttributeName, contentType.ToString());
                 xmlWriter.WriteEndElement();
             }
 
             private void WriteDefaultElement(XmlWriter xmlWriter, string extension, ContentType contentType)
             {
-                xmlWriter.WriteStartElement(s_defaultTagName);
-                xmlWriter.WriteAttributeString(s_extensionAttributeName, extension);
-                xmlWriter.WriteAttributeString(s_contentTypeAttributeName, contentType.ToString());
+                xmlWriter.WriteStartElement(DefaultTagName);
+                xmlWriter.WriteAttributeString(ExtensionAttributeName, extension);
+                xmlWriter.WriteAttributeString(ContentTypeAttributeName, contentType.ToString());
                 xmlWriter.WriteEndElement();
             }
 
@@ -988,21 +988,20 @@ namespace System.IO.Packaging
             private bool _contentTypeStreamExists;
             private bool _dirty;
             private CompressionLevel _cachedCompressionLevel;
-            private static readonly string s_contentTypesFile = "[Content_Types].xml";
-            private static readonly string s_contentTypesFileUpperInvariant = "[CONTENT_TYPES].XML";
-            private static readonly int s_defaultDictionaryInitialSize = 16;
-            private static readonly int s_overrideDictionaryInitialSize = 8;
-
+            private const string ContentTypesFile = "[Content_Types].xml";
+            private const string ContentTypesFileUpperInvariant = "[CONTENT_TYPES].XML";
+            private const int DefaultDictionaryInitialSize = 16;
+            private const int OverrideDictionaryInitialSize = 8;
 
             //Xml tag specific strings for the Content Type file
-            private static readonly string s_typesNamespaceUri = "http://schemas.openxmlformats.org/package/2006/content-types";
-            private static readonly string s_typesTagName = "Types";
-            private static readonly string s_defaultTagName = "Default";
-            private static readonly string s_extensionAttributeName = "Extension";
-            private static readonly string s_contentTypeAttributeName = "ContentType";
-            private static readonly string s_overrideTagName = "Override";
-            private static readonly string s_partNameAttributeName = "PartName";
-            private static readonly string s_temporaryPartNameWithoutExtension = "/tempfiles/sample.";
+            private const string TypesNamespaceUri = "http://schemas.openxmlformats.org/package/2006/content-types";
+            private const string TypesTagName = "Types";
+            private const string DefaultTagName = "Default";
+            private const string ExtensionAttributeName = "Extension";
+            private const string ContentTypeAttributeName = "ContentType";
+            private const string OverrideTagName = "Override";
+            private const string PartNameAttributeName = "PartName";
+            private const string TemporaryPartNameWithoutExtension = "/tempfiles/sample.";
         }
     }
 }

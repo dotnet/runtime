@@ -22,8 +22,10 @@ namespace System.Net.Internals
 #endif
     class SocketAddress
     {
+#pragma warning disable CA1802 // these could be const on Windows but need to be static readonly for Unix
         internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
         internal static readonly int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
+#pragma warning restore CA1802
 
         internal int InternalSize;
         internal byte[] Buffer;

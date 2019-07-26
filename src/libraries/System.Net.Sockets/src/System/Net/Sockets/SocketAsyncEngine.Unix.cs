@@ -57,17 +57,20 @@ namespace System.Net.Sockets
 
         // In debug builds, force there to be 2 engines. In release builds, use half the number of processors when
         // there are at least 6. The lower bound is to avoid using multiple engines on systems which aren't servers.
-        private static readonly int EngineCount =
+#pragma warning disable CA1802 // const works for debug, but needs to be static readonly for release
+        private static readonly int s_engineCount =
 #if DEBUG
             2;
 #else
             Environment.ProcessorCount >= 6 ? Environment.ProcessorCount / 2 : 1;
 #endif
+#pragma warning restore CA1802
+
         //
         // The current engines. We replace an engine when it runs out of "handle" values.
         // Must be accessed under s_lock.
         //
-        private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[EngineCount];
+        private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[s_engineCount];
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
@@ -102,7 +105,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesForAdditionalEngine = EngineCount == 1 ? MaxHandles : (IntPtr)32;
+        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)32;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
@@ -181,7 +184,7 @@ namespace System.Net.Sockets
                 // Round-robin to the next engine once we have sufficient sockets on this one.
                 if (!engine.HasLowNumberOfSockets)
                 {
-                    s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
+                    s_allocateFromEngine = (s_allocateFromEngine + 1) % s_engineCount;
                 }
             }
         }

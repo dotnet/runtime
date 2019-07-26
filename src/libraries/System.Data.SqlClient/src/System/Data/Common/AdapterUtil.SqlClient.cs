@@ -581,9 +581,6 @@ namespace System.Data.Common
         internal const int DefaultCommandTimeout = 30;
         internal const float FailoverTimeoutStep = 0.08F;    // fraction of timeout to use for fast failover connections
 
-        // security issue, don't rely upon public static readonly values
-        internal static readonly string StrEmpty = ""; // String.Empty
-
         internal const int CharSize = sizeof(char);
 
         internal static Delegate FindBuilder(MulticastDelegate mcd)

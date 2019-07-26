@@ -29,7 +29,7 @@ namespace System.Configuration
                 if (result == null)
                 {
                     PropertyInformation defaultColl =
-                        (PropertyInformation)BaseGet(ConfigurationProperty.s_defaultCollectionPropertyName);
+                        (PropertyInformation)BaseGet(ConfigurationProperty.DefaultCollectionPropertyName);
 
                     if ((defaultColl != null) && (defaultColl.ProvidedName == propertyName)) result = defaultColl;
                 }

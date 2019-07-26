@@ -225,9 +225,9 @@ namespace System.IO.Packaging
             // Get the partname without the last segment
             partName = partName.Substring(0, partName.Length - file.Length);
 
-            partName = Path.Combine(partName, s_relationshipPartSegmentName, file); // Adding the "_rels" segment and the last segment back
+            partName = Path.Combine(partName, RelationshipPartSegmentName, file); // Adding the "_rels" segment and the last segment back
             partName = partName.Replace(BackwardSlashChar, ForwardSlashChar);
-            partName += s_relationshipPartExtensionName;                            // Adding the ".rels" extension
+            partName += RelationshipPartExtensionName;                            // Adding the ".rels" extension
 
             // convert to Uri - We could use PackUriHelper.Create, but since we know that this is a
             //valid Part Uri we can just call the Uri constructor.
@@ -276,16 +276,16 @@ namespace System.IO.Packaging
 
                 string partNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
 
-                Debug.Assert((path.Length - partNameWithoutExtension.Length - s_relationshipPartExtensionName.Length - 1) > 0,
+                Debug.Assert((path.Length - partNameWithoutExtension.Length - RelationshipPartExtensionName.Length - 1) > 0,
                     "The partname may not be well-formed");
 
                 //Get the part name without the last segment
-                path = path.Substring(0, path.Length - partNameWithoutExtension.Length - s_relationshipPartExtensionName.Length - 1);
+                path = path.Substring(0, path.Length - partNameWithoutExtension.Length - RelationshipPartExtensionName.Length - 1);
 
-                Debug.Assert((path.Length - s_relationshipPartSegmentName.Length) > 0,
+                Debug.Assert((path.Length - RelationshipPartSegmentName.Length) > 0,
                     "The partname may not be well-formed");
 
-                path = path.Substring(0, path.Length - s_relationshipPartSegmentName.Length); // Removing rels segment
+                path = path.Substring(0, path.Length - RelationshipPartSegmentName.Length); // Removing rels segment
                 path = Path.Combine(path, partNameWithoutExtension);        // Adding the last segment without ".rels" extension
                 path = path.Replace(BackwardSlashChar, ForwardSlashChar);
 
@@ -595,15 +595,15 @@ namespace System.IO.Packaging
         private static readonly char[] s_specialCharacterChars = { '%', '@', ',', '?' };
 
         //Rels segment and extension
-        private static readonly string s_relationshipPartSegmentName = "_rels";
-        private static readonly string s_relationshipPartExtensionName = ".rels";
+        private const string RelationshipPartSegmentName = "_rels";
+        private const string RelationshipPartExtensionName = ".rels";
 
         // Forward Slash
         internal const char ForwardSlashChar = '/';
         internal static readonly char[] s_forwardSlashCharArray = { ForwardSlashChar };
 
         // Backward Slash
-        internal static readonly char BackwardSlashChar = '\\';
+        internal const char BackwardSlashChar = '\\';
 
         /// <summary>
         /// pack scheme name
@@ -795,7 +795,7 @@ namespace System.IO.Packaging
                 bool result = false;
 
                 //exit early if the partUri does not end with the relationship extension
-                if (!NormalizedPartUriString.EndsWith(s_relationshipPartUpperCaseExtension, StringComparison.Ordinal))
+                if (!NormalizedPartUriString.EndsWith(RelationshipPartUpperCaseExtension, StringComparison.Ordinal))
                     return false;
 
                 // if uri is /_rels/.rels then we return true
@@ -819,25 +819,25 @@ namespace System.IO.Packaging
                 Debug.Assert(segments.Length > 0 && segments[0] == string.Empty);
 
                 //If the extension was not equal to .rels, we would have exited early.
-                Debug.Assert(string.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), s_relationshipPartUpperCaseExtension) == 0);
+                Debug.Assert(string.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), RelationshipPartUpperCaseExtension) == 0);
 
                 // must be at least two segments and the last one must end with .RELs
                 // and the length of the segment should be greater than just the extension.
                 if ((segments.Length >= 3) &&
-                    (segments[segments.Length - 1].Length > s_relationshipPartExtensionName.Length))
+                    (segments[segments.Length - 1].Length > RelationshipPartExtensionName.Length))
                 {
                     // look for "_RELS" segment which must be second last segment
-                    result = (string.CompareOrdinal(segments[segments.Length - 2], s_relationshipPartUpperCaseSegmentName) == 0);
+                    result = (string.CompareOrdinal(segments[segments.Length - 2], RelationshipPartUpperCaseSegmentName) == 0);
                 }
 
                 // In addition we need to make sure that the relationship is not created by taking another relationship
                 // as the source of this uri. So XXX/_rels/_rels/YYY.rels.rels would be invalid.
                 if (segments.Length > 3 && result == true)
                 {
-                    if ((segments[segments.Length - 1]).EndsWith(s_relsrelsUpperCaseExtension, StringComparison.Ordinal))
+                    if ((segments[segments.Length - 1]).EndsWith(RelsrelsUpperCaseExtension, StringComparison.Ordinal))
                     {
                         // look for "_rels" segment in the third last segment
-                        if (string.CompareOrdinal(segments[segments.Length - 3], s_relationshipPartUpperCaseSegmentName) == 0)
+                        if (string.CompareOrdinal(segments[segments.Length - 3], RelationshipPartUpperCaseSegmentName) == 0)
                             throw new ArgumentException(SR.NotAValidRelationshipPartUri);
                     }
                 }
@@ -895,9 +895,9 @@ namespace System.IO.Packaging
 
             //String Uppercase variants
 
-            private static readonly string s_relationshipPartUpperCaseExtension = ".RELS";
-            private static readonly string s_relationshipPartUpperCaseSegmentName = "_RELS";
-            private static readonly string s_relsrelsUpperCaseExtension = string.Concat(s_relationshipPartUpperCaseExtension, s_relationshipPartUpperCaseExtension);
+            private const string RelationshipPartUpperCaseExtension = ".RELS";
+            private const string RelationshipPartUpperCaseSegmentName = "_RELS";
+            private const string RelsrelsUpperCaseExtension = RelationshipPartUpperCaseExtension + RelationshipPartUpperCaseExtension;
 
             //need to use the private constructor to initialize this particular partUri as we need this in the 
             //IsRelationshipPartUri, that is called from the constructor.

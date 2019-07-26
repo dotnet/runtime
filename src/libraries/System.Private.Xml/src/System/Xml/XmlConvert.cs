@@ -109,7 +109,7 @@ namespace System.Xml
                 matchPos = m.Index;
             }
 
-            for (int position = 0; position < length - s_encodedCharLength + 1; position++)
+            for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
@@ -142,7 +142,7 @@ namespace System.Xml
                         {
                             if (u <= 0x0010ffff)
                             { //convert to two chars
-                                copyPosition = position + s_encodedCharLength + 4;
+                                copyPosition = position + EncodedCharLength + 4;
                                 char lowChar, highChar;
                                 XmlCharType.SplitSurrogateChar(u, out lowChar, out highChar);
                                 bufBld.Append(highChar);
@@ -152,20 +152,20 @@ namespace System.Xml
                         }
                         else
                         { //convert to single char
-                            copyPosition = position + s_encodedCharLength + 4;
+                            copyPosition = position + EncodedCharLength + 4;
                             bufBld.Append((char)u);
                         }
-                        position += s_encodedCharLength - 1 + 4; //just skip
+                        position += EncodedCharLength - 1 + 4; //just skip
                     }
                     else
                     {
-                        copyPosition = position + s_encodedCharLength;
+                        copyPosition = position + EncodedCharLength;
                         bufBld.Append((char)(
                             FromHex(name[position + 2]) * 0x1000 +
                             FromHex(name[position + 3]) * 0x100 +
                             FromHex(name[position + 4]) * 0x10 +
                             FromHex(name[position + 5])));
-                        position += s_encodedCharLength - 1;
+                        position += EncodedCharLength - 1;
                     }
                 }
             }
@@ -300,7 +300,7 @@ namespace System.Xml
             }
         }
 
-        private static readonly int s_encodedCharLength = 7; // ("_xFFFF_".Length);
+        private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
         private static volatile Regex s_encodeCharPattern;
         private static volatile Regex s_decodeCharPattern;
         private static int FromHex(char digit)
