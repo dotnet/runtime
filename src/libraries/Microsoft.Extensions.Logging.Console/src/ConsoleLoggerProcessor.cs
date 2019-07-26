@@ -41,7 +41,11 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             // Adding is completed so just log the message
-            WriteMessage(message);
+            try
+            {
+                WriteMessage(message);            
+            }
+            catch (Exception) { }
         }
 
         // for testing
