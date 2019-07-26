@@ -893,7 +893,6 @@ public:
                                                //            even if they have been retyped as SIMD16.
 
 #define GTF_STMT_CMPADD             0x80000000 // GT_STMT -- added by compiler
-#define GTF_STMT_HAS_CSE            0x40000000 // GT_STMT -- CSE def or use was subsituted
 
 //---------------------------------------------------------------------
 //

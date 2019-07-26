@@ -944,10 +944,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 inline GenTreeStmt* Compiler::gtNewStmt(GenTree* expr, IL_OFFSETX offset)
 {
-    /* NOTE - GT_STMT is now a small node in retail */
-
     GenTreeStmt* stmt = new (this, GT_STMT) GenTreeStmt(expr, offset);
-
     return stmt;
 }
 
