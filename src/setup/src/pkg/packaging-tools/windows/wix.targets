@@ -6,6 +6,8 @@
     this file and switch to wixproj. See https://github.com/wixtoolset/issues/issues/5627
   -->
 
+  <UsingTask TaskName="StabilizeWixFileId" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+
   <!--
     If UpgradeCode isn't manually set, generate based on installer full path. Not suitable for
     bundles.
@@ -85,6 +87,17 @@
 
     <Message Importance="High" Text="Heat '$(MSBuildProjectName)'" />
     <Exec Command="%(DirectoryToHarvest.Command)" WorkingDirectory="$(WixToolsDir)" />
+
+    <!--
+      Currently FileElementToStabilize assumes a single DirectoryToHarvest. If there were multiple,
+      the task would expect exactly one match in each file, which isn't likely to be the case. But,
+      there is no known scenario to have multiple DirectoryToHarvest and use FileElementToStabilize.
+    -->
+    <StabilizeWixFileId
+      Condition="'@(HeatOutputFileElementToStabilize)' != ''"
+      SourceFile="%(DirectoryToHarvest.WixSourceFile)"
+      OutputFile="%(DirectoryToHarvest.WixSourceFile)"
+      FileElementToStabilize="@(HeatOutputFileElementToStabilize)" />
   </Target>
 
   <Target Name="RunCandleCompiler"
