@@ -50,18 +50,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>20322</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex2/*">
-            <Issue>19515</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex2a/*">
-            <Issue>19406</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex4/*">
-            <Issue>14249</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex4a/*">
-            <Issue>14249</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/misc/waitone2/*">
             <Issue>6397</Issue>
         </ExcludeList>
