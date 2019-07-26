@@ -27,7 +27,7 @@ namespace HttpStress
         private readonly double _http2Probability;
 
         public RequestContext(HttpClient httpClient, Random random, int taskNum,
-                                string contentSource, int maxRequestParameters, int maxRequestLineSize,
+                                string contentSource, int maxRequestParameters, int maxRequestUriSize,
                                 double cancellationProbability, double http2Probability)
         {
             _random = random;
@@ -38,7 +38,7 @@ namespace HttpStress
             TaskNum = taskNum;
             IsCancellationRequested = false;
             MaxRequestParameters = maxRequestParameters;
-            MaxRequestLineSize = maxRequestLineSize;
+            MaxRequestUriSize = maxRequestUriSize;
             ContentSource = contentSource;
         }
 
@@ -46,7 +46,7 @@ namespace HttpStress
         public bool IsCancellationRequested { get; set; }
         public string ContentSource { get; }
         public int MaxRequestParameters { get; }
-        public int MaxRequestLineSize { get; }
+        public int MaxRequestUriSize { get; }
         public int MaxContentLength => ContentSource.Length;
 
         // HttpClient.SendAsync() wrapper that wires randomized cancellation
@@ -209,7 +209,7 @@ namespace HttpStress
                 {
                     Version httpVersion = ctx.GetRandomHttpVersion();
                     string uri = "/variables";
-                    string expectedResponse = GetGetQueryParameters(ref uri, ctx.MaxRequestLineSize, ctx, ctx.MaxRequestParameters);
+                    string expectedResponse = GetGetQueryParameters(ref uri, ctx.MaxRequestUriSize, ctx, ctx.MaxRequestParameters);
                     using (var req = new HttpRequestMessage(HttpMethod.Get, uri) { Version = httpVersion })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
@@ -404,11 +404,11 @@ namespace HttpStress
             }
         }
 
-        private static string GetGetQueryParameters(ref string uri, int maxRequestLineSize, RequestContext clientContext, int numParameters)
+        private static string GetGetQueryParameters(ref string uri, int maxRequestUriSize, RequestContext clientContext, int numParameters)
         {
-            if (maxRequestLineSize < uri.Length)
+            if (maxRequestUriSize < uri.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxRequestLineSize));
+                throw new ArgumentOutOfRangeException(nameof(maxRequestUriSize));
             }
             if (numParameters <= 0)
             {
@@ -417,16 +417,16 @@ namespace HttpStress
 
             var expectedString = new StringBuilder();
             var uriSb = new StringBuilder(uri);
-            maxRequestLineSize -= uri.Length;
+            maxRequestUriSize -= uri.Length;
 
-            int appxMaxValueLength = Math.Max(maxRequestLineSize / numParameters, 1);
+            int appxMaxValueLength = Math.Max(maxRequestUriSize / numParameters, 1);
 
             int num = clientContext.GetRandomInt32(1, numParameters + 1);
             for (int i = 0; i < num; i++)
             {
                 string key = $"{(i == 0 ? "?" : "&")}Var{i}=";
 
-                int remainingLength = maxRequestLineSize - uriSb.Length - key.Length;
+                int remainingLength = maxRequestUriSize - uriSb.Length - key.Length;
                 if (remainingLength <= 0)
                 {
                     break;
