@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Microsoft.VisualBasic.Tests
 {
@@ -723,7 +724,15 @@ namespace Microsoft.VisualBasic.Tests
             {
                 ex = e;
             }
-            Assert.NotNull(ex?.GetType() == typeof(TException));
+            if (ex == null)
+            {
+                throw new ThrowsException(typeof(TException));
+            }
+            
+            if (ex.GetType() != typeof(TException))
+            {
+                throw new ThrowsException(typeof(TException), ex);
+            }
         }
     }
 }

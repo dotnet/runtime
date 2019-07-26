@@ -133,12 +133,10 @@ namespace System.Collections.Specialized.Tests
         public static void Constructor_DefaultTest()
         {
             BitVector32 bv = new BitVector32();
-            Assert.NotNull(bv);
             Assert.Equal(0, bv.Data);
 
             // Copy constructor results in item with same data.
             BitVector32 copied = new BitVector32(bv);
-            Assert.NotNull(bv);
             Assert.Equal(0, copied.Data);
         }
 
@@ -163,12 +161,10 @@ namespace System.Collections.Specialized.Tests
         public static void Constructor_DataTest(int data)
         {
             BitVector32 bv = new BitVector32(data);
-            Assert.NotNull(bv);
             Assert.Equal(data, bv.Data);
 
             // Copy constructor results in item with same data.
             BitVector32 copied = new BitVector32(bv);
-            Assert.NotNull(bv);
             Assert.Equal(data, copied.Data);
         }
 

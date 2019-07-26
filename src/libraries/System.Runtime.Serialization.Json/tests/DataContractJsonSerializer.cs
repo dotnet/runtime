@@ -1016,7 +1016,6 @@ public static partial class DataContractJsonSerializerTests
         var x = new KeyValuePair<string, object>("key1", "key1value");
 
         var y = SerializeAndDeserialize<KeyValuePair<string, object>>(x, @"{""key"":""key1"",""value"":""key1value""}");
-        Assert.NotNull(y);
         Assert.StrictEqual(y.Key, "key1");
         Assert.StrictEqual(y.Value, "key1value");
     }
@@ -2468,7 +2467,6 @@ public static partial class DataContractJsonSerializerTests
                 },
             };
             var actual = SerializeAndDeserialize(original, null, dcjsSettings, null, true);
-            Assert.NotNull(actual);
             Assert.Equal(original, actual);
         }
     }
@@ -2512,7 +2510,6 @@ public static partial class DataContractJsonSerializerTests
             };
             var original = DateTime.Now;
             var actual = SerializeAndDeserialize(original, null, dcjsSettings, null, true);
-            Assert.NotNull(actual);
             Assert.Equal(original, actual);
         }
     }
@@ -2593,7 +2590,6 @@ public static partial class DataContractJsonSerializerTests
         var graph = new DateTimeOffset(2008, 5, 1, 8, 6, 32, new TimeSpan(1, 0, 0));
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_DMMMM };
         var actual3 = SerializeAndDeserialize(graph, "{\"DateTime\":\"1, mayo\",\"OffsetMinutes\":60}", dcjsSettings);
-        Assert.NotNull(actual3);
         var expected3 = new DateTimeOffset(DateTime.Now.Year, 5, 1, 0, 0, 0, new TimeSpan(1, 0, 0));
         Assert.True(actual3 == expected3, 
             $"{nameof(actual3)} was not as expected.\r\nExpected: {expected3} \r\n Actual: {actual3}");
@@ -2621,7 +2617,6 @@ public static partial class DataContractJsonSerializerTests
         expectedOutput = string.Format("\"{0}\"", expectedOutput);
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_DefaultFormatProviderIsDateTimeFormatInfoDotCurrentInfo };
         var actual6 = SerializeAndDeserialize(dateTime, expectedOutput, dcjsSettings);
-        Assert.NotNull(actual6);
         Assert.True(actual6 == dateTime);
     }
 
@@ -2639,7 +2634,6 @@ public static partial class DataContractJsonSerializerTests
             KnownTypes = new List<Type>()
         };
         var actual = SerializeAndDeserialize(dateTime, expectedString, dcjsSettings);
-        Assert.NotNull(actual);
         Assert.True(actual == dateTime);
 
         dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2652,7 +2646,6 @@ public static partial class DataContractJsonSerializerTests
         string actualam = GetAmString(jsonTypes.DTF_hmsFt);
         string baseline = $"\"03:58:32.00 {actualam}\"";
         var actual2 = SerializeAndDeserialize(new DateTime(1, 1, 1, 3, 58, 32), baseline, dcjsSettings);
-        Assert.NotNull(actual2);
         Assert.True(actual2 == new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 3, 58, 32));
 
         dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2664,7 +2657,6 @@ public static partial class DataContractJsonSerializerTests
         };
         var value3 = new DateTime(DateTime.Now.Year, 12, 20);
         var actual3 = SerializeAndDeserialize(value3, "\"20, diciembre\"", dcjsSettings);
-        Assert.NotNull(actual3);
         Assert.Equal(value3, actual3);
 
         dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2676,7 +2668,6 @@ public static partial class DataContractJsonSerializerTests
         };
         var value4 = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 32);
         var actual4 = SerializeAndDeserialize(value4, "\"32\"", dcjsSettings);
-        Assert.NotNull(actual4);
         Assert.Equal(value4, actual4);
 
         dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2688,7 +2679,6 @@ public static partial class DataContractJsonSerializerTests
         };
         var value5 = new DateTime(1998, 1, 1);
         var actual5 = SerializeAndDeserialize(value5, "\"1998 A.D.\"", dcjsSettings);
-        Assert.NotNull(actual5);
         Assert.Equal(value5, actual5);
 
         dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2700,7 +2690,6 @@ public static partial class DataContractJsonSerializerTests
         };
         var value6 = new DateTime(1998, 1, 1, 8, 25, 32, DateTimeKind.Utc);
         var actual6 = SerializeAndDeserialize(value6, "\"1998-01-01T08:25:32.000Z\"", dcjsSettings);
-        Assert.NotNull(actual6);
         Assert.Equal(value6, actual6);
     }
 

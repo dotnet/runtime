@@ -2001,7 +2001,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 Assert.Equal(SocketFlags.None, socketFlags);
-                Assert.NotNull(ipPacketInformation);
 
                 Assert.Equal(connectTo, ipPacketInformation.Address);
             }
@@ -2173,7 +2172,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 Assert.Equal(SocketFlags.None, socketFlags);
-                Assert.NotNull(ipPacketInformation);
                 Assert.Equal(connectTo, ipPacketInformation.Address);
             }
         }
@@ -2345,7 +2343,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
-                Assert.NotNull(args.ReceiveMessageFromPacketInfo);
                 Assert.Equal(connectTo, args.ReceiveMessageFromPacketInfo.Address);
             }
         }

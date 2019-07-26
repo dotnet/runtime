@@ -36,7 +36,6 @@ namespace System.IO.Pipelines.Tests
             var endSegment = (BufferSegment)end;
 
             Assert.Same(startSegment, endSegment);
-            Assert.NotNull(startSegment.Memory);
             Assert.IsType<byte[]>(startSegment.MemoryOwner);
 
             pipe.Reader.AdvanceTo(result.Buffer.End);
