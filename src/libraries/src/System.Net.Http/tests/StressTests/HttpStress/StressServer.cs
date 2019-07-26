@@ -127,37 +127,29 @@ namespace HttpStress
             });
             endpoints.MapGet("/headers", async context =>
             {
-                // Get request but with a bunch of extra headers
-                for (int i = 0; i < 20; i++)
-                {
-                    context.Response.Headers.Add(
-                        "CustomHeader" + i,
-                        new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
-                }
-                await context.Response.WriteAsync(contentSource);
-                if (context.Response.SupportsTrailers())
-                {
-                    for (int i = 0; i < 10; i++)
-                    {
-                        context.Response.AppendTrailer(
-                            "CustomTrailer" + i,
-                            new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
-                    }
-                }
-            });
-            endpoints.MapGet("/echoHeaders", async context =>
-            {
-                foreach(KeyValuePair<string, StringValues> header in context.Request.Headers)
-                {
-                    // skip pseudo-headers surfaced by kestrel
-                    if (header.Key.StartsWith(':')) continue;
+                (string name, StringValues values)[] headersToEcho = 
+                        context.Request.Headers
+                        // filter the pseudo-headers surfaced by Kestrel
+                        .Where(h => !h.Key.StartsWith(':'))
+                        // kestrel does not seem to be splitting comma separated header values, handle here
+                        .Select(h => (h.Key, new StringValues(h.Value.SelectMany(v => v.Split(',')).Select(x => x.Trim()).ToArray())))
+                        .ToArray();
 
-                    // kestrel seems to not be splitting comma separated header values, handle here
-                    string[] values = header.Value.SelectMany(v => v.Split(',')).Select(x => x.Trim()).ToArray();
-                    context.Response.Headers.Add(header.Key, new StringValues(values));
+                foreach((string name, StringValues values) in headersToEcho)
+                {
+                    context.Response.Headers.Add(name, values);
                 }
 
                 await context.Response.WriteAsync("ok");
+
+                if (context.Response.SupportsTrailers())
+                {
+                    // just add variations of already echoed headers as trailers
+                    foreach ((string name, StringValues values) in headersToEcho)
+                    {
+                        context.Response.AppendTrailer(name + "-Trailer", values);
+                    }
+                }
 
             });
             endpoints.MapGet("/variables", async context =>
