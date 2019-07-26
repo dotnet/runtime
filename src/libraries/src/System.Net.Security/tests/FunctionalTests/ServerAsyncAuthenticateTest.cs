@@ -99,11 +99,11 @@ namespace System.Net.Security.Tests
             int timeOut = expectedToFail ? TestConfiguration.FailingTestTimeoutMiliseconds
                 : TestConfiguration.PassingTestTimeoutMilliseconds;
 
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
             var server = new TcpListener(endPoint);
             server.Start();
 
-            using (var clientConnection = new TcpClient(AddressFamily.InterNetworkV6))
+            using (var clientConnection = new TcpClient())
             {
                 IPEndPoint serverEndPoint = (IPEndPoint)server.LocalEndpoint;
 

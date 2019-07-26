@@ -106,6 +106,19 @@ static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 #endif
 }
 
+static void ResetProtocolRestrictions(SSL_CTX* ctx)
+{
+#ifndef SSL_CTRL_SET_MIN_PROTO_VERSION
+#define SSL_CTRL_SET_MIN_PROTO_VERSION 123
+#endif
+#ifndef SSL_CTRL_SET_MAX_PROTO_VERSION
+#define SSL_CTRL_SET_MAX_PROTO_VERSION 124
+#endif
+
+    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MIN_PROTO_VERSION, 0, NULL);
+    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
+}
+
 void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // Ensure that ECDHE is available
@@ -151,6 +164,10 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
     {
         protocolOptions |= SSL_OP_NO_TLSv1_3;
     }
+
+    // We manually set protocols - we need to reset OpenSSL restrictions
+    // to a maximum possible range
+    ResetProtocolRestrictions(ctx);
 
     // OpenSSL 1.0 calls this long, OpenSSL 1.1 calls it unsigned long.
 #pragma clang diagnostic push
@@ -327,6 +344,7 @@ int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
         case NoEncryption:
             // No minimum security policy, same as OpenSSL 1.0
             SSL_CTX_set_security_level(ctx, 0);
+            ResetProtocolRestrictions(ctx);
             return true;
         case RequireEncryption:
             return true;

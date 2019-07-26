@@ -39,15 +39,15 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.None, null)]
         [InlineData(null, SslProtocols.None)]
         [InlineData(SslProtocols.None, SslProtocols.None)]
-        [InlineData(null, SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls11, null)]
+        [InlineData(NegotiatedCipherSuiteTest.NonTls13Protocols, SslProtocols.Tls11)]
+        [InlineData(SslProtocols.Tls11, NegotiatedCipherSuiteTest.NonTls13Protocols)]
         [InlineData(null, SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls12, null)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null)]
         [InlineData(null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
 #pragma warning disable 0618
-        [InlineData(SslProtocols.Default, null)]
-        [InlineData(null, SslProtocols.Default)]
+        [InlineData(SslProtocols.Default, NegotiatedCipherSuiteTest.NonTls13Protocols)]
+        [InlineData(NegotiatedCipherSuiteTest.NonTls13Protocols, SslProtocols.Default)]
 #pragma warning restore 0618
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {

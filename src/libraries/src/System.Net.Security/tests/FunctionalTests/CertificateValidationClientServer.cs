@@ -16,7 +16,7 @@ namespace System.Net.Security.Tests
 
     public class CertificateValidationClientServer : IDisposable
     {
-        private readonly ITestOutputHelper _output;        
+        private readonly ITestOutputHelper _output;
         private readonly X509Certificate2 _clientCertificate;
         private readonly X509Certificate2Collection _clientCertificateCollection;
         private readonly X509Certificate2 _serverCertificate;
@@ -47,7 +47,7 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
         {
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
             var server = new TcpListener(endPoint);
             server.Start();
 
@@ -67,7 +67,7 @@ namespace System.Net.Security.Tests
                 _clientCertificateRemovedByFilter = true;
             }
 
-            using (var clientConnection = new TcpClient(AddressFamily.InterNetworkV6))
+            using (var clientConnection = new TcpClient())
             {
                 IPEndPoint serverEndPoint = (IPEndPoint)server.LocalEndpoint;
 
@@ -204,7 +204,7 @@ namespace System.Net.Security.Tests
             // Verify that the certificate is in the trustedChain.
             _output.WriteLine($"cert: subject={cert.Subject}, issuer={cert.Issuer}, thumbprint={cert.Thumbprint}");
             Assert.Equal(cert.Thumbprint, trustedChain.ChainElements[0].Certificate.Thumbprint);
-            
+
             // Verify that the root certificate in the chain is the one that issued the received certificate.
             foreach (X509ChainElement element in trustedChain.ChainElements)
             {
