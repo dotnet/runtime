@@ -222,6 +222,37 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void GetHashCode_SingleValueVsArrayWithOneItem_SameHashCode()
+        {
+            var sv1 = new StringValues("value");
+            var sv2 = new StringValues(new[] { "value" });
+            Assert.Equal(sv1, sv2);
+            Assert.Equal(sv1.GetHashCode(), sv2.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCode_NullCases_DifferentHashCodes()
+        {
+            var sv1 = new StringValues((string)null);
+            var sv2 = new StringValues(new[] { (string)null });
+            Assert.NotEqual(sv1, sv2);
+            Assert.NotEqual(sv1.GetHashCode(), sv2.GetHashCode());
+
+            var sv3 = new StringValues((string[])null);
+            Assert.Equal(sv1, sv3);
+            Assert.Equal(sv1.GetHashCode(), sv3.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCode_SingleValueVsArrayWithTwoItems_DifferentHashCodes()
+        {
+            var sv1 = new StringValues("value");
+            var sv2 = new StringValues(new[] { "value", "value" });
+            Assert.NotEqual(sv1, sv2);
+            Assert.NotEqual(sv1.GetHashCode(), sv2.GetHashCode());
+        }
+
+        [Fact]
         public void ImplicitStringArrayConverter_Works()
         {
             string[] nullStringArray = null;
@@ -511,6 +542,9 @@ namespace Microsoft.Extensions.Primitives
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
+
+            Assert.True(StringValues.Equals(stringValues, new StringValues(expected)));
+            Assert.Equal(stringValues.GetHashCode(), new StringValues(expected).GetHashCode());
         }
 
         [Theory]
@@ -521,6 +555,9 @@ namespace Microsoft.Extensions.Primitives
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
+
+            Assert.True(StringValues.Equals(stringValues, new StringValues(expected)));
+            Assert.Equal(stringValues.GetHashCode(), new StringValues(expected).GetHashCode());
         }
     }
 }
