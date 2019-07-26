@@ -7,10 +7,7 @@ namespace System.Configuration
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class ConfigurationPropertyAttribute : Attribute
     {
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        internal static readonly string s_defaultCollectionPropertyName = "";
-#pragma warning restore 0414
+        internal const string DefaultCollectionPropertyName = "";
 
         public ConfigurationPropertyAttribute(string name)
         {

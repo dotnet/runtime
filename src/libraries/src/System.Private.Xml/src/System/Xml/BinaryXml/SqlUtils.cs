@@ -31,13 +31,13 @@ namespace System.Xml
             }
         }
 
-        private static readonly byte s_NUMERIC_MAX_PRECISION = 38;            // Maximum precision of numeric
-        private static readonly byte s_maxPrecision = s_NUMERIC_MAX_PRECISION;  // max SS precision
+        private const byte s_NUMERIC_MAX_PRECISION = 38;            // Maximum precision of numeric
+        private const byte s_maxPrecision = s_NUMERIC_MAX_PRECISION;  // max SS precision
 
-        private static readonly int s_cNumeMax = 4;
-        private static readonly long s_lInt32Base = ((long)1) << 32;      // 2**32
-        internal static readonly ulong x_llMax = long.MaxValue;   // Max of Int64
-        private static readonly double s_DUINT_BASE = (double)s_lInt32Base;     // 2**32
+        private const int s_cNumeMax = 4;
+        private const long s_lInt32Base = ((long)1) << 32;      // 2**32
+        internal const ulong x_llMax = long.MaxValue;   // Max of Int64
+        private const double s_DUINT_BASE = (double)s_lInt32Base;     // 2**32
 
         public BinXmlSqlDecimal(byte[] data, int offset, bool trim)
         {
@@ -606,10 +606,10 @@ Error:
         }
 
         // Number of (100ns) ticks per time unit
-        private static readonly double s_SQLTicksPerMillisecond = 0.3;
-        public static readonly int SQLTicksPerSecond = 300;
-        public static readonly int SQLTicksPerMinute = SQLTicksPerSecond * 60;
-        public static readonly int SQLTicksPerHour = SQLTicksPerMinute * 60;
+        private const double s_SQLTicksPerMillisecond = 0.3;
+        internal const int SQLTicksPerSecond = 300;
+        internal const int SQLTicksPerMinute = SQLTicksPerSecond * 60;
+        internal const int SQLTicksPerHour = SQLTicksPerMinute * 60;
 
 
         public static string SqlSmallDateTimeToString(short dateticks, ushort timeticks)

@@ -9,12 +9,12 @@ namespace System.Data.Common
 {
     internal sealed class DecimalStorage : DataStorage
     {
-        private static readonly decimal s_defaultValue = decimal.Zero;
+        private const decimal DefaultValue = decimal.Zero;
 
         private decimal[] _values;
 
         internal DecimalStorage(DataColumn column)
-        : base(column, typeof(decimal), s_defaultValue, StorageType.Decimal)
+        : base(column, typeof(decimal), DefaultValue, StorageType.Decimal)
         {
         }
 
@@ -26,7 +26,7 @@ namespace System.Data.Common
                 switch (kind)
                 {
                     case AggregateType.Sum:
-                        decimal sum = s_defaultValue;
+                        decimal sum = DefaultValue;
                         foreach (int record in records)
                         {
                             if (HasValue(record))
@@ -42,7 +42,7 @@ namespace System.Data.Common
                         return _nullValue;
 
                     case AggregateType.Mean:
-                        decimal meanSum = s_defaultValue;
+                        decimal meanSum = DefaultValue;
                         int meanCount = 0;
                         foreach (int record in records)
                         {
@@ -64,10 +64,10 @@ namespace System.Data.Common
                     case AggregateType.Var:
                     case AggregateType.StDev:
                         int count = 0;
-                        double var = (double)s_defaultValue;
-                        double prec = (double)s_defaultValue;
-                        double dsum = (double)s_defaultValue;
-                        double sqrsum = (double)s_defaultValue;
+                        double var = (double)DefaultValue;
+                        double prec = (double)DefaultValue;
+                        double dsum = (double)DefaultValue;
+                        double sqrsum = (double)DefaultValue;
 
                         foreach (int record in records)
                         {
@@ -158,7 +158,7 @@ namespace System.Data.Common
             decimal valueNo1 = _values[recordNo1];
             decimal valueNo2 = _values[recordNo2];
 
-            if (valueNo1 == s_defaultValue || valueNo2 == s_defaultValue)
+            if (valueNo1 == DefaultValue || valueNo2 == DefaultValue)
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
                 if (0 != bitCheck)
@@ -178,7 +178,7 @@ namespace System.Data.Common
             }
 
             decimal valueNo1 = _values[recordNo];
-            if ((s_defaultValue == valueNo1) && !HasValue(recordNo))
+            if ((DefaultValue == valueNo1) && !HasValue(recordNo))
             {
                 return -1;
             }
@@ -217,7 +217,7 @@ namespace System.Data.Common
             System.Diagnostics.Debug.Assert(null != value, "null value");
             if (_nullValue == value)
             {
-                _values[record] = s_defaultValue;
+                _values[record] = DefaultValue;
                 SetNullBit(record, true);
             }
             else

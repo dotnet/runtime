@@ -158,3 +158,6 @@ indent_size = 2
 end_of_line = lf
 [*.{cmd, bat}]
 end_of_line = crlf
+
+# Analyzers
+dotnet_code_quality.ca1802.api_surface = private, internal

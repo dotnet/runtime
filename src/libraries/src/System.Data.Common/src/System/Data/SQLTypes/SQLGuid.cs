@@ -18,7 +18,7 @@ namespace System.Data.SqlTypes
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct SqlGuid : INullable, IComparable, IXmlSerializable
     {
-        private static readonly int s_sizeOfGuid = 16;
+        private const int SizeOfGuid = 16;
 
         // Comparison orders.
         private static readonly int[] s_rgiGuidOrder = new int[16]
@@ -36,16 +36,16 @@ namespace System.Data.SqlTypes
 
         public SqlGuid(byte[] value)
         {
-            if (value == null || value.Length != s_sizeOfGuid)
+            if (value == null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
-            m_value = new byte[s_sizeOfGuid];
+            m_value = new byte[SizeOfGuid];
             value.CopyTo(m_value, 0);
         }
 
         internal SqlGuid(byte[] value, bool ignored)
         {
-            if (value == null || value.Length != s_sizeOfGuid)
+            if (value == null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
             m_value = value;
@@ -99,7 +99,7 @@ namespace System.Data.SqlTypes
 
         public byte[] ToByteArray()
         {
-            byte[] ret = new byte[s_sizeOfGuid];
+            byte[] ret = new byte[SizeOfGuid];
             m_value.CopyTo(ret, 0);
             return ret;
         }
@@ -126,7 +126,7 @@ namespace System.Data.SqlTypes
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
             //Swap to the correct order to be compared
-            for (int i = 0; i < s_sizeOfGuid; i++)
+            for (int i = 0; i < SizeOfGuid; i++)
             {
                 byte b1, b2;
 

@@ -9,12 +9,12 @@ namespace System.Data.Common
 {
     internal sealed class UInt64Storage : DataStorage
     {
-        private static readonly ulong s_defaultValue = ulong.MinValue;
+        private const ulong DefaultValue = ulong.MinValue;
 
         private ulong[] _values;
 
         public UInt64Storage(DataColumn column)
-        : base(column, typeof(ulong), s_defaultValue, StorageType.UInt64)
+        : base(column, typeof(ulong), DefaultValue, StorageType.UInt64)
         {
         }
 
@@ -26,7 +26,7 @@ namespace System.Data.Common
                 switch (kind)
                 {
                     case AggregateType.Sum:
-                        ulong sum = s_defaultValue;
+                        ulong sum = DefaultValue;
                         foreach (int record in records)
                         {
                             if (HasValue(record))
@@ -42,7 +42,7 @@ namespace System.Data.Common
                         return _nullValue;
 
                     case AggregateType.Mean:
-                        decimal meanSum = s_defaultValue;
+                        decimal meanSum = DefaultValue;
                         int meanCount = 0;
                         foreach (int record in records)
                         {
@@ -158,7 +158,7 @@ namespace System.Data.Common
             ulong valueNo1 = _values[recordNo1];
             ulong valueNo2 = _values[recordNo2];
 
-            if (valueNo1.Equals(s_defaultValue) || valueNo2.Equals(s_defaultValue))
+            if (valueNo1.Equals(DefaultValue) || valueNo2.Equals(DefaultValue))
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
                 if (0 != bitCheck)
@@ -179,7 +179,7 @@ namespace System.Data.Common
             }
 
             ulong valueNo1 = _values[recordNo];
-            if ((s_defaultValue == valueNo1) && !HasValue(recordNo))
+            if ((DefaultValue == valueNo1) && !HasValue(recordNo))
             {
                 return -1;
             }
@@ -212,7 +212,7 @@ namespace System.Data.Common
         public override object Get(int record)
         {
             ulong value = _values[record];
-            if (!value.Equals(s_defaultValue))
+            if (!value.Equals(DefaultValue))
             {
                 return value;
             }
@@ -224,7 +224,7 @@ namespace System.Data.Common
             System.Diagnostics.Debug.Assert(null != value, "null value");
             if (_nullValue == value)
             {
-                _values[record] = s_defaultValue;
+                _values[record] = DefaultValue;
                 SetNullBit(record, true);
             }
             else

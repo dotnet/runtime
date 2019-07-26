@@ -30,26 +30,26 @@ namespace System.Data.SqlTypes
         // Constants
 
         // Number of (100ns) ticks per time unit
-        private static readonly double s_SQLTicksPerMillisecond = 0.3;
+        private const double s_SQLTicksPerMillisecond = 0.3;
         public static readonly int SQLTicksPerSecond = 300;
         public static readonly int SQLTicksPerMinute = SQLTicksPerSecond * 60;
         public static readonly int SQLTicksPerHour = SQLTicksPerMinute * 60;
         private static readonly int s_SQLTicksPerDay = SQLTicksPerHour * 24;
 
-        private static readonly long s_ticksPerSecond = TimeSpan.TicksPerMillisecond * 1000;
+        private const long s_ticksPerSecond = TimeSpan.TicksPerMillisecond * 1000;
 
         private static readonly DateTime s_SQLBaseDate = new DateTime(1900, 1, 1);
         private static readonly long s_SQLBaseDateTicks = s_SQLBaseDate.Ticks;
 
-        private static readonly int s_minYear = 1753;                 // Jan 1 1753
-        private static readonly int s_maxYear = 9999;                 // Dec 31 9999
+        private const int s_minYear = 1753;                 // Jan 1 1753
+        private const int s_maxYear = 9999;                 // Dec 31 9999
 
-        private static readonly int s_minDay = -53690;               // Jan 1 1753
-        private static readonly int s_maxDay = 2958463;              // Dec 31 9999 is this many days from Jan 1 1900
-        private static readonly int s_minTime = 0;                    // 00:00:0:000PM
+        private const int s_minDay = -53690;               // Jan 1 1753
+        private const int s_maxDay = 2958463;              // Dec 31 9999 is this many days from Jan 1 1900
+        private const int s_minTime = 0;                    // 00:00:0:000PM
         private static readonly int s_maxTime = s_SQLTicksPerDay - 1;   // = 25919999,  11:59:59:997PM
 
-        private static readonly int s_dayBase = 693595;               // Jan 1 1900 is this many days from Jan 1 0001
+        private const int s_dayBase = 693595;               // Jan 1 1900 is this many days from Jan 1 0001
 
 
         private static readonly int[] s_daysToMonth365 = new int[] {
@@ -61,7 +61,7 @@ namespace System.Data.SqlTypes
         private static readonly DateTime s_maxDateTime = DateTime.MaxValue;
         private static readonly TimeSpan s_minTimeSpan = s_minDateTime.Subtract(s_SQLBaseDate);
         private static readonly TimeSpan s_maxTimeSpan = s_maxDateTime.Subtract(s_SQLBaseDate);
-        private static readonly string s_ISO8601_DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
+        private const string s_ISO8601_DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
 
         // These formats are valid styles in SQL Server (style 9, 12, 13, 14)
         // but couldn't be recognized by the default parse. Needs to call

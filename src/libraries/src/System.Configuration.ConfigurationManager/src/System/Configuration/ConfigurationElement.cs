@@ -1163,7 +1163,7 @@ namespace System.Configuration
 
                     ConfigurationElement elem = (ConfigurationElement)value;
 
-                    if (prop.Name != ConfigurationProperty.s_defaultCollectionPropertyName)
+                    if (prop.Name != ConfigurationProperty.DefaultCollectionPropertyName)
                     {
                         dataToWrite |= elem.SerializeToXmlElement(writer, prop.Name);
                     }

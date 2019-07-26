@@ -28,12 +28,12 @@ namespace System.Data.SqlTypes
         private long _value;
 
         // SQL Server stores money8 as ticks of 1/10000.
-        internal static readonly int s_iMoneyScale = 4;
-        private static readonly long s_lTickBase = 10000;
-        private static readonly double s_dTickBase = s_lTickBase;
+        internal const int s_iMoneyScale = 4;
+        private const long s_lTickBase = 10000;
+        private const double s_dTickBase = s_lTickBase;
 
-        private static readonly long s_minLong = unchecked((long)0x8000000000000000L) / s_lTickBase;
-        private static readonly long s_maxLong = 0x7FFFFFFFFFFFFFFFL / s_lTickBase;
+        private const long s_minLong = unchecked((long)0x8000000000000000L) / s_lTickBase;
+        private const long s_maxLong = 0x7FFFFFFFFFFFFFFFL / s_lTickBase;
 
         // constructor
         // construct a Null

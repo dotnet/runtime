@@ -259,13 +259,13 @@ namespace System.Security.Principal
         // Identifier authority must be at most six bytes long
         //
 
-        internal static readonly long MaxIdentifierAuthority = 0xFFFFFFFFFFFF;
+        internal const long MaxIdentifierAuthority = 0xFFFFFFFFFFFF;
 
         //
         // Maximum number of subauthorities in a SID
         //
 
-        internal static readonly byte MaxSubAuthorities = 15;
+        internal const byte MaxSubAuthorities = 15;
 
         //
         // Minimum length of a binary representation of a SID

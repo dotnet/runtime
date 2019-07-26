@@ -12,11 +12,11 @@ namespace System.Xml
     /// </summary>
     internal static class Bits
     {
-        private static readonly uint s_MASK_0101010101010101 = 0x55555555;
-        private static readonly uint s_MASK_0011001100110011 = 0x33333333;
-        private static readonly uint s_MASK_0000111100001111 = 0x0f0f0f0f;
-        private static readonly uint s_MASK_0000000011111111 = 0x00ff00ff;
-        private static readonly uint s_MASK_1111111111111111 = 0x0000ffff;
+        private const uint MASK_0101010101010101 = 0x55555555;
+        private const uint MASK_0011001100110011 = 0x33333333;
+        private const uint MASK_0000111100001111 = 0x0f0f0f0f;
+        private const uint MASK_0000000011111111 = 0x00ff00ff;
+        private const uint MASK_1111111111111111 = 0x0000ffff;
 
         /// <summary>
         /// Returns the number of 1 bits in an unsigned integer.  Counts bits by divide-and-conquer method,
@@ -25,11 +25,11 @@ namespace System.Xml
         /// </summary>
         public static int Count(uint num)
         {
-            num = (num & s_MASK_0101010101010101) + ((num >> 1) & s_MASK_0101010101010101);
-            num = (num & s_MASK_0011001100110011) + ((num >> 2) & s_MASK_0011001100110011);
-            num = (num & s_MASK_0000111100001111) + ((num >> 4) & s_MASK_0000111100001111);
-            num = (num & s_MASK_0000000011111111) + ((num >> 8) & s_MASK_0000000011111111);
-            num = (num & s_MASK_1111111111111111) + (num >> 16);
+            num = (num & MASK_0101010101010101) + ((num >> 1) & MASK_0101010101010101);
+            num = (num & MASK_0011001100110011) + ((num >> 2) & MASK_0011001100110011);
+            num = (num & MASK_0000111100001111) + ((num >> 4) & MASK_0000111100001111);
+            num = (num & MASK_0000000011111111) + ((num >> 8) & MASK_0000000011111111);
+            num = (num & MASK_1111111111111111) + (num >> 16);
 
             return (int)num;
         }
