@@ -52,8 +52,7 @@ public class Program
             return;
         }
 
-        await
-        Run(
+        await Run(
             runMode                 : cmdline.ValueForOption<RunMode>("-runMode"),
             serverUri               : cmdline.ValueForOption<Uri>("-serverUri"),
             httpSys                 : cmdline.ValueForOption<bool>("-httpSys"),
