@@ -186,7 +186,7 @@ namespace System.Text.RegularExpressions
                             vsb.Append(input.AsSpan(prevat, match.Index - prevat));
 
                         prevat = match.Index + match.Length;
-                        vsb.Append(evaluator(match));
+                        vsb.Append(evaluator(match) ?? "");
 
                         if (--count == 0)
                             break;
