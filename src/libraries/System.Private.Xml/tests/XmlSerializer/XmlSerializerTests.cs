@@ -712,7 +712,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         using (StringReader reader = new StringReader(xml))
         {
             TimeSpan deserializedObj = (TimeSpan)serializer.Deserialize(reader);
-            Assert.NotNull(deserializedObj);
             Assert.Equal(default(TimeSpan), deserializedObj);
         }
     }

@@ -292,7 +292,7 @@ namespace System.Reflection.Tests
         public void Flags_CurrentlyExecutingAssembly()
         {
             AssemblyName assemblyName = Helpers.ExecutingAssembly.GetName();
-            Assert.NotNull(assemblyName.Flags);
+            Assert.NotEqual(AssemblyNameFlags.None, assemblyName.Flags);
         }
 
         [Theory]

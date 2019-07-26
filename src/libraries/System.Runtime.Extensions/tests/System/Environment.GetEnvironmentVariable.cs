@@ -237,7 +237,7 @@ namespace System.Tests
                 IDictionaryEnumerator enumerator = results.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    Assert.NotNull(enumerator.Entry);
+                    Assert.NotNull(enumerator.Entry.Key);
                 }
 
                 if (lookForSetValue)

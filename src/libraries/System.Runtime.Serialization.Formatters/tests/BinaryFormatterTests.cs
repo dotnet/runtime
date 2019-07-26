@@ -339,7 +339,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             f.Binder = binder;
             Assert.Same(binder, f.Binder);
 
-            Assert.NotNull(f.Context);
             Assert.Null(f.Context.Context);
             Assert.Equal(StreamingContextStates.All, f.Context.State);
             var context = new StreamingContext(StreamingContextStates.Clone);
