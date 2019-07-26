@@ -2518,7 +2518,7 @@ namespace System.Diagnostics.Tracing
             return eventData.Parameters[parameterId].ParameterType;
         }
 
-        private static readonly bool m_EventSourcePreventRecursion = false;
+        private const bool m_EventSourcePreventRecursion = false;
 #else
         private int GetParameterCount(EventMetadata eventData)
         {
