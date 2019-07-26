@@ -18,6 +18,14 @@ namespace System.Net
 
         public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
         {
+            if ((int)(family) > (int)AddressFamily.Max)
+            {
+                // For legacy values up to AddressFamily.Max, family maps directly to Winsock value.
+                // Other values will need mapping if/when supported.
+                // Currently, that is Netlink, Packet and ControllerAreaNetwork, neither of them supported on Windows.
+                throw new PlatformNotSupportedException();
+            }
+
 #if BIGENDIAN
             buffer[0] = unchecked((byte)((int)family >> 8));
             buffer[1] = unchecked((byte)((int)family));
