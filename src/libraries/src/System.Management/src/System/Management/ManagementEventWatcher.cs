@@ -9,12 +9,12 @@ using System.Threading;
 namespace System.Management
 {
     /// <summary>
-    /// <para>Represents the method that will handle the <see cref='E:System.Management.ManagementEventWatcher.EventArrived'/> event.</para>
+    /// <para>Represents the method that will handle the <see cref='System.Management.ManagementEventWatcher.EventArrived'/> event.</para>
     /// </summary>
     public delegate void EventArrivedEventHandler(object sender, EventArrivedEventArgs e);
 
     /// <summary>
-    /// <para>Represents the method that will handle the <see cref='E:System.Management.ManagementEventWatcher.Stopped'/> event.</para>
+    /// <para>Represents the method that will handle the <see cref='System.Management.ManagementEventWatcher.Stopped'/> event.</para>
     /// </summary>
     public delegate void StoppedEventHandler (object sender, StoppedEventArgs e);
 

@@ -1359,7 +1359,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Raises the <see cref='E:System.Data.DataView.ListChanged'/> event.
+        /// Raises the <see cref="System.Data.DataView.ListChanged" /> event.
         /// </summary>
         protected virtual void OnListChanged(ListChangedEventArgs e)
         {

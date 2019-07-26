@@ -24,7 +24,7 @@ namespace System.Reflection.Internal
     /// This implementation is scoped to byte arrays as that is all that the metadata reader needs.
     /// 
     /// Also, since we don't have access to immutable collection internals, we use a trick involving
-    /// overlapping a <see cref="ImmutableArray{Byte}"/> with a <see cref="T:Byte[]"/> refer. While
+    /// overlapping a <see cref="ImmutableArray{Byte}"/> with an array reference. While
     /// unverifiable, it is valid. See ECMA-335, section II.10.7 Controlling instance layout:
     /// 
     /// "It is possible to overlap fields in this way, though offsets occupied by an object reference 
@@ -32,7 +32,7 @@ namespace System.Reflection.Internal
     /// another object reference. While one object reference can completely overlap another, this is
     /// unverifiable."
     /// 
-    /// Furthermore, the fact that <see cref="ImmutableArray{Byte}"/> backed by a single <see cref="T:Byte[]"/> 
+    /// Furthermore, the fact that <see cref="ImmutableArray{Byte}"/> backed by a single byte array
     /// field is something inherent to the design of ImmutableArray in order to get its performance
     /// characteristics and therefore something we (Microsoft) are comfortable defining as a contract that 
     /// can be depended upon as below.

@@ -30,9 +30,9 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// <summary>
         /// Copies the elements of the <see cref="IProducerConsumerCollection{T}"/> to
         /// an
-        /// <see cref="T:System.Array"/>, starting at a specified index.
+        /// <see cref="System.Array"/>, starting at a specified index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of
+        /// <param name="array">The one-dimensional <see cref="System.Array"/> that is the destination of
         /// the elements copied from the <see cref="IProducerConsumerCollection{T}"/>.
         /// The array must have zero-based indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying
@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// <param name="item">The object to add to the <see
         /// cref="IProducerConsumerCollection{T}"/>.</param>
         /// <returns>true if the object was added successfully; otherwise, false.</returns>
-        /// <exception cref="T:System.ArgumentException">The <paramref name="item"/> was invalid for this collection.</exception>
+        /// <exception cref="System.ArgumentException">The <paramref name="item"/> was invalid for this collection.</exception>
         bool TryAdd(T item);
 
         /// <summary>

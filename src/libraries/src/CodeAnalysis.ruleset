@@ -26,7 +26,6 @@
     <Rule Id="CA1066" Action="None" /> <!-- Type should implement IEquatable -->
     <Rule Id="CA1067" Action="None" /> <!-- Override Object.Equals(object) when implementing IEquatable -->
     <Rule Id="CA1068" Action="None" /> <!-- CancellationToken parameters must come last -->
-    <Rule Id="CA1200" Action="None" /> <!-- Avoid using cref tags with a prefix -->
     <Rule Id="CA1303" Action="None" /> <!-- Do not pass literals as localized parameters -->
     <Rule Id="CA1304" Action="None" /> <!-- Specify CultureInfo -->
     <Rule Id="CA1305" Action="None" /> <!-- Specify IFormatProvider -->

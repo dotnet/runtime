@@ -221,7 +221,7 @@ namespace System.ComponentModel.Composition.Hosting
         public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
 
         /// <summary>
-        /// Raises the <see cref="E:Changed"/> event.
+        /// Raises the <see cref="Changed"/> event.
         /// </summary>
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
@@ -234,7 +234,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        /// Raises the <see cref="E:Changing"/> event.
+        /// Raises the <see cref="Changing"/> event.
         /// </summary>
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)

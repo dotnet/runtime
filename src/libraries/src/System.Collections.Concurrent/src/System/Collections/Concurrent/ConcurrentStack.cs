@@ -75,7 +75,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="collection">The collection whose elements are copied to the new <see
         /// cref="ConcurrentStack{T}"/>.</param>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="collection"/> argument is
+        /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is
         /// null.</exception>
         public ConcurrentStack(IEnumerable<T> collection)
         {
@@ -160,10 +160,10 @@ namespace System.Collections.Concurrent
 
 
         /// <summary>
-        /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection"/> is
+        /// Gets a value indicating whether access to the <see cref="System.Collections.ICollection"/> is
         /// synchronized with the SyncRoot.
         /// </summary>
-        /// <value>true if access to the <see cref="T:System.Collections.ICollection"/> is synchronized
+        /// <value>true if access to the <see cref="System.Collections.ICollection"/> is synchronized
         /// with the SyncRoot; otherwise, false. For <see cref="ConcurrentStack{T}"/>, this property always
         /// returns false.</value>
         bool ICollection.IsSynchronized
@@ -177,9 +177,9 @@ namespace System.Collections.Concurrent
 
         /// <summary>
         /// Gets an object that can be used to synchronize access to the <see
-        /// cref="T:System.Collections.ICollection"/>. This property is not supported.
+        /// cref="System.Collections.ICollection"/>. This property is not supported.
         /// </summary>
-        /// <exception cref="T:System.NotSupportedException">The SyncRoot property is not supported</exception>
+        /// <exception cref="System.NotSupportedException">The SyncRoot property is not supported</exception>
         object ICollection.SyncRoot
         {
             get
@@ -201,13 +201,13 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection"/> to an <see
-        /// cref="T:System.Array"/>, starting at a particular
-        /// <see cref="T:System.Array"/> index.
+        /// Copies the elements of the <see cref="System.Collections.ICollection"/> to an <see
+        /// cref="System.Array"/>, starting at a particular
+        /// <see cref="System.Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of
+        /// <param name="array">The one-dimensional <see cref="System.Array"/> that is the destination of
         /// the elements copied from the
-        /// <see cref="ConcurrentStack{T}"/>. The <see cref="T:System.Array"/> must
+        /// <see cref="ConcurrentStack{T}"/>. The <see cref="System.Array"/> must
         /// have zero-based indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying
         /// begins.</param>
@@ -219,10 +219,10 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/> is multidimensional. -or-
         /// <paramref name="array"/> does not have zero-based indexing. -or-
         /// <paramref name="index"/> is equal to or greater than the length of the <paramref name="array"/>
-        /// -or- The number of elements in the source <see cref="T:System.Collections.ICollection"/> is
+        /// -or- The number of elements in the source <see cref="System.Collections.ICollection"/> is
         /// greater than the available space from <paramref name="index"/> to the end of the destination
         /// <paramref name="array"/>. -or- The type of the source <see
-        /// cref="T:System.Collections.ICollection"/> cannot be cast automatically to the type of the
+        /// cref="System.Collections.ICollection"/> cannot be cast automatically to the type of the
         /// destination <paramref name="array"/>.
         /// </exception>
         void ICollection.CopyTo(Array array, int index)
@@ -242,11 +242,11 @@ namespace System.Collections.Concurrent
 
         /// <summary>
         /// Copies the <see cref="ConcurrentStack{T}"/> elements to an existing one-dimensional <see
-        /// cref="T:System.Array"/>, starting at the specified array index.
+        /// cref="System.Array"/>, starting at the specified array index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of
+        /// <param name="array">The one-dimensional <see cref="System.Array"/> that is the destination of
         /// the elements copied from the
-        /// <see cref="ConcurrentStack{T}"/>. The <see cref="T:System.Array"/> must have zero-based
+        /// <see cref="ConcurrentStack{T}"/>. The <see cref="System.Array"/> must have zero-based
         /// indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying
         /// begins.</param>
@@ -423,10 +423,10 @@ namespace System.Collections.Concurrent
 
         /// <summary>
         /// Attempts to add an object to the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// cref="System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">The object to add to the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>. The value can be a null
+        /// cref="System.Collections.Concurrent.IProducerConsumerCollection{T}"/>. The value can be a null
         /// reference (Nothing in Visual Basic) for reference types.
         /// </param>
         /// <returns>true if the object was added successfully; otherwise, false.</returns>
@@ -444,7 +444,7 @@ namespace System.Collections.Concurrent
         /// without removing it.
         /// </summary>
         /// <param name="result">When this method returns, <paramref name="result"/> contains an object from
-        /// the top of the <see cref="T:System.Collections.Concurrent.ConcurrentStack{T}"/> or an
+        /// the top of the <see cref="System.Collections.Concurrent.ConcurrentStack{T}"/> or an
         /// unspecified value if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
         public bool TryPeek([MaybeNullWhen(false)] out T result)
@@ -498,7 +498,7 @@ namespace System.Collections.Concurrent
         /// atomically.
         /// </summary>
         /// <param name="items">
-        /// The <see cref="T:System.Array"/> to which objects popped from the top of the <see
+        /// The <see cref="System.Array"/> to which objects popped from the top of the <see
         /// cref="ConcurrentStack{T}"/> will be added.
         /// </param>
         /// <returns>The number of objects successfully popped from the top of the <see
@@ -528,7 +528,7 @@ namespace System.Collections.Concurrent
         /// atomically.
         /// </summary>
         /// <param name="items">
-        /// The <see cref="T:System.Array"/> to which objects popped from the top of the <see
+        /// The <see cref="System.Array"/> to which objects popped from the top of the <see
         /// cref="ConcurrentStack{T}"/> will be added.
         /// </param>
         /// <param name="startIndex">The zero-based offset in <paramref name="items"/> at which to begin
@@ -682,7 +682,7 @@ namespace System.Collections.Concurrent
 
         /// <summary>
         /// Attempts to remove and return an object from the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// cref="System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">
         /// When this method returns, if the operation was successful, <paramref name="item"/> contains the
@@ -773,7 +773,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
-        /// <returns>An <see cref="T:System.Collections.IEnumerator"/> that can be used to iterate through
+        /// <returns>An <see cref="System.Collections.IEnumerator"/> that can be used to iterate through
         /// the collection.</returns>
         /// <remarks>
         /// The enumeration represents a moment-in-time snapshot of the contents of the stack. It does not

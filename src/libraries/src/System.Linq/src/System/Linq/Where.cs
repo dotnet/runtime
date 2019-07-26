@@ -139,7 +139,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that filters each item of a <see cref="T:TSource[]"/>.
+        /// An iterator that filters each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         internal sealed partial class WhereArrayIterator<TSource> : Iterator<TSource>
@@ -240,7 +240,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that filters, then maps, each item of a <see cref="T:TSource[]"/>.
+        /// An iterator that filters, then maps, each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
