@@ -89,4 +89,3 @@ jobs:
     jobTemplate: format-job.yml
     platforms:
     - Linux_x64
-    - Windows_NT_x64
