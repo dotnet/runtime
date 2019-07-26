@@ -165,5 +165,25 @@ namespace System.Text.Json.Serialization.Tests
             public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
                 => s_stringEnumConverter.CreateConverter(typeToConvert, options);
         }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        private enum MyCustomEnum
+        {
+            First = 1,
+            Second =2
+        }
+
+        [Fact]
+        public void EnumWithConverterAttribute()
+        {
+            string json = JsonSerializer.Serialize(MyCustomEnum.Second);
+            Assert.Equal(@"""Second""", json);
+
+            MyCustomEnum obj = JsonSerializer.Deserialize<MyCustomEnum>("\"Second\"");
+            Assert.Equal(MyCustomEnum.Second, obj);
+
+            obj = JsonSerializer.Deserialize<MyCustomEnum>("2");
+            Assert.Equal(MyCustomEnum.Second, obj);
+        }
     }
 }
