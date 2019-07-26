@@ -1004,6 +1004,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // _TARGET_XXX_
 
 #if FEATURE_FASTTAILCALL
+            if (cSlots > 1)
+            {
+                varDscInfo->hasMultiSlotStruct = true;
+            }
+
             varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
 #endif // FEATURE_FASTTAILCALL
         }
