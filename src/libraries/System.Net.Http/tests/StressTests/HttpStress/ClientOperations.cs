@@ -176,21 +176,8 @@ namespace HttpStress
                 async ctx =>
                 {
                     Version httpVersion = ctx.GetRandomHttpVersion();
+
                     using (var req = new HttpRequestMessage(HttpMethod.Get, "/headers") { Version = httpVersion })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, httpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent(ctx.ContentSource, await m.Content.ReadAsStringAsync());
-                    }
-                }),
-
-                ("GET Echo Headers",
-                async ctx =>
-                {
-                    Version httpVersion = ctx.GetRandomHttpVersion();
-
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, "/echoHeaders") { Version = httpVersion })
                     {
                         ctx.PopulateWithRandomHeaders(req.Headers);
 
@@ -208,7 +195,7 @@ namespace HttpStress
                                 }
                                 else if (!reqHeader.Value.SequenceEqual(values))
                                 {
-                                    string FmtValues(IEnumerable<string> values) => $"{string.Join(", ", values.Select(x => $"\"{x}\""))}";
+                                    string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
                                     throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}");
                                 }
                             }
