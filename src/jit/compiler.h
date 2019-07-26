@@ -9455,10 +9455,6 @@ public:
     // test data, associate that data with "to".
     void TransferTestDataToNode(GenTree* from, GenTree* to);
 
-    // Requires that "to" is a clone of "from".  If any nodes in the "from" tree
-    // have annotations, attach similar annotations to the corresponding nodes in "to".
-    void CopyTestDataToCloneTree(GenTree* from, GenTree* to);
-
     // These are the methods that test that the various conditions implied by the
     // test attributes are satisfied.
     void JitTestCheckSSA(); // SSA builder tests.
