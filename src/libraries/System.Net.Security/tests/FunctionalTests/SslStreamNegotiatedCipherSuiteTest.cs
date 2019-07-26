@@ -21,12 +21,12 @@ namespace System.Net.Security.Tests
     public class NegotiatedCipherSuiteTest
     {
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
-        private const SslProtocols AllProtocols =
+        public const SslProtocols AllProtocols =
             SslProtocols.Ssl2 | SslProtocols.Ssl3 |
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #pragma warning restore CS0618
 
-        private const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
+        public const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
 
         private static bool IsKnownPlatformSupportingTls13 => PlatformDetection.SupportsTls13;
         private static bool CipherSuitesPolicySupported => s_cipherSuitePolicySupported.Value;
@@ -93,11 +93,17 @@ namespace System.Net.Security.Tests
             };
 
             NegotiatedParams ret = ConnectAndGetNegotiatedParams(p, p);
-            ret.Succeeded();
-
-            Assert.True(
-                s_protocolCipherSuiteLookup[protocol].Contains(ret.CipherSuite),
-                $"`{ret.CipherSuite}` is not recognized as {protocol} cipher suite");
+            if (ret.HasSucceeded)
+            {
+                Assert.True(
+                    s_protocolCipherSuiteLookup[protocol].Contains(ret.CipherSuite),
+                    $"`{ret.CipherSuite}` is not recognized as {protocol} cipher suite");
+            }
+            else
+            {
+                // currently TLS 1.2 should be enabled by all known implementations
+                Assert.NotEqual(SslProtocols.Tls12, protocol);
+            }
         }
 
         [Fact]

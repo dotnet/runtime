@@ -17,7 +17,7 @@ namespace System.Net.Security
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CertValidationDelegate = remoteCallback;
             CheckCertName = true;
-            EnabledSslProtocols = sslClientAuthenticationOptions.EnabledSslProtocols;
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
@@ -36,7 +36,7 @@ namespace System.Net.Security
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             CheckCertName = false;
-            EnabledSslProtocols = sslServerAuthenticationOptions.EnabledSslProtocols;
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             IsServer = true;
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
@@ -50,6 +50,21 @@ namespace System.Net.Security
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
             ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
+        }
+
+        private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
+        {
+            if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
+            {
+#pragma warning disable 0618
+                // SSL2 is mutually exclusive with >= TLS1.2
+                // On Windows10 SSL2 flag has no effect but on earlier versions of the OS
+                // opting into both SSL2 and >= TLS1.2 causes negotiation to always fail.
+                protocols &= ~SslProtocols.Ssl2;
+#pragma warning restore 0618
+            }
+
+            return protocols;
         }
 
         internal bool AllowRenegotiation { get; set; }

@@ -67,7 +67,7 @@ namespace System.Net.Security.Tests
             var validationCallback = new RemoteCertificateValidationCallback((object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
             {
                 Assert.Equal(serverCert, certificate);
-                return true; 
+                return true;
             });
 
             VirtualNetwork vn = new VirtualNetwork();
@@ -192,7 +192,7 @@ namespace System.Net.Security.Tests
             return new SslServerAuthenticationOptions()
             {
                 ClientCertificateRequired = false,
-                EnabledSslProtocols = SslProtocols.Tls,
+                EnabledSslProtocols = SslProtocols.None,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
             };
         }
