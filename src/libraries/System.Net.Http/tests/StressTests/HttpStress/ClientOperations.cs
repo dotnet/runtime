@@ -199,8 +199,8 @@ namespace HttpStress
                             ValidateHttpVersion(res, httpVersion);
                             ValidateStatusCode(res);
 
-                            // Validate that response headers are being echoed
-                            foreach (var reqHeader in req.Headers)
+                            // Validate that request headers are being echoed
+                            foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                             {
                                 if (!res.Headers.TryGetValues(reqHeader.Key, out var values))
                                 {
@@ -458,7 +458,7 @@ namespace HttpStress
 
         private static (string, MultipartContent) GetMultipartContent(RequestContext clientContext, int numFormFields)
         {
-            var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomString(0, clientContext.MaxContentLength, alphaNumericOnly: true), "test_boundary");
+            var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomString(0, clientContext.MaxContentLength), "test_boundary");
             StringBuilder sb = new StringBuilder();
 
             int num = clientContext.GetRandomInt32(1, numFormFields + 1);
