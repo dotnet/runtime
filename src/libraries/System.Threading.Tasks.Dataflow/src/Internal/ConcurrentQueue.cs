@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// </summary>
         /// <param name="collection">The collection whose elements are copied to the new <see
         /// cref="ConcurrentQueue{T}"/>.</param>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="collection"/> argument is
+        /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is
         /// null.</exception>
         public ConcurrentQueue(IEnumerable<T> collection)
         {
@@ -92,14 +92,14 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         }
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection"/> to an <see
-        /// cref="T:System.Array"/>, starting at a particular
-        /// <see cref="T:System.Array"/> index.
+        /// Copies the elements of the <see cref="System.Collections.ICollection"/> to an <see
+        /// cref="System.Array"/>, starting at a particular
+        /// <see cref="System.Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array">Array</see> that is the
+        /// <param name="array">The one-dimensional <see cref="System.Array">Array</see> that is the
         /// destination of the elements copied from the
-        /// <see cref="T:System.Collections.Concurrent.ConcurrentBag"/>. The <see
-        /// cref="T:System.Array">Array</see> must have zero-based indexing.</param>
+        /// <see cref="ConcurrentQueue{T}"/>. The <see
+        /// cref="System.Array">Array</see> must have zero-based indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying
         /// begins.</param>
         /// <exception cref="ArgumentNullException"><paramref name="array"/> is a null reference (Nothing in
@@ -110,10 +110,10 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// <paramref name="array"/> is multidimensional. -or-
         /// <paramref name="array"/> does not have zero-based indexing. -or-
         /// <paramref name="index"/> is equal to or greater than the length of the <paramref name="array"/>
-        /// -or- The number of elements in the source <see cref="T:System.Collections.ICollection"/> is
+        /// -or- The number of elements in the source <see cref="System.Collections.ICollection"/> is
         /// greater than the available space from <paramref name="index"/> to the end of the destination
         /// <paramref name="array"/>. -or- The type of the source <see
-        /// cref="T:System.Collections.ICollection"/> cannot be cast automatically to the type of the
+        /// cref="System.Collections.ICollection"/> cannot be cast automatically to the type of the
         /// destination <paramref name="array"/>.
         /// </exception>
         void ICollection.CopyTo(Array array, int index)
@@ -132,10 +132,10 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         }
 
         /// <summary>
-        /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection"/> is
+        /// Gets a value indicating whether access to the <see cref="System.Collections.ICollection"/> is
         /// synchronized with the SyncRoot.
         /// </summary>
-        /// <value>true if access to the <see cref="T:System.Collections.ICollection"/> is synchronized
+        /// <value>true if access to the <see cref="System.Collections.ICollection"/> is synchronized
         /// with the SyncRoot; otherwise, false. For <see cref="ConcurrentQueue{T}"/>, this property always
         /// returns false.</value>
         bool ICollection.IsSynchronized
@@ -150,9 +150,9 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
         /// <summary>
         /// Gets an object that can be used to synchronize access to the <see
-        /// cref="T:System.Collections.ICollection"/>. This property is not supported.
+        /// cref="System.Collections.ICollection"/>. This property is not supported.
         /// </summary>
-        /// <exception cref="T:System.NotSupportedException">The SyncRoot property is not supported.</exception>
+        /// <exception cref="System.NotSupportedException">The SyncRoot property is not supported.</exception>
         object ICollection.SyncRoot
         {
             get
@@ -164,7 +164,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
-        /// <returns>An <see cref="T:System.Collections.IEnumerator"/> that can be used to iterate through the collection.</returns>
+        /// <returns>An <see cref="System.Collections.IEnumerator"/> that can be used to iterate through the collection.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((IEnumerable<T>)this).GetEnumerator();
@@ -172,10 +172,10 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
         /// <summary>
         /// Attempts to add an object to the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// cref="IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">The object to add to the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>. The value can be a null
+        /// cref="IProducerConsumerCollection{T}"/>. The value can be a null
         /// reference (Nothing in Visual Basic) for reference types.
         /// </param>
         /// <returns>true if the object was added successfully; otherwise, false.</returns>
@@ -190,7 +190,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
         /// <summary>
         /// Attempts to remove and return an object from the <see
-        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// cref="IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">
         /// When this method returns, if the operation was successful, <paramref name="item"/> contains the
@@ -261,9 +261,9 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
         /// <summary>
         /// Copies the <see cref="ConcurrentQueue{T}"/> elements to a new <see
-        /// cref="T:System.Collections.Generic.List{T}"/>.
+        /// cref="System.Collections.Generic.List{T}"/>.
         /// </summary>
-        /// <returns>A new <see cref="T:System.Collections.Generic.List{T}"/> containing a snapshot of
+        /// <returns>A new <see cref="System.Collections.Generic.List{T}"/> containing a snapshot of
         /// elements copied from the <see cref="ConcurrentQueue{T}"/>.</returns>
         private List<T> ToList()
         {
@@ -380,11 +380,11 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
         /// <summary>
         /// Copies the <see cref="ConcurrentQueue{T}"/> elements to an existing one-dimensional <see
-        /// cref="T:System.Array">Array</see>, starting at the specified array index.
+        /// cref="System.Array">Array</see>, starting at the specified array index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array">Array</see> that is the
+        /// <param name="array">The one-dimensional <see cref="System.Array">Array</see> that is the
         /// destination of the elements copied from the
-        /// <see cref="ConcurrentQueue{T}"/>. The <see cref="T:System.Array">Array</see> must have zero-based
+        /// <see cref="ConcurrentQueue{T}"/>. The <see cref="System.Array">Array</see> must have zero-based
         /// indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying
         /// begins.</param>
@@ -574,7 +574,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// without removing it.
         /// </summary>
         /// <param name="result">When this method returns, <paramref name="result"/> contains an object from
-        /// the beginning of the <see cref="T:System.Collections.Concurrent.ConcurrentQueue{T}"/> or an
+        /// the beginning of the <see cref="ConcurrentQueue{T}"/> or an
         /// unspecified value if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
         public bool TryPeek(out T result)

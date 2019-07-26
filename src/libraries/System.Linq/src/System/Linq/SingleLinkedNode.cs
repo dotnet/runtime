@@ -86,7 +86,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="T:TSource[]"/> that contains the items of this node's singly-linked list in reverse.
+        /// Returns an array that contains the items of this node's singly-linked list in reverse.
         /// </summary>
         /// <param name="count">The number of items in this node.</param>
         public TSource[] ToArray(int count)

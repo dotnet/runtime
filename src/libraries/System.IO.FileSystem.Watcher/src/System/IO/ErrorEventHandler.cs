@@ -6,8 +6,8 @@ namespace System.IO
 {
     /// <devdoc>
     ///    Represents the method that will
-    ///    handle the <see cref='E:System.IO.FileSystemWatcher.Error'/>
-    ///    event of a <see cref='T:System.IO.FileSystemWatcher'/>.
+    ///    handle the <see cref='System.IO.FileSystemWatcher.Error'/>
+    ///    event of a <see cref='System.IO.FileSystemWatcher'/>.
     /// </devdoc>
     public delegate void ErrorEventHandler(object sender, ErrorEventArgs e);
 }

@@ -1592,7 +1592,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Reads the XML schema from the specified <see cref='T:System.Xml.XMLReader'/> into the <see cref='System.Data.DataSet'/>
+        /// Reads the XML schema from the specified <see cref="System.Xml.XmlReader" /> into the <see cref="System.Data.DataSet" />
         /// </summary>
         public void ReadXmlSchema(XmlReader reader) => ReadXmlSchema(reader, false);
 

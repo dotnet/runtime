@@ -85,7 +85,7 @@ namespace System.Linq
         /// to convert to a <see cref="System.Linq.ParallelQuery{T}"/>.</param>
         /// <returns>The source as a <see cref="System.Linq.ParallelQuery{T}"/> to bind to
         /// ParallelEnumerable extension methods.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> AsParallel<TSource>(this IEnumerable<TSource> source)
@@ -110,7 +110,7 @@ namespace System.Linq
         /// whereas the partitioner's GetPartitions is used if ordering is not enabled (the default).
         /// The source partitioner's GetDynamicPartitions and GetDynamicOrderedPartitions are not used.
         /// </remarks>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> AsParallel<TSource>(this Partitioner<TSource> source)
@@ -131,10 +131,10 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The input sequence.</param>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// Thrown if <paramref name="source"/> is not one of AsParallel, ParallelEnumerable.Range, or ParallelEnumerable.Repeat.
         /// </exception>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <remarks>
@@ -178,7 +178,7 @@ namespace System.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the <paramref name="source"/> is not one of AsParallel, ParallelEnumerable.Range, or ParallelEnumerable.Repeat.
         /// </exception>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <remarks>
@@ -213,7 +213,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The input sequence.</param>
         /// <returns>The source sequence with arbitrary order.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> AsUnordered<TSource>(this ParallelQuery<TSource> source)
@@ -235,7 +235,7 @@ namespace System.Linq
         /// The source as a ParallelQuery to bind to
         /// ParallelEnumerable extension methods.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery AsParallel(this IEnumerable source)
@@ -262,7 +262,7 @@ namespace System.Linq
         /// <param name="source">A <see cref="ParallelQuery{T}"/> to convert to an <see cref="System.Collections.Generic.IEnumerable{T}"/>.</param>
         /// <returns>The source as an <see cref="System.Collections.Generic.IEnumerable{T}"/>
         /// to bind to sequential extension methods.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static IEnumerable<TSource> AsSequential<TSource>(this ParallelQuery<TSource> source)
@@ -289,13 +289,13 @@ namespace System.Linq
         /// <param name="source">A ParallelQuery on which to set the limit on the degrees of parallelism.</param>
         /// <param name="degreeOfParallelism">The degree of parallelism for the query.</param>
         /// <returns>ParallelQuery representing the same query as source, with the limit on the degrees of parallelism set.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// WithDegreeOfParallelism is used multiple times in the query.
         /// </exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="degreeOfParallelism"/> is less than 1 or greater than 512.
         /// </exception>
         public static ParallelQuery<TSource> WithDegreeOfParallelism<TSource>(this ParallelQuery<TSource> source, int degreeOfParallelism)
@@ -321,10 +321,10 @@ namespace System.Linq
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>ParallelQuery representing the same query as source, but with the <seealso cref="System.Threading.CancellationToken"/>
         /// registered.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// WithCancellation is used multiple times in the query.
         /// </exception>
         public static ParallelQuery<TSource> WithCancellation<TSource>(this ParallelQuery<TSource> source, CancellationToken cancellationToken)
@@ -346,13 +346,13 @@ namespace System.Linq
         /// <param name="executionMode">The mode in which to execute the query.</param>
         /// <returns>ParallelQuery representing the same query as source, but with the 
         /// <seealso cref="System.Linq.ParallelExecutionMode"/> registered.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
-        /// <paramref name="executionMode"/> is not a valid <see cref="T:System.Linq.ParallelExecutionMode"/> value.
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="executionMode"/> is not a valid <see cref="System.Linq.ParallelExecutionMode"/> value.
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// WithExecutionMode is used multiple times in the query.
         /// </exception>
         public static ParallelQuery<TSource> WithExecutionMode<TSource>(this ParallelQuery<TSource> source, ParallelExecutionMode executionMode)
@@ -378,13 +378,13 @@ namespace System.Linq
         /// <param name="mergeOptions">The merge options to set for this query.</param>
         /// <returns>ParallelQuery representing the same query as source, but with the 
         /// <seealso cref="ParallelMergeOptions"/> registered.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
-        /// <paramref name="mergeOptions"/> is not a valid <see cref="T:System.Linq.ParallelMergeOptions"/> value.
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="mergeOptions"/> is not a valid <see cref="System.Linq.ParallelMergeOptions"/> value.
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// WithMergeOptions is used multiple times in the query.
         /// </exception>
         public static ParallelQuery<TSource> WithMergeOptions<TSource>(this ParallelQuery<TSource> source, ParallelMergeOptions mergeOptions)
@@ -416,10 +416,10 @@ namespace System.Linq
         /// <param name="count">The number of sequential integers to generate.</param>
         /// <returns>An <b>IEnumerable&lt;Int32&gt;</b> in C# or <B>IEnumerable(Of Int32)</B> in 
         /// Visual Basic that contains a range of sequential integral numbers.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="count"/> is less than 0
         /// -or-
-        /// <paramref name="start"/> + <paramref name="count"/> - 1 is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <paramref name="start"/> + <paramref name="count"/> - 1 is larger than <see cref="System.Int32.MaxValue"/>.
         /// </exception>
         public static ParallelQuery<int> Range(int start, int count)
         {
@@ -438,7 +438,7 @@ namespace System.Linq
         /// <param name="element">The value to be repeated.</param>
         /// <param name="count">The number of times to repeat the value in the generated sequence.</param>
         /// <returns>A sequence that contains a repeated value.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="count"/> is less than 0.
         /// </exception>
         public static ParallelQuery<TResult> Repeat<TResult>(TResult element, int count)
@@ -490,13 +490,13 @@ namespace System.Linq
         /// <param name="source">The <see cref="ParallelQuery{T}"/> whose elements will be processed by 
         /// <paramref name="action"/>.</param>
         /// <param name="action">An Action to invoke on each element.</param>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="action"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static void ForAll<TSource>(this ParallelQuery<TSource> source, Action<TSource> action)
@@ -528,7 +528,7 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>A sequence that contains elements from the input sequence that satisfy 
         /// the condition.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Where<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -546,7 +546,7 @@ namespace System.Linq
         /// <param name="source">A sequence to filter.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>A sequence that contains elements from the input sequence that satisfy the condition.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Where<TSource>(this ParallelQuery<TSource> source, Func<TSource, int, bool> predicate)
@@ -571,7 +571,7 @@ namespace System.Linq
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 
         /// element of <paramref name="source"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> Select<TSource, TResult>(
@@ -592,7 +592,7 @@ namespace System.Linq
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 
         /// element of <paramref name="source"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> Select<TSource, TResult>(
@@ -622,7 +622,7 @@ namespace System.Linq
         /// resultSelector pairwise on two sequences. If the sequence lengths are unequal, this truncates
         /// to the length of the shorter sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> Zip<TFirst, TSecond, TResult>(
@@ -647,7 +647,7 @@ namespace System.Linq
         /// <param name="second">This parameter is not used.</param>
         /// <param name="resultSelector">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Zip with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TFirst}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSecond}"/>.
@@ -682,7 +682,7 @@ namespace System.Linq
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
         /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
         /// an inner join on two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
         /// <paramref name="innerKeySelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -709,7 +709,7 @@ namespace System.Linq
         /// <param name="innerKeySelector">This parameter is not used.</param>
         /// <param name="resultSelector">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage Join with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
@@ -742,7 +742,7 @@ namespace System.Linq
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to hash and compare keys.</param>
         /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
         /// an inner join on two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
         /// <paramref name="innerKeySelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -776,7 +776,7 @@ namespace System.Linq
         /// <param name="resultSelector">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Join with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
@@ -814,7 +814,7 @@ namespace System.Linq
         /// the first sequence and a collection of matching elements from the second sequence.</param>
         /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
         /// a grouped join on two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
         /// <paramref name="innerKeySelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -841,7 +841,7 @@ namespace System.Linq
         /// <param name="innerKeySelector">This parameter is not used.</param>
         /// <param name="resultSelector">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of GroupJoin with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
@@ -876,7 +876,7 @@ namespace System.Linq
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to hash and compare keys.</param>
         /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
         /// a grouped join on two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
         /// <paramref name="innerKeySelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -910,7 +910,7 @@ namespace System.Linq
         /// <param name="resultSelector">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of GroupJoin with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
@@ -942,7 +942,7 @@ namespace System.Linq
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
         /// function on each element of the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> SelectMany<TSource, TResult>(
@@ -965,7 +965,7 @@ namespace System.Linq
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
         /// function on each element of the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> SelectMany<TSource, TResult>(
@@ -993,7 +993,7 @@ namespace System.Linq
         /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
         /// function <paramref name="collectionSelector"/> on each element of <paramref name="source"/> and then mapping 
         /// each of those sequence elements and their corresponding source element to a result element.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="collectionSelector"/> or
         /// <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1029,7 +1029,7 @@ namespace System.Linq
         /// each of those sequence elements and their corresponding source element to a 
         /// result element.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="collectionSelector"/> or
         /// <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1065,7 +1065,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
         /// according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static OrderedParallelQuery<TSource> OrderBy<TSource, TKey>(
@@ -1093,7 +1093,7 @@ namespace System.Linq
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted according 
         /// to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static OrderedParallelQuery<TSource> OrderBy<TSource, TKey>(
@@ -1120,7 +1120,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
         /// descending according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static OrderedParallelQuery<TSource> OrderByDescending<TSource, TKey>(
@@ -1147,7 +1147,7 @@ namespace System.Linq
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted descending 
         /// according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static OrderedParallelQuery<TSource> OrderByDescending<TSource, TKey>(
@@ -1176,7 +1176,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are 
         /// sorted according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
 
@@ -1206,7 +1206,7 @@ namespace System.Linq
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
         /// according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// 
@@ -1236,7 +1236,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
         /// descending according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// 
@@ -1267,7 +1267,7 @@ namespace System.Linq
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
         /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
         /// descending according to a key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         ///         
@@ -1295,7 +1295,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
         /// group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/>
         /// is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1315,7 +1315,7 @@ namespace System.Linq
         /// <param name="comparer">An equality comparer to compare keys.</param>
         /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
         /// group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(
@@ -1341,7 +1341,7 @@ namespace System.Linq
         /// IGrouping{Key, TElement}.</param>
         /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
         /// group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1367,7 +1367,7 @@ namespace System.Linq
         /// <param name="comparer">An equality comparer to compare keys.</param>
         /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
         /// group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1406,7 +1406,7 @@ namespace System.Linq
         /// <param name="resultSelector">A function to create a result value from each group.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1434,7 +1434,7 @@ namespace System.Linq
         /// <param name="comparer">An equality comparer to compare keys.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1464,7 +1464,7 @@ namespace System.Linq
         /// <param name="resultSelector">A function to create a result value from each group.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1495,7 +1495,7 @@ namespace System.Linq
         /// <param name="comparer">An equality comparer to compare keys.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1611,16 +1611,16 @@ namespace System.Linq
         /// <param name="source">A sequence to aggregate over.</param>
         /// <param name="func">An accumulator function to be invoked on each element.</param>
         /// <returns>The final accumulator value.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="func"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Aggregate<TSource>(
@@ -1661,13 +1661,13 @@ namespace System.Linq
         /// <param name="seed">The initial accumulator value.</param>
         /// <param name="func">An accumulator function to be invoked on each element.</param>
         /// <returns>The final accumulator value.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="func"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TAccumulate Aggregate<TSource, TAccumulate>(
@@ -1700,13 +1700,13 @@ namespace System.Linq
         /// <param name="resultSelector">A function to transform the final accumulator value 
         /// into the result value.</param>
         /// <returns>The transformed final accumulator value.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="func"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TResult Aggregate<TSource, TAccumulate, TResult>(
@@ -1762,14 +1762,14 @@ namespace System.Linq
         /// A function to transform the final accumulator value into the result value.
         /// </param>
         /// <returns>The transformed final accumulator value.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="updateAccumulatorFunc"/> 
         /// or <paramref name="combineAccumulatorsFunc"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TResult Aggregate<TSource, TAccumulate, TResult>(
@@ -1815,14 +1815,14 @@ namespace System.Linq
         /// A function to transform the final accumulator value into the result value.
         /// </param>
         /// <returns>The transformed final accumulator value.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="seedFactory"/> or <paramref name="updateAccumulatorFunc"/> 
         /// or <paramref name="combineAccumulatorsFunc"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TResult Aggregate<TSource, TAccumulate, TResult>(
@@ -1854,15 +1854,15 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence that contains elements to be counted.</param>
         /// <returns>The number of elements in the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The number of elements in source is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The number of elements in source is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Count<TSource>(this ParallelQuery<TSource> source)
@@ -1898,15 +1898,15 @@ namespace System.Linq
         /// A number that represents how many elements in the sequence satisfy the condition 
         /// in the predicate function.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The number of elements in source is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The number of elements in source is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Count<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -1927,15 +1927,15 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence that contains elements to be counted.</param>
         /// <returns>The number of elements in the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The number of elements in source is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The number of elements in source is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long LongCount<TSource>(this ParallelQuery<TSource> source)
@@ -1967,15 +1967,15 @@ namespace System.Linq
         /// A number that represents how many elements in the sequence satisfy the condition 
         /// in the predicate function.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The number of elements in source is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The number of elements in source is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long LongCount<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -1996,15 +1996,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Sum(this ParallelQuery<int> source)
@@ -2018,15 +2018,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Sum(this ParallelQuery<int?> source)
@@ -2040,15 +2040,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Sum(this ParallelQuery<long> source)
@@ -2062,15 +2062,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Sum(this ParallelQuery<long?> source)
@@ -2084,13 +2084,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Sum(this ParallelQuery<float> source)
@@ -2104,13 +2104,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Sum(this ParallelQuery<float?> source)
@@ -2124,13 +2124,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Sum(this ParallelQuery<double> source)
@@ -2144,13 +2144,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Sum(this ParallelQuery<double?> source)
@@ -2164,15 +2164,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Decimal.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Sum(this ParallelQuery<decimal> source)
@@ -2186,15 +2186,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Decimal.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Sum(this ParallelQuery<decimal?> source)
@@ -2210,15 +2210,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, int> selector)
@@ -2234,15 +2234,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, int?> selector)
@@ -2258,15 +2258,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, long> selector)
@@ -2282,15 +2282,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, long?> selector)
@@ -2306,13 +2306,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, float> selector)
@@ -2328,13 +2328,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, float?> selector)
@@ -2350,13 +2350,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, double> selector)
@@ -2372,13 +2372,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, double?> selector)
@@ -2394,15 +2394,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Decimal.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal> selector)
@@ -2418,15 +2418,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values to calculate the sum of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the values in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum is larger than <see cref="M:System.Decimal.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Sum<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal?> selector)
@@ -2453,16 +2453,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Min(this ParallelQuery<int> source)
@@ -2476,13 +2476,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Min(this ParallelQuery<int?> source)
@@ -2496,16 +2496,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Min(this ParallelQuery<long> source)
@@ -2519,13 +2519,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Min(this ParallelQuery<long?> source)
@@ -2539,16 +2539,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Min(this ParallelQuery<float> source)
@@ -2562,13 +2562,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Min(this ParallelQuery<float?> source)
@@ -2582,16 +2582,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Min(this ParallelQuery<double> source)
@@ -2605,13 +2605,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Min(this ParallelQuery<double?> source)
@@ -2625,16 +2625,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Min(this ParallelQuery<decimal> source)
@@ -2648,13 +2648,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Min(this ParallelQuery<decimal?> source)
@@ -2669,16 +2669,16 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements and <typeparamref name="TSource"/> is a non-nullable value type.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Min<TSource>(this ParallelQuery<TSource> source)
@@ -2695,16 +2695,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, int> selector)
@@ -2720,13 +2720,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, int?> selector)
@@ -2742,16 +2742,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, long> selector)
@@ -2767,13 +2767,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, long?> selector)
@@ -2789,16 +2789,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, float> selector)
@@ -2814,13 +2814,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, float?> selector)
@@ -2836,16 +2836,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, double> selector)
@@ -2861,13 +2861,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, double?> selector)
@@ -2883,16 +2883,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal> selector)
@@ -2908,13 +2908,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Min<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal?> selector)
@@ -2931,16 +2931,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements and <typeparamref name="TResult"/> is a non-nullable value type.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TResult Min<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
@@ -2957,16 +2957,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Max(this ParallelQuery<int> source)
@@ -2980,13 +2980,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Max(this ParallelQuery<int?> source)
@@ -3000,16 +3000,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Max(this ParallelQuery<long> source)
@@ -3023,13 +3023,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Max(this ParallelQuery<long?> source)
@@ -3043,16 +3043,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Max(this ParallelQuery<float> source)
@@ -3066,13 +3066,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Max(this ParallelQuery<float?> source)
@@ -3086,16 +3086,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Max(this ParallelQuery<double> source)
@@ -3109,13 +3109,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Max(this ParallelQuery<double?> source)
@@ -3129,16 +3129,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Max(this ParallelQuery<decimal> source)
@@ -3152,13 +3152,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Max(this ParallelQuery<decimal?> source)
@@ -3172,16 +3172,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements and <typeparam name="TSource"/> is a non-nullable value type.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Max<TSource>(this ParallelQuery<TSource> source)
@@ -3198,16 +3198,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, int> selector)
@@ -3223,13 +3223,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static int? Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, int?> selector)
@@ -3245,16 +3245,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, long> selector)
@@ -3270,13 +3270,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static long? Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, long?> selector)
@@ -3292,16 +3292,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, float> selector)
@@ -3317,13 +3317,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, float?> selector)
@@ -3339,16 +3339,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, double> selector)
@@ -3364,13 +3364,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, double?> selector)
@@ -3386,16 +3386,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal> selector)
@@ -3411,13 +3411,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Max<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal?> selector)
@@ -3434,16 +3434,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements and <typeparamref name="TResult"/> is a non-nullable value type.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TResult Max<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
@@ -3460,18 +3460,18 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average(this ParallelQuery<int> source)
@@ -3485,15 +3485,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average(this ParallelQuery<int?> source)
@@ -3507,18 +3507,18 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average(this ParallelQuery<long> source)
@@ -3532,15 +3532,15 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average(this ParallelQuery<long?> source)
@@ -3554,16 +3554,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Average(this ParallelQuery<float> source)
@@ -3577,13 +3577,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Average(this ParallelQuery<float?> source)
@@ -3597,16 +3597,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average(this ParallelQuery<double> source)
@@ -3618,15 +3618,15 @@ namespace System.Linq
         /// <summary>
         /// Computes in parallel the average of a sequence of values.
         /// </summary>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average(this ParallelQuery<double?> source)
@@ -3640,16 +3640,16 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Average(this ParallelQuery<decimal> source)
@@ -3663,13 +3663,13 @@ namespace System.Linq
         /// </summary>
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Average(this ParallelQuery<decimal?> source)
@@ -3686,18 +3686,18 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, int> selector)
@@ -3713,15 +3713,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, int?> selector)
@@ -3737,18 +3737,18 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int32.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, long> selector)
@@ -3764,15 +3764,15 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="M:System.Int64.MaxValue"/>.
+        /// <exception cref="System.AggregateException">
+        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int64.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, long?> selector)
@@ -3788,16 +3788,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, float> selector)
@@ -3813,13 +3813,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static float? Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, float?> selector)
@@ -3835,16 +3835,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, double> selector)
@@ -3860,13 +3860,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static double? Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, double?> selector)
@@ -3882,16 +3882,16 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal> selector)
@@ -3907,13 +3907,13 @@ namespace System.Linq
         /// <param name="source">A sequence of values that are used to calculate an average.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The average of the sequence of values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static decimal? Average<TSource>(this ParallelQuery<TSource> source, Func<TSource, decimal?> selector)
@@ -3934,13 +3934,13 @@ namespace System.Linq
         /// <returns>
         /// true if any elements in the source sequence pass the test in the specified predicate; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool Any<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -3957,13 +3957,13 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The IEnumerable to check for emptiness.</param>
         /// <returns>true if the source sequence contains any elements; otherwise, false.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool Any<TSource>(this ParallelQuery<TSource> source)
@@ -3986,13 +3986,13 @@ namespace System.Linq
         /// <returns>
         /// true if all elements in the source sequence pass the test in the specified predicate; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool All<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -4017,13 +4017,13 @@ namespace System.Linq
         /// <returns>
         /// true if the source sequence contains an element that has the specified value; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool Contains<TSource>(this ParallelQuery<TSource> source, TSource value)
@@ -4042,13 +4042,13 @@ namespace System.Linq
         /// <returns>
         /// true if the source sequence contains an element that has the specified value; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool Contains<TSource>(this ParallelQuery<TSource> source, TSource value, IEqualityComparer<TSource> comparer)
@@ -4077,7 +4077,7 @@ namespace System.Linq
         /// <returns>
         /// A sequence that contains the specified number of elements from the start of the input sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Take<TSource>(this ParallelQuery<TSource> source, int count)
@@ -4109,7 +4109,7 @@ namespace System.Linq
         /// A sequence that contains the elements from the input sequence that occur before 
         /// the element at which the test no longer passes.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> TakeWhile<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -4134,7 +4134,7 @@ namespace System.Linq
         /// A sequence that contains elements from the input sequence that occur before 
         /// the element at which the test no longer passes.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> TakeWhile<TSource>(this ParallelQuery<TSource> source, Func<TSource, int, bool> predicate)
@@ -4159,7 +4159,7 @@ namespace System.Linq
         /// <returns>
         /// A sequence that contains the elements that occur after the specified index in the input sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Skip<TSource>(this ParallelQuery<TSource> source, int count)
@@ -4191,7 +4191,7 @@ namespace System.Linq
         /// <returns>A sequence that contains the elements from the input sequence starting at 
         /// the first element in the linear series that does not pass the test specified by 
         /// <B>predicate</B>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> SkipWhile<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -4218,7 +4218,7 @@ namespace System.Linq
         /// first element in the linear series that does not pass the test specified by 
         /// <B>predicate</B>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> SkipWhile<TSource>(this ParallelQuery<TSource> source, Func<TSource, int, bool> predicate)
@@ -4244,7 +4244,7 @@ namespace System.Linq
         /// <param name="first">The first sequence to concatenate.</param>
         /// <param name="second">The sequence to concatenate to the first sequence.</param>
         /// <returns>A sequence that contains the concatenated elements of the two input sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Concat<TSource>(this ParallelQuery<TSource> first, ParallelQuery<TSource> second)
@@ -4262,7 +4262,7 @@ namespace System.Linq
         /// <param name="first">This parameter is not used.</param>
         /// <param name="second">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Concat with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4290,13 +4290,13 @@ namespace System.Linq
         /// true if the two source sequences are of equal length and their corresponding elements 
         /// are equal according to the default equality comparer for their type; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool SequenceEqual<TSource>(this ParallelQuery<TSource> first, ParallelQuery<TSource> second)
@@ -4314,7 +4314,7 @@ namespace System.Linq
         /// <param name="first">This parameter is not used.</param>
         /// <param name="second">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">Thrown every time this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown every time this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of SequenceEqual with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4339,13 +4339,13 @@ namespace System.Linq
         /// true if the two source sequences are of equal length and their corresponding 
         /// elements are equal according to the default equality comparer for their type; otherwise, false.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static bool SequenceEqual<TSource>(this ParallelQuery<TSource> first, ParallelQuery<TSource> second, IEqualityComparer<TSource> comparer)
@@ -4435,7 +4435,7 @@ namespace System.Linq
         /// <param name="second">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">Thrown every time this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown every time this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of SequenceEqual with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4459,7 +4459,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to remove duplicate elements from.</param>
         /// <returns>A sequence that contains distinct elements from the source sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Distinct<TSource>(
@@ -4476,7 +4476,7 @@ namespace System.Linq
         /// <param name="source">The sequence to remove duplicate elements from.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare values.</param>
         /// <returns>A sequence that contains distinct elements from the source sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Distinct<TSource>(
@@ -4498,7 +4498,7 @@ namespace System.Linq
         /// <param name="first">A sequence whose distinct elements form the first set for the union.</param>
         /// <param name="second">A sequence whose distinct elements form the second set for the union.</param>
         /// <returns>A sequence that contains the elements from both input sequences, excluding duplicates.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Union<TSource>(
@@ -4515,7 +4515,7 @@ namespace System.Linq
         /// <param name="first">This parameter is not used.</param>
         /// <param name="second">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Union with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4537,7 +4537,7 @@ namespace System.Linq
         /// <param name="second">A sequence whose distinct elements form the second set for the union.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare values.</param>
         /// <returns>A sequence that contains the elements from both input sequences, excluding duplicates.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Union<TSource>(
@@ -4558,7 +4558,7 @@ namespace System.Linq
         /// <param name="second">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Union with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4588,7 +4588,7 @@ namespace System.Linq
         /// A sequence whose distinct elements that also appear in the first sequence will be returned.
         /// </param>
         /// <returns>A sequence that contains the elements that form the set intersection of two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Intersect<TSource>(
@@ -4605,7 +4605,7 @@ namespace System.Linq
         /// <param name="first">This parameter is not used.</param>
         /// <param name="second">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Intersect with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4632,7 +4632,7 @@ namespace System.Linq
         /// </param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare values.</param>
         /// <returns>A sequence that contains the elements that form the set intersection of two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Intersect<TSource>(
@@ -4653,7 +4653,7 @@ namespace System.Linq
         /// <param name="second">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Intersect with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4685,7 +4685,7 @@ namespace System.Linq
         /// elements to be removed from the returned sequence.
         /// </param>
         /// <returns>A sequence that contains the set difference of the elements of two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Except<TSource>(
@@ -4702,7 +4702,7 @@ namespace System.Linq
         /// <param name="first">This parameter is not used.</param>
         /// <param name="second">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Except with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4728,7 +4728,7 @@ namespace System.Linq
         /// </param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare values.</param>
         /// <returns>A sequence that contains the set difference of the elements of two sequences.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="first"/> or <paramref name="second"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Except<TSource>(
@@ -4749,7 +4749,7 @@ namespace System.Linq
         /// <param name="second">This parameter is not used.</param>
         /// <param name="comparer">This parameter is not used.</param>
         /// <returns>This overload always throws a <see cref="System.NotSupportedException"/>.</returns>
-        /// <exception cref="T:System.NotSupportedException">The exception that occurs when this method is called.</exception>
+        /// <exception cref="System.NotSupportedException">The exception that occurs when this method is called.</exception>
         /// <remarks>
         /// This overload exists to disallow usage of Except with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
@@ -4779,7 +4779,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to type as <see cref="System.Collections.Generic.IEnumerable{T}"/>.</param>
         /// <returns>The input sequence types as <see cref="System.Collections.Generic.IEnumerable{T}"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static IEnumerable<TSource> AsEnumerable<TSource>(this ParallelQuery<TSource> source)
@@ -4798,13 +4798,13 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence to create an array from.</param>
         /// <returns>An array that contains the elements from the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource[] ToArray<TSource>(this ParallelQuery<TSource> source)
@@ -4832,13 +4832,13 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence to create a List&lt;(Of &lt;(T&gt;)&gt;) from.</param>
         /// <returns>A List&lt;(Of &lt;(T&gt;)&gt;) that contains elements from the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static List<TSource> ToList<TSource>(this ParallelQuery<TSource> source)
@@ -4910,17 +4910,17 @@ namespace System.Linq
         /// <param name="source">A sequence to create a Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) from.</param>
         /// <param name="keySelector">A function to extract a key from each element.</param>
         /// <returns>A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains keys and values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// <paramref name="keySelector"/> produces a key that is a null reference (Nothing in Visual Basic).
         /// -or-
         /// <paramref name="keySelector"/> produces duplicate keys for two elements.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(
@@ -4939,17 +4939,17 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from each element.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare keys.</param>
         /// <returns>A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains keys and values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// <paramref name="keySelector"/> produces a key that is a null reference (Nothing in Visual Basic).
         /// -or-
         /// <paramref name="keySelector"/> produces duplicate keys for two elements.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(
@@ -5008,17 +5008,17 @@ namespace System.Linq
         /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/> 
         /// selected from the input sequence
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// <paramref name="keySelector"/> produces a key that is a null reference (Nothing in Visual Basic).
         /// -or-
         /// <paramref name="keySelector"/> produces duplicate keys for two elements.
         /// -or- 
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(
@@ -5043,17 +5043,17 @@ namespace System.Linq
         /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/> 
         /// selected from the input sequence
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// <paramref name="keySelector"/> produces a key that is a null reference (Nothing in Visual Basic).
         /// -or-
         /// <paramref name="keySelector"/> produces duplicate keys for two elements.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(
@@ -5111,13 +5111,13 @@ namespace System.Linq
         /// <param name="source">The sequence to create a Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) from.</param>
         /// <param name="keySelector">A function to extract a key from each element.</param>
         /// <returns>A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains keys and values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
@@ -5136,13 +5136,13 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from each element.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare keys.</param>
         /// <returns>A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains keys and values.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
@@ -5190,13 +5190,13 @@ namespace System.Linq
         /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement 
         /// selected from the input sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(
@@ -5222,13 +5222,13 @@ namespace System.Linq
         /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement selected 
         /// from the input sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(
@@ -5275,7 +5275,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence of values to reverse.</param>
         /// <returns>A sequence whose elements correspond to those of the input sequence in reverse order.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> Reverse<TSource>(this ParallelQuery<TSource> source)
@@ -5296,7 +5296,7 @@ namespace System.Linq
         /// <typeparam name="TResult">The type to filter the elements of the sequence on.</typeparam>
         /// <param name="source">The sequence whose elements to filter.</param>
         /// <returns>A sequence that contains elements from the input sequence of type <typeparamref name="TResult"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> OfType<TResult>(this ParallelQuery source)
@@ -5314,7 +5314,7 @@ namespace System.Linq
         /// <returns>
         /// A sequence that contains each weakly-type element of the source sequence converted to the specified stronger type.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TResult> Cast<TResult>(this ParallelQuery source)
@@ -5391,16 +5391,16 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return the first element of.</param>
         /// <returns>The first element in the specified sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource First<TSource>(this ParallelQuery<TSource> source)
@@ -5434,16 +5434,16 @@ namespace System.Linq
         /// <param name="source">The sequence to return an element from.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>The first element in the sequence that passes the test in the specified predicate function.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// No element in <paramref name="source"/> satisfies the condition in <paramref name="predicate"/>.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource First<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5476,13 +5476,13 @@ namespace System.Linq
         /// <returns>
         /// default(<B>TSource</B>) if <paramref name="source"/> is empty; otherwise, the first element in <paramref name="source"/>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource FirstOrDefault<TSource>(this ParallelQuery<TSource> source)
@@ -5522,13 +5522,13 @@ namespace System.Linq
         /// specified by <B>predicate</B>; otherwise, the first element in <paramref name="source"/> that 
         /// passes the test specified by <B>predicate</B>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource FirstOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5567,16 +5567,16 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return the last element from.</param>
         /// <returns>The value at the last position in the source sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// <paramref name="source"/> contains no elements.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Last<TSource>(this ParallelQuery<TSource> source)
@@ -5610,16 +5610,16 @@ namespace System.Linq
         /// <returns>
         /// The last element in the sequence that passes the test in the specified predicate function.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// No element in <paramref name="source"/> satisfies the condition in <paramref name="predicate"/>.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Last<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5654,13 +5654,13 @@ namespace System.Linq
         /// <returns>
         /// default(<typeparamref name="TSource"/>) if the source sequence is empty; otherwise, the last element in the sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource LastOrDefault<TSource>(this ParallelQuery<TSource> source)
@@ -5696,13 +5696,13 @@ namespace System.Linq
         /// default(<typeparamref name="TSource"/>) if the sequence is empty or if no elements pass the test in the 
         /// predicate function; otherwise, the last element that passes the test in the predicate function.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource LastOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5741,16 +5741,16 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return the single element of.</param>
         /// <returns>The single element of the input sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// The input sequence contains more than one element. -or- The input sequence is empty.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Single<TSource>(this ParallelQuery<TSource> source)
@@ -5770,16 +5770,16 @@ namespace System.Linq
         /// <param name="source">The sequence to return the single element of.</param>
         /// <param name="predicate">A function to test an element for a condition.</param>
         /// <returns>The single element of the input sequence that satisfies a condition.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// No element satisfies the condition in <paramref name="predicate"/>. -or- More than one element satisfies the condition in <paramref name="predicate"/>.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource Single<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5800,13 +5800,13 @@ namespace System.Linq
         /// The single element of the input sequence, or default(<typeparamref name="TSource"/>) if the 
         /// sequence contains no elements.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource SingleOrDefault<TSource>(this ParallelQuery<TSource> source)
@@ -5830,13 +5830,13 @@ namespace System.Linq
         /// The single element of the input sequence that satisfies the condition, or 
         /// default(<typeparamref name="TSource"/>) if no such element is found.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource SingleOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
@@ -5861,7 +5861,7 @@ namespace System.Linq
         /// <returns>
         /// A sequence that contains default(<B>TSource</B>) if <paramref name="source"/> is empty; otherwise, <paramref name="source"/>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> DefaultIfEmpty<TSource>(this ParallelQuery<TSource> source)
@@ -5879,7 +5879,7 @@ namespace System.Linq
         /// <returns>
         /// A sequence that contains <B>defaultValue</B> if <paramref name="source"/> is empty; otherwise, <paramref name="source"/>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         public static ParallelQuery<TSource> DefaultIfEmpty<TSource>(this ParallelQuery<TSource> source, TSource defaultValue)
@@ -5901,16 +5901,16 @@ namespace System.Linq
         /// <param name="source">A sequence to return an element from.</param>
         /// <param name="index">The zero-based index of the element to retrieve.</param>
         /// <returns>The element at the specified position in the source sequence.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="index"/> is less than 0 or greater than or equal to the number of elements in <paramref name="source"/>.
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource ElementAt<TSource>(this ParallelQuery<TSource> source, int index)
@@ -5943,13 +5943,13 @@ namespace System.Linq
         /// default(<B>TSource</B>) if the index is outside the bounds of the source sequence; 
         /// otherwise, the element at the specified position in the source sequence.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException">
+        /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// <exception cref="T:System.AggregateException">
+        /// <exception cref="System.AggregateException">
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
+        /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
         public static TSource ElementAtOrDefault<TSource>(this ParallelQuery<TSource> source, int index)

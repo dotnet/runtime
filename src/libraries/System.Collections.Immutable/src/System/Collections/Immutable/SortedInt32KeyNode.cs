@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// with <c>TKey</c> fixed to be <see cref="int"/>.  This avoids multiple interface-based dispatches while examining
     /// each node in the tree during a lookup: an interface call to the comparer's <see cref="IComparer{T}.Compare"/> method,
     /// and then an interface call to <see cref="int"/>'s <see cref="IComparable{T}.CompareTo"/> method as part of
-    /// the <see cref="T:System.Collections.Generic.GenericComparer`1"/>'s <see cref="IComparer{T}.Compare"/> implementation.
+    /// the comparer's <see cref="IComparer{T}.Compare"/> implementation.
     /// </remarks>
     [DebuggerDisplay("{_key} = {_value}")]
     internal sealed partial class SortedInt32KeyNode<TValue> : IBinaryTree

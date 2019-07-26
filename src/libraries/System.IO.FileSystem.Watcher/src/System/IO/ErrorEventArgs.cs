@@ -5,7 +5,7 @@
 namespace System.IO
 {
     /// <devdoc>
-    ///    Provides data for the <see cref='E:System.IO.FileSystemWatcher.Error'/> event.
+    ///    Provides data for the <see cref='System.IO.FileSystemWatcher.Error'/> event.
     /// </devdoc>
     public class ErrorEventArgs : EventArgs
     {

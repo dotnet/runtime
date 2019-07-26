@@ -4,12 +4,7 @@
 
 namespace System.Net.Sockets
 {
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the address families that an instance of the <see cref='T:System.Net.Sockets.Socket'/>
-    ///       class can use.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>Specifies the addressing scheme that an instance of the Socket class can use.</summary>
     public enum AddressFamily
     {
         Unknown = -1,           // Unknown

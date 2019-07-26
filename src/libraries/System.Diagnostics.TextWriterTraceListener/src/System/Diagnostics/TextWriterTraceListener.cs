@@ -11,8 +11,8 @@ namespace System.Diagnostics
 {
     /// <devdoc>
     ///    <para>Directs tracing or debugging output to
-    ///       a <see cref='T:System.IO.TextWriter'/> or to a <see cref='T:System.IO.Stream'/>,
-    ///       such as <see cref='F:System.Console.Out'/> or <see cref='T:System.IO.FileStream'/>.</para>
+    ///       a <see cref='System.IO.TextWriter'/> or to a <see cref='System.IO.Stream'/>,
+    ///       such as <see cref='System.Console.Out'/> or <see cref='System.IO.FileStream'/>.</para>
     /// </devdoc>
     public class TextWriterTraceListener : TraceListener
     {

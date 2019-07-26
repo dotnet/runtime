@@ -151,9 +151,9 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TSource">Type of the elements in source enumerable.</typeparam>
         /// <param name="source">The enumerable to be partitioned.</param>
         /// <param name="partitionerOptions">Options to control the buffering behavior of the partitioner.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// The <paramref name="partitionerOptions"/> argument specifies an invalid value for <see
-        /// cref="T:System.Collections.Concurrent.EnumerablePartitionerOptions"/>.
+        /// cref="System.Collections.Concurrent.EnumerablePartitionerOptions"/>.
         /// </exception>
         /// <returns>
         /// An orderable partitioner based on the input array.
@@ -179,7 +179,7 @@ namespace System.Collections.Concurrent
         /// <param name="fromInclusive">The lower, inclusive bound of the range.</param>
         /// <param name="toExclusive">The upper, exclusive bound of the range.</param>
         /// <returns>A partitioner.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
@@ -200,9 +200,9 @@ namespace System.Collections.Concurrent
         /// <param name="toExclusive">The upper, exclusive bound of the range.</param>
         /// <param name="rangeSize">The size of each subrange.</param>
         /// <returns>A partitioner.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="rangeSize"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="rangeSize"/> argument is 
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize)
         {
@@ -236,7 +236,7 @@ namespace System.Collections.Concurrent
         /// <param name="fromInclusive">The lower, inclusive bound of the range.</param>
         /// <param name="toExclusive">The upper, exclusive bound of the range.</param>
         /// <returns>A partitioner.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {
@@ -257,9 +257,9 @@ namespace System.Collections.Concurrent
         /// <param name="toExclusive">The upper, exclusive bound of the range.</param>
         /// <param name="rangeSize">The size of each subrange.</param>
         /// <returns>A partitioner.</returns>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is 
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> The <paramref name="rangeSize"/> argument is 
+        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="rangeSize"/> argument is 
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize)
         {

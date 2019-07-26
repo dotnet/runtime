@@ -249,11 +249,6 @@ namespace System.ComponentModel
         /// components, you would pass typeof(IComponent). Passing typeof(object) 
         /// will cause the provider to be called to provide type information for 
         /// all types.
-        /// 
-        /// This method can be called from partially trusted code. If 
-        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
-        /// is defined, the caller can register a provider for the specified type 
-        /// if it's also partially trusted.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, Type type)
@@ -277,11 +272,6 @@ namespace System.ComponentModel
         /// using this method will never have its CreateInstance method called 
         /// because the instance already exists. This method does not prevent 
         /// the object from finalizing.
-        /// 
-        /// This method can be called from partially trusted code. If 
-        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
-        /// is defined, the caller can register a provider for the specified instance 
-        /// if its type is also partially trusted.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, object instance)
@@ -2501,11 +2491,6 @@ namespace System.ComponentModel
         /// description provider. Removing a provider causes a Refresh 
         /// event to be raised for the object or type the provider is 
         /// associated with.
-        /// 
-        /// This method can be called from partially trusted code. If 
-        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
-        /// is defined, the caller can unregister a provider for the specified type
-        /// if it's also partially trusted.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, Type type)
@@ -2528,11 +2513,6 @@ namespace System.ComponentModel
         /// description provider. Removing a provider causes a Refresh 
         /// event to be raised for the object or type the provider is 
         /// associated with.
-        /// 
-        /// This method can be called from partially trusted code. If 
-        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
-        /// is defined, the caller can register a provider for the specified instance 
-        /// if its type is also partially trusted.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, object instance)
