@@ -700,7 +700,7 @@ namespace System.Data.SqlClient
         // store on TdsEnums instead of SqlDbType because we do not want to expose
         // this type to the user.
         private static readonly MetaType s_metaSmallVarBinary = new MetaType
-            (255, 255, -1, false, false, false, TdsEnums.SQLVARBINARY, TdsEnums.SQLBIGBINARY, ADP.StrEmpty, typeof(byte[]), typeof(SqlBinary), TdsEnums.SmallVarBinary, DbType.Binary, 2);
+            (255, 255, -1, false, false, false, TdsEnums.SQLVARBINARY, TdsEnums.SQLBIGBINARY, string.Empty, typeof(byte[]), typeof(SqlBinary), TdsEnums.SmallVarBinary, DbType.Binary, 2);
 
         internal static readonly MetaType MetaImage = new MetaType
             (255, 255, -1, false, true, false, TdsEnums.SQLIMAGE, TdsEnums.SQLIMAGE, MetaTypeName.IMAGE, typeof(byte[]), typeof(SqlBinary), SqlDbType.Image, DbType.Binary, 0);

@@ -11,7 +11,7 @@ namespace System.Configuration
         private readonly ArrayList _items = new ArrayList();
 
         internal ConfigurationProperty DefaultCollectionProperty
-            => this[ConfigurationProperty.s_defaultCollectionPropertyName];
+            => this[ConfigurationProperty.DefaultCollectionPropertyName];
 
         public ConfigurationProperty this[string name]
         {

@@ -69,20 +69,20 @@ namespace System.Data.SqlTypes
         /// </summary>
         public static readonly int BinarySort2 = 0x4000;
 
-        private static readonly SqlCompareOptions s_iDefaultFlag =
+        private const SqlCompareOptions s_iDefaultFlag =
                     SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType |
                     SqlCompareOptions.IgnoreWidth;
-        private static readonly CompareOptions s_iValidCompareOptionMask =
+        private const CompareOptions s_iValidCompareOptionMask =
                     CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth |
                     CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType;
 
-        internal static readonly SqlCompareOptions s_iValidSqlCompareOptionMask =
+        internal const SqlCompareOptions s_iValidSqlCompareOptionMask =
                     SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreWidth |
                     SqlCompareOptions.IgnoreNonSpace | SqlCompareOptions.IgnoreKanaType |
                     SqlCompareOptions.BinarySort | SqlCompareOptions.BinarySort2;
 
-        internal static readonly int s_lcidUSEnglish = 0x00000409;
-        private static readonly int s_lcidBinary = 0x00008200;
+        internal const int s_lcidUSEnglish = 0x00000409;
+        private const int s_lcidBinary = 0x00008200;
 
 
         // constructor

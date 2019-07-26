@@ -42,7 +42,7 @@ namespace System.Xml.Schema
         private static readonly Type s_uriType = typeof(Uri);
         private static readonly Type s_timeSpanType = typeof(TimeSpan);
 
-        private static readonly string s_untypedStringTypeName = "xdt:untypedAtomic";
+        private const string UntypedStringTypeName = "xdt:untypedAtomic";
 
         // Static convertor instance
         internal static XmlUntypedStringConverter Instance = new XmlUntypedStringConverter(true);
@@ -240,7 +240,7 @@ namespace System.Xml.Schema
 
         private Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
-            return new InvalidCastException(SR.Format(SR.XmlConvert_TypeListBadMapping2, s_untypedStringTypeName, sourceType.Name, destinationType.Name));
+            return new InvalidCastException(SR.Format(SR.XmlConvert_TypeListBadMapping2, UntypedStringTypeName, sourceType.Name, destinationType.Name));
         }
     }
 }

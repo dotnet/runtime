@@ -107,7 +107,7 @@ namespace System.Data.SqlClient
 
         public override string SourceColumn
         {
-            get => (_sourceColumn ?? ADP.StrEmpty);
+            get => (_sourceColumn ?? string.Empty);
             set => _sourceColumn = value;
         }
 

@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Net.Mail;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Net.Mime
 {
@@ -31,22 +27,22 @@ namespace System.Net.Mime
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        internal static readonly int Ascii7bitMaxValue = 127;
-        internal static readonly char Quote = '\"';
-        internal static readonly char Space = ' ';
-        internal static readonly char Tab = '\t';
-        internal static readonly char CR = '\r';
-        internal static readonly char LF = '\n';
-        internal static readonly char StartComment = '(';
-        internal static readonly char EndComment = ')';
-        internal static readonly char Backslash = '\\';
-        internal static readonly char At = '@';
-        internal static readonly char EndAngleBracket = '>';
-        internal static readonly char StartAngleBracket = '<';
-        internal static readonly char StartSquareBracket = '[';
-        internal static readonly char EndSquareBracket = ']';
-        internal static readonly char Comma = ',';
-        internal static readonly char Dot = '.';
+        internal const int Ascii7bitMaxValue = 127;
+        internal const char Quote = '\"';
+        internal const char Space = ' ';
+        internal const char Tab = '\t';
+        internal const char CR = '\r';
+        internal const char LF = '\n';
+        internal const char StartComment = '(';
+        internal const char EndComment = ')';
+        internal const char Backslash = '\\';
+        internal const char At = '@';
+        internal const char EndAngleBracket = '>';
+        internal const char StartAngleBracket = '<';
+        internal const char StartSquareBracket = '[';
+        internal const char EndSquareBracket = ']';
+        internal const char Comma = ',';
+        internal const char Dot = '.';
 
         private static readonly char[] s_colonSeparator = new char[] { ':' };
 

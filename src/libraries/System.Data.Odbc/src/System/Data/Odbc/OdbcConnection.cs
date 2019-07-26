@@ -206,7 +206,7 @@ namespace System.Data.Odbc
                     }
                     return ProviderInfo.DriverName;
                 }
-                return ADP.StrEmpty;
+                return string.Empty;
             }
         }
 

@@ -22,7 +22,7 @@ namespace System.Data.SqlTypes
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)
         private short m_value; // Do not rename (binary serialization)
 
-        private static readonly int s_MASKI2 = ~0x00007fff;
+        private const int MaskI2 = ~0x00007fff;
 
         // constructor
         // construct a Null
@@ -125,8 +125,8 @@ namespace System.Data.SqlTypes
                 return Null;
 
             int iResult = x.m_value * y.m_value;
-            int iTemp = iResult & s_MASKI2;
-            if (iTemp != 0 && iTemp != s_MASKI2)
+            int iTemp = iResult & MaskI2;
+            if (iTemp != 0 && iTemp != MaskI2)
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)iResult);

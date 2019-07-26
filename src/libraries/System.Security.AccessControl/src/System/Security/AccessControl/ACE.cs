@@ -1789,7 +1789,7 @@ nameof(qualifier),
         //    ADS_RIGHT_DS_WRITE_PROP = 0x20, 
         //    ADS_RIGHT_DS_CONTROL_ACCESS = 0x100
         //
-        internal static readonly int AccessMaskWithObjectType = 0x1 | 0x2 | 0x8 | 0x10 | 0x20 | 0x100;
+        internal const int AccessMaskWithObjectType = 0x1 | 0x2 | 0x8 | 0x10 | 0x20 | 0x100;
 
         private static AceType TypeFromQualifier(bool isCallback, AceQualifier qualifier)
         {

@@ -12,7 +12,7 @@ namespace System.Configuration
     {
         internal static readonly ConfigurationValidatorBase s_nonEmptyStringValidator = new StringValidator(1);
         private static readonly ConfigurationValidatorBase s_defaultValidatorInstance = new DefaultValidator();
-        internal static readonly string s_defaultCollectionPropertyName = "";
+        internal const string DefaultCollectionPropertyName = "";
         private TypeConverter _converter;
         private volatile bool _isConfigurationElementType;
         private volatile bool _isTypeInited;
@@ -229,7 +229,7 @@ namespace System.Configuration
 
             if (((options & ConfigurationPropertyOptions.IsDefaultCollection) != 0) && string.IsNullOrEmpty(name))
             {
-                name = s_defaultCollectionPropertyName;
+                name = DefaultCollectionPropertyName;
             }
             else
             {

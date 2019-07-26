@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</ProjectGuid>
     <AssemblyName>System.Private.Xml</AssemblyName>

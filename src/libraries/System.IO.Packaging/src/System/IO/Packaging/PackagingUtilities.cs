@@ -12,7 +12,7 @@ namespace System.IO.Packaging
 {
     internal static class PackagingUtilities
     {
-        internal static readonly string RelationshipNamespaceUri = "http://schemas.openxmlformats.org/package/2006/relationships";
+        internal const string RelationshipNamespaceUri = "http://schemas.openxmlformats.org/package/2006/relationships";
         internal static readonly ContentType RelationshipPartContentType
             = new ContentType("application/vnd.openxmlformats-package.relationships+xml");
 
