@@ -8,22 +8,26 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace HttpStress
 {
     /// <summary>Client context containing information pertaining to a single request.</summary>
     public sealed class RequestContext
     {
+        private const string alphaNumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
         private readonly Random _random;
         private readonly HttpClient _client;
         private readonly double _cancellationProbability;
         private readonly double _http2Probability;
 
         public RequestContext(HttpClient httpClient, Random random, int taskNum,
-                                string contentSource, int maxRequestParameters, int maxRequestLineSize,
+                                string contentSource, int maxRequestParameters, int maxRequestUriSize,
                                 double cancellationProbability, double http2Probability)
         {
             _random = random;
@@ -34,7 +38,7 @@ namespace HttpStress
             TaskNum = taskNum;
             IsCancellationRequested = false;
             MaxRequestParameters = maxRequestParameters;
-            MaxRequestLineSize = maxRequestLineSize;
+            MaxRequestUriSize = maxRequestUriSize;
             ContentSource = contentSource;
         }
 
@@ -42,8 +46,9 @@ namespace HttpStress
         public bool IsCancellationRequested { get; set; }
         public string ContentSource { get; }
         public int MaxRequestParameters { get; }
-        public int MaxRequestLineSize { get; }
+        public int MaxRequestUriSize { get; }
         public int MaxContentLength => ContentSource.Length;
+        public Uri BaseAddress => _client.BaseAddress;
 
         // HttpClient.SendAsync() wrapper that wires randomized cancellation
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
@@ -75,22 +80,33 @@ namespace HttpStress
             }
         }
 
-        public string GetRandomString(int maxLength)
+        /// Gets a random ASCII string within specified length range
+        public string GetRandomString(int minLength, int maxLength, bool alphaNumericOnly = true)
         {
-            int length = _random.Next(0, maxLength);
+            int length = _random.Next(minLength, maxLength);
             var sb = new StringBuilder(length);
             for (int i = 0; i < length; i++)
             {
-                sb.Append((char)(_random.Next(0, 26) + 'a'));
+                if (alphaNumericOnly)
+                {
+                    // alpha character
+                    sb.Append(alphaNumeric[_random.Next(alphaNumeric.Length)]);
+                }
+                else
+                {
+                    // use a random ascii character
+                    sb.Append((char)_random.Next(0, 128));
+                }
             }
+
             return sb.ToString();
         }
 
-        public string GetRandomSubstring(string input)
+        public byte[] GetRandomBytes(int minBytes, int maxBytes)
         {
-            int offset = _random.Next(0, input.Length);
-            int length = _random.Next(0, input.Length - offset + 1);
-            return input.Substring(offset, length);
+            byte[] bytes = new byte[_random.Next(minBytes, maxBytes)];
+            _random.NextBytes(bytes);
+            return bytes;
         }
 
         public bool GetRandomBoolean(double probability = 0.5)
@@ -99,6 +115,18 @@ namespace HttpStress
                 throw new ArgumentOutOfRangeException(nameof(probability));
 
             return _random.NextDouble() < probability;
+        }
+
+        public void PopulateWithRandomHeaders(HttpRequestHeaders headers)
+        {
+            int numHeaders = _random.Next(100);
+
+            for (int i = 0; i < numHeaders; i++)
+            {
+                string name = $"Header-{i}";
+                IEnumerable<string> values = Enumerable.Range(0, _random.Next(0, 5)).Select(_ => HttpUtility.UrlEncode(GetRandomString(0, 30, alphaNumericOnly: false)));
+                headers.Add(name, values);
+            }
         }
 
         public int GetRandomInt32(int minValueInclusive, int maxValueExclusive) => _random.Next(minValueInclusive, maxValueExclusive);
@@ -122,7 +150,8 @@ namespace HttpStress
                     using (var req = new HttpRequestMessage(HttpMethod.Get, "/") { Version = httpVersion })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent(ctx.ContentSource, await m.Content.ReadAsStringAsync());
                     }
                 }),
@@ -134,7 +163,9 @@ namespace HttpStress
                     using (var req = new HttpRequestMessage(HttpMethod.Get, "/slow") { Version = httpVersion })
                     using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
+
                         using (Stream s = await m.Content.ReadAsStreamAsync())
                         {
                             s.ReadByte(); // read single byte from response and throw the rest away
@@ -146,11 +177,31 @@ namespace HttpStress
                 async ctx =>
                 {
                     Version httpVersion = ctx.GetRandomHttpVersion();
+
                     using (var req = new HttpRequestMessage(HttpMethod.Get, "/headers") { Version = httpVersion })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
-                        ValidateContent(ctx.ContentSource, await m.Content.ReadAsStringAsync());
+                        ctx.PopulateWithRandomHeaders(req.Headers);
+
+                        using (HttpResponseMessage res = await ctx.SendAsync(req))
+                        {
+                            ValidateHttpVersion(res, httpVersion);
+                            ValidateStatusCode(res);
+
+                            // Validate that request headers are being echoed
+                            foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
+                            {
+                                if (!res.Headers.TryGetValues(reqHeader.Key, out var values))
+                                {
+                                    throw new Exception($"Expected response header name {reqHeader.Key} missing.");
+                                }
+                                else if (!reqHeader.Value.SequenceEqual(values))
+                                {
+                                    string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
+                                    throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}");
+                                }
+                            }
+                        }
+
                     }
                 }),
 
@@ -159,11 +210,12 @@ namespace HttpStress
                 {
                     Version httpVersion = ctx.GetRandomHttpVersion();
                     string uri = "/variables";
-                    string expectedResponse = GetGetQueryParameters(ref uri, ctx.MaxRequestLineSize, ctx.ContentSource, ctx, ctx.MaxRequestParameters);
+                    string expectedResponse = GetGetQueryParameters(ref uri, ctx.MaxRequestUriSize, ctx, ctx.MaxRequestParameters);
                     using (var req = new HttpRequestMessage(HttpMethod.Get, uri) { Version = httpVersion })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
                     }
                 }),
@@ -216,13 +268,14 @@ namespace HttpStress
                 ("POST",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomSubstring(ctx.ContentSource);
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Version = httpVersion, Content = new StringDuplexContent(content) })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent(content, await m.Content.ReadAsStringAsync());;
                     }
                 }),
@@ -230,13 +283,14 @@ namespace HttpStress
                 ("POST Multipart Data",
                 async ctx =>
                 {
-                    (string expected, MultipartContent formDataContent) formData = GetMultipartContent(ctx.ContentSource, ctx, ctx.MaxRequestParameters);
+                    (string expected, MultipartContent formDataContent) formData = GetMultipartContent(ctx, ctx.MaxRequestParameters);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Version = httpVersion, Content = formData.formDataContent })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());;
                     }
                 }),
@@ -244,13 +298,14 @@ namespace HttpStress
                 ("POST Duplex",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomSubstring(ctx.ContentSource);
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Version = httpVersion, Content = new StringDuplexContent(content) })
                     using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
                 }),
@@ -258,13 +313,14 @@ namespace HttpStress
                 ("POST Duplex Slow",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomSubstring(ctx.ContentSource);
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplexSlow") { Version = httpVersion, Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) })
                     using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
                 }),
@@ -272,7 +328,7 @@ namespace HttpStress
                 ("POST ExpectContinue",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomSubstring(ctx.ContentSource);
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Version = httpVersion, Content = new StringContent(content) })
@@ -280,7 +336,8 @@ namespace HttpStress
                         req.Headers.ExpectContinue = true;
                         using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                         {
-                            ValidateResponse(m, httpVersion);
+                            ValidateHttpVersion(m, httpVersion);
+                            ValidateStatusCode(m);
                             ValidateContent(content, await m.Content.ReadAsStringAsync());
                         }
                     }
@@ -293,7 +350,9 @@ namespace HttpStress
                     using (var req = new HttpRequestMessage(HttpMethod.Head, "/") { Version = httpVersion })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
+
                         if (m.Content.Headers.ContentLength != ctx.MaxContentLength)
                         {
                             throw new Exception($"Expected {ctx.MaxContentLength}, got {m.Content.Headers.ContentLength}");
@@ -306,13 +365,15 @@ namespace HttpStress
                 ("PUT",
                 async ctx =>
                 {
-                    string content = ctx.GetRandomSubstring(ctx.ContentSource);
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
                     Version httpVersion = ctx.GetRandomHttpVersion();
 
                     using (var req = new HttpRequestMessage(HttpMethod.Put, "/") { Version = httpVersion, Content = new StringContent(content) })
                     using (HttpResponseMessage m = await ctx.SendAsync(req))
                     {
-                        ValidateResponse(m, httpVersion);
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
+
                         string r = await m.Content.ReadAsStringAsync();
                         if (r != "") throw new Exception($"Got unexpected response: {r}");
                     }
@@ -320,11 +381,19 @@ namespace HttpStress
             };
 
         // Validation of a response message
-        private static void ValidateResponse(HttpResponseMessage m, Version expectedVersion)
+        private static void ValidateHttpVersion(HttpResponseMessage m, Version expectedVersion)
         {
             if (m.Version != expectedVersion)
             {
                 throw new Exception($"Expected response version {expectedVersion}, got {m.Version}");
+            }
+        }
+
+        private static void ValidateStatusCode(HttpResponseMessage m, HttpStatusCode expectedStatus = HttpStatusCode.OK)
+        {
+            if (m.StatusCode != expectedStatus)
+            {
+                throw new Exception($"Expected status code {expectedStatus}, got {m.StatusCode}");
             }
         }
 
@@ -336,11 +405,11 @@ namespace HttpStress
             }
         }
 
-        private static string GetGetQueryParameters(ref string uri, int maxRequestLineSize, string contentSource, RequestContext clientContext, int numParameters)
+        private static string GetGetQueryParameters(ref string uri, int maxRequestUriSize, RequestContext clientContext, int numParameters)
         {
-            if (maxRequestLineSize < uri.Length)
+            if (maxRequestUriSize < uri.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxRequestLineSize));
+                throw new ArgumentOutOfRangeException(nameof(maxRequestUriSize));
             }
             if (numParameters <= 0)
             {
@@ -349,16 +418,16 @@ namespace HttpStress
 
             var expectedString = new StringBuilder();
             var uriSb = new StringBuilder(uri);
-            maxRequestLineSize -= uri.Length;
+            maxRequestUriSize -= clientContext.BaseAddress.OriginalString.Length + uri.Length + 1;
 
-            int appxMaxValueLength = Math.Max(maxRequestLineSize / numParameters, 1);
+            int appxMaxValueLength = Math.Max(maxRequestUriSize / numParameters, 1);
 
             int num = clientContext.GetRandomInt32(1, numParameters + 1);
             for (int i = 0; i < num; i++)
             {
                 string key = $"{(i == 0 ? "?" : "&")}Var{i}=";
 
-                int remainingLength = maxRequestLineSize - uriSb.Length - key.Length;
+                int remainingLength = maxRequestUriSize - uriSb.Length - key.Length;
                 if (remainingLength <= 0)
                 {
                     break;
@@ -366,7 +435,7 @@ namespace HttpStress
 
                 uriSb.Append(key);
 
-                string value = clientContext.GetRandomString(Math.Min(appxMaxValueLength, remainingLength));
+                string value = clientContext.GetRandomString(0, Math.Min(appxMaxValueLength, remainingLength));
                 expectedString.Append(value);
                 uriSb.Append(value);
             }
@@ -375,9 +444,9 @@ namespace HttpStress
             return expectedString.ToString();
         }
 
-        private static (string, MultipartContent) GetMultipartContent(string contentSource, RequestContext clientContext, int numFormFields)
+        private static (string, MultipartContent) GetMultipartContent(RequestContext clientContext, int numFormFields)
         {
-            var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomSubstring(contentSource), "test_boundary");
+            var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomString(0, clientContext.MaxContentLength), "test_boundary");
             StringBuilder sb = new StringBuilder();
 
             int num = clientContext.GetRandomInt32(1, numFormFields + 1);
@@ -385,7 +454,7 @@ namespace HttpStress
             for (int i = 0; i < num; i++)
             {
                 sb.Append("--test_boundary\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n");
-                string content = clientContext.GetRandomSubstring(contentSource);
+                string content = clientContext.GetRandomString(0, clientContext.MaxContentLength);
                 sb.Append(content);
                 sb.Append("\r\n");
                 multipartContent.Add(new StringContent(content));

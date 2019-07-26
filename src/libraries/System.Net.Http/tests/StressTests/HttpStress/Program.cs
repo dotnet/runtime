@@ -19,17 +19,18 @@ public class Program
     [Flags]
     enum RunMode { server = 1, client = 2, both = 3 }; 
 
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var cmd = new RootCommand();
         cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
         cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<Uri>("serverUri", new Uri("https://localhost:5001")) });
         cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both)});
         cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
-        cmd.AddOption(new Option("-maxRequestLineSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8192) });
+        cmd.AddOption(new Option("-maxRequestUriSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8000) });
         cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null)});
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]>("space-delimited indices", null) });
+        cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]>("space-delimited indices", null) });
         cmd.AddOption(new Option("-trace", "Enable Microsoft-System-Net-Http tracing.") { Argument = new Argument<string>("\"console\" or path") });
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
@@ -51,16 +52,17 @@ public class Program
             return;
         }
 
-        Run(
+        await Run(
             runMode                 : cmdline.ValueForOption<RunMode>("-runMode"),
             serverUri               : cmdline.ValueForOption<Uri>("-serverUri"),
             httpSys                 : cmdline.ValueForOption<bool>("-httpSys"),
             concurrentRequests      : cmdline.ValueForOption<int>("-n"),
             maxContentLength        : cmdline.ValueForOption<int>("-maxContentLength"),
-            maxRequestLineSize      : cmdline.ValueForOption<int>("-maxRequestLineSize"),
+            maxRequestUriSize      : cmdline.ValueForOption<int>("-maxRequestUriSize"),
             httpVersion             : cmdline.ValueForOption<Version>("-http"),
             connectionLifetime      : cmdline.ValueForOption<int?>("-connectionLifetime"),
             opIndices               : cmdline.ValueForOption<int[]>("-ops"),
+            excludedOpIndices       : cmdline.ValueForOption<int[]>("-xops"),
             logPath                 : cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
             aspnetLog               : cmdline.ValueForOption<bool>("-aspnetlog"),
             listOps                 : cmdline.ValueForOption<bool>("-listOps"),
@@ -70,16 +72,35 @@ public class Program
             displayIntervalSeconds  : cmdline.ValueForOption<int>("-displayInterval"));
     }
 
-    private static void Run(RunMode runMode, Uri serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestLineSize, Version httpVersion, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
+    private static async Task Run(RunMode runMode, Uri serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestUriSize, Version httpVersion, int? connectionLifetime, int[] opIndices, int[] excludedOpIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
     {
 
-        if (serverUri.Scheme != "https")
-        {
-            Console.Error.WriteLine("Server uri must be https.");
-            return;
-        }
-
         (string name, Func<RequestContext, Task> op)[] clientOperations = ClientOperations.Operations;
+
+        // handle operation index arguments
+        switch (opIndices, excludedOpIndices)
+        {
+            case (null, null):
+                break;
+            case (_, null):
+                clientOperations = opIndices.Select(i => clientOperations[i]).ToArray();
+                break;
+            case (null, _):
+                opIndices =
+                    Enumerable
+                        .Range(0, clientOperations.Length)
+                        .Concat(excludedOpIndices)
+                        .GroupBy(x => x)
+                        .Where(gp => gp.Count() < 2)
+                        .Select(gp => gp.Key)
+                        .ToArray();
+
+                clientOperations = opIndices.Select(i => clientOperations[i]).ToArray();
+                break;
+            default:
+                Console.Error.WriteLine("Cannot specify both -ops and -xops flags simultaneously");
+                return;
+        }
 
         Console.WriteLine("       .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
         Console.WriteLine("    ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
@@ -112,12 +133,17 @@ public class Program
             return;
         }
 
+        if (serverUri.Scheme != "https")
+        {
+            Console.Error.WriteLine("Server uri must be https.");
+            return;
+        }
+
         if (runMode.HasFlag(RunMode.server))
         {
             // Start the Kestrel web server in-proc.
             Console.WriteLine($"Starting {(httpSys ? "http.sys" : "Kestrel")} server.");
-            var server = new StressServer(serverUri, httpSys, maxContentLength, logPath, aspnetLog);
-            maxRequestLineSize = server.MaxRequestLineSize;
+            var server = new StressServer(serverUri, httpSys, maxContentLength, maxRequestUriSize, logPath, aspnetLog);
             Console.WriteLine($"Server started at {server.ServerUri}");
         }
 
@@ -125,10 +151,6 @@ public class Program
         {
             // Start the client.
             Console.WriteLine($"Starting {concurrentRequests} client workers.");
-            if (opIndices != null)
-            {
-                clientOperations = opIndices.Select(i => clientOperations[i]).ToArray();
-            }
 
             new StressClient(
                 serverUri: serverUri,
@@ -136,7 +158,7 @@ public class Program
                 concurrentRequests: concurrentRequests,
                 maxContentLength: maxContentLength,
                 maxRequestParameters: numParameters,
-                maxRequestLineSize: maxRequestLineSize,
+                maxRequestUriSize: maxRequestUriSize,
                 randomSeed: seed,
                 cancellationProbability: cancellationProbability,
                 http2Probability: (httpVersion == new Version(2, 0)) ? 1 : 0,
@@ -144,7 +166,7 @@ public class Program
                 displayInterval: TimeSpan.FromSeconds(displayIntervalSeconds));
         }
 
-        AwaitCancelKeyPress().Wait();
+        await AwaitCancelKeyPress();
     }
 
     private static async Task AwaitCancelKeyPress()

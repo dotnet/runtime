@@ -20,7 +20,7 @@ namespace HttpStress
 
         // TOCONSIDER: configuration class to avoid threading so many parameters
         public StressClient(Uri serverUri, (string name, Func<RequestContext, Task> operation)[] clientOperations, int concurrentRequests,
-                                int maxContentLength, int maxRequestParameters, int maxRequestLineSize,
+                                int maxContentLength, int maxRequestParameters, int maxRequestUriSize,
                                 int randomSeed, double cancellationProbability, double http2Probability,
                                 int? connectionLifetime, TimeSpan displayInterval)
         {
@@ -125,7 +125,7 @@ namespace HttpStress
                         // Random instance should be shared across all requests made by same worker
                         Random random = CreateRandomInstance();
 
-                        return () => new RequestContext(client, random, taskNum, contentSource, maxRequestParameters, maxRequestLineSize, cancellationProbability, http2Probability);
+                        return () => new RequestContext(client, random, taskNum, contentSource, maxRequestParameters, maxRequestUriSize, cancellationProbability, http2Probability);
                     }
 
                     async Task RunWorker(int taskNum)
@@ -174,7 +174,7 @@ namespace HttpStress
                     }
 
                     // Start N workers, each of which sits in a loop making requests.
-                    Task[] tasks = Enumerable.Range(0, concurrentRequests - 1).Select(RunWorker).ToArray();
+                    Task[] tasks = Enumerable.Range(0, concurrentRequests).Select(RunWorker).ToArray();
                     await Task.WhenAll(tasks);
                 }
             }
