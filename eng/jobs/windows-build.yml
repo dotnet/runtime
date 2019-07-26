@@ -36,6 +36,7 @@ jobs:
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)
+      TargetArchitecture: ${{ parameters.targetArchitecture }}
 
     steps:
 
@@ -59,6 +60,16 @@ jobs:
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build
+
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['DisableVSPublish'], 'true')) }}:
+      - task: NuGetCommand@2
+        displayName: Push Visual Studio NuPkgs
+        inputs:
+          command: push
+          packagesToPush: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/*/VS.Redist.Common.*.nupkg'
+          nuGetFeedType: external
+          publishFeedCredentials: 'DevDiv - VS package feed'
+        condition: and(succeeded(), or(eq(variables['TargetArchitecture'], 'x64'), eq(variables['TargetArchitecture'], 'x86')), eq(variables['_BuildConfig'], 'Release'))
 
     - template: steps/upload-job-artifacts.yml
       parameters:
