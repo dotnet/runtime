@@ -26,7 +26,7 @@ public class Program
         cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<Uri>("serverUri", new Uri("https://localhost:5001")) });
         cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both)});
         cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
-        cmd.AddOption(new Option("-maxRequestLineSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8192) });
+        cmd.AddOption(new Option("-maxRequestUriSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8000) });
         cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null)});
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]>("space-delimited indices", null) });
@@ -58,7 +58,7 @@ public class Program
             httpSys                 : cmdline.ValueForOption<bool>("-httpSys"),
             concurrentRequests      : cmdline.ValueForOption<int>("-n"),
             maxContentLength        : cmdline.ValueForOption<int>("-maxContentLength"),
-            maxRequestLineSize      : cmdline.ValueForOption<int>("-maxRequestLineSize"),
+            maxRequestUriSize      : cmdline.ValueForOption<int>("-maxRequestUriSize"),
             httpVersion             : cmdline.ValueForOption<Version>("-http"),
             connectionLifetime      : cmdline.ValueForOption<int?>("-connectionLifetime"),
             opIndices               : cmdline.ValueForOption<int[]>("-ops"),
@@ -72,7 +72,7 @@ public class Program
             displayIntervalSeconds  : cmdline.ValueForOption<int>("-displayInterval"));
     }
 
-    private static async Task Run(RunMode runMode, Uri serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestLineSize, Version httpVersion, int? connectionLifetime, int[] opIndices, int[] excludedOpIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
+    private static async Task Run(RunMode runMode, Uri serverUri, bool httpSys, int concurrentRequests, int maxContentLength, int maxRequestUriSize, Version httpVersion, int? connectionLifetime, int[] opIndices, int[] excludedOpIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability, int displayIntervalSeconds)
     {
 
         (string name, Func<RequestContext, Task> op)[] clientOperations = ClientOperations.Operations;
@@ -143,8 +143,7 @@ public class Program
         {
             // Start the Kestrel web server in-proc.
             Console.WriteLine($"Starting {(httpSys ? "http.sys" : "Kestrel")} server.");
-            var server = new StressServer(serverUri, httpSys, maxContentLength, logPath, aspnetLog);
-            maxRequestLineSize = server.MaxRequestLineSize;
+            var server = new StressServer(serverUri, httpSys, maxContentLength, maxRequestUriSize, logPath, aspnetLog);
             Console.WriteLine($"Server started at {server.ServerUri}");
         }
 
@@ -159,7 +158,7 @@ public class Program
                 concurrentRequests: concurrentRequests,
                 maxContentLength: maxContentLength,
                 maxRequestParameters: numParameters,
-                maxRequestLineSize: maxRequestLineSize,
+                maxRequestUriSize: maxRequestUriSize,
                 randomSeed: seed,
                 cancellationProbability: cancellationProbability,
                 http2Probability: (httpVersion == new Version(2, 0)) ? 1 : 0,
