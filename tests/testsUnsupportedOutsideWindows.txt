@@ -87,8 +87,6 @@ baseservices/threading/threadpool/bindhandle/bindhandleinvalid5/bindhandleinvali
 baseservices/threading/threadpool/bindhandle/bindhandleinvalid6/bindhandleinvalid6.sh
 baseservices/threading/volatile/atomictest/atomictest.sh
 baseservices/threading/waithandle/abandonedmutexscenarios/threadabort/threadabort.sh
-baseservices/threading/waithandle/waitany/waitanyex2/waitanyex2.sh
-baseservices/threading/waithandle/waitany/waitanyex4/waitanyex4.sh
 CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact2/DateTimeParseExact2.sh
