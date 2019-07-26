@@ -63,7 +63,7 @@ namespace HttpStress
                 // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
                 host = host.UseKestrel(ko =>
                 {
-                    MaxRequestLineSize = ko.Limits.MaxRequestLineSize;
+                    MaxRequestLineSize = ko.Limits.MaxRequestLineSize - 10;
                     ko.ListenLocalhost(serverUri.Port, listenOptions =>
                     {
                         // Create self-signed cert for server.
