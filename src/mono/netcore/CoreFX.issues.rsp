@@ -12,9 +12,6 @@
 # https://github.com/mono/mono/issues/14854
 -nomethod Microsoft.VisualBasic.Tests.ErrObjectTests.Clear
 
-# Microsoft.VisualBasic.ApplicationServices.AssemblyInfo.LoadedAssemblies not implemented
--nomethod Microsoft.VisualBasic.ApplicationServices.Tests.AssemblyInfoTests.LoadedAssemblies
-
 ####################################################################
 ##  System.CodeDom.Tests
 ####################################################################
