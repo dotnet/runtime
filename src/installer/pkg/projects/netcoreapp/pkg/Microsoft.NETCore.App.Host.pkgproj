@@ -6,4 +6,16 @@
   -->
   <Import Project="..\..\Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.props" />
 
+  <!--
+    These files are not signed, because they're templates: they are modified by the SDK on the
+    user's machine before use. We have a signing validation exception for Visual Studio insertion's
+    signature validation. However, the exceptions are based on the file IDs, which are not stable
+    because product version is in the path. We need to force these IDs to be stable by modifying
+    the WiX source file. https://github.com/dotnet/core-setup/issues/7327
+  -->
+  <ItemGroup>
+    <HeatOutputFileElementToStabilize Include="native\apphost.exe" ReplacementId="apphosttemplateapphostexe" />
+    <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
+  </ItemGroup>
+
 </Project>
