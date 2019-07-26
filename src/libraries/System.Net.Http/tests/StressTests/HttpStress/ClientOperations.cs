@@ -48,6 +48,7 @@ namespace HttpStress
         public int MaxRequestParameters { get; }
         public int MaxRequestUriSize { get; }
         public int MaxContentLength => ContentSource.Length;
+        public Uri BaseAddress => _client.BaseAddress;
 
         // HttpClient.SendAsync() wrapper that wires randomized cancellation
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
@@ -417,7 +418,7 @@ namespace HttpStress
 
             var expectedString = new StringBuilder();
             var uriSb = new StringBuilder(uri);
-            maxRequestUriSize -= uri.Length;
+            maxRequestUriSize -= clientContext.BaseAddress.OriginalString.Length + uri.Length + 1;
 
             int appxMaxValueLength = Math.Max(maxRequestUriSize / numParameters, 1);
 
