@@ -6936,6 +6936,7 @@ if test x$buildsgen = xyes; then
 fi
 
 if test "x$with_core" == "xonly"; then
+  echo "VERSION = $VERSION" > netcore/config.make
   echo "RID = $RID" >> netcore/config.make
   echo "COREARCH = $COREARCH" >> netcore/config.make
   echo "CORETARGETS = $CORETARGETS" >> netcore/config.make
