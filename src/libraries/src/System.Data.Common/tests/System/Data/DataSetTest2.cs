@@ -1440,21 +1440,15 @@ namespace System.Data.Tests
             //-------------------- begin to check ----------------------------------------------
             // merge 1 - make sure the merge method invoked without exceptions
             dsTarget.Merge(ds);
-            Assert.Equal("Success", "Success");
-
             CompareResults_1("merge 1", ds, dsTarget);
 
             //merge again,
             // merge 2 - make sure the merge method invoked without exceptions
             dsTarget.Merge(ds);
-            Assert.Equal("Success", "Success");
-
             CompareResults_1("merge 2", ds, dsTarget);
 
             // merge second dataset - make sure the merge method invoked without exceptions
             dsTarget1.Merge(ds);
-            Assert.Equal("Success", "Success");
-
             CompareResults_2("merge 3", ds, dsTarget1);
         }
 
