@@ -1090,14 +1090,13 @@ namespace System.Net.Http.Functional.Tests
             }, envVarValue, isInstrumentationEnabled.ToString()).Dispose();
         }
 
-        [ActiveIssue(39691)]
         [OuterLoop("Uses external server")]
         [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue, bool isInstrumentationEnabled)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
         {
-            RemoteExecutor.Invoke((innerSwitchValue, innerIsInstrumentationEnabled) =>
+            RemoteExecutor.Invoke(innerSwitchValue =>
             {
                 AppContext.SetSwitch(EnableActivityPropagationAppCtxSettingName, bool.Parse(innerSwitchValue));
 
@@ -1106,12 +1105,12 @@ namespace System.Net.Http.Functional.Tests
                     Activity parent = new Activity("parent").Start();
                     using HttpResponseMessage response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
                     parent.Stop();
-                    Assert.Equal(bool.Parse(innerIsInstrumentationEnabled), response.RequestMessage.Headers.Contains(
+                    Assert.Equal(bool.Parse(innerSwitchValue), response.RequestMessage.Headers.Contains(
                         parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, switchValue.ToString(), isInstrumentationEnabled.ToString()).Dispose();
+            }, switchValue.ToString()).Dispose();
         }
 
         [ActiveIssue(23209)]
