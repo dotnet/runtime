@@ -394,6 +394,7 @@ OPDEF(MINT_LDELEM_VT, "ldelem.vt", 3, MintOpInt)
 
 OPDEF(MINT_LDELEMA, "ldelema", 3, MintOpTwoShorts)
 OPDEF(MINT_LDELEMA_TC, "ldelema.tc", 3, MintOpTwoShorts)
+OPDEF(MINT_LDELEMA_FAST, "ldelema.fast", 3, MintOpInt)
 
 OPDEF(MINT_STELEM_I, "stelem.i", 1, MintOpNoArgs)
 OPDEF(MINT_STELEM_I1, "stelem.i1", 1, MintOpNoArgs)

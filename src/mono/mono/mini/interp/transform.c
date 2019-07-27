@@ -4749,7 +4749,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
 			break;
-		case CEE_LDELEMA:
+		case CEE_LDELEMA: {
+			gint32 size;
 			CHECK_STACK (td, 2);
 			ENSURE_I4 (td, 1);
 			token = read32 (td->ip + 1);
@@ -4769,18 +4770,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				mono_class_setup_vtable (klass);
 				CHECK_TYPELOAD (klass);
 				interp_add_ins (td, MINT_LDELEMA_TC);
+				td->last_ins->data [0] = get_data_item_index (td, klass);
+				td->last_ins->data [1] = 2;
 			} else {
-				interp_add_ins (td, MINT_LDELEMA);
+				interp_add_ins (td, MINT_LDELEMA_FAST);
+				mono_class_init_internal (klass);
+				size = mono_class_array_element_size (klass);
+				WRITE32_INS (td->last_ins, 0, &size);
 			}
-			td->last_ins->data [0] = get_data_item_index (td, klass);
-			/* according to spec, ldelema bytecode is only used for 1-dim arrays */
-			td->last_ins->data [1] = 2;
+
 			readonly = FALSE;
 
 			td->ip += 5;
 			--td->sp;
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_MP);
 			break;
+		}
 		case CEE_LDELEM_I1:
 			CHECK_STACK (td, 2);
 			ENSURE_I4 (td, 1);

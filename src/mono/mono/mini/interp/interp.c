@@ -5275,6 +5275,22 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			sp [-1].data.i = m_class_get_rank (mono_object_class (sp [-1].data.p));
 			ip++;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEMA_FAST) {
+			/* No bounds, one direction */
+			gint32 size = READ32 (ip + 1);
+			gint32 index = sp [-1].data.i;
+
+			MonoArray *ao = (MonoArray*)sp [-2].data.o;
+			if (!ao)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			if (index >= ao->max_length)
+				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+			sp [-2].data.p = mono_array_addr_with_size_fast (ao, size, index);
+			ip += 3;
+			sp --;
+
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDELEMA)
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
 			gboolean needs_typecheck = *ip == MINT_LDELEMA_TC;
