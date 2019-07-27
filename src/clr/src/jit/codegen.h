@@ -594,7 +594,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * in terms of the native code PC.
  */
 
-#endif // USING_VARIABLE_LIVE_RANGE
+#endif // USING_SCOPE_INFO
 public:
     void siInit();
     void checkICodeDebugInfo();
