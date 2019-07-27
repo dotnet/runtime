@@ -7131,18 +7131,6 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array)
 	return mono_array_get_byte_length (array);
 }
 
-gint8 
-ves_icall_System_Buffer_GetByteInternal (MonoArray *array, gint32 idx) 
-{
-	return mono_array_get_internal (array, gint8, idx);
-}
-
-void 
-ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 idx, gint8 value) 
-{
-	mono_array_set_internal (array, gint8, idx, value);
-}
-
 void
 ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32 count)
 {

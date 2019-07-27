@@ -25,8 +25,4 @@
 gpointer
 mono_security_principal_windows_identity_get_current_token (MonoError *error);
 
-ICALL_EXPORT
-MonoArray*
-ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
-
 #endif /* _MONO_METADATA_SECURITY_H_ */

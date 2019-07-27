@@ -36,14 +36,11 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *
 	return mono_security_principal_windows_identity_get_current_token (error);
 }
 
-MonoArray*
-ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
+MonoArrayHandle
+ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, MonoError *error)
 {
-	// FIXME This is now supported by UWP.
-	ERROR_DECL (error); // FIXMEcoop
 	mono_security_win_not_supported ("GetTokenInformation", error);
-	mono_error_set_pending_exception (error); // FIXMEcoop
-	return NULL;
+	return NULL_HANDLE_ARRAY;
 }
 
 gpointer

@@ -329,22 +329,15 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHand
 */
 
 #ifndef HOST_WIN32
-MonoArray*
-ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
+MonoArrayHandle
+ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoArray *array = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
 	/* POSIX-compliant systems should use IsMemberOfGroupId or IsMemberOfGroupName */
 	g_warning ("WindowsIdentity._GetRoles should never be called on POSIX");
 
-	if (!array) {
-		/* return empty array of string, i.e. string [0] */
-		array = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
-		mono_error_set_pending_exception (error);
-	}
-	return array;
+	return mono_array_new_handle (domain, mono_get_string_class (), 0, error);
 }
 #endif /* !HOST_WIN32 */
 
