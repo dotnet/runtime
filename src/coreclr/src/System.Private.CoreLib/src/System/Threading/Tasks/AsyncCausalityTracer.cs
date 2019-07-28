@@ -33,8 +33,7 @@ namespace System.Threading.Tasks
         //Indicates this information comes from the BCL Library
         private const WFD.CausalitySource s_CausalitySource = WFD.CausalitySource.Library;
 
-        //Lazy initialize the actual factory
-        private static WFD.IAsyncCausalityTracerStatics s_TracerFactory;
+        private static WFD.IAsyncCausalityTracerStatics s_TracerFactory = null!;
 
         // The loggers that this Tracer knows about. 
         [Flags]

@@ -4342,7 +4342,7 @@ namespace System
             }
         }
 
-        private static OleAutBinder s_ForwardCallBinder;
+        private static OleAutBinder? s_ForwardCallBinder;
         private OleAutBinder ForwardCallBinder
         {
             get => s_ForwardCallBinder ?? (s_ForwardCallBinder = new OleAutBinder());

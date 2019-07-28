@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private object _data;
 
         // Numeric scalar types which participate in coersion
-        private static volatile Tuple<Type, PropertyType>[] s_numericScalarTypes;
+        private static volatile Tuple<Type, PropertyType>[]? s_numericScalarTypes;
 
         internal CLRIPropertyValueImpl(PropertyType type, object data)
         {

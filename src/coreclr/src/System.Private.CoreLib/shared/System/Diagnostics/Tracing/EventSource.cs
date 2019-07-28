@@ -3956,7 +3956,7 @@ namespace System.Diagnostics.Tracing
         // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
 
         // used for generating GUID from eventsource name
-        private static byte[] namespaceBytes;
+        private static byte[]? namespaceBytes;
 
 #endregion
     }

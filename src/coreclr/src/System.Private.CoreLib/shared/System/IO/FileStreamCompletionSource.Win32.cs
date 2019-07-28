@@ -24,7 +24,7 @@ namespace System.IO
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
 
-            private static Action<object?> s_cancelCallback;
+            private static Action<object?>? s_cancelCallback;
 
             private readonly FileStream _stream;
             private readonly int _numBufferedBytes;

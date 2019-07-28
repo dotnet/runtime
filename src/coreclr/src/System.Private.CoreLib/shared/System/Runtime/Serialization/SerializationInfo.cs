@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
         // On AoT, assume private members are reflection blocked, so there's no further protection required
         // for the thread's DeserializationTracker
         [ThreadStatic]
-        private static DeserializationTracker t_deserializationTracker;
+        private static DeserializationTracker? t_deserializationTracker;
 
         private static DeserializationTracker GetThreadDeserializationTracker()
         {
