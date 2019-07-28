@@ -306,8 +306,8 @@ namespace System.Tests
             var dateTimeOffset3 = new DateTimeOffset(new DateTime(1996, 10, 12, 8, 42, 0, DateTimeKind.Utc));
 
             yield return new object[] { dateTimeOffset2, dateTimeOffset1, new TimeSpan(185, 14, 47, 0) };
-            yield return new object[] { dateTimeOffset1, dateTimeOffset2, new TimeSpan(-185, -14, -47, 0) };
-            yield return new object[] { dateTimeOffset1, dateTimeOffset2, new TimeSpan(-185, -14, -47, 0) };
+            yield return new object[] { dateTimeOffset1, dateTimeOffset2, -new TimeSpan(185, 14, 47, 0) };
+            yield return new object[] { dateTimeOffset1, dateTimeOffset3, -new TimeSpan(130, 10, 27, 0) };
         }
 
         [Theory]
@@ -674,7 +674,44 @@ namespace System.Tests
             DateTimeOffset dateTimeOffset = new DateTimeOffset(new DateTime(1000, DateTimeKind.Utc));
             Assert.Equal(new DateTimeOffset(dateTimeOffset.UtcDateTime.ToLocalTime()), dateTimeOffset.ToLocalTime());
         }
-        
+
+        public static bool IsMinValueNegativeLocalOffset() => TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)).Ticks < 0;
+
+        [ConditionalFact(nameof(IsMinValueNegativeLocalOffset))]
+        public static void ToLocalTime_MinValue()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dateTimeOffset);
+            Assert.Equal(new DateTimeOffset(DateTime.MinValue, offset), dateTimeOffset.ToLocalTime());
+        }
+
+        public static bool IsMaxValuePositiveLocalOffset() => TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc)).Ticks > 0;
+
+        [ConditionalFact(nameof(IsMaxValuePositiveLocalOffset))]
+        public static void ToLocalTime_MaxValue()
+        {
+            DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dateTimeOffset);
+            Assert.Equal(new DateTimeOffset(DateTime.MaxValue, offset), dateTimeOffset.ToLocalTime());
+        }
+
+        public static bool IsPacificTime() => TimeZoneInfo.Local.Id == "Pacific Standard Time";
+
+        public static IEnumerable<object[]> ToLocalTime_Ambiguous_TestData()
+        {
+            yield return new object[] { new DateTime(2019, 11, 3, 8, 0, 0), new TimeSpan(-7, 0, 0) };
+            yield return new object[] { new DateTime(2019, 11, 3, 9, 0, 0), new TimeSpan(-8, 0, 0) };
+        }
+
+        [ConditionalTheory(nameof(IsPacificTime))]
+        [MemberData(nameof(ToLocalTime_Ambiguous_TestData))]
+        public static void ToLocalTime_Ambiguous(DateTime utc, TimeSpan offset)
+        {
+            DateTimeOffset expectedLocalTime = new DateTimeOffset(utc + offset, offset);
+            DateTimeOffset actualLocalTime = new DateTimeOffset(utc, default).ToLocalTime();
+            Assert.Equal(expectedLocalTime, actualLocalTime);
+        }
+
         public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { DateTimeOffset.MinValue, DateTimeOffset.MinValue, true, true };
