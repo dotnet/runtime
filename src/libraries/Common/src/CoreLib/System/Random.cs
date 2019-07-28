@@ -116,7 +116,7 @@ namespace System
         }
 
         [ThreadStatic]
-        private static Random t_threadRandom;
+        private static Random? t_threadRandom;
         private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
 
         /*=====================================GenerateSeed=====================================
@@ -125,7 +125,7 @@ namespace System
         ========================================================================================*/
         private static int GenerateSeed()
         {
-            Random rnd = t_threadRandom;
+            Random? rnd = t_threadRandom;
             if (rnd == null)
             {
                 int seed;

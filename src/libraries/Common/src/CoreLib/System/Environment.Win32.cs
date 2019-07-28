@@ -404,7 +404,7 @@ namespace System
 #if FEATURE_APPX
         private static class WinRTFolderPaths
         {
-            private static Func<SpecialFolder, SpecialFolderOption, string> s_winRTFolderPathsGetFolderPath;
+            private static Func<SpecialFolder, SpecialFolderOption, string>? s_winRTFolderPathsGetFolderPath;
 
             public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
             {
