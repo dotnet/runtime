@@ -632,7 +632,7 @@ namespace System.Tests
                 //
                 // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
                 Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));
-                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
 
                 GC.EndNoGCRegion();
@@ -651,7 +651,7 @@ namespace System.Tests
                 {
 
                     Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget));
-                    Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                    Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                     GC.EndNoGCRegion();
 
                     return RemoteExecutor.SuccessExitCode;
@@ -668,7 +668,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
-                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
 
                 return RemoteExecutor.SuccessExitCode;
@@ -685,7 +685,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
-                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
 
                 return RemoteExecutor.SuccessExitCode;
@@ -702,7 +702,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
-                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
 
                 return RemoteExecutor.SuccessExitCode;

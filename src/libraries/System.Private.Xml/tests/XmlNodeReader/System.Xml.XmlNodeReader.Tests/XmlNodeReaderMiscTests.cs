@@ -44,7 +44,7 @@ namespace System.Xml.Tests
             var namespaceResolver = nodeReader as IXmlNamespaceResolver;
             Assert.Null(namespaceResolver.LookupNamespace("prefix"));
             Assert.Collection(namespaceResolver.GetNamespacesInScope(XmlNamespaceScope.All)
-                , kv => Assert.Equal(kv.Key, "xml"));
+                , kv => Assert.Equal("xml", kv.Key));
             Assert.Empty(namespaceResolver.GetNamespacesInScope(XmlNamespaceScope.Local));
         }
 

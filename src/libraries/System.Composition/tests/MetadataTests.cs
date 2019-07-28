@@ -38,8 +38,8 @@ namespace System.Composition.UnitTests
             var cc = CreateContainer(typeof(MetadataCircularityA), typeof(MetadataCircularityB));
             var a = cc.GetExport<MetadataCircularityA>();
 
-            Assert.Equal(a.B.Metadata.Name, "B");
-            Assert.Equal(a.B.Value.A.Metadata.Name, "A");
+            Assert.Equal("B", a.B.Metadata.Name);
+            Assert.Equal("A", a.B.Value.A.Metadata.Name);
         }
 
         [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]

@@ -26,7 +26,7 @@ namespace EncodingTests
                     new byte[] {0x28, 0x75, 0x6E, 0x6B, 0x6E, 0x6F, 0x77, 0x6E, 0x29, 0x58, 0x28, 0x75, 0x6E, 0x6B, 0x6E, 0x6F, 0x77, 0x6E, 0x29 });
 
             string decodedString = asciiEncoding.GetString(encodedBytes);
-            Assert.Equal(decodedString, "(unknown)X(unknown)");
+            Assert.Equal("(unknown)X(unknown)", decodedString);
 
             // Test when the fallback will not occur
             encodedBytes = new byte[asciiEncoding.GetByteCount(s_asciiInputStringWinNoFallback)];
@@ -40,7 +40,7 @@ namespace EncodingTests
         public static void TestDecoderReplacementFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback("(unknown)"), new DecoderReplacementFallback("Error"));
-            Assert.Equal(asciiEncoding.GetString(new byte [] { 0xAA, (byte)'x', 0xAB }), "ErrorxError");
+            Assert.Equal("ErrorxError", asciiEncoding.GetString(new byte [] { 0xAA, (byte)'x', 0xAB }));
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace EncodingTests
                     new byte[] {(byte) 'a', 0x58, (byte) 'b'});
 
             string decodedString = asciiEncoding.GetString(encodedBytes);
-            Assert.Equal(decodedString, "aXb");
+            Assert.Equal("aXb", decodedString);
         }
     }
 

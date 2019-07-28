@@ -152,7 +152,7 @@ namespace System.IO.Tests
             {
                 string s = Path.GetRandomFileName();
                 Assert.Equal(s.Length, 8 + 1 + 3);
-                Assert.Equal(s[8], '.');
+                Assert.Equal('.', s[8]);
                 Assert.Equal(-1, s.IndexOfAny(invalidChars));
                 Assert.True(fileNames.Add(s));
             }

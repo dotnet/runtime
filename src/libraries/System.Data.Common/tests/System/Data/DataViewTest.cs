@@ -260,10 +260,10 @@ namespace System.Data.Tests
             another_new_row[0] = "9";
             another_new_row[1] = "10";
 
-            Assert.Equal(dv[2][0], "9");
+            Assert.Equal("9", dv[2][0]);
 
             //This should not throw a System.Data.VersionNotFoundException: "There is no proposed data to access"
-            Assert.Equal(dv[1][0], "7");
+            Assert.Equal("7", dv[1][0]);
         }
 
         [Fact]

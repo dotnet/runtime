@@ -350,8 +350,8 @@ namespace System.Text.Json.Serialization.Tests
         public static void PocoWithDictionaryObject()
         {
             PocoDictionary dict = JsonSerializer.Deserialize<PocoDictionary>("{\n\t\"key\" : {\"a\" : \"b\", \"c\" : \"d\"}}");
-            Assert.Equal(dict.key["a"], "b");
-            Assert.Equal(dict.key["c"], "d");
+            Assert.Equal("b", dict.key["a"]);
+            Assert.Equal("d", dict.key["c"]);
         }
 
         public class PocoDictionary

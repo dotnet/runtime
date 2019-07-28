@@ -288,7 +288,7 @@ namespace System.Net.Sockets.Tests
                         }
                         catch (SocketException e)
                         {
-                            Assert.Equal(e.SocketErrorCode, SocketError.WouldBlock);
+                            Assert.Equal(SocketError.WouldBlock, e.SocketErrorCode);
 
                             //No more requests in queue
                             break;

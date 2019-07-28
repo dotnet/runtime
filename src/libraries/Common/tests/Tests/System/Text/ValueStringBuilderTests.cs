@@ -273,9 +273,9 @@ namespace System.Text.Tests
 
             vsb.Append(Text1);
 
-            Assert.Equal(vsb[3], 'b');
+            Assert.Equal('b', vsb[3]);
             vsb[3] = 'c';
-            Assert.Equal(vsb[3], 'c');
+            Assert.Equal('c', vsb[3]);
         }
 
         [Fact]

@@ -442,13 +442,13 @@ namespace System.Diagnostics.Tests
                     // add two new subscribers
                     using (var listener1 = new DiagnosticListener("TestListen1"))
                     {
-                        Assert.Equal(listener1.Name, "TestListen1");
+                        Assert.Equal("TestListen1", listener1.Name);
                         Assert.Equal(listener1, returnedListener);
                         returnedListener = null;
 
                         using (var listener2 = new DiagnosticListener("TestListen2"))
                         {
-                            Assert.Equal(listener2.Name, "TestListen2");
+                            Assert.Equal("TestListen2", listener2.Name);
                             Assert.Equal(listener2, returnedListener);
                             returnedListener = null;
                         }   // Dispose of listener2

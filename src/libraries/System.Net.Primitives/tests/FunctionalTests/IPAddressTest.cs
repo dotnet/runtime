@@ -131,7 +131,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(0, ip.ScopeId);
 
             ip.ScopeId = 700;
-            Assert.Equal(ip.ScopeId, 700);
+            Assert.Equal(700, ip.ScopeId);
 
             ip.ScopeId = 700;
         }

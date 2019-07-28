@@ -24,15 +24,15 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void Get_UnderlyingType()
         {
-            Assert.Equal(NullableConverterTests.s_intNullableConverter.UnderlyingType, typeof(int));
-            Assert.Equal(NullableConverterTests.s_myNullableConverter.UnderlyingType, typeof(SomeValueType));
+            Assert.Equal(typeof(int), NullableConverterTests.s_intNullableConverter.UnderlyingType);
+            Assert.Equal(typeof(SomeValueType), NullableConverterTests.s_myNullableConverter.UnderlyingType);
         }
 
         [Fact]
         public static void Get_NullableType()
         {
-            Assert.Equal(NullableConverterTests.s_intNullableConverter.NullableType, typeof(int?));
-            Assert.Equal(NullableConverterTests.s_myNullableConverter.NullableType, typeof(SomeValueType?));
+            Assert.Equal(typeof(int?), NullableConverterTests.s_intNullableConverter.NullableType);
+            Assert.Equal(typeof(SomeValueType?), NullableConverterTests.s_myNullableConverter.NullableType);
         }
 
         [Fact]

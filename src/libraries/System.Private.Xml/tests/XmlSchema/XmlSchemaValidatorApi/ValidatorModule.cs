@@ -186,8 +186,8 @@ namespace System.Xml.Tests
             val.ValidateEndElement(si);
             val.ValidateEndElement(si);
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(0, errorCount);
         }
 
         public void ValidateWithXmlReader(XmlSchemaSet schemas, string xml, string xsd)
@@ -262,8 +262,8 @@ namespace System.Xml.Tests
             {
                 while (r.Read()) ;
             }
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(0, errorCount);
         }
 
         public void ValidateSchemaSet(XmlSchemaSet ss, int schCount, bool isCompiled, int countGT, int countGE, int countGA, string str)

@@ -36,11 +36,11 @@ namespace BasicEventSourceTests
             using (var mySource = new ContractEventSourceWithTraits())
             {
                 // By default we are self-describing.  
-                Assert.Equal(mySource.Settings, EventSourceSettings.EtwSelfDescribingEventFormat);
-                Assert.Equal(mySource.GetTrait("MyTrait"), "MyTraitValue");
-                Assert.Equal(mySource.GetTrait("ETW_GROUP"), "{4f50731a-89cf-4782-b3e0-dce8c90476ba}");
-                Assert.Equal(mySource.GetTrait("ETW_2"), "#01 02 03 04");
-                Assert.Equal(mySource.GetTrait("ETW_3"), "@Hello");
+                Assert.Equal(EventSourceSettings.EtwSelfDescribingEventFormat, mySource.Settings);
+                Assert.Equal("MyTraitValue", mySource.GetTrait("MyTrait"));
+                Assert.Equal("{4f50731a-89cf-4782-b3e0-dce8c90476ba}", mySource.GetTrait("ETW_GROUP"));
+                Assert.Equal("#01 02 03 04", mySource.GetTrait("ETW_2"));
+                Assert.Equal("@Hello", mySource.GetTrait("ETW_3"));
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
@@ -54,9 +54,9 @@ namespace BasicEventSourceTests
                 "ETW_GROUP", "{4f50731a-89cf-4782-b3e0-dce8c90476ba}"))
             {
                 // By default we are self-describing.  
-                Assert.Equal(mySource.Settings, EventSourceSettings.EtwSelfDescribingEventFormat);
-                Assert.Equal(mySource.GetTrait("MyTrait"), "MyTraitValue");
-                Assert.Equal(mySource.GetTrait("ETW_GROUP"), "{4f50731a-89cf-4782-b3e0-dce8c90476ba}");
+                Assert.Equal(EventSourceSettings.EtwSelfDescribingEventFormat, mySource.Settings);
+                Assert.Equal("MyTraitValue", mySource.GetTrait("MyTrait"));
+                Assert.Equal("{4f50731a-89cf-4782-b3e0-dce8c90476ba}", mySource.GetTrait("ETW_GROUP"));
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }

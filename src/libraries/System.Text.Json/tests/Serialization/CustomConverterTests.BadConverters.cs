@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Tests
             catch (JsonException ex)
             {
                 Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal(ex.Path, "$.Level2.Level3s[1]");
+                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
             }
         }
 
@@ -253,7 +253,7 @@ namespace System.Text.Json.Serialization.Tests
             catch (JsonException ex)
             {
                 Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal(ex.Path, "$.Level2.Level3s[1]");
+                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
             }
         }
 
@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Tests
             catch (JsonException ex)
             {
                 Assert.Contains("$.Level2.Level3s", ex.ToString());
-                Assert.Equal(ex.Path, "$.Level2.Level3s");
+                Assert.Equal("$.Level2.Level3s", ex.Path);
             }
         }
 

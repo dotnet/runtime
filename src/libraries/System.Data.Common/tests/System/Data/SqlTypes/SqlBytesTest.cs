@@ -38,7 +38,7 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes();
             try
             {
-                Assert.Equal(bytes[0], 0);
+                Assert.Equal(0, bytes[0]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -49,7 +49,7 @@ namespace System.Data.Tests.SqlTypes
             bytes = new SqlBytes(b);
             try
             {
-                Assert.Equal(bytes[0], 0);
+                Assert.Equal(0, bytes[0]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -58,10 +58,10 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new byte[10];
             bytes = new SqlBytes(b);
-            Assert.Equal(bytes[0], 0);
+            Assert.Equal(0, bytes[0]);
             try
             {
-                Assert.Equal(bytes[-1], 0);
+                Assert.Equal(0, bytes[-1]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -70,7 +70,7 @@ namespace System.Data.Tests.SqlTypes
             }
             try
             {
-                Assert.Equal(bytes[10], 0);
+                Assert.Equal(0, bytes[10]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -85,7 +85,7 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes();
             try
             {
-                Assert.Equal(bytes.Length, 0);
+                Assert.Equal(0, bytes.Length);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -95,7 +95,7 @@ namespace System.Data.Tests.SqlTypes
             bytes = new SqlBytes(b);
             try
             {
-                Assert.Equal(bytes.Length, 0);
+                Assert.Equal(0, bytes.Length);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -104,7 +104,7 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new byte[10];
             bytes = new SqlBytes(b);
-            Assert.Equal(bytes.Length, 10);
+            Assert.Equal(10, bytes.Length);
         }
         [Fact]
         public void SqlBytesMaxLength()
@@ -116,14 +116,14 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(bytes.MaxLength, -1);
             b = new byte[10];
             bytes = new SqlBytes(b);
-            Assert.Equal(bytes.MaxLength, 10);
+            Assert.Equal(10, bytes.MaxLength);
         }
         [Fact]
         public void SqlBytesNull()
         {
             byte[] b = null;
             SqlBytes bytes = SqlBytes.Null;
-            Assert.Equal(bytes.IsNull, true);
+            Assert.True(bytes.IsNull);
         }
         [Fact]
         public void SqlBytesStorage()
@@ -132,7 +132,7 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes();
             try
             {
-                Assert.Equal(bytes.Storage, StorageState.Buffer);
+                Assert.Equal(StorageState.Buffer, bytes.Storage);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -142,7 +142,7 @@ namespace System.Data.Tests.SqlTypes
             bytes = new SqlBytes(b);
             try
             {
-                Assert.Equal(bytes.Storage, StorageState.Buffer);
+                Assert.Equal(StorageState.Buffer, bytes.Storage);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -151,12 +151,12 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new byte[10];
             bytes = new SqlBytes(b);
-            Assert.Equal(bytes.Storage, StorageState.Buffer);
+            Assert.Equal(StorageState.Buffer, bytes.Storage);
             FileStream fs = null;
             bytes = new SqlBytes(fs);
             try
             {
-                Assert.Equal(bytes.Storage, StorageState.Buffer);
+                Assert.Equal(StorageState.Buffer, bytes.Storage);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -172,8 +172,8 @@ namespace System.Data.Tests.SqlTypes
             byte[] b2 = bytes.Value;
             Assert.Equal(b1[0], b2[0]);
             b2[0] = 10;
-            Assert.Equal(b1[0], 0);
-            Assert.Equal(b2[0], 10);
+            Assert.Equal(0, b1[0]);
+            Assert.Equal(10, b2[0]);
         }
         [Fact]
         public void SqlBytesSetLength()
@@ -190,7 +190,7 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Equal(typeof(SqlTypeException), ex.GetType());
             }
             bytes = new SqlBytes(b1);
-            Assert.Equal(bytes.Length, 10);
+            Assert.Equal(10, bytes.Length);
             try
             {
                 bytes.SetLength(-1);
@@ -210,18 +210,18 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             }
             bytes.SetLength(2);
-            Assert.Equal(bytes.Length, 2);
+            Assert.Equal(2, bytes.Length);
         }
         [Fact]
         public void SqlBytesSetNull()
         {
             byte[] b1 = new byte[10];
             SqlBytes bytes = new SqlBytes(b1);
-            Assert.Equal(bytes.Length, 10);
+            Assert.Equal(10, bytes.Length);
             bytes.SetNull();
             try
             {
-                Assert.Equal(bytes.Length, 10);
+                Assert.Equal(10, bytes.Length);
                 Assert.False(true);
             }
             catch (Exception ex)

@@ -126,9 +126,9 @@ namespace System.ComponentModel.Composition
             container.Compose(batch);
 
             Assert.Equal(1, stableImporter.ImportSatisfiedCount);
-            Assert.Equal(stableImporter.GetImport("stable"), 42);
+            Assert.Equal(42, stableImporter.GetImport("stable"));
             Assert.Equal(1, dynamicImporter.ImportSatisfiedCount);
-            Assert.Equal(dynamicImporter.GetImport("dynamic"), 1);
+            Assert.Equal(1, dynamicImporter.GetImport("dynamic"));
 
             batch = new CompositionBatch();
             stableImporter.ResetImportSatisfiedCount();
@@ -138,9 +138,9 @@ namespace System.ComponentModel.Composition
             container.Compose(batch);
 
             Assert.Equal(0, stableImporter.ImportSatisfiedCount);
-            Assert.Equal(stableImporter.GetImport("stable"), 42);
+            Assert.Equal(42, stableImporter.GetImport("stable"));
             Assert.Equal(1, dynamicImporter.ImportSatisfiedCount);
-            Assert.Equal(dynamicImporter.GetImport("dynamic"), 2);
+            Assert.Equal(2, dynamicImporter.GetImport("dynamic"));
         }
     }
 }

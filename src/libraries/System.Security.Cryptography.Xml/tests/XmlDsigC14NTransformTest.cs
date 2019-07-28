@@ -385,7 +385,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDsigC14NTransform t = new XmlDsigC14NTransform();
             t.LoadInput(doc);
             Stream s = t.GetOutput() as Stream;
-            Assert.Equal(new StreamReader(s, Encoding.UTF8).ReadToEnd(), "<foo xmlns=\"urn:foo\"><bar xmlns=\"urn:bar\"></bar></foo>");
+            Assert.Equal("<foo xmlns=\"urn:foo\"><bar xmlns=\"urn:bar\"></bar></foo>", new StreamReader(s, Encoding.UTF8).ReadToEnd());
             Assert.Equal("urn:foo", doc.DocumentElement.GetAttribute("xmlns"));
         }
 

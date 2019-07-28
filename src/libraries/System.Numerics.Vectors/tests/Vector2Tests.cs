@@ -774,8 +774,8 @@ namespace System.Numerics.Tests
         public void Vector2ConstructorTest2()
         {
             Vector2 target = new Vector2();
-            Assert.Equal(target.X, 0.0f);
-            Assert.Equal(target.Y, 0.0f);
+            Assert.Equal(0.0f, target.X);
+            Assert.Equal(0.0f, target.Y);
         }
 
         // A test for Vector2f (float, float)

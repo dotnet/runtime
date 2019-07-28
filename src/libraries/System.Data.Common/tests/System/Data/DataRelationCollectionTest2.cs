@@ -438,7 +438,7 @@ namespace System.Data.Tests
             ds.Relations.Add(rel1);
             ds.Relations.Add(rel2);
 
-            Assert.Equal(ds.Relations.Count, 2);
+            Assert.Equal(2, ds.Relations.Count);
 
             ds.Relations.CollectionChanged += new CollectionChangeEventHandler(Relations_CollectionChanged);
             //Perform remove

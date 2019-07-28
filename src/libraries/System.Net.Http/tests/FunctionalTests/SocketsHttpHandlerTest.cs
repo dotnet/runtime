@@ -1367,7 +1367,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             if (line.StartsWith("Host:",StringComparison.InvariantCultureIgnoreCase))
                             {
-                                Assert.Equal(line, "Host: foo.com:345");
+                                Assert.Equal("Host: foo.com:345", line);
                                 break;
                             }
                         }

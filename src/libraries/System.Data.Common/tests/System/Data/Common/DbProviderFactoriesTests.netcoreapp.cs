@@ -172,7 +172,7 @@ namespace System.Data.Common
             DataTable providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(2, providerTable.Rows.Count);
             List<string> invariantNames = DbProviderFactories.GetProviderInvariantNames().ToList();
-            Assert.Equal(invariantNames.Count, 2);
+            Assert.Equal(2, invariantNames.Count);
             Assert.True(invariantNames.Contains("System.Data.Common.TestProvider"));
             Assert.True(invariantNames.Contains("System.Data.SqlClient"));
         }

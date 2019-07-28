@@ -62,8 +62,8 @@ namespace BasicEventSourceTests
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EmbeddedNullStringEvent", evt.EventName);
-                        Assert.Equal(evt.PayloadValue(0, "a"), "Hello");
-                        Assert.Equal(evt.PayloadValue(1, "b"), "");
+                        Assert.Equal("Hello", evt.PayloadValue(0, "a"));
+                        Assert.Equal("", evt.PayloadValue(1, "b"));
                     }));
             }
         }

@@ -23,7 +23,7 @@ namespace System.Composition.Convention.Tests
 
             Collections.Generic.IEnumerable<ExportAttribute> exports = builder.GetCustomAttributes(typeof(FooImpl), typeof(FooImpl).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
             Assert.Equal(1, exports.Count());
-            Assert.Equal(exports.First().ContractType, typeof(IFoo));
+            Assert.Equal(typeof(IFoo), exports.First().ContractType);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace System.Composition.Convention.Tests
 
             Collections.Generic.IEnumerable<ExportAttribute> exports = builder.GetDeclaredAttributes(typeof(FooImpl), typeof(FooImpl).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
             Assert.Equal(1, exports.Count());
-            Assert.Equal(exports.First().ContractType, typeof(IFoo));
+            Assert.Equal(typeof(IFoo), exports.First().ContractType);
         }
 
 

@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             };
             foreach (var block in blocks)
             {
-                Assert.Equal(block.InputCount, 0);
+                Assert.Equal(0, block.InputCount);
                 Assert.NotNull(block.Completion);
             }
         }

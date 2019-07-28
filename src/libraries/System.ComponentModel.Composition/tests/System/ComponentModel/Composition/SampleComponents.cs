@@ -420,31 +420,31 @@ namespace System.ComponentModel.Composition
         [Export("ActionWith1Arg")]
         public void MyAction1(int i1)
         {
-            Assert.Equal(i1, 1);
+            Assert.Equal(1, i1);
         }
 
         [Export("ActionWith2Args")]
         public void MyAction2(int i1, int i2)
         {
-            Assert.Equal(i1, 1);
-            Assert.Equal(i2, 2);
+            Assert.Equal(1, i1);
+            Assert.Equal(2, i2);
         }
 
         [Export("ActionWith3Args")]
         public void MyAction3(int i1, int i2, int i3)
         {
-            Assert.Equal(i1, 1);
-            Assert.Equal(i2, 2);
-            Assert.Equal(i3, 3);
+            Assert.Equal(1, i1);
+            Assert.Equal(2, i2);
+            Assert.Equal(3, i3);
         }
 
         [Export("ActionWith4Args")]
         public void MyAction4(int i1, int i2, int i3, int i4)
         {
-            Assert.Equal(i1, 1);
-            Assert.Equal(i2, 2);
-            Assert.Equal(i3, 3);
-            Assert.Equal(i4, 4);
+            Assert.Equal(1, i1);
+            Assert.Equal(2, i2);
+            Assert.Equal(3, i3);
+            Assert.Equal(4, i4);
         }
     }
 

@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Linux)] // test relies on xdg-open
         public void ProcessStart_UseShellExecute_OnUnix_DocumentFile_IgnoresArguments()
         {
-            Assert.Equal(s_allowedProgramsToRun[0], "xdg-open");
+            Assert.Equal("xdg-open", s_allowedProgramsToRun[0]);
 
             if (!IsProgramInstalled("xdg-open"))
             {
@@ -428,15 +428,15 @@ namespace System.Diagnostics.Tests
             ProcessPriorityClass priorityClass = _process.PriorityClass;
 
             _process.PriorityClass = ProcessPriorityClass.Idle;
-            Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Idle);
+            Assert.Equal(ProcessPriorityClass.Idle, _process.PriorityClass);
 
             try
             {
                 _process.PriorityClass = ProcessPriorityClass.High;
-                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.High);
+                Assert.Equal(ProcessPriorityClass.High, _process.PriorityClass);
 
                 _process.PriorityClass = ProcessPriorityClass.Normal;
-                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Normal);
+                Assert.Equal(ProcessPriorityClass.Normal, _process.PriorityClass);
 
                 _process.PriorityClass = priorityClass;
             }

@@ -40,7 +40,7 @@ namespace System.Data.Tests.SqlTypes
         public void Create()
         {
             SqlInt32 foo = new SqlInt32(5);
-            Assert.Equal((int)foo, 5);
+            Assert.Equal(5, (int)foo);
         }
 
         [Fact]
@@ -391,7 +391,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 7: Test non-null conversion to SqlDecimal
             x = new SqlInt32(27);
-            Assert.Equal(x.ToSqlDecimal().Value, 27);
+            Assert.Equal(27, x.ToSqlDecimal().Value);
 
             // Case 8: SqlInt32.Null -> SqlDouble == SqlDouble.Null
             x = SqlInt32.Null;
@@ -399,7 +399,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 9: Test non-null conversion to SqlDouble
             x = new SqlInt32(27);
-            Assert.Equal(x.ToSqlDouble().Value, 27);
+            Assert.Equal(27, x.ToSqlDouble().Value);
 
             // Case 10: SqlInt32.Null -> SqlInt16 == SqlInt16.Null
             x = SqlInt32.Null;
@@ -415,7 +415,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 13: Test non-null conversion to SqlInt64
             x = new SqlInt32(27);
-            Assert.Equal(x.ToSqlInt64().Value, 27);
+            Assert.Equal(27, x.ToSqlInt64().Value);
 
             // Case 14: SqlInt32.Null -> SqlMoney == SqlMoney.Null
             x = SqlInt32.Null;
@@ -423,7 +423,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 15: Test non-null conversion to SqlMoney
             x = new SqlInt32(27);
-            Assert.Equal(x.ToSqlMoney().Value, 27.0000M);
+            Assert.Equal(27.0000M, x.ToSqlMoney().Value);
 
             // Case 16: SqlInt32.Null -> SqlSingle == SqlSingle.Null
             x = SqlInt32.Null;
@@ -431,7 +431,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 17: Test non-null conversion to SqlSingle
             x = new SqlInt32(27);
-            Assert.Equal(x.ToSqlSingle().Value, 27);
+            Assert.Equal(27, x.ToSqlSingle().Value);
         }
 
         [Fact]

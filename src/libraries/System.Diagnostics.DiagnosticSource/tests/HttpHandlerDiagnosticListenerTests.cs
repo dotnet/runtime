@@ -594,7 +594,7 @@ namespace System.Diagnostics.Tests
                         "An unexpected event of name " + pair.Key + "was received");
 
                     WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
-                    Assert.Equal(request.GetType().Name, "HttpWebRequest");
+                    Assert.Equal("HttpWebRequest", request.GetType().Name);
 
                     if (pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start")
                     {
@@ -620,7 +620,7 @@ namespace System.Diagnostics.Tests
                     {
                         // This must be the response.
                         WebResponse response = ReadPublicProperty<WebResponse>(eventFields, "Response");
-                        Assert.Equal(response.GetType().Name, "HttpWebResponse");
+                        Assert.Equal("HttpWebResponse", response.GetType().Name);
 
                         // By the time we see the response, the request object may already have been redirected with a different
                         // url. Hence, it's not reliable to just look up requestData by the URL/hostname. Instead, we have to look

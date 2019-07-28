@@ -94,8 +94,8 @@ namespace System.Xml.Tests
             val.ValidateAttribute(attrType, "", "foo", info);
 
             Assert.Equal(info.SchemaAttribute.QualifiedName, new XmlQualifiedName(attrType));
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.SchemaType.TypeCode, XmlTypeCode.String);
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal(XmlTypeCode.String, info.SchemaType.TypeCode);
 
             return;
         }
@@ -111,8 +111,8 @@ namespace System.Xml.Tests
             val.ValidateAttribute("attr1", "uri:tempuri", "123", info);
 
             Assert.Equal(info.SchemaAttribute.QualifiedName, new XmlQualifiedName("attr1", "uri:tempuri"));
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.SchemaType.TypeCode, XmlTypeCode.Int);
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal(XmlTypeCode.Int, info.SchemaType.TypeCode);
 
             return;
         }
@@ -127,7 +127,7 @@ namespace System.Xml.Tests
             val.ValidateElement("AnyAttributeElement", "", null);
             val.ValidateAttribute("SomeAttribute", "", "foo", info);
 
-            Assert.Equal(info.Validity, XmlSchemaValidity.NotKnown);
+            Assert.Equal(XmlSchemaValidity.NotKnown, info.Validity);
 
             return;
         }
@@ -151,7 +151,7 @@ namespace System.Xml.Tests
 
             atts.Clear();
             val.GetUnspecifiedDefaultAttributes(atts);
-            Assert.Equal(atts.Count, 0);
+            Assert.Equal(0, atts.Count);
 
             return;
         }

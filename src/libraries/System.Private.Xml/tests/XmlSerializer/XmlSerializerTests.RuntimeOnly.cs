@@ -22,12 +22,12 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_BoolAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<bool>(true,
+        Assert.True(SerializeAndDeserialize<bool>(true,
 @"<?xml version=""1.0""?>
-<boolean>true</boolean>"), true);
-        Assert.StrictEqual(SerializeAndDeserialize<bool>(false,
+<boolean>true</boolean>"));
+        Assert.False(SerializeAndDeserialize<bool>(false,
 @"<?xml version=""1.0""?>
-<boolean>false</boolean>"), false);
+<boolean>false</boolean>"));
     }
 
     [Fact]
@@ -52,23 +52,23 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue,
 @"<?xml version=""1.0""?>
 <char>65535</char>"), char.MaxValue);
-        Assert.StrictEqual(SerializeAndDeserialize<char>('a',
+        Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
 @"<?xml version=""1.0""?>
-<char>97</char>"), 'a');
-        Assert.StrictEqual(SerializeAndDeserialize<char>('ñ',
+<char>97</char>"));
+        Assert.StrictEqual('\u00F1', SerializeAndDeserialize<char>('\u00F1',
 @"<?xml version=""1.0""?>
-<char>241</char>"), 'ñ');
-        Assert.StrictEqual(SerializeAndDeserialize<char>('漢',
+<char>241</char>"));
+        Assert.StrictEqual('\u6F22', SerializeAndDeserialize<char>('\u6F22',
 @"<?xml version=""1.0""?>
-<char>28450</char>"), '漢');
+<char>28450</char>"));
     }
 
     [Fact]
     public static void Xml_ByteAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(10,
+        Assert.StrictEqual(10, SerializeAndDeserialize<byte>(10,
 @"<?xml version=""1.0""?>
-<unsignedByte>10</unsignedByte>"), 10);
+<unsignedByte>10</unsignedByte>"));
         Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue,
 @"<?xml version=""1.0""?>
 <unsignedByte>0</unsignedByte>"), byte.MinValue);
@@ -119,12 +119,12 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2,
 @"<?xml version=""1.0""?>
 <double>-1.2</double>"), -1.2);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(0,
+        Assert.StrictEqual(0, SerializeAndDeserialize<double>(0,
 @"<?xml version=""1.0""?>
-<double>0</double>"), 0);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(2.3,
+<double>0</double>"));
+        Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3,
 @"<?xml version=""1.0""?>
-<double>2.3</double>"), 2.3);
+<double>2.3</double>"));
         Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue,
 @"<?xml version=""1.0""?>
 <double>-1.7976931348623157E+308</double>"), double.MinValue);
@@ -196,17 +196,17 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ObjectAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<object>(1,
+        Assert.StrictEqual(1, SerializeAndDeserialize<object>(1,
 @"<?xml version=""1.0""?>
-<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:int"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">1</anyType>"), 1);
-        Assert.StrictEqual(SerializeAndDeserialize<object>(true,
+<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:int"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">1</anyType>"));
+        Assert.StrictEqual(true, SerializeAndDeserialize<object>(true,
 @"<?xml version=""1.0""?>
-<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:boolean"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">true</anyType>"), true);
-        Assert.StrictEqual(SerializeAndDeserialize<object>("abc",
+<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:boolean"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">true</anyType>"));
+        Assert.StrictEqual("abc", SerializeAndDeserialize<object>("abc",
 @"<?xml version=""1.0""?>
-<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:string"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">abc</anyType>"), "abc");
-        Assert.StrictEqual(SerializeAndDeserialize<object>(null,
-@"<?xml version=""1.0""?><anyType xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:nil=""true"" />"), null);
+<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" d1p1:type=""q1:string"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">abc</anyType>"));
+        Assert.Null(SerializeAndDeserialize<object>(null,
+@"<?xml version=""1.0""?><anyType xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:nil=""true"" />"));
     }
 
     [Fact]
@@ -242,24 +242,24 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_StringAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<string>("abc",
+        Assert.StrictEqual("abc", SerializeAndDeserialize<string>("abc",
 @"<?xml version=""1.0""?>
-<string>abc</string>"), "abc");
-        Assert.StrictEqual(SerializeAndDeserialize<string>("  a b  ",
+<string>abc</string>"));
+        Assert.StrictEqual("  a b  ", SerializeAndDeserialize<string>("  a b  ",
 @"<?xml version=""1.0""?>
-<string>  a b  </string>"), "  a b  ");
-        Assert.StrictEqual(SerializeAndDeserialize<string>(null,
+<string>  a b  </string>"));
+        Assert.Null(SerializeAndDeserialize<string>(null,
 @"<?xml version=""1.0""?>
-<string d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"), null);
-        Assert.StrictEqual(SerializeAndDeserialize<string>("",
+<string d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
+        Assert.StrictEqual("", SerializeAndDeserialize<string>("",
 @"<?xml version=""1.0""?>
-<string />"), "");
+<string />"));
         Assert.StrictEqual(SerializeAndDeserialize<string>(" ",
 @"<?xml version=""1.0""?>
 <string> </string>"), string.Empty);
-        Assert.StrictEqual(SerializeAndDeserialize<string>("Hello World! 漢 ñ",
+        Assert.StrictEqual("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
 @"<?xml version=""1.0""?>
-<string>Hello World! 漢 ñ</string>"), "Hello World! 漢 ñ");
+<string>Hello World! 漢 ñ</string>"));
     }
 
     [Fact]
@@ -643,11 +643,11 @@ public static partial class XmlSerializerTests
     public static void Xml_DefaultNamespaceChangeTest()
     {
         Assert.StrictEqual(
+        "Teststring",
         SerializeAndDeserialize<string>("Teststring",
 @"<?xml version=""1.0""?>
 <string xmlns=""MycustomDefaultNamespace"">Teststring</string>",
-        () => { return new XmlSerializer(typeof(string), "MycustomDefaultNamespace"); }),
-        "Teststring");
+        () => { return new XmlSerializer(typeof(string), "MycustomDefaultNamespace"); }));
     }
 
     [Fact]

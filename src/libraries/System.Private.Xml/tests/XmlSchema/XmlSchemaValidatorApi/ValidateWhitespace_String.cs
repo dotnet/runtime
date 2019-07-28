@@ -81,8 +81,8 @@ namespace System.Xml.Tests
             val.EndValidation();
 
             Assert.True(!holder.IsCalledA);
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.ContentType, XmlSchemaContentType.ElementOnly);
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal(XmlSchemaContentType.ElementOnly, info.ContentType);
 
             return;
         }

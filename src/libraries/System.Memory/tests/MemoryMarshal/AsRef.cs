@@ -16,7 +16,7 @@ namespace System.SpanTests
             Span<byte> span = new byte[] { 0x11, 0x22, 0x22, 0x11 };
             ref int asInt = ref MemoryMarshal.AsRef<int>(span);
 
-            Assert.Equal(asInt, 0x11222211);
+            Assert.Equal(0x11222211, asInt);
             Assert.True(Unsafe.AreSame<byte>(ref Unsafe.As<int, byte>(ref asInt), ref MemoryMarshal.GetReference(span)));
 
             var array = new byte[100];

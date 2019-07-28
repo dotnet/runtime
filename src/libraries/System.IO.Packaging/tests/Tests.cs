@@ -869,7 +869,7 @@ namespace System.IO.Packaging.Tests
                     using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
                     {
                         var len = partStream.Length;
-                        Assert.Equal(len, 2142);
+                        Assert.Equal(2142, len);
                     }
                 }
             }
@@ -890,7 +890,7 @@ namespace System.IO.Packaging.Tests
                 {
                     var rootUri = new Uri("/", UriKind.Relative);
                     var rootRelationshipPartUri = PackUriHelper.GetRelationshipPartUri(rootUri);
-                    Assert.Equal(rootRelationshipPartUri.ToString(), "/_rels/.rels");
+                    Assert.Equal("/_rels/.rels", rootRelationshipPartUri.ToString());
 
                     PackageRelationship docPackageRelationship =
                       package
@@ -906,7 +906,7 @@ namespace System.IO.Packaging.Tests
                                      docPackageRelationship.TargetUri);
 
                         var docRelationshipPartUri = PackUriHelper.GetRelationshipPartUri(documentUri);
-                        Assert.Equal(docRelationshipPartUri.ToString(), "/word/_rels/document.xml.rels");
+                        Assert.Equal("/word/_rels/document.xml.rels", docRelationshipPartUri.ToString());
                     }
                 }
             }
@@ -942,7 +942,7 @@ namespace System.IO.Packaging.Tests
                         Assert.Throws<ArgumentNullException>(() => PackUriHelper.GetRelativeUri(null, stylesUri));
                         Assert.Throws<ArgumentNullException>(() => PackUriHelper.GetRelativeUri(documentUri, null));
                         var relativeUri = PackUriHelper.GetRelativeUri(documentUri, stylesUri);
-                        Assert.Equal(relativeUri.ToString(), "styles.xml");
+                        Assert.Equal("styles.xml", relativeUri.ToString());
                     }
                 }
             }
@@ -974,8 +974,8 @@ namespace System.IO.Packaging.Tests
                         else
                             nonRel++;
                     }
-                    Assert.Equal(nonRel, 8);
-                    Assert.Equal(rel, 2);
+                    Assert.Equal(8, nonRel);
+                    Assert.Equal(2, rel);
                 }
             }
         }
@@ -1008,7 +1008,7 @@ namespace System.IO.Packaging.Tests
                         Assert.Throws<ArgumentNullException>(() => new PackageRelationshipSelector(documentUri, PackageRelationshipSelectorType.Id, null));
                         PackageRelationshipSelector prs = new PackageRelationshipSelector(documentUri, PackageRelationshipSelectorType.Id, "rId1");
                         var cnt = prs.Select(package).Count();
-                        Assert.Equal(cnt, 1);
+                        Assert.Equal(1, cnt);
                     }
                 }
             }
@@ -1028,7 +1028,7 @@ namespace System.IO.Packaging.Tests
                     var mainPartUri = new Uri("/", UriKind.Relative);
                     PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Id, "rId1");
                     var cnt = prs.Select(package).Count();
-                    Assert.Equal(cnt, 1);
+                    Assert.Equal(1, cnt);
                 }
             }
         }
@@ -1048,7 +1048,7 @@ namespace System.IO.Packaging.Tests
                     var mainPartUri = new Uri("/", UriKind.Relative);
                     PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, DocumentRelationshipType);
                     var cnt = prs.Select(package).Count();
-                    Assert.Equal(cnt, 1);
+                    Assert.Equal(1, cnt);
                 }
             }
         }
@@ -1068,7 +1068,7 @@ namespace System.IO.Packaging.Tests
                     var mainPartUri = new Uri("/word/document.xml", UriKind.Relative);
                     PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, StylesRelationshipType);
                     var cnt = prs.Select(package).Count();
-                    Assert.Equal(cnt, 1);
+                    Assert.Equal(1, cnt);
                 }
             }
         }
@@ -1105,9 +1105,9 @@ namespace System.IO.Packaging.Tests
                         var validCompressionOption = documentPart.CompressionOption == CompressionOption.Normal ||
                             documentPart.CompressionOption == CompressionOption.SuperFast;
                         Assert.True(validCompressionOption);
-                        Assert.Equal(documentPart.ContentType, "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml");
+                        Assert.Equal("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml", documentPart.ContentType);
                         Assert.NotNull(documentPart.Package);
-                        Assert.Equal(documentPart.Uri.ToString(), "/word/document.xml");
+                        Assert.Equal("/word/document.xml", documentPart.Uri.ToString());
                     }
                 }
             }
@@ -1148,7 +1148,7 @@ namespace System.IO.Packaging.Tests
                     var mainDocumentPart = package.GetPart(documentUri);
                     Uri documentUri2 = new Uri("/word/document.xml", UriKind.RelativeOrAbsolute);
                     Assert.True(package.PartExists(documentUri));
-                    Assert.Equal(package.FileOpenAccess, FileAccess.ReadWrite);
+                    Assert.Equal(FileAccess.ReadWrite, package.FileOpenAccess);
                 }
             }
         }
@@ -1166,12 +1166,12 @@ namespace System.IO.Packaging.Tests
                 Assert.Null(pp.Category);
                 Assert.Null(pp.ContentStatus);
                 Assert.Null(pp.ContentType);
-                Assert.Equal(pp.Creator, "Eric White");
-                Assert.Equal(pp.Description, "");
+                Assert.Equal("Eric White", pp.Creator);
+                Assert.Equal("", pp.Description);
                 Assert.Null(pp.Identifier);
                 Assert.Null(pp.Language);
-                Assert.Equal(pp.Subject, "");
-                Assert.Equal(pp.Title, "");
+                Assert.Equal("", pp.Subject);
+                Assert.Equal("", pp.Title);
                 Assert.Null(pp.Version);
             }
             fiGuidName.Delete();
@@ -1368,7 +1368,7 @@ namespace System.IO.Packaging.Tests
                     sb.AppendFormatComma("pp.Version: >{0}<", pp.Version);
 
                     string s = sb.ToString();
-                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >(null)<, pp.ContentStatus: >(null)<, pp.ContentType: >(null)<, pp.Creator: >Eric White<, pp.Description: ><, pp.Identifier: >(null)<, pp.Keywords: ><, pp.Language: >(null)<, pp.LastModifiedBy: >Eric White<, pp.LastPrinted: >(null)<, pp.Revision: >2<, pp.Subject: ><, pp.Title: ><, pp.Version: >(null)<,");
+                    Assert.Equal(@"pp.Category: >(null)<, pp.ContentStatus: >(null)<, pp.ContentType: >(null)<, pp.Creator: >Eric White<, pp.Description: ><, pp.Identifier: >(null)<, pp.Keywords: ><, pp.Language: >(null)<, pp.LastModifiedBy: >Eric White<, pp.LastPrinted: >(null)<, pp.Revision: >2<, pp.Subject: ><, pp.Title: ><, pp.Version: >(null)<,", sb.ToString().Trim());
 
                     pp.Category = "Category";
                     pp.ContentStatus = "ContentStatus";
@@ -1403,7 +1403,7 @@ namespace System.IO.Packaging.Tests
                     sb.AppendFormatComma("pp.Version: >{0}<", pp.Version);
 
                     s = sb.ToString();
-                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >Category<, pp.ContentStatus: >ContentStatus<, pp.ContentType: >ContentType<, pp.Creator: >Creator<, pp.Description: >Description<, pp.Identifier: >Identifier<, pp.Keywords: >Keywords<, pp.Language: >Language<, pp.LastModifiedBy: >LastModifiedBy<, pp.Revision: >Revision<, pp.Subject: >Subject<, pp.Title: >Title<, pp.Version: >Version<,");
+                    Assert.Equal(@"pp.Category: >Category<, pp.ContentStatus: >ContentStatus<, pp.ContentType: >ContentType<, pp.Creator: >Creator<, pp.Description: >Description<, pp.Identifier: >Identifier<, pp.Keywords: >Keywords<, pp.Language: >Language<, pp.LastModifiedBy: >LastModifiedBy<, pp.Revision: >Revision<, pp.Subject: >Subject<, pp.Title: >Title<, pp.Version: >Version<,", sb.ToString().Trim());
 
                 }
             }
@@ -2084,15 +2084,15 @@ namespace System.IO.Packaging.Tests
             using (Package package = Package.Open(fiGuidName.FullName, FileMode.Open))
             using (PackageProperties pp = package.PackageProperties)
             {
-                Assert.Equal(pp.Category, "Test-Category");
-                Assert.Equal(pp.ContentStatus, "Test-Status");
+                Assert.Equal("Test-Category", pp.Category);
+                Assert.Equal("Test-Status", pp.ContentStatus);
                 Assert.Null(pp.ContentType);
-                Assert.Equal(pp.Creator, "Eric White");
-                Assert.Equal(pp.Description, "Test-Comments");
+                Assert.Equal("Eric White", pp.Creator);
+                Assert.Equal("Test-Comments", pp.Description);
                 Assert.Null(pp.Identifier);
                 Assert.Null(pp.Language);
-                Assert.Equal(pp.Subject, "Test-Subject");
-                Assert.Equal(pp.Title, "Test-Title");
+                Assert.Equal("Test-Subject", pp.Subject);
+                Assert.Equal("Test-Title", pp.Title);
                 Assert.Null(pp.Version);
             }
             fiGuidName.Delete();
@@ -2111,12 +2111,12 @@ namespace System.IO.Packaging.Tests
                 Assert.Null(pp.Category);
                 Assert.Null(pp.ContentStatus);
                 Assert.Null(pp.ContentType);
-                Assert.Equal(pp.Creator, "Eric White");
-                Assert.Equal(pp.Description, "");
+                Assert.Equal("Eric White", pp.Creator);
+                Assert.Equal("", pp.Description);
                 Assert.Null(pp.Identifier);
                 Assert.Null(pp.Language);
-                Assert.Equal(pp.Subject, "");
-                Assert.Equal(pp.Title, "");
+                Assert.Equal("", pp.Subject);
+                Assert.Equal("", pp.Title);
                 Assert.Null(pp.Version);
             }
             fiGuidName.Delete();
@@ -2407,7 +2407,7 @@ namespace System.IO.Packaging.Tests
             {
                 var parts = package.GetParts();
                 var numberOfParts = parts.Count();
-                Assert.Equal(numberOfParts, 10);
+                Assert.Equal(10, numberOfParts);
                 long sumLen = 0;
                 foreach (var part in parts)
                 {
@@ -2418,7 +2418,7 @@ namespace System.IO.Packaging.Tests
                     }
                     sumLen += len;
                 }
-                Assert.Equal(sumLen, 44768);
+                Assert.Equal(44768, sumLen);
             }
             fiGuidName.Delete();
         }

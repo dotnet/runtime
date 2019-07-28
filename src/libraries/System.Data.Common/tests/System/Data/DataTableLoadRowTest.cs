@@ -185,8 +185,8 @@ namespace System.Data.Tests
                 Assert.True(_rowDeleted);
                 Assert.Equal(_rowInAction_Deleting, dt.Rows[4]);
                 Assert.Equal(_rowInAction_Deleted, dt.Rows[4]);
-                Assert.Equal(_rowAction_Deleting, DataRowAction.Delete);
-                Assert.Equal(_rowAction_Deleted, DataRowAction.Delete);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleting);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleted);
                 dt.LoadDataRow(new object[] { 5, "mono 5" }, LoadOption.Upsert);
                 Assert.Equal(6, dt.Rows.Count);
                 Assert.Equal("mono 5", dt.Rows[5][1]);
@@ -315,8 +315,8 @@ namespace System.Data.Tests
                 Assert.True(_rowDeleted);
                 Assert.Equal(_rowInAction_Deleting, dt.Rows[4]);
                 Assert.Equal(_rowInAction_Deleted, dt.Rows[4]);
-                Assert.Equal(_rowAction_Deleting, DataRowAction.Delete);
-                Assert.Equal(_rowAction_Deleted, DataRowAction.Delete);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleting);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleted);
                 dt.LoadDataRow(new object[] { 5, "mono 51" }, LoadOption.OverwriteChanges);
                 Assert.Equal(5, dt.Rows.Count);
                 Assert.Equal("mono 51", dt.Rows[4][1]);
@@ -408,8 +408,8 @@ namespace System.Data.Tests
                 Assert.True(_rowDeleted);
                 Assert.Equal(_rowInAction_Deleting, dt.Rows[1]);
                 Assert.Equal(_rowInAction_Deleted, dt.Rows[1]);
-                Assert.Equal(_rowAction_Deleting, DataRowAction.Delete);
-                Assert.Equal(_rowAction_Deleted, DataRowAction.Delete);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleting);
+                Assert.Equal(DataRowAction.Delete, _rowAction_Deleted);
                 dt.LoadDataRow(new object[] { 2, "mono deleted" }, LoadOption.PreserveChanges);
                 Assert.Equal(5, dt.Rows.Count);
                 Assert.Equal("mono deleted", dt.Rows[1][1, DataRowVersion.Original]);

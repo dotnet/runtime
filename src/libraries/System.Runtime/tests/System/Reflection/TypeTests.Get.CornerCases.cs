@@ -78,7 +78,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass);
 
             MemberInfo[] members = t.GetMember("My*", MemberTypes.Event, BindingFlags.Public | BindingFlags.Instance);
-            Assert.Equal(members.Length, 1);
+            Assert.Equal(1, members.Length);
             Assert.Equal("MyEvent", members[0].Name);
         }
 
@@ -88,7 +88,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass);
 
             MemberInfo[] members = t.GetMember("My*", MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance);
-            Assert.Equal(members.Length, 1);
+            Assert.Equal(1, members.Length);
             Assert.Equal("MyField", members[0].Name);
         }
 
@@ -98,7 +98,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass);
 
             MemberInfo[] members = t.GetMember("My*", MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);
-            Assert.Equal(members.Length, 1);
+            Assert.Equal(1, members.Length);
             Assert.Equal("MyMethod", members[0].Name);
         }
 
@@ -108,7 +108,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass);
 
             MemberInfo[] members = t.GetMember("My*", MemberTypes.NestedType, BindingFlags.Public | BindingFlags.Instance);
-            Assert.Equal(members.Length, 1);
+            Assert.Equal(1, members.Length);
             Assert.Equal("MyNestedType", members[0].Name);
         }
 
@@ -118,7 +118,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass);
 
             MemberInfo[] members = t.GetMember("My*", MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
-            Assert.Equal(members.Length, 1);
+            Assert.Equal(1, members.Length);
             Assert.Equal("MyProperty", members[0].Name);
         }
 
@@ -377,7 +377,7 @@ namespace System.Reflection.Tests
 
         // Fields return the most derived match.
         FieldInfo f = t.GetField("myfield", bf);
-        Assert.Equal(f.Name, "MyField");
+        Assert.Equal("MyField", f.Name);
 
         // Unless two of them are both the most derived match...
         Assert.Throws<AmbiguousMatchException>(() => t.GetField("myfield2", bf));
@@ -391,9 +391,9 @@ namespace System.Reflection.Tests
 
         // Methods return the most derived match, provided all their signatures are the same.
         MethodInfo m1 = t.GetMethod("mymethod1", bf);
-        Assert.Equal(m1.Name, "MyMethod1");
+        Assert.Equal("MyMethod1", m1.Name);
         MethodInfo m2 = t.GetMethod("mymethod2", bf);
-        Assert.Equal(m2.Name, "MyMethod2");
+        Assert.Equal("MyMethod2", m2.Name);
 
         // Unless two of them are both the most derived match...
         Assert.Throws<AmbiguousMatchException>(() => t.GetMethod("mymethod3", bf));

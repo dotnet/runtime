@@ -467,7 +467,7 @@ namespace System.Linq.Expressions.Tests
 
             f(0);
 
-            Assert.Equal(s.Type, typeof(void));
+            Assert.Equal(typeof(void), s.Type);
         }
 
         [Fact]

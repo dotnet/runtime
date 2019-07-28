@@ -30,7 +30,7 @@ namespace System.Runtime.Caching.Tests
 
             mc.Set("key", "value", cip);
             mc.Dispose();
-            Assert.Equal(reason, CacheEntryRemovedReason.CacheSpecificEviction);
+            Assert.Equal(CacheEntryRemovedReason.CacheSpecificEviction, reason);
         }
     }
 }

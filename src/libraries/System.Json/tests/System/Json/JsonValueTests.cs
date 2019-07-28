@@ -153,7 +153,7 @@ namespace System.Json.Tests
         [Fact]
         public void JsonPrimitive_QuoteEscape()
         {
-            Assert.Equal((new JsonPrimitive("\"\"")).ToString(), "\"\\\"\\\"\"");
+            Assert.Equal("\"\\\"\\\"\"", (new JsonPrimitive("\"\"")).ToString());
         }
 
         [Fact]

@@ -137,7 +137,7 @@ namespace System.Composition.UnitTests
             var b = test.GetExport<ClassWithDependecyAndSameBaseType>();
             Assert.NotNull(b);
             Assert.NotNull(b._dep);
-            Assert.Equal(b._dep.GetType(), typeof(TestDependency));
+            Assert.Equal(typeof(TestDependency), b._dep.GetType());
         }
     }
 }

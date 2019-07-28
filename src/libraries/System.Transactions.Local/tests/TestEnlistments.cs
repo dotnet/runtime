@@ -73,19 +73,19 @@ namespace System.Transactions.Tests
 
         public void Commit(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Committed);
+            Assert.Equal(EnlistmentOutcome.Committed, _expectedOutcome);
             enlistment.Done();
         }
 
         public void Rollback(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Aborted);
+            Assert.Equal(EnlistmentOutcome.Aborted, _expectedOutcome);
             enlistment.Done();
         }
 
         public void InDoubt(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.InDoubt);
+            Assert.Equal(EnlistmentOutcome.InDoubt, _expectedOutcome);
             enlistment.Done();
         }
     }
@@ -121,11 +121,11 @@ namespace System.Transactions.Tests
                             try
                             {
                                 _txToEnlist.EnlistVolatile(newVol, EnlistmentOptions.None);
-                                Assert.Equal(_expectEnlistToSucceed, true);
+                                Assert.True(_expectEnlistToSucceed);
                             }
                             catch (Exception)
                             {
-                                Assert.Equal(_expectEnlistToSucceed, false);
+                                Assert.False(_expectEnlistToSucceed);
                             }
                         }
                         preparingEnlistment.Prepared();
@@ -154,7 +154,7 @@ namespace System.Transactions.Tests
 
         public void Commit(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Committed);
+            Assert.Equal(EnlistmentOutcome.Committed, _expectedOutcome);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();
@@ -164,7 +164,7 @@ namespace System.Transactions.Tests
 
         public void Rollback(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.Aborted);
+            Assert.Equal(EnlistmentOutcome.Aborted, _expectedOutcome);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();
@@ -174,7 +174,7 @@ namespace System.Transactions.Tests
 
         public void InDoubt(Enlistment enlistment)
         {
-            Assert.Equal(_expectedOutcome, EnlistmentOutcome.InDoubt);
+            Assert.Equal(EnlistmentOutcome.InDoubt, _expectedOutcome);
             if (_outcomeReceived != null)
             {
                 _outcomeReceived.Set();

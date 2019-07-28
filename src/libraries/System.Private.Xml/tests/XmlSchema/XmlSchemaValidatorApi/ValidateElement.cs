@@ -124,10 +124,10 @@ namespace System.Xml.Tests
                 val.ValidateElement(name, "", info, null, null, null, null);
 
             Assert.Equal(info.ContentType, schemaContentType);
-            Assert.Equal(info.Validity, XmlSchemaValidity.NotKnown);
+            Assert.Equal(XmlSchemaValidity.NotKnown, info.Validity);
             Assert.Equal(info.SchemaElement, schemas.GlobalElements[new XmlQualifiedName(name)]);
-            Assert.Equal(info.IsNil, false);
-            Assert.Equal(info.IsDefault, false);
+            Assert.False(info.IsNil);
+            Assert.False(info.IsDefault);
             if (name == "SimpleElement")
                 Assert.True(info.SchemaType is XmlSchemaSimpleType);
             else
@@ -161,7 +161,7 @@ namespace System.Xml.Tests
             val.ValidateElement("bar", "", info);
             Assert.Equal(info.SchemaElement.QualifiedName, new XmlQualifiedName("bar"));
             Assert.True(info.SchemaType is XmlSchemaSimpleType);
-            Assert.Equal(info.SchemaType.TypeCode, XmlTypeCode.String);
+            Assert.Equal(XmlTypeCode.String, info.SchemaType.TypeCode);
 
             return;
         }
@@ -282,7 +282,7 @@ namespace System.Xml.Tests
             val.ValidateEndOfAttributes(null);
 
             val.ValidateEndElement(info);
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
 
             return;
         }
@@ -356,7 +356,7 @@ namespace System.Xml.Tests
             val.ValidateElement("root", "", info, "t:rootType", null, "uri:tempuri " + Path.Combine(TestData, "__NonExistingFile__.xsd"), null);
 
             Assert.True(holder.IsCalledA);
-            Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
+            Assert.Equal(XmlSeverityType.Warning, holder.lastSeverity);
             _exVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "uri:tempuri", null });
 
             return;
@@ -384,7 +384,7 @@ namespace System.Xml.Tests
             val.ValidateElement("root", "", info, "rootType", null, null, Path.Combine(TestData, "__NonExistingFile__.xsd"));
 
             Assert.True(holder.IsCalledA);
-            Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
+            Assert.Equal(XmlSeverityType.Warning, holder.lastSeverity);
             _exVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "", null });
 
             return;
@@ -405,7 +405,7 @@ namespace System.Xml.Tests
             val.ValidateElement("undefined", "", null);
 
             Assert.True(holder.IsCalledA);
-            Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
+            Assert.Equal(XmlSeverityType.Warning, holder.lastSeverity);
             _exVerifier.IsExceptionOk(holder.lastException, "Sch_NoElementSchemaFound", new string[] { "undefined" });
 
             return;
@@ -502,8 +502,8 @@ namespace System.Xml.Tests
             val.ValidateEndElement(si);
             val.ValidateEndElement(si);
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 2);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(2, errorCount);
             return;
         }
 

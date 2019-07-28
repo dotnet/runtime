@@ -141,7 +141,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             using (SqlDataReader rdr = cmd.ExecuteReader())
                             {
                                 rdr.Read();
-                                Assert.Equal(rdr.FieldCount, 1);
+                                Assert.Equal(1, rdr.FieldCount);
                                 Assert.Equal(rdr.GetName(0), COLUMN_NAME_2);
                             }
                             break;
@@ -155,7 +155,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             cmd.Transaction = con.BeginTransaction();
                             cmd.CommandText = "select @@trancount";
                             int tranCount = (int)cmd.ExecuteScalar();
-                            Assert.Equal(tranCount, 1);
+                            Assert.Equal(1, tranCount);
                             break;
                     }
                 }
@@ -221,7 +221,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     cmd.CommandText = "select @@trancount";
                     int tranCount = (int)cmd.ExecuteScalar();
-                    Assert.Equal(tranCount, 0);
+                    Assert.Equal(0, tranCount);
                 }
             }
         }

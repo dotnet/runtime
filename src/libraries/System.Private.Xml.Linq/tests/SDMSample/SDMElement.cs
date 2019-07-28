@@ -660,8 +660,8 @@ namespace XDocumentTests.SDMSample
             Assert.Null(e1.Attribute("foo"));
             Assert.Null(e2.Attribute("foo"));
 
-            Assert.Equal(e2.Attribute("a3").Name.ToString(), "a3");
-            Assert.Equal(e2.Attribute("a3").Value, "3");
+            Assert.Equal("a3", e2.Attribute("a3").Name.ToString());
+            Assert.Equal("3", e2.Attribute("a3").Value);
 
             Assert.Equal(new[] { "a1", "a2", "a3", "a4", "a5" }, e2.Attributes().Select(x => x.Name.ToString()));
             Assert.Equal(new[] { "1", "2", "3", "4", "5" }, e2.Attributes().Select(x => x.Value));
@@ -680,13 +680,13 @@ namespace XDocumentTests.SDMSample
 
             // Add of non-existent attribute
             e1.SetAttributeValue("foo", "foo-value");
-            Assert.Equal(e1.Attribute("foo").Name.ToString(), "foo");
-            Assert.Equal(e1.Attribute("foo").Value, "foo-value");
+            Assert.Equal("foo", e1.Attribute("foo").Name.ToString());
+            Assert.Equal("foo-value", e1.Attribute("foo").Value);
 
             // Overwriting of existing attribute
             e1.SetAttributeValue("foo", "noo-value");
-            Assert.Equal(e1.Attribute("foo").Name.ToString(), "foo");
-            Assert.Equal(e1.Attribute("foo").Value, "noo-value");
+            Assert.Equal("foo", e1.Attribute("foo").Name.ToString());
+            Assert.Equal("noo-value", e1.Attribute("foo").Value);
 
             // Effective removal of existing attribute
             e1.SetAttributeValue("foo", null);

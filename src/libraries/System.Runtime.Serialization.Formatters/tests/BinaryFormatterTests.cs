@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
             catch (ArgumentException ex)
             {
-                Assert.Equal(ex.GetType().Name, "RegexParseException");
+                Assert.Equal("RegexParseException", ex.GetType().Name);
                 ArgumentException clone = BinaryFormatterHelpers.Clone(ex);
                 Assert.IsType<ArgumentException>(clone);
             }

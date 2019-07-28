@@ -40,8 +40,8 @@ namespace System.Xml.Tests
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml("<Root xmlns:aa=\"aa\" xmlns:bb=\"bb\"><aa:elem1><bb:elem2 /></aa:elem1></Root>");
 
-            Assert.Equal(xmlDocument.DocumentElement.FirstChild.LocalName, "elem1");
-            Assert.Equal(xmlDocument.DocumentElement.FirstChild.FirstChild.LocalName, "elem2");
+            Assert.Equal("elem1", xmlDocument.DocumentElement.FirstChild.LocalName);
+            Assert.Equal("elem2", xmlDocument.DocumentElement.FirstChild.FirstChild.LocalName);
         }
     }
 }

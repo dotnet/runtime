@@ -100,7 +100,7 @@ namespace System.Globalization.Tests
         {
             if (yearHasLeapMonth > 0)
             {
-                Assert.NotEqual(calendar.GetLeapMonth(yearHasLeapMonth),  0);
+                Assert.NotEqual(0,  calendar.GetLeapMonth(yearHasLeapMonth));
                 Assert.Equal(0, calendar.GetLeapMonth(yearHasLeapMonth - 1));
             }
             else

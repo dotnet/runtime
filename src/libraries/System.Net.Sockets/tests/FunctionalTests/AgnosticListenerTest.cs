@@ -110,7 +110,7 @@ namespace System.Net.Sockets.Tests
 
             IPEndPoint ep = (IPEndPoint)listener.LocalEndpoint;
             Assert.Equal(ep.Address, IPAddress.IPv6Any);
-            Assert.Equal(ep.Port, 0);
+            Assert.Equal(0, ep.Port);
             Assert.True(listener.Server.DualMode);
 
             listener.Start();

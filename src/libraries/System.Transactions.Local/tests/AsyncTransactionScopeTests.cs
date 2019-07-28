@@ -1742,7 +1742,7 @@ namespace System.Transactions.Tests
             }
 
             AssertTransactionNull();
-            Assert.Equal<bool>(hasException, true);
+            Assert.True(hasException);
             ResetExceptionInjection();
         }
     }
