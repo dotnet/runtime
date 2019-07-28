@@ -51,7 +51,7 @@ namespace System.Globalization
     {
         // cache for the invariant culture.
         // invariantInfo is constant irrespective of your current culture.
-        private static volatile DateTimeFormatInfo s_invariantInfo;
+        private static volatile DateTimeFormatInfo? s_invariantInfo;
 
         // an index which points to a record in Culture Data Table.
         private CultureData _cultureData;
@@ -2135,8 +2135,8 @@ namespace System.Globalization
         internal const string JapaneseLangName = "ja";
         internal const string EnglishLangName = "en";
 
-        private static volatile DateTimeFormatInfo s_jajpDTFI;
-        private static volatile DateTimeFormatInfo s_zhtwDTFI;
+        private static volatile DateTimeFormatInfo? s_jajpDTFI;
+        private static volatile DateTimeFormatInfo? s_zhtwDTFI;
 
         /// <summary>
         /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse
@@ -2146,7 +2146,7 @@ namespace System.Globalization
         /// </summary>
         internal static DateTimeFormatInfo GetJapaneseCalendarDTFI()
         {
-            DateTimeFormatInfo temp = s_jajpDTFI;
+            DateTimeFormatInfo? temp = s_jajpDTFI;
             if (temp == null)
             {
                 temp = new CultureInfo("ja-JP", false).DateTimeFormat;
@@ -2164,7 +2164,7 @@ namespace System.Globalization
         /// </summary>
         internal static DateTimeFormatInfo GetTaiwanCalendarDTFI()
         {
-            DateTimeFormatInfo temp = s_zhtwDTFI;
+            DateTimeFormatInfo? temp = s_zhtwDTFI;
             if (temp == null)
             {
                 temp = new CultureInfo("zh-TW", false).DateTimeFormat;

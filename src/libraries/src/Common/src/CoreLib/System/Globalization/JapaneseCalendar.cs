@@ -81,7 +81,7 @@ namespace System.Globalization
                 });
         }
 
-        internal static volatile Calendar s_defaultInstance;
+        internal static volatile Calendar? s_defaultInstance;
         internal GregorianCalendarHelper _helper;
 
         internal static Calendar GetDefaultInstance()
