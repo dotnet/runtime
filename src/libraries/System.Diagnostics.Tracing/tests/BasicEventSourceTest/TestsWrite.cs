@@ -79,7 +79,7 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Greeting", evt.EventName);
 
-                        Assert.Equal(evt.PayloadValue(0, "msg"), "Hello, world!");
+                        Assert.Equal("Hello, world!", evt.PayloadValue(0, "msg"));
                     }));
                 /*************************************************************************/
                 decimal myMoney = 300;
@@ -203,7 +203,7 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "PartB_UserInfo");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["UserName"], "Someone Else");
+                        Assert.Equal("Someone Else", structValueAsDictionary["UserName"]);
                     }));
 
                 /*************************************************************************/
@@ -222,9 +222,9 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "PartB_UserInfo");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["UserName"], "Myself");
+                        Assert.Equal("Myself", structValueAsDictionary["UserName"]);
 
-                        Assert.Equal(evt.PayloadValue(1, "msec"), 10);
+                        Assert.Equal(10, evt.PayloadValue(1, "msec"));
                     }));
 
                 /*************************************************************************/
@@ -287,9 +287,9 @@ namespace BasicEventSourceTests
 
                         var keyValues = evt.PayloadValue(0, "myDict");
                         IDictionary<string, object> vDict = GetDictionaryFromKeyValueArray(keyValues);
-                        Assert.Equal(vDict["elem1"], "10");
-                        Assert.Equal(vDict["elem2"], "20");
-                        Assert.Equal(evt.PayloadValue(1, "s"), "end");
+                        Assert.Equal("10", vDict["elem1"]);
+                        Assert.Equal("20", vDict["elem2"]);
+                        Assert.Equal("end", evt.PayloadValue(1, "s"));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Dict/EventWithStringDict_BC",
@@ -311,16 +311,16 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "PartB_UserInfo");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["UserName"], "Me");
-                        Assert.Equal(structValueAsDictionary["LogTime"], "Now");
+                        Assert.Equal("Me", structValueAsDictionary["UserName"]);
+                        Assert.Equal("Now", structValueAsDictionary["LogTime"]);
 
                         var keyValues = evt.PayloadValue(1, "PartC_Dict");
                         var vDict = GetDictionaryFromKeyValueArray(keyValues);
                         Assert.NotNull(dict);
-                        Assert.Equal(vDict["elem1"], "10");    // string values.
-                        Assert.Equal(vDict["elem2"], "20");
+                        Assert.Equal("10", vDict["elem1"]);    // string values.
+                        Assert.Equal("20", vDict["elem2"]);
 
-                        Assert.Equal(evt.PayloadValue(2, "s"), "end");
+                        Assert.Equal("end", evt.PayloadValue(2, "s"));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Dict/EventWithIntDict_BC",
@@ -343,16 +343,16 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "PartB_UserInfo");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["UserName"], "Me");
-                        Assert.Equal(structValueAsDictionary["LogTime"], "Now");
+                        Assert.Equal("Me", structValueAsDictionary["UserName"]);
+                        Assert.Equal("Now", structValueAsDictionary["LogTime"]);
 
                         var keyValues = evt.PayloadValue(1, "PartC_Dict");
                         var vDict = GetDictionaryFromKeyValueArray(keyValues);
                         Assert.NotNull(vDict);
-                        Assert.Equal(vDict["elem1"], 10);  // Notice they are integers, not strings.
-                        Assert.Equal(vDict["elem2"], 20);
+                        Assert.Equal(10, vDict["elem1"]);  // Notice they are integers, not strings.
+                        Assert.Equal(20, vDict["elem2"]);
 
-                        Assert.Equal(evt.PayloadValue(2, "s"), "end");
+                        Assert.Equal("end", evt.PayloadValue(2, "s"));
                     }));
                 /*************************************************************************/
                 /**************************** Empty Event TESTING ************************/
@@ -396,7 +396,7 @@ namespace BasicEventSourceTests
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("OptionsEvent", evt.EventName);
-                    Assert.Equal(evt.PayloadValue(0, "OptionsEvent"), "test options!");
+                    Assert.Equal("test options!", evt.PayloadValue(0, "OptionsEvent"));
                 }));
 
                 tests.Add(new SubTest("Write/Basic/WriteOfTWithRefOptios",
@@ -409,7 +409,7 @@ namespace BasicEventSourceTests
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("RefOptionsEvent", evt.EventName);
-                    Assert.Equal(evt.PayloadValue(0, "OptionsEvent"), "test ref options!");
+                    Assert.Equal("test ref options!", evt.PayloadValue(0, "OptionsEvent"));
                 }));
 
                 tests.Add(new SubTest("Write/Basic/WriteOfTWithNullString",
@@ -422,8 +422,8 @@ namespace BasicEventSourceTests
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("NullStringEvent", evt.EventName);
-                    Assert.Equal(evt.PayloadValue(0, "a"), "");
-                    Assert.Equal(evt.PayloadValue(1, "b"), "");
+                    Assert.Equal("", evt.PayloadValue(0, "a"));
+                    Assert.Equal("", evt.PayloadValue(1, "b"));
                 }));
 
                 // This test only applies to ETW and will fail on EventListeners due to different behavior
@@ -442,7 +442,7 @@ namespace BasicEventSourceTests
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("ActivityEvent", evt.EventName);
-                    Assert.Equal(evt.PayloadValue(0, "ActivityMsg"), "test activity!");
+                    Assert.Equal("test activity!", evt.PayloadValue(0, "ActivityMsg"));
                 }));
 
 
@@ -498,7 +498,7 @@ namespace BasicEventSourceTests
                     }
                 }
 
-                Assert.Equal(events.Count, 1);
+                Assert.Equal(1, events.Count);
                 Event _event = events[0];
                 Assert.Equal("MyTestEvent", _event.EventName);
                 Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
@@ -520,7 +520,7 @@ namespace BasicEventSourceTests
             {
                 Assert.Equal(logger.Name, evt.ProviderName);
                 Assert.Equal("EnumEvent" + subTestName, evt.EventName);
-                Assert.Equal(evt.PayloadValue(0, "b"), "start");
+                Assert.Equal("start", evt.PayloadValue(0, "b"));
                 if (evt.IsEtw)
                 {
                     var value = evt.PayloadValue(1, "v");
@@ -530,7 +530,7 @@ namespace BasicEventSourceTests
                 {
                     Assert.Equal(evt.PayloadValue(1, "v"), enumValue);
                 }
-                Assert.Equal(evt.PayloadValue(2, "s"), "end");
+                Assert.Equal("end", evt.PayloadValue(2, "s"));
             }));
         }
 
@@ -569,7 +569,7 @@ namespace BasicEventSourceTests
             foreach (var item in asArray)
             {
                 var keyValue = item as IDictionary<string, object>;
-                Assert.Equal(keyValue.Count, 2);
+                Assert.Equal(2, keyValue.Count);
                 ret.Add((string)keyValue["Key"], keyValue["Value"]);
             }
             return ret;

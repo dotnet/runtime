@@ -117,7 +117,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                     Assert.True(elem.IsEmpty, "Did not remove correctly");
                 }
                 undo.Undo();
-                Assert.Equal(elem.Value, "text2text0text1");
+                Assert.Equal("text2text0text1", elem.Value);
             }
         }
 
@@ -143,7 +143,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                     Assert.True(elem.IsEmpty, "Did not remove correctly");
                 }
                 undo.Undo();
-                Assert.Equal(elem.Value, "text1text0text2");
+                Assert.Equal("text1text0text2", elem.Value);
             }
         }
 
@@ -169,7 +169,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                     Assert.True(elem.IsEmpty, "Did not remove correctly");
                 }
                 undo.Undo();
-                Assert.Equal(elem.Value, "text1text0text2");
+                Assert.Equal("text1text0text2", elem.Value);
             }
         }
 
@@ -189,7 +189,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                     Assert.True(elem.IsEmpty, "Did not remove correctly");
                 }
                 undo.Undo();
-                Assert.Equal(elem.Value, "text2text0text1");
+                Assert.Equal("text2text0text1", elem.Value);
             }
         }
 

@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Xml.Tests
                      || encryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncAES192Url
                      || encryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncAES256Url);
 
-            Assert.Equal(keyInfo.Count, 1);
+            Assert.Equal(1, keyInfo.Count);
 
             byte[] decryptedKey = null;
 
@@ -51,8 +51,8 @@ namespace System.Security.Cryptography.Xml.Tests
                     EncryptedKey encryptedKey = encryptedKeyInfo.EncryptedKey;
 
                     Assert.Equal(encryptedKey.EncryptionMethod.KeyAlgorithm, EncryptedXml.XmlEncRSAOAEPUrl);
-                    Assert.Equal(encryptedKey.KeyInfo.Count, 1);
-                    Assert.NotEqual(_asymmetricKeys.Count, 0);
+                    Assert.Equal(1, encryptedKey.KeyInfo.Count);
+                    Assert.NotEqual(0, _asymmetricKeys.Count);
 
                     RSAParameters rsaParams = new RSAParameters();
                     RSAParameters rsaInputParams = new RSAParameters();

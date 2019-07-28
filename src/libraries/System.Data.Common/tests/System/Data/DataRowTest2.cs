@@ -2483,7 +2483,7 @@ namespace System.Data.Tests
             Assert.Equal(dr.RowError, string.Empty);
 
             dr.RowError = "Err";
-            Assert.Equal(dr.RowError, "Err");
+            Assert.Equal("Err", dr.RowError);
         }
 
         [Fact]
@@ -2924,11 +2924,11 @@ namespace System.Data.Tests
             table.AcceptChanges();
 
             row.SetModified();
-            Assert.Equal(row.RowState, DataRowState.Modified);
+            Assert.Equal(DataRowState.Modified, row.RowState);
             Assert.Equal(1, row[0, DataRowVersion.Current]);
             Assert.Equal(1, row[0, DataRowVersion.Original]);
             table.RejectChanges();
-            Assert.Equal(row.RowState, DataRowState.Unchanged);
+            Assert.Equal(DataRowState.Unchanged, row.RowState);
         }
         [Fact]
         public void DataRowExpressionDefaultValueTest()

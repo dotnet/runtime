@@ -37,7 +37,7 @@ namespace System.Security.AccessControl
             Assert.Equal(1, rules.Count);
             CustomAccessRule rule = (CustomAccessRule)rules[0];
             // Should be users group
-            Assert.Equal(rule.IdentityReference.Value, "S-1-5-32-545");
+            Assert.Equal("S-1-5-32-545", rule.IdentityReference.Value);
             Assert.Equal(AccessControlType.Allow, rule.AccessControlType);
             Assert.Equal(InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, rule.InheritanceFlags);
             Assert.Equal(0x1200a9, rule.AccessMaskValue);

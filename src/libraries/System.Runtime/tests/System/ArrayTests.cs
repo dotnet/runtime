@@ -100,9 +100,9 @@ namespace System.Tests
             // Initializations of this form are handled specially on Desktop and in .NET Native by UTC.
             var array = new int[,,,] { { { { 1, 2, 3 }, { 1, 2, 3 } }, { { 1, 2, 3 }, { 1, 2, 3 } } }, { { { 1, 2, 3 }, { 1, 2, 3 } }, { { 1, 2, 3 }, { 1, 2, 3 } } } };
             Assert.NotNull(array);
-            Assert.Equal(array.GetValue(0, 0, 0, 0), 1);
-            Assert.Equal(array.GetValue(0, 0, 0, 1), 2);
-            Assert.Equal(array.GetValue(0, 0, 0, 2), 3);
+            Assert.Equal(1, array.GetValue(0, 0, 0, 0));
+            Assert.Equal(2, array.GetValue(0, 0, 0, 1));
+            Assert.Equal(3, array.GetValue(0, 0, 0, 2));
         }
 
         [Fact]
@@ -1946,7 +1946,7 @@ namespace System.Tests
             Assert.False(Array.Exists(intArray, i => i == -1));
 
             int[] results = Array.FindAll(intArray, i => (i % 2) != 0);
-            Assert.Equal(results.Length, 2);
+            Assert.Equal(2, results.Length);
             Assert.True(Array.Exists(results, i => i == 7));
             Assert.True(Array.Exists(results, i => i == 9));
 

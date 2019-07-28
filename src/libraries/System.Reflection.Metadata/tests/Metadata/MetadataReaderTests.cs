@@ -1479,7 +1479,7 @@ namespace System.Reflection.Metadata.Tests
                 var sig = reader.GetBlobBytes(row.Signature);
 
                 // calling convention, always 6 for field
-                Assert.Equal(sig[0], 6);
+                Assert.Equal(6, sig[0]);
                 int len = 0;
                 if (isMod)
                 {
@@ -2614,10 +2614,10 @@ namespace System.Reflection.Metadata.Tests
         {
             var reader = GetMetadataReader(Interop.OtherAccessors);
             var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.First());
-            Assert.Equal(reader.GetString(typeDef.Name), "<Module>");
+            Assert.Equal("<Module>", reader.GetString(typeDef.Name));
 
             typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(1).First());
-            Assert.Equal(reader.GetString(typeDef.Name), "IContainerObject");
+            Assert.Equal("IContainerObject", reader.GetString(typeDef.Name));
 
             var propertyDef = reader.GetPropertyDefinition(typeDef.GetProperties().First());
             var propertyAccessors = propertyDef.GetAccessors();
@@ -2627,7 +2627,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("let_Value", reader.GetString(reader.GetMethodDefinition(propertyAccessors.Others.Single()).Name));
 
             typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(2).First());
-            Assert.Equal(reader.GetString(typeDef.Name), "IEventSource");
+            Assert.Equal("IEventSource", reader.GetString(typeDef.Name));
 
             var eventDef = reader.GetEventDefinition(typeDef.GetEvents().First());
             var eventAccessors = eventDef.GetAccessors();

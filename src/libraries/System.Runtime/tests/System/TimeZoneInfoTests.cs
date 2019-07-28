@@ -1997,7 +1997,7 @@ namespace System.Tests
             DateTimeKind expectedKind = (TimeZoneInfo.Local == TimeZoneInfo.Utc) ? DateTimeKind.Utc : DateTimeKind.Local;
             Assert.Equal(expectedKind, converted.Kind);
             back = TimeZoneInfo.ConvertTimeToUtc(converted, TimeZoneInfo.Local);
-            Assert.Equal(back.Kind, DateTimeKind.Utc);
+            Assert.Equal(DateTimeKind.Utc, back.Kind);
             Assert.Equal(utc, back);
         }
 

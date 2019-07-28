@@ -368,10 +368,10 @@ namespace System.Composition.UnitTests
             var cInstance = cc.GetExport<CirA>();
             cInstance.SharedState = 1;
             var bInstance1 = cInstance.CreateInstance();
-            Assert.Equal(bInstance1.DepC.DepA.SharedState, 1);
+            Assert.Equal(1, bInstance1.DepC.DepA.SharedState);
             bInstance1.DepC.DepA.SharedState = 10;
             cInstance.CreateInstance();
-            Assert.Equal(bInstance1.DepC.DepA.SharedState, 10);
+            Assert.Equal(10, bInstance1.DepC.DepA.SharedState);
         }
 
         /// <summary>

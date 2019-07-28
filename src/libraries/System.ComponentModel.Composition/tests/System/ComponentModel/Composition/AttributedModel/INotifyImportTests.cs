@@ -48,11 +48,11 @@ namespace System.ComponentModel.Composition.AttributedModel
             batch.AddParts(new object());
             container.Compose(batch);
 
-            Assert.Equal(entrypoint.LowerCaseStrings.Count, 1);
-            Assert.Equal(entrypoint.ImportCompletedCallCount, 1);
-            Assert.Equal(entrypoint.UpperCaseStrings.Count, 1);
-            Assert.Equal(entrypoint.LowerCaseStrings[0].Value.String, "abc");
-            Assert.Equal(entrypoint.UpperCaseStrings[0], "ABC");
+            Assert.Equal(1, entrypoint.LowerCaseStrings.Count);
+            Assert.Equal(1, entrypoint.ImportCompletedCallCount);
+            Assert.Equal(1, entrypoint.UpperCaseStrings.Count);
+            Assert.Equal("abc", entrypoint.LowerCaseStrings[0].Value.String);
+            Assert.Equal("ABC", entrypoint.UpperCaseStrings[0]);
         }
 
         [Fact]
@@ -65,22 +65,22 @@ namespace System.ComponentModel.Composition.AttributedModel
             batch.AddParts(new LowerCaseString("abc"), entrypoint);
             container.Compose(batch);
 
-            Assert.Equal(entrypoint.LowerCaseStrings.Count, 1);
-            Assert.Equal(entrypoint.ImportCompletedCallCount, 1);
-            Assert.Equal(entrypoint.UpperCaseStrings.Count, 1);
-            Assert.Equal(entrypoint.LowerCaseStrings[0].Value.String, "abc");
-            Assert.Equal(entrypoint.UpperCaseStrings[0], "ABC");
+            Assert.Equal(1, entrypoint.LowerCaseStrings.Count);
+            Assert.Equal(1, entrypoint.ImportCompletedCallCount);
+            Assert.Equal(1, entrypoint.UpperCaseStrings.Count);
+            Assert.Equal("abc", entrypoint.LowerCaseStrings[0].Value.String);
+            Assert.Equal("ABC", entrypoint.UpperCaseStrings[0]);
 
             // Add another component to verify recomposing
             batch = new CompositionBatch();
             batch.AddParts(new LowerCaseString("def"));
             container.Compose(batch);
 
-            Assert.Equal(entrypoint.LowerCaseStrings.Count, 2);
-            Assert.Equal(entrypoint.ImportCompletedCallCount, 2);
-            Assert.Equal(entrypoint.UpperCaseStrings.Count, 2);
-            Assert.Equal(entrypoint.LowerCaseStrings[1].Value.String, "def");
-            Assert.Equal(entrypoint.UpperCaseStrings[1], "DEF");
+            Assert.Equal(2, entrypoint.LowerCaseStrings.Count);
+            Assert.Equal(2, entrypoint.ImportCompletedCallCount);
+            Assert.Equal(2, entrypoint.UpperCaseStrings.Count);
+            Assert.Equal("def", entrypoint.LowerCaseStrings[1].Value.String);
+            Assert.Equal("DEF", entrypoint.UpperCaseStrings[1]);
 
             // Verify that adding a random component doesn't cause
             // the OnImportsSatisfied to be called again.
@@ -88,9 +88,9 @@ namespace System.ComponentModel.Composition.AttributedModel
             batch.AddParts(new object());
             container.Compose(batch);
 
-            Assert.Equal(entrypoint.LowerCaseStrings.Count, 2);
-            Assert.Equal(entrypoint.ImportCompletedCallCount, 2);
-            Assert.Equal(entrypoint.UpperCaseStrings.Count, 2);
+            Assert.Equal(2, entrypoint.LowerCaseStrings.Count);
+            Assert.Equal(2, entrypoint.ImportCompletedCallCount);
+            Assert.Equal(2, entrypoint.UpperCaseStrings.Count);
         }
 
         [Fact]

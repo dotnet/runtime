@@ -282,8 +282,8 @@ namespace System.Tests
             {
                 Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, null);
-                Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
-                Assert.Equal(Environment.GetEnvironmentVariable(varNamePrefix), null);
+                Assert.Null(Environment.GetEnvironmentVariable(varName));
+                Assert.Null(Environment.GetEnvironmentVariable(varNamePrefix));
             }
             finally
             {

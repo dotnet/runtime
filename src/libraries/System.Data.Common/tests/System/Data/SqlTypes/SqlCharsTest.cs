@@ -41,7 +41,7 @@ namespace System.Data.Tests.SqlTypes
             SqlChars chars = new SqlChars();
             try
             {
-                Assert.Equal(chars[0], 0);
+                Assert.Equal(0, chars[0]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -52,7 +52,7 @@ namespace System.Data.Tests.SqlTypes
             chars = new SqlChars(b);
             try
             {
-                Assert.Equal(chars[0], 0);
+                Assert.Equal(0, chars[0]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -61,10 +61,10 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new char[10];
             chars = new SqlChars(b);
-            Assert.Equal(chars[0], 0);
+            Assert.Equal(0, chars[0]);
             try
             {
-                Assert.Equal(chars[-1], 0);
+                Assert.Equal(0, chars[-1]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -73,7 +73,7 @@ namespace System.Data.Tests.SqlTypes
             }
             try
             {
-                Assert.Equal(chars[10], 0);
+                Assert.Equal(0, chars[10]);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -89,7 +89,7 @@ namespace System.Data.Tests.SqlTypes
             SqlChars chars = new SqlChars();
             try
             {
-                Assert.Equal(chars.Length, 0);
+                Assert.Equal(0, chars.Length);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -99,7 +99,7 @@ namespace System.Data.Tests.SqlTypes
             chars = new SqlChars(b);
             try
             {
-                Assert.Equal(chars.Length, 0);
+                Assert.Equal(0, chars.Length);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -108,7 +108,7 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new char[10];
             chars = new SqlChars(b);
-            Assert.Equal(chars.Length, 10);
+            Assert.Equal(10, chars.Length);
         }
 
         [Fact]
@@ -121,7 +121,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(chars.MaxLength, -1);
             b = new char[10];
             chars = new SqlChars(b);
-            Assert.Equal(chars.MaxLength, 10);
+            Assert.Equal(10, chars.MaxLength);
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b = null;
             SqlChars chars = SqlChars.Null;
-            Assert.Equal(chars.IsNull, true);
+            Assert.True(chars.IsNull);
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace System.Data.Tests.SqlTypes
             SqlChars chars = new SqlChars();
             try
             {
-                Assert.Equal(chars.Storage, StorageState.Buffer);
+                Assert.Equal(StorageState.Buffer, chars.Storage);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -149,7 +149,7 @@ namespace System.Data.Tests.SqlTypes
             chars = new SqlChars(b);
             try
             {
-                Assert.Equal(chars.Storage, StorageState.Buffer);
+                Assert.Equal(StorageState.Buffer, chars.Storage);
                 Assert.False(true);
             }
             catch (Exception ex)
@@ -158,7 +158,7 @@ namespace System.Data.Tests.SqlTypes
             }
             b = new char[10];
             chars = new SqlChars(b);
-            Assert.Equal(chars.Storage, StorageState.Buffer);
+            Assert.Equal(StorageState.Buffer, chars.Storage);
         }
 
         [Fact]
@@ -169,8 +169,8 @@ namespace System.Data.Tests.SqlTypes
             char[] b2 = chars.Value;
             Assert.Equal(b1[0], b2[0]);
             b2[0] = '1';
-            Assert.Equal(b1[0], 0);
-            Assert.Equal(b2[0], '1');
+            Assert.Equal(0, b1[0]);
+            Assert.Equal('1', b2[0]);
         }
 
         [Fact]
@@ -188,7 +188,7 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Equal(typeof(SqlTypeException), ex.GetType());
             }
             chars = new SqlChars(b1);
-            Assert.Equal(chars.Length, 10);
+            Assert.Equal(10, chars.Length);
             try
             {
                 chars.SetLength(-1);
@@ -208,7 +208,7 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             }
             chars.SetLength(2);
-            Assert.Equal(chars.Length, 2);
+            Assert.Equal(2, chars.Length);
         }
 
         [Fact]
@@ -216,11 +216,11 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b1 = new char[10];
             SqlChars chars = new SqlChars(b1);
-            Assert.Equal(chars.Length, 10);
+            Assert.Equal(10, chars.Length);
             chars.SetNull();
             try
             {
-                Assert.Equal(chars.Length, 10);
+                Assert.Equal(10, chars.Length);
                 Assert.False(true);
             }
             catch (Exception ex)

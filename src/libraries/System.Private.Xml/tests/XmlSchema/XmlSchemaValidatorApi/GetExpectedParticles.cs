@@ -30,7 +30,7 @@ namespace System.Xml.Tests
             if (after == "init")
             {
                 val.Initialize();
-                Assert.Equal(val.GetExpectedParticles().Length, 18);
+                Assert.Equal(18, val.GetExpectedParticles().Length);
             }
             else if (after == "end")
             {
@@ -312,10 +312,10 @@ namespace System.Xml.Tests
             {
                 result = val.GetExpectedParticles();
 
-                Assert.Equal(result.Length, 1);
+                Assert.Equal(1, result.Length);
                 Assert.True(result[0] is XmlSchemaAny);
-                Assert.Equal((result[0] as XmlSchemaAny).Namespace, "uri:tempuri");
-                Assert.Equal((result[0] as XmlSchemaAny).ProcessContents, XmlSchemaContentProcessing.Strict);
+                Assert.Equal("uri:tempuri", (result[0] as XmlSchemaAny).Namespace);
+                Assert.Equal(XmlSchemaContentProcessing.Strict, (result[0] as XmlSchemaAny).ProcessContents);
             }
             else
             {
@@ -349,12 +349,12 @@ namespace System.Xml.Tests
             {
                 result = val.GetExpectedParticles();
 
-                Assert.Equal(result.Length, 2);
+                Assert.Equal(2, result.Length);
 
                 if (result[0] is XmlSchemaAny)
                 {
-                    Assert.Equal((result[0] as XmlSchemaAny).Namespace, "uri:tempuri");
-                    Assert.Equal((result[0] as XmlSchemaAny).ProcessContents, XmlSchemaContentProcessing.Strict);
+                    Assert.Equal("uri:tempuri", (result[0] as XmlSchemaAny).Namespace);
+                    Assert.Equal(XmlSchemaContentProcessing.Strict, (result[0] as XmlSchemaAny).ProcessContents);
 
                     Assert.True(result[1] is XmlSchemaElement);
                     Assert.Equal((result[1] as XmlSchemaElement).QualifiedName, new XmlQualifiedName("foo"));
@@ -362,8 +362,8 @@ namespace System.Xml.Tests
                 else
                 {
                     Assert.True(result[1] is XmlSchemaAny);
-                    Assert.Equal((result[1] as XmlSchemaAny).Namespace, "uri:tempuri");
-                    Assert.Equal((result[1] as XmlSchemaAny).ProcessContents, XmlSchemaContentProcessing.Strict);
+                    Assert.Equal("uri:tempuri", (result[1] as XmlSchemaAny).Namespace);
+                    Assert.Equal(XmlSchemaContentProcessing.Strict, (result[1] as XmlSchemaAny).ProcessContents);
 
                     Assert.True(result[0] is XmlSchemaElement);
                     Assert.Equal((result[0] as XmlSchemaElement).QualifiedName, new XmlQualifiedName("foo"));
@@ -588,11 +588,11 @@ namespace System.Xml.Tests
 
             result = val.GetExpectedParticles();
 
-            Assert.Equal(result.Length, 1);
+            Assert.Equal(1, result.Length);
 
             Assert.True(result[0] is XmlSchemaAny);
-            Assert.Equal((result[0] as XmlSchemaAny).Namespace, null);
-            Assert.Equal((result[0] as XmlSchemaAny).ProcessContents, XmlSchemaContentProcessing.Lax);
+            Assert.Null((result[0] as XmlSchemaAny).Namespace);
+            Assert.Equal(XmlSchemaContentProcessing.Lax, (result[0] as XmlSchemaAny).ProcessContents);
 
             return;
         }

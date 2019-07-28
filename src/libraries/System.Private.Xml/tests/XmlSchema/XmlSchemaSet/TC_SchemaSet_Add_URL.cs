@@ -45,7 +45,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             XmlSchema Schema = sc.Add((string)null, TestData._FileXSD1);
-            Assert.Equal(Schema != null, true);
+            Assert.True(Schema != null);
 
             return;
         }
@@ -58,7 +58,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             XmlSchema Schema = sc.Add("xsdauthor", TestData._XsdAuthor);
 
-            Assert.Equal(Schema != null, true);
+            Assert.True(Schema != null);
 
             return;
         }
@@ -108,10 +108,10 @@ namespace System.Xml.Tests
             XmlSchema Schema1 = sc.Add("xsdauthor1", TestData._XsdNoNs);
             XmlSchema Schema2 = sc.Add("xsdauthor2", TestData._XsdNoNs);
 
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(Schema1 != null, true);
+            Assert.Equal(2, sc.Count);
+            Assert.True(Schema1 != null);
             // the second call to add should be ignored with Add returning the first obj
-            Assert.Equal((Schema2 == Schema1), false);
+            Assert.False((Schema2 == Schema1));
 
             return;
         }
@@ -125,8 +125,8 @@ namespace System.Xml.Tests
             XmlSchema Schema1 = sc.Add(null, TestData._XsdAuthor);
             XmlSchema Schema2 = sc.Add(null, TestData._XsdAuthor);
 
-            Assert.Equal(sc.Count, 1);
-            Assert.Equal(Schema1 != null, true);
+            Assert.Equal(1, sc.Count);
+            Assert.True(Schema1 != null);
 
             // the second call to add should be ignored with Add returning the first obj
             Assert.Equal(Schema2, Schema1);
@@ -143,9 +143,9 @@ namespace System.Xml.Tests
             XmlSchema Schema1 = sc.Add("xsdauthor", TestData._XsdAuthor);
             XmlSchema Schema2 = sc.Add("xsdauthor", TestData._XsdNoNs);
 
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(Schema1 != null, true);
-            Assert.Equal((Schema2 == Schema1), false);
+            Assert.Equal(2, sc.Count);
+            Assert.True(Schema1 != null);
+            Assert.False((Schema2 == Schema1));
             return;
         }
 
@@ -162,7 +162,7 @@ namespace System.Xml.Tests
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(sc.Count, 0);
+                Assert.Equal(0, sc.Count);
                 // GLOBALIZATION
                 return;
             }
@@ -180,14 +180,14 @@ namespace System.Xml.Tests
             XmlSchema Schema2 = sc.Add("xsdauthor", TestData._XsdAuthorDup);
 
             // schemas should be successfully added
-            Assert.Equal(sc.Count, 2);
+            Assert.Equal(2, sc.Count);
             try
             {
                 sc.Compile();
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(sc.Count, 2);
+                Assert.Equal(2, sc.Count);
                 // GLOBALIZATION
                 return;
             }
@@ -205,14 +205,14 @@ namespace System.Xml.Tests
             XmlSchema Schema2 = sc.Add("xsdauthor", TestData._XsdAuthorDup);
 
             // schemas should be successfully added
-            Assert.Equal(sc.Count, 2);
+            Assert.Equal(2, sc.Count);
             try
             {
                 sc.Compile();
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(sc.Count, 2);
+                Assert.Equal(2, sc.Count);
 
                 // GLOBALIZATION
                 return;

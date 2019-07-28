@@ -64,11 +64,11 @@ namespace System.Transactions.Tests
             }
             catch (TransactionInDoubtException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+                Assert.Equal(TransactionStatus.InDoubt, expectedTxStatus);
             }
             catch (TransactionAbortedException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, expectedTxStatus);
             }
 
 
@@ -118,11 +118,11 @@ namespace System.Transactions.Tests
             }
             catch (TransactionInDoubtException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+                Assert.Equal(TransactionStatus.InDoubt, expectedTxStatus);
             }
             catch (TransactionAbortedException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, expectedTxStatus);
             }
 
             Assert.NotNull(tx);
@@ -153,11 +153,11 @@ namespace System.Transactions.Tests
             }
             catch (TransactionInDoubtException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+                Assert.Equal(TransactionStatus.InDoubt, expectedTxStatus);
             }
             catch (TransactionAbortedException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, expectedTxStatus);
             }
 
             Assert.True(outcomeEvent.WaitOne(TimeSpan.FromSeconds(MaxTransactionCommitTimeoutInSeconds)));
@@ -202,11 +202,11 @@ namespace System.Transactions.Tests
             }
             catch (TransactionInDoubtException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.InDoubt);
+                Assert.Equal(TransactionStatus.InDoubt, expectedTxStatus);
             }
             catch (TransactionAbortedException)
             {
-                Assert.Equal(expectedTxStatus, TransactionStatus.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, expectedTxStatus);
             }
 
             Task.Run(() => // in case current thread is STA thread, where WaitHandle.WaitAll isn't supported

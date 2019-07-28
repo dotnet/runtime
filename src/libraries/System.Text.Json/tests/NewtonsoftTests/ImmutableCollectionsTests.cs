@@ -130,7 +130,7 @@ namespace System.Text.Json.Tests
         {
             InvalidOperationException e = Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Serialize(default(ImmutableArray<int>), s_indentedOption));
-            Assert.Equal(e.Message, "This operation cannot be performed on a default instance of ImmutableArray<T>.  Consider initializing the array, or checking the ImmutableArray<T>.IsDefault property.");
+            Assert.Equal("This operation cannot be performed on a default instance of ImmutableArray<T>.  Consider initializing the array, or checking the ImmutableArray<T>.IsDefault property.", e.Message);
         }
         #endregion
 

@@ -190,7 +190,7 @@ namespace System.IO.Tests
                 char[] chArr = new char[baseInfo.chArr.Length];
 
                 var read = await tr.ReadAsync(chArr, 4, 3);
-                Assert.Equal(read, 3);
+                Assert.Equal(3, read);
 
                 for (int count = 0; count < 3; ++count)
                 {

@@ -190,7 +190,7 @@ namespace XLinqTests
             // Verify that without annotation the output gets indented and the duplicate ns decls are not removed
             if (testXElement)
             {
-                Assert.Equal(NormalizeNewLines(serialize(child)), "<child xmlns:a=\"uri\">  <baby xmlns:a=\"uri\">text</baby></child>");
+                Assert.Equal("<child xmlns:a=\"uri\">  <baby xmlns:a=\"uri\">text</baby></child>", NormalizeNewLines(serialize(child)));
             }
 
             // Now add annotation to the leaf element node
@@ -199,7 +199,7 @@ namespace XLinqTests
 
             if (testXElement)
             {
-                Assert.Equal(serialize(baby), "<baby xmlns:a=\"uri\">text</baby>");
+                Assert.Equal("<baby xmlns:a=\"uri\">text</baby>", serialize(baby));
             }
 
             // Now add annotation to the middle node
@@ -208,9 +208,9 @@ namespace XLinqTests
             if (testXElement)
             {
                 // Verify that the options are applied correctly
-                Assert.Equal(NormalizeNewLines(serialize(child)), "<child xmlns:a=\"uri\"><baby>text</baby></child>");
+                Assert.Equal("<child xmlns:a=\"uri\"><baby>text</baby></child>", NormalizeNewLines(serialize(child)));
                 // Verify that the root node is not affected as we don't look for the annotation among descendants
-                Assert.Equal(NormalizeNewLines(serialize(root)), "<root xmlns:a=\"uri\">  <child xmlns:a=\"uri\">    <baby xmlns:a=\"uri\">text</baby>  </child></root>");
+                Assert.Equal("<root xmlns:a=\"uri\">  <child xmlns:a=\"uri\">    <baby xmlns:a=\"uri\">text</baby>  </child></root>", NormalizeNewLines(serialize(root)));
             }
 
             // And now add the annotation to the root and remove it from the child to test that we can correctly skip over a node
@@ -220,9 +220,9 @@ namespace XLinqTests
             if (testXElement)
             {
                 // Verify that the options are still applied to child
-                Assert.Equal(serialize(child), "<child xmlns:a=\"uri\"><baby>text</baby></child>");
+                Assert.Equal("<child xmlns:a=\"uri\"><baby>text</baby></child>", serialize(child));
                 // And they should be also applied to the root now
-                Assert.Equal(serialize(root), "<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>");
+                Assert.Equal("<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>", serialize(root));
             }
 
             // Add a document node above it all to test that it works on non-XElement as well
@@ -234,12 +234,12 @@ namespace XLinqTests
             // Options should still apply to root as well as the doc
             if (testXElement)
             {
-                Assert.Equal(serialize(root), "<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>");
+                Assert.Equal("<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>", serialize(root));
             }
 
             if (testXDocument)
             {
-                Assert.Equal(serialize(doc), "<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>");
+                Assert.Equal("<root xmlns:a=\"uri\"><child><baby>text</baby></child></root>", serialize(doc));
             }
         }
 

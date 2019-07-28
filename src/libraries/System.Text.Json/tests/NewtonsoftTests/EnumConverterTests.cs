@@ -180,7 +180,7 @@ namespace System.Text.Json.Tests
         public static void TestValidIntegerValue()
         {
             StoreColor c = JsonSerializer.Deserialize<StoreColor>("1");
-            Assert.Equal(c, StoreColor.Black);
+            Assert.Equal(StoreColor.Black, c);
         }
 
         [Fact]

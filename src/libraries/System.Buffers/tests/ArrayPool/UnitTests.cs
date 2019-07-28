@@ -132,7 +132,7 @@ namespace System.Buffers.ArrayPool.Tests
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArraysPerBucket: 1, maxArrayLength: 32);
             byte[] rented = pool.Rent(27);
             Assert.NotNull(rented);
-            Assert.Equal(rented.Length, 32);
+            Assert.Equal(32, rented.Length);
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace System.Buffers.ArrayPool.Tests
 
             // Note - yes this is bad to hold on to the old instance but we need to validate the contract
             pool.Return(buffer, clearArray: true);
-            CheckFilledArray(buffer, (byte b1, byte b2) => Assert.Equal(b1, default(byte)));
+            CheckFilledArray(buffer, (byte b1, byte b2) => Assert.Equal(default(byte), b1));
         }
 
         [Fact]
@@ -216,8 +216,8 @@ namespace System.Buffers.ArrayPool.Tests
             array[0].InternalRef = "foo";
             array[1].InternalRef = "bar";
             pool.Return(array, clearArray: true);
-            Assert.Equal(array[0], default(TestStruct));
-            Assert.Equal(array[1], default(TestStruct));
+            Assert.Equal(default(TestStruct), array[0]);
+            Assert.Equal(default(TestStruct), array[1]);
         }
 
         [Fact]

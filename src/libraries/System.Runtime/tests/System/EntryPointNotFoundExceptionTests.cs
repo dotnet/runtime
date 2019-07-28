@@ -38,7 +38,7 @@ namespace System.Tests
             var exception = new EntryPointNotFoundException(message, innerException);
 
             Assert.Equal(message, exception.Message);
-            Assert.Equal(exception.GetBaseException().Message, "Created inner exception");
+            Assert.Equal("Created inner exception", exception.GetBaseException().Message);
             Assert.Equal(COR_E_ENTRYPOINTNOTFOUND, exception.HResult);
             Assert.Equal(innerException, exception.InnerException);
             Assert.Equal(innerException.HResult, exception.InnerException.HResult);

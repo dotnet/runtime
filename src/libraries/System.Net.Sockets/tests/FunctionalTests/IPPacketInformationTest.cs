@@ -34,7 +34,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(packetInfo == packetInfoCopy);
             Assert.False(packetInfo != packetInfoCopy);
 
-            Assert.NotEqual(packetInfo, default(IPPacketInformation));
+            Assert.NotEqual(default, packetInfo);
             Assert.False(packetInfo == default(IPPacketInformation));
             Assert.True(packetInfo != default(IPPacketInformation));
 

@@ -171,10 +171,10 @@ namespace System.ComponentModel.Composition
 
             Assert.NotNull(export.Metadata);
             Assert.NotNull(export.Metadata.Values);
-            Assert.Equal(export.Metadata.Values.Count(), 3);
-            Assert.Equal(export.Metadata.Values.First(), "One");
-            Assert.Equal(export.Metadata.Values.Skip(1).First(), "two");
-            Assert.Equal(export.Metadata.Values.Skip(2).First(), "3");
+            Assert.Equal(3, export.Metadata.Values.Count());
+            Assert.Equal("One", export.Metadata.Values.First());
+            Assert.Equal("two", export.Metadata.Values.Skip(1).First());
+            Assert.Equal("3", export.Metadata.Values.Skip(2).First());
         }
 
         [Fact]

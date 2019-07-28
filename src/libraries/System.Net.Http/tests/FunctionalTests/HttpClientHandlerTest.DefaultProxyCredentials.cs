@@ -64,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
                     handler.DefaultProxyCredentials = defaultSystemProxyCreds;
                     using (HttpResponseMessage response = await client.GetAsync("http://notatrealserver.com/")) // URL does not matter
                     {
-                        Assert.Equal(response.StatusCode, HttpStatusCode.OK);
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 }
             }, async server =>
@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.DefaultProxyCredentials = new NetworkCredential("UsernameNotUsed", "PasswordNotUsed");
                 HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer);
 
-                Assert.Equal(response.StatusCode, HttpStatusCode.OK);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
     }

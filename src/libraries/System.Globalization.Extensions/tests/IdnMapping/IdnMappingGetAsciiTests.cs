@@ -105,7 +105,7 @@ namespace System.Globalization.Tests
                 // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception
                 Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                 Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                Assert.Equal(result, ".");
+                Assert.Equal(".", result);
             }
             else
             {

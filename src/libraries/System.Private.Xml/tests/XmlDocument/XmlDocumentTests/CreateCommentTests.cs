@@ -16,7 +16,7 @@ namespace System.Xml.Tests
 
             Assert.Equal("<!---->", comment.OuterXml);
             Assert.Equal(string.Empty, comment.InnerText);
-            Assert.Equal(comment.NodeType, XmlNodeType.Comment);
+            Assert.Equal(XmlNodeType.Comment, comment.NodeType);
         }
     }
 }

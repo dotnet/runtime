@@ -1763,7 +1763,7 @@ namespace System.Data.Tests
             child.Rows[0].Delete();
             changes = ds.GetChanges();
 
-            Assert.Equal(changes.Tables.Count, 2);
+            Assert.Equal(2, changes.Tables.Count);
             Assert.Equal(1, changes.Tables["parent"].Rows.Count);
             Assert.Equal(1, (int)changes.Tables["parent"].Rows[0][0]);
         }

@@ -31,7 +31,7 @@ namespace System.Linq.Tests
         public void Range_ToArray_ProduceCorrectResult()
         {
             var array = Enumerable.Range(1, 100).ToArray();
-            Assert.Equal(array.Length, 100);
+            Assert.Equal(100, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Equal(i + 1, array[i]);
         }
@@ -40,7 +40,7 @@ namespace System.Linq.Tests
         public void Range_ToList_ProduceCorrectResult()
         {
             var list = Enumerable.Range(1, 100).ToList();
-            Assert.Equal(list.Count, 100);
+            Assert.Equal(100, list.Count);
             for (var i = 0; i < list.Count; i++)
                 Assert.Equal(i + 1, list[i]);
         }
@@ -51,9 +51,9 @@ namespace System.Linq.Tests
             var array = Enumerable.Range(1, 0).ToArray();
             var array2 = Enumerable.Range(int.MinValue, 0).ToArray();
             var array3 = Enumerable.Range(int.MaxValue, 0).ToArray();
-            Assert.Equal(array.Length, 0);
-            Assert.Equal(array2.Length, 0);
-            Assert.Equal(array3.Length, 0);
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, array2.Length);
+            Assert.Equal(0, array3.Length);
         }
 
         [Fact]

@@ -794,7 +794,7 @@ namespace System.Data.Tests
             Assert.Equal(dr["String1"], dt.Columns["String1"].DefaultValue);
 
             // LoadDataRow(update1) - check column String2
-            Assert.Equal(dr["String2"], "Changed");
+            Assert.Equal("Changed", dr["String2"]);
 
             // LoadDataRow(update1) - check row state
             Assert.Equal(DataRowState.Modified, dr.RowState);

@@ -188,8 +188,8 @@ namespace System.Xml.Tests
             val.ValidateText(StringGetter("123"));
             val.ValidateEndElement(info);
 
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.SchemaElement.Name, "PartialElement");
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal("PartialElement", info.SchemaElement.Name);
 
             return;
         }
@@ -271,8 +271,8 @@ namespace System.Xml.Tests
             val.ValidateEndOfAttributes(null);
             val.ValidateEndElement(info);
 
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.SchemaType.Name, "PartialType");
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal("PartialType", info.SchemaType.Name);
 
             return;
         }
@@ -369,8 +369,8 @@ namespace System.Xml.Tests
 
             val.ValidateAttribute("PartialAttribute", "", StringGetter("123"), info);
 
-            Assert.Equal(info.Validity, XmlSchemaValidity.Valid);
-            Assert.Equal(info.SchemaAttribute.Name, "PartialAttribute");
+            Assert.Equal(XmlSchemaValidity.Valid, info.Validity);
+            Assert.Equal("PartialAttribute", info.SchemaAttribute.Name);
 
             return;
         }

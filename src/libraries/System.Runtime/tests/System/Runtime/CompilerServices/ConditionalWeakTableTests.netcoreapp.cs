@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices.Tests
 
             string value;
             Assert.True(cwt.TryGetValue(key, out value));
-            Assert.Equal(value, "value1");
+            Assert.Equal("value1", value);
             Assert.Equal(value, cwt.GetOrCreateValue(key));
             Assert.Equal(value, cwt.GetValue(key, k => "value1"));
 
@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices.Tests
 
             cwt.AddOrUpdate(key, "value2");
             Assert.True(cwt.TryGetValue(key, out value));
-            Assert.Equal(value, "value2");
+            Assert.Equal("value2", value);
             Assert.Equal(value, cwt.GetOrCreateValue(key));
             Assert.Equal(value, cwt.GetValue(key, k => "value1"));
         }

@@ -90,7 +90,7 @@ namespace System.IO.Tests
                 UmsTests.ReadUmsInvariants(stream);
 
                 var position = stream.Position;
-                Assert.Equal(stream.ReadByte(), 100);
+                Assert.Equal(100, stream.ReadByte());
                 Assert.Equal(stream.Position, position + 1);
 
                 position = stream.Position;
@@ -104,7 +104,7 @@ namespace System.IO.Tests
                 buffer.Write(0, (byte)100);
 
                 var position = stream.Position;
-                Assert.Equal(stream.ReadByte(), 100);
+                Assert.Equal(100, stream.ReadByte());
                 Assert.Equal(stream.Position, position + 1);
 
                 Assert.Equal(stream.ReadByte(), -1); // end of stream

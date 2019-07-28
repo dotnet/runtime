@@ -35,7 +35,7 @@ namespace System.Reflection.Tests
                 Assert.Throws<FileNotFoundException>(() => t.BaseType);
 
                 Assert.Same(lc, resolver.Context);
-                Assert.Equal(resolver.AssemblyName.Name, "Foo");
+                Assert.Equal("Foo", resolver.AssemblyName.Name);
                 Assert.Equal(2, resolver.CallCount);
             }
         }
@@ -54,7 +54,7 @@ namespace System.Reflection.Tests
                 Type bt = t.BaseType;
 
                 Assert.Same(lc, resolver.Context);
-                Assert.Equal(resolver.AssemblyName.Name, "Foo");
+                Assert.Equal("Foo", resolver.AssemblyName.Name);
                 Assert.Equal(2, resolver.CallCount);
 
                 Assembly a = bt.Assembly;

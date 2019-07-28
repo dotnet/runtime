@@ -47,7 +47,7 @@ namespace System.Xml.Tests
             val.ValidateEndElement(null);
             val.ValidateEndElement(info);
 
-            Assert.Equal(info.ContentType, XmlSchemaContentType.ElementOnly);
+            Assert.Equal(XmlSchemaContentType.ElementOnly, info.ContentType);
             Assert.True(info.SchemaType != null);
 
             return;
@@ -325,8 +325,8 @@ namespace System.Xml.Tests
             }
             catch (XmlSchemaValidationException e)
             {
-                Assert.Equal(e.LineNumber, 2);
-                Assert.Equal(e.LinePosition, 8);
+                Assert.Equal(2, e.LineNumber);
+                Assert.Equal(8, e.LinePosition);
             }
 
             return;
@@ -562,7 +562,7 @@ namespace System.Xml.Tests
             val.Initialize();
             val.ValidateElement("bar", "", info);
 
-            Assert.Equal(holder.NestingDepth, 3);
+            Assert.Equal(3, holder.NestingDepth);
 
             return;
         }

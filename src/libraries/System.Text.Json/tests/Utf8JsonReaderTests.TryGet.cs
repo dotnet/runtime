@@ -1131,7 +1131,7 @@ namespace System.Text.Json.Tests
                         }
                         catch (InvalidOperationException ex)
                         {
-                            Assert.Equal(ex.InnerException.GetType(), typeof(DecoderFallbackException));
+                            Assert.Equal(typeof(DecoderFallbackException), ex.InnerException.GetType());
                         }
                     }
                 }

@@ -1131,7 +1131,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(arguments, observer.EventObject);
                     Assert.NotNull(observer.Activity);
 
-                    Assert.NotEqual(activity.StartTimeUtc, default(DateTime));
+                    Assert.NotEqual(default(DateTime), activity.StartTimeUtc);
                     Assert.Equal(TimeSpan.Zero, observer.Activity.Duration);
 
                     observer.Reset();

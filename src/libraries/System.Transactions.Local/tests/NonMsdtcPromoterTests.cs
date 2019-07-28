@@ -1045,13 +1045,13 @@ namespace System.Transactions.Tests
                 TransactionAbortedException abortedEx = ex as TransactionAbortedException;
                 if ((abortedEx != null) && (spcResponse != TransactionStatus.Aborted))
                 {
-                    Assert.Equal(spcResponse, TransactionStatus.Aborted);
+                    Assert.Equal(TransactionStatus.Aborted, spcResponse);
                 }
 
                 TransactionInDoubtException indoubtEx = ex as TransactionInDoubtException;
                 if ((indoubtEx != null) && (spcResponse != TransactionStatus.InDoubt))
                 {
-                    Assert.Equal(spcResponse, TransactionStatus.InDoubt);
+                    Assert.Equal(TransactionStatus.InDoubt, spcResponse);
                 }
 
                 if (spcResponse == TransactionStatus.Committed)
@@ -1243,16 +1243,16 @@ namespace System.Transactions.Tests
                 TransactionAbortedException abortedEx = ex as TransactionAbortedException;
                 if ((abortedEx != null) && (spcResponse != TransactionStatus.Aborted))
                 {
-                    Assert.Equal(spcResponse, TransactionStatus.Aborted);
+                    Assert.Equal(TransactionStatus.Aborted, spcResponse);
                 }
 
                 TransactionInDoubtException indoubtEx = ex as TransactionInDoubtException;
                 if ((indoubtEx != null) && (spcResponse != TransactionStatus.InDoubt))
                 {
-                    Assert.Equal(spcResponse, TransactionStatus.InDoubt);
+                    Assert.Equal(TransactionStatus.InDoubt, spcResponse);
                 }
 
-                Assert.NotEqual(spcResponse, TransactionStatus.Committed);
+                Assert.NotEqual(TransactionStatus.Committed, spcResponse);
             }
 
             TestPassed();

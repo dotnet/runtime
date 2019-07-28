@@ -125,7 +125,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         int count = 0;
                         while (reader.Read()) { count++; }
                         Assert.True(count == 1, "Error: incorrect number of rows in table after update.");
-                        Assert.Equal(count, 1);
+                        Assert.Equal(1, count);
                     }
                 }
             }
@@ -161,7 +161,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         Assert.False(reader.HasRows, "Error Rollback Test : incorrect number of rows in table after rollback.");
                         int count = 0;
                         while (reader.Read()) count++;
-                        Assert.Equal(count, 0);
+                        Assert.Equal(0, count);
                     }
 
                     connection.Close();
@@ -210,7 +210,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         Assert.True(reader.HasRows, "Error Scoped Transaction Test : incorrect number of rows in table after rollback to save state one.");
                         int count = 0;
                         while (reader.Read()) count++;
-                        Assert.Equal(count, 1);
+                        Assert.Equal(1, count);
                     }
 
                     tx.Rollback();

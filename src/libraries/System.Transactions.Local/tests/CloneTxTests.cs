@@ -126,7 +126,7 @@ namespace System.Transactions.Tests
             }
             catch (TransactionAbortedException ex)
             {
-                Assert.Equal(expectedStatus, TransactionStatus.Aborted);
+                Assert.Equal(TransactionStatus.Aborted, expectedStatus);
                 switch (cloneType)
                 {
                     case CloneType.Normal:

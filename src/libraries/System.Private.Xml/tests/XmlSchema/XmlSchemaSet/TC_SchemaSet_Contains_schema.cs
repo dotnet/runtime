@@ -49,7 +49,7 @@ namespace System.Xml.Tests
 
             XmlSchema Schema = scl.Add(null, TestData._XsdAuthor);
 
-            Assert.Equal(sc.Contains(Schema), false);
+            Assert.False(sc.Contains(Schema));
 
             return;
         }
@@ -67,11 +67,11 @@ namespace System.Xml.Tests
             XmlSchema Schema = scl.Add(null, TestData._XsdAuthor);
             sc.Add(Schema);
 
-            Assert.Equal(sc.Contains(Schema), true);
+            Assert.True(sc.Contains(Schema));
 
             sc.Remove(Schema);
 
-            Assert.Equal(sc.Contains(Schema), false);
+            Assert.False(sc.Contains(Schema));
 
             return;
         }
@@ -84,7 +84,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             XmlSchema Schema = sc.Add(null, TestData._XsdAuthor);
 
-            Assert.Equal(sc.Contains(Schema), true);
+            Assert.True(sc.Contains(Schema));
 
             return;
         }

@@ -237,7 +237,7 @@ namespace System.IO.Tests
 
             var read = await sr.ReadAsync(chArr, 4, 3);
 
-            Assert.Equal(read, 3);
+            Assert.Equal(3, read);
             for (int i = 0; i < 3; i++)
             {
                 Assert.Equal(baseInfo.Item1[i], chArr[i + 4]);

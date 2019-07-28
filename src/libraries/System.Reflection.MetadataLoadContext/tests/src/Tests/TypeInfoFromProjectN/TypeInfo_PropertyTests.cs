@@ -69,7 +69,7 @@ namespace System.Reflection.Tests
             TypeInfo ti = t.GetTypeInfo();
 
             string fname = ti.FullName;
-            Assert.Equal(fname, "System.Int32");
+            Assert.Equal("System.Int32", fname);
         }
 
 
@@ -278,12 +278,12 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestNamespace()
         {
-            Assert.Equal(typeof(TypeInfoPropertyBase).Project().GetTypeInfo().Namespace, "System.Reflection.Tests");
-            Assert.Equal(typeof(ITest).Project().GetTypeInfo().Namespace, "System.Reflection.Tests");
-            Assert.Equal(typeof(MYENUM).Project().GetTypeInfo().Namespace, "System.Reflection.Tests");
-            Assert.Equal(typeof(PublicClass).Project().GetTypeInfo().Namespace, "System.Reflection.Tests");
-            Assert.Equal(typeof(PublicClass.publicNestedClass).Project().GetTypeInfo().Namespace, "System.Reflection.Tests");
-            Assert.Equal(typeof(int).Project().GetTypeInfo().Namespace, "System");
+            Assert.Equal("System.Reflection.Tests", typeof(TypeInfoPropertyBase).Project().GetTypeInfo().Namespace);
+            Assert.Equal("System.Reflection.Tests", typeof(ITest).Project().GetTypeInfo().Namespace);
+            Assert.Equal("System.Reflection.Tests", typeof(MYENUM).Project().GetTypeInfo().Namespace);
+            Assert.Equal("System.Reflection.Tests", typeof(PublicClass).Project().GetTypeInfo().Namespace);
+            Assert.Equal("System.Reflection.Tests", typeof(PublicClass.publicNestedClass).Project().GetTypeInfo().Namespace);
+            Assert.Equal("System", typeof(int).Project().GetTypeInfo().Namespace);
         }
 
         // VerifyIsImport 

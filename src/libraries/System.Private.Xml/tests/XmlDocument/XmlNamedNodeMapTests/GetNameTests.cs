@@ -17,13 +17,13 @@ namespace System.Xml.Tests
             var namedNodeMap = (XmlNamedNodeMap)xmlDocument.FirstChild.Attributes;
 
             Assert.Equal(namedNodeMap.Item(0), namedNodeMap.GetNamedItem("child1"));
-            Assert.Equal(namedNodeMap.Item(0).Value, string.Empty);
+            Assert.Equal(string.Empty, namedNodeMap.Item(0).Value);
 
             Assert.Equal(namedNodeMap.Item(1), namedNodeMap.GetNamedItem("child2"));
-            Assert.Equal(namedNodeMap.Item(1).Value, "duu");
+            Assert.Equal("duu", namedNodeMap.Item(1).Value);
 
             Assert.Equal(namedNodeMap.Item(4), namedNodeMap.GetNamedItem("child5"));
-            Assert.Equal(namedNodeMap.Item(4).Value, "goody");
+            Assert.Equal("goody", namedNodeMap.Item(4).Value);
         }
     }
 }

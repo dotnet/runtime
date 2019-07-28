@@ -188,18 +188,18 @@ namespace System.Threading.Tasks.Tests
                 CancellationTokenSource cts = new CancellationTokenSource();
                 TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(cts.Token);
                 tcs.SetResult(5);
-                Assert.Equal(tcs.Task.Status, TaskStatus.RanToCompletion);
+                Assert.Equal(TaskStatus.RanToCompletion, tcs.Task.Status);
 
                 cts.Cancel();
 
-                Assert.Equal(tcs.Task.Status, TaskStatus.RanToCompletion);
+                Assert.Equal(TaskStatus.RanToCompletion, tcs.Task.Status);
 
                 Assert.False(tcs.TrySetException(new Exception("some exception")), "RunTaskCompletionSourceTests:    > Error!  Set result, Canceled, tcs.TrySetException succeeded");
 
                 Assert.False(tcs.TrySetResult(10), "RunTaskCompletionSourceTests:    > Error!  Set result, Canceled, tcs.TrySetResult succeeded");
                 Assert.False(tcs.TrySetCanceled(), "RunTaskCompletionSourceTests:    > Error!  Set result, Canceled, tcs.TrySetCanceled succeeded");
 
-                Assert.Equal(tcs.Task.Result, 5);
+                Assert.Equal(5, tcs.Task.Result);
 
                 Exception fake = new Exception("blah!");
                 try

@@ -138,7 +138,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 var cmd = new SqlCommand("select @input", conn);
                 cmd.Parameters.AddWithValue("@input", MyEnum.B);
                 object value = cmd.ExecuteScalar();
-                Assert.Equal((MyEnum)value, MyEnum.B);
+                Assert.Equal(MyEnum.B, (MyEnum)value);
             }
         }
 
@@ -159,7 +159,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 cmd.ExecuteNonQuery();
 
-                Assert.Equal((MyEnum)outputParam.Value, MyEnum.B);
+                Assert.Equal(MyEnum.B, (MyEnum)outputParam.Value);
             }
         }
 
