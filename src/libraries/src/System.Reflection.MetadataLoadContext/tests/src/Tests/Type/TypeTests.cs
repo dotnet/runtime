@@ -155,20 +155,20 @@ namespace System.Reflection.Tests
             Type t = typeof(long[]).Project();
             TypeInfo ti = t.GetTypeInfo();
             MethodInfo m = ti.GetDeclaredMethod("Get");
-            Assert.Equal(m.Attributes, MethodAttributes.Public | MethodAttributes.PrivateScope);
-            Assert.Equal(m.CallingConvention, CallingConventions.Standard | CallingConventions.HasThis);
-            Assert.Equal(m.DeclaringType, t);
-            Assert.Equal(m.ReturnType, et);
+            Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope, m.Attributes);
+            Assert.Equal(CallingConventions.Standard | CallingConventions.HasThis, m.CallingConvention);
+            Assert.Equal(t, m.DeclaringType);
+            Assert.Equal(et, m.ReturnType);
             ParameterInfo[] p = m.GetParameters();
-            Assert.Equal(p.Length, 1);
+            Assert.Equal(1, p.Length);
 
-            Assert.Equal(p[0].Attributes, ParameterAttributes.None);
-            Assert.Equal(p[0].ParameterType, typeof(int).Project());
-            Assert.Equal(p[0].Member, m);
-            Assert.Equal(p[0].Position, 0);
-            Assert.Equal(p[0].Name, null);
-            Assert.Equal(p[0].HasDefaultValue, expectedDefaultValue);
-            Assert.Equal(p[0].RawDefaultValue, null); //Legacy: This makes no sense
+            Assert.Equal(ParameterAttributes.None, p[0].Attributes);
+            Assert.Equal(typeof(int).Project(), p[0].ParameterType);
+            Assert.Equal(m, p[0].Member);
+            Assert.Equal(0, p[0].Position);
+            Assert.Null(p[0].Name);
+            Assert.Equal(expectedDefaultValue, p[0].HasDefaultValue);
+            Assert.Null(p[0].RawDefaultValue); //Legacy: This makes no sense
 
             return;
         }
@@ -182,29 +182,29 @@ namespace System.Reflection.Tests
             Type t = typeof(long[]).Project(); ;
             TypeInfo ti = t.GetTypeInfo();
             MethodInfo m = ti.GetDeclaredMethod("Set");
-            Assert.Equal(m.Attributes, MethodAttributes.Public | MethodAttributes.PrivateScope);
-            Assert.Equal(m.CallingConvention, CallingConventions.Standard | CallingConventions.HasThis);
+            Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope, m.Attributes);
+            Assert.Equal(CallingConventions.Standard | CallingConventions.HasThis, m.CallingConvention);
 
-            Assert.Equal(m.DeclaringType, t);
-            Assert.Equal(m.ReturnType, typeof(void).Project());
+            Assert.Equal(t, m.DeclaringType);
+            Assert.Equal(typeof(void).Project(), m.ReturnType);
             ParameterInfo[] p = m.GetParameters();
-            Assert.Equal(p.Length, 2);
+            Assert.Equal(2, p.Length);
 
-            Assert.Equal(p[0].Attributes, ParameterAttributes.None);
-            Assert.Equal(p[0].ParameterType, typeof(int).Project());
-            Assert.Equal(p[0].Name, null);
-            Assert.Equal(p[0].Member, m);
-            Assert.Equal(p[0].Position, 0);
-            Assert.Equal(p[0].HasDefaultValue, expectedDefaultValue);  //Legacy: This makes no sense
-            Assert.Equal(p[0].RawDefaultValue, null); //Legacy: This makes no sense
+            Assert.Equal(ParameterAttributes.None, p[0].Attributes);
+            Assert.Equal(typeof(int).Project(), p[0].ParameterType);
+            Assert.Null(p[0].Name);
+            Assert.Equal(m, p[0].Member);
+            Assert.Equal(0, p[0].Position);
+            Assert.Equal(expectedDefaultValue, p[0].HasDefaultValue);  //Legacy: This makes no sense
+            Assert.Null(p[0].RawDefaultValue); //Legacy: This makes no sense
 
-            Assert.Equal(p[1].Attributes, ParameterAttributes.None);
-            Assert.Equal(p[1].ParameterType, et);
-            Assert.Equal(p[1].Name, null);
-            Assert.Equal(p[1].Member, m);
-            Assert.Equal(p[1].Position, 1);
-            Assert.Equal(p[1].HasDefaultValue, expectedDefaultValue);  //Legacy: This makes no sense
-            Assert.Equal(p[1].RawDefaultValue, null); //Legacy: This makes no sense
+            Assert.Equal(ParameterAttributes.None, p[1].Attributes);
+            Assert.Equal(et, p[1].ParameterType);
+            Assert.Null(p[1].Name);
+            Assert.Equal(m, p[1].Member);
+            Assert.Equal(1, p[1].Position);
+            Assert.Equal(expectedDefaultValue, p[1].HasDefaultValue);  //Legacy: This makes no sense
+            Assert.Null(p[1].RawDefaultValue); //Legacy: This makes no sense
 
             return;
         }
@@ -218,20 +218,20 @@ namespace System.Reflection.Tests
             Type t = typeof(long[]).Project(); ;
             TypeInfo ti = t.GetTypeInfo();
             MethodInfo m = ti.GetDeclaredMethod("Address");
-            Assert.Equal(m.Attributes, MethodAttributes.Public | MethodAttributes.PrivateScope);
-            Assert.Equal(m.CallingConvention, CallingConventions.Standard | CallingConventions.HasThis);
-            Assert.Equal(m.DeclaringType, t);
-            Assert.Equal(m.ReturnType, et.MakeByRefType());
+            Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope, m.Attributes);
+            Assert.Equal(CallingConventions.Standard | CallingConventions.HasThis, m.CallingConvention);
+            Assert.Equal(t, m.DeclaringType);
+            Assert.Equal(et.MakeByRefType(), m.ReturnType);
             ParameterInfo[] p = m.GetParameters();
-            Assert.Equal(p.Length, 1);
+            Assert.Equal(1, p.Length);
 
-            Assert.Equal(p[0].Attributes, ParameterAttributes.None);
-            Assert.Equal(p[0].ParameterType, typeof(int).Project());
-            Assert.Equal(p[0].Name, null);
-            Assert.Equal(p[0].Member, m);
-            Assert.Equal(p[0].Position, 0);
-            Assert.Equal(p[0].HasDefaultValue, expectedDefaultValue);
-            Assert.Equal(p[0].RawDefaultValue, null); //Legacy: This makes no sense
+            Assert.Equal(ParameterAttributes.None, p[0].Attributes);
+            Assert.Equal(typeof(int).Project(), p[0].ParameterType);
+            Assert.Null(p[0].Name);
+            Assert.Equal(m, p[0].Member);
+            Assert.Equal(0, p[0].Position);
+            Assert.Equal(expectedDefaultValue, p[0].HasDefaultValue);
+            Assert.Null(p[0].RawDefaultValue); //Legacy: This makes no sense
 
             return;
         }
@@ -245,21 +245,21 @@ namespace System.Reflection.Tests
             Type t = typeof(long[]).Project(); ;
             TypeInfo ti = t.GetTypeInfo();
             ConstructorInfo[] ctors = ti.DeclaredConstructors.ToArray();
-            Assert.Equal(ctors.Length, 1);
+            Assert.Equal(1, ctors.Length);
             ConstructorInfo m = ctors[0];
-            Assert.Equal(m.Attributes, MethodAttributes.Public | MethodAttributes.PrivateScope | MethodAttributes.RTSpecialName);
-            Assert.Equal(m.CallingConvention, CallingConventions.Standard | CallingConventions.HasThis);
-            Assert.Equal(m.DeclaringType, t);
+            Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope | MethodAttributes.RTSpecialName, m.Attributes);
+            Assert.Equal(CallingConventions.Standard | CallingConventions.HasThis, m.CallingConvention);
+            Assert.Equal(t, m.DeclaringType);
             ParameterInfo[] p = m.GetParameters();
-            Assert.Equal(p.Length, 1);
+            Assert.Equal(1, p.Length);
 
-            Assert.Equal(p[0].Attributes, ParameterAttributes.None);
-            Assert.Equal(p[0].ParameterType, typeof(int).Project());
-            Assert.Equal(p[0].Member, m);
-            Assert.Equal(p[0].Position, 0);
-            Assert.Equal(p[0].Name, null);
-            Assert.Equal(p[0].HasDefaultValue, expectedDefaultValue);
-            Assert.Equal(p[0].RawDefaultValue, null); //Legacy: This makes no sense
+            Assert.Equal(ParameterAttributes.None, p[0].Attributes);
+            Assert.Equal(typeof(int).Project(), p[0].ParameterType);
+            Assert.Equal(m, p[0].Member);
+            Assert.Equal(0, p[0].Position);
+            Assert.Null(p[0].Name);
+            Assert.Equal(expectedDefaultValue, p[0].HasDefaultValue);
+            Assert.Null(p[0].RawDefaultValue); //Legacy: This makes no sense
 
             return;
         }

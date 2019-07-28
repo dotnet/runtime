@@ -179,7 +179,7 @@ namespace System.PrivateUri.Tests
         {
             var u = new Uri("https://a.net/1@1.msg");
             var result = u.GetComponents(UriComponents.Scheme | UriComponents.Host | UriComponents.Port | UriComponents.Path, UriFormat.UriEscaped);
-            Assert.Equal(result, "https://a.net/1@1.msg");
+            Assert.Equal("https://a.net/1@1.msg", result);
         }
 
 

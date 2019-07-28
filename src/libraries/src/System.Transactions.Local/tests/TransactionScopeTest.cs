@@ -117,7 +117,7 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
             /* Value = 2, got committed */
-            Assert.Equal(irm.Value, 2);
+            Assert.Equal(2, irm.Value);
             irm.Check(1, 1, 0, 0, "irm");
         }
 
@@ -135,7 +135,7 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
             /* Value = 2, got rolledback */
-            Assert.Equal(irm.Value, 1);
+            Assert.Equal(1, irm.Value);
             irm.Check(0, 0, 1, 0, "irm");
         }
 
@@ -162,8 +162,8 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
             /* Both got committed */
-            Assert.Equal(irm.Value, 2);
-            Assert.Equal(irm2.Value, 20);
+            Assert.Equal(2, irm.Value);
+            Assert.Equal(20, irm2.Value);
             irm.Check(1, 1, 0, 0, "irm");
             irm2.Check(1, 1, 0, 0, "irm2");
         }
@@ -195,8 +195,8 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
 
-            Assert.Equal(irm.Value, 1);
-            Assert.Equal(irm2.Value, 10);
+            Assert.Equal(1, irm.Value);
+            Assert.Equal(10, irm2.Value);
             irm.Check(0, 0, 1, 0, "irm");
         }
 
@@ -224,8 +224,8 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
 
-            Assert.Equal(irm.Value, 1);
-            Assert.Equal(irm2.Value, 10);
+            Assert.Equal(1, irm.Value);
+            Assert.Equal(10, irm2.Value);
             irm.Check(0, 0, 1, 0, "irm");
             irm2.Check(0, 0, 1, 0, "irm2");
         }
@@ -248,7 +248,7 @@ namespace System.Transactions.Tests
                 }
                 /* vr2, committed */
                 irm2.Check(1, 1, 0, 0, "irm2");
-                Assert.Equal(irm2.Value, 20);
+                Assert.Equal(20, irm2.Value);
 
                 Assert.Equal(TransactionStatus.Active, Transaction.Current.TransactionInformation.Status);
 
@@ -256,7 +256,7 @@ namespace System.Transactions.Tests
             }
 
             Assert.Null(Transaction.Current);
-            Assert.Equal(irm.Value, 2);
+            Assert.Equal(2, irm.Value);
             irm.Check(1, 1, 0, 0, "irm");
         }
 
@@ -280,7 +280,7 @@ namespace System.Transactions.Tests
 
                 /* irm2, rolled back*/
                 irm2.Check(0, 0, 1, 0, "irm2");
-                Assert.Equal(irm2.Value, 10);
+                Assert.Equal(10, irm2.Value);
 
                 Assert.Equal(TransactionStatus.Active, Transaction.Current.TransactionInformation.Status);
 
@@ -289,7 +289,7 @@ namespace System.Transactions.Tests
 
             Assert.Null(Transaction.Current);
             /* ..But irm got committed */
-            Assert.Equal(irm.Value, 2);
+            Assert.Equal(2, irm.Value);
             irm.Check(1, 1, 0, 0, "irm");
         }
 
@@ -318,7 +318,7 @@ namespace System.Transactions.Tests
             }
 
             Assert.Null(Transaction.Current);
-            Assert.Equal(irm.Value, 2);
+            Assert.Equal(2, irm.Value);
             irm.Check(1, 1, 0, 0, "irm");
         }
 
@@ -376,15 +376,15 @@ namespace System.Transactions.Tests
 
                 /* vr's value has changed as the inner scope committed = 6 */
                 irm.Check(1, 1, 0, 0, "irm");
-                Assert.Equal(irm.Value, 6);
-                Assert.Equal(irm.Actual, 6);
+                Assert.Equal(6, irm.Value);
+                Assert.Equal(6, irm.Actual);
                 Assert.Equal(TransactionStatus.Active, Transaction.Current.TransactionInformation.Status);
 
                 scope.Complete();
             }
 
             Assert.Null(Transaction.Current);
-            Assert.Equal(irm.Value, 6);
+            Assert.Equal(6, irm.Value);
             irm.Check(2, 2, 0, 0, "irm");
         }
 

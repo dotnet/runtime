@@ -45,7 +45,7 @@ namespace System.Xml.Tests
             XmlSchemaSet scnew = new XmlSchemaSet();
             sc.Add(scnew);
 
-            Assert.Equal(sc.Count, 0);
+            Assert.Equal(0, sc.Count);
 
             return;
         }
@@ -63,7 +63,7 @@ namespace System.Xml.Tests
 
             sc.Add(scnew);
             // adding schemaset with same schema should be ignored
-            Assert.Equal(sc.Count, 1);
+            Assert.Equal(1, sc.Count);
             return;
         }
 
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
             sc.Add("xsdauthor", TestData._XsdAuthor);
             sc.Add(sc);
 
-            Assert.Equal(sc.Count, 1);
+            Assert.Equal(1, sc.Count);
 
             return;
         }
@@ -96,7 +96,7 @@ namespace System.Xml.Tests
             scnew.Add(null, TestData._XsdNoNs);
             scnew.Add(null, TestData._FileXSD1);
             sc.Add(scnew);
-            Assert.Equal(sc.Count, 3);
+            Assert.Equal(3, sc.Count);
             return;
         }
 
@@ -113,7 +113,7 @@ namespace System.Xml.Tests
             scnew.Add(null, TestData._FileXSD1);
             scnew.Add(null, TestData._FileXSD2);
             sc.Add(scnew);
-            Assert.Equal(sc.Count, 4);
+            Assert.Equal(4, sc.Count);
             return;
         }
 
@@ -130,8 +130,8 @@ namespace System.Xml.Tests
             scnew.Add(null, TestData._FileXSD1);
             scnew.Add(null, TestData._XsdAuthorDup); // this conflicts with _XsdAuthor
             sc.Add(scnew);
-            Assert.Equal(sc.IsCompiled, false);
-            Assert.Equal(sc.Count, 4); //ok
+            Assert.False(sc.IsCompiled);
+            Assert.Equal(4, sc.Count); //ok
             try
             {
                 sc.Compile(); // should fail
@@ -154,12 +154,12 @@ namespace System.Xml.Tests
             sc.Add("xsdauthor", TestData._XsdAuthor);
             sc.Add(null, TestData._XsdNoNs);
             sc.Compile();
-            Assert.Equal(sc.IsCompiled, true);
+            Assert.True(sc.IsCompiled);
             scnew.Add(null, TestData._FileXSD1);
             scnew.Add(null, TestData._XsdAuthorDup); // this conflicts with _XsdAuthor
             sc.Add(scnew);
-            Assert.Equal(sc.IsCompiled, false);
-            Assert.Equal(sc.Count, 4); //ok
+            Assert.False(sc.IsCompiled);
+            Assert.Equal(4, sc.Count); //ok
             try
             {
                 sc.Compile(); // should fail
@@ -182,7 +182,7 @@ namespace System.Xml.Tests
             sc.Add("xsdauthor", TestData._XsdAuthor);
             sc.Add(null, TestData._XsdNoNs);
             sc.Compile();
-            Assert.Equal(sc.IsCompiled, true);
+            Assert.True(sc.IsCompiled);
             scnew.Add(null, TestData._FileXSD1);
             scnew.Add(null, TestData._XsdAuthorDup); // this conflicts with _XsdAuthor
             scnew.Compile();
@@ -223,14 +223,14 @@ namespace System.Xml.Tests
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(schemaSet2.Count, 0); // no schema should be added
-                Assert.Equal(schemaSet1.Count, 2); // no schema should be added
-                Assert.Equal(schemaSet2.IsCompiled, false); // no schema should be added
-                Assert.Equal(schemaSet1.IsCompiled, false); // no schema should be added
+                Assert.Equal(0, schemaSet2.Count); // no schema should be added
+                Assert.Equal(2, schemaSet1.Count); // no schema should be added
+                Assert.False(schemaSet2.IsCompiled); // no schema should be added
+                Assert.False(schemaSet1.IsCompiled); // no schema should be added
                 return;
             }
 
-            Assert.Equal(schemaSet2.Count, 0); // no schema should be added
+            Assert.Equal(0, schemaSet2.Count); // no schema should be added
             Assert.True(false);
         }
 
@@ -253,11 +253,11 @@ namespace System.Xml.Tests
             try
             {
                 schemaSet2.Add(schemaSet1);
-                Assert.Equal(schemaSet1.Count, 3); // no schema should be added
-                Assert.Equal(schemaSet2.Count, 3); // no schema should be added
-                Assert.Equal(schemaSet1.IsCompiled, true); // no schema should be added
+                Assert.Equal(3, schemaSet1.Count); // no schema should be added
+                Assert.Equal(3, schemaSet2.Count); // no schema should be added
+                Assert.True(schemaSet1.IsCompiled); // no schema should be added
                 schemaSet2.Compile();
-                Assert.Equal(schemaSet2.IsCompiled, true); // no schema should be added
+                Assert.True(schemaSet2.IsCompiled); // no schema should be added
                 // shound not reach here
             }
             catch (XmlSchemaException)

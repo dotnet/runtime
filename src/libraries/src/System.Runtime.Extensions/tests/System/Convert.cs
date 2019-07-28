@@ -25,8 +25,8 @@ namespace System.Tests
             char[] carray = new char[352];
             int length = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.InsertLineBreaks);
             int length2 = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.None);
-            Assert.Equal(length, 352);
-            Assert.Equal(length, 352);
+            Assert.Equal(352, length);
+            Assert.Equal(352, length);
         }
 
         [Fact]

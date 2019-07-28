@@ -2618,7 +2618,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2));
             Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3));
             Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3, obj4));
-
+#pragma warning disable IDE0043 // Format string contains invalid placeholder - the purpose of this is to test the functions
             // Format has out of range value
             Assert.Throws<FormatException>(() => string.Format("{1}", obj1));
             Assert.Throws<FormatException>(() => string.Format("{2}", obj1, obj2));
@@ -2628,6 +2628,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => string.Format(formatter, "{2}", obj1, obj2));
             Assert.Throws<FormatException>(() => string.Format(formatter, "{3}", obj1, obj2, obj3));
             Assert.Throws<FormatException>(() => string.Format(formatter, "{4}", obj1, obj2, obj3, obj4));
+#pragma warning restore IDE0043 // Format string contains invalid placeholder
         }
 
         [Theory]

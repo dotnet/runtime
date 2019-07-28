@@ -188,7 +188,7 @@ namespace System.Reflection.Tests
 
             Type systemInt32 = type.BaseType.Assembly.GetType("System.Int32", throwOnError: true);
             ConstructorInfo[] cis = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
-            Assert.Equal(cis.Length, 2);
+            Assert.Equal(2, cis.Length);
             ConstructorInfo c1 = cis.Single(c => c.GetParameters().Length == rank);
             foreach (ParameterInfo p in c1.GetParameters())
                 Assert.Equal(p.ParameterType, systemInt32);

@@ -233,23 +233,23 @@ namespace System.Text.Json.Serialization.Tests
         public void Verify()
         {
             Assert.Equal(MyInt16, (short)1);
-            Assert.Equal(MyInt32, (int)2);
-            Assert.Equal(MyInt64, (long)3);
-            Assert.Equal(MyUInt16, (ushort)4);
-            Assert.Equal(MyUInt32, (uint)5);
-            Assert.Equal(MyUInt64, (ulong)6);
-            Assert.Equal(MyByte, (byte)7);
-            Assert.Equal(MySByte, (sbyte)8);
-            Assert.Equal(MyChar, 'a');
-            Assert.Equal(MyDecimal, 3.3m);
-            Assert.Equal(MyBooleanFalse, false);
-            Assert.Equal(MyBooleanTrue, true);
-            Assert.Equal(MySingle, 1.1f);
-            Assert.Equal(MyDouble, 2.2d);
-            Assert.Equal(MyDateTime, new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc));
-            Assert.Equal(MyDateTimeOffset, new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
-            Assert.Equal(MyGuid, new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"));
-            Assert.Equal(MyEnum, SampleEnum.Two);
+            Assert.Equal((int)2, MyInt32);
+            Assert.Equal((long)3, MyInt64);
+            Assert.Equal((ushort)4, MyUInt16);
+            Assert.Equal((uint)5, MyUInt32);
+            Assert.Equal((ulong)6, MyUInt64);
+            Assert.Equal((byte)7, MyByte);
+            Assert.Equal((sbyte)8, MySByte);
+            Assert.Equal('a', MyChar);
+            Assert.Equal(3.3m, MyDecimal);
+            Assert.False(MyBooleanFalse);
+            Assert.True(MyBooleanTrue);
+            Assert.Equal(1.1f, MySingle);
+            Assert.Equal(2.2d, MyDouble);
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTime);
+            Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffset);
+            Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), MyGuid);
+            Assert.Equal(SampleEnum.Two, MyEnum);
 
             Assert.Equal((short)1, MyInt16Array[0]);
             Assert.Equal((int)2, MyInt32Array[0]);

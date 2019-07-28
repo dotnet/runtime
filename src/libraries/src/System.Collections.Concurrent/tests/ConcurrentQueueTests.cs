@@ -207,7 +207,7 @@ namespace System.Collections.Concurrent.Tests
                     expectedNext++;
                 }
                 Assert.False(enumerator2.MoveNext());
-                Assert.Equal(expectedNext, 6);
+                Assert.Equal(6, expectedNext);
             }
         }
 

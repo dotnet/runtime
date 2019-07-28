@@ -237,8 +237,8 @@ namespace System.ComponentModel.Composition.Hosting
             Assert.False(filter2Ing);
             Assert.False(filter2Ed);
 
-            Assert.Equal(edArgs.AddedDefinitions.Count(), 2);
-            Assert.Equal(edArgs.RemovedDefinitions.Count(), 0);
+            Assert.Equal(2, edArgs.AddedDefinitions.Count());
+            Assert.Equal(0, edArgs.RemovedDefinitions.Count());
             Assert.Equal(0, filter2.Parts.Count());
             Assert.Equal(2, filter1.Parts.Count());
 
@@ -259,8 +259,8 @@ namespace System.ComponentModel.Composition.Hosting
             Assert.False(filter1Ing);
             Assert.False(filter1Ed);
 
-            Assert.Equal(edArgs.AddedDefinitions.Count(), 2);
-            Assert.Equal(edArgs.RemovedDefinitions.Count(), 0);
+            Assert.Equal(2, edArgs.AddedDefinitions.Count());
+            Assert.Equal(0, edArgs.RemovedDefinitions.Count());
             Assert.Equal(2, filter2.Parts.Count());
             Assert.Equal(2, filter1.Parts.Count());
 
@@ -281,8 +281,8 @@ namespace System.ComponentModel.Composition.Hosting
             Assert.False(filter1Ing);
             Assert.False(filter1Ed);
 
-            Assert.Equal(edArgs.AddedDefinitions.Count(), 0);
-            Assert.Equal(edArgs.RemovedDefinitions.Count(), 2);
+            Assert.Equal(0, edArgs.AddedDefinitions.Count());
+            Assert.Equal(2, edArgs.RemovedDefinitions.Count());
             Assert.Equal(0, filter2.Parts.Count());
             Assert.Equal(2, filter1.Parts.Count());
 
@@ -303,8 +303,8 @@ namespace System.ComponentModel.Composition.Hosting
             Assert.False(filter2Ing);
             Assert.False(filter2Ed);
 
-            Assert.Equal(edArgs.AddedDefinitions.Count(), 0);
-            Assert.Equal(edArgs.RemovedDefinitions.Count(), 2);
+            Assert.Equal(0, edArgs.AddedDefinitions.Count());
+            Assert.Equal(2, edArgs.RemovedDefinitions.Count());
             Assert.Equal(0, filter2.Parts.Count());
             Assert.Equal(0, filter1.Parts.Count());
 

@@ -32,7 +32,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.NotEqual(i123.GetHashCode(), h4);
 
             int h5 = RuntimeHelpers.GetHashCode(null);
-            Assert.Equal(h5, 0);
+            Assert.Equal(0, h5);
         }
 
         public struct TestStruct
@@ -97,7 +97,7 @@ namespace System.Runtime.CompilerServices.Tests
         {
             RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
             RuntimeHelpers.RunClassConstructor(t);
-            Assert.Equal(HasCctorReceiver.S, "Hello");
+            Assert.Equal("Hello", HasCctorReceiver.S);
             return;
         }
 

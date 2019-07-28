@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                     IList<int> items;
                     Assert.True(((IReceivableSourceBlock<int>)bb).TryReceiveAll(out items));
-                    Assert.Equal(expected: items.Count, actual: 1);
+                    Assert.Equal(expected: 1, actual: items.Count);
                     Assert.Equal(expected: -data, actual: items[0]);
                 }
 

@@ -851,10 +851,10 @@ namespace System.Net.Sockets.Tests
             {
                 SocketException e;
                 e = Assert.Throws<SocketException>(() => socket.SendBufferSize = 0);
-                Assert.Equal(e.SocketErrorCode, SocketError.InvalidArgument);
+                Assert.Equal(SocketError.InvalidArgument, e.SocketErrorCode);
 
                 e = Assert.Throws<SocketException>(() => socket.ReceiveBufferSize = 0);
-                Assert.Equal(e.SocketErrorCode, SocketError.InvalidArgument);
+                Assert.Equal(SocketError.InvalidArgument, e.SocketErrorCode);
             }
         }
 

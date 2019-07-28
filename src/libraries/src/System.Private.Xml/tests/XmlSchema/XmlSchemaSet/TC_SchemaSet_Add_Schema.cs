@@ -33,13 +33,13 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    Assert.Equal(sc.Count, 0);
-                    Assert.Equal(sc.Contains((XmlSchema)null), false);
+                    Assert.Equal(0, sc.Count);
+                    Assert.False(sc.Contains((XmlSchema)null));
                 }
                 catch (ArgumentNullException)
                 {
-                    Assert.Equal(sc.Contains((string)null), false);
-                    Assert.Equal(sc.IsCompiled, false);
+                    Assert.False(sc.Contains((string)null));
+                    Assert.False(sc.IsCompiled);
                     return;
                 }
             }
@@ -55,10 +55,10 @@ namespace System.Xml.Tests
             XmlSchema Schema = XmlSchema.Read(new StreamReader(new FileStream(TestData._FileXSD1, FileMode.Open, FileAccess.Read)), null);
             XmlSchema SchemaNew = sc.Add(Schema);
 
-            Assert.Equal(sc.Count, 1);
-            Assert.Equal(sc.Contains(SchemaNew), true);
-            Assert.Equal(sc.IsCompiled, false);
-            Assert.Equal(Schema == SchemaNew, true);
+            Assert.Equal(1, sc.Count);
+            Assert.True(sc.Contains(SchemaNew));
+            Assert.False(sc.IsCompiled);
+            Assert.True(Schema == SchemaNew);
 
         }
 
@@ -72,18 +72,18 @@ namespace System.Xml.Tests
             XmlSchema SchemaNew1 = sc.Add(Schema);
             XmlSchema SchemaNew2 = sc.Add(Schema);
 
-            Assert.Equal(sc.Count, 1);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, false);
-            Assert.Equal(Schema == SchemaNew1, true);
-            Assert.Equal(Schema == SchemaNew2, true);
+            Assert.Equal(1, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.False(sc.IsCompiled);
+            Assert.True(Schema == SchemaNew1);
+            Assert.True(Schema == SchemaNew2);
 
             sc.Compile();
-            Assert.Equal(sc.Count, 1);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, true);
+            Assert.Equal(1, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.True(sc.IsCompiled);
         }
 
         //-----------------------------------------------------------------------------------
@@ -97,14 +97,14 @@ namespace System.Xml.Tests
             XmlSchema SchemaNew2 = sc.Add("schema1.xsd", TestData._FileXSD1);
 
             // both schemas are added but they are dup
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, false);
+            Assert.Equal(2, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.False(sc.IsCompiled);
 
             // check its not the same schema as first
-            Assert.Equal(Schema == SchemaNew1, true);
-            Assert.Equal(Schema == SchemaNew2, false);
+            Assert.True(Schema == SchemaNew1);
+            Assert.False(Schema == SchemaNew2);
 
             try
             {
@@ -112,10 +112,10 @@ namespace System.Xml.Tests
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(sc.Count, 2);
-                Assert.Equal(sc.Contains(SchemaNew1), true);
-                Assert.Equal(sc.Contains(SchemaNew2), true);
-                Assert.Equal(sc.IsCompiled, false);
+                Assert.Equal(2, sc.Count);
+                Assert.True(sc.Contains(SchemaNew1));
+                Assert.True(sc.Contains(SchemaNew2));
+                Assert.False(sc.IsCompiled);
                 return;
             }
 
@@ -133,20 +133,20 @@ namespace System.Xml.Tests
             XmlSchema SchemaNew2 = sc.Add(null, TestData._XsdAuthorNoNs);
 
             // both schemas are added but they are dup
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, false);
+            Assert.Equal(2, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.False(sc.IsCompiled);
 
             // check its not the same schema as first
-            Assert.Equal(Schema == SchemaNew1, true);
-            Assert.Equal(Schema == SchemaNew2, false);
+            Assert.True(Schema == SchemaNew1);
+            Assert.False(Schema == SchemaNew2);
 
             sc.Compile();
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, true);
+            Assert.Equal(2, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.True(sc.IsCompiled);
         }
 
         //-----------------------------------------------------------------------------------
@@ -160,24 +160,24 @@ namespace System.Xml.Tests
             XmlSchema SchemaNew2 = sc.Add(null, TestData._XsdNoNs);
 
             // both schemas are added but they are dup
-            Assert.Equal(sc.Count, 2);
-            Assert.Equal(sc.Contains(SchemaNew1), true);
-            Assert.Equal(sc.Contains(SchemaNew2), true);
-            Assert.Equal(sc.IsCompiled, false);
+            Assert.Equal(2, sc.Count);
+            Assert.True(sc.Contains(SchemaNew1));
+            Assert.True(sc.Contains(SchemaNew2));
+            Assert.False(sc.IsCompiled);
 
             // check its not the same schema as first
-            Assert.Equal(Schema == SchemaNew1, true);
-            Assert.Equal(Schema == SchemaNew2, false);
+            Assert.True(Schema == SchemaNew1);
+            Assert.False(Schema == SchemaNew2);
             try
             {
                 sc.Compile();
             }
             catch (XmlSchemaException)
             {
-                Assert.Equal(sc.Count, 2);
-                Assert.Equal(sc.Contains(SchemaNew1), true);
-                Assert.Equal(sc.Contains(SchemaNew2), true);
-                Assert.Equal(sc.IsCompiled, false);
+                Assert.Equal(2, sc.Count);
+                Assert.True(sc.Contains(SchemaNew1));
+                Assert.True(sc.Contains(SchemaNew2));
+                Assert.False(sc.IsCompiled);
                 return;
             }
 
@@ -212,22 +212,22 @@ namespace System.Xml.Tests
 
             XmlSchema aSchema = XmlSchema.Read(new XmlTextReader(path1), null);
             XmlSchema bSchema = XmlSchema.Read(new XmlTextReader(path2), null);
-            Assert.Equal(s.Count, 0);
-            Assert.Equal(s.Contains(aSchema), false);
-            Assert.Equal(s.Contains(bSchema), false);
-            Assert.Equal(s.IsCompiled, false);
+            Assert.Equal(0, s.Count);
+            Assert.False(s.Contains(aSchema));
+            Assert.False(s.Contains(bSchema));
+            Assert.False(s.IsCompiled);
 
             s.Add(aSchema);
             Assert.Equal(s.Count, expCount);
-            Assert.Equal(s.Contains(aSchema), true);
-            Assert.Equal(s.Contains(bSchema), false);
-            Assert.Equal(s.IsCompiled, false);
+            Assert.True(s.Contains(aSchema));
+            Assert.False(s.Contains(bSchema));
+            Assert.False(s.IsCompiled);
 
             s.Add(bSchema);
             Assert.Equal(s.Count, expCount + 1);
-            Assert.Equal(s.Contains(aSchema), true);
-            Assert.Equal(s.Contains(bSchema), true);
-            Assert.Equal(s.IsCompiled, false);
+            Assert.True(s.Contains(aSchema));
+            Assert.True(s.Contains(bSchema));
+            Assert.False(s.IsCompiled);
             try
             {
                 s.Compile();
@@ -238,9 +238,9 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
                 Assert.Equal(s.Count, expCount + 1);
-                Assert.Equal(s.Contains(aSchema), true);
-                Assert.Equal(s.Contains(bSchema), true);
-                Assert.Equal(s.IsCompiled, false);
+                Assert.True(s.Contains(aSchema));
+                Assert.True(s.Contains(bSchema));
+                Assert.False(s.IsCompiled);
             }
 
             return 0;
@@ -264,20 +264,20 @@ namespace System.Xml.Tests
             set.XmlResolver = resolver;
 
             set.Add(s2);
-            Assert.Equal(set.Count, 1);
-            Assert.Equal(set.Contains(s2), true);
-            Assert.Equal(set.IsCompiled, false);
+            Assert.Equal(1, set.Count);
+            Assert.True(set.Contains(s2));
+            Assert.False(set.IsCompiled);
 
             set.Add(s);
-            Assert.Equal(set.Count, 2);
-            Assert.Equal(set.Contains(s), true);
-            Assert.Equal(set.IsCompiled, false);
+            Assert.Equal(2, set.Count);
+            Assert.True(set.Contains(s));
+            Assert.False(set.IsCompiled);
 
             set.Compile();
-            Assert.Equal(set.Count, 2);
-            Assert.Equal(set.Contains(s2), true);
-            Assert.Equal(set.Contains(s), true);
-            Assert.Equal(set.IsCompiled, true);
+            Assert.Equal(2, set.Count);
+            Assert.True(set.Contains(s2));
+            Assert.True(set.Contains(s));
+            Assert.True(set.IsCompiled);
 
             XmlTextReader r3 = new XmlTextReader(Path.Combine(TestData._Root, @"BaseEmployee2.xsd"));
             XmlSchema s3 = XmlSchema.Read(r3, null);
@@ -292,27 +292,27 @@ namespace System.Xml.Tests
             set2.ValidationEventHandler += new ValidationEventHandler(callback);
             set2.XmlResolver = resolver;
             set2.Add(s3);
-            Assert.Equal(set2.Count, 1);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), false);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, false);
+            Assert.Equal(1, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.False(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.False(set2.IsCompiled);
 
             set2.Add(s);
-            Assert.Equal(set2.Count, 2);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), true);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, false);
+            Assert.Equal(2, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.True(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.False(set2.IsCompiled);
 
             set2.Compile();
-            Assert.Equal(set2.Count, 2);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), true);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, true);
+            Assert.Equal(2, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.True(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.True(set2.IsCompiled);
 
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, errorCount);
         }
 
         //[Variation(Desc = "525477b: XSD Redefine doesn't work")]
@@ -332,20 +332,20 @@ namespace System.Xml.Tests
             XmlSchemaSet set = new XmlSchemaSet();
             set.XmlResolver = resolver;
             set.Add(s2);
-            Assert.Equal(set.Count, 1);
-            Assert.Equal(set.Contains(s2), true);
-            Assert.Equal(set.IsCompiled, false);
+            Assert.Equal(1, set.Count);
+            Assert.True(set.Contains(s2));
+            Assert.False(set.IsCompiled);
 
             set.Add(s);
-            Assert.Equal(set.Count, 2);
-            Assert.Equal(set.Contains(s), true);
-            Assert.Equal(set.IsCompiled, false);
+            Assert.Equal(2, set.Count);
+            Assert.True(set.Contains(s));
+            Assert.False(set.IsCompiled);
 
             set.Compile();
-            Assert.Equal(set.Count, 2);
-            Assert.Equal(set.Contains(s2), true);
-            Assert.Equal(set.Contains(s), true);
-            Assert.Equal(set.IsCompiled, true);
+            Assert.Equal(2, set.Count);
+            Assert.True(set.Contains(s2));
+            Assert.True(set.Contains(s));
+            Assert.True(set.IsCompiled);
 
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.ValidationType = ValidationType.Schema;
@@ -362,11 +362,11 @@ namespace System.Xml.Tests
             XmlSchemaSet set2 = new XmlSchemaSet();
             set2.XmlResolver = resolver;
             set2.Add(s3);
-            Assert.Equal(set2.Count, 1);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), false);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, false);
+            Assert.Equal(1, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.False(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.False(set2.IsCompiled);
 
             foreach (XmlSchemaRedefine redefine in s.Includes)
             {
@@ -374,18 +374,18 @@ namespace System.Xml.Tests
             }
 
             set2.Add(s);
-            Assert.Equal(set2.Count, 2);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), true);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, false);
+            Assert.Equal(2, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.True(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.False(set2.IsCompiled);
 
             set2.Compile();
-            Assert.Equal(set2.Count, 2);
-            Assert.Equal(set2.Contains(s2), false);
-            Assert.Equal(set2.Contains(s), true);
-            Assert.Equal(set2.Contains(s3), true);
-            Assert.Equal(set2.IsCompiled, true);
+            Assert.Equal(2, set2.Count);
+            Assert.False(set2.Contains(s2));
+            Assert.True(set2.Contains(s));
+            Assert.True(set2.Contains(s3));
+            Assert.True(set2.IsCompiled);
 
             settings.Schemas = set2;
 
@@ -393,7 +393,7 @@ namespace System.Xml.Tests
             {
                 while (reader.Read()) ;
             }
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, errorCount);
         }
 
         //[Variation(Desc = "649967a.XmlSchemaSet.Reprocess() fix is changing a collection where schemas are stored")]

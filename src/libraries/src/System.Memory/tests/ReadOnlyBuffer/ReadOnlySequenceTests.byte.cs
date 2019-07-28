@@ -101,10 +101,10 @@ namespace System.Memory.Tests
             ReadOnlySequence<byte> buffer = Factory.CreateOfSize(100);
 
             SequencePosition position = buffer.GetPosition(65);
-            Assert.Equal(buffer.Slice(position).Length, 35);
+            Assert.Equal(35, buffer.Slice(position).Length);
 
             position = buffer.GetPosition(65, buffer.Start);
-            Assert.Equal(buffer.Slice(position).Length, 35);
+            Assert.Equal(35, buffer.Slice(position).Length);
         }
 
         [Fact]

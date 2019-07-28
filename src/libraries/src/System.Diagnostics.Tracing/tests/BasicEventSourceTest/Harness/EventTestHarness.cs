@@ -58,7 +58,7 @@ namespace BasicEventSourceTests
             {
                 if (data.ProviderName == "TestHarnessEventSource")
                 {
-                    Assert.Equal(data.EventName, "StartTest");
+                    Assert.Equal("StartTest", data.EventName);
 
                     int testNumber = (int)data.PayloadValue(1, "testNumber");
                     Assert.Equal(expectedTestNumber, testNumber);
@@ -78,7 +78,7 @@ namespace BasicEventSourceTests
                         else
                         {
                             // we only expect exactly one reply
-                            Assert.Equal(replies.Count, 1);
+                            Assert.Equal(1, replies.Count);
                             currentTest.EventValidator(replies[0]);
                         }
                     }

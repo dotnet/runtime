@@ -296,11 +296,11 @@ namespace Tests.Integration
             batch.AddPart(new Friend("Steve"));
             batch.AddPart(new Friend("Joyce"));
             container.Compose(batch);
-            Assert.Equal(me.Name, "Blake");
-            Assert.Equal(me.Job, null);
-            Assert.Equal(me.Friends.Length, 3);
-            Assert.Equal(me.Relatives.Length, 1);
-            Assert.Equal(me.Children.Length, 0);
+            Assert.Equal("Blake", me.Name);
+            Assert.Null(me.Job);
+            Assert.Equal(3, me.Friends.Length);
+            Assert.Equal(1, me.Relatives.Length);
+            Assert.Equal(0, me.Children.Length);
 
             // Can only have one name
             Assert.Throws<ChangeRejectedException>(() =>
@@ -310,12 +310,12 @@ namespace Tests.Integration
             batch.AddPart(new MyName("Blayke"));
             batch.RemovePart(namePart);
             container.Compose(batch);
-            Assert.Equal(me.Name, "Blayke");
+            Assert.Equal("Blayke", me.Name);
 
             batch = new CompositionBatch();
             var jobPart = batch.AddPart(new Job("Architect"));
             container.Compose(batch);
-            Assert.Equal(me.Job, "Architect");
+            Assert.Equal("Architect", me.Job);
 
             batch = new CompositionBatch();
             batch.AddPart(new Job("Chimney Sweep"));
@@ -325,7 +325,7 @@ namespace Tests.Integration
             batch = new CompositionBatch();
             batch.RemovePart(jobPart);
             container.Compose(batch);
-            Assert.Equal(me.Job, "Chimney Sweep");
+            Assert.Equal("Chimney Sweep", me.Job);
 
             batch = new CompositionBatch();
 
@@ -333,13 +333,13 @@ namespace Tests.Integration
             Assert.Throws<ChangeRejectedException>(() =>
                 container.ComposeParts(new Spouse("Cameron")));
 
-            Assert.Equal(me.Relatives.Length, 1);
+            Assert.Equal(1, me.Relatives.Length);
 
             batch = new CompositionBatch();
             batch.AddPart(new Friend("Graham"));
             container.Compose(batch);
-            Assert.Equal(me.Friends.Length, 4);
-            Assert.Equal(me.Relatives.Length, 1);
+            Assert.Equal(4, me.Friends.Length);
+            Assert.Equal(1, me.Relatives.Length);
         }
 
         public class FooWithOptionalImport

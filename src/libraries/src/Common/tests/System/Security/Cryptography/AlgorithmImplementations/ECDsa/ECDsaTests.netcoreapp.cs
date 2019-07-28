@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             using (ec = ECDsaFactory.Create(curveDef.Curve))
             {
                 param = ec.ExportParameters(true);
-                Assert.NotEqual(param.D, null);
+                Assert.NotNull(param.D);
                 param.Validate();
 
                 ec.GenerateKey(param.Curve);
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             using (ec = ECDsaFactory.Create(256))
             {
                 param = ec.ExportExplicitParameters(true);
-                Assert.NotEqual(param.D, null);
+                Assert.NotNull(param.D);
 
                 ec.GenerateKey(param.Curve);
                 param2 = ec.ExportExplicitParameters(true);

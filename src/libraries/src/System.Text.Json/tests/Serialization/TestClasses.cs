@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Verify()
         {
-            Assert.Equal(MyString, null);
+            Assert.Null(MyString);
         }
     }
 

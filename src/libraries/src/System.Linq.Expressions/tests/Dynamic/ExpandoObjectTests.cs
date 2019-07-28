@@ -93,10 +93,10 @@ namespace System.Dynamic.Tests
             Assert.Equal(0, changeCount);
             dict.Add("X", 1);
             Assert.Equal(1, changeCount);
-            Assert.Equal(lastKey, "X");
+            Assert.Equal("X", lastKey);
             dict["Y"] = 2;
             Assert.Equal(2, changeCount);
-            Assert.Equal(lastKey, "Y");
+            Assert.Equal("Y", lastKey);
             object boxed = 0;
             dict["Z"] = boxed;
             Assert.Equal(3, changeCount);

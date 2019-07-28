@@ -63,7 +63,7 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount, true, expCountGT, expCountGE, expCountGA, "Validation after repr/comp");
             ValidateWithSchemaInfo(ss);
 
-            Assert.Equal(ss.RemoveRecursive(Schema), true);
+            Assert.True(ss.RemoveRecursive(Schema));
             ValidateSchemaSet(ss, 0, false, 1, 0, 0, "Validation after remRec");
             ValidateWithSchemaInfo(ss);
 
@@ -117,7 +117,7 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount, true, expCountGT, expCountGE, expCountGA, "Validation after repr/comp");
             ValidateWithXmlReader(ss, xml, xsd);
 
-            Assert.Equal(ss.RemoveRecursive(Schema), true);
+            Assert.True(ss.RemoveRecursive(Schema));
             ValidateSchemaSet(ss, 0, false, 1, 0, 0, "Validation after remRec");
             ValidateWithXmlReader(ss, xml, xsd);
 
@@ -192,7 +192,7 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount - 1, true, expCountGERC, expCountGER, 0, "Validation after repr");
             ValidateWithSchemaInfo(ss);
 
-            Assert.Equal(ss.RemoveRecursive(Schema), false);
+            Assert.False(ss.RemoveRecursive(Schema));
             ValidateSchemaSet(ss, expCount - 1, true, expCountGERC, expCountGER, 0, "Validation after add");
             ValidateWithSchemaInfo(ss);
 
@@ -257,7 +257,7 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount - 1, true, expCountGERC, expCountGER, 0, "Validation after repr");
             ValidateWithXmlReader(ss, xml, xsd);
 
-            Assert.Equal(ss.RemoveRecursive(Schema), false);
+            Assert.False(ss.RemoveRecursive(Schema));
             ValidateSchemaSet(ss, expCount - 1, true, expCountGERC, expCountGER, 0, "Validation after remRec");
             ValidateWithXmlReader(ss, xml, xsd);
 
@@ -323,9 +323,9 @@ namespace System.Xml.Tests
             Assert.Equal(ss.Count, expCount);
 
             ss.RemoveRecursive(Schema);
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
 
             try
             {
@@ -335,7 +335,7 @@ namespace System.Xml.Tests
             catch (ArgumentException e)
             {
                 _output.WriteLine(e.Message);
-                Assert.Equal(ss.Count, 0);
+                Assert.Equal(0, ss.Count);
             }
             return;
         }
@@ -387,9 +387,9 @@ namespace System.Xml.Tests
             Assert.Equal(ss.Count, expCount);
 
             ss.RemoveRecursive(schema);
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
 
             try
             {
@@ -399,7 +399,7 @@ namespace System.Xml.Tests
             catch (ArgumentException e)
             {
                 _output.WriteLine(e.Message);
-                Assert.Equal(ss.Count, 0);
+                Assert.Equal(0, ss.Count);
             }
             return;
         }
@@ -659,9 +659,9 @@ namespace System.Xml.Tests
             XmlSchema schema = XmlSchema.Read(new StringReader(schemaXml), null);
 
             ss.Add(schema);
-            Assert.Equal(ss.Count, 1);
+            Assert.Equal(1, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 1);
+            Assert.Equal(1, ss.Count);
 
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.Schemas = ss;
@@ -681,9 +681,9 @@ namespace System.Xml.Tests
             }
 
             XmlSchema removedSchema = ss.Remove(schema);
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
 
             settings = new XmlReaderSettings();
             settings.Schemas = ss;
@@ -709,9 +709,9 @@ namespace System.Xml.Tests
             XmlSchema schema = XmlSchema.Read(new StringReader(schemaXml), null);
 
             ss.Add(schema);
-            Assert.Equal(ss.Count, 1);
+            Assert.Equal(1, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 1);
+            Assert.Equal(1, ss.Count);
 
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.Schemas = ss;
@@ -723,9 +723,9 @@ namespace System.Xml.Tests
             }
 
             XmlSchema removedSchema = ss.Remove(schema);
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
             ss.Compile();
-            Assert.Equal(ss.Count, 0);
+            Assert.Equal(0, ss.Count);
 
             settings = new XmlReaderSettings();
             settings.Schemas = ss;
@@ -912,8 +912,8 @@ namespace System.Xml.Tests
 
                 ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
                 doc.Validate(valEventHandler);
-                Assert.Equal(warningCount, 0);
-                Assert.Equal(errorCount, 0);
+                Assert.Equal(0, warningCount);
+                Assert.Equal(0, errorCount);
             }
         }
 
@@ -937,8 +937,8 @@ namespace System.Xml.Tests
 
                 ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
                 doc.Validate(valEventHandler);
-                Assert.Equal(warningCount, 0);
-                Assert.Equal(errorCount, 0);
+                Assert.Equal(0, warningCount);
+                Assert.Equal(0, errorCount);
             }
         }
 
@@ -999,8 +999,8 @@ namespace System.Xml.Tests
                 while (r.Read()) ;
             }
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(0, errorCount);
             return;
         }
 
@@ -1029,8 +1029,8 @@ namespace System.Xml.Tests
             xss.Add(schema);
             xss.Compile();
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(0, errorCount);
             return;
         }
 
@@ -1082,8 +1082,8 @@ namespace System.Xml.Tests
                 while (r.Read()) ;
             }
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 2);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(2, errorCount);
             return;
         }
 
@@ -1112,8 +1112,8 @@ namespace System.Xml.Tests
                 while (r.Read()) ;
             }
 
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 1);
+            Assert.Equal(0, warningCount);
+            Assert.Equal(1, errorCount);
             return;
         }
     }

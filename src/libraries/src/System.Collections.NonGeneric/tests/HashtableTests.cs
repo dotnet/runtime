@@ -1174,7 +1174,7 @@ namespace System.Collections.Tests
 
             Task.WaitAll(workers);
 
-            Assert.Equal(_hash2.Count, 0);
+            Assert.Equal(0, _hash2.Count);
         }
 
         private void AddElements(string strName)
@@ -1208,7 +1208,7 @@ namespace System.Collections.Tests
             var hash2 = new Hashtable();
 
             Assert.NotSame(hash1.SyncRoot, hash2.SyncRoot);
-            Assert.Equal(hash1.SyncRoot.GetType(), typeof(Hashtable));
+            Assert.Equal(typeof(Hashtable), hash1.SyncRoot.GetType());
 
             // Cloned hashtables have different SyncRoots
             hash1 = new Hashtable();

@@ -1853,7 +1853,7 @@ namespace System.Drawing.Drawing2D.Tests
                 Assert.Equal(0, types[0]);
                 Assert.Equal(0, types[2]);
 
-                Assert.Equal((types[path.PointCount - 3] & 128), 128);
+                Assert.Equal(128, (types[path.PointCount - 3] & 128));
                 Assert.Equal(0, types[path.PointCount - 2]);
                 Assert.Equal(1, types[path.PointCount - 1]);
             }
@@ -2575,7 +2575,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.GreaterThanOrEqualTo(flat.PointCount, original.PointCount);
             for (int i = 0; i < flat.PointCount; i++)
             {
-                Assert.NotEqual(flat.PathTypes[i], 3);
+                Assert.NotEqual(3, flat.PathTypes[i]);
             }
         }
 

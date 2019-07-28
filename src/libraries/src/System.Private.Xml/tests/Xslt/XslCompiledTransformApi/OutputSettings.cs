@@ -83,35 +83,35 @@ namespace System.Xml.Tests
             switch ((int)param2)
             {
                 case 2:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.AutoDetect);
+                    Assert.Equal(XmlOutputMethod.AutoDetect, os.OutputMethod);
                     break;
 
                 case 3:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Xml);
+                    Assert.Equal(XmlOutputMethod.Xml, os.OutputMethod);
                     break;
 
                 case 4:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Html);
+                    Assert.Equal(XmlOutputMethod.Html, os.OutputMethod);
                     break;
 
                 case 5:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Text);
+                    Assert.Equal(XmlOutputMethod.Text, os.OutputMethod);
                     break;
 
                 case 6:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.AutoDetect);
+                    Assert.Equal(XmlOutputMethod.AutoDetect, os.OutputMethod);
                     break;
 
                 case 7:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Text);
+                    Assert.Equal(XmlOutputMethod.Text, os.OutputMethod);
                     break;
 
                 case 8:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Xml);
+                    Assert.Equal(XmlOutputMethod.Xml, os.OutputMethod);
                     break;
 
                 case 9:
-                    Assert.Equal(os.OutputMethod, XmlOutputMethod.Html);
+                    Assert.Equal(XmlOutputMethod.Html, os.OutputMethod);
                     break;
             }
 
@@ -149,7 +149,7 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
                 XmlWriterSettings os = _xsl.OutputSettings;
-                Assert.Equal(os, null);
+                Assert.Null(os);
             }
 
             return;
@@ -170,7 +170,7 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
                 XmlWriterSettings os = _xsl.OutputSettings;
-                Assert.Equal(os, null);
+                Assert.Null(os);
             }
 
             return;
@@ -235,7 +235,7 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
                 XmlWriterSettings os = _xsl.OutputSettings;
-                Assert.Equal(os, null);
+                Assert.Null(os);
             }
 
             return;
@@ -256,7 +256,7 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
                 XmlWriterSettings os = _xsl.OutputSettings;
-                Assert.Equal(os, null);
+                Assert.Null(os);
             }
 
             return;
@@ -271,11 +271,11 @@ namespace System.Xml.Tests
             _xsl.Load(_xslFile);
             XmlWriterSettings os = _xsl.OutputSettings;
             _output.WriteLine("OmitXmlDeclaration : {0}", os.OmitXmlDeclaration);
-            Assert.Equal(os.OmitXmlDeclaration, true);
+            Assert.True(os.OmitXmlDeclaration);
             _output.WriteLine("Indent : {0}", os.Indent);
-            Assert.Equal(os.Indent, true);
+            Assert.True(os.Indent);
             _output.WriteLine("OutputMethod : {0}", os.OutputMethod);
-            Assert.Equal(os.OutputMethod, XmlOutputMethod.Xml);
+            Assert.Equal(XmlOutputMethod.Xml, os.OutputMethod);
             _output.WriteLine("Encoding : {0}", os.Encoding.ToString());
             Assert.Equal(os.Encoding, System.Text.Encoding.GetEncoding("utf-8"));
 

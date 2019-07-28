@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             Assert.False(sock.LingerState.Enabled, "Linger was turned on by default!");
-            Assert.Equal<int>(sock.LingerState.LingerTime, 0);
+            Assert.Equal<int>(0, sock.LingerState.LingerTime);
 
             TestLingerState_ArgumentException(sock, true, -1);
 

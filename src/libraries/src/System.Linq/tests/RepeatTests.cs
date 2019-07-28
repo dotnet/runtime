@@ -31,7 +31,7 @@ namespace System.Linq.Tests
         public void Repeat_ToArray_ProduceCorrectResult()
         {
             var array = Enumerable.Repeat(1, 100).ToArray();
-            Assert.Equal(array.Length, 100);
+            Assert.Equal(100, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Equal(1, array[i]);
         }
@@ -40,7 +40,7 @@ namespace System.Linq.Tests
         public void Repeat_ToList_ProduceCorrectResult()
         {
             var list = Enumerable.Repeat(1, 100).ToList();
-            Assert.Equal(list.Count, 100);
+            Assert.Equal(100, list.Count);
             for (var i = 0; i < list.Count; i++)
                 Assert.Equal(1, list[i]);
         }
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
         {
             object objectInstance = new object();
             var array = Enumerable.Repeat(objectInstance, 100).ToArray();
-            Assert.Equal(array.Length, 100);
+            Assert.Equal(100, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Same(objectInstance, array[i]);
         }
@@ -60,7 +60,7 @@ namespace System.Linq.Tests
         {
             object objectInstance = null;
             var array = Enumerable.Repeat(objectInstance, 100).ToArray();
-            Assert.Equal(array.Length, 100);
+            Assert.Equal(100, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Null(array[i]);
         }
@@ -70,7 +70,7 @@ namespace System.Linq.Tests
         public void Repeat_ZeroCountLeadToEmptySequence()
         {
             var array = Enumerable.Repeat(1, 0).ToArray();
-            Assert.Equal(array.Length, 0);
+            Assert.Equal(0, array.Length);
         }
 
         [Fact]

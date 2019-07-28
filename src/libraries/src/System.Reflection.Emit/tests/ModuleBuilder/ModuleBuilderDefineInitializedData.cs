@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
             Assert.True(field.IsStatic);
             Assert.Equal((attributes & FieldAttributes.Public) != 0 , field.IsPublic);
             Assert.Equal((attributes & FieldAttributes.Private) != 0, field.IsPrivate);
-            Assert.Equal(field.Name, "MyField");
+            Assert.Equal("MyField", field.Name);
         }
 
         [Fact]

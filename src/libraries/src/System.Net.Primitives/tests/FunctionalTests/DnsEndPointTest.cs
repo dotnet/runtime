@@ -49,7 +49,7 @@ namespace System.Net.Primitives.Functional.Tests
             DnsEndPoint ep3 = new DnsEndPoint("name", 700, AddressFamily.InterNetwork);
             DnsEndPoint ep4 = new DnsEndPoint("name", 500, AddressFamily.InterNetworkV6);
 
-            Assert.NotEqual(ep1, null);
+            Assert.NotNull(ep1);
             Assert.False(ep1.Equals("string"));
 
             Assert.Equal(ep1, ep2);

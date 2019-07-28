@@ -42,7 +42,7 @@ namespace System.Xml.Tests
 
             Assert.Equal("textNode", node.LastChild.Value);
             Assert.Equal(XmlNodeType.Text, node.LastChild.NodeType);
-            Assert.Equal(node.ChildNodes.Count, 1);
+            Assert.Equal(1, node.ChildNodes.Count);
         }
 
         [Fact]

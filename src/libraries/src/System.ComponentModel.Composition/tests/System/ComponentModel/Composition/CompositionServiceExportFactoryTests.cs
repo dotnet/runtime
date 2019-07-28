@@ -60,9 +60,9 @@ namespace System.ComponentModel.Composition
             e2.Value.FooChild.FooValue = 20;
             e3.Value.FooChild.FooValue = 30;
 
-            Assert.Equal<int>(e1.Value.FooChild.FooValue, 30);
-            Assert.Equal<int>(e2.Value.FooChild.FooValue, 30);
-            Assert.Equal<int>(e3.Value.FooChild.FooValue, 30);
+            Assert.Equal<int>(30, e1.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e2.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e3.Value.FooChild.FooValue);
         }
 
         [Fact]
@@ -84,9 +84,9 @@ namespace System.ComponentModel.Composition
             e2.Value.FooChild.FooValue = 20;
             e3.Value.FooChild.FooValue = 30;
 
-            Assert.Equal<int>(e1.Value.FooChild.FooValue, 10);
-            Assert.Equal<int>(e2.Value.FooChild.FooValue, 20);
-            Assert.Equal<int>(e3.Value.FooChild.FooValue, 30);
+            Assert.Equal<int>(10, e1.Value.FooChild.FooValue);
+            Assert.Equal<int>(20, e2.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e3.Value.FooChild.FooValue);
         }
 
         [Fact]
@@ -108,9 +108,9 @@ namespace System.ComponentModel.Composition
             e2.Value.FooChild.FooValue = 20;
             e3.Value.FooChild.FooValue = 30;
 
-            Assert.Equal<int>(e1.Value.FooChild.FooValue, 10);
-            Assert.Equal<int>(e2.Value.FooChild.FooValue, 20);
-            Assert.Equal<int>(e3.Value.FooChild.FooValue, 30);
+            Assert.Equal<int>(10, e1.Value.FooChild.FooValue);
+            Assert.Equal<int>(20, e2.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e3.Value.FooChild.FooValue);
         }
 
         [Fact]
@@ -131,9 +131,9 @@ namespace System.ComponentModel.Composition
             e2.Value.FooChild.FooValue = 20;
             e3.Value.FooChild.FooValue = 30;
 
-            Assert.Equal<int>(e1.Value.FooChild.FooValue, 30);
-            Assert.Equal<int>(e2.Value.FooChild.FooValue, 30);
-            Assert.Equal<int>(e3.Value.FooChild.FooValue, 30);
+            Assert.Equal<int>(30, e1.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e2.Value.FooChild.FooValue);
+            Assert.Equal<int>(30, e3.Value.FooChild.FooValue);
         }
     }
 }

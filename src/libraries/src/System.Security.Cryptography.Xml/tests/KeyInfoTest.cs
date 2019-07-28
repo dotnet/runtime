@@ -339,7 +339,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
 
             // 0x1f = b11111, number of ones = 5
-            Assert.Equal(pathsCovered, 0x1f);
+            Assert.Equal(0x1f, pathsCovered);
             Assert.Equal(5, i);
         }
 

@@ -45,13 +45,13 @@ namespace System.Net.Tests
             Assert.Null(request.Proxy);
             Assert.Equal(request.ReadWriteTimeout, 5 * 60 * 1000);
             Assert.Null(request.RenameTo);
-            Assert.Equal(request.RequestUri.Scheme, "ftp");
-            Assert.Equal(request.RequestUri.Host, "foo.com");
-            Assert.Equal(request.RequestUri.Port, 21);
+            Assert.Equal("ftp", request.RequestUri.Scheme);
+            Assert.Equal("foo.com", request.RequestUri.Host);
+            Assert.Equal(21, request.RequestUri.Port);
             Assert.True(request.RequestUri.IsDefaultPort);
-            Assert.Equal(request.RequestUri.AbsolutePath, "/bar");
+            Assert.Equal("/bar", request.RequestUri.AbsolutePath);
             Assert.Equal(request.ServicePoint, ServicePointManager.FindServicePoint(new Uri("ftp://foo.com/bar")));
-            Assert.Equal(request.Timeout, 100000);
+            Assert.Equal(100000, request.Timeout);
             Assert.True(request.UseBinary);
             Assert.True(request.UsePassive);
         }
@@ -312,7 +312,7 @@ namespace System.Net.Tests
             byte[] responseBody = Do(mode, method, uri, requestBody);
 
             // Should be no response
-            Assert.Equal(responseBody.Length, 0);
+            Assert.Equal(0, responseBody.Length);
         }
 
         private static void DoCommand(FtpExecutionMode mode, string method, string uri, string renameTo = null)
@@ -320,7 +320,7 @@ namespace System.Net.Tests
             byte[] responseBody = Do(mode, method, uri, null, renameTo);
 
             // Should be no response
-            Assert.Equal(responseBody.Length, 0);
+            Assert.Equal(0, responseBody.Length);
         }
 
         public static List<object[]> Modes = new List<object[]>

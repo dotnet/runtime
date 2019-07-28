@@ -32,7 +32,7 @@ namespace System.Data.SqlClient.Tests
             command.CommandText = "select 1";
             command.CommandTimeout = 45;
             command.ResetCommandTimeout();
-            Assert.Equal(command.CommandTimeout, 30);
+            Assert.Equal(30, command.CommandTimeout);
             command.CommandType = CommandType.Text;
 
             SqlParameter parameter = command.CreateParameter();

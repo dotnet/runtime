@@ -135,7 +135,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 
             // Test Invalid drive
             var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
-            Assert.Equal(invalidDrive.DriveType, DriveType.NoRootDirectory);
+            Assert.Equal(DriveType.NoRootDirectory, invalidDrive.DriveType);
         }
 
         [Fact]
@@ -282,7 +282,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         private IEnumerable<char> GetValidDriveLettersOnMachine()
         {
             uint mask = (uint)GetLogicalDrives();
-            Assert.NotEqual<uint>(mask, 0);
+            Assert.NotEqual<uint>(0, mask);
 
             var bits = new BitArray(new int[] { (int)mask });
             for (int i = 0; i < bits.Length; i++)
@@ -296,7 +296,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         private IEnumerable<char> GetInvalidDriveLettersOnMachine()
         {
             uint mask = (uint)GetLogicalDrives();
-            Assert.NotEqual<uint>(mask, 0);
+            Assert.NotEqual<uint>(0, mask);
 
             var bits = new BitArray(new int[] { (int)mask });
             for (int i = 0; i < bits.Length; i++)

@@ -726,7 +726,7 @@ namespace System.Tests
                 {
                     AppDomain.CurrentDomain.ResourceResolve -= handler;
                 }
-                Assert.Equal(s, "Happy Halloween");
+                Assert.Equal("Happy Halloween", s);
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }

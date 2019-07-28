@@ -268,56 +268,56 @@ namespace Microsoft.VisualBasic.MyServices.Tests
         public void GetDirectories_Directory()
         {
             var DirectoryList = _fileSystem.GetDirectories(TestDirectory);
-            Assert.Equal(DirectoryList.Count, 0);
+            Assert.Equal(0, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
                 System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory{i}"));
             }
             DirectoryList = _fileSystem.GetDirectories(TestDirectory);
-            Assert.Equal(DirectoryList.Count, 6);
+            Assert.Equal(6, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
                 Assert.True(DirectoryList.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory{i}")));
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory0", $"NewSubSubDirectory"));
             DirectoryList = _fileSystem.GetDirectories(TestDirectory);
-            Assert.Equal(DirectoryList.Count, 6);
+            Assert.Equal(6, DirectoryList.Count);
         }
 
         [Fact]
         public void GetDirectories_Directory_SearchOption()
         {
             var DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly);
-            Assert.Equal(DirectoryList.Count, 0);
+            Assert.Equal(0, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
                 System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory{i}"));
             }
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly);
-            Assert.Equal(DirectoryList.Count, 6);
+            Assert.Equal(6, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
                 Assert.True(DirectoryList.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory{i}")));
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory0", $"NewSubSubDirectory"));
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly);
-            Assert.Equal(DirectoryList.Count, 6);
+            Assert.Equal(6, DirectoryList.Count);
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchAllSubDirectories);
-            Assert.Equal(DirectoryList.Count, 7);
+            Assert.Equal(7, DirectoryList.Count);
         }
 
         [Fact]
         public void GetDirectories_Directory_SearchOption_Wildcards()
         {
             var DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly, "*");
-            Assert.Equal(DirectoryList.Count, 0);
+            Assert.Equal(0, DirectoryList.Count);
             var CreatedDirectories = new List<string>();
             for (int i = 0; i < 6; i++)
             {
                 CreatedDirectories.Add(System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"NewSubDirectory00{i}")).Name);
             }
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly, "*000", "*001");
-            Assert.Equal(DirectoryList.Count, 2);
+            Assert.Equal(2, DirectoryList.Count);
             for (int i = 0; i < 2; i++)
             {
                 var DirectoryName = System.IO.Path.Combine(TestDirectory, $"NewSubDirectory00{i}");
@@ -325,9 +325,9 @@ namespace Microsoft.VisualBasic.MyServices.Tests
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"NewSubDirectory000", $"NewSubSubDirectory000"));
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly, "*000");
-            Assert.Equal(DirectoryList.Count, 1);
+            Assert.Equal(1, DirectoryList.Count);
             DirectoryList = _fileSystem.GetDirectories(TestDirectory, SearchOption.SearchAllSubDirectories, "*000");
-            Assert.Equal(DirectoryList.Count, 2);
+            Assert.Equal(2, DirectoryList.Count);
         }
 
         [Fact]
@@ -385,13 +385,13 @@ namespace Microsoft.VisualBasic.MyServices.Tests
         public void GetFiles_Directory()
         {
             var FileList = _fileSystem.GetFiles(TestDirectory);
-            Assert.Equal(FileList.Count, 0);
+            Assert.Equal(0, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
                 CreateTestFile(SourceData, PathFromBase: null, TestFileName: $"NewFile{i}");
             }
             FileList = _fileSystem.GetFiles(TestDirectory);
-            Assert.Equal(FileList.Count, 6);
+            Assert.Equal(6, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
                 Assert.True(FileList.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}")));
@@ -399,7 +399,7 @@ namespace Microsoft.VisualBasic.MyServices.Tests
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, "GetFiles_DirectoryNewSubDirectory"));
             CreateTestFile(SourceData, PathFromBase: "GetFiles_DirectoryNewSubDirectory", TestFileName: "NewFile");
             FileList = _fileSystem.GetFiles(TestDirectory);
-            Assert.Equal(FileList.Count, 6);
+            Assert.Equal(6, FileList.Count);
         }
 
         [Fact]
@@ -409,20 +409,20 @@ namespace Microsoft.VisualBasic.MyServices.Tests
             System.IO.Directory.CreateDirectory(NewSubDirectoryPath);
             CreateTestFile(SourceData, PathFromBase: "GetFiles_Directory_SearchOptionNewSubDirectory", TestFileName: "NewFile");
             var FileList = _fileSystem.GetFiles(TestDirectory);
-            Assert.Equal(FileList.Count, 0);
+            Assert.Equal(0, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
                 CreateTestFile(SourceData, PathFromBase: null, TestFileName: $"NewFile{i}");
             }
             FileList = _fileSystem.GetFiles(TestDirectory, SearchOption.SearchTopLevelOnly);
             CreateTestFile(SourceData, PathFromBase: null, TestFileName: "NewFile");
-            Assert.Equal(FileList.Count, 6);
+            Assert.Equal(6, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
                 Assert.True(FileList.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}")));
             }
             FileList = _fileSystem.GetFiles(TestDirectory, SearchOption.SearchAllSubDirectories);
-            Assert.Equal(FileList.Count, 8);
+            Assert.Equal(8, FileList.Count);
             for (int i = 0; i < 7; i++)
             {
                 Assert.True(System.IO.File.Exists(FileList[i]));
@@ -433,14 +433,14 @@ namespace Microsoft.VisualBasic.MyServices.Tests
         public void GetFiles_Directory_SearchOption_Wildcards()
         {
             var FileList = _fileSystem.GetFiles(TestDirectory);
-            Assert.Equal(FileList.Count, 0);
+            Assert.Equal(0, FileList.Count);
             var TestFileList = new List<string>();
             for (int i = 0; i < 6; i++)
             {
                 TestFileList.Add(CreateTestFile(SourceData, PathFromBase: null, TestFileName: $"NewFile{i}{(i % 2 == 0 ? ".vb" : ".cs")}"));
             }
             FileList = _fileSystem.GetFiles(TestDirectory, SearchOption.SearchTopLevelOnly, "*.vb");
-            Assert.Equal(FileList.Count, 3);
+            Assert.Equal(3, FileList.Count);
             for (int i = 0; i < 3; i++)
             {
                 Assert.True(TestFileList.Contains(FileList[i]));
@@ -450,7 +450,7 @@ namespace Microsoft.VisualBasic.MyServices.Tests
             TestFileList.Add(CreateTestFile(SourceData, PathFromBase: "GetFiles_Directory_SearchOption_WildcardsNewSubDirectory", TestFileName: "NewFile.cs"));
             FileList = _fileSystem.GetFiles(TestDirectory, SearchOption.SearchAllSubDirectories, "*.cs");
             Assert.True(FileList.Contains(TestFileList[TestFileList.Count - 1]), "File in Subdirectory not found");
-            Assert.Equal(FileList.Count, 4);
+            Assert.Equal(4, FileList.Count);
         }
 
         [Fact]
@@ -470,7 +470,7 @@ namespace Microsoft.VisualBasic.MyServices.Tests
         {
             var TempFile = _fileSystem.GetTempFileName();
             Assert.True(System.IO.File.Exists(TempFile));
-            Assert.Equal((new System.IO.FileInfo(TempFile)).Length, 0);
+            Assert.Equal(0, (new System.IO.FileInfo(TempFile)).Length);
             System.IO.File.Delete(TempFile);
         }
 

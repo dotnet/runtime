@@ -78,7 +78,7 @@ namespace System.Threading.Tasks.Tests
                 IEnumerator<KeyValuePair<long, int>> enumerator = partitioner.GetOrderableDynamicPartitions().GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    Assert.Equal(dataSourceMoveNextCalls, 1);
+                    Assert.Equal(1, dataSourceMoveNextCalls);
                     //reset the count - for the next moveNext call 
                     dataSourceMoveNextCalls = 0;
                 }
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Tests
 
                 while (enumerator.MoveNext())
                 {
-                    Assert.Equal(dataSourceMoveNextCalls, 1);
+                    Assert.Equal(1, dataSourceMoveNextCalls);
                     //reset the count - for the next moveNext call 
                     dataSourceMoveNextCalls = 0;
                 }
@@ -273,7 +273,7 @@ namespace System.Threading.Tasks.Tests
         private static void VerifyAggregateException(AggregateException aggregatEx, Exception userException)
         {
             Assert.True(aggregatEx.InnerExceptions.Contains(userException));
-            Assert.Equal(aggregatEx.Flatten().InnerExceptions.Count, 1);
+            Assert.Equal(1, aggregatEx.Flatten().InnerExceptions.Count);
         }
 
         #endregion

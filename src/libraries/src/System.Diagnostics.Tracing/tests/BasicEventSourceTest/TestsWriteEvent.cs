@@ -113,8 +113,8 @@ namespace BasicEventSourceTests
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventII", evt.EventName);
-                        Assert.Equal(evt.PayloadValue(0, "arg1"), 10);
-                        Assert.Equal(evt.PayloadValue(1, "arg2"), 11);
+                        Assert.Equal(10, evt.PayloadValue(0, "arg1"));
+                        Assert.Equal(11, evt.PayloadValue(1, "arg2"));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Basic/EventSS",
@@ -124,8 +124,8 @@ namespace BasicEventSourceTests
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventSS", evt.EventName);
-                        Assert.Equal(evt.PayloadValue(0, "arg1"), "one");
-                        Assert.Equal(evt.PayloadValue(1, "arg2"), "two");
+                        Assert.Equal("one", evt.PayloadValue(0, "arg1"));
+                        Assert.Equal("two", evt.PayloadValue(1, "arg2"));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/EventWith7Strings",
@@ -198,9 +198,9 @@ namespace BasicEventSourceTests
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithIntIntString", evt.EventName);
-                        Assert.Equal(evt.PayloadValue(0, "i1"), 10);
-                        Assert.Equal(evt.PayloadValue(1, "i2"), 11);
-                        Assert.Equal(evt.PayloadValue(2, "str"), "test");
+                        Assert.Equal(10, evt.PayloadValue(0, "i1"));
+                        Assert.Equal(11, evt.PayloadValue(1, "i2"));
+                        Assert.Equal("test", evt.PayloadValue(2, "str"));
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntLongString",
@@ -210,9 +210,9 @@ namespace BasicEventSourceTests
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithIntLongString", evt.EventName);
-                        Assert.Equal(evt.PayloadValue(0, "i1"), 10);
+                        Assert.Equal(10, evt.PayloadValue(0, "i1"));
                         Assert.Equal(evt.PayloadValue(1, "l1"), (long)11);
-                        Assert.Equal(evt.PayloadValue(2, "str"), "test");
+                        Assert.Equal("test", evt.PayloadValue(2, "str"));
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithString",

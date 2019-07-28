@@ -64,9 +64,9 @@ namespace System.Xml.Tests
             var node = (XmlElement)xmlDocument.DocumentElement;
             var attribute = node.GetAttributeNode("ns1:att1");
 
-            Assert.Equal(attribute.Value, "value1");
+            Assert.Equal("value1", attribute.Value);
             node.SetAttribute("ns1:att1", "value3");
-            Assert.Equal(attribute.Value, "value3");
+            Assert.Equal("value3", attribute.Value);
         }
 
         [Fact]
@@ -77,9 +77,9 @@ namespace System.Xml.Tests
 
             var node = (XmlElement)xmlDocument.DocumentElement;
             var attribute = node.GetAttributeNode("attr1");
-            Assert.Equal(attribute.Value, "test");
+            Assert.Equal("test", attribute.Value);
             node.SetAttribute("attr1", "newvalue");
-            Assert.Equal(attribute.Value, "newvalue");
+            Assert.Equal("newvalue", attribute.Value);
         }
 
         [Fact]
@@ -90,9 +90,9 @@ namespace System.Xml.Tests
 
             var node = (XmlElement)xmlDocument.DocumentElement;
             var attribute = node.GetAttributeNode("attr1");
-            Assert.Equal(attribute.Value, "test");
+            Assert.Equal("test", attribute.Value);
             node.SetAttribute("attr1", "newvalue");
-            Assert.Equal(attribute.Value, "newvalue");
+            Assert.Equal("newvalue", attribute.Value);
         }
 
         [Fact]
@@ -103,9 +103,9 @@ namespace System.Xml.Tests
 
             var node = (XmlElement)xmlDocument.DocumentElement;
             var attribute = node.GetAttributeNode("attr1");
-            Assert.Equal(attribute.Value, "test");
+            Assert.Equal("test", attribute.Value);
             node.SetAttribute("attr1", "newvalue");
-            Assert.Equal(attribute.Value, "newvalue");
+            Assert.Equal("newvalue", attribute.Value);
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace System.Xml.Tests
             node.SetAttribute("attr2", "newvalue");
             var attribute = node.Attributes.GetNamedItem("attr2");
 
-            Assert.Equal(attribute.Value, "newvalue");
+            Assert.Equal("newvalue", attribute.Value);
             Assert.Equal(2, node.Attributes.Count);
         }
     }

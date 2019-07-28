@@ -56,13 +56,13 @@ namespace System.Xml.Tests
             }
 
             val = new XmlSchemaValidator(nt, sch, new XmlNamespaceManager(new NameTable()), AllFlags);
-            Assert.NotEqual(val, null);
+            Assert.NotNull(val);
 
             val.Initialize();
             val.ValidateElement("root", "", info);
 
             Assert.True(nt.IsAddCalled);
-            Assert.Equal(nt.IsGetCalled, false);
+            Assert.False(nt.IsGetCalled);
 
             return;
         }
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
             }
 
             val = new XmlSchemaValidator(new NameTable(), sch, new XmlNamespaceManager(new NameTable()), AllFlags);
-            Assert.NotEqual(val, null);
+            Assert.NotNull(val);
 
             val.Initialize();
             val.ValidateElement("elem1", "", null);

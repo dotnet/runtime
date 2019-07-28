@@ -193,15 +193,15 @@ namespace BasicEventSourceTests
                         }
 
                         EventTestHarness.LogWriteLine("Validating: Count={0} RequestSum={1:n3} TimeSum={2:n3} ", evts.Count, requestSum, timeSum);
-                        Assert.Equal(requestCount, 5);
-                        Assert.Equal(requestSum, 31);
-                        Assert.Equal(requestMin, 1);
-                        Assert.Equal(requestMax, 16);
+                        Assert.Equal(5, requestCount);
+                        Assert.Equal(31, requestSum);
+                        Assert.Equal(1, requestMin);
+                        Assert.Equal(16, requestMax);
 
-                        Assert.Equal(errorCount, 2);
-                        Assert.Equal(errorSum, 2);
-                        Assert.Equal(errorMin, 1);
-                        Assert.Equal(errorMax, 1);
+                        Assert.Equal(2, errorCount);
+                        Assert.Equal(2, errorSum);
+                        Assert.Equal(1, errorMin);
+                        Assert.Equal(1, errorMax);
 
                         Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec 
                         Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  

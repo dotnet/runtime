@@ -156,9 +156,9 @@ namespace System.Net.Tests
             Assert.Equal(0, request.Headers.Count);
             Assert.Equal(HttpVersion.Version11, request.ProtocolVersion);
             Assert.Equal("GET", request.Method);
-            Assert.Equal(HttpWebRequest.DefaultMaximumResponseHeadersLength, 64);
+            Assert.Equal(64, HttpWebRequest.DefaultMaximumResponseHeadersLength);
             Assert.NotNull(HttpWebRequest.DefaultCachePolicy);
-            Assert.Equal(HttpWebRequest.DefaultCachePolicy.Level, RequestCacheLevel.BypassCache);
+            Assert.Equal(RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
             Assert.Equal(0, HttpWebRequest.DefaultMaximumErrorResponseLength);
             Assert.NotNull(request.Proxy);
             Assert.Equal(remoteServer, request.RequestUri);
@@ -1216,7 +1216,7 @@ namespace System.Net.Tests
             request.CookieContainer.Add(remoteServer, new Cookie("1", "cookie1"));
             request.CookieContainer.Add(remoteServer, new Cookie("2", "cookie2"));
             Assert.True(request.SupportsCookieContainer);
-            Assert.Equal(request.CookieContainer.GetCookies(remoteServer).Count, 2);
+            Assert.Equal(2, request.CookieContainer.GetCookies(remoteServer).Count);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1224,7 +1224,7 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.AddRange(1, 5);
-            Assert.Equal(request.Headers["Range"], "bytes=1-5");
+            Assert.Equal("bytes=1-5", request.Headers["Range"]);
         }
 
         [Theory]

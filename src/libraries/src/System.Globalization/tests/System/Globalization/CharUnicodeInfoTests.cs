@@ -191,7 +191,7 @@ namespace System.Globalization.Tests
         [Fact]
         public static void DigitsDecimalTest()
         {
-            Assert.Equal(s_numericsCodepoints.Length % 10, 0);
+            Assert.Equal(0, s_numericsCodepoints.Length % 10);
             for (int i=0; i < s_numericsCodepoints.Length; i+= 10)
             {
                 for (int j=0; j < 10; j++)

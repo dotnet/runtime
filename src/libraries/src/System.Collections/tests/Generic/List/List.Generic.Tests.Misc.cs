@@ -560,25 +560,25 @@ namespace System.Collections.Tests
             public void ClearEmptyList()
             {
                 List<T> list = new List<T>();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0"
+                Assert.Equal(0, list.Count); //"Should be equal to 0"
                 list.Clear();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
             }
             public void ClearMultipleTimesEmptyList(int times)
             {
                 List<T> list = new List<T>();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
                 for (int i = 0; i < times; i++)
                 {
                     list.Clear();
-                    Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                    Assert.Equal(0, list.Count); //"Should be equal to 0."
                 }
             }
             public void ClearNonEmptyList(T[] items)
             {
                 List<T> list = new List<T>(items);
                 list.Clear();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
             }
 
             public void ClearMultipleTimesNonEmptyList(T[] items, int times)
@@ -587,7 +587,7 @@ namespace System.Collections.Tests
                 for (int i = 0; i < times; i++)
                 {
                     list.Clear();
-                    Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                    Assert.Equal(0, list.Count); //"Should be equal to 0."
                 }
             }
 
@@ -595,19 +595,19 @@ namespace System.Collections.Tests
             {
                 List<T> list = new List<T>();
                 IList _ilist = list;
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
                 _ilist.Clear();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
             }
             public void NonGenericIListClearMultipleTimesEmptyList(int times)
             {
                 List<T> list = new List<T>();
                 IList _ilist = list;
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
                 for (int i = 0; i < times; i++)
                 {
                     _ilist.Clear();
-                    Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                    Assert.Equal(0, list.Count); //"Should be equal to 0."
                 }
             }
             public void NonGenericIListClearNonEmptyList(T[] items)
@@ -615,7 +615,7 @@ namespace System.Collections.Tests
                 List<T> list = new List<T>(items);
                 IList _ilist = list;
                 _ilist.Clear();
-                Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                Assert.Equal(0, list.Count); //"Should be equal to 0."
             }
 
             public void NonGenericIListClearMultipleTimesNonEmptyList(T[] items, int times)
@@ -625,7 +625,7 @@ namespace System.Collections.Tests
                 for (int i = 0; i < times; i++)
                 {
                     _ilist.Clear();
-                    Assert.Equal(list.Count, 0); //"Should be equal to 0."
+                    Assert.Equal(0, list.Count); //"Should be equal to 0."
                 }
             }
 

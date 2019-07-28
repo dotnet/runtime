@@ -147,13 +147,13 @@ namespace System.Net.Mail.Tests
         public void DisplayName_Precedence()
         {
             var ma = new MailAddress("Hola <foo@bar.com>");
-            Assert.Equal(ma.DisplayName, "Hola");
+            Assert.Equal("Hola", ma.DisplayName);
             ma = new MailAddress("Hola <foo@bar.com>", "Adios");
-            Assert.Equal(ma.DisplayName, "Adios");
+            Assert.Equal("Adios", ma.DisplayName);
             ma = new MailAddress("Hola <foo@bar.com>", "");
-            Assert.Equal(ma.DisplayName, "Hola");
+            Assert.Equal("Hola", ma.DisplayName);
             ma = new MailAddress("<foo@bar.com>", "");
-            Assert.Equal(ma.DisplayName, "");
+            Assert.Equal("", ma.DisplayName);
         }
         
         [Fact]

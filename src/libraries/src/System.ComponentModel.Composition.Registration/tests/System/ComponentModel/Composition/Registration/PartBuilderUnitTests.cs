@@ -261,7 +261,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var catalog = new TypeCatalog(new[] {
                 typeof(AmbiguousConstructors),
                 typeof(ConstructorArgs) }, ctx);
-            Assert.Equal(catalog.Parts.Count(), 2);
+            Assert.Equal(2, catalog.Parts.Count());
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             Assert.Throws<CompositionException>(() => container.GetExportedValue<AmbiguousConstructors>());
         }

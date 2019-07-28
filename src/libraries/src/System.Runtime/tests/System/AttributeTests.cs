@@ -90,18 +90,18 @@ namespace System.Tests
             var f2 = new ChildAttributeWithField { Prop = 42 };
             var f3 = new ChildAttributeWithField { Prop = 1 }; 
 
-            Assert.NotEqual(a1.GetHashCode(), 0);
-            Assert.NotEqual(a2.GetHashCode(), 0);
-            Assert.NotEqual(a3.GetHashCode(), 0);
-            Assert.NotEqual(d1.GetHashCode(), 0);
-            Assert.NotEqual(d2.GetHashCode(), 0);
-            Assert.NotEqual(d3.GetHashCode(), 0);
-            Assert.NotEqual(s1.GetHashCode(), 0);
-            Assert.NotEqual(s2.GetHashCode(), 0);
-            Assert.NotEqual(s3.GetHashCode(), 0);
-            Assert.Equal(f1.GetHashCode(), 0);
-            Assert.Equal(f2.GetHashCode(), 0);
-            Assert.Equal(f3.GetHashCode(), 0);
+            Assert.NotEqual(0, a1.GetHashCode());
+            Assert.NotEqual(0, a2.GetHashCode());
+            Assert.NotEqual(0, a3.GetHashCode());
+            Assert.NotEqual(0, d1.GetHashCode());
+            Assert.NotEqual(0, d2.GetHashCode());
+            Assert.NotEqual(0, d3.GetHashCode());
+            Assert.NotEqual(0, s1.GetHashCode());
+            Assert.NotEqual(0, s2.GetHashCode());
+            Assert.NotEqual(0, s3.GetHashCode());
+            Assert.Equal(0, f1.GetHashCode());
+            Assert.Equal(0, f2.GetHashCode());
+            Assert.Equal(0, f3.GetHashCode());
 
             Assert.NotEqual(a1.GetHashCode(), a2.GetHashCode());
             Assert.NotEqual(a2.GetHashCode(), a3.GetHashCode());

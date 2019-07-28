@@ -25,7 +25,7 @@ namespace System.Xml.Tests
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            Assert.Equal(sc.Contains((string)null), false);
+            Assert.False(sc.Contains((string)null));
 
             return;
         }
@@ -37,7 +37,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.Add("xsdauthor", TestData._XsdAuthor);
-            Assert.Equal(sc.Contains("test"), false);
+            Assert.False(sc.Contains("test"));
             return;
         }
 
@@ -48,11 +48,11 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             XmlSchema Schema = sc.Add("xsdauthor", TestData._XsdAuthor);
-            Assert.Equal(sc.Contains("xsdauthor"), true);
+            Assert.True(sc.Contains("xsdauthor"));
 
             sc.Remove(Schema);
 
-            Assert.Equal(sc.Contains("xsdauthor"), false);
+            Assert.False(sc.Contains("xsdauthor"));
 
             return;
         }
@@ -66,11 +66,11 @@ namespace System.Xml.Tests
             XmlSchema Schema1 = sc.Add("xsdauthor", TestData._XsdAuthor);
             XmlSchema Schema2 = sc.Add("xsdauthor", TestData._XsdNoNs);
 
-            Assert.Equal(sc.Contains("xsdauthor"), true);
+            Assert.True(sc.Contains("xsdauthor"));
 
             sc.Remove(Schema1);
 
-            Assert.Equal(sc.Contains("xsdauthor"), true);
+            Assert.True(sc.Contains("xsdauthor"));
 
             return;
         }

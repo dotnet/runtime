@@ -250,11 +250,11 @@ namespace XDocumentTests.SDMSample
 
             Assert.Equal(2, element.Attributes().Count());
 
-            Assert.Equal(element.Attribute("att").Name, "att");
-            Assert.Equal(element.Attribute("att").Value, "bar");
+            Assert.Equal("att", element.Attribute("att").Name);
+            Assert.Equal("bar", element.Attribute("att").Value);
 
-            Assert.Equal(element.Attribute("att2").Name, "att2");
-            Assert.Equal(element.Attribute("att2").Value, "att-value");
+            Assert.Equal("att2", element.Attribute("att2").Name);
+            Assert.Equal("att-value", element.Attribute("att2").Value);
         }
 
         /// <summary>

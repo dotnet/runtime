@@ -77,7 +77,7 @@ namespace System.Numerics.Tests
                 {
                     BigInteger junk;
                     BigInteger.TryParse("1", invalid, null, out junk);
-                    Assert.Equal(junk.ToString("d"), "1");
+                    Assert.Equal("1", junk.ToString("d"));
                 });
 
                 //FormatProvider tests
@@ -773,7 +773,7 @@ namespace System.Numerics.Tests
 
             if (x == 0)
             {
-                Assert.Equal(expected, "0");
+                Assert.Equal("0", expected);
             }
             else
             {

@@ -1036,10 +1036,10 @@ namespace System.Numerics.Tests
         {
             Vector4 a = new Vector4();
 
-            Assert.Equal(a.X, 0.0f);
-            Assert.Equal(a.Y, 0.0f);
-            Assert.Equal(a.Z, 0.0f);
-            Assert.Equal(a.W, 0.0f);
+            Assert.Equal(0.0f, a.X);
+            Assert.Equal(0.0f, a.Y);
+            Assert.Equal(0.0f, a.Z);
+            Assert.Equal(0.0f, a.W);
         }
 
         // A test for Vector4f ()

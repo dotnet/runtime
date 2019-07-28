@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Tests
             Type delType = exp.Type;
             Assert.Equal(new[] { delType }, exp.GetType().GetGenericArguments());
             MethodInfo delMethod = delType.GetMethod("Invoke");
-            Assert.Equal(delMethod.ReturnType, typeof(int));
+            Assert.Equal(typeof(int), delMethod.ReturnType);
             Assert.Equal(20, delMethod.GetParameters().Length);
             Assert.True(delMethod.GetParameters().All(p => p.ParameterType == typeof(int)));
             Assert.Same(delType, Expression.Lambda(Expression.Constant(9), paramList).Type);
@@ -298,7 +298,7 @@ namespace System.Linq.Expressions.Tests
             delType = exp.Type;
             Assert.Equal(new[] { delType }, exp.GetType().GetGenericArguments());
             delMethod = delType.GetMethod("Invoke");
-            Assert.Equal(delMethod.ReturnType, typeof(long));
+            Assert.Equal(typeof(long), delMethod.ReturnType);
             Assert.Equal(1, delMethod.GetParameters().Length);
             Assert.Equal(typeof(int).MakeByRefType(), delMethod.GetParameters()[0].ParameterType);
             Assert.Same(delType, Expression.Lambda(Expression.Constant(3L), Expression.Parameter(typeof(int).MakeByRefType())).Type);

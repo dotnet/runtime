@@ -277,7 +277,7 @@ namespace System.Reflection.Tests
 
                                 if (validLengths1[j] == 0)
                                 {
-                                    Assert.Equal(arr.Length, 0);
+                                    Assert.Equal(0, arr.Length);
                                 }
                                 else
                                 {

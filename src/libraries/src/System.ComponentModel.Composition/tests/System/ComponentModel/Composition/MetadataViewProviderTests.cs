@@ -295,7 +295,7 @@ namespace System.ComponentModel.Composition
             var view1 = MetadataViewProvider.GetMetadataView<IMetadataViewWithImplementation>(metadata);
             Assert.Equal("One", view1.String1);
             Assert.Equal("Two", view1.String2);
-            Assert.Equal(view1.GetType(), typeof(MetadataViewWithImplementation));
+            Assert.Equal(typeof(MetadataViewWithImplementation), view1.GetType());
         }
 
         [Fact]

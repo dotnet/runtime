@@ -298,16 +298,16 @@ namespace System.Reflection.Metadata.Tests
             fixed (byte* bufferPtr2 = buffer2)
             {
                 var reader = new BlobReader(new MemoryBlock(bufferPtr2, buffer2.Length));
-                Assert.Equal(reader.Offset, 0);
+                Assert.Equal(0, reader.Offset);
                 Assert.Equal(0x0807060504030201UL, reader.ReadUInt64());
-                Assert.Equal(reader.Offset, 8);
+                Assert.Equal(8, reader.Offset);
 
                 reader.Reset();
-                Assert.Equal(reader.Offset, 0);
+                Assert.Equal(0, reader.Offset);
                 Assert.Equal(0x0807060504030201L, reader.ReadInt64());
 
                 reader.Reset();
-                Assert.Equal(reader.Offset, 0);
+                Assert.Equal(0, reader.Offset);
                 Assert.Equal(BitConverter.ToDouble(buffer2, 0), reader.ReadDouble());
             }
         }
@@ -382,24 +382,24 @@ namespace System.Reflection.Metadata.Tests
 
 
                 Assert.Equal("\u0001", block.PeekUtf8NullTerminated(1, null, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 2);
+                Assert.Equal(2, bytesRead);
 
                 Assert.Equal("\u0002", block.PeekUtf8NullTerminated(3, null, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 1);
+                Assert.Equal(1, bytesRead);
 
                 Assert.Equal("", block.PeekUtf8NullTerminated(4, null, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 0);
+                Assert.Equal(0, bytesRead);
 
                 byte[] helloPrefix = Encoding.UTF8.GetBytes("Hello");
 
                 Assert.Equal("Hello\u0001", block.PeekUtf8NullTerminated(1, helloPrefix, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 2);
+                Assert.Equal(2, bytesRead);
 
                 Assert.Equal("Hello\u0002", block.PeekUtf8NullTerminated(3, helloPrefix, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 1);
+                Assert.Equal(1, bytesRead);
 
                 Assert.Equal("Hello", block.PeekUtf8NullTerminated(4, helloPrefix, stringDecoder, out bytesRead));
-                Assert.Equal(bytesRead, 0);
+                Assert.Equal(0, bytesRead);
             }
         }
 
