@@ -31,8 +31,10 @@ namespace System
         // We need to call the String constructor so that the compiler doesn't mark this as a literal.
         // Marking this as a literal would mean that it doesn't show up as a field which we can access 
         // from native.
+#pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
         [Intrinsic]
         public static readonly string Empty;
+#pragma warning restore CS8618
 
         // Gets the character at a specified position.
         //
