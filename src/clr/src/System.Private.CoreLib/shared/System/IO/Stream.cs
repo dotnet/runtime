@@ -644,7 +644,7 @@ namespace System.IO
                 callback(rwc);
             }
 
-            private static ContextCallback s_invokeAsyncCallback;
+            private static ContextCallback? s_invokeAsyncCallback;
 
             void ITaskCompletionAction.Invoke(Task completingTask)
             {

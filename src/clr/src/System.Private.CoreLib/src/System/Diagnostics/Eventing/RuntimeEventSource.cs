@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tracing
     [EventSource(Guid="49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
     internal sealed class RuntimeEventSource : EventSource
     {
-        private static RuntimeEventSource s_RuntimeEventSource;
+        private static RuntimeEventSource? s_RuntimeEventSource;
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;
