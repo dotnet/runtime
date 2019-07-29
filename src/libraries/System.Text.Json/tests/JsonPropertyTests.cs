@@ -36,7 +36,7 @@ namespace System.Text.Json.Tests
                 {
                     SkipValidation = skipValidation,
                 };
-                var writer = new Utf8JsonWriter(buffer, options);
+                using var writer = new Utf8JsonWriter(buffer, options);
                 if (skipValidation)
                 {
                     foreach (JsonProperty property in root.EnumerateObject())
@@ -67,7 +67,7 @@ namespace System.Text.Json.Tests
             var buffer = new ArrayBufferWriter<byte>(1024);
             using (JsonDocument doc = JsonDocument.Parse("{\"First\":1, \"Number\":1e400}"))
             {
-                var writer = new Utf8JsonWriter(buffer);
+                using var writer = new Utf8JsonWriter(buffer);
                 writer.WriteStartObject();
                 foreach (JsonProperty prop in doc.RootElement.EnumerateObject())
                 {
