@@ -673,6 +673,32 @@ namespace System.Text.Json
             }
         }
 
+        public static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
+        {
+            string value = Encoding.UTF8.GetString(
+                    buffer.WrittenSpan
+#if netfx
+                        .ToArray()
+#endif
+                    );
+
+            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+        }
+
+        public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer)
+        {
+            string value = Encoding.UTF8.GetString(
+                    buffer.WrittenSpan
+#if netfx
+                        .ToArray()
+#endif
+                    );
+
+            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
+            Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+        }
+
         public delegate void AssertThrowsActionUtf8JsonReader(Utf8JsonReader json);
 
         // Cannot use standard Assert.Throws() when testing Utf8JsonReader - ref structs and closures don't get along.
