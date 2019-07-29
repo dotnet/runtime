@@ -142,7 +142,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //  "Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //  "Transitivity failure"
 
             Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
@@ -156,7 +156,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //"Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //"Transitivity failure"
         }
 
         [Fact]
@@ -168,12 +168,12 @@ namespace System.PrivateUri.Tests
 
             Assert.False(rel.IsAbsoluteUri, "Result should be relative");
 
-            Assert.Equal<String>("d:/hi:there/", rel.ToString());
+            Assert.Equal("d:/hi:there/", rel.ToString());
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //  "Transitivity failure"
-            Assert.Equal<String>(test.ToString(), result.ToString()); //  "Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //  "Transitivity failure"
+            Assert.Equal(test.ToString(), result.ToString()); //  "Transitivity failure"
         }
 
         [Fact]
@@ -187,7 +187,7 @@ namespace System.PrivateUri.Tests
 
             // This is a known oddity when mix and matching Unc & dos paths in this order. 
             // The other way works as expected.
-            Assert.Equal<string>("file:///u:/unc/hi:there/", result.ToString());
+            Assert.Equal("file:///u:/unc/hi:there/", result.ToString());
         }
 
         [Fact]
@@ -199,7 +199,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath);  // "Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath);  // "Transitivity failure"
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //"Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //"Transitivity failure"
         }
 
         [Fact]
@@ -223,7 +223,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //"Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //"Transitivity failure"
         }
 
         [Fact]
@@ -235,7 +235,7 @@ namespace System.PrivateUri.Tests
 
             Uri result = new Uri(baseUri, rel);
 
-            Assert.Equal<String>(test.LocalPath, result.LocalPath); //"Transitivity failure"
+            Assert.Equal(test.LocalPath, result.LocalPath); //"Transitivity failure"
         }
 
         [Fact]

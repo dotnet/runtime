@@ -37,7 +37,7 @@ public static class XmlDictionaryWriterTest
             actual = sr.ReadToEnd();
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public static class XmlDictionaryWriterTest
             actual = sr.ReadToEnd();
         }
         
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public static class XmlDictionaryWriterTest
             Assert.True(false, sb.ToString());
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
 
     }
 
@@ -139,7 +139,7 @@ public static class XmlDictionaryWriterTest
             actual = sr.ReadToEnd();
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
