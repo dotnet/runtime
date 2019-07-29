@@ -2019,8 +2019,7 @@ def parse_test_results(host_os, arch, build_type, coreclr_repo_location, test_lo
 
                 if failed == "1":
                     failure_info = collection[0][0]
-
-                    test_output = failure_info[0].text
+                    test_output = failure_info.text
 
                 test_location_on_filesystem = find_test_from_name(host_os, test_location, test_name)
 
