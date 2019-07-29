@@ -546,6 +546,11 @@ namespace System.Net.Test.Common
             return bytesGenerated;
         }
 
+        public static int EncodeDynamicTableSizeUpdate(int newMaximumSize, Span<byte> headerBlock)
+        {
+            return EncodeInteger(newMaximumSize, 0b00100000, 0b11100000, headerBlock);
+        }
+
         public async Task<byte[]> ReadBodyAsync()
         {
             byte[] body = null;

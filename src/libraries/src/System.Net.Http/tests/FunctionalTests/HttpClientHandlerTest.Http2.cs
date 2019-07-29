@@ -3006,5 +3006,41 @@ namespace System.Net.Http.Functional.Tests
                     await con.ShutdownIgnoringErrorsAsync(streamId);
                 });
         }
+
+        [Fact]
+        public async Task DynamicTableSizeUpdate_Exceeds_Settings_Throws()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.Contains("Dynamic table size update", e.InnerException.Message);
+                },
+                async server =>
+                {
+                    (Http2LoopbackConnection con, SettingsFrame settings) = await server.EstablishConnectionGetSettingsAsync();
+                    int streamId = await con.ReadRequestHeaderAsync();
+
+                    int headerTableSize = 4096; // Default per HTTP2 spec.
+
+                    foreach (SettingsEntry setting in settings.Entries)
+                    {
+                        if (setting.SettingId == SettingId.HeaderTableSize)
+                        {
+                            headerTableSize = (int)setting.Value;
+                        }
+                    }
+
+                    byte[] headerData = new byte[16];
+                    int headersLen = Http2LoopbackConnection.EncodeDynamicTableSizeUpdate(headerTableSize + 1, headerData);
+                    HeadersFrame frame = new HeadersFrame(headerData.AsMemory(0, headersLen), FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId);
+
+                    await con.WriteFrameAsync(frame);
+                    await con.ShutdownIgnoringErrorsAsync(streamId);
+                });
+        }
     }
 }
