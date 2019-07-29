@@ -25,17 +25,11 @@ namespace System.Configuration
 
         private byte _mode;
 
-        internal static OverrideModeSetting s_sectionDefault;
-        internal static OverrideModeSetting s_locationDefault;
+        // Default for section is ALLOW
+        internal static readonly OverrideModeSetting s_sectionDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Allow };
 
-        static OverrideModeSetting()
-        {
-            // Default for section is ALLOW
-            s_sectionDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Allow };
-
-            // Default for location tags is INHERIT. Note that we do not make the value as existent in the XML or specified by the API
-            s_locationDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Inherit };
-        }
+        // Default for location tags is INHERIT. Note that we do not make the value as existent in the XML or specified by the API
+        internal static readonly OverrideModeSetting s_locationDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Inherit };
 
         internal static OverrideModeSetting CreateFromXmlReadValue(bool allowOverride)
         {
