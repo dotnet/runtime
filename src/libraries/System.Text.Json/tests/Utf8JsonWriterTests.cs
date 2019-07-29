@@ -4980,9 +4980,9 @@ namespace System.Text.Json.Tests
             value.AsSpan().Fill((byte)'b');
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
 
             {
+                var output = new ArrayBufferWriter<byte>(1024);
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTime.Now));
@@ -4990,6 +4990,7 @@ namespace System.Text.Json.Tests
             }
 
             {
+                var output = new ArrayBufferWriter<byte>(1024);
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(value));
