@@ -5,6 +5,5 @@
   </PropertyGroup>
   <ItemGroup>
     <NativeBinary Include="$(BinDir)ildasm.exe" />
-    <NativeBinary Include="$(BinDir)ildasmrc.dll" />
   </ItemGroup>
 </Project>

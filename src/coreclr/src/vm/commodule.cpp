@@ -1020,7 +1020,7 @@ Object* GetTypesInner(Module* pModule)
     // Get the count of typedefs
     hEnum.EnumTypeDefInit();
 
-    dwNumTypeDefs = pInternalImport->EnumTypeDefGetCount(&hEnum);
+    dwNumTypeDefs = pInternalImport->EnumGetCount(&hEnum);
 
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
@@ -1033,7 +1033,7 @@ Object* GetTypesInner(Module* pModule)
 
     GCPROTECT_BEGIN(throwable);
     // Now create each COM+ Method object and insert it into the array.
-    while (pInternalImport->EnumTypeDefNext(&hEnum, &tdCur))
+    while (pInternalImport->EnumNext(&hEnum, &tdCur))
     {
         // Get the VM class for the current class token
         TypeHandle curClass;

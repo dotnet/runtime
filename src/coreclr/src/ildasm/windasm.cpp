@@ -534,7 +534,7 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
 
 #ifndef FEATURE_PAL
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
-    g_hResources = LoadLocalizedResourceDLLForSDK(L"ildasmrc.dll");
+    g_hResources = WszGetModuleHandle(NULL);
 #endif
 
     iCommandLineParsed = ParseCmdLineW((wzCommandLine = GetCommandLineW()),&g_pszObjFileName);

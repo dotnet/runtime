@@ -52,8 +52,6 @@
 #define dwUniBuf 16384
 
 #ifdef FEATURE_PAL
-#include "coreclrloader.h"
-extern CoreCLRLoader *g_loader;
 extern char *g_pszExeFile;
 #endif
 typedef int(STDAPICALLTYPE *MetaDataGetDispenserFunc) (

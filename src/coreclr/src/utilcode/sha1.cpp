@@ -40,9 +40,9 @@ Revision History:
 
 */
 
-#include "common.h"
+#include "stdafx.h"
+#include <utilcode.h>                   // Utility helpers.
 #include "sha1.h"
-#include "contract.h"
 
 typedef const DWORD DWORDC;
 #define ROTATE32L(x,n) _rotl(x,n)
@@ -197,12 +197,6 @@ static void SHA1_block(SHA1_CTX *ctx)
 
 void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-    
     ctx->nbit_total[0] = ctx->nbit_total[1] = 0;
     
     for (DWORD i = 0; i != 16; i++) {
@@ -230,12 +224,6 @@ void SHA1Hash::SHA1Update(
     Append data to a partially hashed SHA-1 message.
 */
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-    
     const BYTE *fresh_data = msg;
     DWORD nbyte_left = nbyte;
     DWORD nbit_occupied = ctx->nbit_total[0] & 511;
@@ -317,12 +305,6 @@ void SHA1Hash::SHA1Final(
         Finish a SHA-1 hash.
 */
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-    
     DWORDC nbit0 = ctx->nbit_total[0];
     DWORDC nbit1 = ctx->nbit_total[1];
     DWORD  nbit_occupied = nbit0 & 511;
@@ -361,24 +343,12 @@ void SHA1Hash::SHA1Final(
 
 SHA1Hash::SHA1Hash()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
     m_fFinalized = FALSE;
     SHA1Init(&m_Context);
 }
     
 void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-    
     if (m_fFinalized)
         return;
         
@@ -388,12 +358,6 @@ void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
 // Retrieve a pointer to the final hash.
 BYTE *SHA1Hash::GetHash()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
     if (m_fFinalized)
         return m_Value;
 
@@ -403,4 +367,3 @@ BYTE *SHA1Hash::GetHash()
 
     return m_Value;
 }
-

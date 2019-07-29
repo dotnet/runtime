@@ -693,14 +693,6 @@ ErrExit:
     return hr;
 }   // RegMeta::FindManifestResourceByName
 
-extern HRESULT STDMETHODCALLTYPE
-    GetAssembliesByName(LPCWSTR  szAppBase,
-                        LPCWSTR  szPrivateBin,
-                        LPCWSTR  szAssemblyName,
-                        IUnknown *ppIUnk[],
-                        ULONG    cMax,
-                        ULONG    *pcAssemblies);
-
 //*******************************************************************************
 // Used to find assemblies either in Fusion cache or on disk at build time.
 //*******************************************************************************
@@ -723,8 +715,7 @@ STDMETHODIMP RegMeta::FindAssembliesByName( // S_OK or error
    
     // No need to lock this function. It is going through fusion to find the matching Assemblies by name
 
-    IfFailGo(GetAssembliesByName(szAppBase, szPrivateBin,
-                                 szAssemblyName, ppIUnk, cMax, pcAssemblies));
+    IfFailGo(COR_E_NOTSUPPORTED);
 
 ErrExit:
     STOP_MD_PERF(FindAssembliesByName);

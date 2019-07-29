@@ -469,8 +469,6 @@ MetaEnum::End(void)
     switch(m_kind)
     {
     case mdtTypeDef:
-        m_mdImport->EnumTypeDefClose(&m_enum);
-        break;
     case mdtMethodDef:
     case mdtFieldDef:
         m_mdImport->EnumClose(&m_enum);
@@ -494,7 +492,7 @@ MetaEnum::NextToken(mdToken* token,
     switch(m_kind)
     {
     case mdtTypeDef:
-        if (!m_mdImport->EnumTypeDefNext(&m_enum, token))
+        if (!m_mdImport->EnumNext(&m_enum, token))
         {
             return S_FALSE;
         }
