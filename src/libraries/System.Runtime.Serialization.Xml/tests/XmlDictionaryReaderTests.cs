@@ -59,7 +59,7 @@ namespace System.Runtime.Serialization.Xml.Tests
                         returnedString = new string(resultChars.ToArray());
                     }
 
-                    Assert.StrictEqual(testString, returnedString);
+                    Assert.Equal(testString, returnedString);
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization.Xml.Tests
                 returnedString = xmlReader.ReadElementContentAsString();
             }
 
-            Assert.StrictEqual(testString, returnedString);
+            Assert.Equal(testString, returnedString);
         }
 
         [Fact]

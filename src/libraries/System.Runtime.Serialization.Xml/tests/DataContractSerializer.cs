@@ -210,12 +210,12 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_StringAsRoot()
     {
-        Assert.StrictEqual("abc", DataContractSerializerHelper.SerializeAndDeserialize<string>("abc", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">abc</string>"));
-        Assert.StrictEqual("  a b  ", DataContractSerializerHelper.SerializeAndDeserialize<string>("  a b  ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">  a b  </string>"));
+        Assert.Equal("abc", DataContractSerializerHelper.SerializeAndDeserialize<string>("abc", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">abc</string>"));
+        Assert.Equal("  a b  ", DataContractSerializerHelper.SerializeAndDeserialize<string>("  a b  ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">  a b  </string>"));
         Assert.Null(DataContractSerializerHelper.SerializeAndDeserialize<string>(null, @"<string i:nil=""true"" xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>"));
-        Assert.StrictEqual("", DataContractSerializerHelper.SerializeAndDeserialize<string>("", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/""/>"));
-        Assert.StrictEqual(" ", DataContractSerializerHelper.SerializeAndDeserialize<string>(" ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/""> </string>"));
-        Assert.StrictEqual("Hello World! 漢 ñ", DataContractSerializerHelper.SerializeAndDeserialize<string>("Hello World! 漢 ñ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">Hello World! 漢 ñ</string>"));
+        Assert.Equal("", DataContractSerializerHelper.SerializeAndDeserialize<string>("", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/""/>"));
+        Assert.Equal(" ", DataContractSerializerHelper.SerializeAndDeserialize<string>(" ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/""> </string>"));
+        Assert.Equal("Hello World! 漢 ñ", DataContractSerializerHelper.SerializeAndDeserialize<string>("Hello World! 漢 ñ", @"<string xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">Hello World! 漢 ñ</string>"));
     }
 
     [Fact]
@@ -673,7 +673,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.Count == 2);
 
         string actual = string.Join("", y);
-        Assert.StrictEqual("a1a2", actual);
+        Assert.Equal("a1a2", actual);
     }
 
     [Fact]
@@ -846,7 +846,7 @@ public static partial class DataContractSerializerTests
         IDMA_1 x = new IDMA_1 { MyDataMember = "MyDataMember", MyIgnoreDataMember = "MyIgnoreDataMember", MyUnsetDataMember = "MyUnsetDataMember" };
         IDMA_1 y = DataContractSerializerHelper.SerializeAndDeserialize<IDMA_1>(x, @"<IDMA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyDataMember>MyDataMember</MyDataMember></IDMA_1>");
         Assert.NotNull(y);
-        Assert.StrictEqual(x.MyDataMember, y.MyDataMember);
+        Assert.Equal(x.MyDataMember, y.MyDataMember);
         Assert.Null(y.MyIgnoreDataMember);
         Assert.Null(y.MyUnsetDataMember);
     }
@@ -898,7 +898,7 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(y);
         Assert.StrictEqual(1, y.Count);
         Assert.True(y["Key1"] is Dictionary<string, object>);
-        Assert.StrictEqual("subkey1value", ((y["Key1"] as Dictionary<string, object>)["subkey1"]) as string);
+        Assert.Equal("subkey1value", ((y["Key1"] as Dictionary<string, object>)["subkey1"]) as string);
     }
 
     [Fact]
@@ -931,7 +931,7 @@ public static partial class DataContractSerializerTests
         };
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(obj, "<AppEnvironment xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><screen_dpi_x0028_x_x003A_y_x0029_>440</screen_dpi_x0028_x_x003A_y_x0029_><screen_x003A_orientation>horizontal</screen_x003A_orientation></AppEnvironment>");
         Assert.StrictEqual(obj.ScreenDpi, actual.ScreenDpi);
-        Assert.StrictEqual(obj.ScreenOrientation, actual.ScreenOrientation);
+        Assert.Equal(obj.ScreenOrientation, actual.ScreenOrientation);
     }
 
     [Fact]
@@ -971,8 +971,8 @@ public static partial class DataContractSerializerTests
         var x = new TypeHasArrayOfASerializedAsB(true);
         var y = DataContractSerializerHelper.SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(x, @"<TypeHasArrayOfASerializedAsB xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items><TypeA><Name>typeAValue</Name></TypeA><TypeA><Name>typeBValue</Name></TypeA></Items></TypeHasArrayOfASerializedAsB>");
 
-        Assert.StrictEqual(x.Items[0].Name, y.Items[0].Name);
-        Assert.StrictEqual(x.Items[1].Name, y.Items[1].Name);
+        Assert.Equal(x.Items[0].Name, y.Items[0].Name);
+        Assert.Equal(x.Items[1].Name, y.Items[1].Name);
     }
 
     [Fact]
@@ -981,7 +981,7 @@ public static partial class DataContractSerializerTests
         var x = new WithDuplicateNames(true);
         var y = DataContractSerializerHelper.SerializeAndDeserialize<WithDuplicateNames>(x, @"<WithDuplicateNames xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ClassA1 xmlns:a=""http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns1""><a:Name>Hello World! 漢 ñ</a:Name></ClassA1><ClassA2 xmlns:a=""http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns2""><a:Nombre/></ClassA2><EnumA1>two</EnumA1><EnumA2>dos</EnumA2><StructA1 xmlns:a=""http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns1""><a:Text/></StructA1><StructA2 xmlns:a=""http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns2""><a:Texto/></StructA2></WithDuplicateNames>");
 
-        Assert.StrictEqual(x.ClassA1.Name, y.ClassA1.Name);
+        Assert.Equal(x.ClassA1.Name, y.ClassA1.Name);
         Assert.StrictEqual(x.StructA1, y.StructA1);
         Assert.StrictEqual(x.EnumA1, y.EnumA1);
         Assert.StrictEqual(x.EnumA2, y.EnumA2);
@@ -1010,12 +1010,12 @@ public static partial class DataContractSerializerTests
 
     private static void VerifyXElementObject(XElement x1, XElement x2, bool checkFirstAttribute = true)
     {
-        Assert.StrictEqual(x1.Value, x2.Value);
+        Assert.Equal(x1.Value, x2.Value);
         Assert.StrictEqual(x1.Name, x2.Name);
         if (checkFirstAttribute)
         {
             Assert.StrictEqual(x1.FirstAttribute.Name, x2.FirstAttribute.Name);
-            Assert.StrictEqual(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
+            Assert.Equal(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
         }
     }
 
@@ -1059,11 +1059,11 @@ public static partial class DataContractSerializerTests
         var x = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
         var y = DataContractSerializerHelper.SerializeAndDeserialize<DerivedTypeWithDifferentOverrides>(x, @"<DerivedTypeWithDifferentOverrides xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name1>Name1</Name1><Name2 i:nil=""true""/><Name3 i:nil=""true""/><Name4 i:nil=""true""/><Name5 i:nil=""true""/><Name6 i:nil=""true""/><Name2>Name2</Name2><Name3>Name3</Name3><Name5>Name5</Name5></DerivedTypeWithDifferentOverrides>");
 
-        Assert.StrictEqual(x.Name1, y.Name1);
-        Assert.StrictEqual(x.Name2, y.Name2);
-        Assert.StrictEqual(x.Name3, y.Name3);
+        Assert.Equal(x.Name1, y.Name1);
+        Assert.Equal(x.Name2, y.Name2);
+        Assert.Equal(x.Name3, y.Name3);
         Assert.Null(y.Name4);
-        Assert.StrictEqual(x.Name5, y.Name5);
+        Assert.Equal(x.Name5, y.Name5);
     }
 
     [Fact]
@@ -1072,7 +1072,7 @@ public static partial class DataContractSerializerTests
         var x = new __TypeNameWithSpecialCharacters漢ñ() { PropertyNameWithSpecialCharacters漢ñ = "Test" };
         var y = DataContractSerializerHelper.SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(x, @"<__TypeNameWithSpecialCharacters漢ñ xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><PropertyNameWithSpecialCharacters漢ñ>Test</PropertyNameWithSpecialCharacters漢ñ></__TypeNameWithSpecialCharacters漢ñ>");
 
-        Assert.StrictEqual(x.PropertyNameWithSpecialCharacters漢ñ, y.PropertyNameWithSpecialCharacters漢ñ);
+        Assert.Equal(x.PropertyNameWithSpecialCharacters漢ñ, y.PropertyNameWithSpecialCharacters漢ñ);
     }
 
     [Fact]
@@ -1204,12 +1204,12 @@ public static partial class DataContractSerializerTests
 
         Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
-        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.NotNull(actual.ListProperty);
         Assert.True(value.ListProperty.Count == actual.ListProperty.Count);
-        Assert.StrictEqual("one", actual.ListProperty[0]);
-        Assert.StrictEqual("two", actual.ListProperty[1]);
-        Assert.StrictEqual("three", actual.ListProperty[2]);
+        Assert.Equal("one", actual.ListProperty[0]);
+        Assert.Equal("two", actual.ListProperty[1]);
+        Assert.Equal("three", actual.ListProperty[2]);
     }
 
     [Fact]
@@ -1257,8 +1257,8 @@ public static partial class DataContractSerializerTests
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementsInterface>(value, @"<ClassImplementsInterface xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><DisplayName>DisplayName</DisplayName><Id>Id</Id></ClassImplementsInterface>");
 
 
-        Assert.StrictEqual(value.DisplayName, actual.DisplayName);
-        Assert.StrictEqual(value.Id, actual.Id);
+        Assert.Equal(value.DisplayName, actual.DisplayName);
+        Assert.Equal(value.Id, actual.Id);
     }
 
     [Fact]
@@ -1351,7 +1351,7 @@ public static partial class DataContractSerializerTests
         Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), "ChangedRoot", "http://changedNamespace");
         string baselineXml = @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
         var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
-        Assert.StrictEqual("Hello", result.Str);
+        Assert.Equal("Hello", result.Str);
     }
 
     [Fact]
@@ -1363,7 +1363,7 @@ public static partial class DataContractSerializerTests
         Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), xmlDictionary.Add("ChangedRoot"), xmlDictionary.Add("http://changedNamespace"));
         string baselineXml = @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
         var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
-        Assert.StrictEqual("Hello", result.Str);
+        Assert.Equal("Hello", result.Str);
     }
 
     [Fact]
@@ -1377,7 +1377,7 @@ public static partial class DataContractSerializerTests
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
-        Assert.StrictEqual("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
+        Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
     [Fact]
@@ -1406,7 +1406,7 @@ public static partial class DataContractSerializerTests
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
-        Assert.StrictEqual("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
+        Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
     [Fact]
@@ -1420,7 +1420,7 @@ public static partial class DataContractSerializerTests
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
-        Assert.StrictEqual("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
+        Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
     [Fact]
@@ -1435,7 +1435,7 @@ public static partial class DataContractSerializerTests
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
-        Assert.StrictEqual("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
+        Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
     [Fact]
@@ -1444,11 +1444,11 @@ public static partial class DataContractSerializerTests
         var value = new Exception("Test Exception");
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<Exception>(value, @"<Exception xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.Exception</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2146233088</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/></Exception>");
 
-        Assert.StrictEqual(value.Message, actual.Message);
-        Assert.StrictEqual(value.Source, actual.Source);
-        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.Equal(value.Message, actual.Message);
+        Assert.Equal(value.Source, actual.Source);
+        Assert.Equal(value.StackTrace, actual.StackTrace);
         Assert.StrictEqual(value.HResult, actual.HResult);
-        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+        Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
     [Fact]
@@ -1457,12 +1457,12 @@ public static partial class DataContractSerializerTests
         var value = new MyArgumentException("Test Exception", "paramName");
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<MyArgumentException>(value, @"<MyArgumentException xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">MyArgumentException</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2146233088</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/><ParamName i:type=""x:string"" xmlns="""">paramName</ParamName></MyArgumentException>");
 
-        Assert.StrictEqual(value.Message, actual.Message);
-        Assert.StrictEqual(value.ParamName, actual.ParamName);
-        Assert.StrictEqual(value.Source, actual.Source);
-        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.Equal(value.Message, actual.Message);
+        Assert.Equal(value.ParamName, actual.ParamName);
+        Assert.Equal(value.Source, actual.Source);
+        Assert.Equal(value.StackTrace, actual.StackTrace);
         Assert.StrictEqual(value.HResult, actual.HResult);
-        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+        Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
     [Fact]
@@ -1471,11 +1471,11 @@ public static partial class DataContractSerializerTests
         var value = new Exception("Test Exception<>&'\"");
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<Exception>(value, @"<Exception xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.Exception</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception&lt;&gt;&amp;'""</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2146233088</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/></Exception>");
 
-        Assert.StrictEqual(value.Message, actual.Message);
-        Assert.StrictEqual(value.Source, actual.Source);
-        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.Equal(value.Message, actual.Message);
+        Assert.Equal(value.Source, actual.Source);
+        Assert.Equal(value.StackTrace, actual.StackTrace);
         Assert.StrictEqual(value.HResult, actual.HResult);
-        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+        Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
     [Fact]
@@ -1484,17 +1484,17 @@ public static partial class DataContractSerializerTests
         var value = new Exception("", new Exception("Test Exception<>&'\""));
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<Exception>(value, @"<Exception xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.Exception</ClassName><Message i:type=""x:string"" xmlns=""""/><Data i:nil=""true"" xmlns=""""/><InnerException i:type=""a:Exception"" xmlns="""" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><ClassName i:type=""x:string"">System.Exception</ClassName><Message i:type=""x:string"">Test Exception&lt;&gt;&amp;'""</Message><Data i:nil=""true""/><InnerException i:nil=""true""/><HelpURL i:nil=""true""/><StackTraceString i:nil=""true""/><RemoteStackTraceString i:nil=""true""/><RemoteStackIndex i:type=""x:int"">0</RemoteStackIndex><ExceptionMethod i:nil=""true""/><HResult i:type=""x:int"">-2146233088</HResult><Source i:nil=""true""/><WatsonBuckets i:nil=""true""/></InnerException><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2146233088</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/></Exception>");
 
-        Assert.StrictEqual(value.Message, actual.Message);
-        Assert.StrictEqual(value.Source, actual.Source);
-        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.Equal(value.Message, actual.Message);
+        Assert.Equal(value.Source, actual.Source);
+        Assert.Equal(value.StackTrace, actual.StackTrace);
         Assert.StrictEqual(value.HResult, actual.HResult);
-        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+        Assert.Equal(value.HelpLink, actual.HelpLink);
 
-        Assert.StrictEqual(value.InnerException.Message, actual.InnerException.Message);
-        Assert.StrictEqual(value.InnerException.Source, actual.InnerException.Source);
-        Assert.StrictEqual(value.InnerException.StackTrace, actual.InnerException.StackTrace);
+        Assert.Equal(value.InnerException.Message, actual.InnerException.Message);
+        Assert.Equal(value.InnerException.Source, actual.InnerException.Source);
+        Assert.Equal(value.InnerException.StackTrace, actual.InnerException.StackTrace);
         Assert.StrictEqual(value.InnerException.HResult, actual.InnerException.HResult);
-        Assert.StrictEqual(value.InnerException.HelpLink, actual.InnerException.HelpLink);
+        Assert.Equal(value.InnerException.HelpLink, actual.InnerException.HelpLink);
     }
 
     [Fact]
@@ -1691,7 +1691,7 @@ public static partial class DataContractSerializerTests
         TypeWithTypeProperty value = new TypeWithTypeProperty { Id = 123, Name = "Jon Doe" };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithTypeProperty>(value, @"<TypeWithTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Id>123</Id><Name>Jon Doe</Name><Type i:nil=""true"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""/></TypeWithTypeProperty>");
         Assert.StrictEqual(value.Id, deserializedValue.Id);
-        Assert.StrictEqual(value.Name, deserializedValue.Name);
+        Assert.Equal(value.Name, deserializedValue.Name);
         Assert.StrictEqual(value.Type, deserializedValue.Type);
     }
 
@@ -1705,9 +1705,9 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(2, deserializedValue.Count);
         IEnumerator enumerator = ((IEnumerable)deserializedValue).GetEnumerator();
         enumerator.MoveNext();
-        Assert.StrictEqual("Foo", (string)enumerator.Current);
+        Assert.Equal("Foo", (string)enumerator.Current);
         enumerator.MoveNext();
-        Assert.StrictEqual("Bar", (string)enumerator.Current);
+        Assert.Equal("Bar", (string)enumerator.Current);
     }
 
     [Fact]
@@ -1719,9 +1719,9 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithGenericDictionaryAsKnownType>(value, @"<TypeWithGenericDictionaryAsKnownType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Foo xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfintLevelQk4Xq8_SP><a:Key>10</a:Key><a:Value><LevelNo>1</LevelNo><Name>Foo</Name></a:Value></a:KeyValueOfintLevelQk4Xq8_SP><a:KeyValueOfintLevelQk4Xq8_SP><a:Key>20</a:Key><a:Value><LevelNo>2</LevelNo><Name>Bar</Name></a:Value></a:KeyValueOfintLevelQk4Xq8_SP></Foo></TypeWithGenericDictionaryAsKnownType>");
 
         Assert.StrictEqual(2, deserializedValue.Foo.Count);
-        Assert.StrictEqual("Foo", deserializedValue.Foo[10].Name);
+        Assert.Equal("Foo", deserializedValue.Foo[10].Name);
         Assert.StrictEqual(1, deserializedValue.Foo[10].LevelNo);
-        Assert.StrictEqual("Bar", deserializedValue.Foo[20].Name);
+        Assert.Equal("Bar", deserializedValue.Foo[20].Name);
         Assert.StrictEqual(2, deserializedValue.Foo[20].LevelNo);
     }
 
@@ -1732,8 +1732,8 @@ public static partial class DataContractSerializerTests
         value.HeadLine = new NewsArticle() { Title = "Foo News" };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithKnownTypeAttributeAndInterfaceMember>(value, @"<TypeWithKnownTypeAttributeAndInterfaceMember xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><HeadLine i:type=""NewsArticle""><Category>News</Category><Title>Foo News</Title></HeadLine></TypeWithKnownTypeAttributeAndInterfaceMember>");
 
-        Assert.StrictEqual("News", deserializedValue.HeadLine.Category);
-        Assert.StrictEqual("Foo News", deserializedValue.HeadLine.Title);
+        Assert.Equal("News", deserializedValue.HeadLine.Category);
+        Assert.Equal("Foo News", deserializedValue.HeadLine.Title);
     }
 
     [Fact]
@@ -1744,8 +1744,8 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithKnownTypeAttributeAndListOfInterfaceMember>(value, @"<TypeWithKnownTypeAttributeAndListOfInterfaceMember xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Articles xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""SummaryArticle""><Category>Summary</Category><Title>Bar Summary</Title></a:anyType></Articles></TypeWithKnownTypeAttributeAndListOfInterfaceMember>");
 
         Assert.StrictEqual(1, deserializedValue.Articles.Count);
-        Assert.StrictEqual("Summary", deserializedValue.Articles[0].Category);
-        Assert.StrictEqual("Bar Summary", deserializedValue.Articles[0].Title);
+        Assert.Equal("Summary", deserializedValue.Articles[0].Category);
+        Assert.Equal("Bar Summary", deserializedValue.Articles[0].Title);
     }
 
     /*
@@ -1793,7 +1793,7 @@ public static partial class DataContractSerializerTests
         DerivedTypeWithDataMemberInBaseType value = new DerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new TypeAsEmbeddedDataMember { Name = "Foo" } };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<DerivedTypeWithDataMemberInBaseType>(value, @"<DerivedTypeWithDataMemberInBaseType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EmbeddedDataMember><Name>Foo</Name></EmbeddedDataMember></DerivedTypeWithDataMemberInBaseType>");
 
-        Assert.StrictEqual("Foo", deserializedValue.EmbeddedDataMember.Name);
+        Assert.Equal("Foo", deserializedValue.EmbeddedDataMember.Name);
     }
 
     [Fact]
@@ -1802,7 +1802,7 @@ public static partial class DataContractSerializerTests
         PocoDerivedTypeWithDataMemberInBaseType value = new PocoDerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new PocoTypeAsEmbeddedDataMember { Name = "Foo" } };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<PocoDerivedTypeWithDataMemberInBaseType>(value, @"<PocoDerivedTypeWithDataMemberInBaseType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EmbeddedDataMember><Name>Foo</Name></EmbeddedDataMember></PocoDerivedTypeWithDataMemberInBaseType>");
 
-        Assert.StrictEqual("Foo", deserializedValue.EmbeddedDataMember.Name);
+        Assert.Equal("Foo", deserializedValue.EmbeddedDataMember.Name);
     }
 
     [Fact]
@@ -1810,7 +1810,7 @@ public static partial class DataContractSerializerTests
     {
         ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"<ClassImplementingIXmlSerialiable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
-        Assert.StrictEqual(value.StringValue, deserializedValue.StringValue);
+        Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
@@ -1818,7 +1818,7 @@ public static partial class DataContractSerializerTests
     {
         TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
-        Assert.StrictEqual(value.StringValue, deserializedValue.StringValue);
+        Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
@@ -1866,7 +1866,7 @@ public static partial class DataContractSerializerTests
         ms.Seek(0, SeekOrigin.Begin);
 
         TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcs.ReadObject(ms);
-        Assert.StrictEqual("Foo", deserializedValue.Name);
+        Assert.Equal("Foo", deserializedValue.Name);
         Assert.Null(deserializedValue.MemberWithInvalidDataContract);
     }
 
@@ -1877,8 +1877,8 @@ public static partial class DataContractSerializerTests
         ReadOnlyCollection<string> value = new ReadOnlyCollection<string>(list);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyCollection<string>>(value, @"<ReadOnlyCollectionOfstring xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><list xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>Foo</a:string><a:string>Bar</a:string></list></ReadOnlyCollectionOfstring>");
         Assert.StrictEqual(value.Count, deserializedValue.Count);
-        Assert.StrictEqual(value[0], deserializedValue[0]);
-        Assert.StrictEqual(value[1], deserializedValue[1]);
+        Assert.Equal(value[0], deserializedValue[0]);
+        Assert.Equal(value[1], deserializedValue[1]);
     }
 
     [Fact]
@@ -1901,7 +1901,7 @@ public static partial class DataContractSerializerTests
         var value = new KeyValuePair<string, object>("FooKey", "FooValue");
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<KeyValuePair<string, object>>(value, @"<KeyValuePairOfstringanyType xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><key>FooKey</key><value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">FooValue</value></KeyValuePairOfstringanyType>");
 
-        Assert.StrictEqual(value.Key, deserializedValue.Key);
+        Assert.Equal(value.Key, deserializedValue.Key);
         Assert.StrictEqual(value.Value, deserializedValue.Value);
     }
 
@@ -1926,7 +1926,7 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<DataContractWithDotInName>(value, @"<DCWith.InName xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>Foo</Name></DCWith.InName>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value.Name, deserializedValue.Name);
+        Assert.Equal(value.Name, deserializedValue.Name);
     }
 
     [Fact]
@@ -1936,7 +1936,7 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<DataContractWithMinusSignInName>(value, @"<DCWith-InName xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>Foo</Name></DCWith-InName>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value.Name, deserializedValue.Name);
+        Assert.Equal(value.Name, deserializedValue.Name);
     }
 
     [Fact]
@@ -1946,7 +1946,7 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<DataContractWithOperatorsInName>(value, @"<DCWith_x007B__x007D__x005B__x005D__x0028__x0029_._x002C__x003A__x003B__x002B_-_x002A__x002F__x0025__x0026__x007C__x005E__x0021__x007E__x003D__x003C__x003E__x003F__x002B__x002B_--_x0026__x0026__x007C__x007C__x003C__x003C__x003E__x003E__x003D__x003D__x0021__x003D__x003C__x003D__x003E__x003D__x002B__x003D_-_x003D__x002A__x003D__x002F__x003D__x0025__x003D__x0026__x003D__x007C__x003D__x005E__x003D__x003C__x003C__x003D__x003E__x003E__x003D_-_x003E_InName xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>Foo</Name></DCWith_x007B__x007D__x005B__x005D__x0028__x0029_._x002C__x003A__x003B__x002B_-_x002A__x002F__x0025__x0026__x007C__x005E__x0021__x007E__x003D__x003C__x003E__x003F__x002B__x002B_--_x0026__x0026__x007C__x007C__x003C__x003C__x003E__x003E__x003D__x003D__x0021__x003D__x003C__x003D__x003E__x003D__x002B__x003D_-_x003D__x002A__x003D__x002F__x003D__x0025__x003D__x0026__x003D__x007C__x003D__x005E__x003D__x003C__x003C__x003D__x003E__x003E__x003D_-_x003E_InName>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value.Name, deserializedValue.Name);
+        Assert.Equal(value.Name, deserializedValue.Name);
     }
 
     [Fact]
@@ -1956,7 +1956,7 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<DataContractWithOtherSymbolsInName>(value, @"<DCWith_x0060__x0040__x0023__x0024__x0027__x0022__x0020__x0009_InName xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>Foo</Name></DCWith_x0060__x0040__x0023__x0024__x0027__x0022__x0020__x0009_InName>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value.Name, deserializedValue.Name);
+        Assert.Equal(value.Name, deserializedValue.Name);
     }
 
     [Fact]
@@ -2042,7 +2042,7 @@ public static partial class DataContractSerializerTests
             {
                 var deserializedObject = (TypeWithTypeWithIntAndStringPropertyProperty)serializer.ReadObject(reader);
                 Assert.StrictEqual(10, deserializedObject.ObjectProperty.SampleInt);
-                Assert.StrictEqual("Sample string", deserializedObject.ObjectProperty.SampleString);
+                Assert.Equal("Sample string", deserializedObject.ObjectProperty.SampleString);
             }
             else
             {
@@ -2101,7 +2101,7 @@ public static partial class DataContractSerializerTests
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(expected,
 @"<Element>Element innertext</Element>");
         Assert.NotNull(actual);
-        Assert.StrictEqual(expected.InnerText, actual.InnerText);
+        Assert.Equal(expected.InnerText, actual.InnerText);
     }
 
     [Fact]
@@ -2119,7 +2119,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
         for (int i = 0; i < expected.Elements.Length; ++i)
         {
-            Assert.StrictEqual(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
+            Assert.Equal(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
         }
     }
 
@@ -2246,7 +2246,7 @@ public static partial class DataContractSerializerTests
     {
         TypeWithPrimitiveProperties x = new TypeWithPrimitiveProperties { P1 = "abc", P2 = 11 };
         TypeWithPrimitiveProperties y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithPrimitiveProperties>(x, @"<TypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveProperties>");
-        Assert.StrictEqual(x.P1, y.P1);
+        Assert.Equal(x.P1, y.P1);
         Assert.StrictEqual(x.P2, y.P2);
     }
 
@@ -2255,7 +2255,7 @@ public static partial class DataContractSerializerTests
     {
         TypeWithPrimitiveFields x = new TypeWithPrimitiveFields { P1 = "abc", P2 = 11 };
         TypeWithPrimitiveFields y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithPrimitiveFields>(x, @"<TypeWithPrimitiveFields xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveFields>");
-        Assert.StrictEqual(x.P1, y.P1);
+        Assert.Equal(x.P1, y.P1);
         Assert.StrictEqual(x.P2, y.P2);
     }
 
@@ -2285,7 +2285,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.DoubleMember, y.DoubleMember);
         Assert.StrictEqual(x.FloatMember, y.FloatMember);
         Assert.StrictEqual(x.GuidMember, y.GuidMember);
-        Assert.StrictEqual(x.StringMember, y.StringMember);
+        Assert.Equal(x.StringMember, y.StringMember);
         Assert.StrictEqual(x.IntMember, y.IntMember);
     }
 
@@ -3864,7 +3864,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
-            Assert.StrictEqual(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
         }
     }
 
@@ -3899,7 +3899,7 @@ public static partial class DataContractSerializerTests
                 using (var stream2 = (MyFileStream)dcs.ReadObject(stream))
                 {
                     string fileData = stream2.ReadLine();
-                    Assert.StrictEqual(TestFileData, fileData);
+                    Assert.Equal(TestFileData, fileData);
                 }
             }
         }

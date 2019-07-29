@@ -151,8 +151,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
-        Assert.StrictEqual((string)x[0], (string)y[0]);
-        Assert.StrictEqual((string)x[1], (string)y[1]);
+        Assert.Equal((string)x[0], (string)y[0]);
+        Assert.Equal((string)x[1], (string)y[1]);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </DCClassWithEnumAndStruct>");
 
         Assert.StrictEqual(value.MyEnum1, actual.MyEnum1);
-        Assert.StrictEqual(value.MyStruct.Data, actual.MyStruct.Data);
+        Assert.Equal(value.MyStruct.Data, actual.MyStruct.Data);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             () => { return new XmlSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
-        Assert.StrictEqual(((SimpleKnownTypeValue)value.SimpleTypeValue).StrProperty, ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
+        Assert.Equal(((SimpleKnownTypeValue)value.SimpleTypeValue).StrProperty, ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
     [Fact]
@@ -300,7 +300,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
         Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
-        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
     }
 
@@ -327,9 +327,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
   <IsLoaded>true</IsLoaded>
 </ClassImplementsInterface>");
 
-        Assert.StrictEqual(value.ClassID, actual.ClassID);
-        Assert.StrictEqual(value.DisplayName, actual.DisplayName);
-        Assert.StrictEqual(value.Id, actual.Id);
+        Assert.Equal(value.ClassID, actual.ClassID);
+        Assert.Equal(value.DisplayName, actual.DisplayName);
+        Assert.Equal(value.Id, actual.Id);
         Assert.StrictEqual(value.IsLoaded, actual.IsLoaded);
     }
 
@@ -360,8 +360,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(actual.XmlElementProperty, value.XmlElementProperty);
         Assert.Equal(actual.XmlEnumProperty, value.XmlEnumProperty);
         Assert.StrictEqual(actual.XmlIncludeProperty, value.XmlIncludeProperty);
-        Assert.StrictEqual(actual.XmlNamespaceDeclarationsProperty, value.XmlNamespaceDeclarationsProperty);
-        Assert.StrictEqual(actual.XmlTextProperty, value.XmlTextProperty);
+        Assert.Equal(actual.XmlNamespaceDeclarationsProperty, value.XmlNamespaceDeclarationsProperty);
+        Assert.Equal(actual.XmlTextProperty, value.XmlTextProperty);
     }
 
     [Fact]
@@ -382,10 +382,10 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             var obj = (TypeWithAnyAttribute)serializer.Deserialize(stream);
             Assert.NotNull(obj);
             Assert.StrictEqual(intProperty, obj.IntProperty);
-            Assert.StrictEqual(name, obj.Name);
+            Assert.Equal(name, obj.Name);
             Assert.StrictEqual(2, obj.Attributes.Length);
-            Assert.StrictEqual(attribute1, obj.Attributes[0].Value);
-            Assert.StrictEqual(attribute2, obj.Attributes[1].Value);
+            Assert.Equal(attribute1, obj.Attributes[0].Value);
+            Assert.Equal(attribute2, obj.Attributes[1].Value);
         }
     }
 
@@ -454,7 +454,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actual = SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value,
 @"<?xml version=""1.0""?>
 <ClassImplementingIXmlSerialiable StringValue=""Hello world"" BoolValue=""True"" />");
-        Assert.StrictEqual(value.StringValue, actual.StringValue);
+        Assert.Equal(value.StringValue, actual.StringValue);
         Assert.StrictEqual(value.GetPrivateMember(), actual.GetPrivateMember());
         Assert.True(ClassImplementingIXmlSerialiable.ReadXmlInvoked);
         Assert.True(ClassImplementingIXmlSerialiable.WriteXmlInvoked);
@@ -466,7 +466,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var value = new TypeWithPropertyNameSpecified() { MyField = "MyField", MyFieldIgnored = 99, MyFieldSpecified = true, MyFieldIgnoredSpecified = false };
         var actual = SerializeAndDeserialize<TypeWithPropertyNameSpecified>(value,
 @"<?xml version=""1.0""?><TypeWithPropertyNameSpecified xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><MyField>MyField</MyField></TypeWithPropertyNameSpecified>");
-        Assert.StrictEqual(value.MyField, actual.MyField);
+        Assert.Equal(value.MyField, actual.MyField);
         Assert.StrictEqual(0, actual.MyFieldIgnored);
     }
 
@@ -478,7 +478,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 @"<?xml version=""1.0""?><TypeWithXmlSchemaFormAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><UnqualifiedSchemaFormListProperty><int>1</int></UnqualifiedSchemaFormListProperty><NoneSchemaFormListProperty><NoneParameter>abc</NoneParameter></NoneSchemaFormListProperty><QualifiedSchemaFormListProperty><QualifiedParameter>true</QualifiedParameter></QualifiedSchemaFormListProperty></TypeWithXmlSchemaFormAttribute>");
 
         Assert.StrictEqual(value.NoneSchemaFormListProperty.Count, actual.NoneSchemaFormListProperty.Count);
-        Assert.StrictEqual(value.NoneSchemaFormListProperty[0], actual.NoneSchemaFormListProperty[0]);
+        Assert.Equal(value.NoneSchemaFormListProperty[0], actual.NoneSchemaFormListProperty[0]);
         Assert.StrictEqual(value.UnqualifiedSchemaFormListProperty.Count, actual.UnqualifiedSchemaFormListProperty.Count);
         Assert.StrictEqual(value.UnqualifiedSchemaFormListProperty[0], actual.UnqualifiedSchemaFormListProperty[0]);
         Assert.StrictEqual(value.QualifiedSchemaFormListProperty.Count, actual.QualifiedSchemaFormListProperty.Count);
@@ -504,7 +504,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val2</TypeWithXmlTextAttributeOnArray>");
         Assert.NotNull(actual.Text);
         Assert.StrictEqual(1, actual.Text.Length);
-        Assert.StrictEqual("val1val2", actual.Text[0]);
+        Assert.Equal("val1val2", actual.Text[0]);
     }
 
     [Fact]
@@ -513,7 +513,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };
         var actual = SerializeAndDeserialize<TypeWithSchemaFormInXmlAttribute>(value,
 @"<?xml version=""1.0""?><TypeWithSchemaFormInXmlAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" d1p1:TestProperty=""hello"" xmlns:d1p1=""http://test.com"" />");
-        Assert.StrictEqual(value.TestProperty, actual.TestProperty);
+        Assert.Equal(value.TestProperty, actual.TestProperty);
     }
 
 
@@ -532,7 +532,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
         for (int i = 0; i < expected.Elements.Length; ++i)
         {
-            Assert.StrictEqual(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
+            Assert.Equal(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
         }
     }
 
@@ -546,7 +546,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 @"<TypeWithXmlDocumentProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Document><html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html></Document></TypeWithXmlDocumentProperty>");
         Assert.NotNull(actual);
         Assert.NotNull(actual.Document);
-        Assert.StrictEqual(expected.Document.OuterXml, actual.Document.OuterXml);
+        Assert.Equal(expected.Document.OuterXml, actual.Document.OuterXml);
     }
 
     [Fact]
@@ -555,13 +555,13 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         System.Reflection.TypeInfo ti = System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
         TypeWithNonPublicDefaultConstructor value = null;
         value = (TypeWithNonPublicDefaultConstructor)FindDefaultConstructor(ti).Invoke(null);
-        Assert.StrictEqual("Mr. FooName", value.Name);
+        Assert.Equal("Mr. FooName", value.Name);
         var actual = SerializeAndDeserialize<TypeWithNonPublicDefaultConstructor>(value,
 @"<?xml version=""1.0""?>
 <TypeWithNonPublicDefaultConstructor xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <Name>Mr. FooName</Name>
 </TypeWithNonPublicDefaultConstructor>");
-        Assert.StrictEqual(value.Name, actual.Name);
+        Assert.Equal(value.Name, actual.Name);
     }
 
     private static System.Reflection.ConstructorInfo FindDefaultConstructor(System.Reflection.TypeInfo ti)
@@ -590,8 +590,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         XmlSerializer serializer = new XmlSerializer(typeof(ServerSettings));
         StringReader reader = new StringReader(xml);
         var value = (ServerSettings)serializer.Deserialize(reader);
-        Assert.StrictEqual(@" http://s3.amazonaws.com/windows-prod-twc/desktop8/beacons.xml ", value.MetricConfigUrl);
-        Assert.StrictEqual(@" http://wxdata.weather.com/wxdata/", value.DS2Root);
+        Assert.Equal(@" http://s3.amazonaws.com/windows-prod-twc/desktop8/beacons.xml ", value.MetricConfigUrl);
+        Assert.Equal(@" http://wxdata.weather.com/wxdata/", value.DS2Root);
     }
 
 
@@ -652,7 +652,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
             // XmlSerializer.Deserialize(XmlReader)
             var actual = (SimpleType)serializer.Deserialize(reader);
-            Assert.StrictEqual(expected.P1, actual.P1);
+            Assert.Equal(expected.P1, actual.P1);
             Assert.StrictEqual(expected.P2, actual.P2);
 
             stream.Dispose();
@@ -829,7 +829,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
   <P2>1</P2>
 </SimpleType>");
         Assert.NotNull(deserializedObj);
-        Assert.StrictEqual(obj.P1, deserializedObj.P1);
+        Assert.Equal(obj.P1, deserializedObj.P1);
         Assert.StrictEqual(obj.P2, deserializedObj.P2);
     }
 
@@ -854,7 +854,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
         Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
-        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
     }
 
@@ -872,8 +872,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithPropertiesHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <CharProperty>109</CharProperty>\r\n</TypeWithPropertiesHavingDefaultValue>");
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
-        Assert.StrictEqual(value.EmptyStringProperty, actual.EmptyStringProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.EmptyStringProperty, actual.EmptyStringProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.StrictEqual(value.CharProperty, actual.CharProperty);
     }
@@ -892,7 +892,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithPropertiesHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EmptyStringProperty>NonEmpty</EmptyStringProperty>\r\n  <StringProperty>NonDefaultValue</StringProperty>\r\n  <IntProperty>12</IntProperty>\r\n  <CharProperty>110</CharProperty>\r\n</TypeWithPropertiesHavingDefaultValue>");
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
     }
 
     [Fact]
@@ -1003,7 +1003,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.Foo, actual.Foo);
+        Assert.Equal(value.Foo, actual.Foo);
     }
 
     [Fact]
@@ -1014,7 +1014,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithShouldSerializeMethod>");
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.Foo, actual.Foo);
+        Assert.Equal(value.Foo, actual.Foo);
     }
 
     [Fact]
@@ -1838,7 +1838,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
   <Name>Lily&amp;Lucy</Name>
 </TypeA>");
         Assert.NotNull(y);
-        Assert.StrictEqual(x.Name, y.Name);
+        Assert.Equal(x.Name, y.Name);
     }
 
     private static readonly string s_defaultNs = "http://tempuri.org/";

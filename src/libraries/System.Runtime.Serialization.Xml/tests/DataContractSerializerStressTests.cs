@@ -53,7 +53,7 @@ public static partial class DataContractSerializerTests
             Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
             for (int i = 0; i < myFamily.Members.Length; ++i)
             {
-                Assert.StrictEqual(myFamily.Members[i].Name, newFamily.Members[i].Name);
+                Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
             }
 
             var resultMembers = newFamily.Members;

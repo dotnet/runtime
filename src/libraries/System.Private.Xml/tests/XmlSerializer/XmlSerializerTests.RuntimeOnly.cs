@@ -242,22 +242,22 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_StringAsRoot()
     {
-        Assert.StrictEqual("abc", SerializeAndDeserialize<string>("abc",
+        Assert.Equal("abc", SerializeAndDeserialize<string>("abc",
 @"<?xml version=""1.0""?>
 <string>abc</string>"));
-        Assert.StrictEqual("  a b  ", SerializeAndDeserialize<string>("  a b  ",
+        Assert.Equal("  a b  ", SerializeAndDeserialize<string>("  a b  ",
 @"<?xml version=""1.0""?>
 <string>  a b  </string>"));
         Assert.Null(SerializeAndDeserialize<string>(null,
 @"<?xml version=""1.0""?>
 <string d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
-        Assert.StrictEqual("", SerializeAndDeserialize<string>("",
+        Assert.Equal("", SerializeAndDeserialize<string>("",
 @"<?xml version=""1.0""?>
 <string />"));
-        Assert.StrictEqual(SerializeAndDeserialize<string>(" ",
+        Assert.Equal(SerializeAndDeserialize<string>(" ",
 @"<?xml version=""1.0""?>
 <string> </string>"), string.Empty);
-        Assert.StrictEqual("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
+        Assert.Equal("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
 @"<?xml version=""1.0""?>
 <string>Hello World! 漢 ñ</string>"));
     }
@@ -371,7 +371,7 @@ public static partial class XmlSerializerTests
         Assert.True(y.Count == 2);
 
         string itemsInY = string.Join("", y);
-        Assert.StrictEqual("a1a2", itemsInY);
+        Assert.Equal("a1a2", itemsInY);
     }
 
     [Fact]
@@ -455,12 +455,12 @@ public static partial class XmlSerializerTests
 
     private static void VerifyXElementObject(XElement x1, XElement x2, bool checkFirstAttribute = true)
     {
-        Assert.StrictEqual(x1.Value, x2.Value);
+        Assert.Equal(x1.Value, x2.Value);
         Assert.StrictEqual(x1.Name, x2.Name);
         if (checkFirstAttribute)
         {
             Assert.StrictEqual(x1.FirstAttribute.Name, x2.FirstAttribute.Name);
-            Assert.StrictEqual(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
+            Assert.Equal(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
         }
     }
 
@@ -642,7 +642,7 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DefaultNamespaceChangeTest()
     {
-        Assert.StrictEqual(
+        Assert.Equal(
         "Teststring",
         SerializeAndDeserialize<string>("Teststring",
 @"<?xml version=""1.0""?>
@@ -661,7 +661,7 @@ public static partial class XmlSerializerTests
   <P2>11</P2>
 </SimpleType>",
         () => { return new XmlSerializer(typeof(SimpleType), "MycustomDefaultNamespace"); });
-        Assert.StrictEqual(value.P1, o.P1);
+        Assert.Equal(value.P1, o.P1);
         Assert.StrictEqual(value.P2, o.P2);
     }
 
@@ -678,7 +678,7 @@ public static partial class XmlSerializerTests
   <P2>11</P2>
 </SimpleType>",
             () => { return new XmlSerializer(typeof(SimpleType), "MycustomDefaultNamespace"); }, xns: xns);
-        Assert.StrictEqual(value.P1, o.P1);
+        Assert.Equal(value.P1, o.P1);
         Assert.StrictEqual(value.P2, o.P2);
     }
 
@@ -747,8 +747,8 @@ public static partial class XmlSerializerTests
   <header>foo</header>
   <body>bar</body>
 </Envelope>");
-        Assert.StrictEqual(original.header, actual.header);
-        Assert.StrictEqual(original.body, actual.body);
+        Assert.Equal(original.header, actual.header);
+        Assert.Equal(original.body, actual.body);
     }
 
     [Fact]
@@ -764,8 +764,8 @@ public static partial class XmlSerializerTests
   <body>bar</body>
 </Envelope>");
 
-        Assert.StrictEqual(original.header, actual.header);
-        Assert.StrictEqual(original.body, actual.body);
+        Assert.Equal(original.header, actual.header);
+        Assert.Equal(original.body, actual.body);
         Assert.NotNull(actual.xmlns);
         Assert.Contains(ns, actual.xmlns.ToArray());
     }
@@ -790,7 +790,7 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize(expected,
 @"<?xml version=""1.0"" encoding=""utf-8""?><Element>Element innertext</Element>");
         Assert.NotNull(actual);
-        Assert.StrictEqual(expected.InnerText, actual.InnerText);
+        Assert.Equal(expected.InnerText, actual.InnerText);
     }
 
     [Fact]
@@ -801,7 +801,7 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize(expected,
 @"<?xml version=""1.0"" encoding=""utf-8""?><html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
         Assert.NotNull(actual);
-        Assert.StrictEqual(expected.OuterXml, actual.OuterXml);
+        Assert.Equal(expected.OuterXml, actual.OuterXml);
     }
 
     [Fact]
@@ -837,15 +837,15 @@ public static partial class XmlSerializerTests
   </AnotherStringList>
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.StrictEqual(value.PropertyWithXmlElementAttribute.Count, actual.PropertyWithXmlElementAttribute.Count);
-        Assert.StrictEqual(value.PropertyWithXmlElementAttribute[0], actual.PropertyWithXmlElementAttribute[0]);
-        Assert.StrictEqual(value.PropertyWithXmlElementAttribute[1], actual.PropertyWithXmlElementAttribute[1]);
+        Assert.Equal(value.PropertyWithXmlElementAttribute[0], actual.PropertyWithXmlElementAttribute[0]);
+        Assert.Equal(value.PropertyWithXmlElementAttribute[1], actual.PropertyWithXmlElementAttribute[1]);
         Assert.StrictEqual(value.IntList.Count, actual.IntList.Count);
         Assert.StrictEqual(value.IntList[0], actual.IntList[0]);
         Assert.StrictEqual(value.StringList.Count, actual.StringList.Count);
-        Assert.StrictEqual(value.StringList[0], actual.StringList[0]);
-        Assert.StrictEqual(value.StringList[1], actual.StringList[1]);
+        Assert.Equal(value.StringList[0], actual.StringList[0]);
+        Assert.Equal(value.StringList[1], actual.StringList[1]);
         Assert.StrictEqual(value.AnotherStringList.Count, actual.AnotherStringList.Count);
-        Assert.StrictEqual(value.AnotherStringList[0], actual.AnotherStringList[0]);
+        Assert.Equal(value.AnotherStringList[0], actual.AnotherStringList[0]);
         Assert.StrictEqual(value.PublicIntListField[0], actual.PublicIntListField[0]);
         Assert.StrictEqual(value.PublicIntListFieldWithXmlElementAttribute[0], actual.PublicIntListFieldWithXmlElementAttribute[0]);
     }
@@ -866,7 +866,7 @@ public static partial class XmlSerializerTests
 </ArrayOfBridgeGameHighScore>");
         Assert.StrictEqual(1, actual.Count);
         Assert.StrictEqual(value[0].Id, actual[0].Id);
-        Assert.StrictEqual(value[0].Name, actual[0].Name);
+        Assert.Equal(value[0].Name, actual[0].Name);
     }
 
     [Fact]
@@ -886,8 +886,8 @@ public static partial class XmlSerializerTests
   </LevelData>
 </ArrayOfLevelData>");
         Assert.StrictEqual(2, actual.Count);
-        Assert.StrictEqual(value[0].Name, actual[0].Name);
-        Assert.StrictEqual(value[1].Name, actual[1].Name);
+        Assert.Equal(value[0].Name, actual[0].Name);
+        Assert.Equal(value[1].Name, actual[1].Name);
     }
 
     [Fact]
@@ -907,8 +907,8 @@ public static partial class XmlSerializerTests
   </LevelData>
 </ArrayOfLevelData>");
         Assert.StrictEqual(2, actual.Count);
-        Assert.StrictEqual(value[0].Name, actual[0].Name);
-        Assert.StrictEqual(value[1].Name, actual[1].Name);
+        Assert.Equal(value[0].Name, actual[0].Name);
+        Assert.Equal(value[1].Name, actual[1].Name);
     }
 
     [Fact]
@@ -945,12 +945,12 @@ public static partial class XmlSerializerTests
         stream.Seek(0, SeekOrigin.Begin);
         List<SerializableSlide> actual = (List<SerializableSlide>)serializer.Deserialize(stream);
         Assert.StrictEqual(2, actual.Count);
-        Assert.StrictEqual("SecondAdventureImage", actual[0].ImageName);
+        Assert.Equal("SecondAdventureImage", actual[0].ImageName);
         Assert.StrictEqual(SlideEventType.LaunchSection, actual[0].EventType);
-        Assert.StrictEqual("Adventures.Episode2.Details", actual[0].EventData);
-        Assert.StrictEqual(actual[0].ImageName, actual[1].ImageName);
+        Assert.Equal("Adventures.Episode2.Details", actual[0].EventData);
+        Assert.Equal(actual[0].ImageName, actual[1].ImageName);
         Assert.StrictEqual(actual[0].EventType, actual[1].EventType);
-        Assert.StrictEqual(actual[0].EventData, actual[1].EventData);
+        Assert.Equal(actual[0].EventData, actual[1].EventData);
     }
 
     [Fact]
@@ -1008,7 +1008,7 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize(expected,
 @"<?xml version=""1.0"" encoding=""utf-8""?><Orchestra xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Brass><Name>Trumpet</Name><IsValved>true</IsValved></Brass><Brass><Name>Cornet</Name><IsValved>true</IsValved></Brass></Orchestra>",
             () => serializer);
-        Assert.StrictEqual(expected.Instruments[0].Name, actual.Instruments[0].Name);
+        Assert.Equal(expected.Instruments[0].Name, actual.Instruments[0].Name);
 
         // XmlSerializer(Type, XmlAttributeOverrides, Type[], XmlRootAttribute, String)
         var root = new XmlRootAttribute("Collection");
@@ -1016,7 +1016,7 @@ public static partial class XmlSerializerTests
         actual = SerializeAndDeserialize(expected,
 @"<?xml version=""1.0"" encoding=""utf-8""?><Collection xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""  xmlns=""defaultNamespace""><Brass><Name>Trumpet</Name><IsValved>true</IsValved></Brass><Brass><Name>Cornet</Name><IsValved>true</IsValved></Brass></Collection>",
             () => serializer);
-        Assert.StrictEqual(expected.Instruments[0].Name, actual.Instruments[0].Name);
+        Assert.Equal(expected.Instruments[0].Name, actual.Instruments[0].Name);
 
         Assert.Throws<ArgumentNullException>(() =>
         {
@@ -2768,8 +2768,8 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.XmlElementProperty, actual.XmlElementProperty);
         Assert.Equal(value.XmlEnumProperty, actual.XmlEnumProperty);
         Assert.StrictEqual(value.XmlIncludeProperty, actual.XmlIncludeProperty);
-        Assert.StrictEqual(value.XmlNamespaceDeclarationsProperty, actual.XmlNamespaceDeclarationsProperty);
-        Assert.StrictEqual(value.XmlTextProperty, actual.XmlTextProperty);
+        Assert.Equal(value.XmlNamespaceDeclarationsProperty, actual.XmlNamespaceDeclarationsProperty);
+        Assert.Equal(value.XmlTextProperty, actual.XmlTextProperty);
     }
 
     [Fact]
@@ -2781,7 +2781,7 @@ public static partial class XmlSerializerTests
     <TypeWithIndirectRef xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
       <Name>Foo</Name>
     </TypeWithIndirectRef>");
-        Assert.StrictEqual(value.Name, actual.Name);
+        Assert.Equal(value.Name, actual.Name);
     }
 
     [Fact]
@@ -2794,7 +2794,7 @@ public static partial class XmlSerializerTests
         var deserializedValue = SerializeAndDeserialize<NookAppLocalState>(value, "<?xml version=\"1.0\"?>\r\n<NookAppLocalState xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <TextColor>\r\n    <A>3</A>\r\n    <B>6</B>\r\n    <G>5</G>\r\n    <R>4</R>\r\n  </TextColor>\r\n  <ArticleViewCount>1</ArticleViewCount>\r\n  <CurrentlyReadingProductEAN>Current</CurrentlyReadingProductEAN>\r\n  <CurrentPaymentType>Microsoft</CurrentPaymentType>\r\n  <IsFirstRun>true</IsFirstRun>\r\n  <LocalReadingPositionState>\r\n    <LocalReadingPosition>\r\n      <Ean>Ean</Ean>\r\n      <LastReadTime>2013-01-02T00:00:00</LastReadTime>\r\n      <PageCount>1</PageCount>\r\n      <PageNumber>1</PageNumber>\r\n      <PlatformOffset>offset</PlatformOffset>\r\n    </LocalReadingPosition>\r\n  </LocalReadingPositionState>\r\n  <PreviousSearchQueries>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </PreviousSearchQueries>\r\n  <IsFirstRunDuplicate>false</IsFirstRunDuplicate>\r\n</NookAppLocalState>", null, true);
 
         Assert.StrictEqual(deserializedValue.ArticleViewCount, value.ArticleViewCount);
-        Assert.StrictEqual(deserializedValue.CurrentlyReadingProductEAN, value.CurrentlyReadingProductEAN);
+        Assert.Equal(deserializedValue.CurrentlyReadingProductEAN, value.CurrentlyReadingProductEAN);
         Assert.StrictEqual(deserializedValue.CurrentPaymentType, value.CurrentPaymentType);
         Assert.StrictEqual(deserializedValue.IsFirstRun, value.IsFirstRun);
     }
@@ -2804,11 +2804,11 @@ public static partial class XmlSerializerTests
     {
         DerivedTypeWithDifferentOverrides value = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
         DerivedTypeWithDifferentOverrides actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name5>Name5</Name5></DerivedTypeWithDifferentOverrides>");
-        Assert.StrictEqual(value.Name1, actual.Name1);
-        Assert.StrictEqual(value.Name2, actual.Name2);
-        Assert.StrictEqual(value.Name3, actual.Name3);
+        Assert.Equal(value.Name1, actual.Name1);
+        Assert.Equal(value.Name2, actual.Name2);
+        Assert.Equal(value.Name3, actual.Name3);
         Assert.Null(actual.Name4);
-        Assert.StrictEqual(value.Name5, actual.Name5);
+        Assert.Equal(value.Name5, actual.Name5);
     }
 
     [Fact]
@@ -2821,18 +2821,18 @@ public static partial class XmlSerializerTests
         ((DerivedTypeWithDifferentOverrides)value).Name6 = "MidLevelName6";
         ((SerializationTypes.BaseType)value).Name6 = "BaseLevelName6";
         DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6></DerivedTypeWithDifferentOverrides2>");
-        Assert.StrictEqual(value.Name1, actual.Name1);
-        Assert.StrictEqual(value.Name2, actual.Name2);
-        Assert.StrictEqual(value.Name3, actual.Name3);
+        Assert.Equal(value.Name1, actual.Name1);
+        Assert.Equal(value.Name2, actual.Name2);
+        Assert.Equal(value.Name3, actual.Name3);
         Assert.Null(actual.Name4);
         Assert.Null(((DerivedTypeWithDifferentOverrides)actual).Name4);
-        Assert.StrictEqual(((SerializationTypes.BaseType)value).Name4, ((SerializationTypes.BaseType)actual).Name4);
+        Assert.Equal(((SerializationTypes.BaseType)value).Name4, ((SerializationTypes.BaseType)actual).Name4);
         Assert.Null(actual.Name5);
-        Assert.StrictEqual(((DerivedTypeWithDifferentOverrides)value).Name5, ((DerivedTypeWithDifferentOverrides)actual).Name5);
+        Assert.Equal(((DerivedTypeWithDifferentOverrides)value).Name5, ((DerivedTypeWithDifferentOverrides)actual).Name5);
         Assert.Null(((SerializationTypes.BaseType)actual).Name5);
         Assert.Null(actual.Name6);
-        Assert.StrictEqual(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
-        Assert.StrictEqual(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.Equal(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
     }
 
     [Fact]
@@ -2863,7 +2863,7 @@ public static partial class XmlSerializerTests
         var value = new UnspecifiedRootSerializationType();
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?>\r\n<UnspecifiedRootSerializationType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <MyIntProperty>0</MyIntProperty>\r\n</UnspecifiedRootSerializationType>", () => { return new XmlSerializer(Type.GetType(typeof(UnspecifiedRootSerializationType).FullName)); });
         Assert.StrictEqual(value.MyIntProperty, actual.MyIntProperty);
-        Assert.StrictEqual(value.MyStringProperty, actual.MyStringProperty);     
+        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);     
     }
 
     [Fact]
