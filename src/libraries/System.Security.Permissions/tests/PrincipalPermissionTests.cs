@@ -21,8 +21,8 @@ namespace System.Security.Permissions.Tests
             PrincipalPermission copy = (PrincipalPermission)p.Copy();
             Assert.Equal(p.IsUnrestricted(), copy.IsUnrestricted());
             SecurityElement se = p.ToXml();
-            Assert.True((se.Attributes["class"] as string).StartsWith(className));
-            Assert.Equal("1", (se.Attributes["version"] as string));
+            Assert.StartsWith(className, se.Attributes["class"] as string);
+            Assert.Equal("1", se.Attributes["version"] as string);
         }
 
         [Fact]

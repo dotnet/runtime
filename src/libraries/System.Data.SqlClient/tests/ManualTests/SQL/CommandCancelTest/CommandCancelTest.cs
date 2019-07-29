@@ -260,7 +260,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     proxy.PauseCopying();
                     string errorMessage = SystemDataResourceManager.Instance.SQL_Timeout;
                     Exception exception = Assert.Throws<SqlException>(() => reader.GetValue(0));
-                    Assert.True(exception.Message.Contains(errorMessage));
+                    Assert.Contains(errorMessage, exception.Message);
 
                     // Return everything to normal and close
                     proxy.ResumeCopying();

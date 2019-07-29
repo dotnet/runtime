@@ -45,8 +45,8 @@ namespace System.Tests
             string className = "class";
             string memberName = "member";
             var exception = new MissingMethodException(className, memberName);
-            Assert.True(exception.Message.Contains(className));
-            Assert.True(exception.Message.Contains(memberName));
+            Assert.Contains(className, exception.Message);
+            Assert.Contains(memberName, exception.Message);
         }
     }
 }

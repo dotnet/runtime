@@ -156,7 +156,7 @@ namespace System.IO.Tests
                 }
                 else
                 {
-                    Assert.True(Path.GetFullPath(bad).EndsWith(bad));
+                    Assert.EndsWith(bad, Path.GetFullPath(bad));
                 }
                 Assert.Equal(string.Empty, Path.GetPathRoot(bad));
                 Assert.False(Path.IsPathRooted(bad));

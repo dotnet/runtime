@@ -42,7 +42,7 @@ namespace System.Diagnostics.Contracts.Tests
             {
                 Assert.Null(e.Condition);
                 Assert.False(e.Handled);
-                Assert.True(e.Message.Contains(message));
+                Assert.Contains(message, e.Message);
                 Assert.False(e.Unwind);
                 e.SetHandled();
             }))
@@ -54,7 +54,7 @@ namespace System.Diagnostics.Contracts.Tests
             {
                 Assert.Null(e.Condition);
                 Assert.False(e.Handled);
-                Assert.True(e.Message.Contains(message));
+                Assert.Contains(message, e.Message);
                 Assert.False(e.Unwind);
                 e.SetHandled();
             }))

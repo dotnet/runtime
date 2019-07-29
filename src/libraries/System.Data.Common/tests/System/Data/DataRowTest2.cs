@@ -2471,7 +2471,7 @@ namespace System.Data.Tests
             dr = dtParent.Rows[0];
 
             // ToString
-            Assert.True(dr.ToString().ToLower().StartsWith("system.data.datarow"));
+            Assert.StartsWith("system.data.datarow", dr.ToString().ToLower());
         }
 
         [Fact]

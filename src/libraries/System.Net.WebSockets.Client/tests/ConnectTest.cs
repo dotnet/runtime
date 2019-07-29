@@ -84,8 +84,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
-                Assert.True(headers.Contains("X-CustomHeader1:Value1"));
-                Assert.True(headers.Contains("X-CustomHeader2:Value2"));
+                Assert.Contains("X-CustomHeader1:Value1", headers);
+                Assert.Contains("X-CustomHeader2:Value2", headers);
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
             }
@@ -154,8 +154,8 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
 
-                Assert.True(headers.Contains("Cookies=Are Yummy"));
-                Assert.True(headers.Contains("Especially=Chocolate Chip"));
+                Assert.Contains("Cookies=Are Yummy", headers);
+                Assert.Contains("Especially=Chocolate Chip", headers);
                 Assert.Equal(server.Scheme == "wss", headers.Contains("Occasionally=Raisin"));
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);

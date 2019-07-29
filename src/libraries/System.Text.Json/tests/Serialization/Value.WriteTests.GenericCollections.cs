@@ -450,8 +450,8 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(input);
-            Assert.True(json.Contains("[1,2]"));
-            Assert.True(json.Contains("[3,4]"));
+            Assert.Contains("[1,2]", json);
+            Assert.Contains("[3,4]", json);
         }
 
         [Fact]
@@ -646,8 +646,8 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             string json = JsonSerializer.Serialize(input);
-            Assert.True(json.Contains("[1,2]"));
-            Assert.True(json.Contains("[3,4]"));
+            Assert.Contains("[1,2]", json);
+            Assert.Contains("[3,4]", json);
         }
 
         [Fact]

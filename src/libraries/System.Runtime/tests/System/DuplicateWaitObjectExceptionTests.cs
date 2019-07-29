@@ -24,7 +24,7 @@ namespace System.Tests
         {
             string parameterName = "THISISAPARAMETERNAME";
             var exception = new DuplicateWaitObjectException(parameterName);
-            Assert.True(exception.Message.Contains(parameterName));
+            Assert.Contains(parameterName, exception.Message);
             Assert.Equal(COR_E_DUPLICATEWAITOBJECT, exception.HResult);
         }
 
@@ -46,8 +46,8 @@ namespace System.Tests
             string parameterName = "THISISAPARAMETERNAME";
             string message = "CreatedDuplicateWaitObjectException";
             var exception = new DuplicateWaitObjectException(parameterName, message);
-            Assert.True(exception.Message.Contains(parameterName));
-            Assert.True(exception.Message.Contains(message));
+            Assert.Contains(parameterName, exception.Message);
+            Assert.Contains(message, exception.Message);
         }
     }
 }

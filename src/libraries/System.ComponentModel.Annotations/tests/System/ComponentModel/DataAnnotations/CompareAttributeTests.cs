@@ -87,13 +87,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
             CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));
 
             string oldErrorMessage = attribute.FormatErrorMessage("name");
-            Assert.False(oldErrorMessage.Contains("CustomDisplayName"));
+            Assert.DoesNotContain("CustomDisplayName", oldErrorMessage);
 
             Assert.Throws<ValidationException>(() => attribute.Validate("test1", new ValidationContext(new CompareObject("test"))));
 
             string newErrorMessage = attribute.FormatErrorMessage("name");
             Assert.NotEqual(oldErrorMessage, newErrorMessage);
-            Assert.True(newErrorMessage.Contains("CustomDisplayName"));
+            Assert.Contains("CustomDisplayName", newErrorMessage);
         }
         
         private class DerivedCompareAttribute : CompareAttribute

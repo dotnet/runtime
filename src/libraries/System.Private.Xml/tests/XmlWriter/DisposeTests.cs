@@ -101,7 +101,7 @@ namespace System.Xml.Tests
                                     else
                                     {
                                         string output = ReadAsString(ms);
-                                        Assert.True(output.Contains("<test>abc"));
+                                        Assert.Contains("<test>abc", output);
                                         Assert.NotEqual(output.Contains("<?xml version"), omitXmlDeclaration);
                                         Assert.Equal(output.Contains("  "), indent);
                                         Assert.Equal(output.Contains("</test>"), writeEndDocumentOnClose);

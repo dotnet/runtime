@@ -98,7 +98,7 @@ namespace System.ComponentModel.Composition
                 var metadata = export.Metadata;
             });
 
-            Assert.True(ex.Message.Contains("Bar"));
+            Assert.Contains("Bar", ex.Message);
         }
 
         [AttributeUsage(AttributeTargets.All)]
