@@ -113,8 +113,6 @@ void HENUMInternal::DestroyEnumIfEmpty(
     if (*ppEnum == NULL)
         return;
 
-    _ASSERTE((*ppEnum)->m_EnumType != MDCustomEnum);
-
     if ((*ppEnum)->m_ulCount == 0)
     {
         HENUMInternal::DestroyEnum(*ppEnum);
@@ -148,7 +146,6 @@ bool HENUMInternal::EnumNext(
     mdToken     *ptk)                   // [OUT] token to scope the search
 {
     _ASSERTE(phEnum && ptk);
-    _ASSERTE(phEnum->m_EnumType != MDCustomEnum);
 
     if (phEnum->u.m_ulCur >= phEnum->u.m_ulEnd)
         return false;
@@ -178,9 +175,6 @@ HRESULT HENUMInternal::GetCount(
     // Check for empty enum.
     if (phEnum == 0)
         return S_FALSE;
-
-    _ASSERTE(phEnum->m_EnumType != MDCustomEnum);
-
 
     *pCount = phEnum->u.m_ulEnd - phEnum->u.m_ulStart;
     return S_OK;

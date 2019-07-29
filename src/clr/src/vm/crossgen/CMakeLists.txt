@@ -66,7 +66,6 @@ set(VM_CROSSGEN_SOURCES
   ../peimagelayout.cpp
   ../pendingload.cpp
   ../precode.cpp
-  ../sha1.cpp
   ../sigformat.cpp
   ../siginfo.cpp
   ../simplerwlock.cpp
@@ -162,7 +161,6 @@ set(VM_CROSSGEN_HEADERS
   ../peimagelayout.inl
   ../pendingload.h
   ../precode.h
-  ../sha1.h
   ../sigformat.h
   ../siginfo.hpp
   ../simplerwlock.hpp

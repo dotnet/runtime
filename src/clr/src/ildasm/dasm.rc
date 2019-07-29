@@ -54,7 +54,6 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#if FX_VFT == VFT_DLL
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_USAGE_TITLE         L"ILDASM command line syntax"
@@ -251,7 +250,6 @@ BEGIN
     IDS_E_SUPPRESSED        L"Protected module -- cannot disassemble"
     IDS_LEGALCOPYRIGHT      L"\251 Microsoft Corporation.  All rights reserved."
 END
-#endif // FX_VFT == VFT_DLL
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

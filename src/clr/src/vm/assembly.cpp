@@ -2089,39 +2089,6 @@ void Assembly::AddExportedType(mdExportedType cl)
 
 
 
-
-HRESULT STDMETHODCALLTYPE
-GetAssembliesByName(LPCWSTR  szAppBase,
-                    LPCWSTR  szPrivateBin,
-                    LPCWSTR  szAssemblyName,
-                    IUnknown *ppIUnk[],
-                    ULONG    cMax,
-                    ULONG    *pcAssemblies)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_PREEMPTIVE;
-        GC_TRIGGERS;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END
-
-    HRESULT hr = S_OK;
-
-    if (g_fEEInit) {
-        // Cannot call this during EE startup
-        return MSEE_E_ASSEMBLYLOADINPROGRESS;
-    }
-
-    if (!(szAssemblyName && ppIUnk && pcAssemblies))
-        return E_POINTER;
-
-    hr = COR_E_NOTSUPPORTED;
-
-    return hr;
-}// Used by the IMetadata API's to access an assemblies metadata.
-
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {
     WRAPPER_NO_CONTRACT;
