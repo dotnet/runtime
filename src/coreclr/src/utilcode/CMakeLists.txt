@@ -40,6 +40,7 @@ set(UTILCODE_COMMON_SOURCES
   format1.cpp
   prettyprintsig.cpp
   regutil.cpp
+  sha1.cpp
   sigbuilder.cpp
   sigparser.cpp
   sstring.cpp

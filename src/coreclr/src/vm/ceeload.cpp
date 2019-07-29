@@ -7579,7 +7579,7 @@ void Module::ExpandAll(DataImage *image)
         HENUMInternalHolder hEnum(pInternalImport);
         hEnum.EnumTypeDefInit();
         
-        while (pInternalImport->EnumTypeDefNext(&hEnum, &tk))
+        while (pInternalImport->EnumNext(&hEnum, &tk))
         {
 #ifdef FEATURE_COMINTEROP            
             // Skip the non-managed WinRT types since they're only used by Javascript and C++
@@ -14130,7 +14130,7 @@ void Module::ExpandAll()
         //jit everything in the MT.
         Local::CompileMethodsForTypeDefRefSpec(this, COR_GLOBAL_PARENT_TOKEN);
     }
-    while (pMDI->EnumTypeDefNext(&hEnum, &td))
+    while (pMDI->EnumNext(&hEnum, &td))
     {
         //jit everything
         Local::CompileMethodsForTypeDefRefSpec(this, td);
