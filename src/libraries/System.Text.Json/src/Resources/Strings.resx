@@ -156,8 +156,8 @@
   <data name="CannotWritePropertyAfterProperty" xml:space="preserve">
     <value>Cannot write a JSON property name following another property name. A JSON value is missing.</value>
   </data>
-  <data name="CannotWriteValueAfterPrimitive" xml:space="preserve">
-    <value>Cannot write a JSON value after a single JSON value. Current token type is '{0}'.</value>
+  <data name="CannotWriteValueAfterPrimitiveOrClose" xml:space="preserve">
+    <value>Cannot write a JSON value after a single JSON value or outside of an existing closed object/array. Current token type is '{0}'.</value>
   </data>
   <data name="CannotWriteValueWithinObject" xml:space="preserve">
     <value>Cannot write a JSON value within an object without a property name. Current token type is '{0}'.</value>
