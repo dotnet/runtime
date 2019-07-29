@@ -724,7 +724,8 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray* cattrs)
 {
 	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_VAL (mono_custom_attrs_from_builders_handle (alloc_img, image, MONO_HANDLE_NEW (MonoArray, cattrs)));
+	MonoCustomAttrInfo* const result = mono_custom_attrs_from_builders_handle (alloc_img, image, MONO_HANDLE_NEW (MonoArray, cattrs));
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static void
@@ -2045,7 +2046,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj_raw)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, obj);
-	MonoCustomAttrInfo *result = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	MonoCustomAttrInfo * const result = mono_reflection_get_custom_attrs_info_checked (obj, error);
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }

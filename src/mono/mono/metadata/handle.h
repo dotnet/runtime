@@ -217,6 +217,8 @@ Icall macros
 	MONO_RESTORE_WARNING
 
 // Return a non-pointer or non-managed pointer, e.g. gboolean.
+// VAL should be a local variable or at least not use handles in the current frame.
+// i.e. it is "val", not "expr".
 #define HANDLE_FUNCTION_RETURN_VAL(VAL)		\
 	CLEAR_ICALL_FRAME;			\
 	return (VAL);				\

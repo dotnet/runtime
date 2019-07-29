@@ -5092,7 +5092,7 @@ mono_thread_execute_interruption_ptr (void)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
-	MonoException *exc_raw = mono_thread_execute_interruption (&exc) ? MONO_HANDLE_RAW (exc) : NULL;
+	MonoException * const exc_raw = mono_thread_execute_interruption (&exc) ? MONO_HANDLE_RAW (exc) : NULL;
 	HANDLE_FUNCTION_RETURN_VAL (exc_raw);
 }
 

@@ -355,7 +355,8 @@ cominterop_object_is_rcw (MonoObject *obj_raw)
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, obj);
 	MonoRealProxyHandle real_proxy;
-	HANDLE_FUNCTION_RETURN_VAL (cominterop_object_is_rcw_handle (obj, &real_proxy));
+	gboolean const result = cominterop_object_is_rcw_handle (obj, &real_proxy);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static int
@@ -2187,7 +2188,7 @@ cominterop_get_ccw (MonoObject* object_raw, MonoClass* itf)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, object);
-	gpointer ccw_entry = cominterop_get_ccw_checked (object, itf, error);
+	gpointer const ccw_entry = cominterop_get_ccw_checked (object, itf, error);
 	mono_error_set_pending_exception (error);
 	HANDLE_FUNCTION_RETURN_VAL (ccw_entry);
 }
@@ -2277,7 +2278,8 @@ mono_marshal_free_ccw (MonoObject* object_raw)
 
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, object);
-	HANDLE_FUNCTION_RETURN_VAL (mono_marshal_free_ccw_handle (object));
+	gboolean const result = mono_marshal_free_ccw_handle (object);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /**
@@ -3697,7 +3699,8 @@ mono_cominterop_get_com_interface (MonoObject *object_raw, MonoClass *ic, MonoEr
 {
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, object);
-	HANDLE_FUNCTION_RETURN_VAL (mono_cominterop_get_com_interface_internal (FALSE, object, ic, error));
+	void* const result = mono_cominterop_get_com_interface_internal (FALSE, object, ic, error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static void*

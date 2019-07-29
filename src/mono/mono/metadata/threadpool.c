@@ -281,7 +281,7 @@ try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
-	MonoObject *res = mono_runtime_try_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, exc, error);
+	MonoObject * const res = mono_runtime_try_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, exc, error);
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 

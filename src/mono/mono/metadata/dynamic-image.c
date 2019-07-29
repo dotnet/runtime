@@ -263,7 +263,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 
 	if (!handle_class)
 		handle_class = &klass;
-	gpointer result = mono_reflection_resolve_object_handle (image, obj, handle_class, context, error);
+	gpointer const result = mono_reflection_resolve_object_handle (image, obj, handle_class, context, error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 #else /* DISABLE_REFLECTION_EMIT */

@@ -161,7 +161,8 @@ mono_runtime_object_init_checked (MonoObject *this_obj_raw, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, this_obj);
-	HANDLE_FUNCTION_RETURN_VAL (mono_runtime_object_init_handle (this_obj, error));
+	gboolean const result = mono_runtime_object_init_handle (this_obj, error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /* The pseudo algorithm for type initialization from the spec
@@ -8509,7 +8510,7 @@ get_native_backtrace (MonoException *exc_raw)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL(MonoException, exc);
-	char * trace = mono_exception_handle_get_native_backtrace (exc);
+	char * const trace = mono_exception_handle_get_native_backtrace (exc);
 	HANDLE_FUNCTION_RETURN_VAL (trace);
 }
 

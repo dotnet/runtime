@@ -186,7 +186,7 @@ image_create_token_raw  (MonoDynamicImage *assembly, MonoObject* obj_raw, gboole
 	HANDLE_FUNCTION_ENTER (); /* FIXME callers of image_create_token_raw should use handles */
 	error_init (error);
 	MONO_HANDLE_DCL (MonoObject, obj);
-	guint32 result = mono_image_create_token (assembly, obj, create_methodspec, register_token, error);
+	guint32 const result = mono_image_create_token (assembly, obj, create_methodspec, register_token, error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
