@@ -93,6 +93,7 @@ namespace Mono.Linker.Steps {
 			case AssemblyAction.Link:
 			case AssemblyAction.AddBypassNGen:
 			case AssemblyAction.AddBypassNGenUsed:
+			case AssemblyAction.Copy:
 				return true;
 			default:
 				return false;
