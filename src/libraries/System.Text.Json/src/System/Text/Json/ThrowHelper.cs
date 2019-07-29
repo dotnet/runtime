@@ -496,8 +496,8 @@ namespace System.Text.Json
                         SR.Format(SR.CannotWritePropertyAfterProperty) :
                         SR.Format(SR.CannotWritePropertyWithinArray, tokenType);
                     break;
-                case ExceptionResource.CannotWriteValueAfterPrimitive:
-                    message = SR.Format(SR.CannotWriteValueAfterPrimitive, tokenType);
+                case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:
+                    message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
@@ -623,7 +623,7 @@ namespace System.Text.Json
         CannotStartObjectArrayWithoutProperty,
         CannotStartObjectArrayAfterPrimitiveOrClose,
         CannotWriteValueWithinObject,
-        CannotWriteValueAfterPrimitive,
+        CannotWriteValueAfterPrimitiveOrClose,
         CannotWritePropertyWithinArray,
         ExpectedJsonTokens,
         TrailingCommaNotAllowedBeforeArrayEnd,
