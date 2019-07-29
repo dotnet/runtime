@@ -16,7 +16,7 @@ namespace System.Reflection.Tests
         [InlineData(AssemblyNameFlags.EnableJITcompileTracking)]
         [InlineData(AssemblyNameFlags.PublicKey)]
         [InlineData(AssemblyNameFlags.Retargetable)]
-        [InlineData(int.MinValue)]
+        [InlineData((AssemblyNameFlags)int.MinValue)]
         [InlineData((AssemblyNameFlags)(AssemblyNameFlags.None - 1))]
         [InlineData((AssemblyNameFlags)int.MaxValue)]
         public void Ctor_AssemblyNameFlags(AssemblyNameFlags assemblyFlags)

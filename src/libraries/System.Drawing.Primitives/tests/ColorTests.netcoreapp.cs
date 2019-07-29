@@ -78,8 +78,8 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
+        [InlineData((KnownColor)(-1))]
+        [InlineData((KnownColor)0)]
         [InlineData(KnownColor.MenuHighlight + 1)]
         public void FromOutOfRangeKnownColor(KnownColor known)
         {
@@ -102,8 +102,8 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
+        [InlineData((KnownColor)(-1))]
+        [InlineData((KnownColor)0)]
         [InlineData(KnownColor.MenuHighlight + 1)]
         public void FromOutOfRangeKnownColorToKnownColor(KnownColor known)
         {
@@ -134,8 +134,8 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
+        [InlineData((KnownColor)(-1))]
+        [InlineData((KnownColor)0)]
         [InlineData(KnownColor.MenuHighlight + 1)]
         public void IsSystemColorOutOfRangeKnown(KnownColor known)
         {
@@ -158,8 +158,8 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
+        [InlineData((KnownColor)(-1))]
+        [InlineData((KnownColor)0)]
         [InlineData(KnownColor.MenuHighlight + 1)]
         public void IsKnownColorOutOfRangeKnown(KnownColor known)
         {
