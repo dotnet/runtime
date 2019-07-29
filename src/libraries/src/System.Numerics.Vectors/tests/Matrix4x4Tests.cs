@@ -1205,8 +1205,25 @@ namespace System.Numerics.Tests
         public void Matrix4x4SubtractionTest()
         {
             Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+
             Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = a.M11 - b.M11;
+            expected.M12 = a.M12 - b.M12;
+            expected.M13 = a.M13 - b.M13;
+            expected.M14 = a.M14 - b.M14;
+            expected.M21 = a.M21 - b.M21;
+            expected.M22 = a.M22 - b.M22;
+            expected.M23 = a.M23 - b.M23;
+            expected.M24 = a.M24 - b.M24;
+            expected.M31 = a.M31 - b.M31;
+            expected.M32 = a.M32 - b.M32;
+            expected.M33 = a.M33 - b.M33;
+            expected.M34 = a.M34 - b.M34;
+            expected.M41 = a.M41 - b.M41;
+            expected.M42 = a.M42 - b.M42;
+            expected.M43 = a.M43 - b.M43;
+            expected.M44 = a.M44 - b.M44;
 
             Matrix4x4 actual = a - b;
             Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.operator - did not return the expected value.");
@@ -1281,7 +1298,7 @@ namespace System.Numerics.Tests
         public void Matrix4x4AdditionTest()
         {
             Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 + b.M11;
@@ -1301,10 +1318,7 @@ namespace System.Numerics.Tests
             expected.M43 = a.M43 + b.M43;
             expected.M44 = a.M44 + b.M44;
 
-            Matrix4x4 actual;
-
-            actual = a + b;
-
+            Matrix4x4 actual = a + b;
             Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.operator + did not return the expected value.");
         }
 
@@ -1516,7 +1530,7 @@ namespace System.Numerics.Tests
         public void Matrix4x4AddTest()
         {
             Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 + b.M11;
@@ -1536,9 +1550,7 @@ namespace System.Numerics.Tests
             expected.M43 = a.M43 + b.M43;
             expected.M44 = a.M44 + b.M44;
 
-            Matrix4x4 actual;
-
-            actual = Matrix4x4.Add(a, b);
+            Matrix4x4 actual = Matrix4x4.Add(a, b);
             Assert.Equal(expected, actual);
         }
 
@@ -1719,11 +1731,27 @@ namespace System.Numerics.Tests
         public void Matrix4x4SubtractTest()
         {
             Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 expected = new Matrix4x4();
-            Matrix4x4 actual;
+            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
-            actual = Matrix4x4.Subtract(a, b);
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = a.M11 - b.M11;
+            expected.M12 = a.M12 - b.M12;
+            expected.M13 = a.M13 - b.M13;
+            expected.M14 = a.M14 - b.M14;
+            expected.M21 = a.M21 - b.M21;
+            expected.M22 = a.M22 - b.M22;
+            expected.M23 = a.M23 - b.M23;
+            expected.M24 = a.M24 - b.M24;
+            expected.M31 = a.M31 - b.M31;
+            expected.M32 = a.M32 - b.M32;
+            expected.M33 = a.M33 - b.M33;
+            expected.M34 = a.M34 - b.M34;
+            expected.M41 = a.M41 - b.M41;
+            expected.M42 = a.M42 - b.M42;
+            expected.M43 = a.M43 - b.M43;
+            expected.M44 = a.M44 - b.M44;
+
+            Matrix4x4 actual = Matrix4x4.Subtract(a, b);
             Assert.Equal(expected, actual);
         }
 
