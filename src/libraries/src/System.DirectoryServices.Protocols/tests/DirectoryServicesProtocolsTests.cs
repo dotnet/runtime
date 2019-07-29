@@ -395,7 +395,7 @@ namespace System.DirectoryServicesProtocols.Tests
                         {
                             if (partialResult[i] is SearchResultEntry)
                             {
-                                Assert.True(((SearchResultEntry)partialResult[i]).DistinguishedName.Contains("Group9"));
+                                Assert.Contains("Group9", ((SearchResultEntry)partialResult[i]).DistinguishedName);
                             }
                         }
                     }
@@ -408,7 +408,7 @@ namespace System.DirectoryServicesProtocols.Tests
                     {
                         foreach (SearchResultEntry entry in response.Entries)
                         {
-                            Assert.True(entry.DistinguishedName.Contains("Group9"));
+                            Assert.Contains("Group9", entry.DistinguishedName);
                         }
                     }
                 }

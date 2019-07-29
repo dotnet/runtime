@@ -202,7 +202,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertStackTrace(Exception ex, string searchTerm)
         {
-            Assert.True(ex.StackTrace.Contains(searchTerm));
+            Assert.Contains(searchTerm, ex.StackTrace);
         }
 
         private sealed class Thrower

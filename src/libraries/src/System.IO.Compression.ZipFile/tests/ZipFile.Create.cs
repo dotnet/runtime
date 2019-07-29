@@ -35,7 +35,7 @@ namespace System.IO.Compression.Tests
                 foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
                 {
                     string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
-                    Assert.True(actualEntry.FullName.StartsWith("normal"));
+                    Assert.StartsWith("normal", actualEntry.FullName);
                     Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
                     using (Stream expectedStream = File.OpenRead(expectedFile))
                     using (Stream actualStream = actualEntry.Open())
@@ -77,7 +77,7 @@ namespace System.IO.Compression.Tests
                 using (ZipArchive archive = ZipFile.OpenRead(archivePath))
                 {
                     Assert.Equal(1, archive.Entries.Count);
-                    Assert.True(archive.Entries[0].FullName.StartsWith("empty1"));
+                    Assert.StartsWith("empty1", archive.Entries[0].FullName);
                 }
             }
         }

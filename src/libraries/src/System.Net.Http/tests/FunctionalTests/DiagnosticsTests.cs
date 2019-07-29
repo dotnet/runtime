@@ -1251,7 +1251,7 @@ namespace System.Net.Http.Functional.Tests
             if (parent.IdFormat == ActivityIdFormat.Hierarchical)
             {
                 Assert.True(requestId != null, "Request-Id was not injected when instrumentation was enabled");
-                Assert.True(requestId.StartsWith(parent.Id));
+                Assert.StartsWith(parent.Id, requestId);
                 Assert.NotEqual(parent.Id, requestId);
                 Assert.Null(traceparent);
                 Assert.Null(tracestate);
@@ -1260,7 +1260,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Null(requestId);
                 Assert.True(traceparent != null, "traceparent was not injected when W3C instrumentation was enabled");
-                Assert.True(traceparent.StartsWith($"00-{parent.TraceId.ToHexString()}-"));
+                Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                 Assert.Equal(parent.TraceStateString, tracestate);
             }
 

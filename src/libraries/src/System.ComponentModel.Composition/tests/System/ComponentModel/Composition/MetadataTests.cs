@@ -260,7 +260,7 @@ namespace System.ComponentModel.Composition
                 var metadata = export.Metadata;
             });
 
-            Assert.True(ex.Message.Contains("DuplicateMetadataName"));
+            Assert.Contains("DuplicateMetadataName", ex.Message);
         }
 
         [PartNotDiscoverable]
@@ -283,7 +283,7 @@ namespace System.ComponentModel.Composition
                 var metadata = export.Metadata;
             });
 
-            Assert.True(ex.Message.Contains("DuplicateMetadataName"));
+            Assert.Contains("DuplicateMetadataName", ex.Message);
         }
 
         [Export]
@@ -353,7 +353,7 @@ namespace System.ComponentModel.Composition
                 var metadata = export.Metadata;
             });
 
-            Assert.True(ex.Message.Contains(CompositionConstants.PartCreationPolicyMetadataName));
+            Assert.Contains(CompositionConstants.PartCreationPolicyMetadataName, ex.Message);
         }
 
         #endregion

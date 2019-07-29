@@ -21,8 +21,8 @@ namespace System.Net.Mail.Tests
             _message.EncodeHeaders(_headers, false);
 
             string encodedHeader = _headers.Get("X-Custom");
-            Assert.True(encodedHeader.StartsWith("="));
-            Assert.True(encodedHeader.EndsWith("="));
+            Assert.StartsWith("=", encodedHeader);
+            Assert.EndsWith("=", encodedHeader);
             //should contain no unicode
             Assert.False(ContainsNonAscii(encodedHeader), encodedHeader);
 

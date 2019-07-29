@@ -14,6 +14,8 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
+#pragma warning disable xUnit2009 // these are the tests for String and so should be using the explicit methods on String
+
 namespace System.Tests
 {
     //When add new tests make sure to add checks for both string and span APIs where relevant.

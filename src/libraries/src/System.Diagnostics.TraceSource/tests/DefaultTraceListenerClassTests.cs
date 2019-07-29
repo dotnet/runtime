@@ -65,7 +65,7 @@ namespace System.Diagnostics.TraceSourceTests
             var listener = new TestDefaultTraceListener();
             listener.ShouldOverrideWriteLine = false;
             listener.Fail("FAIL");
-            Assert.False(listener.Output.Contains("FAIL"));
+            Assert.DoesNotContain("FAIL", listener.Output);
         }
 
         [Fact]

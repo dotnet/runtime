@@ -215,7 +215,7 @@ namespace System.Diagnostics.Tests
                     Assert.NotNull(traceparent);
                     Assert.Equal("some=state", tracestate);
                     Assert.Equal("k=v", correlationContext);
-                    Assert.True(traceparent.StartsWith($"00-{parent.TraceId.ToHexString()}-"));
+                    Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                     Assert.Matches("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$", traceparent);
                     Assert.Null(startRequest.Headers["Request-Id"]);
                 }
@@ -413,7 +413,7 @@ namespace System.Diagnostics.Tests
                 var correlationContext = thisRequest.Headers["Correlation-Context"];
 
                 Assert.NotNull(requestId);
-                Assert.True(requestId.StartsWith(parentActivity.Id));
+                Assert.StartsWith(parentActivity.Id, requestId);
 
                 Assert.NotNull(correlationContext);
                 Assert.True(correlationContext == "k1=v1,k2=v2" || correlationContext == "k2=v2,k1=v1");
@@ -607,7 +607,7 @@ namespace System.Diagnostics.Tests
 
                         // all requests have Request-Id with proper parent Id
                         var requestId = request.Headers["Request-Id"];
-                        Assert.True(requestId.StartsWith(parentActivity.Id));
+                        Assert.StartsWith(parentActivity.Id, requestId);
                         // all request activities are siblings:
                         var childSuffix = requestId.Substring(0, parentActivity.Id.Length);
                         Assert.True(childSuffix.IndexOf('.') == childSuffix.Length - 1);

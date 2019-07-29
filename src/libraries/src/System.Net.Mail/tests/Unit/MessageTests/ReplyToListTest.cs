@@ -43,9 +43,9 @@ namespace System.Net.Mail.Tests
             string[] s = _message.Headers.GetValues("Reply-To");
             Assert.Equal(1, s.Length);
 
-            Assert.False(s[0].Contains("test@example.com"));
-            Assert.False(s[0].Contains("test2@example.com"));
-            Assert.True(s[0].Contains("test3@example.com"));
+            Assert.DoesNotContain("test@example.com", s[0]);
+            Assert.DoesNotContain("test2@example.com", s[0]);
+            Assert.Contains("test3@example.com", s[0]);
         }
 
         [Fact]
@@ -68,9 +68,9 @@ namespace System.Net.Mail.Tests
             string[] s = _message.Headers.GetValues("Reply-To");
             Assert.Equal(1, s.Length);
 
-            Assert.True(s[0].Contains("test@example.com"));
-            Assert.True(s[0].Contains("test2@example.com"));
-            Assert.True(s[0].Contains("test3@example.com"));
+            Assert.Contains("test@example.com", s[0]);
+            Assert.Contains("test2@example.com", s[0]);
+            Assert.Contains("test3@example.com", s[0]);
 
             Assert.Null(_message.ReplyTo);
         }
@@ -97,10 +97,10 @@ namespace System.Net.Mail.Tests
             string[] s = _message.Headers.GetValues("Reply-To");
             Assert.Equal(1, s.Length);
 
-            Assert.True(s[0].Contains("test@example.com"));
-            Assert.True(s[0].Contains("test2@example.com"));
-            Assert.True(s[0].Contains("test3@example.com"));
-            Assert.False(s[0].Contains("shouldnotbeset@example.com"));
+            Assert.Contains("test@example.com", s[0]);
+            Assert.Contains("test2@example.com", s[0]);
+            Assert.Contains("test3@example.com", s[0]);
+            Assert.DoesNotContain("shouldnotbeset@example.com", s[0]);
 
             Assert.Null(_message.ReplyTo);
         }

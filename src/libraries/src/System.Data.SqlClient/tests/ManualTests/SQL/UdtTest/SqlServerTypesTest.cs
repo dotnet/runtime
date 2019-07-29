@@ -357,9 +357,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             Assert.Equal(expectedType, type);
             Assert.Equal("Microsoft.SqlServer.Types", assembly);
-            Assert.True(version.StartsWith("Version"));
-            Assert.True(culture.StartsWith("Culture"));
-            Assert.True(token.StartsWith("PublicKeyToken"));
+            Assert.StartsWith("Version", version);
+            Assert.StartsWith("Culture", culture);
+            Assert.StartsWith("PublicKeyToken", token);
         }
 
         private static string ToHexString(byte[] bytes)

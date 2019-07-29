@@ -2468,7 +2468,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         TestHelper.VerifyRequestMethod(response, method);
                         string responseContent = await response.Content.ReadAsStringAsync();
-                        Assert.False(responseContent.Contains(ExpectedContent));
+                        Assert.DoesNotContain(ExpectedContent, responseContent);
                     }
                 }
             }
