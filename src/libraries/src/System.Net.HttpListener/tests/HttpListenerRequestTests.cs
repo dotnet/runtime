@@ -143,25 +143,6 @@ namespace System.Net.Tests
             Assert.Equal(hasEntityBody, request.HasEntityBody);
         }
 
-        [Theory]
-        [InlineData(100)]
-        [InlineData("-100")]
-        [InlineData("")]
-        [InlineData("abc")]
-        [InlineData("9223372036854775808")]
-        [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
-        public async Task ContentLength_ManuallySetInHeaders_ReturnsExpected(string newValue)
-        {
-            HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");
-            Assert.Equal("1", request.Headers["Content-Length"]);
-
-            request.Headers.Set("Content-Length", newValue);
-            Assert.Equal(newValue, request.Headers["Content-Length"]);
-            Assert.Equal(1, request.ContentLength64);
-
-            Assert.True(request.HasEntityBody);
-        }
-
         [Fact]
         [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
         public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()

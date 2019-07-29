@@ -48,50 +48,50 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(
             PublicEncodingRules.BER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.None,
+            (long)(X509KeyUsageCSharpStyle.None),
             "030100")]
         [InlineData(
             PublicEncodingRules.CER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign,
+            (long)(X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign),
             "0303070480")]
         [InlineData(
             PublicEncodingRules.DER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.KeyAgreement,
+            (long)(X509KeyUsageCSharpStyle.KeyAgreement),
             "03020308")]
         [InlineData(
             PublicEncodingRules.BER,
             typeof(LongFlags),
-            LongFlags.Mid | LongFlags.Max,
+            (long)(LongFlags.Mid | LongFlags.Max),
             "0309010000000080000002")]
         [InlineData(
             PublicEncodingRules.CER,
             typeof(LongFlags),
-            LongFlags.Mid | LongFlags.Min,
+            (long)(LongFlags.Mid | LongFlags.Min),
             "0309000000000080000001")]
         [InlineData(
             PublicEncodingRules.DER,
             typeof(LongFlags),
-            LongFlags.Min | LongFlags.Max,
+            (long)(LongFlags.Min | LongFlags.Max),
             "0309000000000000000003")]
         // BER: Unused bits are unmapped, regardless of value.
         [InlineData(
             PublicEncodingRules.BER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign,
+            (long)(X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign),
             "030307048F")]
         // BER: Trailing zeros are permitted.
         [InlineData(
             PublicEncodingRules.BER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign | X509KeyUsageCSharpStyle.DataEncipherment,
+            (long)(X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign | X509KeyUsageCSharpStyle.DataEncipherment),
             "03050014800000")]
         // BER: Trailing 0-bits don't have to be declared "unused"
         [InlineData(
             PublicEncodingRules.BER,
             typeof(X509KeyUsageCSharpStyle),
-            X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign | X509KeyUsageCSharpStyle.DataEncipherment,
+            (long)(X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign | X509KeyUsageCSharpStyle.DataEncipherment),
             "0303001480")]
         public static void VerifyReadNamedBitListEncodings(
             PublicEncodingRules ruleSet,
@@ -111,17 +111,17 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(
             PublicEncodingRules.BER,
             typeof(ULongFlags),
-            ULongFlags.Mid | ULongFlags.Max,
+            (ulong)(ULongFlags.Mid | ULongFlags.Max),
             "0309000000000080000001")]
         [InlineData(
             PublicEncodingRules.CER,
             typeof(ULongFlags),
-            ULongFlags.Min | ULongFlags.Mid,
+            (ulong)(ULongFlags.Min | ULongFlags.Mid),
             "0306078000000080")]
         [InlineData(
             PublicEncodingRules.DER,
             typeof(ULongFlags),
-            ULongFlags.Min | ULongFlags.Max,
+            (ulong)(ULongFlags.Min | ULongFlags.Max),
             "0309008000000000000001")]
         public static void VerifyReadNamedBitListEncodings_ULong(
             PublicEncodingRules ruleSet,

@@ -11,8 +11,8 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt")]
         [InlineData(WatcherChangeTypes.All, "C:", "foo.txt")]
-        [InlineData(0, "", "")]
-        [InlineData(0, "", null)]
+        [InlineData((WatcherChangeTypes)0, "", "")]
+        [InlineData((WatcherChangeTypes)0, "", null)]
         public static void FileSystemEventArgs_ctor(WatcherChangeTypes changeType, string directory, string name)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(changeType, directory, name);

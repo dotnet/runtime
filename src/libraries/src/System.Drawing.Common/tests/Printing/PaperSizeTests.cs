@@ -98,11 +98,11 @@ namespace System.Drawing.Printing.Tests
         [InlineData(999999, PaperKind.Custom)]
         [InlineData(int.MaxValue, PaperKind.Custom)]
         [InlineData(1 + (int)PaperKind.PrcEnvelopeNumber10Rotated, PaperKind.Custom)]
-        public void RawKind_ReturnsExpected(int rawKind, int expectedKind)
+        public void RawKind_ReturnsExpected(int rawKind, PaperKind expectedKind)
         {
             PaperSize ps = new PaperSize();
             ps.RawKind = rawKind;
-            Assert.Equal((PaperKind)expectedKind, ps.Kind);
+            Assert.Equal(expectedKind, ps.Kind);
             Assert.Equal(rawKind, ps.RawKind);
         }
 

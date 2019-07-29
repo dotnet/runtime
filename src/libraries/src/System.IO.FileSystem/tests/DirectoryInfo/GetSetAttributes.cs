@@ -85,7 +85,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(~FileAttributes.ReadOnly)]
-        [InlineData(-1)]
+        [InlineData((FileAttributes)(-1))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-invalid file attributes that throw
         public void UnixInvalidAttributes_ThrowArgumentException(FileAttributes attr)
         {
@@ -96,7 +96,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileAttributes.Temporary)]
         [InlineData(~FileAttributes.ReadOnly)]
-        [InlineData(-1)]
+        [InlineData((FileAttributes)(-1))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid file attributes that throw
         public void WindowsInvalidAttributes_ThrowArgumentException(FileAttributes attr)
         {

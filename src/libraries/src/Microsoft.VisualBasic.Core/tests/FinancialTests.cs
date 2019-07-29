@@ -55,8 +55,8 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(0.01, 37, 100.0, 0, DueDate.BegOfPeriod, -4495.27236141772, -4495.2723614177185)]
         [InlineData(-0.0083, 15, 263.0, 0, DueDate.EndOfPeriod, -3723.83765008048, -3723.837650080481)] // rate < 0
         [InlineData(0, 15, 263, 0, DueDate.EndOfPeriod, -3945, -3945)] // rate = 0
-        [InlineData(0.0083, 15, 263.0, 0, 8, -4217.37334665461, -4217.37334665461)] // type <> 0 and type <> 1
-        [InlineData(1e+25, 12, 1797, 0, 1, -1.797e+303, -1.797000000000002e+303)] // overFlow
+        [InlineData(0.0083, 15, 263.0, 0, (DueDate)8, -4217.37334665461, -4217.37334665461)] // type <> 0 and type <> 1
+        [InlineData(1e+25, 12, 1797, 0, (DueDate)1, -1.797e+303, -1.797000000000002e+303)] // overFlow
         public void FV(double Rate, double NPer, double Pmt, double PV, DueDate Due, double expectedOld, double expectedNew)
         {
             AreEqual(expectedOld, expectedNew, Financial.FV(Rate, NPer, Pmt, PV, Due));
@@ -72,12 +72,12 @@ namespace Microsoft.VisualBasic.Tests
         [ConditionalTheory(nameof(IsNotArmOrAlpine))] // some tests fail due to precision
         [InlineData(0, 1.0, 1.0, 0, 0, DueDate.EndOfPeriod, 0, 0)]
         [InlineData(0.1 / 12, 12.0, 48.0, -20000.0, 0, DueDate.BegOfPeriod, 133.00409235109, 133.00409235108953)]
-        [InlineData(0.008, 4, 12, 3000, 0, 0, -18.2133959841799, -18.21339598417987)]
-        [InlineData(0.012, 15, 79, 2387, 200, 1, -24.7440714828291, -24.74407148282907)]
-        [InlineData(0.0096, 54, 123, 4760, 0, 0, -32.2391587542905, -32.23915875429054)]
-        [InlineData(-0.008, 4, 12, 3000, 0, 0, 17.7814213334481, 17.781421333448126)] // rate < 0
-        [InlineData(0, 4, 12, 3000, 0, 0, 0, 0)] // rate = 0
-        [InlineData(0.008, 4, 12, 3000, 0, 7, -18.0688452224006, -18.068845222400633)] // type <> 0 and type <> 1
+        [InlineData(0.008, 4, 12, 3000, 0, (DueDate)0, -18.2133959841799, -18.21339598417987)]
+        [InlineData(0.012, 15, 79, 2387, 200, (DueDate)1, -24.7440714828291, -24.74407148282907)]
+        [InlineData(0.0096, 54, 123, 4760, 0, (DueDate)0, -32.2391587542905, -32.23915875429054)]
+        [InlineData(-0.008, 4, 12, 3000, 0, (DueDate)0, 17.7814213334481, 17.781421333448126)] // rate < 0
+        [InlineData(0, 4, 12, 3000, 0, (DueDate)0, 0, 0)] // rate = 0
+        [InlineData(0.008, 4, 12, 3000, 0, (DueDate)7, -18.0688452224006, -18.068845222400633)] // type <> 0 and type <> 1
         public void IPmt(double Rate, double Per, double NPer, double PV, double FV, DueDate Due, double expectedOld, double expectedNew)
         {
             AreEqual(expectedOld, expectedNew, Financial.IPmt(Rate, Per, NPer, PV, FV, Due));
@@ -93,9 +93,9 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [InlineData(0.008, -4, 12, 3000, 0, 0)]
-        [InlineData(0.008, 4, -12, 3000, 0, 0)]
-        [InlineData(0.008, 12, 4, 3000, 0, 0)]
+        [InlineData(0.008, -4, 12, 3000, 0, (DueDate)0)]
+        [InlineData(0.008, 4, -12, 3000, 0, (DueDate)0)]
+        [InlineData(0.008, 12, 4, 3000, 0, (DueDate)0)]
         public void IPmt_Invalid(double Rate, double Per, double NPer, double PV, double FV, DueDate Due)
         {
             Assert.Throws<ArgumentException>(() => Financial.IPmt(Rate, Per, NPer, PV, FV, Due));
@@ -150,7 +150,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(0.0096, 1500.0, -70000.0, 10000, DueDate.EndOfPeriod, 55.2706372559078, 55.2706372559078)]
         [InlineData(-0.0072, -350.0, 7000.0, 0, DueDate.EndOfPeriod, 18.6174997871788, 18.617499787178836)] // rate < 0
         [InlineData(0, -350.0, 7000.0, 0, DueDate.EndOfPeriod, 20, 20)] // rate = 0
-        [InlineData(0.0072, -350.0, 7000.0, 0, 7, 21.5052532943763, 21.505253294376303)] // type <> 0 and type <> 1
+        [InlineData(0.0072, -350.0, 7000.0, 0, (DueDate)7, 21.5052532943763, 21.505253294376303)] // type <> 0 and type <> 1
         [InlineData(0.0072, -9000.0, 200.0, 0, DueDate.EndOfPeriod, 0.0223039109268324, 0.02230391092683241)] // pmt > pv
         public void NPer(double Rate, double Pmt, double PV, double FV, DueDate Due, double expectedOld, double expectedNew)
         {
@@ -194,7 +194,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(0.0012, 5, 500, 0, DueDate.EndOfPeriod, -100.360287827152, -100.36028782715209)]
         [InlineData(-0.007, 25, -3000, 0, DueDate.EndOfPeriod, 109.386677326841, 109.38667732684138)] // rate < 0
         [InlineData(0.007, -25, 3000, 0, DueDate.EndOfPeriod, 110.224540233228, 110.22454023322811)] // nper < 0
-        [InlineData(0.007, 25, 3000, 0, 7, -130.31235375693, -130.31235375692967)] // type <> 0 and type <> 1
+        [InlineData(0.007, 25, 3000, 0, (DueDate)7, -130.31235375693, -130.31235375692967)] // type <> 0 and type <> 1
         [InlineData(0, 25, 3000, 0, DueDate.EndOfPeriod, -120, -120)] // rate = 0
         public void Pmt(double Rate, double NPer, double PV, double FV, DueDate Due, double expectedOld, double expectedNew)
         {
@@ -215,7 +215,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(0.012, 15, 79, 2387, 200, DueDate.BegOfPeriod, -23.1486833595771, -23.14868335957714)]
         [InlineData(0.0096, 54, 123, 4760, 0, DueDate.EndOfPeriod, -33.8688007923638, -33.86880079236377)]
         [InlineData(-0.008, 4, 12, 3000, 0, DueDate.EndOfPeriod, -254.972824918514, -254.97282491851354)] // rate < 0
-        [InlineData(0.008, 4, 12, 3000, 0, 7, -243.03222512529, -243.03222512529004)] // type <> 0 and type <> 1
+        [InlineData(0.008, 4, 12, 3000, 0, (DueDate)7, -243.03222512529, -243.03222512529004)] // type <> 0 and type <> 1
         public void PPmt(double Rate, double Per, double NPer, double PV, double FV, DueDate Due, double expectedOld, double expectedNew)
         {
             AreEqual(expectedOld, expectedNew, Financial.PPmt(Rate, Per, NPer, PV, FV, Due));

@@ -261,7 +261,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Theory]
-        [InlineData(PublicEncodingRules.BER, 0, "D00100")]
+        [InlineData(PublicEncodingRules.BER, "0", "D00100")]
         [InlineData(PublicEncodingRules.BER, "1339673755198158349044581307228491520", "D0100102030405060708090A0B0C0D0E0F00")]
         [InlineData(PublicEncodingRules.CER, "320182027492359845421654932427609477120", "D01100F0E0D0C0B0A090807060504030201000")]
         [InlineData(PublicEncodingRules.DER, "-1339673755198158349044581307228491520", "D010FEFDFCFBFAF9F8F7F6F5F4F3F2F1F100")]

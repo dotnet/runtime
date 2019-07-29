@@ -31,8 +31,8 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(PipeDirection.In, 999)]
-        [InlineData(PipeDirection.Out, 999)]
+        [InlineData(PipeDirection.In, (HandleInheritability)999)]
+        [InlineData(PipeDirection.Out, (HandleInheritability)999)]
         public static void ServerBadInheritabilityThrows(PipeDirection direction, HandleInheritability inheritability)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new AnonymousPipeServerStream(direction, inheritability));

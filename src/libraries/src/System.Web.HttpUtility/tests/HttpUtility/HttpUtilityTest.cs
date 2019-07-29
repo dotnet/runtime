@@ -258,9 +258,9 @@ namespace System.Web.Tests
         [MemberData(nameof(HtmlEncodeData))]
         [InlineData(null, null)]
         [InlineData(2, "2")]
-        public void HtmlEncodeObject(string decoded, string encoded)
+        public void HtmlEncodeObject(object decoded, string encoded)
         {
-            Assert.Equal(encoded, HttpUtility.HtmlEncode((object)decoded));
+            Assert.Equal(encoded, HttpUtility.HtmlEncode(decoded));
         }
 
         [Theory]

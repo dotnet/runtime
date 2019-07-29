@@ -556,11 +556,11 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [InlineData('\0', "\0")]
-        [InlineData('\uffff', "\uffff")]
-        [InlineData('a', "a")]
-        [InlineData('A', "a")]
-        [InlineData('1', "1")]
+        [InlineData('\0', '\0')]
+        [InlineData('\uffff', '\uffff')]
+        [InlineData('a', 'a')]
+        [InlineData('A', 'a')]
+        [InlineData('1', '1')]
         public void LCase(char value, char expected)
         {
             Assert.Equal(expected, Strings.LCase(value));
@@ -580,11 +580,11 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [InlineData('\0', "\0")]
-        [InlineData('\uffff', "\uffff")]
-        [InlineData('a', "A")]
-        [InlineData('A', "A")]
-        [InlineData('1', "1")]
+        [InlineData('\0', '\0')]
+        [InlineData('\uffff', '\uffff')]
+        [InlineData('a', 'A')]
+        [InlineData('A', 'A')]
+        [InlineData('1', '1')]
         public void UCase(char value, char expected)
         {
             Assert.Equal(expected, Strings.UCase(value));
