@@ -2015,7 +2015,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         fgArgTabEntry* argTabEntry = comp->gtArgEntryByNode(call, putArgStkNode);
         assert(argTabEntry);
         unsigned callerArgNum = argTabEntry->argNum - calleeNonStandardArgCount;
-        noway_assert(callerArgNum < comp->info.compArgsCount);
 
         unsigned   callerArgLclNum = callerArgNum;
         LclVarDsc* callerArgDsc    = comp->lvaTable + callerArgLclNum;
