@@ -365,7 +365,6 @@ struct ILStubEHClause
     DWORD dwTypeToken;
 };
 
-
 class ILCodeLabel;
 class ILCodeStream;
 //---------------------------------------------------------------------------------------
