@@ -38,8 +38,8 @@ namespace System.Composition.UnitTests
             var c = CreateContainer(typeof(LogA), typeof(LogB));
             var x = Assert.Throws<CompositionFailedException>(() =>
                 c.GetExport<ILog>());
-            Assert.True(x.Message.Contains("LogA"));
-            Assert.True(x.Message.Contains("LogB"));
+            Assert.Contains("LogA", x.Message);
+            Assert.Contains("LogB", x.Message);
         }
 
         [Fact]
@@ -49,8 +49,8 @@ namespace System.Composition.UnitTests
             var c = CreateContainer(typeof(LogA), typeof(LogB), typeof(UsesLog));
             var x = Assert.Throws<CompositionFailedException>(() =>
                 c.GetExport<UsesLog>());
-            Assert.True(x.Message.Contains("LogA"));
-            Assert.True(x.Message.Contains("LogB"));
+            Assert.Contains("LogA", x.Message);
+            Assert.Contains("LogB", x.Message);
         }
     }
 }

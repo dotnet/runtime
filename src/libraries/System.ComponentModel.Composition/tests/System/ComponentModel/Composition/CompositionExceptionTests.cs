@@ -413,7 +413,7 @@ namespace System.ComponentModel.Composition
 
                 if (rootCauseCount == 1)
                 {
-                    Assert.True(line.Contains(SR.CompositionException_SingleErrorWithSinglePath));
+                    Assert.Contains(SR.CompositionException_SingleErrorWithSinglePath, line);
                 }
                 else
                 {

@@ -55,7 +55,7 @@ namespace Microsoft.VisualBasic.ApplicationServices.Tests
             // Property is independent of the actual assembly.
             var assemblyInfo = new AssemblyInfo(Assembly.GetExecutingAssembly());
             var stackTrace = assemblyInfo.StackTrace;
-            Assert.True(stackTrace.Contains(nameof(AssemblyInfoTests)));
+            Assert.Contains(nameof(AssemblyInfoTests), stackTrace);
         }
 
         [Fact]

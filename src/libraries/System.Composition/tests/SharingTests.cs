@@ -330,7 +330,7 @@ namespace System.Composition.UnitTests
             }
             catch (Exception ex)
             {
-                Assert.True(ex.Message.Contains("The component (unknown) cannot be created outside the Boundary sharing boundary"));
+                Assert.Contains("The component (unknown) cannot be created outside the Boundary sharing boundary", ex.Message);
             }
         }
 

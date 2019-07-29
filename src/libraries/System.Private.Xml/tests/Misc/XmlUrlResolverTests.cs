@@ -27,7 +27,7 @@ namespace System.Xml.Tests
             Uri resolvedUri = resolver.ResolveUri(baseUri, path);
 
             Assert.Equal(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, path)), resolvedUri.LocalPath);
-            Assert.True(resolvedUri.LocalPath.EndsWith(path.Replace('/', Path.DirectorySeparatorChar)));
+            Assert.EndsWith(path.Replace('/', Path.DirectorySeparatorChar), resolvedUri.LocalPath);
         }
 
         [Theory]

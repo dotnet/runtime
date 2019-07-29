@@ -117,10 +117,10 @@ namespace System.Net.Mail.Tests
             Assert.Equal(1, replyToHeaders.Length);
 
             //all headers that were set via properties should remain
-            Assert.True(fromHeaders[0].Contains(validFrom));
-            Assert.True(toHeaders[0].Contains(validTo));
-            Assert.True(ccHeaders[0].Contains(validCc));
-            Assert.True(replyToHeaders[0].Contains(validReplyTo));
+            Assert.Contains(validFrom, fromHeaders[0]);
+            Assert.Contains(validTo, toHeaders[0]);
+            Assert.Contains(validCc, ccHeaders[0]);
+            Assert.Contains(validReplyTo, replyToHeaders[0]);
         }
 
         [Fact]
@@ -140,9 +140,9 @@ namespace System.Net.Mail.Tests
             Assert.True(_message.Headers.GetValues("X-Priority").Length == 1, "x-priority was not set");
             Assert.True(_message.Headers.GetValues("Priority").Length == 1, "priority was not set");
 
-            Assert.True(_message.Headers.GetValues("Importance")[0].Contains("low"));
-            Assert.True(_message.Headers.GetValues("X-Priority")[0].Contains("5"));
-            Assert.True(_message.Headers.GetValues("Priority")[0].Contains("non-urgent"));
+            Assert.Contains("low", _message.Headers.GetValues("Importance")[0]);
+            Assert.Contains("5", _message.Headers.GetValues("X-Priority")[0]);
+            Assert.Contains("non-urgent", _message.Headers.GetValues("Priority")[0]);
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal("correct subject", _message.Subject);
             Assert.True(_message.Headers.GetValues("Subject").Length == 1);
-            Assert.True(_message.Headers.GetValues("Subject")[0].Contains("correct subject"));
+            Assert.Contains("correct subject", _message.Headers.GetValues("Subject")[0]);
         }
 
         [Fact]

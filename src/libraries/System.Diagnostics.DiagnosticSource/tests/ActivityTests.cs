@@ -585,7 +585,7 @@ namespace System.Diagnostics.Tests
                 activity.SetParentId(parentId);
                 activity.Start();
                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-                Assert.True(activity.Id.StartsWith(parentId));
+                Assert.StartsWith(parentId, activity.Id);
             }).Dispose();
         }
 
