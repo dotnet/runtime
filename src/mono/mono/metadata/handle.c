@@ -399,14 +399,6 @@ mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_
 	return MONO_HANDLE_NEW (MonoArray, mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, error));
 }
 
-uintptr_t
-mono_array_handle_length (MonoArrayHandle arr)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return MONO_HANDLE_RAW (arr)->max_length;
-}
-
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {

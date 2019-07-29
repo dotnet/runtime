@@ -541,9 +541,6 @@ MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, ui
 MonoArrayHandle
 mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
-uintptr_t
-mono_array_handle_length (MonoArrayHandle arr);
-
 #define mono_array_handle_setref(array,index,value) MONO_HANDLE_ARRAY_SETREF ((array), (index), (value))
 
 void

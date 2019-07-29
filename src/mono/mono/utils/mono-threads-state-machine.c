@@ -15,25 +15,25 @@
 #include <errno.h>
 
 /*thread state helpers*/
-static inline int
+static int
 get_thread_state (int thread_state)
 {
 	return thread_state & THREAD_STATE_MASK;
 }
 
-static inline int
+static int
 get_thread_suspend_count (int thread_state)
 {
 	return (thread_state & THREAD_SUSPEND_COUNT_MASK) >> THREAD_SUSPEND_COUNT_SHIFT;
 }
 
-static inline gboolean
+static gboolean
 get_thread_no_safepoints (int thread_state)
 {
 	return (thread_state & THREAD_SUSPEND_NO_SAFEPOINTS_MASK) >> THREAD_SUSPEND_NO_SAFEPOINTS_SHIFT;
 }
 
-static inline int
+static int
 build_thread_state (int thread_state, int suspend_count, gboolean no_safepoints)
 {
 	g_assert (suspend_count >= 0 && suspend_count <= THREAD_SUSPEND_COUNT_MAX);

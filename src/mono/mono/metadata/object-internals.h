@@ -51,9 +51,7 @@
 #define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
 	if (G_UNLIKELY (!(arg)))				\
 	{							\
-		ERROR_DECL (error);				\
 		mono_error_set_argument_null (error, #arg, "");	\
-		mono_error_set_pending_exception (error);	\
 		return retval;					\
 	}							\
 } while (0)
@@ -185,6 +183,15 @@ struct _MonoString {
  * both vectors and multidimensional arrays.
  */
 #define mono_array_length_internal(array) ((array)->max_length)
+
+static inline
+uintptr_t
+mono_array_handle_length (MonoArrayHandle arr)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	return mono_array_length_internal (MONO_HANDLE_RAW (arr));
+}
 
 // Equivalent to mono_array_addr_with_size, except:
 // 1. A macro instead of a function -- the types of size and index are open.

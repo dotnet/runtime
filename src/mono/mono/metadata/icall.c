@@ -6921,10 +6921,14 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 
 	MonoArrayHandle res = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, len, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
+
+	// FIXME MONO_ENTER_NO_SAFEPOINTS instead of pin/gchandle.
+
 	uint32_t h;
 	gpointer array_base = MONO_ARRAY_HANDLE_PIN (res, guint8, 0, &h);
 	memcpy (array_base, ptr, len);
 	mono_gchandle_free_internal (h);
+
 	return res;
 }
 
@@ -7082,22 +7086,22 @@ ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegateHandle delegate
 
 /* System.Buffer */
 
-static inline gint32 
-mono_array_get_byte_length (MonoArray *array)
+static gint32
+mono_array_get_byte_length (MonoArrayHandle array)
 {
-	MonoClass *klass;
 	int length;
-	int i;
 
-	klass = array->obj.vtable->klass;
+	MonoClass * const klass = mono_handle_class (array);
 
-	if (array->bounds == NULL)
-		length = array->max_length;
-	else {
+	// This resembles mono_array_get_length, but adds the loop.
+
+	if (mono_handle_array_has_bounds (array)) {
 		length = 1;
-		int klass_rank = m_class_get_rank (klass);
-		for (i = 0; i < klass_rank; ++ i)
-			length *= array->bounds [i].length;
+		const int klass_rank = m_class_get_rank (klass);
+		for (int i = 0; i < klass_rank; ++ i)
+			length *= MONO_HANDLE_GETVAL (array, bounds [i].length);
+	} else {
+		length = mono_array_handle_length (array);
 	}
 
 	switch (m_class_get_byval_arg (m_class_get_element_class (klass))->type) {
@@ -7125,8 +7129,8 @@ mono_array_get_byte_length (MonoArray *array)
 	}
 }
 
-gint32 
-ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) 
+gint32
+ves_icall_System_Buffer_ByteLengthInternal (MonoArrayHandle array, MonoError* error)
 {
 	return mono_array_get_byte_length (array);
 }
@@ -7138,34 +7142,38 @@ ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32
 }
 
 MonoBoolean
-ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, MonoArray *dest, gint32 dest_offset, gint32 count) 
+ves_icall_System_Buffer_BlockCopyInternal (MonoArrayHandle src, gint32 src_offset, MonoArrayHandle dest, gint32 dest_offset, gint32 count, MonoError* error)
 {
-	guint8 *src_buf, *dest_buf;
-
 	if (count < 0) {
-		ERROR_DECL (error);
 		mono_error_set_argument (error, "count", "is negative");
-		mono_error_set_pending_exception (error);
 		return FALSE;
 	}
 
-	g_assert (count >= 0);
-
 	/* This is called directly from the class libraries without going through the managed wrapper */
-	MONO_CHECK_ARG_NULL (src, FALSE);
-	MONO_CHECK_ARG_NULL (dest, FALSE);
+	MONO_CHECK_ARG_NULL_HANDLE (src, FALSE);
+	MONO_CHECK_ARG_NULL_HANDLE (dest, FALSE);
 
 	/* watch out for integer overflow */
 	if ((src_offset > mono_array_get_byte_length (src) - count) || (dest_offset > mono_array_get_byte_length (dest) - count))
 		return FALSE;
 
-	src_buf = (guint8 *)src->vector + src_offset;
-	dest_buf = (guint8 *)dest->vector + dest_offset;
+	MONO_ENTER_NO_SAFEPOINTS;
 
-	if (src != dest)
+	guint8 const * const src_buf = (guint8*)MONO_HANDLE_RAW (src)->vector + src_offset;
+	guint8* const dest_buf = (guint8*)MONO_HANDLE_RAW (dest)->vector + dest_offset;
+
+#if !HOST_WIN32
+
+	// Windows memcpy is memmove and checks for overlap anyway, so skip
+	// the check here that would not help.
+
+	if (MONO_HANDLE_RAW (src) != MONO_HANDLE_RAW (dest))
 		memcpy (dest_buf, src_buf, count);
 	else
+#endif
 		memmove (dest_buf, src_buf, count); /* Source and dest are the same array */
+
+	MONO_EXIT_NO_SAFEPOINTS;
 
 	return TRUE;
 }
@@ -7285,7 +7293,7 @@ ves_icall_System_Environment_get_MachineName (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline int
+static int
 mono_icall_get_platform (void)
 {
 #if defined(__MACH__)
@@ -7312,7 +7320,7 @@ ves_icall_System_Environment_get_Platform (void)
 }
 
 #ifndef HOST_WIN32
-static inline MonoStringHandle
+static MonoStringHandle
 mono_icall_get_new_line (MonoError *error)
 {
 	error_init (error);
