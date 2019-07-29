@@ -8665,19 +8665,14 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	   
 	switch (command) {
 	case CMD_THREAD_GET_NAME: {
-		guint32 name_len;
-		gunichar2 *s = mono_thread_get_name (thread, &name_len);
+		char *s = mono_thread_get_name_utf8 (thread_obj);
 
 		if (!s) {
 			buffer_add_int (buf, 0);
 		} else {
-			char *name;
-			glong len;
-
-			name = g_utf16_to_utf8 (s, name_len, NULL, &len, NULL);
-			g_assert (name);
+			const size_t len = strlen (s);
 			buffer_add_int (buf, len);
-			buffer_add_data (buf, (guint8*)name, len);
+			buffer_add_data (buf, (guint8*)s, len);
 			g_free (s);
 		}
 		break;

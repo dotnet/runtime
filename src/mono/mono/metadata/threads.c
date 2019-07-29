@@ -1822,7 +1822,7 @@ mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len)
  * mono_thread_get_name_utf8:
  * \returns the name of the thread in UTF-8.
  * Return NULL if the thread has no name.
- * The returned memory is owned by the caller.
+ * The returned memory is owned by the caller (g_free it).
  */
 char *
 mono_thread_get_name_utf8 (MonoThread *thread)
