@@ -63,6 +63,7 @@
     <Content Include="LinkXml\CanPreserveAnExportedType.xml" />
     <Content Include="LinkXml\CanPreserveExportedTypesUsingRegex.xml" />
     <Content Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library1.xml" />
+    <Content Include="LinkXml\Dependencies\EmbeddedLinkXmlFromCopyAssemblyIsProcessed\CopyLibrary.xml" />
     <Content Include="LinkXml\FeatureExclude\OnAssembly.xml" />
     <Content Include="LinkXml\FeatureExclude\OnEvent.xml" />
     <Content Include="LinkXml\FeatureExclude\OnField.xml" />
