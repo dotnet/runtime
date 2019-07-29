@@ -1769,19 +1769,19 @@ namespace System.Text.Json.Tests
 
                 Assert.Throws<ObjectDisposedException>(() =>
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(buffer);
+                    using var writer = new Utf8JsonWriter(buffer);
                     root.WriteTo(writer);
                 });
 
                 Assert.Throws<ObjectDisposedException>(() =>
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(buffer);
+                    using var writer = new Utf8JsonWriter(buffer);
                     doc.WriteTo(writer);
                 });
 
                 Assert.Throws<ObjectDisposedException>(() =>
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(buffer);
+                    using var writer = new Utf8JsonWriter(buffer);
                     property.WriteTo(writer);
                 });
             }
@@ -1831,7 +1831,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<InvalidOperationException>(() =>
             {
                 var buffer = new ArrayBufferWriter<byte>(1024);
-                Utf8JsonWriter writer = new Utf8JsonWriter(buffer);                
+                using var writer = new Utf8JsonWriter(buffer);
                 root.WriteTo(writer);
             });
         }
@@ -3693,7 +3693,7 @@ namespace System.Text.Json.Tests
             var expectedNonIndentedJson = $"[{OneQuarticGoogol}]";
             using (JsonDocument doc = JsonDocument.Parse($"[ {OneQuarticGoogol} ]"))
             {
-                var writer = new Utf8JsonWriter(buffer, default);
+                using var writer = new Utf8JsonWriter(buffer, default);
                 doc.WriteTo(writer);
                 writer.Flush();
 

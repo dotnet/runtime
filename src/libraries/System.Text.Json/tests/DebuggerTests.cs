@@ -30,7 +30,7 @@ namespace System.Text.Json.Tests
         public void DefaultUtf8JsonWriter()
         {
             // Validating that we don't throw on new object
-            Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
+            using var writer = new Utf8JsonWriter(new MemoryStream());
             GetDebuggerDisplayProperty(writer);
         }
 
