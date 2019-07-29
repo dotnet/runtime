@@ -1004,7 +1004,7 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     IfFailThrow(pImport->EnumTypeDefInit(&hTypeDefEnum));
 
     // Now loop through all the classdefs adding the CVID and scope to the hash
-    while(pImport->EnumTypeDefNext(&hTypeDefEnum, &td)) {
+    while(pImport->EnumNext(&hTypeDefEnum, &td)) {
         
         AddAvailableClassHaveLock(pModule,
                                   td,
@@ -1012,7 +1012,7 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
                                   szWinRtNamespacePrefix,
                                   cchWinRtNamespacePrefix);
     }
-    pImport->EnumTypeDefClose(&hTypeDefEnum);
+    pImport->EnumClose(&hTypeDefEnum);
 }
 
 

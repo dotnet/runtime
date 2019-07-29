@@ -177,31 +177,6 @@ class WinMDInternalImportRO : public IMDInternalImport, IWinMDImport, IMetaModel
         return m_pRawInternalImport->EnumTypeDefInit(phEnum);
     }
 
-    STDMETHODIMP_(ULONG) EnumTypeDefGetCount(
-        HENUMInternal *phEnum)         // [IN] the enumerator to retrieve information  
-    {
-        return m_pRawInternalImport->EnumTypeDefGetCount(phEnum);
-    }
-
-    STDMETHODIMP_(void) EnumTypeDefReset(
-        HENUMInternal *phEnum)         // [IN] the enumerator to retrieve information  
-    {
-        return m_pRawInternalImport->EnumTypeDefReset(phEnum);
-    }
-
-    STDMETHODIMP_(bool) EnumTypeDefNext(      // return hresult
-        HENUMInternal *phEnum,              // [IN] input enum
-        mdTypeDef   *ptd)              // [OUT] return token
-    {
-        return m_pRawInternalImport->EnumTypeDefNext(phEnum, ptd);
-    }
-
-    STDMETHODIMP_(void) EnumTypeDefClose(
-        HENUMInternal *phEnum)         // [IN] the enumerator to retrieve information  
-    {
-        return m_pRawInternalImport->EnumTypeDefClose(phEnum);
-    }
-
     //*****************************************************************************
     // enumerator for MethodImpl
     //*****************************************************************************
@@ -326,43 +301,6 @@ ErrExit:
 
 ErrExit:
         return hr;
-    }
-
-    STDMETHODIMP_(bool) EnumNext(
-        HENUMInternal *phEnum,              // [IN] the enumerator to retrieve information  
-        mdToken     *ptk)              // [OUT] token to scope the search
-    {
-        return m_pRawInternalImport->EnumNext(phEnum, ptk);
-    }
-
-    STDMETHODIMP_(ULONG) EnumGetCount(
-        HENUMInternal *phEnum)         // [IN] the enumerator to retrieve information  
-    {
-        return m_pRawInternalImport->EnumGetCount(phEnum);
-    }
-
-    STDMETHODIMP_(void) EnumReset(
-        HENUMInternal *phEnum)         // [IN] the enumerator to be reset  
-    {
-        return m_pRawInternalImport->EnumReset(phEnum);
-    }
-
-    STDMETHODIMP_(void) EnumClose(
-        HENUMInternal *phEnum)         // [IN] the enumerator to be closed
-    {
-        return m_pRawInternalImport->EnumClose(phEnum);
-    }
-
-    //*****************************************
-    // Enumerator helpers for declsecurity.
-    //*****************************************
-    __checkReturn 
-    STDMETHODIMP EnumPermissionSetsInit(      // return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        CorDeclSecurity Action,             // [IN] Action to scope the search
-        HENUMInternal *phEnum)         // [OUT] the enumerator to fill 
-    {
-        return m_pRawInternalImport->EnumPermissionSetsInit(tkParent, Action, phEnum);
     }
 
     //*****************************************
@@ -1489,27 +1427,6 @@ ErrExit:
     {
         return m_pWinMDAdapter->GetVersionString(pVer);
     }
-
-    __checkReturn 
-    STDMETHODIMP SafeAndSlowEnumCustomAttributeByNameInit(// return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
-        HENUMInternal *phEnum)              // [OUT] The enumerator
-    {
-        WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(&szName);
-        return m_pRawInternalImport->SafeAndSlowEnumCustomAttributeByNameInit(tkParent, szName, phEnum);
-    }
-    __checkReturn 
-    STDMETHODIMP SafeAndSlowEnumCustomAttributeByNameNext(// return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
-        HENUMInternal *phEnum,              // [IN] The enumerator
-        mdCustomAttribute *mdAttribute)      // [OUT] The custom attribute that was found 
-    {
-        WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(&szName);
-        return m_pRawInternalImport->SafeAndSlowEnumCustomAttributeByNameNext(tkParent, szName, phEnum, mdAttribute);
-    }
-
 
     __checkReturn 
     STDMETHODIMP GetTypeDefRefTokenInTypeSpec(// return S_FALSE if enclosing type does not have a token

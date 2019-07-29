@@ -35,7 +35,6 @@
 #endif
 
 #ifdef FEATURE_PAL
-#include "coreclrloader.h"
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
 DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
@@ -308,33 +307,8 @@ extern CQuickBytes *        g_szBuf_JUMPPT;
 extern CQuickBytes *        g_szBuf_UnquotedProperName;
 extern CQuickBytes *        g_szBuf_ProperName;
 
-#ifdef FEATURE_PAL
-CoreCLRLoader *g_loader;
-#endif
-MetaDataGetDispenserFunc metaDataGetDispenser;
-GetMetaDataInternalInterfaceFunc getMetaDataInternalInterface;
-GetMetaDataInternalInterfaceFromPublicFunc getMetaDataInternalInterfaceFromPublic;
-GetMetaDataPublicInterfaceFromInternalFunc getMetaDataPublicInterfaceFromInternal;
-
 BOOL Init()
 {
-#ifdef FEATURE_PAL
-    g_loader = CoreCLRLoader::Create(g_pszExeFile);
-    if (g_loader == NULL)
-    {
-        return FALSE;
-    }
-    metaDataGetDispenser = (MetaDataGetDispenserFunc)g_loader->LoadFunction("MetaDataGetDispenser");
-    getMetaDataInternalInterface = (GetMetaDataInternalInterfaceFunc)g_loader->LoadFunction("GetMetaDataInternalInterface");
-    getMetaDataInternalInterfaceFromPublic = (GetMetaDataInternalInterfaceFromPublicFunc)g_loader->LoadFunction("GetMetaDataInternalInterfaceFromPublic");
-    getMetaDataPublicInterfaceFromInternal = (GetMetaDataPublicInterfaceFromInternalFunc)g_loader->LoadFunction("GetMetaDataPublicInterfaceFromInternal");
-#else // FEATURE_PAL
-    metaDataGetDispenser = (MetaDataGetDispenserFunc)MetaDataGetDispenser;
-    getMetaDataInternalInterface = (GetMetaDataInternalInterfaceFunc)GetMetaDataInternalInterface;
-    getMetaDataInternalInterfaceFromPublic = (GetMetaDataInternalInterfaceFromPublicFunc)GetMetaDataInternalInterfaceFromPublic;
-    getMetaDataPublicInterfaceFromInternal = (GetMetaDataPublicInterfaceFromInternalFunc)GetMetaDataPublicInterfaceFromInternal;
-#endif // FEATURE_PAL
-
     g_szBuf_KEYWORD = new CQuickBytes();
     g_szBuf_COMMENT = new CQuickBytes();
     g_szBuf_ERRORMSG = new CQuickBytes();
@@ -487,13 +461,6 @@ void Uninit()
     {
         SDELETE(g_szBuf_ProperName);
     }
-    
-#ifdef FEATURE_PAL
-    if (g_loader != NULL)
-    {
-        g_loader->Finish();
-    }
-#endif
 } // Uninit
 
 HRESULT IsClassRefInScope(mdTypeRef classref)
@@ -581,7 +548,7 @@ BOOL EnumClasses()
         return FALSE;
     }
     
-    g_NumClasses = g_pImport->EnumTypeDefGetCount(&hEnum);
+    g_NumClasses = g_pImport->EnumGetCount(&hEnum);
 
     g_tkClassToDump = 0;
 
@@ -622,7 +589,7 @@ BOOL EnumClasses()
     }
 
     // fill the list of typedef tokens
-    while(g_pImport->EnumTypeDefNext(&hEnum, &g_cl_list[i]))
+    while(g_pImport->EnumNext(&hEnum, &g_cl_list[i]))
     {
         mdToken     tkEnclosing;
         
@@ -676,7 +643,7 @@ BOOL EnumClasses()
         }
         i++;
     }
-    g_pImport->EnumTypeDefClose(&hEnum);
+    g_pImport->EnumClose(&hEnum);
     // check nesting consistency (circular nesting, invalid enclosers)
     for(i = 0; i < g_NumClasses; i++)
     {
@@ -1628,7 +1595,7 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             IUnknown *pUnk; 
             if(FAILED(pIAMDI[0]->QueryInterface(IID_IUnknown, (void**)&pUnk))) goto AssignAndReturn;
 
-            if (FAILED(getMetaDataInternalInterfaceFromPublic(
+            if (FAILED(GetMetaDataInternalInterfaceFromPublic(
                 pUnk,
                 IID_IMDInternalImport,
                 (LPVOID *)ppIMDInew)))
@@ -6853,7 +6820,7 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (metaDataGetDispenser(CLSID_CorMetaDataDispenser,
+        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
             IID_IMetaDataDispenserEx, (void **)&g_pDisp))
                 {
                     WCHAR *pwzObjFileName=NULL;
@@ -6875,7 +6842,7 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
         HRESULT hr = S_OK;
         if(g_pDisp == NULL)
         {
-            hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
                 IID_IMetaDataDispenserEx, (void **)&g_pDisp);
         }
         if(SUCCEEDED(hr))
@@ -7363,7 +7330,7 @@ BOOL DumpFile()
         g_cbMetaData = VAL32(g_CORHeader->MetaData.Size);
     }
 
-    if (FAILED(getMetaDataInternalInterface(
+    if (FAILED(GetMetaDataInternalInterface(
         (BYTE *)g_pMetaData,
         g_cbMetaData,
         openFlags,
@@ -7377,7 +7344,7 @@ BOOL DumpFile()
     }
 
     TokenSigInit(g_pImport);
-    if (FAILED(metaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+    if (FAILED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
     {
         if (g_fDumpHeader)
             DumpHeader(g_CORHeader, g_pFile);

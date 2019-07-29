@@ -992,14 +992,14 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             if(pdwSize && *pdwSize)
             {
                 pbManifest += sizeof(DWORD);
-                if (SUCCEEDED(hr = getMetaDataInternalInterface(
+                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
                     pbManifest,
                     VAL32(*pdwSize),
                     ofRead,
                     IID_IMDInternalImport,
                     (LPVOID *)&pParam->pImport)))
                 {
-                    if (FAILED(hr = getMetaDataPublicInterfaceFromInternal(
+                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
                         pParam->pImport,
                         IID_IMetaDataAssemblyImport,
                         (LPVOID *)&pParam->pAssemblyImport)))

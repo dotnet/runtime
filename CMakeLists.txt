@@ -160,7 +160,6 @@ endif()
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/pal)
     add_subdirectory(src/coreclr/hosts)
-    add_subdirectory(src/ildasm/unixcoreclrloader)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 # Add this subdir. We install the headers for the jit.

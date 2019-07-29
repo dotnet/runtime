@@ -98,19 +98,6 @@ public:
     STDMETHODIMP EnumTypeDefInit(           // return hresult
         HENUMInternal *phEnum);             // [OUT] buffer to fill for enumerator data
 
-    STDMETHODIMP_(ULONG) EnumTypeDefGetCount(
-        HENUMInternal *phEnum);             // [IN] the enumerator to retrieve information  
-
-    STDMETHODIMP_(void) EnumTypeDefReset(
-        HENUMInternal *phEnum);             // [IN] the enumerator to retrieve information  
-
-    STDMETHODIMP_(bool) EnumTypeDefNext(    // return hresult
-        HENUMInternal *phEnum,              // [IN] input enum
-        mdTypeDef   *ptd);                  // [OUT] return token
-
-    STDMETHODIMP_(void) EnumTypeDefClose(
-        HENUMInternal *phEnum);             // [IN] the enumerator to retrieve information  
-
     //*****************************************************************************
     // enumerator for MethodImpl
     //*****************************************************************************
@@ -163,25 +150,6 @@ public:
         DWORD       tkKind,                 // [IN] which table to work on
         HENUMInternal *phEnum);             // [OUT] the enumerator to fill 
 
-    STDMETHODIMP_(bool) EnumNext(
-        HENUMInternal *phEnum,              // [IN] the enumerator to retrieve information  
-        mdToken     *ptk);                  // [OUT] token to scope the search
-
-    STDMETHODIMP_(ULONG) EnumGetCount(
-        HENUMInternal *phEnum);             // [IN] the enumerator to retrieve information  
-
-    STDMETHODIMP_(void) EnumReset(
-        HENUMInternal *phEnum);             // [IN] the enumerator to be reset  
-
-    STDMETHODIMP_(void) EnumClose(
-        HENUMInternal *phEnum);             // [IN] the enumerator to be closed
-
-    __checkReturn 
-    STDMETHODIMP EnumPermissionSetsInit(    // return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        CorDeclSecurity Action,             // [IN] Action to scope the search
-        HENUMInternal *phEnum);             // [OUT] the enumerator to fill 
-
     __checkReturn 
     STDMETHODIMP EnumCustomAttributeByNameInit(// return S_FALSE if record not found
         mdToken     tkParent,               // [IN] token to scope the search
@@ -216,19 +184,6 @@ public:
         mdCustomAttribute mdAttribute,      // [IN] The Custom Attribute
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName);         // [OUT] Name of Custom Attribute.
-
-    __checkReturn 
-    STDMETHODIMP SafeAndSlowEnumCustomAttributeByNameInit(// return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
-        HENUMInternal *phEnum);             // [OUT] The enumerator
-
-    __checkReturn 
-    STDMETHODIMP SafeAndSlowEnumCustomAttributeByNameNext(// return S_FALSE if record not found
-        mdToken     tkParent,               // [IN] token to scope the search
-        LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
-        HENUMInternal *phEnum,              // [IN] The enumerator
-        mdCustomAttribute *mdAttribute);     // [OUT] The custom attribute that was found 
 
     __checkReturn 
     STDMETHODIMP GetScopeProps(
