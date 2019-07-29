@@ -214,7 +214,12 @@ namespace System.Net.Http.HPack
 
                             if (_integerDecoder.StartDecode((byte)(b & ~DynamicTableSizeUpdateMask), DynamicTableSizeUpdatePrefix))
                             {
-                                // TODO: validate that it's less than what's defined via SETTINGS
+                                if (_integerDecoder.Value > _maxDynamicTableSize)
+                                {
+                                    // Dynamic table size update is too large.
+                                    throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, _integerDecoder.Value, _maxDynamicTableSize));
+                                }
+
                                 _dynamicTable.Resize(_integerDecoder.Value);
                             }
                             else
@@ -321,7 +326,7 @@ namespace System.Net.Http.HPack
                             if (_integerDecoder.Value > _maxDynamicTableSize)
                             {
                                 // Dynamic table size update is too large.
-                                throw new HPackDecodingException();
+                                throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, _integerDecoder.Value, _maxDynamicTableSize));
                             }
 
                             _dynamicTable.Resize(_integerDecoder.Value);
