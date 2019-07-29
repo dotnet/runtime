@@ -148,8 +148,8 @@ namespace System.ServiceModel.Syndication.Tests
         }
         
         [Theory]
-        [InlineData(-1)]
-        [InlineData(24)]
+        [InlineData("-1")]
+        [InlineData("24")]
         [InlineData("invalid")]
         [InlineData("")]
         public void SkipHours_GetWithInvalidElementExtension_ThrowsFormatException(string value)

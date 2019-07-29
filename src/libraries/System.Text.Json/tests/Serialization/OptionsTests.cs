@@ -206,7 +206,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(JsonCommentHandling.Allow)]
+        [InlineData((int)JsonCommentHandling.Allow)]
         [InlineData(3)]
         [InlineData(byte.MaxValue)]
         [InlineData(byte.MaxValue + 3)] // Other values, like byte.MaxValue + 1 overflows to 0 (i.e. JsonCommentHandling.Disallow), which is valid.

@@ -22,8 +22,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(ModuleTest))]
-        public void Assembly(TypeInfo typeInfo)
+        public void Assembly(Type type)
         {
+            TypeInfo typeInfo = type.GetTypeInfo();
             Module module = typeInfo.Module;
             Assert.Equal(typeInfo.Assembly, module.Assembly);
         }

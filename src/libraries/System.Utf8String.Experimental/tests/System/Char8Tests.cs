@@ -13,9 +13,9 @@ namespace System.Tests
         [InlineData(10, 20, -1)]
         [InlineData(20, 10, 1)]
         [InlineData(30, 30, 0)]
-        public static void CompareTo(Char8 a, Char8 b, int expectedSign)
+        public static void CompareTo(int a, int b, int expectedSign)
         {
-            Assert.Equal(expectedSign, Math.Sign(a.CompareTo(b)));
+            Assert.Equal(expectedSign, Math.Sign(((Char8)a).CompareTo((Char8)b)));
         }
 
         [Theory]
@@ -70,7 +70,7 @@ namespace System.Tests
         [InlineData(10, 20, false)]
         [InlineData(20, 10, false)]
         [InlineData(30, 30, true)]
-        public static void OperatorEquals(Char8 a, Char8 b, bool expected)
+        public static void OperatorEquals(int a, int b, bool expected)
         {
             Assert.Equal(expected, (Char8)a == (Char8)b);
             Assert.NotEqual(expected, (Char8)a != (Char8)b);
@@ -82,7 +82,7 @@ namespace System.Tests
         [InlineData(29, 30, true)]
         [InlineData(30, 30, false)]
         [InlineData(31, 30, false)]
-        public static void OperatorLessThan(Char8 a, Char8 b, bool expected)
+        public static void OperatorLessThan(int a, int b, bool expected)
         {
             Assert.Equal(expected, (Char8)a < (Char8)b);
             Assert.NotEqual(expected, (Char8)a >= (Char8)b);
@@ -94,7 +94,7 @@ namespace System.Tests
         [InlineData(29, 30, false)]
         [InlineData(30, 30, false)]
         [InlineData(31, 30, true)]
-        public static void OperatorGreaterThan(Char8 a, Char8 b, bool expected)
+        public static void OperatorGreaterThan(int a, int b, bool expected)
         {
             Assert.Equal(expected, (Char8)a > (Char8)b);
             Assert.NotEqual(expected, (Char8)a <= (Char8)b);
