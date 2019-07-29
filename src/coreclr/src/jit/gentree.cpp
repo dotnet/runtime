@@ -1078,7 +1078,15 @@ bool GenTreeCall::AreArgsComplete() const
         assert((gtCallLateArgs != nullptr) || !fgArgInfo->HasRegArgs());
         return true;
     }
+
+#if defined(FEATURE_FASTTAILCALL)
+// If we have FEATURE_FASTTAILCALL, 'fgCanFastTailCall()' can call 'fgInitArgInfo()', and in that
+// scenario it is valid to have 'fgArgInfo' be non-null when 'fgMorphArgs()' first queries this,
+// when it hasn't yet morphed the arguments.
+#else
     assert(gtCallArgs == nullptr);
+#endif
+
     return false;
 }
 

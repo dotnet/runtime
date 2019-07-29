@@ -1327,6 +1327,14 @@ public:
                       // Note that on ARM, if we have a double hfa, this reflects the number
                       // of DOUBLE registers.
 
+#if defined(UNIX_AMD64_ABI)
+    // Unix amd64 will split floating point types and integer types in structs
+    // between floating point and general purpose registers. Keep track of that
+    // information so we do not need to recompute it later.
+    unsigned structIntRegs;
+    unsigned structFloatRegs;
+#endif // UNIX_AMD64_ABI
+
     // A slot is a pointer sized region in the OutArg area.
     unsigned slotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
     unsigned numSlots; // Count of number of slots that this argument uses
@@ -1451,6 +1459,45 @@ public:
 #else
         return false;
 #endif
+    }
+
+    unsigned intRegCount()
+    {
+#if defined(UNIX_AMD64_ABI)
+        if (this->isStruct)
+        {
+            return this->structIntRegs;
+        }
+#endif // defined(UNIX_AMD64_ABI)
+
+        if (!this->isPassedInFloatRegisters())
+        {
+            return this->numRegs;
+        }
+
+        return 0;
+    }
+
+    unsigned floatRegCount()
+    {
+#if defined(UNIX_AMD64_ABI)
+        if (this->isStruct)
+        {
+            return this->structFloatRegs;
+        }
+#endif // defined(UNIX_AMD64_ABI)
+
+        if (this->isPassedInFloatRegisters())
+        {
+            return this->numRegs;
+        }
+
+        return 0;
+    }
+
+    unsigned stackSize()
+    {
+        return (TARGET_POINTER_SIZE * this->numSlots);
     }
 
     __declspec(property(get = GetHfaType)) var_types hfaType;
@@ -1728,6 +1775,8 @@ public:
                              const bool                                                       isStruct,
                              const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
+                             const unsigned                                                   structIntRegs,
+                             const unsigned                                                   structFloatRegs,
                              const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
 #endif // UNIX_AMD64_ABI
 
