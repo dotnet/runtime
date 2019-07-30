@@ -26,7 +26,7 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
-                Assert.Same(value, actualValue);
+                Assert.Same((object)value, (object)actualValue);
             }
         }
 
@@ -41,7 +41,7 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
-                Assert.Same(value, actualValue);
+                Assert.Same((object)value, (object)actualValue);
             }
         }
 

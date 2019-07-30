@@ -20,7 +20,7 @@ namespace System
             Assert.True(span.SequenceEqual(expected));
         }
 
-        public static void ValidateReferenceType<T>(this Span<T> span, params T[] expected)
+        public static void ValidateReferenceType<T>(this Span<T> span, params T[] expected) where T : class
         {
             Assert.Equal(span.Length, expected.Length);
             for (int i = 0; i < expected.Length; i++)
@@ -84,7 +84,7 @@ namespace System
             Assert.True(span.SequenceEqual(expected));
         }
 
-        public static void ValidateReferenceType<T>(this ReadOnlySpan<T> span, params T[] expected)
+        public static void ValidateReferenceType<T>(this ReadOnlySpan<T> span, params T[] expected) where T : class
         {
             Assert.Equal(span.Length, expected.Length);
             for (int i = 0; i < expected.Length; i++)
@@ -148,7 +148,7 @@ namespace System
             Assert.True(memory.Span.SequenceEqual(expected));
         }
 
-        public static void ValidateReferenceType<T>(this Memory<T> memory, params T[] expected)
+        public static void ValidateReferenceType<T>(this Memory<T> memory, params T[] expected) where T : class
         {
             T[] bufferArray = memory.ToArray();
             Assert.Equal(memory.Length, expected.Length);
@@ -164,7 +164,7 @@ namespace System
             Assert.True(memory.Span.SequenceEqual(expected));
         }
 
-        public static void ValidateReferenceType<T>(this ReadOnlyMemory<T> memory, params T[] expected)
+        public static void ValidateReferenceType<T>(this ReadOnlyMemory<T> memory, params T[] expected) where T : class
         {
             T[] bufferArray = memory.ToArray();
             Assert.Equal(memory.Length, expected.Length);
