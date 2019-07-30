@@ -58,6 +58,7 @@ namespace Microsoft.VisualBasic.ApplicationServices.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Different entry assembly")]
         public void Info()
         {
             var app = new ApplicationBase();
