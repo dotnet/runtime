@@ -356,8 +356,6 @@ void mono_thread_cleanup_apartment_state (void);
 
 void mono_threads_set_shutting_down (void);
 
-gunichar2* mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len);
-
 MONO_API MonoException* mono_thread_get_undeniable_exception (void);
 
 ICALL_EXPORT
