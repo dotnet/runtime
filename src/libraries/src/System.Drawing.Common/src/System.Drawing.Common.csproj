@@ -33,6 +33,7 @@
     <Compile Include="System\Drawing\StringFormat.cs" />
     <Compile Include="System\Drawing\SystemFonts.cs" />
     <Compile Include="System\Drawing\SystemPens.cs" />
+    <Compile Include="System\Drawing\Imaging\Metafile.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPageInfo.cs" />
     <Compile Include="System\Drawing\Printing\PrintEventHandler.cs" />

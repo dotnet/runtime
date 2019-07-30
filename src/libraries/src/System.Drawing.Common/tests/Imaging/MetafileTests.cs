@@ -53,7 +53,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_String_Success()
         {
@@ -88,7 +87,6 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { string.Empty };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("bad\0name")]
         [InlineData("")]
@@ -97,7 +95,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(path));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Stream_Success()
         {
@@ -163,7 +160,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullEmfType_ThrowsArgumentException()
         {
@@ -423,7 +419,6 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrZeroII_ThrowsArgumentException()
         {
@@ -462,7 +457,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("bad\0path")]
         [InlineData("")]
@@ -478,8 +472,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        // Long paths aren't that much of a problem on Unix.
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_PathTooLong_ThrowsPathTooLongException()
         {
@@ -663,7 +655,6 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrZeroIII_ThrowsArgumentException()
         {
@@ -747,7 +738,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("bad\0path")]
         [InlineData("")]
@@ -767,8 +757,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        // Long paths aren't that much of a problem on Unix.
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_PathTooLongI_ThrowsPathTooLongException()
         {
@@ -857,7 +845,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrZeroIV_ThrowsArgumentException()
         {
@@ -938,7 +925,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("bad\0path")]
         [InlineData("")]
@@ -947,7 +933,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => Metafile.GetMetafileHeader(fileName));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Static_GetMetafileHeader_NullString_ThrowsArgumentNullException()
         {
@@ -992,7 +977,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetMetafileHeader_Disposed_ThrowsArgumentException()
         {
@@ -1002,7 +986,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => metafile.GetMetafileHeader());
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHenhmetafile_ReturnsExpected()
         {
@@ -1022,7 +1005,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => metafile.GetHenhmetafile());
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PlayRecord_Disposed_ThrowsArgumentException()
         {
