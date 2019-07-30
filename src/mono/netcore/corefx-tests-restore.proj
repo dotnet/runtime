@@ -1,0 +1,39 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Target Name="DownloadTest">
+        <DownloadFile
+            SourceUrl="$(FEED_BASE_URL)/$(TestFile)"
+            DestinationFolder="$(MSBuildProjectDirectory)/corefx/tests"
+            Retries="3">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+    </Target>
+
+    <Target Name="DownloadTestsList">
+        <DownloadFile
+            SourceUrl="$(FEED_BASE_URL)/$(TEST_ASSETS_PATH)"
+            DestinationFolder="$(MSBuildProjectDirectory)/corefx/tests"
+            Retries="3">
+            <Output TaskParameter="DownloadedFile" ItemName="Content" />
+        </DownloadFile>
+        <XmlPeek
+            XmlInputPath="$(MSBuildProjectDirectory)/corefx/tests/corefx-test-assets.xml" 
+            Query="/Build/Blob/@Id">
+            <Output TaskParameter="Result" ItemName="AllTests" />
+        </XmlPeek>
+    </Target>
+
+    <Target Name="DownloadAllTests" DependsOnTargets="DownloadTestsList">
+        <ItemGroup>
+            <TempProjects Include="$(MSBuildProjectFile)">
+                <Properties>TestFile=%(AllTests.Identity)</Properties>
+            </TempProjects>
+        </ItemGroup>
+        <MSBuild Projects="@(TempProjects)" BuildInParallel="true" StopOnFirstFailure="true" Targets="DownloadTest" />
+        <Message Text="Extracting CoreFX tests..." Importance="high" />
+        <Unzip
+            SourceFiles="$(MSBuildProjectDirectory)/corefx/tests/$([System.IO.Path]::GetFileName('%(AllTests.Identity)'))"
+            DestinationFolder="$(MSBuildProjectDirectory)/corefx/tests/extracted/$([System.IO.Path]::GetFileNameWithoutExtension('%(AllTests.Identity)'))" />
+    </Target>
+
+</Project>
