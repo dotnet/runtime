@@ -111,6 +111,13 @@ namespace System.Net.Http
                 {
                     // Create this here because it can be canceled before SendRequestBodyAsync is even called.
                     _requestBodyCancellationSource = new CancellationTokenSource();
+
+                    if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
+                    {
+                        // Create a TCS for handling Expect: 100-continue semantics. See WaitFor100ContinueAsync.
+                        // Note we need to create this in the constructor, because we can receive a 100 Continue response at any time after the constructor finishes.
+                        _expect100ContinueWaiter = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+                    }
                 }
 
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
@@ -150,7 +157,7 @@ namespace System.Net.Http
                 try
                 {
                     bool sendRequestContent = true;
-                    if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
+                    if (_expect100ContinueWaiter != null)
                     {
                         sendRequestContent = await WaitFor100ContinueAsync(_requestBodyCancellationToken).ConfigureAwait(false);
                     }
@@ -221,14 +228,14 @@ namespace System.Net.Http
                 Debug.Assert(_request.Content != null);
                 if (NetEventSource.IsEnabled) Trace($"Waiting to send request body content for 100-Continue.");
 
-                // Create a TCS that will complete when one of two things occurs:
+                // use TCS created in constructor. It will complete when one of two things occurs:
                 // 1. if a timer fires before we receive the relevant response from the server.
                 // 2. if we receive the relevant response from the server before a timer fires.
                 // In the first case, we could run this continuation synchronously, but in the latter, we shouldn't,
                 // as we could end up starting the body copy operation on the main event loop thread, which could
                 // then starve the processing of other requests.  So, we make the TCS RunContinuationsAsynchronously.
                 bool sendRequestContent;
-                var waiter = _expect100ContinueWaiter = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<bool> waiter = _expect100ContinueWaiter;
                 using (var expect100Timer = new Timer(s =>
                 {
                     var thisRef = (Http2Stream)s;
@@ -240,7 +247,6 @@ namespace System.Net.Http
                     // By now, either we got a response from the server or the timer expired.
                 }
 
-                _expect100ContinueWaiter = null;
                 return sendRequestContent;
             }
 
@@ -382,17 +388,15 @@ namespace System.Net.Http
                                 StatusCode = (HttpStatusCode)statusValue
                             };
 
-                            TaskCompletionSource<bool> expect100ContinueWaiter = _expect100ContinueWaiter;
                             if (statusValue < 200)
                             {
                                 // We do not process headers from 1xx responses.
                                 _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
 
-                                if (_response.StatusCode == HttpStatusCode.Continue && expect100ContinueWaiter != null)
+                                if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
                                 {
                                     if (NetEventSource.IsEnabled) Trace("Received 100-Continue status.");
-                                    expect100ContinueWaiter.TrySetResult(true);
-                                    _expect100ContinueWaiter = null;
+                                    _expect100ContinueWaiter.TrySetResult(true);
                                 }
                             }
                             else
@@ -400,14 +404,13 @@ namespace System.Net.Http
                                 _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
 
                                 // If we are waiting for a 100-continue response, signal the waiter now.
-                                if (expect100ContinueWaiter != null)
+                                if (_expect100ContinueWaiter != null)
                                 {
                                     // If the final status code is >= 300, skip sending the body.
                                     bool shouldSendBody = (statusValue < 300);
 
                                     if (NetEventSource.IsEnabled) Trace($"Expecting 100 Continue but received final status {statusValue}.");
-                                    expect100ContinueWaiter.TrySetResult(shouldSendBody);
-                                    _expect100ContinueWaiter = null;
+                                    _expect100ContinueWaiter.TrySetResult(shouldSendBody);
                                 }
                             }
                         }
