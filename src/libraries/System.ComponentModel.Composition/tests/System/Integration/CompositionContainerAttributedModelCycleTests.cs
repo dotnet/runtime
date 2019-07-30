@@ -125,7 +125,7 @@ namespace Tests.Integration
             {
                 var export = GetExport(type, types);
 
-                Assert.IsType<Type>(export.Value);
+                Assert.IsAssignableFrom<Type>(export.Value);
             }
         }
 

@@ -45,20 +45,6 @@ namespace System.ComponentModel.Composition.Factories
             return Create(catalog);
         }
 
-        public static CompositionContainer CreateAttributed(params object[] parts)
-        {
-            var container = new CompositionContainer();
-            var partsArray = new ComposablePart[parts.Length];
-
-            for (int i = 0; i < parts.Length; i++)
-            {
-                Assert.IsNotType<Type>(parts[i]);
-                partsArray[i] = PartFactory.CreateAttributed(parts[i]);
-            }
-
-            return Create(partsArray);
-        }
-
         public static CompositionContainer Create(CompositionContainer parent, params ComposablePart[] parts)
         {
             CompositionContainer container;
