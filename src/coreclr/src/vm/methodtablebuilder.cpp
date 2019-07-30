@@ -2932,7 +2932,7 @@ MethodTableBuilder::EnumerateClassMethods()
             if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
                 // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsReadyToRunCompilation()
+                && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
 #endif
                 )
             {
