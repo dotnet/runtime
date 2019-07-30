@@ -23,19 +23,11 @@ namespace System.Runtime.Caching.Configuration
 
     internal sealed class MemoryCacheSection : ConfigurationSection
     {
-        private static ConfigurationPropertyCollection s_properties;
-        private static readonly ConfigurationProperty s_propNamedCaches;
-
-        static MemoryCacheSection()
-        {
-            s_propNamedCaches = new ConfigurationProperty("namedCaches",
-                                            typeof(MemoryCacheSettingsCollection),
-                                            null, // defaultValue
-                                            ConfigurationPropertyOptions.None);
-
-            s_properties = new ConfigurationPropertyCollection();
-            s_properties.Add(s_propNamedCaches);
-        }
+        private static readonly ConfigurationProperty s_propNamedCaches = new ConfigurationProperty("namedCaches",
+            typeof(MemoryCacheSettingsCollection),
+            null, // defaultValue
+            ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection() { s_propNamedCaches };
 
         public MemoryCacheSection()
         {

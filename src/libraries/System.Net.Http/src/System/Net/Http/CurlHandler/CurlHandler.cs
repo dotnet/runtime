@@ -157,6 +157,7 @@ namespace System.Net.Http
 
         #endregion
 
+#pragma warning disable CA1810 // explicit static cctor
         static CurlHandler()
         {
             // curl_global_init call handled by Interop.LibCurl's cctor
@@ -179,6 +180,7 @@ namespace System.Net.Http
                 s_singletonSharedAgent = new MultiAgent(null);
             }
         }
+#pragma warning restore CA1810
 
         public CurlHandler()
         {

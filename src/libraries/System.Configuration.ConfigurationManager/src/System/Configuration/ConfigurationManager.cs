@@ -13,15 +13,9 @@ namespace System.Configuration
         private static volatile IInternalConfigSystem s_configSystem;
 
         // Initialization state
-        private static volatile InitState s_initState;
-        private static readonly object s_initLock;
+        private static volatile InitState s_initState = InitState.NotStarted;
+        private static readonly object s_initLock = new object();
         private static volatile Exception s_initError;
-
-        static ConfigurationManager()
-        {
-            s_initState = InitState.NotStarted;
-            s_initLock = new object();
-        }
 
         // to be used by System.Diagnostics to avoid false config results during config init
         internal static bool SetConfigurationSystemInProgress

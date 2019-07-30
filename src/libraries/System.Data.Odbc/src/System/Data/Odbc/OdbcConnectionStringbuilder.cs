@@ -14,38 +14,27 @@ namespace System.Data.Odbc
     public sealed class OdbcConnectionStringBuilder : DbConnectionStringBuilder
     {
         private enum Keywords
-        { // must maintain same ordering as _validKeywords array
-          //            NamedConnection,
+        {
+            // must maintain same ordering as s_validKeywords array
             Dsn,
-
             Driver,
         }
 
-        private static readonly string[] s_validKeywords;
-        private static readonly Dictionary<string, Keywords> s_keywords;
+        private static readonly string[] s_validKeywords = new string[2]
+        {
+            DbConnectionStringKeywords.Dsn, // (int)Keywords.Dsn
+            DbConnectionStringKeywords.Driver // (int)Keywords.Driver
+        };
+        private static readonly Dictionary<string, Keywords> s_keywords = new Dictionary<string, Keywords>(2, StringComparer.OrdinalIgnoreCase)
+        {
+            { DbConnectionStringKeywords.Driver, Keywords.Driver },
+            { DbConnectionStringKeywords.Dsn, Keywords.Dsn }
+        };
 
         private string[] _knownKeywords;
 
         private string _dsn = DbConnectionStringDefaults.Dsn;
-        //        private string _namedConnection  = DbConnectionStringDefaults.NamedConnection;
-
         private string _driver = DbConnectionStringDefaults.Driver;
-
-        static OdbcConnectionStringBuilder()
-        {
-            string[] validKeywords = new string[2];
-            validKeywords[(int)Keywords.Driver] = DbConnectionStringKeywords.Driver;
-            validKeywords[(int)Keywords.Dsn] = DbConnectionStringKeywords.Dsn;
-            //            validKeywords[(int)Keywords.NamedConnection] = DbConnectionStringKeywords.NamedConnection;
-            s_validKeywords = validKeywords;
-
-            Dictionary<string, Keywords> hash = new Dictionary<string, Keywords>(2, StringComparer.OrdinalIgnoreCase);
-            hash.Add(DbConnectionStringKeywords.Driver, Keywords.Driver);
-            hash.Add(DbConnectionStringKeywords.Dsn, Keywords.Dsn);
-            //            hash.Add(DbConnectionStringKeywords.NamedConnection, Keywords.NamedConnection);
-            Debug.Assert(2 == hash.Count, "initial expected size is incorrect");
-            s_keywords = hash;
-        }
 
         public OdbcConnectionStringBuilder() : this((string)null)
         {
@@ -86,7 +75,6 @@ namespace System.Data.Odbc
                         {
                             case Keywords.Driver: Driver = ConvertToString(value); break;
                             case Keywords.Dsn: Dsn = ConvertToString(value); break;
-                            //                      case Keywords.NamedConnection: NamedConnection = ConvertToString(value); break;
                             default:
                                 Debug.Fail("unexpected keyword");
                                 throw ADP.KeywordNotSupported(keyword);
@@ -127,20 +115,7 @@ namespace System.Data.Odbc
                 _dsn = value;
             }
         }
-        /*
-                [DisplayName(DbConnectionStringKeywords.NamedConnection)]
-                [ResCategoryAttribute(Res.DataCategory_NamedConnectionString)]
-                [ResDescriptionAttribute(Res.DbConnectionString_NamedConnection)]
-                [RefreshPropertiesAttribute(RefreshProperties.All)]
-                [TypeConverter(typeof(NamedConnectionStringConverter))]
-                public string NamedConnection {
-                    get { return _namedConnection; }
-                    set {
-                        SetValue(DbConnectionStringKeywords.NamedConnection, value);
-                        _namedConnection = value;
-                    }
-                }
-        */
+
         public override ICollection Keys
         {
             get
@@ -224,51 +199,11 @@ namespace System.Data.Odbc
             {
                 case Keywords.Driver: return Driver;
                 case Keywords.Dsn: return Dsn;
-                //          case Keywords.NamedConnection: return NamedConnection;
                 default:
                     Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
-
-        /*
-        protected override void GetProperties(Hashtable propertyDescriptors) {
-            object value;
-            if (TryGetValue(DbConnectionStringSynonyms.TRUSTEDCONNECTION, out value)) {
-                bool trusted = false;
-                if (value is bool) {
-                    trusted = (bool)value;
-                }
-                else if ((value is string) && !Boolean.TryParse((string)value, out trusted)) {
-                    trusted = false;
-                }
-
-                if (trusted) {
-                   Attribute[] attributes = new Attribute[] {
-                        BrowsableAttribute.Yes,
-                        RefreshPropertiesAttribute.All,
-                    };
-                    DbConnectionStringBuilderDescriptor descriptor;
-                    descriptor = new DbConnectionStringBuilderDescriptor(DbConnectionStringSynonyms.TRUSTEDCONNECTION,
-                                        this.GetType(), typeof(bool), false, attributes);
-                    descriptor.RefreshOnChange = true;
-                    propertyDescriptors[DbConnectionStringSynonyms.TRUSTEDCONNECTION] = descriptor;
-
-                    if (ContainsKey(DbConnectionStringSynonyms.Pwd)) {
-                        descriptor = new DbConnectionStringBuilderDescriptor(DbConnectionStringSynonyms.Pwd,
-                                            this.GetType(), typeof(string), true, attributes);
-                        propertyDescriptors[DbConnectionStringSynonyms.Pwd] = descriptor;
-                    }
-                    if (ContainsKey(DbConnectionStringSynonyms.UID)) {
-                        descriptor = new DbConnectionStringBuilderDescriptor(DbConnectionStringSynonyms.UID,
-                                            this.GetType(), typeof(string), true, attributes);
-                        propertyDescriptors[DbConnectionStringSynonyms.UID] = descriptor;
-                    }
-                }
-            }
-            base.GetProperties(propertyDescriptors);
-        }
-        */
 
         public override bool Remove(string keyword)
         {
@@ -299,9 +234,6 @@ namespace System.Data.Odbc
                 case Keywords.Dsn:
                     _dsn = DbConnectionStringDefaults.Dsn;
                     break;
-                //            case Keywords.NamedConnection:
-                //               _namedConnection = DbConnectionStringDefaults.NamedConnection;
-                //                break;
                 default:
                     Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);

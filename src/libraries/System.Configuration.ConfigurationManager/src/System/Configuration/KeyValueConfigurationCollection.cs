@@ -7,13 +7,7 @@ namespace System.Configuration
     [ConfigurationCollection(typeof(KeyValueConfigurationElement))]
     public class KeyValueConfigurationCollection : ConfigurationElementCollection
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
-        static KeyValueConfigurationCollection()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection();
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection();
 
         public KeyValueConfigurationCollection() :
             base(StringComparer.OrdinalIgnoreCase)

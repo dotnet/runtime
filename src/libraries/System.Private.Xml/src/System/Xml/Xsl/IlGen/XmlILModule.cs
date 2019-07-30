@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.IlGen
     internal class XmlILModule
     {
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain
-        private static ModuleBuilder s_LREModule;                             // Module used to emit dynamic lightweight-reflection-emit (LRE) methods
+        private static ModuleBuilder s_LREModule = CreateLREModule();         // Module used to emit dynamic lightweight-reflection-emit (LRE) methods
 
         private TypeBuilder _typeBldr;
         private Hashtable _methods;
@@ -34,32 +34,21 @@ namespace System.Xml.Xsl.IlGen
         private static readonly Guid s_vendorGuid = new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
         private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
 
-        static XmlILModule()
+        private static ModuleBuilder CreateLREModule()
         {
-            AssemblyName asmName;
-            AssemblyBuilder asmBldr;
-
-            s_assemblyId = 0;
-
             // 1. LRE assembly only needs to execute
             // 2. No temp files need be created
             // 3. Never allow assembly to Assert permissions
-            asmName = CreateAssemblyName();
-            asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+            AssemblyName asmName = CreateAssemblyName();
+            AssemblyBuilder asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
 
-            try
-            {
-                // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
-                // and link demands will be converted to full demands.
-                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, Array.Empty<object>()));
+            // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
+            // and link demands will be converted to full demands.
+            asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, Array.Empty<object>()));
 
-                // Store LREModule once.  If multiple threads are doing this, then some threads might get different
-                // modules.  This is OK, since it's not mandatory to share, just preferable.
-                s_LREModule = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
-            }
-            finally
-            {
-            }
+            // Store LREModule once.  If multiple threads are doing this, then some threads might get different
+            // modules.  This is OK, since it's not mandatory to share, just preferable.
+            return asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
         }
 
         public XmlILModule(TypeBuilder typeBldr)

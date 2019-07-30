@@ -183,6 +183,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
+#pragma warning disable CA1810 // explicit static cctor
         static MemberPolicies()
         {
             Type t = typeof(M);
@@ -221,6 +222,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 Debug.Fail("Unknown MemberInfo type.");
             }
         }
+#pragma warning restore CA1810
 
         //
         // This is a singleton class one for each MemberInfo category: Return the appropriate one. 

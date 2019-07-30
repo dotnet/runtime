@@ -43,7 +43,6 @@
     <Rule Id="CA1724" Action="None" /> <!-- Type names should not match namespaces -->
     <Rule Id="CA1801" Action="None" /> <!-- Review unused parameters -->
     <Rule Id="CA1806" Action="None" /> <!-- Do not ignore method results -->
-    <Rule Id="CA1810" Action="None" /> <!-- Initialize reference type static fields inline -->
     <Rule Id="CA1812" Action="None" /> <!-- Avoid uninstantiated internal classes -->
     <Rule Id="CA1814" Action="None" /> <!-- Prefer jagged arrays over multidimensional -->
     <Rule Id="CA1815" Action="None" /> <!-- Override equals and operator equals on value types -->

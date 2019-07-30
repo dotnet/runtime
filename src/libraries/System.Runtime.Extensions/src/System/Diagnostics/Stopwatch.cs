@@ -21,20 +21,13 @@ namespace System.Diagnostics
         // if one exists. Otherwise it will store TicksPerSecond. 
         // The frequency cannot change while the system is running,
         // so we only need to initialize it once. 
-        public static readonly long Frequency;
-        public static readonly bool IsHighResolution;
+        public static readonly long Frequency = QueryPerformanceFrequency();
+        public static readonly bool IsHighResolution = true;
 
         // performance-counter frequency, in counts per ticks.
         // This can speed up conversion from high frequency performance-counter 
         // to ticks. 
-        private static readonly double s_tickFrequency;
-
-        static Stopwatch()
-        {
-            Frequency = QueryPerformanceFrequency();
-            IsHighResolution = true;
-            s_tickFrequency = (double)TicksPerSecond / Frequency;
-        }
+        private static readonly double s_tickFrequency = (double)TicksPerSecond / Frequency;
 
         public Stopwatch()
         {

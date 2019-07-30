@@ -12,23 +12,93 @@ namespace System
     /// </devdoc>
     internal abstract class CSharpHelpers
     {
-        private static Dictionary<string, object> s_fixedStringLookup;
-
-        static CSharpHelpers()
+        private static readonly HashSet<string> s_fixedStringLookup = new HashSet<string>()
         {
-            s_fixedStringLookup = new Dictionary<string, object>();
-            for (int i = 0; i < s_keywords.Length; i++)
-            {
-                string[] values = s_keywords[i];
-                if (values != null)
-                {
-                    for (int j = 0; j < values.Length; j++)
-                    {
-                        s_fixedStringLookup.Add(values[j], null);
-                    }
-                }
-            }
-        }
+            "as",
+            "do",
+            "if",
+            "in",
+            "is",
+            "for",
+            "int",
+            "new",
+            "out",
+            "ref",
+            "try",
+            "base",
+            "bool",
+            "byte",
+            "case",
+            "char",
+            "else",
+            "enum",
+            "goto",
+            "lock",
+            "long",
+            "null",
+            "this",
+            "true",
+            "uint",
+            "void",
+            "break",
+            "catch",
+            "class",
+            "const",
+            "event",
+            "false",
+            "fixed",
+            "float",
+            "sbyte",
+            "short",
+            "throw",
+            "ulong",
+            "using",
+            "where",
+            "while",
+            "yield",
+            "double",
+            "extern",
+            "object",
+            "params",
+            "public",
+            "return",
+            "sealed",
+            "sizeof",
+            "static",
+            "string",
+            "struct",
+            "switch",
+            "typeof",
+            "unsafe",
+            "ushort",
+            "checked",
+            "decimal",
+            "default",
+            "finally",
+            "foreach",
+            "partial",
+            "private",
+            "virtual",
+            "abstract",
+            "continue",
+            "delegate",
+            "explicit",
+            "implicit",
+            "internal",
+            "operator",
+            "override",
+            "readonly",
+            "volatile",
+            "__arglist",
+            "__makeref",
+            "__reftype",
+            "interface",
+            "namespace",
+            "protected",
+            "unchecked",
+            "__refvalue",
+            "stackalloc",
+        };
 
         public static string CreateEscapedIdentifier(string name)
         {
@@ -52,115 +122,9 @@ namespace System
             return IsValidTypeNameOrIdentifier(value, false);
         }
 
-        private static readonly string[][] s_keywords = new string[][] {
-            null,           // 1 character
-            new string[] {  // 2 characters
-                "as",
-                "do",
-                "if",
-                "in",
-                "is",
-            },
-            new string[] {  // 3 characters
-                "for",
-                "int",
-                "new",
-                "out",
-                "ref",
-                "try",
-            },
-            new string[] {  // 4 characters
-                "base",
-                "bool",
-                "byte",
-                "case",
-                "char",
-                "else",
-                "enum",
-                "goto",
-                "lock",
-                "long",
-                "null",
-                "this",
-                "true",
-                "uint",
-                "void",
-            },
-            new string[] {  // 5 characters
-                "break",
-                "catch",
-                "class",
-                "const",
-                "event",
-                "false",
-                "fixed",
-                "float",
-                "sbyte",
-                "short",
-                "throw",
-                "ulong",
-                "using",
-                "where",
-                "while",
-                "yield",
-            },
-            new string[] {  // 6 characters
-                "double",
-                "extern",
-                "object",
-                "params",
-                "public",
-                "return",
-                "sealed",
-                "sizeof",
-                "static",
-                "string",
-                "struct",
-                "switch",
-                "typeof",
-                "unsafe",
-                "ushort",
-            },
-            new string[] {  // 7 characters
-                "checked",
-                "decimal",
-                "default",
-                "finally",
-                "foreach",
-                "partial",
-                "private",
-                "virtual",
-            },
-            new string[] {  // 8 characters
-                "abstract",
-                "continue",
-                "delegate",
-                "explicit",
-                "implicit",
-                "internal",
-                "operator",
-                "override",
-                "readonly",
-                "volatile",
-            },
-            new string[] {  // 9 characters
-                "__arglist",
-                "__makeref",
-                "__reftype",
-                "interface",
-                "namespace",
-                "protected",
-                "unchecked",
-            },
-            new string[] {  // 10 characters
-                "__refvalue",
-                "stackalloc",
-            },
-        };
-
         internal static bool IsKeyword(string value)
         {
-            return s_fixedStringLookup.ContainsKey(value);
+            return s_fixedStringLookup.Contains(value);
         }
 
         internal static bool IsPrefixTwoUnderscore(string value)

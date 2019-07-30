@@ -6,8 +6,6 @@ namespace System.Configuration
 {
     public class KeyValueConfigurationElement : ConfigurationElement
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
         private static readonly ConfigurationProperty s_propKey =
             new ConfigurationProperty("key", typeof(string), string.Empty,
                 ConfigurationPropertyOptions.IsKey | ConfigurationPropertyOptions.IsRequired);
@@ -15,15 +13,12 @@ namespace System.Configuration
         private static readonly ConfigurationProperty s_propValue =
             new ConfigurationProperty("value", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propKey, s_propValue };
+
         private readonly string _initKey;
         private readonly string _initValue;
 
         private bool _needsInit;
-
-        static KeyValueConfigurationElement()
-        {
-            s_properties = new ConfigurationPropertyCollection { s_propKey, s_propValue };
-        }
 
         internal KeyValueConfigurationElement() { }
 

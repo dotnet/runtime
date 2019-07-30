@@ -49,21 +49,10 @@ namespace System.Drawing.Printing
     {
         #region Private Fields
 
-        private static Hashtable doc_info = new Hashtable();
-        private static bool cups_installed;
-
-        private static Hashtable installed_printers;
+        private static readonly Hashtable doc_info = new Hashtable();
+        private static readonly bool cups_installed = CheckCupsInstalled();
+        private static readonly Hashtable installed_printers = new Hashtable();
         private static string default_printer = string.Empty;
-
-        #endregion
-
-        #region Constructor
-
-        static PrintingServices()
-        {
-            installed_printers = new Hashtable();
-            CheckCupsInstalled();
-        }
 
         #endregion
 
@@ -101,7 +90,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Do a cups call to check if it is installed
         /// </summary>
-        private static void CheckCupsInstalled()
+        private static bool CheckCupsInstalled()
         {
             try
             {
@@ -114,11 +103,10 @@ namespace System.Drawing.Printing
 #else
                 Console.WriteLine("libcups not found. To have printing support, you need cups installed");
 #endif
-                cups_installed = false;
-                return;
+                return false;
             }
 
-            cups_installed = true;
+            return true;
         }
 
         /// <summary>

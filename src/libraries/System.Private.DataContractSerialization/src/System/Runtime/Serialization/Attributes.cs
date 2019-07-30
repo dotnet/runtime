@@ -2,37 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.IO;
 using System.Xml;
 
 namespace System.Runtime.Serialization
 {
     internal class Attributes
     {
-        private static XmlDictionaryString[] s_serializationLocalNames;
-
-        private static XmlDictionaryString[] s_schemaInstanceLocalNames;
-
-        static Attributes()
+        private static XmlDictionaryString[] s_serializationLocalNames = new XmlDictionaryString[]
         {
-            s_serializationLocalNames = new XmlDictionaryString[]
-            {
-                DictionaryGlobals.IdLocalName,
-                DictionaryGlobals.ArraySizeLocalName,
-                DictionaryGlobals.RefLocalName,
-                DictionaryGlobals.ClrTypeLocalName,
-                DictionaryGlobals.ClrAssemblyLocalName,
-                DictionaryGlobals.ISerializableFactoryTypeLocalName
-            };
+            DictionaryGlobals.IdLocalName,
+            DictionaryGlobals.ArraySizeLocalName,
+            DictionaryGlobals.RefLocalName,
+            DictionaryGlobals.ClrTypeLocalName,
+            DictionaryGlobals.ClrAssemblyLocalName,
+            DictionaryGlobals.ISerializableFactoryTypeLocalName
+        };
 
-            s_schemaInstanceLocalNames = new XmlDictionaryString[]
-            {
-                DictionaryGlobals.XsiNilLocalName,
-                DictionaryGlobals.XsiTypeLocalName
-            };
-        }
+        private static XmlDictionaryString[] s_schemaInstanceLocalNames = new XmlDictionaryString[]
+        {
+            DictionaryGlobals.XsiNilLocalName,
+            DictionaryGlobals.XsiTypeLocalName
+        };
 
         internal string Id;
         internal string Ref;

@@ -9,14 +9,8 @@ namespace System.Configuration
     /// </summary>
     public sealed class ClientSettingsSection : ConfigurationSection
     {
-        private static ConfigurationPropertyCollection _properties;
-        private static readonly ConfigurationProperty _propSettings = new ConfigurationProperty(null, typeof(SettingElementCollection), null, ConfigurationPropertyOptions.IsDefaultCollection);
-
-        static ClientSettingsSection()
-        {
-            _properties = new ConfigurationPropertyCollection();
-            _properties.Add(_propSettings);
-        }
+        private static readonly ConfigurationProperty s_propSettings = new ConfigurationProperty(null, typeof(SettingElementCollection), null, ConfigurationPropertyOptions.IsDefaultCollection);
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection() { s_propSettings };
 
         public ClientSettingsSection()
         {
@@ -26,7 +20,7 @@ namespace System.Configuration
         {
             get
             {
-                return _properties;
+                return s_properties;
             }
         }
 
@@ -35,7 +29,7 @@ namespace System.Configuration
         {
             get
             {
-                return (SettingElementCollection)base[_propSettings];
+                return (SettingElementCollection)base[s_propSettings];
             }
         }
     }
