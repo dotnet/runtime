@@ -223,20 +223,16 @@ namespace System.IO.Pipelines
         {
             BufferSegment newSegment = CreateSegmentUnsynchronized();
 
-            if (_pool is null)
+            if (_pool is null || sizeHint > _pool.MaxBufferSize)
             {
                 // Use the array pool
-                newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(GetSegmentSize(sizeHint)));
-            }
-            else if (sizeHint <= _pool.MaxBufferSize)
-            {
-                // Use the specified pool if it fits
-                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
+                int sizeToRequest = GetSegmentSize(sizeHint);
+                newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
             }
             else
             {
-                // We can't use the pool so allocate an array
-                newSegment.SetUnownedMemory(new byte[sizeHint]);
+                // Use the specified pool as it fits
+                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
             }
 
             _writingHeadMemory = newSegment.AvailableMemory;
