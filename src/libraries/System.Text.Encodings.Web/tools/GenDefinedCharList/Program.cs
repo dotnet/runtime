@@ -62,9 +62,9 @@ namespace GenDefinedCharList
                 }
 
                 // We only allow certain categories of code points.
-                // Zs (space separators) aren't included, but we allow U+0020 SPACE as a special case
+                // Check for special-cased code points before querying whether the overall category is allowed.
 
-                if (!(codepoint == (uint)' ' || IsAllowedUnicodeCategory(category)))
+                if (!(GetIsCodePointAllowedOverride(codepoint) ?? IsAllowedUnicodeCategory(category)))
                 {
                     continue;
                 }
@@ -149,6 +149,26 @@ namespace GenDefinedCharList
             builder.AppendLine("}");
 
             File.WriteAllText(args[1], builder.ToString());
+        }
+
+        private static bool? GetIsCodePointAllowedOverride(uint codepoint)
+        {
+            switch (codepoint)
+            {
+                case 0x0020:
+                    // ' ' U+0020 SPACE is allowed, even though the Zs category (space separators) is otherwise disallowed.
+                    return true;
+
+                case 0xFEFF:
+                    // U+FEFF ZERO WIDTH NO-BREAK SPACE is disallowed, even though the Cf category (format characters) is otherwise allowed.
+                    // The reason for this is that U+FEFF is also used as the byte order mark (BOM), and some clients don't handle this
+                    // code point correctly when it appears in the middle of a string. See https://www.unicode.org/faq/utf_bom.html#BOM.
+                    return false;
+
+                default:
+                    // No override specified; fall back to whether the category itself is allowed or disallowed.
+                    return null;
+            }
         }
 
         private static bool IsAllowedUnicodeCategory(string category)
