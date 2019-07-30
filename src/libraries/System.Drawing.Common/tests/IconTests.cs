@@ -239,7 +239,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(expectedSize.Width, icon.Width);
                 Assert.Equal(expectedSize.Height, icon.Height);
                 Assert.Equal(expectedSize, icon.Size);
-                Assert.NotSame(sourceIcon.Handle, icon.Handle);
+                Assert.NotEqual(sourceIcon.Handle, icon.Handle);
             }
         }
 
@@ -254,7 +254,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(expectedSize.Width, icon.Width);
                 Assert.Equal(expectedSize.Height, icon.Height);
                 Assert.Equal(expectedSize, icon.Size);
-                Assert.NotSame(sourceIcon.Handle, icon.Handle);
+                Assert.NotEqual(sourceIcon.Handle, icon.Handle);
             }
         }
 
@@ -319,7 +319,7 @@ namespace System.Drawing.Tests
             using (Icon clone = Assert.IsType<Icon>(icon.Clone()))
             {
                 Assert.NotSame(icon, clone);
-                Assert.NotSame(icon.Handle, clone.Handle);
+                Assert.NotEqual(icon.Handle, clone.Handle);
                 Assert.Equal(32, clone.Width);
                 Assert.Equal(32, clone.Height);
                 Assert.Equal(new Size(32, 32), clone.Size);
@@ -333,7 +333,7 @@ namespace System.Drawing.Tests
             using (Icon clone = Assert.IsType<Icon>(icon.Clone()))
             {
                 Assert.NotSame(icon, clone);
-                Assert.NotSame(icon.Handle, clone.Handle);
+                Assert.NotEqual(icon.Handle, clone.Handle);
                 Assert.Equal(SystemIcons.Hand.Width, clone.Width);
                 Assert.Equal(SystemIcons.Hand.Height, clone.Height);
                 Assert.Equal(SystemIcons.Hand.Size, clone.Size);
