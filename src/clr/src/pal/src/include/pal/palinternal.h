@@ -421,8 +421,6 @@ function_name() to call the system's implementation
 #undef bsearch
 #undef time
 #undef tm
-#undef localtime
-#undef mktime
 #undef FILE
 #undef fclose
 #undef setbuf
@@ -568,8 +566,6 @@ function_name() to call the system's implementation
 #undef _mm_getcsr
 #undef _mm_setcsr
 #endif // _AMD64_
-
-#undef ctime
 
 #undef min
 #undef max

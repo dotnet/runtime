@@ -30,19 +30,6 @@ DEBUG_NOINLINE BOOL CHECK::EnforceAssert_StaticCheckOnly()
 // Need a place to stick this, there is no contract.cpp...
 BOOL BaseContract::s_alwaysEnforceContracts = 1;
 
-
-void PAL_TryMarker::Enter()
-{
-    SCAN_SCOPE_BEGIN;
-    STATIC_CONTRACT_THROWS;
-};
-
-void PAL_TryMarker::Leave()
-{
-    SCAN_SCOPE_END;
-};
-
-
 #define SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask)                              \
 template<> void ContractViolationHolder<mask>::Enter()                          \
 {                                                                               \

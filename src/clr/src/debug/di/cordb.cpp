@@ -232,12 +232,6 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
             }
 #endif
 
-#ifdef RSCONTRACTS
-            // alloc a TLS slot
-            DbgRSThread::s_TlsSlot = TlsAlloc();
-            _ASSERTE(DbgRSThread::s_TlsSlot != TLS_OUT_OF_INDEXES);
-#endif
-
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
             g_pDbgTransportTarget = new (nothrow) DbgTransportTarget();
             if (g_pDbgTransportTarget == NULL)
@@ -276,11 +270,6 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
                 g_pDbgTransportTarget = NULL;
             }
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
-            
-#ifdef RSCONTRACTS
-            TlsFree(DbgRSThread::s_TlsSlot);
-            DbgRSThread::s_TlsSlot = TLS_OUT_OF_INDEXES;
-#endif
         }
         break;
     }

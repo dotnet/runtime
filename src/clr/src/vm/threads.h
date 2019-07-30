@@ -11,28 +11,6 @@
 //
 
 // 
-// #RuntimeThreadLocals.
-// 
-// Windows has a feature call Thread Local Storage (TLS, which is data that the OS allocates every time it
-// creates a thread). Programs access this storage by using the Windows TlsAlloc, TlsGetValue, TlsSetValue
-// APIs (see http://msdn2.microsoft.com/en-us/library/ms686812.aspx). The runtime allocates two such slots
-// for its use
-// 
-//     * A slot that holds a pointer to the runtime thread object code:Thread (see code:#ThreadClass). The
-//         runtime has a special optimized version of this helper code:GetThread (we actually emit assembly
-//         code on the fly so it is as fast as possible). These code:Thread objects live in the
-//         code:ThreadStore.
-//         
-//      * The other slot holds the current code:AppDomain (a managed equivalent of a process). The
-//          runtime thread object also has a pointer to the thread's AppDomain (see code:Thread.m_pDomain,
-//          so in theory this TLS is redundant. It is there for speed (one less pointer indirection). The
-//          optimized helper for this is code:GetAppDomain (we emit assembly code on the fly for this one
-//          too).
-//          
-// Initially these TLS slots are empty (when the OS starts up), however before we run managed code, we must
-// set them properly so that managed code knows what AppDomain it is in and we can suspend threads properly
-// for a GC (see code:#SuspendingTheRuntime)
-// 
 // #SuspendingTheRuntime
 // 
 // One of the primary differences between runtime code (managed code), and traditional (unmanaged code) is

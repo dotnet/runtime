@@ -86,20 +86,6 @@ using namespace CorUnix;
 
 /* ------------------- Definitions ------------------------------*/
 
-/* list of free CPalThread objects */
-static Volatile<CPalThread*> free_threads_list = NULL;
-
-/* lock to access list of free THREAD structures */
-/* NOTE: can't use a CRITICAL_SECTION here (see comment in FreeTHREAD) */
-int free_threads_spinlock = 0;
-
-/* lock to access iEndingThreads counter, condition variable to signal shutdown
-thread when any remaining threads have died, and count of exiting threads that
-can't be suspended. */
-pthread_mutex_t ptmEndThread;
-pthread_cond_t ptcEndThread;
-static int iEndingThreads = 0;
-
 // Activation function that gets called when an activation is injected into a thread.
 PAL_ActivationFunction g_activationFunction = NULL;
 // Function to check if an activation can be safely injected at a specified context
@@ -120,16 +106,6 @@ ThreadInitializationRoutine(
     void *pImmutableData,
     void *pSharedData,
     void *pProcessLocalData
-    );
-
-void
-IncrementEndingThreadCount(
-    void
-    );
-
-void
-DecrementEndingThreadCount(
-    void
     );
 
 CObjectType CorUnix::otThread(
@@ -175,7 +151,6 @@ static void InternalEndCurrentThreadWrapper(void *arg)
     // that the current thread is known to this PAL, and that pThread
     // actually is the current PAL thread, put it back in TLS temporarily.
     pthread_setspecific(thObjKey, pThread);
-    (void)PAL_Enter(PAL_BoundaryTop);
 
     /* Call entry point functions of every attached modules to
        indicate the thread is exiting */
@@ -209,8 +184,6 @@ BOOL TLSInitialize()
         return FALSE;
     }
 
-    SPINLOCKInit(&free_threads_spinlock);
-
     return TRUE;
 }
 
@@ -222,8 +195,6 @@ Function:
 --*/
 VOID TLSCleanup()
 {
-    SPINLOCKDestroy(&free_threads_spinlock);
-
     pthread_key_delete(thObjKey);
 }
 
@@ -239,30 +210,7 @@ Return:
 --*/
 CPalThread* AllocTHREAD()
 {
-    CPalThread* pThread = NULL;
-
-    /* Get the lock */
-    SPINLOCKAcquire(&free_threads_spinlock, 0);
-
-    pThread = free_threads_list;
-    if (pThread != NULL)
-    {
-        free_threads_list = pThread->GetNext();
-    }
-
-    /* Release the lock */
-    SPINLOCKRelease(&free_threads_spinlock);
-
-    if (pThread == NULL)
-    {
-        pThread = InternalNew<CPalThread>();
-    }
-    else
-    {
-        pThread = new (pThread) CPalThread;
-    }
-
-    return pThread;
+    return InternalNew<CPalThread>();
 }
 
 /*++
@@ -287,37 +235,7 @@ static void FreeTHREAD(CPalThread *pThread)
     memset((void*)pThread, 0xcc, sizeof(*pThread));
 #endif
 
-    // We SHOULD be doing the following, but it causes massive problems. See the
-    // comment below.
-    //pthread_setspecific(thObjKey, NULL); // Make sure any TLS entry is removed.
-
-    //
-    // Never actually free the THREAD structure to make the TLS lookaside cache work.
-    // THREAD* for terminated thread can be stuck in the lookaside cache code for an
-    // arbitrary amount of time. The unused THREAD* structures has to remain in a
-    // valid memory and thus can't be returned to the heap.
-    //
-    // TODO: is this really true? Why would the entry remain in the cache for
-    // an indefinite period of time after we've flushed it?
-    //
-
-    /* NOTE: can't use a CRITICAL_SECTION here: EnterCriticalSection(&cs,TRUE) and
-       LeaveCriticalSection(&cs,TRUE) need to access the thread private data
-       stored in the very THREAD structure that we just destroyed. Entering and
-       leaving the critical section with internal==FALSE leads to possible hangs
-       in the PROCSuspendOtherThreads logic, at shutdown time
-
-       Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
-       code be changed?*/
-
-    /* Get the lock */
-    SPINLOCKAcquire(&free_threads_spinlock, 0);
-
-    pThread->SetNext(free_threads_list);
-    free_threads_list = pThread;
-
-    /* Release the lock */
-    SPINLOCKRelease(&free_threads_spinlock);
+    free(pThread);
 }
 
 
@@ -815,10 +733,6 @@ CorUnix::InternalCreateThread(
     storedErrno = errno;
 #endif  // PTHREAD_CREATE_MODIFIES_ERRNO
 
-#ifdef FEATURE_PAL_SXS
-    _ASSERT_MSG(pNewThread->IsInPal(), "New threads we're about to spawn should always be in the PAL.\n");
-#endif // FEATURE_PAL_SXS
-
 #if HAVE_PTHREAD_ATTR_SETAFFINITY_NP && HAVE_SCHED_GETAFFINITY
     {
         // Threads inherit their parent's affinity mask on Linux. This is not desired, so we reset
@@ -965,12 +879,6 @@ ExitThread(
     /* store the exit code */
     pThread->SetExitCode(dwExitCode);
 
-    /* pthread_exit runs TLS destructors and cleanup routines,
-       possibly registered by foreign code.  The right thing
-       to do here is to leave the PAL.  Our own TLS destructor
-       re-enters us explicitly. */
-    PAL_Leave(PAL_BoundaryTop);
-
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
     pthread_exit(NULL);
 
@@ -1019,7 +927,6 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->suspensionInfo.AcquireSuspensionLock(pThread);
-    IncrementEndingThreadCount();
     pThread->synchronizationInfo.SetThreadState(TS_DONE);
     pThread->suspensionInfo.ReleaseSuspensionLock(pThread);
 
@@ -1054,7 +961,6 @@ CorUnix::InternalEndCurrentThread(
     if (PROCGetNumberOfThreads() == 1)
     {
         TRACE("Last thread is exiting\n");
-        DecrementEndingThreadCount();
         TerminateCurrentProcessNoExit(FALSE);
     }
     else
@@ -1086,7 +992,6 @@ CorUnix::InternalEndCurrentThread(
 #ifdef FEATURE_PAL_SXS
         // Ensure that EH is disabled on the current thread
         SEHDisable(pThread);
-        PAL_Leave(PAL_BoundaryTop);
 #endif // FEATURE_PAL_SXS
 
 
@@ -1096,8 +1001,6 @@ CorUnix::InternalEndCurrentThread(
         //
 
         pThread->ReleaseThreadReference();
-        DecrementEndingThreadCount();
-
     }
 }
 
@@ -1730,14 +1633,6 @@ CPalThread::ThreadEntry(
     }
 #endif // !HAVE_MACH_EXCEPTIONS
 
-#if defined(FEATURE_PAL_SXS) && defined(_DEBUG)
-    // We cannot assert yet, as we haven't set in this thread into the TLS, and so __ASSERT_ENTER
-    // will fail if the assert fails and we'll crash.
-    //_ASSERT_MSG(pThread->m_fInPal == 1, "New threads should always be in the PAL upon ThreadEntry.\n");
-    if (g_Dbg_asserts_enabled && pThread->m_fInPal != 1)
-        DebugBreak();
-#endif // FEATURE_PAL_SXS && _DEBUG
-
     pThread->m_threadId = THREADSilentGetCurrentThreadId();
     pThread->m_pthreadSelf = pthread_self();
 #if HAVE_MACH_THREADS
@@ -1807,11 +1702,9 @@ CPalThread::ThreadEntry(
     retValue = (*pfnStartRoutine)(pvPar);
 
     TRACE("Thread exited (%u)\n", retValue);
-    ExitThread(retValue);
+    pThread->SetExitCode(retValue);
 
-    /* Note: never get here */
-    ASSERT("ExitThread failed!\n");
-    for (;;);
+    return NULL;
 
 fail:
 
@@ -2267,18 +2160,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = sehInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
-    palError = tlsInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
     palError = apcInfo.InitializePreCreate();
     if (NO_ERROR != palError)
     {
@@ -2358,6 +2239,13 @@ CPalThread::RunPostCreateInitializers(
     // Call the post-create initializers for embedded classes
     //
 
+    if (pthread_setspecific(thObjKey, reinterpret_cast<void*>(this)))
+    {
+        ASSERT("Unable to set the thread object key's value\n");
+        palError = ERROR_INTERNAL_ERROR;
+        goto RunPostCreateInitializersExit;
+    }
+
     palError = synchronizationInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
@@ -2365,18 +2253,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = suspensionInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = sehInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = tlsInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
@@ -2395,7 +2271,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
 #ifdef FEATURE_PAL_SXS
-    _ASSERTE(m_fInPal);
     palError = SEHEnable(this);
     if (NO_ERROR != palError)
     {
@@ -2598,108 +2473,6 @@ CPalThread::FreeSignalAlternateStack()
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
-
-/* IncrementEndingThreadCount and DecrementEndingThreadCount are used
-to control a global counter that indicates if any threads are about to die.
-Once a thread's state is set to TS_DONE, it cannot be suspended. However,
-the dying thread can still access PAL resources, which is dangerous if the
-thread dies during PAL cleanup. To avoid this, the shutdown thread calls
-WaitForEndingThreads after suspending all other threads. WaitForEndingThreads
-uses a condition variable along with the global counter to wait for remaining
-PAL threads to die before proceeding with cleanup. As threads die, they
-decrement the counter and signal the condition variable. */
-
-void
-IncrementEndingThreadCount(
-    void
-    )
-{
-    int iError;
-
-    iError = pthread_mutex_lock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_lock returned %d\n", iError);
-
-    iEndingThreads++;
-
-    iError = pthread_mutex_unlock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_unlock returned %d\n", iError);
-}
-
-void
-DecrementEndingThreadCount(
-    void
-    )
-{
-    int iError;
-
-    iError = pthread_mutex_lock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_lock returned %d\n", iError);
-
-    iEndingThreads--;
-    _ASSERTE(iEndingThreads >= 0);
-
-    if (iEndingThreads == 0)
-    {
-        iError = pthread_cond_signal(&ptcEndThread);
-        _ASSERT_MSG(iError == 0, "pthread_cond_signal returned %d\n", iError);
-    }
-
-    iError = pthread_mutex_unlock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_unlock returned %d\n", iError);
-}
-
-void
-WaitForEndingThreads(
-    void
-    )
-{
-    int iError;
-
-    iError = pthread_mutex_lock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_lock returned %d\n", iError);
-
-    while (iEndingThreads > 0)
-    {
-        iError = pthread_cond_wait(&ptcEndThread, &ptmEndThread);
-        _ASSERT_MSG(iError == 0, "pthread_cond_wait returned %d\n", iError);
-    }
-
-    iError = pthread_mutex_unlock(&ptmEndThread);
-    _ASSERT_MSG(iError == 0, "pthread_mutex_unlock returned %d\n", iError);
-}
-
-PAL_ERROR
-CorUnix::InitializeEndingThreadsData(
-    void
-    )
-{
-    PAL_ERROR palError = ERROR_INTERNAL_ERROR;
-    int iError;
-
-    iError = pthread_mutex_init(&ptmEndThread, NULL);
-    if (0 != iError)
-    {
-        goto InitializeEndingThreadsDataExit;
-    }
-
-    iError = pthread_cond_init(&ptcEndThread, NULL);
-    if (0 != iError)
-    {
-        //
-        // Don't bother checking the return value of pthread_mutex_destroy
-        // since PAL initialization will now fail.
-        //
-
-        pthread_mutex_destroy(&ptmEndThread);
-        goto InitializeEndingThreadsDataExit;
-    }
-
-    palError = NO_ERROR;
-
-InitializeEndingThreadsDataExit:
-
-    return palError;
-}
 
 void
 ThreadCleanupRoutine(
