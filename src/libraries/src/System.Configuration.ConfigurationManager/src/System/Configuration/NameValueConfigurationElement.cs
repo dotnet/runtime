@@ -6,19 +6,13 @@ namespace System.Configuration
 {
     public sealed class NameValueConfigurationElement : ConfigurationElement
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
         private static readonly ConfigurationProperty s_propName =
             new ConfigurationProperty("name", typeof(string), string.Empty, ConfigurationPropertyOptions.IsKey);
 
         private static readonly ConfigurationProperty s_propValue =
             new ConfigurationProperty("value", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
-        static NameValueConfigurationElement()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection { s_propName, s_propValue };
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propName, s_propValue };
 
         internal NameValueConfigurationElement() { }
 

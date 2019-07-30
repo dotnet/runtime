@@ -271,7 +271,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         sealed internal class QilPatterns
         {
-            private BitArray _bits;
+            private readonly BitArray _bits;
 
             public QilPatterns(int szBits, bool allSet)
             {

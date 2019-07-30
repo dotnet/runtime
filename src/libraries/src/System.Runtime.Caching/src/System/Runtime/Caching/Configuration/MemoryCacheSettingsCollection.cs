@@ -11,13 +11,7 @@ namespace System.Runtime.Caching.Configuration
     CollectionType = ConfigurationElementCollectionType.AddRemoveClearMap)]
     internal sealed class MemoryCacheSettingsCollection : ConfigurationElementCollection
     {
-        private static ConfigurationPropertyCollection s_properties;
-
-        static MemoryCacheSettingsCollection()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection();
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection();
 
         protected override ConfigurationPropertyCollection Properties
         {

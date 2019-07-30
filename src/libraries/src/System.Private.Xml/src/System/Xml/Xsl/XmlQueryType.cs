@@ -20,33 +20,7 @@ namespace System.Xml.Xsl
     /// </summary>
     internal abstract class XmlQueryType : ListBase<XmlQueryType>
     {
-        private static readonly BitMatrix s_typeCodeDerivation;
         private int _hashCode;
-
-
-        //-----------------------------------------------
-        // Static Constructor
-        //-----------------------------------------------
-        static XmlQueryType()
-        {
-            s_typeCodeDerivation = new BitMatrix(s_baseTypeCodes.Length);
-
-            // Build derivation matrix
-            for (int i = 0; i < s_baseTypeCodes.Length; i++)
-            {
-                int nextAncestor = i;
-
-                while (true)
-                {
-                    s_typeCodeDerivation[i, nextAncestor] = true;
-                    if ((int)s_baseTypeCodes[nextAncestor] == nextAncestor)
-                        break;
-
-                    nextAncestor = (int)s_baseTypeCodes[nextAncestor];
-                }
-            }
-        }
-
 
         //-----------------------------------------------
         // ItemType, OccurrenceIndicator Properties
@@ -871,6 +845,29 @@ namespace System.Xml.Xsl
             /* YearMonthDuration           */ "xdt:yearMonthDuration",
             /* DayTimeDuration             */ "xdt:dayTimeDuration",
         };
+
+        private static readonly BitMatrix s_typeCodeDerivation = CreateTypeCodeDerivation();
+
+        private static BitMatrix CreateTypeCodeDerivation()
+        {
+            var matrix = new BitMatrix(s_baseTypeCodes.Length);
+
+            for (int i = 0; i < s_baseTypeCodes.Length; i++)
+            {
+                int nextAncestor = i;
+
+                while (true)
+                {
+                    matrix[i, nextAncestor] = true;
+                    if ((int)s_baseTypeCodes[nextAncestor] == nextAncestor)
+                        break;
+
+                    nextAncestor = (int)s_baseTypeCodes[nextAncestor];
+                }
+            }
+
+            return matrix;
+        }
         #endregion
 
         /// <summary>

@@ -15,10 +15,6 @@ namespace System.Text.RegularExpressions
         // During static initialisation of Regex we check
         private const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
 
-        // DefaultMatchTimeout specifies the match timeout to use if no other timeout was specified
-        // by one means or another. Typically, it is set to InfiniteMatchTimeout.
-        internal static readonly TimeSpan s_defaultMatchTimeout;
-
         // InfiniteMatchTimeout specifies that match timeout is switched OFF. It allows for faster code paths
         // compared to simply having a very large timeout.
         // We do not want to ask users to use System.Threading.Timeout.InfiniteTimeSpan as a parameter because:
@@ -29,13 +25,12 @@ namespace System.Text.RegularExpressions
         // value as Timeout.InfiniteTimeSpan creating an implementation detail dependency only.
         public static readonly TimeSpan InfiniteMatchTimeout = Timeout.InfiniteTimeSpan;
 
+        // DefaultMatchTimeout specifies the match timeout to use if no other timeout was specified
+        // by one means or another. Typically, it is set to InfiniteMatchTimeout.
+        internal static readonly TimeSpan s_defaultMatchTimeout = InitDefaultMatchTimeout();
+
         // timeout for the execution of this regex
         protected internal TimeSpan internalMatchTimeout;
-
-        static Regex()
-        {
-            s_defaultMatchTimeout = InitDefaultMatchTimeout();
-        }
 
         /// <summary>
         /// The match timeout used by this Regex instance.

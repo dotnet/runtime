@@ -25,36 +25,36 @@ namespace System.Text.RegularExpressions
      */
     internal abstract class RegexCompiler
     {
-        // fields that never change (making them saves about 6% overall running time)
-        private static FieldInfo s_textbegF;
-        private static FieldInfo s_textendF;
-        private static FieldInfo s_textstartF;
-        private static FieldInfo s_textposF;
-        private static FieldInfo s_textF;
-        private static FieldInfo s_trackposF;
-        private static FieldInfo s_trackF;
-        private static FieldInfo s_stackposF;
-        private static FieldInfo s_stackF;
-        private static FieldInfo s_trackcountF;
+        // fields that never change
+        private static readonly FieldInfo s_textbegF = RegexRunnerField("runtextbeg");
+        private static readonly FieldInfo s_textendF = RegexRunnerField("runtextend");
+        private static readonly FieldInfo s_textstartF = RegexRunnerField("runtextstart");
+        private static readonly FieldInfo s_textposF = RegexRunnerField("runtextpos");
+        private static readonly FieldInfo s_textF = RegexRunnerField("runtext");
+        private static readonly FieldInfo s_trackposF = RegexRunnerField("runtrackpos");
+        private static readonly FieldInfo s_trackF = RegexRunnerField("runtrack");
+        private static readonly FieldInfo s_stackposF = RegexRunnerField("runstackpos");
+        private static readonly FieldInfo s_stackF = RegexRunnerField("runstack");
+        private static readonly FieldInfo s_trackcountF = RegexRunnerField("runtrackcount");
 
-        private static MethodInfo s_ensurestorageM;
-        private static MethodInfo s_captureM;
-        private static MethodInfo s_transferM;
-        private static MethodInfo s_uncaptureM;
-        private static MethodInfo s_ismatchedM;
-        private static MethodInfo s_matchlengthM;
-        private static MethodInfo s_matchindexM;
-        private static MethodInfo s_isboundaryM;
-        private static MethodInfo s_isECMABoundaryM;
-        private static MethodInfo s_chartolowerM;
-        private static MethodInfo s_getcharM;
-        private static MethodInfo s_crawlposM;
-        private static MethodInfo s_charInSetM;
-        private static MethodInfo s_getCurrentCulture;
-        private static MethodInfo s_getInvariantCulture;
-        private static MethodInfo s_checkTimeoutM;
+        private static readonly MethodInfo s_ensurestorageM = RegexRunnerMethod("EnsureStorage");
+        private static readonly MethodInfo s_captureM = RegexRunnerMethod("Capture");
+        private static readonly MethodInfo s_transferM = RegexRunnerMethod("TransferCapture");
+        private static readonly MethodInfo s_uncaptureM = RegexRunnerMethod("Uncapture");
+        private static readonly MethodInfo s_ismatchedM = RegexRunnerMethod("IsMatched");
+        private static readonly MethodInfo s_matchlengthM = RegexRunnerMethod("MatchLength");
+        private static readonly MethodInfo s_matchindexM = RegexRunnerMethod("MatchIndex");
+        private static readonly MethodInfo s_isboundaryM = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isECMABoundaryM = RegexRunnerMethod("IsECMABoundary");
+        private static readonly MethodInfo s_chartolowerM = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) });
+        private static readonly MethodInfo s_getcharM = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) });
+        private static readonly MethodInfo s_crawlposM = RegexRunnerMethod("Crawlpos");
+        private static readonly MethodInfo s_charInSetM = RegexRunnerMethod("CharInClass");
+        private static readonly MethodInfo s_getCurrentCulture = typeof(CultureInfo).GetMethod("get_CurrentCulture");
+        private static readonly MethodInfo s_getInvariantCulture = typeof(CultureInfo).GetMethod("get_InvariantCulture");
+        private static readonly MethodInfo s_checkTimeoutM = RegexRunnerMethod("CheckTimeout");
 #if DEBUG
-        private static MethodInfo s_dumpstateM;
+        private static readonly MethodInfo s_dumpstateM = RegexRunnerMethod("DumpState");
 #endif
 
         protected ILGenerator _ilg;
@@ -113,44 +113,6 @@ namespace System.Text.RegularExpressions
         private const int Forejumpback = 9;    // back part of forejump
         private const int Uniquecount = 10;
         private const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
-
-        static RegexCompiler()
-        {
-            // fields
-            s_textbegF = RegexRunnerField("runtextbeg");
-            s_textendF = RegexRunnerField("runtextend");
-            s_textstartF = RegexRunnerField("runtextstart");
-            s_textposF = RegexRunnerField("runtextpos");
-            s_textF = RegexRunnerField("runtext");
-            s_trackposF = RegexRunnerField("runtrackpos");
-            s_trackF = RegexRunnerField("runtrack");
-            s_stackposF = RegexRunnerField("runstackpos");
-            s_stackF = RegexRunnerField("runstack");
-            s_trackcountF = RegexRunnerField("runtrackcount");
-
-            // methods
-            s_ensurestorageM = RegexRunnerMethod("EnsureStorage");
-            s_captureM = RegexRunnerMethod("Capture");
-            s_transferM = RegexRunnerMethod("TransferCapture");
-            s_uncaptureM = RegexRunnerMethod("Uncapture");
-            s_ismatchedM = RegexRunnerMethod("IsMatched");
-            s_matchlengthM = RegexRunnerMethod("MatchLength");
-            s_matchindexM = RegexRunnerMethod("MatchIndex");
-            s_isboundaryM = RegexRunnerMethod("IsBoundary");
-            s_charInSetM = RegexRunnerMethod("CharInClass");
-            s_isECMABoundaryM = RegexRunnerMethod("IsECMABoundary");
-            s_crawlposM = RegexRunnerMethod("Crawlpos");
-            s_checkTimeoutM = RegexRunnerMethod("CheckTimeout");
-
-            s_chartolowerM = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) });
-            s_getcharM = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) });
-            s_getCurrentCulture = typeof(CultureInfo).GetMethod("get_CurrentCulture");
-            s_getInvariantCulture = typeof(CultureInfo).GetMethod("get_InvariantCulture");
-                
-#if DEBUG
-            s_dumpstateM = RegexRunnerMethod("DumpState");
-#endif
-        }
 
         private static FieldInfo RegexRunnerField(string fieldname)
         {

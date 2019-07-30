@@ -7,13 +7,7 @@ namespace System.Configuration
     [ConfigurationCollection(typeof(ConnectionStringSettings))]
     public sealed class ConnectionStringSettingsCollection : ConfigurationElementCollection
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
-        static ConnectionStringSettingsCollection()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection();
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection();
 
         public ConnectionStringSettingsCollection()
             : base(StringComparer.OrdinalIgnoreCase)

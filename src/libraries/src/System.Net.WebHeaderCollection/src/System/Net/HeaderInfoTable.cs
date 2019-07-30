@@ -4,7 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 
 namespace System.Net
@@ -15,7 +15,7 @@ namespace System.Net
         private static readonly Func<string, string[]> s_multiParser = value => ParseValueHelper(value, isSetCookie: false);
         private static readonly Func<string, string[]> s_setCookieParser = value => ParseValueHelper(value, isSetCookie: true);
         private static readonly HeaderInfo s_unknownHeaderInfo = new HeaderInfo(string.Empty, false, false, false, s_singleParser);
-        private static readonly Hashtable s_headerHashTable;
+        private static readonly Hashtable s_headerHashTable = CreateHeaderHashtable();
 
         private static string[] ParseValueHelper(string value, bool isSetCookie)
         {
@@ -76,69 +76,66 @@ namespace System.Net
             return (isExpires && noComma);
         }
 
-        static HeaderInfoTable()
+        private static Hashtable CreateHeaderHashtable()
         {
-            HeaderInfo[] InfoArray = new HeaderInfo[]
+            const int Items = 52;
+            var headers = new Hashtable(Items * 2, CaseInsensitiveAscii.StaticInstance)
             {
-                new HeaderInfo(HttpKnownHeaderNames.Age,                false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Allow,              false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Accept,             true,   false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Authorization,      false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.AcceptRanges,       false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.AcceptCharset,      false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.AcceptEncoding,     false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.AcceptLanguage,     false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Cookie,             false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Connection,         true,   false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentMD5,         false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentType,        true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.CacheControl,       false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentRange,       false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentLength,      true,   true,   false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentEncoding,    false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentLanguage,    false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ContentLocation,    false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Date,               true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.ETag,               false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Expect,             true,   false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Expires,            false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.From,               false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Host,               true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.IfMatch,            false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.IfRange,            false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.IfNoneMatch,        false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.IfModifiedSince,    true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.IfUnmodifiedSince,  false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.KeepAlive,          false,  true,   false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Location,           false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.LastModified,       false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.MaxForwards,        false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Pragma,             false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ProxyAuthenticate,  false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ProxyAuthorization, false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.ProxyConnection,    true,   false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Range,              true,   false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Referer,            true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.RetryAfter,         false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Server,             false,  false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.SetCookie,          false,  false,  true,   s_setCookieParser),
-                new HeaderInfo(HttpKnownHeaderNames.SetCookie2,         false,  false,  true,   s_setCookieParser),
-                new HeaderInfo(HttpKnownHeaderNames.TE,                 false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Trailer,            false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.TransferEncoding,   true,   true,   true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Upgrade,            false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.UserAgent,          true,   false,  false,  s_singleParser),
-                new HeaderInfo(HttpKnownHeaderNames.Via,                false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Vary,               false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.Warning,            false,  false,  true,   s_multiParser),
-                new HeaderInfo(HttpKnownHeaderNames.WWWAuthenticate,    false,  true,   true,   s_singleParser)
+                { HttpKnownHeaderNames.Age,                new HeaderInfo(HttpKnownHeaderNames.Age,                false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Allow,              new HeaderInfo(HttpKnownHeaderNames.Allow,              false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Accept,             new HeaderInfo(HttpKnownHeaderNames.Accept,             true,   false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Authorization,      new HeaderInfo(HttpKnownHeaderNames.Authorization,      false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.AcceptRanges,       new HeaderInfo(HttpKnownHeaderNames.AcceptRanges,       false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.AcceptCharset,      new HeaderInfo(HttpKnownHeaderNames.AcceptCharset,      false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.AcceptEncoding,     new HeaderInfo(HttpKnownHeaderNames.AcceptEncoding,     false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.AcceptLanguage,     new HeaderInfo(HttpKnownHeaderNames.AcceptLanguage,     false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Cookie,             new HeaderInfo(HttpKnownHeaderNames.Cookie,             false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Connection,         new HeaderInfo(HttpKnownHeaderNames.Connection,         true,   false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ContentMD5,         new HeaderInfo(HttpKnownHeaderNames.ContentMD5,         false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.ContentType,        new HeaderInfo(HttpKnownHeaderNames.ContentType,        true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.CacheControl,       new HeaderInfo(HttpKnownHeaderNames.CacheControl,       false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ContentRange,       new HeaderInfo(HttpKnownHeaderNames.ContentRange,       false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.ContentLength,      new HeaderInfo(HttpKnownHeaderNames.ContentLength,      true,   true,   false,  s_singleParser) },
+                { HttpKnownHeaderNames.ContentEncoding,    new HeaderInfo(HttpKnownHeaderNames.ContentEncoding,    false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ContentLanguage,    new HeaderInfo(HttpKnownHeaderNames.ContentLanguage,    false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ContentLocation,    new HeaderInfo(HttpKnownHeaderNames.ContentLocation,    false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Date,               new HeaderInfo(HttpKnownHeaderNames.Date,               true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.ETag,               new HeaderInfo(HttpKnownHeaderNames.ETag,               false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Expect,             new HeaderInfo(HttpKnownHeaderNames.Expect,             true,   false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Expires,            new HeaderInfo(HttpKnownHeaderNames.Expires,            false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.From,               new HeaderInfo(HttpKnownHeaderNames.From,               false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Host,               new HeaderInfo(HttpKnownHeaderNames.Host,               true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.IfMatch,            new HeaderInfo(HttpKnownHeaderNames.IfMatch,            false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.IfRange,            new HeaderInfo(HttpKnownHeaderNames.IfRange,            false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.IfNoneMatch,        new HeaderInfo(HttpKnownHeaderNames.IfNoneMatch,        false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.IfModifiedSince,    new HeaderInfo(HttpKnownHeaderNames.IfModifiedSince,    true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.IfUnmodifiedSince,  new HeaderInfo(HttpKnownHeaderNames.IfUnmodifiedSince,  false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.KeepAlive,          new HeaderInfo(HttpKnownHeaderNames.KeepAlive,          false,  true,   false,  s_singleParser) },
+                { HttpKnownHeaderNames.Location,           new HeaderInfo(HttpKnownHeaderNames.Location,           false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.LastModified,       new HeaderInfo(HttpKnownHeaderNames.LastModified,       false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.MaxForwards,        new HeaderInfo(HttpKnownHeaderNames.MaxForwards,        false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Pragma,             new HeaderInfo(HttpKnownHeaderNames.Pragma,             false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ProxyAuthenticate,  new HeaderInfo(HttpKnownHeaderNames.ProxyAuthenticate,  false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ProxyAuthorization, new HeaderInfo(HttpKnownHeaderNames.ProxyAuthorization, false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.ProxyConnection,    new HeaderInfo(HttpKnownHeaderNames.ProxyConnection,    true,   false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Range,              new HeaderInfo(HttpKnownHeaderNames.Range,              true,   false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Referer,            new HeaderInfo(HttpKnownHeaderNames.Referer,            true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.RetryAfter,         new HeaderInfo(HttpKnownHeaderNames.RetryAfter,         false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Server,             new HeaderInfo(HttpKnownHeaderNames.Server,             false,  false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.SetCookie,          new HeaderInfo(HttpKnownHeaderNames.SetCookie,          false,  false,  true,   s_setCookieParser) },
+                { HttpKnownHeaderNames.SetCookie2,         new HeaderInfo(HttpKnownHeaderNames.SetCookie2,         false,  false,  true,   s_setCookieParser) },
+                { HttpKnownHeaderNames.TE,                 new HeaderInfo(HttpKnownHeaderNames.TE,                 false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Trailer,            new HeaderInfo(HttpKnownHeaderNames.Trailer,            false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.TransferEncoding,   new HeaderInfo(HttpKnownHeaderNames.TransferEncoding,   true,   true,   true,   s_multiParser) },
+                { HttpKnownHeaderNames.Upgrade,            new HeaderInfo(HttpKnownHeaderNames.Upgrade,            false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.UserAgent,          new HeaderInfo(HttpKnownHeaderNames.UserAgent,          true,   false,  false,  s_singleParser) },
+                { HttpKnownHeaderNames.Via,                new HeaderInfo(HttpKnownHeaderNames.Via,                false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Vary,               new HeaderInfo(HttpKnownHeaderNames.Vary,               false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.Warning,            new HeaderInfo(HttpKnownHeaderNames.Warning,            false,  false,  true,   s_multiParser) },
+                { HttpKnownHeaderNames.WWWAuthenticate,    new HeaderInfo(HttpKnownHeaderNames.WWWAuthenticate,    false,  true,   true,   s_singleParser) }
             };
-
-            s_headerHashTable = new Hashtable(InfoArray.Length * 2, CaseInsensitiveAscii.StaticInstance);
-            for (int i = 0; i < InfoArray.Length; i++)
-            {
-                s_headerHashTable[InfoArray[i].HeaderName] = InfoArray[i];
-            }
+            Debug.Assert(headers.Count == Items);
+            return headers;
         }
 
         internal HeaderInfo this[string name]

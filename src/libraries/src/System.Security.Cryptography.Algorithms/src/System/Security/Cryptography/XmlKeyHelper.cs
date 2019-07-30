@@ -265,42 +265,24 @@ namespace System.Security.Cryptography
 
             private static class Functions
             {
-                private static readonly Func<string, object> s_xDocumentCreate;
-                private static readonly PropertyInfo s_docRootProperty;
-                private static readonly MethodInfo s_getElementsMethod;
-                private static readonly PropertyInfo s_elementNameProperty;
-                private static readonly PropertyInfo s_nameNameProperty;
-                private static readonly PropertyInfo s_elementValueProperty;
-
-                static Functions()
-                {
-                    Type xDocument =
-                        Type.GetType(
-                            "System.Xml.Linq.XDocument, System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
-
-                    MethodInfo docCreateMethod = xDocument.GetMethod(
+                private static readonly Type s_xDocument = Type.GetType("System.Xml.Linq.XDocument, System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
+                private static readonly Func<string, object> s_xDocumentCreate =
+                    (Func<string, object>)s_xDocument.GetMethod(
                         "Parse",
                         BindingFlags.Static | BindingFlags.Public,
                         null,
                         new[] { typeof(string) },
-                        null);
-
-                    s_xDocumentCreate =
-                        (Func<string, object>)docCreateMethod.CreateDelegate(typeof(Func<string, object>));
-
-                    s_docRootProperty = xDocument.GetProperty("Root");
-
-                    s_getElementsMethod = s_docRootProperty.PropertyType.GetMethod(
+                        null).CreateDelegate(typeof(Func<string, object>));
+                private static readonly PropertyInfo s_docRootProperty = s_xDocument.GetProperty("Root");
+                private static readonly MethodInfo s_getElementsMethod = s_docRootProperty.PropertyType.GetMethod(
                         "Elements",
                         BindingFlags.Instance | BindingFlags.Public,
                         null,
                         Array.Empty<Type>(),
                         null);
-
-                    s_elementNameProperty = s_docRootProperty.PropertyType.GetProperty("Name");
-                    s_nameNameProperty = s_elementNameProperty.PropertyType.GetProperty("LocalName");
-                    s_elementValueProperty = s_docRootProperty.PropertyType.GetProperty("Value");
-                }
+                private static readonly PropertyInfo s_elementNameProperty = s_docRootProperty.PropertyType.GetProperty("Name");
+                private static readonly PropertyInfo s_nameNameProperty = s_elementNameProperty.PropertyType.GetProperty("LocalName");
+                private static readonly PropertyInfo s_elementValueProperty = s_docRootProperty.PropertyType.GetProperty("Value");
 
                 internal static object ParseDocument(string xmlString) =>
                     s_docRootProperty.GetValue(s_xDocumentCreate(xmlString));

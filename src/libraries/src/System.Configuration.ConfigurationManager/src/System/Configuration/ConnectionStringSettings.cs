@@ -6,8 +6,6 @@ namespace System.Configuration
 {
     public sealed class ConnectionStringSettings : ConfigurationElement
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
         private static readonly ConfigurationProperty s_propName =
             new ConfigurationProperty("name", typeof(string), null, null,
                 ConfigurationProperty.s_nonEmptyStringValidator,
@@ -19,11 +17,7 @@ namespace System.Configuration
         private static readonly ConfigurationProperty s_propProviderName =
             new ConfigurationProperty("providerName", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
-        static ConnectionStringSettings()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection { s_propName, s_propConnectionString, s_propProviderName };
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propName, s_propConnectionString, s_propProviderName };
 
         public ConnectionStringSettings() { }
 

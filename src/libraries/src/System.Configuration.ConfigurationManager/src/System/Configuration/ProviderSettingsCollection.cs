@@ -7,13 +7,7 @@ namespace System.Configuration
     [ConfigurationCollection(typeof(ProviderSettings))]
     public sealed class ProviderSettingsCollection : ConfigurationElementCollection
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
-        static ProviderSettingsCollection()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection();
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection();
 
         public ProviderSettingsCollection() :
             base(StringComparer.OrdinalIgnoreCase)

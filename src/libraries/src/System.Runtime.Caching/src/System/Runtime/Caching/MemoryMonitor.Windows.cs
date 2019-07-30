@@ -12,6 +12,7 @@ namespace System.Runtime.Caching
 {
     internal abstract partial class MemoryMonitor
     {
+#pragma warning disable CA1810 // explicit static cctor
         static MemoryMonitor()
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatusEx = default;
@@ -22,5 +23,6 @@ namespace System.Runtime.Caching
                 s_totalVirtual = (long)memoryStatusEx.ullTotalVirtual;
             }
         }
+#pragma warning restore CA1810
     }
 }

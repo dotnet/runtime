@@ -35,8 +35,6 @@ namespace System.Drawing
 {
     public static class SystemIcons
     {
-
-        static Icon[] icons;
         private const int Application_Winlogo = 0;
         private const int Asterisk_Information = 1;
         private const int Error_Hand = 2;
@@ -44,28 +42,27 @@ namespace System.Drawing
         private const int Question_ = 4;
         private const int Shield_ = 5;
 
-        static SystemIcons()
+        // we minimize the # of icons to load since most of them are duplicates
+        // we use an internal .ctor to ensure the SystemIcons can't de disposed
+        private static readonly Icon[] icons = new Icon[6]
         {
-            // we minimize the # of icons to load since most of them are duplicates
-            icons = new Icon[6];
-            // we use an internal .ctor to ensure the SystemIcons can't de disposed
 #if NETCORE
             // TODO: Decide which icons to use for this.
-            icons[Application_Winlogo] = new Icon("placeholder.ico", true);
-            icons[Asterisk_Information] = new Icon("placeholder.ico", true);
-            icons[Error_Hand] = new Icon("placeholder.ico", true);
-            icons[Exclamation_Warning] = new Icon("placeholder.ico", true);
-            icons[Question_] = new Icon("placeholder.ico", true);
-            icons[Shield_] = new Icon("placeholder.ico", true);
+            new Icon("placeholder.ico", undisposable:true), // Application_Winlogo
+            new Icon("placeholder.ico", undisposable:true), // Asterisk_Information
+            new Icon("placeholder.ico", undisposable:true), // Error_Hand
+            new Icon("placeholder.ico", undisposable:true), // Exclamation_Warning
+            new Icon("placeholder.ico", undisposable:true), // Question_
+            new Icon("placeholder.ico", undisposable:true), // Shield_
 #else
-            icons[Application_Winlogo] = new Icon("Mono.ico", true);
-            icons[Asterisk_Information] = new Icon("Information.ico", true);
-            icons[Error_Hand] = new Icon("Error.ico", true);
-            icons[Exclamation_Warning] = new Icon("Warning.ico", true);
-            icons[Question_] = new Icon("Question.ico", true);
-            icons[Shield_] = new Icon("Shield.ico", true);
+            new Icon("Mono.ico", undisposable:true),        // Application_Winlogo
+            new Icon("Information.ico", undisposable:true), // Asterisk_Information
+            new Icon("Error.ico", undisposable:true),       // Error_Hand
+            new Icon("Warning.ico", undisposable:true),     // Exclamation_Warning
+            new Icon("Question.ico", undisposable:true),    // Question_
+            new Icon("Shield.ico", undisposable:true),      // Shield_
 #endif
-        }
+        };
 
         // note: same as WinLogo (for Mono)
         public static Icon Application

@@ -8,34 +8,23 @@ namespace System.Configuration
 {
     public sealed class SettingElement : ConfigurationElement
     {
-        private static ConfigurationPropertyCollection _properties;
-        private static readonly ConfigurationProperty _propName = new ConfigurationProperty(
+        private static readonly ConfigurationProperty s_propName = new ConfigurationProperty(
             "name",
             typeof(string),
             "",
             ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
-        private static readonly ConfigurationProperty _propSerializeAs = new ConfigurationProperty(
+        private static readonly ConfigurationProperty s_propSerializeAs = new ConfigurationProperty(
             "serializeAs",
             typeof(SettingsSerializeAs),
             SettingsSerializeAs.String,
             ConfigurationPropertyOptions.IsRequired);
-        private static readonly ConfigurationProperty _propValue = new ConfigurationProperty(
+        private static readonly ConfigurationProperty s_propValue = new ConfigurationProperty(
             "value",
             typeof(SettingValueElement),
             null,
             ConfigurationPropertyOptions.IsRequired);
-        private static XmlDocument _document = new XmlDocument();
-
-        static SettingElement()
-        {
-            // Property initialization
-            _properties = new ConfigurationPropertyCollection();
-
-            _properties.Add(_propName);
-            _properties.Add(_propSerializeAs);
-            _properties.Add(_propValue);
-
-        }
+        private static readonly XmlDocument s_document = new XmlDocument();
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection() { s_propName, s_propSerializeAs, s_propValue };
 
         public SettingElement()
         {
@@ -70,7 +59,7 @@ namespace System.Configuration
         {
             get
             {
-                return _properties;
+                return s_properties;
             }
         }
 
@@ -79,11 +68,11 @@ namespace System.Configuration
         {
             get
             {
-                return (string)base[_propName];
+                return (string)base[s_propName];
             }
             set
             {
-                base[_propName] = value;
+                base[s_propName] = value;
             }
         }
 
@@ -92,11 +81,11 @@ namespace System.Configuration
         {
             get
             {
-                return (SettingsSerializeAs)base[_propSerializeAs];
+                return (SettingsSerializeAs)base[s_propSerializeAs];
             }
             set
             {
-                base[_propSerializeAs] = value;
+                base[s_propSerializeAs] = value;
             }
         }
 
@@ -105,11 +94,11 @@ namespace System.Configuration
         {
             get
             {
-                return (SettingValueElement)base[_propValue];
+                return (SettingValueElement)base[s_propValue];
             }
             set
             {
-                base[_propValue] = value;
+                base[s_propValue] = value;
             }
         }
     }

@@ -45,14 +45,12 @@ namespace System.Runtime.Serialization
 
         private XmlObjectSerializerReadContext _context;
 
-        private static Hashtable s_nsToPrefixTable;
+        private static readonly Hashtable s_nsToPrefixTable = new Hashtable();
 
-        private static Hashtable s_prefixToNsTable;
+        private static readonly Hashtable s_prefixToNsTable = new Hashtable();
 
         static ExtensionDataReader()
         {
-            s_nsToPrefixTable = new Hashtable();
-            s_prefixToNsTable = new Hashtable();
             AddPrefix(Globals.XsiPrefix, Globals.SchemaInstanceNamespace);
             AddPrefix(Globals.SerPrefix, Globals.SerializationNamespace);
             AddPrefix(string.Empty, string.Empty);

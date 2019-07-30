@@ -10,55 +10,42 @@ namespace System.Runtime.Caching.Configuration
 {
     internal sealed class MemoryCacheElement : ConfigurationElement
     {
-        private static ConfigurationPropertyCollection s_properties;
-        private static readonly ConfigurationProperty s_propName;
-        private static readonly ConfigurationProperty s_propPhysicalMemoryLimitPercentage;
-        private static readonly ConfigurationProperty s_propCacheMemoryLimitMegabytes;
-        private static readonly ConfigurationProperty s_propPollingInterval;
-
-        static MemoryCacheElement()
+        private static readonly ConfigurationProperty s_propName =
+            new ConfigurationProperty("name",
+                typeof(string),
+                null,
+                new WhiteSpaceTrimStringConverter(),
+                new StringValidator(1),
+                ConfigurationPropertyOptions.IsRequired |
+                ConfigurationPropertyOptions.IsKey);
+        private static readonly ConfigurationProperty s_propPhysicalMemoryLimitPercentage =
+            new ConfigurationProperty("physicalMemoryLimitPercentage",
+                typeof(int),
+                (int)0,
+                null,
+                new IntegerValidator(0, 100),
+                ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propCacheMemoryLimitMegabytes =
+            new ConfigurationProperty("cacheMemoryLimitMegabytes",
+                typeof(int),
+                (int)0,
+                null,
+                new IntegerValidator(0, int.MaxValue),
+                ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propPollingInterval =
+            new ConfigurationProperty("pollingInterval",
+                typeof(TimeSpan),
+                TimeSpan.FromMilliseconds(ConfigUtil.DefaultPollingTimeMilliseconds),
+                new InfiniteTimeSpanConverter(),
+                new PositiveTimeSpanValidator(),
+                ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection()
         {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection();
-
-            s_propName =
-                new ConfigurationProperty("name",
-                                          typeof(string),
-                                          null,
-                                          new WhiteSpaceTrimStringConverter(),
-                                          new StringValidator(1),
-                                          ConfigurationPropertyOptions.IsRequired |
-                                          ConfigurationPropertyOptions.IsKey);
-
-            s_propPhysicalMemoryLimitPercentage =
-                new ConfigurationProperty("physicalMemoryLimitPercentage",
-                                          typeof(int),
-                                          (int)0,
-                                          null,
-                                          new IntegerValidator(0, 100),
-                                          ConfigurationPropertyOptions.None);
-
-            s_propCacheMemoryLimitMegabytes =
-                new ConfigurationProperty("cacheMemoryLimitMegabytes",
-                                          typeof(int),
-                                          (int)0,
-                                          null,
-                                          new IntegerValidator(0, int.MaxValue),
-                                          ConfigurationPropertyOptions.None);
-
-            s_propPollingInterval =
-                new ConfigurationProperty("pollingInterval",
-                                          typeof(TimeSpan),
-                                          TimeSpan.FromMilliseconds(ConfigUtil.DefaultPollingTimeMilliseconds),
-                                          new InfiniteTimeSpanConverter(),
-                                          new PositiveTimeSpanValidator(),
-                                          ConfigurationPropertyOptions.None);
-
-            s_properties.Add(s_propName);
-            s_properties.Add(s_propPhysicalMemoryLimitPercentage);
-            s_properties.Add(s_propCacheMemoryLimitMegabytes);
-            s_properties.Add(s_propPollingInterval);
-        }
+            s_propName,
+            s_propPhysicalMemoryLimitPercentage,
+            s_propCacheMemoryLimitMegabytes,
+            s_propPollingInterval
+        };
 
         internal MemoryCacheElement()
         {

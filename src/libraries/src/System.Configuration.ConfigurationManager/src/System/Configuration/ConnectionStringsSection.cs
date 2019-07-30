@@ -6,17 +6,11 @@ namespace System.Configuration
 {
     public sealed class ConnectionStringsSection : ConfigurationSection
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-
         private static readonly ConfigurationProperty s_propConnectionStrings =
             new ConfigurationProperty(null, typeof(ConnectionStringSettingsCollection), null,
                 ConfigurationPropertyOptions.IsDefaultCollection);
 
-        static ConnectionStringsSection()
-        {
-            // Property initialization
-            s_properties = new ConfigurationPropertyCollection { s_propConnectionStrings };
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propConnectionStrings };
 
         protected internal override ConfigurationPropertyCollection Properties => s_properties;
 
