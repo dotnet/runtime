@@ -324,6 +324,22 @@ namespace HttpStress
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
                 }),
+                
+                ("POST Duplex Dispose",
+                async ctx =>
+                {
+                    // try to reproduce conditions described in https://github.com/dotnet/corefx/issues/39819
+                    string content = ctx.GetRandomString(0, ctx.MaxContentLength);
+                    Version httpVersion = ctx.GetRandomHttpVersion();
+
+                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Version = httpVersion, Content = new StringDuplexContent(content) })
+                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        ValidateHttpVersion(m, httpVersion);
+                        ValidateStatusCode(m);
+                        // Cause the response to be disposed without reading the response body, which will cause the client to cancel the request
+                    }
+                }),
 
                 ("POST ExpectContinue",
                 async ctx =>
