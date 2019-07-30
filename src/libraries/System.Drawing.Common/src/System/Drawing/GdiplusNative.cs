@@ -1110,6 +1110,36 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipImageGetFrameDimensionsList(HandleRef image, Guid* dimensionIDs, int count);
+
+            [DllImport(LibraryName, ExactSpelling = true)]
+            internal static extern int GdipCreateMetafileFromEmf(IntPtr hEnhMetafile, bool deleteEmf, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true)]
+            internal static extern int GdipCreateMetafileFromWmf(IntPtr hMetafile, bool deleteWmf, WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true)]
+            internal static extern int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafileI(IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafileFileNameI(string fileName, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+
+            [DllImport(LibraryName, ExactSpelling = true)]
+            internal static extern int GdipPlayMetafileRecord(HandleRef metafile, EmfPlusRecordType recordType, int flags, int dataSize, byte[] data);
         }
 
         [StructLayout(LayoutKind.Sequential)]

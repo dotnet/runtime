@@ -531,19 +531,16 @@ namespace System.Drawing
             internal static extern int GdipEnumerateMetafileSrcRectDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipPlayMetafileRecord(HandleRef graphics, EmfPlusRecordType recordType, int flags, int dataSize, byte[] data);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSaveGraphics(HandleRef graphics, out int state);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipRestoreGraphics(HandleRef graphics, int state);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromWmf(HandleRef hMetafile, WmfPlaceableFileHeader wmfplaceable, [In] [Out] MetafileHeaderWmf metafileHeaderWmf);
+            internal static extern int GdipGetMetafileHeaderFromWmf(IntPtr hMetafile, WmfPlaceableFileHeader wmfplaceable, [In] [Out] MetafileHeaderWmf metafileHeaderWmf);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromEmf(HandleRef hEnhMetafile, [In] [Out] MetafileHeaderEmf metafileHeaderEmf);
+            internal static extern int GdipGetMetafileHeaderFromEmf(IntPtr hEnhMetafile, [In] [Out] MetafileHeaderEmf metafileHeaderEmf);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
@@ -558,43 +555,16 @@ namespace System.Drawing
             internal static extern int GdipGetHemfFromMetafile(HandleRef metafile, out IntPtr hEnhMetafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMetafileFromWmf(HandleRef hMetafile, bool deleteWmf, WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMetafileFromEmf(HandleRef hEnhMetafile, bool deleteEmf, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateMetafileFromStream(Interop.Ole32.IStream stream, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipRecordMetafile(HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipRecordMetafile(HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipRecordMetafileI(HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileFileNameI(string fileName, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            internal static extern int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipComment(HandleRef graphics, int sizeData, byte[] data);
