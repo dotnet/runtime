@@ -186,12 +186,7 @@ ves_icall_mono_string_to_utf8_impl (MonoStringHandle str, MonoError *error)
 MonoStringHandle
 ves_icall_string_new_wrapper_impl (const char *text, MonoError *error)
 {
-	if (text) {
-		MonoString *s = mono_string_new_checked (mono_domain_get (), text, error);
-		return_val_if_nok (error, NULL_HANDLE_STRING);
-		return MONO_HANDLE_NEW (MonoString, s);
-	}
-	return NULL_HANDLE_STRING;
+	return text ? mono_string_new_handle (mono_domain_get (), text, error) : NULL_HANDLE_STRING;
 }
 
 void
