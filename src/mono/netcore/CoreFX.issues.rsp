@@ -145,12 +145,6 @@
 # https://github.com/mono/mono/issues/14934
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
 
-# float conv.ovf.un opcodes not supported https://github.com/mono/mono/issues/14945
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToNullableULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToULongTest
--nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToNullableULongTest
-
 # Delegate creation w/ reflection https://github.com/mono/mono/issues/14950
 -nomethod System.Linq.Expressions.Tests.CallTests.EnumArgAndReturn
 
