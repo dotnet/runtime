@@ -72,6 +72,7 @@ namespace System.Net.WebSockets
             Receive = 2,
         }
 
+#pragma warning disable CA1810 // explicit static cctor
         static WebSocketProtocolComponent()
         {
             s_webSocketDllHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
@@ -120,6 +121,7 @@ namespace System.Net.WebSockets
                 };
             }
         }
+#pragma warning restore CA1810
 
         internal static string SupportedVersion
         {

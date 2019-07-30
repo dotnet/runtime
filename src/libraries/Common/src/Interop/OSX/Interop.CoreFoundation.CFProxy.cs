@@ -65,6 +65,7 @@ internal static partial class Interop
             private static readonly IntPtr kCFProxyTypeKey;
             private static readonly IntPtr kCFProxyUsernameKey;
 
+#pragma warning disable CA1810 // explicit static cctor
             static CFProxy()
             {
                 IntPtr lib = NativeLibrary.Load(Interop.Libraries.CFNetworkLibrary);
@@ -86,6 +87,7 @@ internal static partial class Interop
                     kCFProxyUsernameKey = LoadSymbol(lib, "kCFProxyUsernameKey");
                 }
             }
+#pragma warning restore CA1810
 
             public CFProxy(SafeCFDictionaryHandle dictionary)
             {

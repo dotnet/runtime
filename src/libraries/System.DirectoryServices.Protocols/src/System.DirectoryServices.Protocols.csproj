@@ -3,7 +3,7 @@
     <ProjectGuid>{135980AC-4583-44EC-894E-CB3B1A481920}</ProjectGuid>
     <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);0649</NoWarn>
+    <NoWarn>$(NoWarn);0649;CA1810</NoWarn>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>

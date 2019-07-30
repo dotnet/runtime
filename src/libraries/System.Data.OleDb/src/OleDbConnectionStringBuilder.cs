@@ -18,19 +18,29 @@ namespace System.Data.OleDb
     public sealed class OleDbConnectionStringBuilder : DbConnectionStringBuilder
     {
         private enum Keywords
-        { // specific ordering for ConnectionString output construction
-          //          NamedConnection,
+        {
             FileName,
-
             Provider,
             DataSource,
             PersistSecurityInfo,
-
             OleDbServices,
         }
-
-        private static readonly string[] _validKeywords;
-        private static readonly Dictionary<string, Keywords> _keywords;
+        private static readonly string[] s_validKeywords = new string[5]
+        {
+            DbConnectionStringKeywords.FileName,
+            DbConnectionStringKeywords.Provider,
+            DbConnectionStringKeywords.DataSource,
+            DbConnectionStringKeywords.PersistSecurityInfo,
+            DbConnectionStringKeywords.OleDbServices
+        };
+        private static readonly Dictionary<string, Keywords> s_keywords = new Dictionary<string, Keywords>(5, StringComparer.OrdinalIgnoreCase)
+        {
+            { DbConnectionStringKeywords.FileName, Keywords.FileName },
+            { DbConnectionStringKeywords.Provider, Keywords.Provider },
+            { DbConnectionStringKeywords.DataSource, Keywords.DataSource },
+            { DbConnectionStringKeywords.PersistSecurityInfo, Keywords.PersistSecurityInfo },
+            { DbConnectionStringKeywords.OleDbServices, Keywords.OleDbServices },
+        };
 
         private string[] _knownKeywords;
         private Dictionary<string, OleDbPropertyInfo> _propertyInfo;
@@ -44,29 +54,9 @@ namespace System.Data.OleDb
 
         private bool _persistSecurityInfo = DbConnectionStringDefaults.PersistSecurityInfo;
 
-        static OleDbConnectionStringBuilder()
-        {
-            string[] validKeywords = new string[5];
-            validKeywords[(int)Keywords.DataSource] = DbConnectionStringKeywords.DataSource;
-            validKeywords[(int)Keywords.FileName] = DbConnectionStringKeywords.FileName;
-            validKeywords[(int)Keywords.OleDbServices] = DbConnectionStringKeywords.OleDbServices;
-            validKeywords[(int)Keywords.PersistSecurityInfo] = DbConnectionStringKeywords.PersistSecurityInfo;
-            validKeywords[(int)Keywords.Provider] = DbConnectionStringKeywords.Provider;
-            _validKeywords = validKeywords;
-
-            Dictionary<string, Keywords> hash = new Dictionary<string, Keywords>(9, StringComparer.OrdinalIgnoreCase);
-            hash.Add(DbConnectionStringKeywords.DataSource, Keywords.DataSource);
-            hash.Add(DbConnectionStringKeywords.FileName, Keywords.FileName);
-            hash.Add(DbConnectionStringKeywords.OleDbServices, Keywords.OleDbServices);
-            hash.Add(DbConnectionStringKeywords.PersistSecurityInfo, Keywords.PersistSecurityInfo);
-            hash.Add(DbConnectionStringKeywords.Provider, Keywords.Provider);
-            Debug.Assert(5 == hash.Count, "initial expected size is incorrect");
-            _keywords = hash;
-        }
-
         public OleDbConnectionStringBuilder() : this(null)
         {
-            _knownKeywords = _validKeywords;
+            _knownKeywords = s_validKeywords;
         }
 
         public OleDbConnectionStringBuilder(string connectionString) : base()
@@ -84,7 +74,7 @@ namespace System.Data.OleDb
                 ADP.CheckArgumentNull(keyword, "keyword");
                 object value;
                 Keywords index;
-                if (_keywords.TryGetValue(keyword, out index))
+                if (s_keywords.TryGetValue(keyword, out index))
                 {
                     value = GetAt(index);
                 }
@@ -102,7 +92,7 @@ namespace System.Data.OleDb
                 {
                     ADP.CheckArgumentNull(keyword, "keyword");
                     Keywords index;
-                    if (_keywords.TryGetValue(keyword, out index))
+                    if (s_keywords.TryGetValue(keyword, out index))
                     {
                         switch (index)
                         {
@@ -112,7 +102,6 @@ namespace System.Data.OleDb
                             case Keywords.FileName:
                                 FileName = ConvertToString(value);
                                 break;
-                            //                      case Keywords.NamedConnection:     NamedConnection = ConvertToString(value); break;
                             case Keywords.Provider:
                                 Provider = ConvertToString(value);
                                 break;
@@ -217,13 +206,13 @@ namespace System.Data.OleDb
                     Dictionary<string, OleDbPropertyInfo> dynamic = GetProviderInfo(Provider);
                     if (0 < dynamic.Count)
                     {
-                        knownKeywords = new string[_validKeywords.Length + dynamic.Count];
-                        _validKeywords.CopyTo(knownKeywords, 0);
-                        dynamic.Keys.CopyTo(knownKeywords, _validKeywords.Length);
+                        knownKeywords = new string[s_validKeywords.Length + dynamic.Count];
+                        s_validKeywords.CopyTo(knownKeywords, 0);
+                        dynamic.Keys.CopyTo(knownKeywords, s_validKeywords.Length);
                     }
                     else
                     {
-                        knownKeywords = _validKeywords;
+                        knownKeywords = s_validKeywords;
                     }
 
                     int count = 0;
@@ -276,7 +265,7 @@ namespace System.Data.OleDb
         public override bool ContainsKey(string keyword)
         {
             ADP.CheckArgumentNull(keyword, "keyword");
-            return _keywords.ContainsKey(keyword) || base.ContainsKey(keyword);
+            return s_keywords.ContainsKey(keyword) || base.ContainsKey(keyword);
         }
 
         private static bool ConvertToBoolean(object value)
@@ -295,12 +284,12 @@ namespace System.Data.OleDb
         public override void Clear()
         {
             base.Clear();
-            for (int i = 0; i < _validKeywords.Length; ++i)
+            for (int i = 0; i < s_validKeywords.Length; ++i)
             {
                 Reset((Keywords)i);
             }
             base.ClearPropertyDescriptors();
-            _knownKeywords = _validKeywords;
+            _knownKeywords = s_validKeywords;
         }
 
         private object GetAt(Keywords index)
@@ -311,7 +300,6 @@ namespace System.Data.OleDb
                     return DataSource;
                 case Keywords.FileName:
                     return FileName;
-                //          case Keywords.NamedConnection:     return NamedConnection;
                 case Keywords.OleDbServices:
                     return OleDbServices;
                 case Keywords.PersistSecurityInfo:
@@ -320,7 +308,7 @@ namespace System.Data.OleDb
                     return Provider;
                 default:
                     Debug.Assert(false, "unexpected keyword");
-                    throw ADP.KeywordNotSupported(_validKeywords[(int)index]);
+                    throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
 
@@ -330,7 +318,7 @@ namespace System.Data.OleDb
             bool value = base.Remove(keyword);
 
             Keywords index;
-            if (_keywords.TryGetValue(keyword, out index))
+            if (s_keywords.TryGetValue(keyword, out index))
             {
                 Reset(index);
             }
@@ -364,7 +352,7 @@ namespace System.Data.OleDb
                     break;
                 default:
                     Debug.Assert(false, "unexpected keyword");
-                    throw ADP.KeywordNotSupported(_validKeywords[(int)index]);
+                    throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
 
@@ -398,7 +386,7 @@ namespace System.Data.OleDb
         {
             ADP.CheckArgumentNull(keyword, "keyword");
             Keywords index;
-            if (_keywords.TryGetValue(keyword, out index))
+            if (s_keywords.TryGetValue(keyword, out index))
             {
                 value = GetAt(index);
                 return true;
@@ -441,7 +429,7 @@ namespace System.Data.OleDb
                             {
                                 Keywords index;
                                 OleDbPropertyInfo info = entry.Value;
-                                if (!_keywords.TryGetValue(info._description, out index))
+                                if (!s_keywords.TryGetValue(info._description, out index))
                                 {
                                     if ((OleDbPropertySetGuid.DBInit == info._propertySet) &&
                                             ((ODB.DBPROP_INIT_ASYNCH == info._propertyID) ||

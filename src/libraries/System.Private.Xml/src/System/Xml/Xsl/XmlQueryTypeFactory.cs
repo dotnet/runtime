@@ -341,6 +341,7 @@ namespace System.Xml.Xsl
             private bool _isStrict;
             private bool _isNotRtf;
 
+#pragma warning disable CA1810 // explicit static cctor
             /// <summary>
             /// Construct arrays of built-in types.
             /// </summary>
@@ -415,6 +416,7 @@ namespace System.Xml.Xsl
 
                 s_specialBuiltInItemTypes = new XmlQueryType[4] { UntypedDocument, UntypedElement, UntypedAttribute, NodeNotRtf };
             }
+#pragma warning restore CA1810
 
             /// <summary>
             /// Create ItemType from XmlTypeCode.

@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Xml.Serialization;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-
     public class XmlSchemaComplexType : XmlSchemaType
     {
+        private static readonly XmlSchemaComplexType s_anyTypeLax = CreateAnyType(XmlSchemaContentProcessing.Lax);
+        private static readonly XmlSchemaComplexType s_anyTypeSkip = CreateAnyType(XmlSchemaContentProcessing.Skip);
+        private static readonly XmlSchemaComplexType s_untypedAnyType = CreateUntypedAnyType();
+
         private XmlSchemaDerivationMethod _block = XmlSchemaDerivationMethod.None;
 
         private XmlSchemaContentModel _contentModel;
@@ -23,9 +26,6 @@ namespace System.Xml.Schema
         private XmlSchemaObjectTable _attributeUses;
         private XmlSchemaAnyAttribute _attributeWildcard;
 
-        private static XmlSchemaComplexType s_anyTypeLax;
-        private static XmlSchemaComplexType s_anyTypeSkip;
-        private static XmlSchemaComplexType s_untypedAnyType;
 
         //additional info for Partial validation
         private byte _pvFlags;
@@ -34,21 +34,21 @@ namespace System.Xml.Schema
         private const byte isAbstractMask = 0x04;
         //const byte dupDeclMask = 0x08;
 
-        static XmlSchemaComplexType()
+        private static XmlSchemaComplexType CreateUntypedAnyType()
         {
-            s_anyTypeLax = CreateAnyType(XmlSchemaContentProcessing.Lax);
-            s_anyTypeSkip = CreateAnyType(XmlSchemaContentProcessing.Skip);
-
             // Create xdt:untypedAny
-            s_untypedAnyType = new XmlSchemaComplexType();
-            s_untypedAnyType.SetQualifiedName(new XmlQualifiedName("untypedAny", XmlReservedNs.NsXQueryDataType));
-            s_untypedAnyType.IsMixed = true;
-            s_untypedAnyType.SetContentTypeParticle(s_anyTypeLax.ContentTypeParticle);
-            s_untypedAnyType.SetContentType(XmlSchemaContentType.Mixed);
+            var untypedAny = new XmlSchemaComplexType();
 
-            s_untypedAnyType.ElementDecl = SchemaElementDecl.CreateAnyTypeElementDecl();
-            s_untypedAnyType.ElementDecl.SchemaType = s_untypedAnyType;
-            s_untypedAnyType.ElementDecl.ContentValidator = AnyTypeContentValidator;
+            untypedAny.SetQualifiedName(new XmlQualifiedName("untypedAny", XmlReservedNs.NsXQueryDataType));
+            untypedAny.IsMixed = true;
+            untypedAny.SetContentTypeParticle(s_anyTypeLax.ContentTypeParticle);
+            untypedAny.SetContentType(XmlSchemaContentType.Mixed);
+
+            untypedAny.ElementDecl = SchemaElementDecl.CreateAnyTypeElementDecl();
+            untypedAny.ElementDecl.SchemaType = untypedAny;
+            untypedAny.ElementDecl.ContentValidator = AnyTypeContentValidator;
+
+            return untypedAny;
         }
 
         private static XmlSchemaComplexType CreateAnyType(XmlSchemaContentProcessing processContents)

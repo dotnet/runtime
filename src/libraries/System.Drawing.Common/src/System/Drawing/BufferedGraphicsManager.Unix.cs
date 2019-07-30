@@ -28,22 +28,10 @@
 //
 //
 
-
 namespace System.Drawing
 {
     public static class BufferedGraphicsManager
     {
-        private static BufferedGraphicsContext graphics_context;
-
-        static BufferedGraphicsManager()
-        {
-            graphics_context = new BufferedGraphicsContext();
-        }
-
-        public static BufferedGraphicsContext Current
-        {
-            get { return graphics_context; }
-        }
+        public static BufferedGraphicsContext Current { get; } = new BufferedGraphicsContext();
     }
 }
-

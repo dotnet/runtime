@@ -345,6 +345,7 @@ namespace System.Drawing
 
         private static readonly ToolboxBitmapAttribute s_defaultComponent;
 
+#pragma warning disable CA1810 // DummyFunction apparently needs to be invoked prior to the rest of the initialization
         static ToolboxBitmapAttribute()
         {
             // When we call Gdip.DummyFunction, JIT will make sure Gdip..cctor will be called.
@@ -357,5 +358,6 @@ namespace System.Drawing
             MakeBackgroundAlphaZero(bitmap);
             s_defaultComponent = new ToolboxBitmapAttribute(bitmap, null);
         }
+#pragma warning restore CA1810
     }
 }

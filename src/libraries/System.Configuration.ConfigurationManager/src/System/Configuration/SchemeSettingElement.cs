@@ -6,23 +6,12 @@ namespace System.Configuration
 {
     public sealed class SchemeSettingElement : ConfigurationElement
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
-        private static readonly ConfigurationProperty s_name;
-        private static readonly ConfigurationProperty s_genericUriParserOptions;
-
-        static SchemeSettingElement()
-        {
-            s_name = new ConfigurationProperty(CommonConfigurationStrings.SchemeName, typeof(string), null,
+        private static readonly ConfigurationProperty s_name = new ConfigurationProperty(CommonConfigurationStrings.SchemeName, typeof(string), null,
                 ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
-
-            s_genericUriParserOptions = new ConfigurationProperty(CommonConfigurationStrings.GenericUriParserOptions,
+        private static readonly ConfigurationProperty s_genericUriParserOptions = new ConfigurationProperty(CommonConfigurationStrings.GenericUriParserOptions,
                 typeof(GenericUriParserOptions), GenericUriParserOptions.Default,
                 ConfigurationPropertyOptions.IsRequired);
-
-            s_properties = new ConfigurationPropertyCollection();
-            s_properties.Add(s_name);
-            s_properties.Add(s_genericUriParserOptions);
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection() { s_name, s_genericUriParserOptions };
 
         [ConfigurationProperty(CommonConfigurationStrings.SchemeName,
             DefaultValue = null, IsRequired = true, IsKey = true)]

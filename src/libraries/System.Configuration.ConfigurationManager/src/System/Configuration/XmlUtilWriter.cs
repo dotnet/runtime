@@ -25,18 +25,11 @@ namespace System.Configuration
         private const char Space = ' ';
         private const string NewLine = "\r\n";
 
-        private static readonly string s_spaces8;
-        private static readonly string s_spaces4;
-        private static readonly string s_spaces2;
+        private static readonly string s_spaces8 = new string(Space, 8);
+        private static readonly string s_spaces4 = new string(Space, 4);
+        private static readonly string s_spaces2 = new string(Space, 2);
         private readonly Stream _baseStream; // stream under TextWriter when tracking position
         private object _lineStartCheckpoint; // checkpoint taken at the start of each line
-
-        static XmlUtilWriter()
-        {
-            s_spaces8 = new string(Space, 8);
-            s_spaces4 = new string(Space, 4);
-            s_spaces2 = new string(Space, 2);
-        }
 
         internal XmlUtilWriter(TextWriter writer, bool trackPosition)
         {

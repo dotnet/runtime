@@ -4,7 +4,7 @@
     <AssemblyName>System.DirectoryServices.AccountManagement</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
-    <NoWarn>$(NoWarn);8073</NoWarn>
+    <NoWarn>$(NoWarn);8073;CA1810</NoWarn>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>

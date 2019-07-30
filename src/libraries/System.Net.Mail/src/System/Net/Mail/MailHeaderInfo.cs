@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Mail
 {
@@ -66,27 +67,18 @@ namespace System.Net.Mail
             new HeaderInfo(MailHeaderID.XSender,                  "X-Sender",                  true,            true,               true)
         };
 
-        private static readonly Dictionary<string, int> s_headerDictionary;
+        private static readonly Dictionary<string, int> s_headerDictionary = CreateHeaderDictionary();
 
-        static MailHeaderInfo()
+        private static Dictionary<string, int> CreateHeaderDictionary()
         {
-#if DEBUG
-            // Check that enum and header info array are in sync
-            for (int i = 0; i < s_headerInfo.Length; i++)
-            {
-                if ((int)s_headerInfo[i].ID != i)
-                {
-                    throw new Exception("Header info data structures are not in sync");
-                }
-            }
-#endif
-
             // Create dictionary for string-to-enum lookup.  Ordinal and IgnoreCase are intentional.
-            s_headerDictionary = new Dictionary<string, int>((int)MailHeaderID.ZMaxEnumValue + 1, StringComparer.OrdinalIgnoreCase);
+            var headers = new Dictionary<string, int>((int)MailHeaderID.ZMaxEnumValue + 1, StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < s_headerInfo.Length; i++)
             {
-                s_headerDictionary.Add(s_headerInfo[i].NormalizedName, i);
+                Debug.Assert((int)s_headerInfo[i].ID == i, "Header info data structures are not in sync");
+                headers.Add(s_headerInfo[i].NormalizedName, i);
             }
+            return headers;
         }
 
         internal static string GetString(MailHeaderID id)

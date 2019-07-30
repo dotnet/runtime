@@ -18,13 +18,13 @@ namespace System.Xml
         private DataColumn _column;
         private bool _fOnValue;
         internal XmlBoundElement _parentOfNS;
-        internal static readonly int[] s_xmlNodeType_To_XpathNodeType_Map;
+        internal static readonly int[] s_xmlNodeType_To_XpathNodeType_Map = CreateXmlNodeTypeToXpathNodeTypeMap();
         internal const string StrReservedXmlns = "http://www.w3.org/2000/xmlns/";
         internal const string StrReservedXml = "http://www.w3.org/XML/1998/namespace";
         internal const string StrXmlNS = "xmlns";
         private bool _bNeedFoliate;
 
-        static XPathNodePointer()
+        private static int[] CreateXmlNodeTypeToXpathNodeTypeMap()
         {
 #if DEBUG
             int max = 0, tempVal = 0;
@@ -37,26 +37,27 @@ namespace System.Xml
             }
             Debug.Assert(max == (int)XmlNodeType.XmlDeclaration);
 #endif        
-            s_xmlNodeType_To_XpathNodeType_Map = new int[20];
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.None)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Element)] = (int)XPathNodeType.Element;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Attribute)] = (int)XPathNodeType.Attribute;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Text)] = (int)XPathNodeType.Text;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.CDATA)] = (int)XPathNodeType.Text;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.EntityReference)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Entity)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.ProcessingInstruction)] = (int)XPathNodeType.ProcessingInstruction;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Comment)] = (int)XPathNodeType.Comment;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Document)] = (int)XPathNodeType.Root;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.DocumentType)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.DocumentFragment)] = (int)XPathNodeType.Root;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Notation)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.Whitespace)] = (int)XPathNodeType.Whitespace;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.SignificantWhitespace)] = (int)XPathNodeType.SignificantWhitespace;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.EndElement)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.EndEntity)] = -1;
-            s_xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.XmlDeclaration)] = -1;
-            // xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.All)] = -1;      
+            var map = new int[20];
+            map[(int)XmlNodeType.None] = -1;
+            map[(int)XmlNodeType.Element] = (int)XPathNodeType.Element;
+            map[(int)XmlNodeType.Attribute] = (int)XPathNodeType.Attribute;
+            map[(int)XmlNodeType.Text] = (int)XPathNodeType.Text;
+            map[(int)XmlNodeType.CDATA] = (int)XPathNodeType.Text;
+            map[(int)XmlNodeType.EntityReference] = -1;
+            map[(int)XmlNodeType.Entity] = -1;
+            map[(int)XmlNodeType.ProcessingInstruction] = (int)XPathNodeType.ProcessingInstruction;
+            map[(int)XmlNodeType.Comment] = (int)XPathNodeType.Comment;
+            map[(int)XmlNodeType.Document] = (int)XPathNodeType.Root;
+            map[(int)XmlNodeType.DocumentType] = -1;
+            map[(int)XmlNodeType.DocumentFragment] = (int)XPathNodeType.Root;
+            map[(int)XmlNodeType.Notation] = -1;
+            map[(int)XmlNodeType.Whitespace] = (int)XPathNodeType.Whitespace;
+            map[(int)XmlNodeType.SignificantWhitespace] = (int)XPathNodeType.SignificantWhitespace;
+            map[(int)XmlNodeType.EndElement] = -1;
+            map[(int)XmlNodeType.EndEntity] = -1;
+            map[(int)XmlNodeType.XmlDeclaration] = -1;
+            // xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.All)] = -1;     
+            return map;
         }
 
         private XPathNodeType DecideXPNodeTypeForTextNodes(XmlNode node)
