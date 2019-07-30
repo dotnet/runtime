@@ -234,11 +234,6 @@ mono_gc_is_critical_method (MonoMethod *method)
 #endif
 }
 
-static void
-emit_nursery_check_noilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
-{
-}
-
 static MonoSgenMonoCallbacks sgenmono_cb;
 static gboolean cb_inited = FALSE;
 
@@ -251,12 +246,17 @@ mono_install_sgen_mono_callbacks (MonoSgenMonoCallbacks *cb)
 	cb_inited = TRUE;
 }
 
+#if !ENABLE_ILGEN
+
+static void
+emit_nursery_check_noilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
+{
+}
+
 static void
 emit_managed_allocater_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
 {
 }
-
-#if !ENABLE_ILGEN
 
 static void
 install_noilgen (void)

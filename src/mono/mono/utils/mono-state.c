@@ -929,6 +929,8 @@ mono_native_state_add_memory (MonoStateWriter *writer)
 
 #define MONO_CRASH_REPORTING_MAPPING_LINE_LIMIT 30
 
+#if !MONO_PRIVATE_CRASHES
+
 static void
 mono_native_state_add_process_map (MonoStateWriter *writer)
 {
@@ -983,6 +985,8 @@ mono_native_state_add_process_map (MonoStateWriter *writer)
 	close (handle);
 #endif
 }
+
+#endif
 
 static void
 mono_native_state_add_prologue (MonoStateWriter *writer)

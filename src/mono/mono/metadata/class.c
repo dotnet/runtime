@@ -1720,15 +1720,6 @@ mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error)
 	return res;
 }
 
-static int
-compare_interface_ids (const void *p_key, const void *p_element)
-{
-	MonoClass *key = (MonoClass *)p_key;
-	MonoClass *element = *(MonoClass **)p_element;
-	
-	return (m_class_get_interface_id (key) - m_class_get_interface_id (element));
-}
-
 /*FIXME verify all callers if they should switch to mono_class_interface_offset_with_variance*/
 int
 mono_class_interface_offset (MonoClass *klass, MonoClass *itf)

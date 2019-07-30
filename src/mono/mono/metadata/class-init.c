@@ -1710,27 +1710,6 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 }
 #endif
 
-typedef struct {
-	MonoClass *ic;
-	int offset;
-	int insertion_order;
-} ClassAndOffset;
-
-static int
-compare_by_interface_id (const void *a, const void *b)
-{
-	const ClassAndOffset *ca = (const ClassAndOffset*)a;
-	const ClassAndOffset *cb = (const ClassAndOffset*)b;
-
-	/* Sort on interface_id, but keep equal elements in the same relative
-	 * order. */
-	int primary_order = ca->ic->interface_id - cb->ic->interface_id;
-	if (primary_order != 0)
-		return primary_order;
-	else
-		return ca->insertion_order - cb->insertion_order;
-}
-
 /*
  * Return -1 on failure and set klass->has_failure and store a MonoErrorBoxed with the details.
  * LOCKING: Acquires the loader lock.

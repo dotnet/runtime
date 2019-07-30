@@ -190,7 +190,7 @@ dyn_array_int_copy (DynIntArray *dst, DynIntArray *src)
 	dyn_array_copy (&dst->array, &src->array, sizeof (int));
 }
 
-static gboolean
+static inline gboolean
 dyn_array_int_is_copy (DynIntArray *da)
 {
 	return dyn_array_is_copy (&da->array);

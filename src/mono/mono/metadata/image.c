@@ -1051,10 +1051,8 @@ static gboolean
 pe_image_load_cli_data (MonoImage *image)
 {
 	MonoCLIImageInfo *iinfo;
-	MonoDotNetHeader *header;
 
 	iinfo = image->image_info;
-	header = &iinfo->cli_header;
 
 	/* Load the CLI header */
 	if (!mono_image_load_cli_header (image, iinfo))

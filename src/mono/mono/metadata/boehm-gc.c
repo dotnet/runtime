@@ -1927,6 +1927,7 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	if (slot < handles->size && slot_occupied (handles, slot)) {
 		if (MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 			old_obj = (MonoObject *)handles->entries [slot];
+			(void)old_obj;
 			if (handles->entries [slot])
 				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
 			if (obj)

@@ -325,6 +325,8 @@ mono_w32process_get_modules (pid_t pid)
 #if defined(MAJOR_IN_MKDEV) || defined(MAJOR_IN_SYSMACROS)
 		device = makedev ((int)maj_dev, (int)min_dev);
 #else
+		(void)maj_dev;
+		(void)min_dev;
 		device = 0;
 #endif
 		if ((device == 0) && (inode == 0)) {

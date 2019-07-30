@@ -8160,6 +8160,7 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_type);
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	(void)klass;
 
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
