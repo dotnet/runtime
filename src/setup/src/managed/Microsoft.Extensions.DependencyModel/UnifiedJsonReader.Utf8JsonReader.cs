@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyModel
@@ -148,8 +149,8 @@ namespace Microsoft.Extensions.DependencyModel
         {
             // Replace with public API once https://github.com/dotnet/corefx/issues/34768 is fixed
             object boxedState = reader.CurrentState;
-            long lineNumber = (long)(typeof(JsonReaderState).GetField("_lineNumber")?.GetValue(boxedState) ?? -1);
-            long bytePositionInLine = (long)(typeof(JsonReaderState).GetField("_bytePositionInLine")?.GetValue(boxedState) ?? -1);
+            long lineNumber = (long)(typeof(JsonReaderState).GetField("_lineNumber", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);
+            long bytePositionInLine = (long)(typeof(JsonReaderState).GetField("_bytePositionInLine", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);
 
             return new FormatException($"Unexpected character encountered, excepted '{expected}' " +
                                        $"at line {lineNumber} position {bytePositionInLine}");
