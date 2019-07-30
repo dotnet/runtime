@@ -126,7 +126,7 @@ namespace System.MemoryTests
             memory.Validate(expected);
         }
 
-        private static void CastReference<T>(Memory<T> memory, params T[] expected)
+        private static void CastReference<T>(Memory<T> memory, params T[] expected) where T : class
         {
             memory.ValidateReferenceType(expected);
         }
@@ -136,7 +136,7 @@ namespace System.MemoryTests
             memory.Validate(expected);
         }
 
-        private static void CastReadOnlyReference<T>(ReadOnlyMemory<T> memory, params T[] expected)
+        private static void CastReadOnlyReference<T>(ReadOnlyMemory<T> memory, params T[] expected) where T : class
         {
             memory.ValidateReferenceType(expected);
         }

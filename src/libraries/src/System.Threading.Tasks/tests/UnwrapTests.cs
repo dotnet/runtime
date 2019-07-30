@@ -546,7 +546,7 @@ namespace System.Threading.Tasks.Tests
                 if (typeof(T).GetTypeInfo().IsValueType)
                     Assert.Equal(expected.Result, actual.Result);
                 else
-                    Assert.Same(expected.Result, actual.Result);
+                    Assert.Same((object)expected.Result, (object)actual.Result);
             }
         }
 

@@ -135,7 +135,7 @@ namespace System.Reflection.Tests
             }
             else
             {
-                Assert.Same(value, rv);
+                Assert.Same((object)value, rv);
             }
         }
 

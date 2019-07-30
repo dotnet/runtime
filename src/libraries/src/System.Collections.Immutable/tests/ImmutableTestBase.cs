@@ -29,7 +29,7 @@ namespace System.Collections.Immutable.Tests
             }
             else
             {
-                Assert.Same(expected, actual); //, message, formattingArgs);
+                Assert.Same((object)expected, (object)actual); //, message, formattingArgs);
             }
         }
 

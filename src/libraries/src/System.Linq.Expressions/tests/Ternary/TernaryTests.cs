@@ -1109,12 +1109,12 @@ namespace System.Linq.Expressions.Tests
             Func<T> f = e.Compile(useInterpreter);
 
             if (default(T) == null)
-                Assert.Same(condition ? a : b, f());
+                Assert.Same((object)(condition ? a : b), (object)f());
             else
                 Assert.Equal(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithClassRestriction<Tc>(bool condition, Tc a, Tc b, bool useInterpreter)
+        private static void VerifyGenericWithClassRestriction<Tc>(bool condition, Tc a, Tc b, bool useInterpreter) where Tc : class
         {
             Expression<Func<Tc>> e =
                 Expression.Lambda<Func<Tc>>(
@@ -1128,7 +1128,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithSubClassRestriction<TC>(bool condition, TC a, TC b, bool useInterpreter)
+        private static void VerifyGenericWithSubClassRestriction<TC>(bool condition, TC a, TC b, bool useInterpreter) where TC : class
         {
             Expression<Func<TC>> e =
                 Expression.Lambda<Func<TC>>(
@@ -1142,7 +1142,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithClassAndNewRestriction<Tcn>(bool condition, Tcn a, Tcn b, bool useInterpreter)
+        private static void VerifyGenericWithClassAndNewRestriction<Tcn>(bool condition, Tcn a, Tcn b, bool useInterpreter) where Tcn : class
         {
             Expression<Func<Tcn>> e =
                 Expression.Lambda<Func<Tcn>>(
@@ -1156,7 +1156,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(condition ? a : b, f());
         }
 
-        private static void VerifyGenericWithSubClassAndNewRestriction<TCn>(bool condition, TCn a, TCn b, bool useInterpreter)
+        private static void VerifyGenericWithSubClassAndNewRestriction<TCn>(bool condition, TCn a, TCn b, bool useInterpreter) where TCn : class
         {
             Expression<Func<TCn>> e =
                 Expression.Lambda<Func<TCn>>(

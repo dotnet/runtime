@@ -151,7 +151,9 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         private static void ValidateEnumerator<TEnumerator, TCurrent>(
             Func<OidCollection, TEnumerator> getEnumerator,
-            Func<TEnumerator, TCurrent> getCurrent) where TEnumerator : IEnumerator
+            Func<TEnumerator, TCurrent> getCurrent)
+            where TEnumerator : IEnumerator
+            where TCurrent : class
         {
             var item1 = new Oid(Sha1Oid, Sha1Name);
             var item2 = new Oid(Sha256Oid, Sha256Name);
