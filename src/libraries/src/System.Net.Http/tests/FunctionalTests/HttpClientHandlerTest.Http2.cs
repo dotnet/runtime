@@ -1897,8 +1897,13 @@ namespace System.Net.Http.Functional.Tests
 
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
+                using (var handler = new SocketsHttpHandler())
                 using (HttpClient client = CreateHttpClient())
                 {
+                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
+                    handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
+
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
                     request.Content = new StringContent(new string('*', 3000));

@@ -137,5 +137,29 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(expectedStatusCode, response.StatusCode);
             }
         }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]    // HttpListener doesn't support nt auth on non-Windows platforms
+        [InlineData(true, 1023)]
+        [InlineData(true, 1024)]
+        [InlineData(true, 1025)]
+        [InlineData(false, 1023)]
+        [InlineData(false, 1024)]
+        [InlineData(false, 1025)]
+        public async Task PostAsync_NtAuthServer_UseExpect100Header_Success(bool ntlm, int contentSize)
+        {
+            NtAuthServer server = ntlm ? _servers.NtlmServer : _servers.NegotiateServer;
+
+            var handler = new HttpClientHandler() { UseDefaultCredentials = true };
+            using (var client = new HttpClient(handler))
+            {
+                client.DefaultRequestHeaders.ExpectContinue = true;
+                var content = new StringContent(new string('A', contentSize));
+                using (HttpResponseMessage response = await client.PostAsync(server.BaseUrl, content))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+        }
     }
 }
