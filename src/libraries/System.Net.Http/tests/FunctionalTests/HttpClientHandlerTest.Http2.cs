@@ -3007,6 +3007,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ActiveIssue(39876)]
         [Fact]
         public async Task DynamicTableSizeUpdate_Exceeds_Settings_Throws()
         {
