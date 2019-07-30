@@ -23,7 +23,12 @@
 extern int RFS_HashStack();
 #endif
 
-static DWORD TlsIndex = TLS_OUT_OF_INDEXES;
+#ifndef __GNUC__
+static __declspec(thread) void** t_pBlock;
+#else  // !__GNUC__
+static thread_local void** t_pBlock;
+#endif // !__GNUC__
+
 static PTLS_CALLBACK_FUNCTION Callbacks[MAX_PREDEFINED_TLS_SLOT];
 
 #ifdef SELF_NO_HOST
@@ -37,7 +42,7 @@ extern LPVOID* (*__ClrFlsGetBlock)();
 //
 LPVOID* ClrFlsGetBlockDirect()
 {
-    return (LPVOID*)TlsGetValue(TlsIndex);
+    return t_pBlock;
 }
 
 //
@@ -48,24 +53,13 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
     // Treat as a runtime assertion, since the invariant spans many DLLs.
     _ASSERTE(slot < MAX_PREDEFINED_TLS_SLOT);
 
-    // Ensure we have a TLS Index
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
+    if (__ClrFlsGetBlock != ClrFlsGetBlockDirect)
     {
-        DWORD tmp = TlsAlloc();
-
-        if (InterlockedCompareExchange((LONG*)&TlsIndex, tmp, TLS_OUT_OF_INDEXES) != (LONG) TLS_OUT_OF_INDEXES)
-        {
-            // We lost the race with another thread.
-            TlsFree(tmp);
-        }
-
         // Switch to faster TLS getter now that the TLS slot is initialized
         __ClrFlsGetBlock = ClrFlsGetBlockDirect;
     }
 
-    _ASSERTE(TlsIndex != TLS_OUT_OF_INDEXES);
-
-    void **pTlsData = (void **)TlsGetValue(TlsIndex);
+    void **pTlsData = t_pBlock;
 
     if (pTlsData == 0 && force) {
 
@@ -89,22 +83,11 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
         }
         for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
             pTlsData[i] = 0;
-        TlsSetValue(TlsIndex, pTlsData);
+        t_pBlock = pTlsData;
     }
 
     return pTlsData;
 } // CheckThreadState
-
-// This function should only be called during process detatch for
-// mscoree.dll.
-VOID STDMETHODCALLTYPE TLS_FreeMasterSlotIndex()
-{
-    if (TlsIndex != TLS_OUT_OF_INDEXES)
-        if (TlsFree(TlsIndex))
-            TlsIndex = TLS_OUT_OF_INDEXES;
-} // TLS_FreeMasterSlotIndex
-
-
 
 HRESULT STDMETHODCALLTYPE UtilExecutionEngine::QueryInterface(REFIID id, void **pInterface) 
 {
@@ -154,10 +137,7 @@ VOID  STDMETHODCALLTYPE UtilExecutionEngine::TLS_AssociateCallback(DWORD slot, P
 
 LPVOID* STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetDataBlock() 
 {
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-        return NULL;
-
-    return (LPVOID *)TlsGetValue(TlsIndex);
+    return t_pBlock;
 }
 
 LPVOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetValue(DWORD slot) 

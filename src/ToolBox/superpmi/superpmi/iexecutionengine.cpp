@@ -36,8 +36,6 @@ ULONG STDMETHODCALLTYPE MyIEE::Release()
 // IExecutionEngine methods for TLS
 //***************************************************************************
 
-DWORD TlsIndex = 42;
-
 // Associate a callback for cleanup with a TLS slot
 VOID STDMETHODCALLTYPE MyIEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
 {
@@ -83,7 +81,6 @@ VOID STDMETHODCALLTYPE MyIEE::TLS_SetValue(DWORD slot, LPVOID pData)
         DebugBreakorAV(143);
         return;
     }
-    void* thing = TlsGetValue(TlsIndex); // TODO-Cleanup: this seems odd.. explain?
 
     // TODO-Cleanup: does anything beyond contracts care?  This seems like a pretty thin mock.
     TLS_Slots[slot] = pData;

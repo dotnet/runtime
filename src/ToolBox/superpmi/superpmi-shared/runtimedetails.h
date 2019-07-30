@@ -31,9 +31,6 @@
 #undef HeapAlloc
 #undef HeapFree
 #undef HeapDestroy
-#undef TlsAlloc
-#undef TlsGetValue
-#undef TlsSetValue
 
 // Jit Exports
 typedef ICorJitCompiler*(__stdcall* PgetJit)();

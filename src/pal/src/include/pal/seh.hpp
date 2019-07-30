@@ -111,38 +111,6 @@ Notes :
 void SEHHandleControlEvent(DWORD event, LPVOID eip);
 #endif // !HAVE_MACH_EXCEPTIONS
 
-#if !HAVE_MACH_EXCEPTIONS
-/*++
-Function :
-    SEHSetSafeState
-
-    specify whether the current thread is in a state where exception handling 
-    of signals can be done safely
-
-Parameters:
-    CPalThread * pthrCurrent : reference to the current thread.
-    BOOL state : TRUE if the thread is safe, FALSE otherwise
-
-(no return value)
---*/
-void SEHSetSafeState(CorUnix::CPalThread *pthrCurrent, BOOL state);
-
-/*++
-Function :
-    SEHGetSafeState
-
-    determine whether the current thread is in a state where exception handling 
-    of signals can be done safely
-
-Parameters:
-    CPalThread * pthrCurrent : reference to the current thread.
-
-Return value :
-    TRUE if the thread is in a safe state, FALSE otherwise
---*/
-BOOL SEHGetSafeState(CorUnix::CPalThread *pthrCurrent);
-#endif // !HAVE_MACH_EXCEPTIONS
-
 extern "C"
 {
 

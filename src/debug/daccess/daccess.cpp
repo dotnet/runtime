@@ -38,8 +38,6 @@ CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
 HINSTANCE g_thisModule;
 
-extern VOID STDMETHODCALLTYPE TLS_FreeMasterSlotIndex();
-
 EXTERN_C
 #ifdef FEATURE_PAL
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
@@ -86,9 +84,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             DeleteCriticalSection(&g_dacCritSec);
         }
-#ifndef FEATURE_PAL
-        TLS_FreeMasterSlotIndex();
-#endif
         g_procInitialized = false;
         break;
     }
