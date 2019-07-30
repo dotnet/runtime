@@ -74,7 +74,12 @@ const char * GetDebugCodeName(DWORD dwCode)
 // Per-thread state for Debug builds...
 //-----------------------------------------------------------------------------
 #ifdef RSCONTRACTS
-DWORD DbgRSThread::s_TlsSlot = TLS_OUT_OF_INDEXES;
+#ifndef __GNUC__
+__declspec(thread) DbgRSThread* DbgRSThread::t_pCurrent;
+#else // !__GNUC__
+__thread DbgRSThread* DbgRSThread::t_pCurrent;
+#endif // !__GNUC__
+
 LONG DbgRSThread::s_Total = 0;
 
 DbgRSThread::DbgRSThread()
@@ -158,16 +163,13 @@ void DbgRSThread::ReleaseVirtualLock(RSLock::ERSLockLevel level)
 // Get a DbgRSThread for the current OS thread id; lazily create if needed.
 DbgRSThread * DbgRSThread::GetThread()
 {
-    _ASSERTE(DbgRSThread::s_TlsSlot != TLS_OUT_OF_INDEXES);
-
-    void * p2 = TlsGetValue(DbgRSThread::s_TlsSlot);
-    if (p2 == NULL)
+    DbgRSThread * p = t_pCurrent;
+    if (p == NULL)
     {
         // We lazily create for threads that haven't gone through DllMain
         // Since this is per-thread, we don't need to lock.
-        p2 = DbgRSThread::Create();
+        p = DbgRSThread::Create();
     }
-    DbgRSThread * p = reinterpret_cast<DbgRSThread*> (p2);
 
     _ASSERTE(p->m_Cookie == COOKIE_VALUE);
 

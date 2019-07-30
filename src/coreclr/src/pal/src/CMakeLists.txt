@@ -189,7 +189,6 @@ set(SOURCES
   cruntime/math.cpp
   cruntime/mbstring.cpp
   cruntime/misc.cpp
-  cruntime/misctls.cpp
   cruntime/path.cpp
   cruntime/printf.cpp
   cruntime/printfcpp.cpp
@@ -283,7 +282,6 @@ set(SOURCES
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
-  thread/tls.cpp
 )
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)

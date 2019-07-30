@@ -35,8 +35,6 @@ ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
 endif ; FEATURE_COMINTEROP
 EXTERN _StubRareDisableTHROWWorker@4:PROC
-EXTERN __imp__TlsGetValue@4:DWORD
-TlsGetValue PROTO stdcall
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK

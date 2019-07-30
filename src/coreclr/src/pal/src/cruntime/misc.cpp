@@ -131,40 +131,6 @@ int * __cdecl PAL_errno( int caller )
     return retval;
 }
 
-/*++
-Function:
-
-    mktime
-
-See MSDN for more details.
---*/
-PAL_time_t 
-__cdecl
-PAL_mktime(struct PAL_tm *tm)
-{
-    time_t result;
-    struct tm tmpTm;
-
-    PERF_ENTRY(mktime);
-    ENTRY( "mktime( tm=%p )\n",tm );
-
-    /*copy the value of Windows struct into BSD struct*/
-    tmpTm.tm_sec = tm->tm_sec;
-    tmpTm.tm_min = tm->tm_min;
-    tmpTm.tm_hour = tm->tm_hour;
-    tmpTm.tm_mday = tm->tm_mday;
-    tmpTm.tm_mon  = tm->tm_mon;
-    tmpTm.tm_year = tm->tm_year;
-    tmpTm.tm_wday = tm->tm_wday;
-    tmpTm.tm_yday = tm->tm_yday;
-    tmpTm.tm_isdst = tm->tm_isdst;
-
-    result = mktime(&tmpTm);
-
-    LOGEXIT( "mktime returned %#lx\n",result );
-    PERF_EXIT(mktime);
-    return result;
-}
 
 /*++
 Function:

@@ -720,50 +720,6 @@ void PAL_IgnoreProfileSignal(int signalNum)
 
 /*++
 Function :
-    SEHSetSafeState
-
-    specify whether the current thread is in a state where exception handling 
-    of signals can be done safely
-
-Parameters:
-    BOOL state : TRUE if the thread is safe, FALSE otherwise
-
-(no return value)
---*/
-void SEHSetSafeState(CPalThread *pthrCurrent, BOOL state)
-{
-    if (NULL == pthrCurrent)
-    {
-        ASSERT( "Unable to get the thread object.\n" );
-        return;
-    }
-    pthrCurrent->sehInfo.safe_state = state;
-}
-
-/*++
-Function :
-    SEHGetSafeState
-
-    determine whether the current thread is in a state where exception handling 
-    of signals can be done safely
-
-    (no parameters)
-
-Return value :
-    TRUE if the thread is in a safe state, FALSE otherwise
---*/
-BOOL SEHGetSafeState(CPalThread *pthrCurrent)
-{
-    if (NULL == pthrCurrent)
-    {
-        ASSERT( "Unable to get the thread object.\n" );
-        return FALSE;
-    }
-    return pthrCurrent->sehInfo.safe_state;
-}
-
-/*++
-Function :
     common_signal_handler
 
     common code for all signal handlers

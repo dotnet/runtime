@@ -516,8 +516,7 @@
     __try                                                                       \
     {                                                                           \
         ___oldOkayToThrowValue = ___pState->IsOkToThrow();                      \
-        ___pState->SetOkToThrow();                                        \
-        PAL_ENTER_THROWS_REGION;
+        ___pState->SetOkToThrow();
 
 // Special version that avoids touching the debug state after doing work in a DllMain for process or thread detach.
 #define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)                              \
@@ -535,11 +534,9 @@
         if ((_reason == DLL_PROCESS_DETACH) || (_reason == DLL_THREAD_DETACH))  \
         {                                                                       \
             ___pState = NULL;                                                   \
-        }                                                                       \
-        PAL_ENTER_THROWS_REGION;
+        }
 
 #define PAL_TRY_HANDLER_DBG_END                                                 \
-        PAL_LEAVE_THROWS_REGION                                                 \
     }                                                                           \
     __finally                                                                   \
     {                                                                           \
