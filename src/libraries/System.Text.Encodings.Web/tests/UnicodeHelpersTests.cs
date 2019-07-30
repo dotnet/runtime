@@ -178,6 +178,10 @@ namespace Microsoft.Framework.WebEncoders
                 {
                     retVal[codePoint] = true; // we allow U+0020 SPACE as our only valid Zs (whitespace) char
                 }
+                else if (codePoint == 0xFEFF)
+                {
+                    retVal[codePoint] = false; // we explicitly forbid U+FEFF ZERO WIDTH NO-BREAK SPACE because it's also the byte order mark (BOM)
+                }
                 else
                 {
                     string category = splitLine[2];
@@ -186,11 +190,11 @@ namespace Microsoft.Framework.WebEncoders
                     {
                         retVal[codePoint] = true; // chars in this category are allowable
                         seenCategories.Add(category);
-                        
+
                         if (splitLine[1].EndsWith("First>"))
                         {
                             startSpanCodepoint = codePoint;
-                        } 
+                        }
                         else if (splitLine[1].EndsWith("Last>"))
                         {
                             for (uint spanCounter = startSpanCodepoint; spanCounter < codePoint; spanCounter++)
@@ -198,7 +202,7 @@ namespace Microsoft.Framework.WebEncoders
                                 retVal[spanCounter] = true; // chars in this category are allowable
                             }
                         }
-                        
+
                     }
                 }
             }
