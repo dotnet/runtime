@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
 {
+    [ActiveIssue(39888, TargetFrameworkMonikers.NetFramework)]
     public class FinancialTests
     {
         private static bool IsNotArmOrAlpine() => !PlatformDetection.IsArmOrArm64Process && !PlatformDetection.IsAlpine;

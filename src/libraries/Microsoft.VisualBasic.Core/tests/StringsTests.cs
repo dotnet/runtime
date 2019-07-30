@@ -134,6 +134,7 @@ namespace Microsoft.VisualBasic.Tests
             }, charCode.ToString(), expected.ToString()).Dispose();
         }
 
+        [ActiveIssue(39888, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0, 0)]
         [InlineData(33, 33)]
