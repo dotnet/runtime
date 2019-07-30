@@ -432,7 +432,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void GetMemoryBiggerThanPoolSizeAllocatesUnpooledArray()
+        public void GetMemoryBiggerThanPoolSizeAllocatesArrayPoolArray()
         {
             using (var pool = new DisposeTrackingBufferPool())
             {
@@ -440,8 +440,7 @@ namespace System.IO.Pipelines.Tests
                 var options = new StreamPipeWriterOptions(pool);
                 PipeWriter writer = PipeWriter.Create(stream, options);
                 Memory<byte> memory = writer.GetMemory(pool.MaxBufferSize + 1);
-
-                Assert.Equal(pool.MaxBufferSize + 1, memory.Length);
+                Assert.True(memory.Length > pool.MaxBufferSize + 1);
                 Assert.Equal(0, pool.CurrentlyRentedBlocks);
                 Assert.Equal(0, pool.DisposedBlocks);
 
