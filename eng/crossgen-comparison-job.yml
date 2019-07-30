@@ -19,7 +19,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
-    helixType: 'test/crossgen-comparison'
+    helixType: 'test/crossgen-comparison/'
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen_comparison_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
