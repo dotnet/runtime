@@ -582,11 +582,9 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 		return NULL_HANDLE_STRING;
 
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
-	int len = g_utf16_len (data);
+	const int len = g_utf16_len (data);
 
-	MonoString *res = mono_string_new_utf16_checked (mono_domain_get (), data, MIN (len, max_len), error);
-	return_val_if_nok (error, NULL_HANDLE_STRING);
-	return MONO_HANDLE_NEW (MonoString, res);
+	return mono_string_new_utf16_handle (mono_domain_get (), data, MIN (len, max_len), error);
 }
 
 gpointer
