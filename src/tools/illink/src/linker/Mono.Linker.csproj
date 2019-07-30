@@ -13,7 +13,7 @@
     <AssemblyName>monolinker</AssemblyName>
     <AssemblyTitle>Mono.Linker</AssemblyTitle>
     <Description>Mono CIL Linker</Description>
-    <TargetFrameworks>net462</TargetFrameworks>
+    <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
