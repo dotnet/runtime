@@ -51,7 +51,6 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_realloc
 #PAL_printf
 #PAL_qsort
-#PAL_Reenter
 #PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
@@ -177,10 +176,6 @@ nativeStringResourceTable_mscorrc_debug
 #SysAllocStringLen
 #SysFreeString
 #TerminateProcess
-#TlsAlloc
-#TlsFree
-#TlsGetValue
-#TlsSetValue
 #VirtualAlloc
 #VirtualAllocExNuma
 #VirtualFree

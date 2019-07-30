@@ -158,7 +158,6 @@ Using Debug channels at Run Time
 #include "pal/perftrace.h"
 #include "pal/debug.h"
 #include "pal/thread.hpp"
-#include "pal/tls.hpp"
 
 #ifdef __cplusplus
 extern "C"
@@ -336,16 +335,6 @@ bool DBG_ShouldCheckStackAlignment();
    in tracing macros */
 #define NOTRACE(...)
 
-#if defined(__cplusplus) && defined(FEATURE_PAL_SXS)
-#define __ASSERT_ENTER()                                                \
-    /* DBG_printf_c99() and DebugBreak() need a PAL thread */           \
-    PAL_EnterHolder __holder(PALIsThreadDataInitialized() && \
-        (CorUnix::InternalGetCurrentThread() == NULL || \
-        !CorUnix::InternalGetCurrentThread()->IsInPal()));
-#else /* __cplusplus && FEATURE_PAL_SXS */
-#define __ASSERT_ENTER()
-#endif /* __cplusplus && FEATURE_PAL_SXS */
-
 #if !defined(_DEBUG)
 
 #define ASSERT(...)
@@ -365,7 +354,6 @@ inline void ANALYZER_NORETURN AssertBreak()
 
 #define ASSERT(...)                                                     \
 {                                                                       \
-    __ASSERT_ENTER();                                                   \
     if (output_file && dbg_master_switch)                               \
     {                                                                   \
         DBG_printf(defdbgchan,DLI_ASSERT,TRUE,__FUNCTION__,__FILE__,__LINE__,__VA_ARGS__); \

@@ -2418,31 +2418,6 @@ GetThreadTimes(
 #define TLS_OUT_OF_INDEXES ((DWORD)0xFFFFFFFF)
 
 PALIMPORT
-DWORD
-PALAPI
-TlsAlloc(
-     VOID);
-
-PALIMPORT
-LPVOID
-PALAPI
-TlsGetValue(
-        IN DWORD dwTlsIndex);
-
-PALIMPORT
-BOOL
-PALAPI
-TlsSetValue(
-        IN DWORD dwTlsIndex,
-        IN LPVOID lpTlsValue);
-
-PALIMPORT
-BOOL
-PALAPI
-TlsFree(
-    IN DWORD dwTlsIndex);
-
-PALIMPORT
 PVOID
 PALAPI
 PAL_GetStackBase(VOID);
@@ -4086,9 +4061,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define fwprintf      PAL_fwprintf
 #define vfprintf      PAL_vfprintf
 #define vfwprintf     PAL_vfwprintf
-#define ctime         PAL_ctime
-#define localtime     PAL_localtime
-#define mktime        PAL_mktime
 #define rand          PAL_rand
 #define time          PAL_time
 #define getenv        PAL_getenv
@@ -4513,9 +4485,6 @@ struct tm {
         int tm_isdst;   /* daylight savings time flag */
         };
 
-PALIMPORT struct tm * __cdecl localtime(const time_t *);
-PALIMPORT time_t __cdecl mktime(struct tm *);
-PALIMPORT char * __cdecl ctime(const time_t *);
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
@@ -4687,180 +4656,6 @@ PALAPI
 PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
 
 #endif
-
-/******************* PAL side-by-side support  ************************/
-
-#ifdef FEATURE_PAL_SXS
-//
-// Some versions of the PAL support several PALs side-by-side
-// in the process.  To avoid those PALs interfering with one
-// another, they need to be told by clients when they are active
-// and when they are not.
-//
-
-// To avoid performance problems incurred by swapping thread
-// exception ports every time we leave the PAL, there's also
-// the concept of entering/leaving the PAL at its top boundary
-// (entering down/leaving up) or at the bottom boundary
-// (leaving down/entering up).
-
-typedef enum _PAL_Boundary {
-    PAL_BoundaryTop,            // closer to main()
-    PAL_BoundaryBottom,         // closer to execution
-    PAL_BoundaryEH,             // out-of-band during EH
-
-    PAL_BoundaryMax = PAL_BoundaryEH
-} PAL_Boundary;
-
-// This function needs to be called on a thread when it enters
-// a region of code that depends on this instance of the PAL
-// in the process, and the current thread may or may not be
-// known to the PAL.  This function can fail (for something else
-// than an internal error) if this is the first time that the
-// current thread entered this PAL.  Note that PAL_Initialize
-// implies a call to this function.  Does not modify LastError.
-PALIMPORT
-DWORD
-PALAPI
-PAL_Enter(PAL_Boundary boundary);
-
-// Returns TRUE if we this thread has already entered the PAL,
-// returns FALSE if we have not entered the PAL.
-PALIMPORT
-BOOL
-PALAPI
-PAL_HasEntered(VOID);
-
-// Equivalent to PAL_Enter(PAL_BoundaryTop) and is for stub
-// code generation use.
-PALIMPORT
-DWORD
-PALAPI
-PAL_EnterTop(VOID);
-
-// This function needs to be called on a thread when it enters
-// a region of code that depends on this instance of the PAL
-// in the process, and the current thread is already known to
-// the PAL.  Does not modify LastError.
-PALIMPORT
-VOID
-PALAPI
-PAL_Reenter(PAL_Boundary boundary);
-
-// This function needs to be called on a thread when it enters
-// a region of code that depends on this instance of the PAL
-// in the process, and it is unknown whether the current thread
-// is already running in the PAL.  Returns TRUE if and only if
-// the thread was not running in the PAL previously.  Does not
-// modify LastError.
-PALIMPORT
-BOOL
-PALAPI
-PAL_ReenterForEH(VOID);
-
-// This function needs to be called on a thread when it leaves
-// a region of code that depends on this instance of the PAL
-// in the process.  Does not modify LastError.
-PALIMPORT
-VOID
-PALAPI
-PAL_Leave(PAL_Boundary boundary);
-
-// This function is equivalent to PAL_Leave(PAL_BoundaryBottom)
-// and is available to limit the creation of stub code.
-PALIMPORT
-VOID
-PALAPI
-PAL_LeaveBottom(VOID);
-
-// This function is equivalent to PAL_Leave(PAL_BoundaryTop)
-// and is available to limit the creation of stub code.
-PALIMPORT
-VOID
-PALAPI
-PAL_LeaveTop(VOID);
-
-#ifdef  __cplusplus
-//
-// A holder to enter the PAL for a specific region of code.
-// Previously, we must have been executing outside the PAL
-// (unless fEnter is set to FALSE).
-//
-class PAL_EnterHolder
-{
-private:
-    BOOL m_fEntered;
-    DWORD m_palError;
-public:
-    PAL_EnterHolder(BOOL fEnter = TRUE) : m_palError(ERROR_SUCCESS)
-    {
-        if (fEnter)
-        {
-            m_palError = PAL_Enter(PAL_BoundaryTop);
-            m_fEntered = m_palError == ERROR_SUCCESS;
-        }
-        else
-        {
-            m_fEntered = FALSE;
-        }
-    }
-
-    ~PAL_EnterHolder()
-    {
-        if (m_fEntered)
-        {
-            PAL_Leave(PAL_BoundaryTop);
-        }
-    }
-
-    DWORD GetError()
-    {
-        return m_palError;
-    }
-
-    void SuppressRelease()
-    {
-        // Used to avoid calling PAL_Leave() when
-        // another code path will explicitly do so.
-        m_fEntered = FALSE;
-    }
-};
-
-class PAL_LeaveHolder
-{
-public:
-    PAL_LeaveHolder()
-    {
-        PAL_Leave(PAL_BoundaryBottom);
-    }
-
-    ~PAL_LeaveHolder()
-    {
-        PAL_Reenter(PAL_BoundaryBottom);
-    }
-};
-#endif // __cplusplus
-
-#else // FEATURE_PAL_SXS
-
-#define PAL_Enter(boundary) ERROR_SUCCESS
-#define PAL_Reenter(boundary)
-#define PAL_Leave(boundary)
-
-#ifdef __cplusplus
-class PAL_EnterHolder {
-public:
-    // using constructor to suppress the "unused variable" warnings
-    PAL_EnterHolder() {}
-};
-class PAL_LeaveHolder {
-public:
-    // using constructor to suppress the "unused variable" warnings
-    PAL_LeaveHolder() {}
-};
-#endif // __cplusplus
-
-#endif // FEATURE_PAL_SXS
 
 #ifdef __cplusplus
 
@@ -5261,11 +5056,10 @@ public:
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
 #define PAL_CPP_TRY                     try { HardwareExceptionHolder
-#define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) { PAL_Reenter(PAL_BoundaryBottom);
-#define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) { PAL_Reenter(PAL_BoundaryBottom);
-#define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) { PAL_Reenter(PAL_BoundaryBottom);
+#define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
+#define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
+#define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
-                                            PAL_Reenter(PAL_BoundaryBottom);                      \
                                             try { throw; }                                        \
                                             catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
                                             catch (...) {}

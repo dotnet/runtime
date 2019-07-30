@@ -11157,7 +11157,11 @@ public:
     DbgRSThread();
 
     // The TLS slot that we'll put this thread object in.
-    static DWORD s_TlsSlot;
+#ifndef __GNUC__
+    static __declspec(thread) DbgRSThread* t_pCurrent;
+#else  // !__GNUC__
+    static __thread DbgRSThread* t_pCurrent;
+#endif // !__GNUC__
 
     static LONG s_Total; // Total count of thread objects
 
@@ -11170,8 +11174,7 @@ public:
         InterlockedIncrement(&s_Total);
 
         DbgRSThread * p = new (nothrow) DbgRSThread();
-        BOOL f = TlsSetValue(s_TlsSlot, p);
-        _ASSERT(f);
+        t_pCurrent = p;
         return p;
     }
 
@@ -11179,8 +11182,7 @@ public:
     {
         InterlockedDecrement(&s_Total);
 
-        BOOL f = TlsSetValue(s_TlsSlot, NULL);
-        _ASSERT(f);
+        t_pCurrent = NULL;
 
         delete this;
     }

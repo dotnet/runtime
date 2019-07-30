@@ -2006,19 +2006,6 @@ class LoadsTypeHolder
 
 
 #ifdef ENABLE_CONTRACTS_IMPL
-class PAL_TryMarker
-{
-public:
-    DEBUG_NOINLINE void Enter();
-    DEBUG_NOINLINE void Leave();
-};
-
-#define PAL_ENTER_THROWS_REGION                                             \
-    PAL_TryMarker __throwsHolder_onlyOneAllowedPerScope;                    \
-    __throwsHolder_onlyOneAllowedPerScope.Enter();
-
-#define PAL_LEAVE_THROWS_REGION                                             \
-    __throwsHolder_onlyOneAllowedPerScope.Leave();
 
 // This sets up a marker that says its okay to throw on this thread. This is not a public macro, and should only be
 // used from within the implementation of various try/catch macros.
@@ -2052,8 +2039,6 @@ private:
 #else // ENABLE_CONTRACTS_IMPL
 
 #define CLR_TRY_MARKER()
-#define PAL_ENTER_THROWS_REGION
-#define PAL_LEAVE_THROWS_REGION
 
 #endif
 

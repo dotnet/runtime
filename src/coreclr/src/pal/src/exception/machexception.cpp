@@ -453,16 +453,6 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-#if FEATURE_PAL_SXS
-    if (!pThread->IsInPal())
-    {
-        // It's now possible to observe system exceptions in code running outside the PAL (as the result of a
-        // p/invoke since we no longer revert our Mach exception ports in this case). In that scenario we need
-        // to re-enter the PAL now as the exception signals the end of the p/invoke.
-        PAL_Reenter(PAL_BoundaryBottom);
-    }
-#endif // FEATURE_PAL_SXS
-
     CONTEXT *contextRecord;
     EXCEPTION_RECORD *exceptionRecord;
     AllocateExceptionRecords(&exceptionRecord, &contextRecord);

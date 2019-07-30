@@ -28,9 +28,6 @@ add_subdirectory(cosf)
 add_subdirectory(cosh)
 add_subdirectory(coshf)
 
-# TODO: make this test compile
-# add_subdirectory(ctime)
-
 add_subdirectory(errno)
 add_subdirectory(exit)
 add_subdirectory(exp)
@@ -74,7 +71,6 @@ add_subdirectory(iswupper)
 add_subdirectory(isxdigit)
 add_subdirectory(labs)
 add_subdirectory(llabs)
-add_subdirectory(localtime)
 add_subdirectory(log)
 add_subdirectory(log2)
 add_subdirectory(log2f)
