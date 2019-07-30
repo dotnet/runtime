@@ -71,8 +71,8 @@ namespace System.IO.Pipelines.Tests
 
                 Assert.Same(startSegment, endSegment);
 
-                // Null owner implies that the buffer is allocated and wasn't rented from the pool
-                Assert.Null(startSegment.MemoryOwner);
+                // Check owner is array rather than a different type
+                Assert.IsType<byte[]>(startSegment.MemoryOwner);
 
                 pipe.Reader.AdvanceTo(result.Buffer.End);
                 pipe.Reader.Complete();
