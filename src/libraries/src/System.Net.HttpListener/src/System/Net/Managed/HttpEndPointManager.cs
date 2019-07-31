@@ -4,7 +4,7 @@
 // System.Net.HttpEndPointManager
 //
 // Author:
-//	Gonzalo Paniagua Javier (gonzalo@ximian.com)
+//  Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //
 // Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
 //

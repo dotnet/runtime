@@ -934,14 +934,14 @@ public class CXmlCache
             }
             else
             {
-                rNewNode.peFlags |= NodeFlags.Indent;		// Turn on Indent for current Node
+                rNewNode.peFlags |= NodeFlags.Indent;        // Turn on Indent for current Node
             }
 
             // Set all Depth 0 nodes to No Mixed Content and Indent True
             if (prXmlReader.Depth == 0)
             {
-                rNewNode.peFlags |= NodeFlags.Indent;			// Turn on Indent
-                rNewNode.peFlags &= ~NodeFlags.MixedContent;	// Turn off MixedContent
+                rNewNode.peFlags |= NodeFlags.Indent;        // Turn on Indent
+                rNewNode.peFlags &= ~NodeFlags.MixedContent; // Turn off MixedContent
             }
 
             rParentNode.InsertNode(rNewNode);
@@ -1021,17 +1021,17 @@ public class CXmlCache
                     {
                         rNewNode.peFlags = _eDefaultFlags | NodeFlags.AttributeTextNode;
                     }
-                    rNewNode.peFlags |= NodeFlags.MixedContent;		// turn on Mixed Content for current node
-                    rNewNode.peFlags &= ~NodeFlags.Indent;			// turn off Indent for current node
-                    rParentNode.peFlags |= NodeFlags.MixedContent;	// turn on Mixed Content for Parent Node
+                    rNewNode.peFlags |= NodeFlags.MixedContent;    // turn on Mixed Content for current node
+                    rNewNode.peFlags &= ~NodeFlags.Indent;         // turn off Indent for current node
+                    rParentNode.peFlags |= NodeFlags.MixedContent; // turn on Mixed Content for Parent Node
                     break;
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.CDATA:
-                    rNewNode.peFlags |= NodeFlags.MixedContent;		// turn on Mixed Content for current node
-                    rNewNode.peFlags &= ~NodeFlags.Indent;			// turn off Indent for current node
-                    rParentNode.peFlags |= NodeFlags.MixedContent;	// turn on Mixed Content for Parent Node
+                    rNewNode.peFlags |= NodeFlags.MixedContent;    // turn on Mixed Content for current node
+                    rNewNode.peFlags &= ~NodeFlags.Indent;         // turn off Indent for current node
+                    rParentNode.peFlags |= NodeFlags.MixedContent; // turn on Mixed Content for Parent Node
                     break;
 
                 case XmlNodeType.Comment:

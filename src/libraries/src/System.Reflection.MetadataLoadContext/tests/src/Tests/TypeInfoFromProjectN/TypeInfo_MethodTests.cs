@@ -438,7 +438,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestMakeArrayType2()
         {
-            TypeInfo ti = typeof(Int32).Project().GetTypeInfo();
+            TypeInfo ti = typeof(int).Project().GetTypeInfo();
             Type arraytype = ti.MakeArrayType();
 
             int[] intArray = { 1, 2, 3 };

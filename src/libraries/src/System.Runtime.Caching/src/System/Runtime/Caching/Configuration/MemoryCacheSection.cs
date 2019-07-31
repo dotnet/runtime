@@ -17,7 +17,7 @@ namespace System.Runtime.Caching.Configuration
              <add name="Foo" physicalMemoryPercentage="0" pollingInterval="00:02:00"/>
              <add name="Bar" physicalMemoryPercentage="0" pollingInterval="00:02:00"/>
            </namedCaches>
-	     </memoryCaches>
+         </memoryCaches>
        </system.caching>
     */
 

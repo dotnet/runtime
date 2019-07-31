@@ -762,7 +762,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("Schema of current DataTable '" + table.TableName + 
-                //		"' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
+                //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
             }
 
             rdr = table.CreateDataReader();
@@ -777,7 +777,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("Schema of current DataTable '" + table.TableName + 
-                //		"' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
+                //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
             }
         }
 
@@ -826,7 +826,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("Unable to cast object of type 'System.String'" +
-                //	" to type 'System.Char[]'.", e.Message, "#1");
+                //    " to type 'System.Char[]'.", e.Message, "#1");
             }
             char[] char_arr = null;
             long len = 0;

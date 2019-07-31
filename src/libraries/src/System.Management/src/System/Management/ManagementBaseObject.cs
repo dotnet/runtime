@@ -471,7 +471,7 @@ namespace System.Management
         /// </summary>
         /// <param name='propertyName'>The name of the property of interest. </param>
         /// <value>
-        ///    An <see cref='System.Object'/> containing the
+        ///    An <see cref='object'/> containing the
         ///    value of the requested property.
         /// </value>
         public object this[string propertyName] 

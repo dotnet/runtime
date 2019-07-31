@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     is a prerequisite.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Export"/> required by the <see cref="ContractBasedImportDefinition"/>.
         /// </param>
         /// <param name="requiredTypeIdentity">
@@ -59,7 +59,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     to generate a type identity for a given type. If no specific type is required pass <see langword="null"/>.
         /// </param>
         /// <param name="requiredMetadata">
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="String"/> objects containing
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="string"/> objects containing
         ///     the metadata names of the <see cref="Export"/> required by the 
         ///     <see cref="ContractBasedImportDefinition"/>; or <see langword="null"/> to
         ///     set the <see cref="RequiredMetadata"/> property to an empty <see cref="IEnumerable{T}"/>.
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     is a prerequisite.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Export"/> required by the <see cref="ContractBasedImportDefinition"/>.
         /// </param>
         /// <param name="requiredTypeIdentity">
@@ -121,7 +121,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     to generate a type identity for a given type. If no specific type is required pass <see langword="null"/>.
         /// </param>
         /// <param name="requiredMetadata">
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="String"/> objects containing
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="string"/> objects containing
         ///     the metadata names of the <see cref="Export"/> required by the 
         ///     <see cref="ContractBasedImportDefinition"/>; or <see langword="null"/> to
         ///     set the <see cref="RequiredMetadata"/> property to an empty <see cref="IEnumerable{T}"/>.

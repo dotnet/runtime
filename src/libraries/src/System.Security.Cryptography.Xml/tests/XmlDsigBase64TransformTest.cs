@@ -4,7 +4,7 @@
 // XmlDsigBase64TransformTest.cs - Test Cases for XmlDsigBase64Transform
 //
 // Author:
-//	Sebastien Pouliot <sebastien@ximian.com>
+//  Sebastien Pouliot <sebastien@ximian.com>
 //
 // (C) 2002 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell (http://www.novell.com)

@@ -7,12 +7,12 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="System.String"/>.
+        /// Convert the provided value into a <see cref="string"/>.
         /// </summary>
-        /// <returns>A <see cref="System.String"/> representation of the value.</returns>
+        /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        /// <remarks>Using a <see cref="System.String"/> is not as efficient as using UTF-8
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
@@ -22,13 +22,13 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="System.String"/>.
+        /// Convert the provided value into a <see cref="string"/>.
         /// </summary>
-        /// <returns>A <see cref="System.String"/> representation of the value.</returns>
+        /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        /// <remarks>Using a <see cref="System.String"/> is not as efficient as using UTF-8
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>

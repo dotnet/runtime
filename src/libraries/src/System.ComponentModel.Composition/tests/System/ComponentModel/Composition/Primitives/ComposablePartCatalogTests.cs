@@ -17,7 +17,7 @@ namespace System.ComponentModel.Composition
         {
             var catalog = CatalogFactory.Create();
             catalog.Dispose();
-			var definition = ImportDefinitionFactory.Create();
+            var definition = ImportDefinitionFactory.Create();
 
             ExceptionAssert.ThrowsDisposed(catalog, () =>
             {

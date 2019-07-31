@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 
+#pragma warning disable SA1121 // we don't want to simplify built-ins here as we're using aliasing
 using CFStringRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;
 using size_t = System.IntPtr;

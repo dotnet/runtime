@@ -5,12 +5,12 @@
 namespace System
 {
 #if PROJECTN
-	[Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
 #endif
-	public enum EnvironmentVariableTarget
-	{
-		Process = 0,
-		User = 1,
-		Machine = 2,
-	}
+    public enum EnvironmentVariableTarget
+    {
+        Process = 0,
+        User = 1,
+        Machine = 2,
+    }
 }

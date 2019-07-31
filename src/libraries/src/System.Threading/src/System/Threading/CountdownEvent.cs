@@ -262,7 +262,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">The current instance is already
         /// set.</exception>
         /// <exception cref="System.InvalidOperationException"><see cref="CurrentCount"/> is equal to <see
-        /// cref="System.Int32.MaxValue"/>.</exception>
+        /// cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">
         /// The current instance has already been disposed.
         /// </exception>
@@ -277,7 +277,7 @@ namespace System.Threading
         /// <returns>true if the increment succeeded; otherwise, false. If <see cref="CurrentCount"/> is
         /// already at zero. this will return false.</returns>
         /// <exception cref="System.InvalidOperationException"><see cref="CurrentCount"/> is equal to <see
-        /// cref="System.Int32.MaxValue"/>.</exception>
+        /// cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         public bool TryAddCount()
@@ -295,7 +295,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">The current instance is already
         /// set.</exception>
         /// <exception cref="System.InvalidOperationException"><see cref="CurrentCount"/> is equal to <see
-        /// cref="System.Int32.MaxValue"/>.</exception>
+        /// cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         public void AddCount(int signalCount)
@@ -318,7 +318,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">The current instance is already
         /// set.</exception>
         /// <exception cref="System.InvalidOperationException"><see cref="CurrentCount"/> is equal to <see
-        /// cref="System.Int32.MaxValue"/>.</exception>
+        /// cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         public bool TryAddCount(int signalCount)
@@ -454,7 +454,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         public bool Wait(TimeSpan timeout)
@@ -482,7 +482,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> has

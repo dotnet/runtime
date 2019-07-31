@@ -87,8 +87,8 @@ namespace System.Collections
         
         private void Init()
         {
-            keys = Array.Empty<Object>();
-            values = Array.Empty<Object>();
+            keys = Array.Empty<object>();
+            values = Array.Empty<object>();
             _size = 0;
             comparer = new Comparer(CultureInfo.CurrentCulture);
         }
@@ -229,8 +229,8 @@ namespace System.Collections
                     {
                         // size can only be zero here.
                         Debug.Assert(_size == 0, "Size is not zero");
-                        keys = Array.Empty<Object>();
-                        values = Array.Empty<Object>();
+                        keys = Array.Empty<object>();
+                        values = Array.Empty<object>();
                     }
                 }
             }

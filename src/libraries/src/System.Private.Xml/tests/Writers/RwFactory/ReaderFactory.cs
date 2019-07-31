@@ -309,11 +309,11 @@ namespace System.Xml.Tests
         ///    <ReaderType>Dtd</ReaderType>
         ///    <NameTable>new</NameTable>
         ///    <LineNumberOffset>1</LineNumberOffset>
-        ///		 <LinePositionOffset>0</LinePositionOffset>
+        ///      <LinePositionOffset>0</LinePositionOffset>
         ///    <IgnoreInlineSchema>false</IgnoreInlineSchema>
         ///    <IgnoreSchemaLocation>true</IgnoreSchemaLocation>
         ///    <IgnoreIdentityConstraints>false</IgnoreIdentityConstraints>
-        ///		 <IgnoreValidationWarnings>true</IgnoreValidationWarnings>
+        ///      <IgnoreValidationWarnings>true</IgnoreValidationWarnings>
         ///    <Schemas>2</Schemas>
         ///    <ValidationEventHandler>0</ValidationEventHandler>
         ///    <ProhibitDtd>true</ProhibitDtd>

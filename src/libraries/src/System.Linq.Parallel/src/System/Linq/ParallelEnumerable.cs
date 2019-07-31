@@ -419,7 +419,7 @@ namespace System.Linq
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="count"/> is less than 0
         /// -or-
-        /// <paramref name="start"/> + <paramref name="count"/> - 1 is larger than <see cref="System.Int32.MaxValue"/>.
+        /// <paramref name="start"/> + <paramref name="count"/> - 1 is larger than <see cref="int.MaxValue"/>.
         /// </exception>
         public static ParallelQuery<int> Range(int start, int count)
         {
@@ -1858,7 +1858,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The number of elements in source is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The number of elements in source is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -1902,7 +1902,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The number of elements in source is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The number of elements in source is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -1931,7 +1931,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The number of elements in source is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The number of elements in source is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -1971,7 +1971,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The number of elements in source is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The number of elements in source is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2000,7 +2000,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2022,7 +2022,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2044,7 +2044,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The sum is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2066,7 +2066,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The sum is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2168,7 +2168,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
+        /// The sum is larger than <see cref="decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2190,7 +2190,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
+        /// The sum is larger than <see cref="decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2214,7 +2214,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2238,7 +2238,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2262,7 +2262,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The sum is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2286,7 +2286,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The sum is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2398,7 +2398,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
+        /// The sum is larger than <see cref="decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -2422,7 +2422,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum is larger than <see cref="System.Decimal.MaxValue"/>.
+        /// The sum is larger than <see cref="decimal.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3467,7 +3467,7 @@ namespace System.Linq
         /// <paramref name="source"/> contains no elements.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3489,7 +3489,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3514,7 +3514,7 @@ namespace System.Linq
         /// <paramref name="source"/> contains no elements.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3536,7 +3536,7 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3693,7 +3693,7 @@ namespace System.Linq
         /// <paramref name="source"/> contains no elements.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3717,7 +3717,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3744,7 +3744,7 @@ namespace System.Linq
         /// <paramref name="source"/> contains no elements.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int32.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="int.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
@@ -3768,7 +3768,7 @@ namespace System.Linq
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// The sum or count of the elements in the sequence is larger than <see cref="System.Int64.MaxValue"/>.
+        /// The sum or count of the elements in the sequence is larger than <see cref="long.MaxValue"/>.
         /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>

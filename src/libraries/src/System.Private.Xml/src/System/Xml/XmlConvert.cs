@@ -235,7 +235,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        bufBld.Append(((Int32)name[0]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append(((int)name[0]).ToString("X4", CultureInfo.InvariantCulture));
                         copyPosition = 1;
                     }
 
@@ -280,7 +280,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        bufBld.Append(((Int32)name[position]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append(((int)name[position]).ToString("X4", CultureInfo.InvariantCulture));
                         copyPosition = position + 1;
                     }
                     bufBld.Append('_');

@@ -12,8 +12,8 @@ namespace SerializationTestTypes
     [Serializable]
     public class PrimitiveTypeResolver : DataContractResolver
     {
-        private readonly static string s_defaultNS = "http://www.default.com";
-        private readonly static ConcurrentDictionary<string, Type> s_types = new ConcurrentDictionary<string, Type>();
+        private static readonly string s_defaultNS = "http://www.default.com";
+        private static readonly ConcurrentDictionary<string, Type> s_types = new ConcurrentDictionary<string, Type>();
 
         public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
         {
@@ -301,7 +301,7 @@ namespace SerializationTestTypes
 
     public class ResolverDefaultCollections : DataContractResolver
     {
-        private readonly static string s_defaultNs = "http://www.default.com";
+        private static readonly string s_defaultNs = "http://www.default.com";
         public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
         {
             string resolvedNamespace = string.Empty;

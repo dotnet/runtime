@@ -364,25 +364,25 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestIsPrimitive()
         {
-            Assert.True(typeof(Boolean).Project().IsPrimitive);
-            Assert.True(typeof(Char).Project().IsPrimitive);
-            Assert.True(typeof(SByte).Project().IsPrimitive);
-            Assert.True(typeof(Byte).Project().IsPrimitive);
-            Assert.True(typeof(Int16).Project().IsPrimitive);
-            Assert.True(typeof(UInt16).Project().IsPrimitive);
-            Assert.True(typeof(Int32).Project().IsPrimitive);
-            Assert.True(typeof(UInt32).Project().IsPrimitive);
-            Assert.True(typeof(Int64).Project().IsPrimitive);
-            Assert.True(typeof(UInt64).Project().IsPrimitive);
-            Assert.True(typeof(Single).Project().IsPrimitive);
-            Assert.True(typeof(Double).Project().IsPrimitive);
+            Assert.True(typeof(bool).Project().IsPrimitive);
+            Assert.True(typeof(char).Project().IsPrimitive);
+            Assert.True(typeof(sbyte).Project().IsPrimitive);
+            Assert.True(typeof(byte).Project().IsPrimitive);
+            Assert.True(typeof(short).Project().IsPrimitive);
+            Assert.True(typeof(ushort).Project().IsPrimitive);
+            Assert.True(typeof(int).Project().IsPrimitive);
+            Assert.True(typeof(uint).Project().IsPrimitive);
+            Assert.True(typeof(long).Project().IsPrimitive);
+            Assert.True(typeof(ulong).Project().IsPrimitive);
+            Assert.True(typeof(float).Project().IsPrimitive);
+            Assert.True(typeof(double).Project().IsPrimitive);
             Assert.True(typeof(IntPtr).Project().IsPrimitive);
             Assert.True(typeof(UIntPtr).Project().IsPrimitive);
 
             Assert.False(typeof(void).Project().IsPrimitive);
-            Assert.False(typeof(Decimal).Project().IsPrimitive);
+            Assert.False(typeof(decimal).Project().IsPrimitive);
             Assert.False(typeof(BindingFlags).Project().IsPrimitive);
-            Assert.False(typeof(Int32[]).Project().IsPrimitive);
+            Assert.False(typeof(int[]).Project().IsPrimitive);
 
             return;
         }
@@ -391,11 +391,11 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestIsValueType()
         {
-            Assert.True(typeof(Boolean).Project().IsValueType);
-            Assert.False(typeof(Boolean).Project().MakeArrayType().IsValueType);
-            Assert.False(typeof(Boolean).Project().MakeArrayType(1).IsValueType);
-            Assert.False(typeof(Boolean).Project().MakeByRefType().IsValueType);
-            Assert.False(typeof(Boolean).Project().MakePointerType().IsValueType);
+            Assert.True(typeof(bool).Project().IsValueType);
+            Assert.False(typeof(bool).Project().MakeArrayType().IsValueType);
+            Assert.False(typeof(bool).Project().MakeArrayType(1).IsValueType);
+            Assert.False(typeof(bool).Project().MakeByRefType().IsValueType);
+            Assert.False(typeof(bool).Project().MakePointerType().IsValueType);
             Assert.True(typeof(KeyValuePair<,>).Project().IsValueType);
             Assert.True(typeof(KeyValuePair<object, object>).Project().IsValueType);
             Assert.False(typeof(object).Project().IsValueType);

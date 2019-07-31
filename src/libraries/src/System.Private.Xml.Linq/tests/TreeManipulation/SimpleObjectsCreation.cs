@@ -216,7 +216,7 @@ namespace XLinqTests
             attr.Verify();
         }
 
-        // 21.	The empty string cannot be used as a namespace name (exception is default ns redef.)  
+        // 21.    The empty string cannot be used as a namespace name (exception is default ns redef.)  
         //[Variation(Priority = 1, Desc = "XAttribute - default namespace decl & empty value", Params = new object[] { false, "xmlns" })]
         public void CreateXAttribute6()
         {
@@ -235,7 +235,7 @@ namespace XLinqTests
             }
         }
 
-        // 21.	The empty string cannot be used as a namespace name (exception is default ns redef.)  
+        // 21.    The empty string cannot be used as a namespace name (exception is default ns redef.)  
         //[Variation(Priority = 1, Desc = "XAttribute - prefixed namespace decl & empty value", Params = new object[] { true, "p" })]
         public void CreateXAttribute7()
         {
@@ -254,14 +254,14 @@ namespace XLinqTests
             }
         }
 
-        // 22.	Xml prefix:  Enforce
-        //    �	http://www.w3.org/XML/1998/namespace 
-        //    �	Must not be bound to any other namespace name.
-        //    �	No other prefix may be bound to this namespace name.
-        // 23.	Xmlns prefix:  Enforce, but some concern about performance
-        //    �	http://www.w3.org/2000/xmlns/ 
-        //    �	It must not be declared
-        //    �	No other prefix may be bound to this namespace name. 
+        // 22. Xml prefix:  Enforce
+        //    � http://www.w3.org/XML/1998/namespace 
+        //    � Must not be bound to any other namespace name.
+        //    � No other prefix may be bound to this namespace name.
+        // 23. Xmlns prefix:  Enforce, but some concern about performance
+        //    � http://www.w3.org/2000/xmlns/ 
+        //    � It must not be declared
+        //    � No other prefix may be bound to this namespace name. 
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - prefix redef", Params = new object[] { "xml", "another", true })]
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - bound to diff. prefix", Params = new object[] { "p", "http://www.w3.org/XML/1998/namespace", true })]
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - redeclared (positive).", Params = new object[] { "xml", "http://www.w3.org/XML/1998/namespace", false })]

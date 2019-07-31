@@ -726,7 +726,7 @@ namespace System.IO.Ports.Tests
                     totalBytesRead += bytesRead + numNewLineBytes;
                 }
 
-                //			indexOfNewLine = strToWrite.IndexOf(newLine, lastIndexOfNewLine + newLineStringLength);
+                //            indexOfNewLine = strToWrite.IndexOf(newLine, lastIndexOfNewLine + newLineStringLength);
                 int indexOfNewLine = TCSupport.OrdinalIndexOf(expectedString, lastIndexOfNewLine + newLineStringLength, newLine);
 
 

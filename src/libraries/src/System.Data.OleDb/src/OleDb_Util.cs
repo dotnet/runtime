@@ -692,7 +692,7 @@ namespace System.Data.OleDb
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(hr.ToString());
-            if ((0 < builder.Length) && Char.IsDigit(builder[0]))
+            if ((0 < builder.Length) && char.IsDigit(builder[0]))
             {
                 builder.Length = 0;
             }

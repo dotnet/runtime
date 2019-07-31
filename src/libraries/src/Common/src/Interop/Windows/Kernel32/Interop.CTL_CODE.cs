@@ -15,7 +15,7 @@ internal partial class Interop
         /// <param name="function">Identifies the function to be performed by the driver. Values of less than 0x800 are reserved for Microsoft. Values of 0x800 and higher can be used by vendors.</param>
         /// <param name="method">Indicates how the system will pass data between the caller of DeviceIoControl (or IoBuildDeviceIoControlRequest) and the driver that handles the IRP.</param>
         /// <param name="access">Indicates the type of access that a caller must request when opening the file object that represents the device (see IRP_MJ_CREATE).</param>
-        internal unsafe static uint CTL_CODE(
+        internal static unsafe uint CTL_CODE(
             ushort deviceType,
             ushort function,
             byte method,

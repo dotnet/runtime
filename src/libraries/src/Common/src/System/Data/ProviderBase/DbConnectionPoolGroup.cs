@@ -26,7 +26,7 @@ namespace System.Data.ProviderBase
     // and once no pools remain, change state from Active->Idle->Disabled
     // Once Disabled, factory can remove its reference to the pool entry
 
-    sealed internal class DbConnectionPoolGroup
+    internal sealed class DbConnectionPoolGroup
     {
         private readonly DbConnectionOptions _connectionOptions;
         private readonly DbConnectionPoolKey _poolKey;
@@ -187,8 +187,8 @@ namespace System.Data.ProviderBase
                                     // else pool entry has been disabled so don't create new pools
                                     Debug.Assert(PoolGroupStateDisabled == _state, "state should be disabled");
 
-                                    // don't need to call connectionFactory.QueuePoolForRelease(newPool) because		
-                                    // pool callbacks were delayed and no risk of connections being created		
+                                    // don't need to call connectionFactory.QueuePoolForRelease(newPool) because
+                                    // pool callbacks were delayed and no risk of connections being created
                                     newPool.Shutdown();
                                 }
                             }

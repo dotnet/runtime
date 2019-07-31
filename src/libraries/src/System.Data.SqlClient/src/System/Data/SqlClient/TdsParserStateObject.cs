@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.SqlClient
 {
-    sealed internal class LastIOTimer
+    internal sealed class LastIOTimer
     {
         internal long _value;
     }

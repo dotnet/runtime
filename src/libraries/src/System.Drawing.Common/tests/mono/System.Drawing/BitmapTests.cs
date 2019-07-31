@@ -4,9 +4,9 @@
 // Bitmap class testing unit
 //
 // Authors:
-// 	Jordi Mas i Hernàndez (jmas@softcatala.org>
-//	Jonathan Gilbert <logic@deltaq.org>
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Jordi Mas i Hernàndez (jmas@softcatala.org>
+//  Jonathan Gilbert <logic@deltaq.org>
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // (C) 2004 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004,2006-2007 Novell, Inc (http://www.novell.com)
@@ -52,7 +52,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestPixels()
         {
-            // Tests GetSetPixel/SetPixel			
+            // Tests GetSetPixel/SetPixel
             Bitmap bmp = new Bitmap(100, 100, PixelFormat.Format32bppRgb);
             bmp.SetPixel(0, 0, Color.FromArgb(255, 128, 128, 128));
             Color color = bmp.GetPixel(0, 0);

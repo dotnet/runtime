@@ -4,8 +4,8 @@
 // DataObjectTest.cs - Test Cases for DataObject
 //
 // Author:
-//	Sebastien Pouliot (spouliot@motus.com)
-//	Atsushi Enomoto (atsushi@ximian.com)
+//  Sebastien Pouliot (spouliot@motus.com)
+//  Atsushi Enomoto (atsushi@ximian.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell Inc.
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Xml.Tests
             DataObject obj = new DataObject();
             XmlElement el1 = obj.GetXml();
             obj.LoadXml(doc.DocumentElement);
-            //			obj.Id = "hogehoge";
+            //            obj.Id = "hogehoge";
             XmlElement el2 = obj.GetXml();
             Assert.Equal(doc, el2.OwnerDocument);
         }
@@ -163,10 +163,10 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlElement el1 = obj.GetXml();
             Assert.Equal("<Object Id=\"hoge\" MimeType=\"application/octet-stream\" Encoding=\"euc-kr\" xmlns=\"http://www.w3.org/2000/09/xmldsig#\">test</Object>", el1.OuterXml);
             /* looks curious? but the element does not look to 
-			   be appended to the document.
-			   Just commented out since it is not fixed.
-			Assert.AreEqual (String.Empty, el1.OwnerDocument.OuterXml);
-			*/
+               be appended to the document.
+               Just commented out since it is not fixed.
+            Assert.AreEqual (String.Empty, el1.OwnerDocument.OuterXml);
+            */
         }
 
         [Fact]

@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition
         ///     with the specified error message.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="String"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the 
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the 
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition
         ///     <see langword="null"/>.
         /// </param>
         /// <param name="message">
-        ///     A <see cref="String"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the 
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the 
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
@@ -61,7 +61,7 @@ namespace System.ComponentModel.Composition
         ///     composition error.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="String"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the 
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the 
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition
         ///     is the cause of the composition error.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="String"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the 
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the 
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Composition
         ///     Gets the message that describes the composition error.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing a message that describes the
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionError"/>.
         /// </value>
         public string Description
@@ -159,7 +159,7 @@ namespace System.ComponentModel.Composition
         ///     Returns a string representation of the composition error.
         /// </summary>
         /// <returns>
-        ///     A <see cref="String"/> containing the <see cref="Description"/> property.
+        ///     A <see cref="string"/> containing the <see cref="Description"/> property.
         /// </returns>
         public override string ToString()
         {

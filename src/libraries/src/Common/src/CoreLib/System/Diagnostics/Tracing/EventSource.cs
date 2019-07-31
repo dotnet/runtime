@@ -4236,7 +4236,7 @@ namespace System.Diagnostics.Tracing
         /// for a particular eventSource to occur BEFORE the OnEventSourceCreated is issued.
         /// </summary>
         /// <param name="eventSource"></param>
-        internal protected virtual void OnEventSourceCreated(EventSource eventSource)
+        protected internal virtual void OnEventSourceCreated(EventSource eventSource)
         {
             EventHandler<EventSourceCreatedEventArgs>? callBack = this._EventSourceCreated;
             if (callBack != null)
@@ -4252,7 +4252,7 @@ namespace System.Diagnostics.Tracing
         /// the EventListener has enabled events.  
         /// </summary>
         /// <param name="eventData"></param>
-        internal protected virtual void OnEventWritten(EventWrittenEventArgs eventData)
+        protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
             EventHandler<EventWrittenEventArgs>? callBack = this.EventWritten;
             if (callBack != null)

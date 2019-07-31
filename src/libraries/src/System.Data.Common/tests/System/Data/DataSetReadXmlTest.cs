@@ -55,13 +55,13 @@ namespace System.Data.Tests
         private const string diff2 = diff1 + xml8;
 
         private const string schema1 = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'>
-	<xs:element name='Root'>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name='Child' type='xs:string' />
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name='Root'>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name='Child' type='xs:string' />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>";
         private const string schema2 = schema1 + xml8;
 
@@ -643,13 +643,13 @@ namespace System.Data.Tests
         public void NameConflictDSAndTable()
         {
             string xml = @"<PriceListDetails> 
-	<PriceListList>    
-		<Id>1</Id>
-	</PriceListList>
-	<PriceListDetails> 
-		<Id>1</Id>
-		<Status>0</Status>
-	</PriceListDetails>
+    <PriceListList>    
+        <Id>1</Id>
+    </PriceListList>
+    <PriceListDetails> 
+        <Id>1</Id>
+        <Status>0</Status>
+    </PriceListDetails>
 </PriceListDetails>";
 
             var ds = new DataSet();

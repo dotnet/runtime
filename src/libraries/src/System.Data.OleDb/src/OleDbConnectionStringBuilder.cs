@@ -488,11 +488,11 @@ namespace System.Data.OleDb
                                                                 {
                                                                     info._defaultValue = "";
                                                                 }
-                                                                else if (typeof(Int32) == info._type)
+                                                                else if (typeof(int) == info._type)
                                                                 {
                                                                     info._defaultValue = 0;
                                                                 }
-                                                                else if (typeof(Boolean) == info._type)
+                                                                else if (typeof(bool) == info._type)
                                                                 {
                                                                     info._defaultValue = false;
                                                                 }
@@ -616,8 +616,8 @@ namespace System.Data.OleDb
                 string svalue = (value as string);
                 if (null != svalue)
                 {
-                    Int32 services;
-                    if (Int32.TryParse(svalue, out services))
+                    int services;
+                    if (int.TryParse(svalue, out services))
                     {
                         return services;
                     }
@@ -651,7 +651,7 @@ namespace System.Data.OleDb
 
             public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
             {
-                if ((typeof(string) == destinationType) && (null != value) && (typeof(Int32) == value.GetType()))
+                if ((typeof(string) == destinationType) && (null != value) && (typeof(int) == value.GetType()))
                 {
                     return Enum.Format(typeof(OleDbServiceValues), ((OleDbServiceValues)(int)value), "G");
                 }
@@ -688,7 +688,7 @@ namespace System.Data.OleDb
             }
         }
 
-        sealed internal class OleDbConnectionStringBuilderConverter : ExpandableObjectConverter
+        internal sealed class OleDbConnectionStringBuilderConverter : ExpandableObjectConverter
         {
             // converter classes should have public ctor
             public OleDbConnectionStringBuilderConverter()

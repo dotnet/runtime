@@ -43,11 +43,11 @@ namespace System
     /// </summary>
     internal class LazyHelper
     {
-        internal readonly static LazyHelper NoneViaConstructor            = new LazyHelper(LazyState.NoneViaConstructor);
-        internal readonly static LazyHelper NoneViaFactory                = new LazyHelper(LazyState.NoneViaFactory);
-        internal readonly static LazyHelper PublicationOnlyViaConstructor = new LazyHelper(LazyState.PublicationOnlyViaConstructor);
-        internal readonly static LazyHelper PublicationOnlyViaFactory     = new LazyHelper(LazyState.PublicationOnlyViaFactory);
-        internal readonly static LazyHelper PublicationOnlyWaitForOtherThreadToPublish       = new LazyHelper(LazyState.PublicationOnlyWait);
+        internal static readonly LazyHelper NoneViaConstructor            = new LazyHelper(LazyState.NoneViaConstructor);
+        internal static readonly LazyHelper NoneViaFactory                = new LazyHelper(LazyState.NoneViaFactory);
+        internal static readonly LazyHelper PublicationOnlyViaConstructor = new LazyHelper(LazyState.PublicationOnlyViaConstructor);
+        internal static readonly LazyHelper PublicationOnlyViaFactory     = new LazyHelper(LazyState.PublicationOnlyViaFactory);
+        internal static readonly LazyHelper PublicationOnlyWaitForOtherThreadToPublish       = new LazyHelper(LazyState.PublicationOnlyWait);
 
         internal LazyState State { get; }
 

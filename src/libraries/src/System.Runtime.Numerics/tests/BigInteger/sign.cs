@@ -89,7 +89,7 @@ namespace System.Numerics.Tests
         {
             StackCalc sc1 = new StackCalc(opstring1);
             while (sc1.DoNextOperation())
-            {	
+            {
                 //Run the full calculation
                 sc1.DoNextOperation();
             }

@@ -24,6 +24,6 @@ internal static partial class Interop
         /// Returns 0 on success; otherwise, returns -1 
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UTimensat", SetLastError = true)]
-        internal static unsafe extern int UTimensat(string path, TimeSpec* times);
+        internal static extern unsafe int UTimensat(string path, TimeSpec* times);
     }
 }

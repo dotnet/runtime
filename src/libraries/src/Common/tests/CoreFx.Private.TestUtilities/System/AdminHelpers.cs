@@ -33,7 +33,7 @@ namespace System
             }
         }
 
-        public unsafe static bool IsProcessElevated()
+        public static unsafe bool IsProcessElevated()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

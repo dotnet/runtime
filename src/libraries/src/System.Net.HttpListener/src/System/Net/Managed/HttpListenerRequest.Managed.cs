@@ -4,8 +4,8 @@
 // System.Net.HttpListenerRequest
 //
 // Authors:
-//	Gonzalo Paniagua Javier (gonzalo.mono@gmail.com)
-//	Marek Safar (marek.safar@gmail.com)
+//  Gonzalo Paniagua Javier (gonzalo.mono@gmail.com)
+//  Marek Safar (marek.safar@gmail.com)
 //
 // Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
 // Copyright (c) 2011-2012 Xamarin, Inc. (http://xamarin.com)

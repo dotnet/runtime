@@ -71,10 +71,10 @@ class StripHeaderAndFooter
         while ((value = inputStream.ReadByte()) != -1)
         {
             bitlist.Add((byte)value);
-            //				outputStream.WriteByte((Byte)value);
+            //                outputStream.WriteByte((Byte)value);
         }
 
-        //			outputStream.Close();
+        //            outputStream.Close();
         inputStream.Dispose();
 
         //Footer
@@ -83,10 +83,10 @@ class StripHeaderAndFooter
         //We can confirm this by comparing the size of the decompressed file with the size specified in the footer
         //To do this, we need to decompress the file
         //@TODO!! - is it worth it??
-        //			outputStream = new MemoryStream(outputFileName, FileMode.Create, FileAccess.Write);
-        //			inputStream = new MemoryStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+        //            outputStream = new MemoryStream(outputFileName, FileMode.Create, FileAccess.Write);
+        //            inputStream = new MemoryStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        //			outputStream.Flush();
+        //            outputStream.Flush();
         byte[] bits = new byte[bitlist.Count - 8];
         bitlist.CopyTo(0, bits, 0, bitlist.Count - 8);
         outputStream.Write(bits, 0, bits.Length);

@@ -4,7 +4,7 @@
 // RSAKeyValueTest.cs - Test Cases for RSAKeyValue
 //
 // Author:
-//	Sebastien Pouliot (spouliot@motus.com)
+//  Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 //

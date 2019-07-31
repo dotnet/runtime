@@ -18,7 +18,7 @@ namespace System.IO.Enumeration
         // is the directory separator and cannot be part of any path segment in Windows). The other three are the
         // special case wildcards that we'll convert some * and ? into. They're also valid as filenames on Unix,
         // which is not true in Windows and as such we'll escape any that occur on the input string.
-        private readonly static char[] s_unixEscapeChars = { '\\', '"', '<', '>' };
+        private static readonly char[] s_unixEscapeChars = { '\\', '"', '<', '>' };
 
         /// <summary>
         /// Validates the directory and expression strings to check that they have no invalid characters, any special DOS wildcard characters in Win32 in the expression get replaced with their proper escaped representation, and if the expression string begins with a directory name, the directory name is moved and appended at the end of the directory string.

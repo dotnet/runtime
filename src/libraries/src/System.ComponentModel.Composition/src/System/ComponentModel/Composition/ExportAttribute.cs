@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition
         ///     type or member marked with this attribute under the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="String"/> containing the contract name to export the type or member 
+        ///      A <see cref="string"/> containing the contract name to export the type or member 
         ///      marked with this attribute, under; or <see langword="null"/> or an empty string 
         ///      ("") to use the default contract name.
         /// </param>
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition
         ///     type or member marked with this attribute under the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="String"/> containing the contract name to export the type or member 
+        ///      A <see cref="string"/> containing the contract name to export the type or member 
         ///      marked with this attribute, under; or <see langword="null"/> or an empty string 
         ///      ("") to use the default contract name.
         /// </param>
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Composition
         ///     Gets the contract name to export the type or member under.
         /// </summary>
         /// <value>
-        ///      A <see cref="String"/> containing the contract name to export the type or member 
+        ///      A <see cref="string"/> containing the contract name to export the type or member 
         ///      marked with this attribute, under. The default value is an empty string ("").
         /// </value>
         public string ContractName { get; private set; }

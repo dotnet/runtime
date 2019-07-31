@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal unsafe static extern bool GetNamedPipeInfo(
+        internal static extern unsafe bool GetNamedPipeInfo(
             SafePipeHandle hNamedPipe,
             uint* lpFlags,
             uint* lpOutBufferSize,

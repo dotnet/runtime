@@ -36,7 +36,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified code base.
         /// </summary>
         /// <param name="codeBase">
-        ///     A <see cref="String"/> containing the code base of the assembly containing the
+        ///     A <see cref="string"/> containing the code base of the assembly containing the
         ///     attributed <see cref="Type"/> objects to add to the <see cref="AssemblyCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -84,7 +84,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified code base.
         /// </summary>
         /// <param name="codeBase">
-        ///     A <see cref="String"/> containing the code base of the assembly containing the
+        ///     A <see cref="string"/> containing the code base of the assembly containing the
         ///     attributed <see cref="Type"/> objects to add to the <see cref="AssemblyCatalog"/>.
         /// </param>
         /// <param name="reflectionContext">
@@ -142,7 +142,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified code base.
         /// </summary>
         /// <param name="codeBase">
-        ///     A <see cref="String"/> containing the code base of the assembly containing the
+        ///     A <see cref="string"/> containing the code base of the assembly containing the
         ///     attributed <see cref="Type"/> objects to add to the <see cref="AssemblyCatalog"/>.
         /// </param>
         /// <param name="definitionOrigin">
@@ -198,7 +198,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified code base.
         /// </summary>
         /// <param name="codeBase">
-        ///     A <see cref="String"/> containing the code base of the assembly containing the
+        ///     A <see cref="string"/> containing the code base of the assembly containing the
         ///     attributed <see cref="Type"/> objects to add to the <see cref="AssemblyCatalog"/>.
         /// </param>
         /// <param name="reflectionContext">
@@ -477,7 +477,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the display name of the assembly catalog.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing a human-readable display name of the <see cref="AssemblyCatalog"/>.
+        ///     A <see cref="string"/> containing a human-readable display name of the <see cref="AssemblyCatalog"/>.
         /// </value>
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName
@@ -501,7 +501,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Returns a string representation of the assembly catalog.
         /// </summary>
         /// <returns>
-        ///     A <see cref="String"/> containing the string representation of the <see cref="AssemblyCatalog"/>.
+        ///     A <see cref="string"/> containing the string representation of the <see cref="AssemblyCatalog"/>.
         /// </returns>
         public override string ToString()
         {

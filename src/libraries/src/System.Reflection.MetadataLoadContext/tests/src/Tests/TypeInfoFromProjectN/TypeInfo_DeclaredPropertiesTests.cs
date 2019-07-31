@@ -83,7 +83,7 @@ namespace System.Reflection.Tests
             }
 
             if (!found)
-                Assert.False(true, String.Format("Property {0} not found in Type {1}", name, t.Name));
+                Assert.False(true, string.Format("Property {0} not found in Type {1}", name, t.Name));
         }
     } //end class
 

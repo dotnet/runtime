@@ -40,9 +40,9 @@ namespace System.Data
         internal const int Minus = 16;          // -
         internal const int Multiply = 17;       // *
         internal const int Divide = 18;     // /
-        //internal final static int IntegerDiv = 19;	// \
+        //internal final static int IntegerDiv = 19;    // \
         internal const int Modulo = 20;     // %
-        //internal final static int Exponent = 21;	// **
+        //internal final static int Exponent = 21;    // **
         /* End of arithmetic operators */
 
         /* Beginning of bitwise operators */
@@ -172,37 +172,37 @@ namespace System.Data
             "Between", //Between = 6;
 
             /* Beginning of Comparison (relationa) operators */
-            "=",    //EqualTo = 7;		// =
-            ">", //GreaterThen = 8;	// >
-            "<",    //LessThen = 9;		// <
+            "=",    //EqualTo = 7;        // =
+            ">", //GreaterThen = 8;    // >
+            "<",    //LessThen = 9;        // <
             ">=", //GreaterOrEqual = 10;// >=
-            "<=",       //LessOrEqual = 11;	// <=
-            "<>", //NotEqual = 12;		// <>
+            "<=",       //LessOrEqual = 11;    // <=
+            "<>", //NotEqual = 12;        // <>
             /* End of Comparison (relational) operators */
 
             "Is",       //Is = 13;
             "Like", //Like = 14;
 
             /* Beginning of arithmetic operators */
-            "+",    //Plus = 15;			// +
-            "-", //Minus = 16;			// -
-            "*", //Multiply = 17;		// *
-            "/",    //Divide = 18;		// /
-            "\\", //IntegerDiv = 19;	// \
-            "Mod", //Modulo = 20;		// %
-            "**", //Exponent = 21;	// **
+            "+",    //Plus = 15;            // +
+            "-", //Minus = 16;            // -
+            "*", //Multiply = 17;        // *
+            "/",    //Divide = 18;        // /
+            "\\", //IntegerDiv = 19;    // \
+            "Mod", //Modulo = 20;        // %
+            "**", //Exponent = 21;    // **
             /* End of arithmetic operators */
 
             /* Beginning of bitwise operators */
-            "&",    //BitwiseAnd = 22;	// &
-            "|",    //BitwiseOr = 23;		// |
-            "^",    //BitwiseXor = 24;	// ^
-            "~",    //BitwiseNot = 25;	// ~
+            "&",    //BitwiseAnd = 22;    // &
+            "|",    //BitwiseOr = 23;        // |
+            "^",    //BitwiseXor = 24;    // ^
+            "~",    //BitwiseNot = 25;    // ~
             /* End of bitwise operators */
 
             /* Beginning of logical operators */
-            "And",  //And = 26;		// AND
-            "Or",       //Or = 27;		// OR
+            "And",  //And = 26;        // AND
+            "Or",       //Or = 27;        // OR
             // Not is in the unary ops
             /* End of logical operators */
 
@@ -217,12 +217,12 @@ namespace System.Data
             "True", //True = 33;
             "False", //False = 34;
 
-            "Date", //Date = 35;			// Date constant
-            "GenUniqueId()",    //GenUniqueId = 36;	// Generate unique ID
-            "GenGuid()",    //GenGUID = 37;		// Generate GUID
-            "Guid {..}",    //GUID = 38;			// GUID constant
+            "Date", //Date = 35;            // Date constant
+            "GenUniqueId()",    //GenUniqueId = 36;    // Generate unique ID
+            "GenGuid()",    //GenGUID = 37;        // Generate GUID
+            "Guid {..}",    //GUID = 38;            // GUID constant
 
-            "Is Not",   //IsNot = 39;			// internal only
+            "Is Not",   //IsNot = 39;            // internal only
         };
 
         internal static string ToString(int op)

@@ -110,5 +110,5 @@ namespace System.ComponentModel.Composition.Registration.Tests
 
             return list[1] as ExportMetadataAttribute;
         }
-	}
+    }
 }

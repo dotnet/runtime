@@ -170,7 +170,7 @@ namespace System.Collections.Tests
             int iterations = 0;
             int expectedCount = expectedItems.Length;
 
-            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made			
+            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made            
             for (int i = 0; i < 3; i++)
             {
                 try
@@ -232,7 +232,7 @@ namespace System.Collections.Tests
             int iterations = 0;
             int expectedCount = expectedItems.Length;
 
-            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made			
+            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made            
             for (int i = 0; i < 3; i++)
             {
                 try

@@ -89,7 +89,7 @@ namespace System.Data.ProviderBase
                                                                         PerformanceCounterType.NumberOfItems32);
         };
 
-        sealed internal class Counter
+        internal sealed class Counter
         {
             private PerformanceCounter _instance;
 
@@ -260,7 +260,7 @@ namespace System.Data.ProviderBase
             // to PERFMON.  They recommend that we translate them as shown below, to 
             // prevent problems.
 
-            result = String.Format((IFormatProvider)null, "{0}[{1}]", instanceName, pid);
+            result = string.Format((IFormatProvider)null, "{0}[{1}]", instanceName, pid);
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127
@@ -331,7 +331,7 @@ namespace System.Data.ProviderBase
         }
     }
 
-    sealed internal class DbConnectionPoolCountersNoCounters : DbConnectionPoolCounters
+    internal sealed class DbConnectionPoolCountersNoCounters : DbConnectionPoolCounters
     {
         public static readonly DbConnectionPoolCountersNoCounters SingletonInstance = new DbConnectionPoolCountersNoCounters();
 

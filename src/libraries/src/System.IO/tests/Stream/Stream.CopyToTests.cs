@@ -250,7 +250,7 @@ namespace System.IO.Tests
                     return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping 
                 });
 
-	        var src = new CallTrackingStream(srcBase);
+            var src = new CallTrackingStream(srcBase);
 
             var destBase = new DelegateStream(
                 canWriteFunc: () => true,
@@ -305,7 +305,7 @@ namespace System.IO.Tests
                     return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping 
                 });
 
-	        var src = new CallTrackingStream(srcBase);
+            var src = new CallTrackingStream(srcBase);
 
             var destBase = new DelegateStream(
                 canWriteFunc: () => true,

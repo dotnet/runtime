@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, SetLastError = true)]
-        internal unsafe static extern bool AdjustTokenPrivileges(
+        internal static extern unsafe bool AdjustTokenPrivileges(
             SafeTokenHandle TokenHandle,
             bool DisableAllPrivileges,
             TOKEN_PRIVILEGE* NewState,

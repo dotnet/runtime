@@ -12,7 +12,7 @@ internal partial class Interop
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private unsafe static extern int NtCreateFile(
+        private static extern unsafe int NtCreateFile(
             out IntPtr FileHandle,
             DesiredAccess DesiredAccess,
             ref OBJECT_ATTRIBUTES ObjectAttributes,
@@ -25,7 +25,7 @@ internal partial class Interop
             void* EaBuffer,
             uint EaLength);
 
-        internal unsafe static (int status, IntPtr handle) CreateFile(
+        internal static unsafe (int status, IntPtr handle) CreateFile(
             ReadOnlySpan<char> path,
             IntPtr rootDirectory,
             CreateDisposition createDisposition,

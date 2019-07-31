@@ -414,13 +414,13 @@ namespace System.Data.OleDb
         /// LARGE_INTEGER
         /// </summary>
         [FieldOffset(0)]
-        internal Int64 hVal;
+        internal long hVal;
 
         /// <summary>
         /// ULARGE_INTEGER
         /// </summary>
         [FieldOffset(0)]
-        internal UInt64 uhVal;
+        internal ulong uhVal;
 
         /// <summary>
         /// FLOAT
@@ -730,7 +730,7 @@ namespace System.Data.OleDb
 
     internal class NativeOledbWrapper
     {
-        internal unsafe static OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
+        internal static unsafe OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             IntPtr hchapter = chapter;
@@ -752,7 +752,7 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal unsafe static OleDbHResult ITransactionAbort(System.IntPtr ptr)
+        internal static unsafe OleDbHResult ITransactionAbort(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             ITransactionLocal transactionLocal = null;
@@ -773,7 +773,7 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal unsafe static OleDbHResult ITransactionCommit(System.IntPtr ptr)
+        internal static unsafe OleDbHResult ITransactionCommit(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             ITransactionLocal transactionLocal = null;
@@ -794,7 +794,7 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal static bool MemoryCompare(System.IntPtr buf1, System.IntPtr buf2, System.Int32 count)
+        internal static bool MemoryCompare(System.IntPtr buf1, System.IntPtr buf2, int count)
         {
             Debug.Assert(buf1 != buf2, "buf1 and buf2 are the same");
             Debug.Assert(buf1.ToInt64() < buf2.ToInt64() || buf2.ToInt64() + count <= buf1.ToInt64(), "overlapping region buf1");
@@ -810,7 +810,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal static void MemoryCopy(System.IntPtr dst, System.IntPtr src, System.Int32 count)
+        internal static void MemoryCopy(System.IntPtr dst, System.IntPtr src, int count)
         {
             Debug.Assert(dst != src, "dst and src are the same");
             Debug.Assert(dst.ToInt64() < src.ToInt64() || src.ToInt64() + count <= dst.ToInt64(), "overlapping region dst");

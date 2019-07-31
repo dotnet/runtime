@@ -79,7 +79,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates an instance of <see cref="SymbolDocumentInfo"/>.
         /// </summary>
-        /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
+        /// <param name="fileName">A <see cref="string"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/> property set to the specified value.</returns>
         public static SymbolDocumentInfo SymbolDocument(string fileName)
         {
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates an instance of <see cref="SymbolDocumentInfo"/>.
         /// </summary>
-        /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
+        /// <param name="fileName">A <see cref="string"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
         /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/>
         /// and <see cref="SymbolDocumentInfo.Language"/> properties set to the specified value.</returns>
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates an instance of <see cref="SymbolDocumentInfo"/>.
         /// </summary>
-        /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
+        /// <param name="fileName">A <see cref="string"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
         /// <param name="languageVendor">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.LanguageVendor"/> equal to.</param>
         /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/>
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates an instance of <see cref="SymbolDocumentInfo"/>.
         /// </summary>
-        /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
+        /// <param name="fileName">A <see cref="string"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
         /// <param name="languageVendor">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.LanguageVendor"/> equal to.</param>
         /// <param name="documentType">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.DocumentType"/> equal to.</param>

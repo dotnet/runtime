@@ -157,10 +157,10 @@ namespace System.Diagnostics
                     {
                         string nameString = names[(index * 2) + 1];
                         if (nameString == null)
-                            nameString = String.Empty;
+                            nameString = string.Empty;
 
                         int key;
-                        if (!Int32.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))
+                        if (!int.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))
                         {
                             if (isHelp)
                             {

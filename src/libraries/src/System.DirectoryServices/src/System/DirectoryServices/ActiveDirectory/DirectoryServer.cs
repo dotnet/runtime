@@ -55,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
             GC.SuppressFinalize(this);
         }
 
-        // private Dispose method		
+        // private Dispose method        
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -434,7 +434,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         FreeReplicaInfo(DS_REPL_INFO_TYPE.DS_REPL_INFO_CURSORS_3_FOR_NC, info, libHandle);
                     }
 
-                    // get the next batch of results		            
+                    // get the next batch of results
                     info = GetReplicationInfoHelper(dsHandle, (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_CURSORS_3_FOR_NC, (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_CURSORS_FOR_NC, partition, ref advanced, context, libHandle);
                 }
             }
@@ -609,7 +609,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (temp != (IntPtr)0)
                 {
-                    // error information is available		            
+                    // error information is available
                     exception = ExceptionHelper.CreateSyncAllException(temp, true);
                     if (exception == null)
                     {

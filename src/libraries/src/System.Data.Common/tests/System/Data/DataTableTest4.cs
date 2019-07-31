@@ -1298,7 +1298,7 @@ namespace System.Data.Tests
 
             using (FileStream stream = new FileStream(_tempFile, FileMode.Open))
             {
-                //This should not read anything as table name is not set	
+                //This should not read anything as table name is not set
                 mode = table.ReadXml(stream);
             }
 

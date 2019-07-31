@@ -4,7 +4,7 @@
 // EncryptedXmlTest.cs
 //
 // Author:
-//	Atsushi Enomoto  <atsushi@ximian.com>
+//  Atsushi Enomoto  <atsushi@ximian.com>
 //
 // Copyright (C) 2006 Novell, Inc (http://www.novell.com)
 //

@@ -64,7 +64,7 @@ namespace System.Xml.Schema
                 if (_internalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<Object>(ref _internalSyncObject, o, null);
+                    Interlocked.CompareExchange<object>(ref _internalSyncObject, o, null);
                 }
                 return _internalSyncObject;
             }

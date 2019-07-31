@@ -287,7 +287,7 @@ namespace System.Security.AccessControl.Tests
             gAce = new CustomAce(aceType, aceFlag, opaque);
             rawAcl.InsertAce(rawAcl.Count, gAce);
 
-            // CompoundAce					
+            // CompoundAce
             aceFlag = (AceFlags)2;
             accessMask = 1;
             compoundAceType = CompoundAceType.Impersonation;

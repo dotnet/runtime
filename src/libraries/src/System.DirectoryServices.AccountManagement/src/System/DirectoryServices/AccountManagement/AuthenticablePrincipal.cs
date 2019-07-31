@@ -325,7 +325,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private implementation
         //
-        internal protected AuthenticablePrincipal(PrincipalContext context)
+        protected internal AuthenticablePrincipal(PrincipalContext context)
         {
             if (context == null)
                 throw new ArgumentException(SR.NullArguments);
@@ -335,7 +335,7 @@ namespace System.DirectoryServices.AccountManagement
             this.rosf = new AdvancedFilters(this);
         }
 
-        internal protected AuthenticablePrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
+        protected internal AuthenticablePrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
             if (samAccountName != null)
             {

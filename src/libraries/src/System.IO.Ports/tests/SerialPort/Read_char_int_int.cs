@@ -537,8 +537,8 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(byteXmitBuffer, 3, byteXmitBuffer.Length - 3);
 
-                //		retValue &= TCSupport.WaitForPredicate(delegate() {return com1.BytesToRead == byteXmitBuffer.Length; }, 
-                //			5000, "Err_91818aheid Expected BytesToRead={0} actual={1}", byteXmitBuffer.Length, com1.BytesToRead);
+                //        retValue &= TCSupport.WaitForPredicate(delegate() {return com1.BytesToRead == byteXmitBuffer.Length; }, 
+                //            5000, "Err_91818aheid Expected BytesToRead={0} actual={1}", byteXmitBuffer.Length, com1.BytesToRead);
 
                 TCSupport.WaitForExpected(() => com1.BytesToRead, byteXmitBuffer.Length,
                     5000, "Err_91818aheid BytesToRead");
@@ -987,7 +987,7 @@ namespace System.IO.Ports.Tests
     
                 for(int i=0; i<xmitCharBuffer.Length; ++i) {
                     Debug.WriteLine("{0}, ", (int)xmitByteBuffer[i]);
-                }			
+                }            
             }*/
             }
         }

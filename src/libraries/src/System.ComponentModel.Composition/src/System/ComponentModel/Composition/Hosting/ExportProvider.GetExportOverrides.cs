@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         <see cref="Lazy{T, TMetadataView}"/> underneath, where 
         ///         <c>TMetadataView</c>
         ///         is <see cref="IDictionary{TKey, TValue}"/> and where <c>TKey</c> 
-        ///         is <see cref="String"/> and <c>TValue</c> is <see cref="Object"/>.
+        ///         is <see cref="string"/> and <c>TValue</c> is <see cref="object"/>.
         ///     </para>
         ///     <para>
         ///         The contract name is the result of calling 
@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The type of the <see cref="Lazy{T}"/> object to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the <see cref="Lazy{T}"/> 
+        ///     A <see cref="string"/> containing the contract name of the <see cref="Lazy{T}"/> 
         ///     object to return; or <see langword="null"/> or an empty string ("") to use the 
         ///     default contract name.
         /// </param>
@@ -83,7 +83,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         <see cref="Lazy{T, TMetadataView}"/> underneath, where 
         ///         <c>TMetadataView</c>
         ///         is <see cref="IDictionary{TKey, TValue}"/> and where <c>TKey</c> 
-        ///         is <see cref="String"/> and <c>TValue</c> is <see cref="Object"/>.
+        ///         is <see cref="string"/> and <c>TValue</c> is <see cref="object"/>.
         ///     </para>
         ///     <para>
         ///         The contract name is the result of calling 
@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Lazy{T, TMetadataView}"/> object to return; or <see langword="null"/> 
         ///     or an empty string ("") to use the default contract name.
         /// </param>
@@ -225,7 +225,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     return.
         /// </param>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Export"/> object to return; or <see langword="null"/> 
         ///     or an empty string ("") to use the default contract name.
         /// </param>
@@ -292,7 +292,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         <see cref="Lazy{T, TMetadataView}"/> underneath, where 
         ///         <c>TMetadataView</c>
         ///         is <see cref="IDictionary{TKey, TValue}"/> and where <c>TKey</c> 
-        ///         is <see cref="String"/> and <c>TValue</c> is <see cref="Object"/>.
+        ///         is <see cref="string"/> and <c>TValue</c> is <see cref="object"/>.
         ///     </para>
         ///     <para>
         ///         The contract name is the result of calling 
@@ -319,7 +319,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The type of the <see cref="Lazy{T}"/> objects to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the <see cref="Lazy{T}"/> 
+        ///     A <see cref="string"/> containing the contract name of the <see cref="Lazy{T}"/> 
         ///     objects to return; or <see langword="null"/> or an empty string ("") to use the 
         ///     default contract name.
         /// </param>
@@ -334,7 +334,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         <see cref="Lazy{T, TMetadataView}"/> underneath, where 
         ///         <c>TMetadataView</c>
         ///         is <see cref="IDictionary{TKey, TValue}"/> and where <c>TKey</c> 
-        ///         is <see cref="String"/> and <c>TValue</c> is <see cref="Object"/>.
+        ///         is <see cref="string"/> and <c>TValue</c> is <see cref="object"/>.
         ///     </para>
         ///     <para>
         ///         The default contract name is the result of calling 
@@ -405,7 +405,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Lazy{T, TMetadataView}"/> objects to return; or <see langword="null"/> 
         ///     or an empty string ("") to use the default contract name.
         /// </param>
@@ -445,7 +445,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     derived from this type parameter.
         /// </typeparam>
         /// <returns>
-        ///     The exported <see cref="Object"/> with the contract name derived from 
+        ///     The exported <see cref="object"/> with the contract name derived from 
         ///     <typeparamref name="T"/>.
         /// </returns>
         /// <remarks>
@@ -492,11 +492,11 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The type of the exported value to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the exported value to return,
+        ///     A <see cref="string"/> containing the contract name of the exported value to return,
         ///     or <see langword="null"/> or an empty string ("") to use the default contract name.
         /// </param>
         /// <returns>
-        ///     The exported <see cref="Object"/> with the specified contract name.
+        ///     The exported <see cref="object"/> with the specified contract name.
         /// </returns>
         /// <remarks>
         ///     <para>
@@ -543,7 +543,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     derived from this type parameter.
         /// </typeparam>
         /// <returns>
-        ///     The exported <see cref="Object"/> with the contract name derived from 
+        ///     The exported <see cref="object"/> with the contract name derived from 
         ///     <typeparamref name="T"/>, if found; otherwise, the default value for
         ///     <typeparamref name="T"/>.
         /// </returns>
@@ -592,11 +592,11 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The type of the exported value to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the exported value to return,
+        ///     A <see cref="string"/> containing the contract name of the exported value to return,
         ///     or <see langword="null"/> or an empty string ("") to use the default contract name.
         /// </param>
         /// <returns>
-        ///     The exported <see cref="Object"/> with the specified contract name, if found; 
+        ///     The exported <see cref="object"/> with the specified contract name, if found; 
         ///     otherwise, the default value for <typeparamref name="T"/>.
         /// </returns>
         /// <remarks>
@@ -680,7 +680,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The type of the exported value to return.
         /// </typeparam>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the exported values to 
+        ///     A <see cref="string"/> containing the contract name of the exported values to 
         ///     return; or <see langword="null"/> or an empty string ("") to use the default 
         ///     contract name.
         /// </param>

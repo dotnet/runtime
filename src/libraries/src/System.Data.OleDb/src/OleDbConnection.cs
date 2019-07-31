@@ -171,7 +171,7 @@ namespace System.Data.OleDb
         Browsable(true),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        public String Provider
+        public string Provider
         {
             get
             {
@@ -216,7 +216,7 @@ namespace System.Data.OleDb
             if (IsOpen)
             {
                 object value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_CONNECTIONSTATUS);
-                if (value is Int32)
+                if (value is int)
                 {
                     int connectionStatus = (int)value;
                     switch (connectionStatus)
@@ -293,7 +293,7 @@ namespace System.Data.OleDb
 
             int quotedIdentifierCase;
             object value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_QUOTEDIDENTIFIERCASE);
-            if (value is Int32)
+            if (value is int)
             {// not OleDbPropertyStatus
                 quotedIdentifierCase = (int)value;
             }

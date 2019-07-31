@@ -7,7 +7,7 @@ using System.Data.SqlClient.SNI;
 
 namespace System.Data.SqlClient
 {
-    sealed internal partial class TdsParser
+    internal sealed partial class TdsParser
     {
         internal void PostReadAsyncForMars()
         {

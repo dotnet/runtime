@@ -162,7 +162,7 @@ namespace System.Xml.Schema
             return Add(schema, _xmlResolver);
         }
 
-	    public XmlSchema Add(XmlSchema schema, XmlResolver resolver)
+        public XmlSchema Add(XmlSchema schema, XmlResolver resolver)
         {
             if (schema == null)
                 throw new ArgumentNullException(nameof(schema));

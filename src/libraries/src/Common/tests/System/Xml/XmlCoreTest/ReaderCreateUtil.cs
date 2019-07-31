@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 /// This class is primarily used to test buffer boundary integrity of readers.
-///	This class constructs a memory stream from the given buffer boundary length such that
-///	the required tag completely lies exactly on the start and end of buffer boundary.
+/// This class constructs a memory stream from the given buffer boundary length such that
+/// the required tag completely lies exactly on the start and end of buffer boundary.
 /// The class makes up the additional bytes by filling in whitespace if so.
-///	The first buffer length consists of the XML Decl and the Root Start (done by PrepareStream() )
+/// The first buffer length consists of the XML Decl and the Root Start (done by PrepareStream() )
 /// The next buffer length consists of the actual start and end text with the variable content stretched
 /// out to end at the buffer boundary.
 ///
@@ -22,9 +22,9 @@ namespace XmlCoreTest.Common
 
 
     /// <summary>
-    ///  This class contains helper methods for Readers.
-    ///	 ConvertToBinaryStream : Converts the given xml string to the binary equivalent of the string and returns it
-    ///		using a memory stream.
+    /// This class contains helper methods for Readers.
+    /// ConvertToBinaryStream : Converts the given xml string to the binary equivalent of the string and returns it
+    /// using a memory stream.
     /// Common usage pattern would be something like :
     /// XmlReader.Create( new MemoryStream(ReaderHelper.ConvertToBinaryStream("<elem>abc</elem>", true, false)), "baseUri", readerSettings );
     /// </summary>

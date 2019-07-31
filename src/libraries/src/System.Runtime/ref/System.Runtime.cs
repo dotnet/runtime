@@ -471,9 +471,9 @@ namespace System
         public static int ByteLength(System.Array array) { throw null; }
         public static byte GetByte(System.Array array, int index) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy) { }
+        public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy) { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
+        public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
         public static void SetByte(System.Array array, int index, byte value) { }
     }
     public readonly partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.IFormattable
@@ -1641,9 +1641,9 @@ namespace System
         public static explicit operator int (System.IntPtr value) { throw null; }
         public static explicit operator long (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator void* (System.IntPtr value) { throw null; }
+        public static unsafe explicit operator void* (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator System.IntPtr (void* value) { throw null; }
+        public static unsafe explicit operator System.IntPtr (void* value) { throw null; }
         public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
         public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
@@ -3368,8 +3368,8 @@ namespace System
         public static explicit operator System.UIntPtr (ulong value) { throw null; }
         public static explicit operator uint (System.UIntPtr value) { throw null; }
         public static explicit operator ulong (System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator void* (System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator System.UIntPtr (void* value) { throw null; }
+        public static unsafe explicit operator void* (System.UIntPtr value) { throw null; }
+        public static unsafe explicit operator System.UIntPtr (void* value) { throw null; }
         public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
         public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
@@ -6220,9 +6220,9 @@ namespace System.Reflection
     public sealed partial class Pointer : System.Runtime.Serialization.ISerializable
     {
         internal Pointer() { }
-        public unsafe static object Box(void* ptr, System.Type type) { throw null; }
+        public static unsafe object Box(void* ptr, System.Type type) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public unsafe static void* Unbox(object ptr) { throw null; }
+        public static unsafe void* Unbox(object ptr) { throw null; }
     }
     [System.FlagsAttribute]
     public enum PortableExecutableKinds

@@ -11,7 +11,7 @@ using System.Data.ProviderBase;
 
 namespace System.Data.SqlClient
 {
-    sealed internal class SqlReferenceCollection : DbReferenceCollection
+    internal sealed class SqlReferenceCollection : DbReferenceCollection
     {
         internal const int DataReaderTag = 1;
         internal const int CommandTag = 2;

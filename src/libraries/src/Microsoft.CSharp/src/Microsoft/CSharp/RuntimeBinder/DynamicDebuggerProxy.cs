@@ -242,7 +242,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 out argInfos);
 
             CallSiteBinder binder;
-            if (String.IsNullOrEmpty(methodName))
+            if (string.IsNullOrEmpty(methodName))
             {
                 //null or empty indicates delegate invocation.
                 binder = new CSharpInvokeBinder(

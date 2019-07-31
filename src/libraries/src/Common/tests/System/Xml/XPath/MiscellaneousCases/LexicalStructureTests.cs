@@ -1181,7 +1181,7 @@ namespace XPathTests.FunctionalTests
         {
             var xml = "books.xml";
             var testExpression = @"
-          /bookstore/child 	 	::
+          /bookstore/child          ::
           book
         ";
             var expected = new XPathResult(0,

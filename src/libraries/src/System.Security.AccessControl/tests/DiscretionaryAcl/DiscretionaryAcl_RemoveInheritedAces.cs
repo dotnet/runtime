@@ -184,11 +184,11 @@ namespace System.Security.AccessControl.Tests
             revision = 255;
             capacity = 1;
             rawAcl = new RawAcl(revision, capacity);
-            //199  has all AceFlags except InheritOnly and Inherited					
+            //199  has all AceFlags except InheritOnly and Inherited
             gAce = new CommonAce((AceFlags)(FlagsForAce.AuditFlags | FlagsForAce.OI | FlagsForAce.CI | FlagsForAce.NP), AceQualifier.AccessDenied, 1,
                 new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BG")), false, null);
             rawAcl.InsertAce(0, gAce);
-            //215  has all AceFlags except InheritOnly					
+            //215  has all AceFlags except InheritOnly
             gAce = new CommonAce((AceFlags)(FlagsForAce.AuditFlags | FlagsForAce.OI | FlagsForAce.CI | FlagsForAce.NP | FlagsForAce.IH), AceQualifier.AccessAllowed, 1,
                 new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BA")), false, null);
             rawAcl.InsertAce(1, gAce);
@@ -202,7 +202,7 @@ namespace System.Security.AccessControl.Tests
             revision = 255;
             capacity = 1;
             rawAcl = new RawAcl(revision, capacity);
-            //215  has all AceFlags except InheritOnly					
+            //215  has all AceFlags except InheritOnly
             gAce = new CommonAce((AceFlags)215, AceQualifier.AccessAllowed, 1,
                 new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BG")), false, null);
             rawAcl.InsertAce(0, gAce);

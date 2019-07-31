@@ -643,7 +643,7 @@ namespace System.Management
             PublicNamesUsed.Add("Boolean","System.Boolean");
             PublicNamesUsed.Add("ValueType", "System.ValueType");
             PublicNamesUsed.Add("Events1", "Events");
-            PublicNamesUsed.Add("Component1", "Component");		
+            PublicNamesUsed.Add("Component1", "Component");
 
             //Initialize the Private Members
             PrivateNamesUsed.Add("SystemPropertiesObject","PrivateSystemProperties");    

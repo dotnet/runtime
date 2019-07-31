@@ -101,14 +101,14 @@ namespace System.DirectoryServices.Tests
                                 Assert.Equal(originalPhone, (string) sameUserEntry.Properties["telephoneNumber"].Value);
                             }
 
-			                userEntry.CommitChanges();
+                            userEntry.CommitChanges();
 
                             using (DirectoryEntry sameUserEntry = GetOrganizationalRole(rootOU, "caching.user.1"))
                             {
                                 Assert.Equal(newPhone, (string) sameUserEntry.Properties["telephoneNumber"].Value);
                             }
 
-			                userEntry.UsePropertyCache = false;
+                            userEntry.UsePropertyCache = false;
                             Assert.False(userEntry.UsePropertyCache);
 
                             userEntry.Properties["telephoneNumber"].Value = originalPhone;

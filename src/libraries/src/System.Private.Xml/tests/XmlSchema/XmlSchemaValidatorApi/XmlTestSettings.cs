@@ -19,11 +19,11 @@ namespace System.Xml.Tests
         }
     }
 
-	public static class FilePathUtil
-	{
-		public static XmlTestSettings TestSettings = new XmlTestSettings();
+    public static class FilePathUtil
+    {
+        public static XmlTestSettings TestSettings = new XmlTestSettings();
 
-	    public static string GetDataPath()
+        public static string GetDataPath()
         {
             return TestSettings.DataPath;
         }
@@ -36,5 +36,5 @@ namespace System.Xml.Tests
         {
             return Path.Combine(GetDataPath(), "TestFiles", "StandardTests");
         }
-	}
+    }
 }

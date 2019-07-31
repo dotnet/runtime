@@ -5,7 +5,7 @@
 // for System.Configuration.ConfigurationElement.
 //
 // Author:
-//	Chris Toshok  <toshok@ximian.com>
+//  Chris Toshok  <toshok@ximian.com>
 //
 // Copyright (C) 2006 Novell, Inc (http://www.novell.com)
 //

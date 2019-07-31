@@ -300,7 +300,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// empty <see cref="IEnumerable{T}"/>.
         /// </result>
         /// <remarks>
-        /// 	<note type="inheritinfo">
+        /// <note type="inheritinfo">
         /// The implementers should not treat the cardinality-related mismatches as errors, and are not
         /// expected to throw exceptions in those cases.
         /// For instance, if the import requests exactly one export and the provider has no matching exports or more than one,

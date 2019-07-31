@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition
         ///     specified name and metadata value.
         /// </summary>
         /// <param name="name">
-        ///     A <see cref="String"/> containing the name of the metadata value; or 
+        ///     A <see cref="string"/> containing the name of the metadata value; or 
         ///     <see langword="null"/> to use an empty string ("").
         /// </param>
         /// <param name="value">
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Composition
         ///     Gets the name of the metadata value.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing the name of the metadata value.
+        ///     A <see cref="string"/> containing the name of the metadata value.
         /// </value>
         public string Name
         {

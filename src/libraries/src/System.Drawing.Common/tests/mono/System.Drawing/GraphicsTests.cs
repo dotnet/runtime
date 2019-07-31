@@ -139,7 +139,7 @@ namespace MonoTests.System.Drawing
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.TextRenderingHint = TextRenderingHint.SystemDefault;
 
-                //Clipping set/get tested in clipping functions			
+                //Clipping set/get tested in clipping functions
                 Assert.Equal(CompositingMode.SourceCopy, g.CompositingMode);
                 Assert.Equal(CompositingQuality.GammaCorrected, g.CompositingQuality);
                 Assert.Equal(InterpolationMode.HighQualityBilinear, g.InterpolationMode);

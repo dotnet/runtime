@@ -141,7 +141,7 @@ namespace System.Data.SqlClient
         {
             if (value is decimal)
             {
-                return ((System.Data.SqlTypes.SqlDecimal)(Decimal)value).Precision;
+                return ((System.Data.SqlTypes.SqlDecimal)(decimal)value).Precision;
             }
             return 0;
         }

@@ -8,7 +8,8 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-using CFAbsoluteTime=System.Double;
+#pragma warning disable SA1121 // we don't want to simplify built-ins here as we're using aliasing
+using CFAbsoluteTime = System.Double;
 
 internal static partial class Interop
 {

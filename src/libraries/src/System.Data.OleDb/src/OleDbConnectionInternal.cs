@@ -14,7 +14,7 @@ namespace System.Data.OleDb
 {
     using SysTx = Transactions;
 
-    sealed internal class OleDbConnectionInternal : DbConnectionInternal, IDisposable
+    internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
         static private volatile OleDbServicesWrapper idataInitialize;
         static private object dataInitializeLock = new object();
@@ -394,12 +394,12 @@ namespace System.Data.OleDb
 
                 DataTable table = new DataTable("DbInfoLiterals");
                 table.Locale = CultureInfo.InvariantCulture;
-                DataColumn literalName = new DataColumn("LiteralName", typeof(String));
-                DataColumn literalValue = new DataColumn("LiteralValue", typeof(String));
-                DataColumn invalidChars = new DataColumn("InvalidChars", typeof(String));
-                DataColumn invalidStart = new DataColumn("InvalidStartingChars", typeof(String));
-                DataColumn literal = new DataColumn("Literal", typeof(Int32));
-                DataColumn maxlen = new DataColumn("Maxlen", typeof(Int32));
+                DataColumn literalName = new DataColumn("LiteralName", typeof(string));
+                DataColumn literalValue = new DataColumn("LiteralValue", typeof(string));
+                DataColumn invalidChars = new DataColumn("InvalidChars", typeof(string));
+                DataColumn invalidStart = new DataColumn("InvalidStartingChars", typeof(string));
+                DataColumn literal = new DataColumn("Literal", typeof(int));
+                DataColumn maxlen = new DataColumn("Maxlen", typeof(int));
 
                 table.Columns.Add(literalName);
                 table.Columns.Add(literalValue);
@@ -451,7 +451,7 @@ namespace System.Data.OleDb
         {
             DataTable table = new DataTable(ODB.DbInfoKeywords);
             table.Locale = CultureInfo.InvariantCulture;
-            DataColumn keyword = new DataColumn(ODB.Keyword, typeof(String));
+            DataColumn keyword = new DataColumn(ODB.Keyword, typeof(string));
             table.Columns.Add(keyword);
 
             if (!AddInfoKeywordsToTable(table, keyword))
@@ -503,7 +503,7 @@ namespace System.Data.OleDb
             table.Locale = CultureInfo.InvariantCulture;
 
             DataColumn schemaGuid = new DataColumn(ODB.Schema, typeof(Guid));
-            DataColumn restrictionSupport = new DataColumn(ODB.RestrictionSupport, typeof(Int32));
+            DataColumn restrictionSupport = new DataColumn(ODB.RestrictionSupport, typeof(int));
 
             table.Columns.Add(schemaGuid);
             table.Columns.Add(restrictionSupport);

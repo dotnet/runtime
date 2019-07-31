@@ -811,7 +811,7 @@ namespace System.Xml.Serialization
                             "CollapseWhitespace",
                             CodeGenerator.InstanceBindingFlags,
                             null,
-                            new Type[] { typeof(String) },
+                            new Type[] { typeof(string) },
                             null
                             );
                         ilg.Call(XmlSerializationReader_CollapseWhitespace);
@@ -1928,7 +1928,7 @@ namespace System.Xml.Serialization
                     CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(string), typeof(string) }
                     );
-                MethodInfo String_get_Length = typeof(String).GetMethod(
+                MethodInfo String_get_Length = typeof(string).GetMethod(
                     "get_Length",
                     CodeGenerator.InstanceBindingFlags,
                     Array.Empty<Type>()
@@ -2087,7 +2087,7 @@ namespace System.Xml.Serialization
                 {
                     LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
-                    MethodInfo String_Split = typeof(String).GetMethod(
+                    MethodInfo String_Split = typeof(string).GetMethod(
                         "Split",
                         CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(char[]) }
@@ -3093,7 +3093,7 @@ namespace System.Xml.Serialization
                     ConstructorInfo TimeSpan_ctor = typeof(TimeSpan).GetConstructor(
                         CodeGenerator.InstanceBindingFlags,
                         null,
-                        new Type[] { typeof(Int64) },
+                        new Type[] { typeof(long) },
                         null
                         );
                     ilg.Ldc(default(TimeSpan).Ticks);

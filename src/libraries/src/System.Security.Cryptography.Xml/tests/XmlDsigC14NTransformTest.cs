@@ -4,8 +4,8 @@
 // XmlDsigC14NTransformTest.cs - Test Cases for XmlDsigC14NTransform
 //
 // Author:
-//	Sebastien Pouliot <sebastien@ximian.com>
-//	Aleksey Sanin (aleksey@aleksey.com)
+//  Sebastien Pouliot <sebastien@ximian.com>
+//  Aleksey Sanin (aleksey@aleksey.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "       <e7 xmlns=\"http://www.ietf.org\">\n" +
                 "           <e8 xmlns=\"\">\n" +
                 "               <e9 xmlns:a=\"http://www.ietf.org\" attr=\"default\"></e9>\n" +
-                //	    	        "               <e9 xmlns:a=\"http://www.ietf.org\"></e9>\n" +
+                //                    "               <e9 xmlns:a=\"http://www.ietf.org\"></e9>\n" +
                 "           </e8>\n" +
                 "       </e7>\n" +
                 "   </e6>\n" +

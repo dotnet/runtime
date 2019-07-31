@@ -38,7 +38,7 @@ namespace System.Reflection.TypeLoading.Ecma
                             result.PointerToResource = blobReader.CurrentPointer;
 
                             // Length check the size of the resource to ensure it fits in the PE file section, note, this is only safe as its in a checked region
-                            if (length + sizeof(Int32) > blobReader.Length)
+                            if (length + sizeof(int) > blobReader.Length)
                                 throw new BadImageFormatException();
                             result.SizeOfResource = length;
                         }

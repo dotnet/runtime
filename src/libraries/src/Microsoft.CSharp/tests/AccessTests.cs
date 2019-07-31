@@ -79,7 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
             public static dynamic ValueTypeDelegate() => (Func<PrivateValueType>)(() => new PrivateValueType());
 
-            public unsafe static dynamic PointerArray() => new PrivateValueType*[4];
+            public static unsafe dynamic PointerArray() => new PrivateValueType*[4];
 
             public static dynamic PrivateInterfaceDelegate() => (Func<IPrivateInterface>)(() => null);
 

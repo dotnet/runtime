@@ -909,9 +909,9 @@ namespace System.Diagnostics.Tests
         private static extern uint getgid();
 
         [DllImport("libc", SetLastError = true)]
-        private unsafe static extern int getgroups(int size, uint* list);
+        private static extern unsafe int getgroups(int size, uint* list);
 
-        private unsafe static HashSet<uint> GetGroups()
+        private static unsafe HashSet<uint> GetGroups()
         {
             int maxSize = 128;
             Span<uint> groups = stackalloc uint[maxSize];
@@ -933,7 +933,7 @@ namespace System.Diagnostics.Tests
         private static extern int seteuid(uint euid);
 
         [DllImport("libc")]
-        private static unsafe extern int setgroups(int length, uint* groups);
+        private static extern unsafe int setgroups(int length, uint* groups);
 
         private const int SIGKILL = 9;
 

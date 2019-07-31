@@ -112,7 +112,7 @@ namespace System.SpanTests
         [Fact]
         [OuterLoop]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        public unsafe static void BinarySearch_MaxLength_NoOverflow()
+        public static unsafe void BinarySearch_MaxLength_NoOverflow()
         {
             if (sizeof(IntPtr) == sizeof(long))
             {

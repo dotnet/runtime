@@ -14,7 +14,7 @@ namespace System
         // RFC 5952 Section 4.2.3
         // Longest consecutive sequence of zero segments, minimum 2.
         // On equal, first sequence wins. <-1, -1> for no compression.
-        internal unsafe static (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(
+        internal static unsafe (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(
             ReadOnlySpan<ushort> numbers)
         {
             int longestSequenceLength = 0, longestSequenceStart = -1, currentSequenceLength = 0;
@@ -43,7 +43,7 @@ namespace System
 
         // Returns true if the IPv6 address should be formatted with an embedded IPv4 address:
         // ::192.168.1.1
-        internal unsafe static bool ShouldHaveIpv4Embedded(ReadOnlySpan<ushort> numbers)
+        internal static unsafe bool ShouldHaveIpv4Embedded(ReadOnlySpan<ushort> numbers)
         {
             // 0:0 : 0:0 : x:x : x.x.x.x
             if (numbers[0] == 0 && numbers[1] == 0 && numbers[2] == 0 && numbers[3] == 0 && numbers[6] != 0)
@@ -96,7 +96,7 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal unsafe static bool IsValidStrict(char* name, int start, ref int end)
+        internal static unsafe bool IsValidStrict(char* name, int start, ref int end)
         {
             int sequenceCount = 0;
             int sequenceLength = 0;

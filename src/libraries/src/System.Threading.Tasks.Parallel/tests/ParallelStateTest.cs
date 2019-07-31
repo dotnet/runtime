@@ -50,9 +50,9 @@ namespace System.Threading.Tasks.Test
         // Hold list of verification
         private Queue<Action<ParallelLoopResult?>> _verifications = new Queue<Action<ParallelLoopResult?>>();
 
-        private volatile bool _isStopped = false;   			// Flag to indicate that we called Stop() on the Parallel state
-        private long? _lowestBreakIter = null;				    // LowestBreakIteration value holder, null indicates that Break hasn't been called
-        private volatile bool _isExceptional = false;       	// Flag to indicate exception thrown in the test
+        private volatile bool _isStopped = false;     // Flag to indicate that we called Stop() on the Parallel state
+        private long? _lowestBreakIter = null;        // LowestBreakIteration value holder, null indicates that Break hasn't been called
+        private volatile bool _isExceptional = false; // Flag to indicate exception thrown in the test
 
         private int _iterCount = 0;  // test own counter for certain scenario, so the test can change behaviour after certain number of loop iteration
 

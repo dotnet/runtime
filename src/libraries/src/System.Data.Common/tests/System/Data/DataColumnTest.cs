@@ -73,7 +73,7 @@ namespace System.Data.Tests
                 Assert.Equal(typeof(ArgumentNullException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 // Never premise English.
-                //				Assert.NotNull (ex.Message);
+                //                Assert.NotNull (ex.Message);
                 Assert.NotNull(ex.ParamName);
                 Assert.Equal("dataType", ex.ParamName);
             }
@@ -995,25 +995,25 @@ namespace System.Data.Tests
 
 #if false
 // Check Windows output for the row [0] value
-		[Fact]
-		public void NullStrings ()
-		{
-			var a = MakeColumn ("nullbar", "null+'bar'");
-			var b = MakeColumn ("barnull", "'bar'+null");
-			var c = MakeColumn ("foobar", "'foo'+'bar'");
+        [Fact]
+        public void NullStrings ()
+        {
+            var a = MakeColumn ("nullbar", "null+'bar'");
+            var b = MakeColumn ("barnull", "'bar'+null");
+            var c = MakeColumn ("foobar", "'foo'+'bar'");
 
-		        var table = new DataTable();
-		        
-		        table.Columns.Add(a);
-		        table.Columns.Add(b);
-		        table.Columns.Add(c);
-		
-		        var row = table.NewRow();
-		        table.Rows.Add(row);
-			Assert.Equal (row [0], DBNull.Value);
-			Assert.Equal (row [1], DBNull.Value);
-			Assert.Equal (row [2], "foobar");
-		}
+                var table = new DataTable();
+                
+                table.Columns.Add(a);
+                table.Columns.Add(b);
+                table.Columns.Add(c);
+        
+                var row = table.NewRow();
+                table.Rows.Add(row);
+            Assert.Equal (row [0], DBNull.Value);
+            Assert.Equal (row [1], DBNull.Value);
+            Assert.Equal (row [2], "foobar");
+        }
 #endif
     }
 }

@@ -4,7 +4,7 @@
 // KeyInfoRetrievalMethodTest.cs - Test Cases for KeyInfoRetrievalMethod
 //
 // Author:
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)

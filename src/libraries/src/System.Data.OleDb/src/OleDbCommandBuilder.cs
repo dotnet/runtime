@@ -156,13 +156,13 @@ namespace System.Data.OleDb
                 string quotePrefix, quoteSuffix;
                 connection.GetLiteralQuotes(ADP.DeriveParameters, out quotePrefix, out quoteSuffix);
 
-                Object[] parsed = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quotePrefix, quoteSuffix, '.', 4, true, SR.OLEDB_OLEDBCommandText, false);
+                object[] parsed = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quotePrefix, quoteSuffix, '.', 4, true, SR.OLEDB_OLEDBCommandText, false);
                 if (null == parsed[3])
                 {
                     throw ADP.NoStoredProcedureExists(command.CommandText);
                 }
 
-                Object[] restrictions = new object[4];
+                object[] restrictions = new object[4];
                 object value;
 
                 // Parse returns an enforced 4 part array
@@ -261,12 +261,12 @@ namespace System.Data.OleDb
                                 if ((null != numericPrecision) && !dataRow.IsNull(numericPrecision, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
-                                    parameter.PrecisionInternal = (Byte)Convert.ToInt16(dataRow[numericPrecision], CultureInfo.InvariantCulture);
+                                    parameter.PrecisionInternal = (byte)Convert.ToInt16(dataRow[numericPrecision], CultureInfo.InvariantCulture);
                                 }
                                 if ((null != numericScale) && !dataRow.IsNull(numericScale, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
-                                    parameter.ScaleInternal = (Byte)Convert.ToInt16(dataRow[numericScale], CultureInfo.InvariantCulture);
+                                    parameter.ScaleInternal = (byte)Convert.ToInt16(dataRow[numericScale], CultureInfo.InvariantCulture);
                                 }
                                 break;
                             case OleDbType.VarBinary:
@@ -317,7 +317,7 @@ namespace System.Data.OleDb
                 }
                 if ((0 == plist.Length) && connection.SupportSchemaRowset(OleDbSchemaGuid.Procedures))
                 {
-                    restrictions = new Object[4] { null, null, command.CommandText, null };
+                    restrictions = new object[4] { null, null, command.CommandText, null };
                     table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedures, restrictions);
                     if (0 == table.Rows.Count)
                     {
@@ -327,7 +327,7 @@ namespace System.Data.OleDb
             }
             else if (connection.SupportSchemaRowset(OleDbSchemaGuid.Procedures))
             {
-                Object[] restrictions = new Object[4] { null, null, command.CommandText, null };
+                object[] restrictions = new object[4] { null, null, command.CommandText, null };
                 DataTable table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedures, restrictions);
                 if (0 == table.Rows.Count)
                 {
@@ -443,7 +443,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            String unquotedIdentifier;
+            string unquotedIdentifier;
             // ignoring the return value because it is acceptable for the quotedString to not be quoted in this
             // context.
             ADP.RemoveStringQuotes(quotePrefix, quoteSuffix, quotedIdentifier, out unquotedIdentifier);

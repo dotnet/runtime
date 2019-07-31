@@ -55,7 +55,7 @@ namespace System.Data.Common
         static internal extern IntPtr LocalFree(IntPtr handle);
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SysAllocStringLen(String src, int len);  // BSTR
+        internal static extern IntPtr SysAllocStringLen(string src, int len);  // BSTR
 
         [DllImport(Interop.Libraries.OleAut32)]
         internal static extern void SysFreeString(IntPtr bstr);
@@ -63,7 +63,7 @@ namespace System.Data.Common
         // only using this to clear existing error info with null
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = false)]
         // TLS values are preserved between threads, need to check that we use this API to clear the error state only.
-        static private extern void SetErrorInfo(Int32 dwReserved, IntPtr pIErrorInfo);
+        static private extern void SetErrorInfo(int dwReserved, IntPtr pIErrorInfo);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         static internal extern int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
@@ -80,7 +80,7 @@ namespace System.Data.Common
         [DllImport(Interop.Libraries.OleAut32, PreserveSig = false)]
         static internal extern void VariantClear(IntPtr pObject);
 
-        sealed internal class Wrapper
+        internal sealed class Wrapper
         {
             private Wrapper() { }
 

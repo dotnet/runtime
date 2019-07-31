@@ -291,9 +291,9 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitChars, 0, xmitChars.Length);
 
-                //		for(int i=0; i<xmitChars.Length; ++i) {
-                //			Debug.WriteLine("{0},", (int)xmitChars[i]);
-                //		}
+                //        for(int i=0; i<xmitChars.Length; ++i) {
+                //            Debug.WriteLine("{0},", (int)xmitChars[i]);
+                //        }
 
                 while (com1.BytesToRead < xmitBytes.Length)
                 {

@@ -177,7 +177,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Re-creates an <see cref='System.Object'/> given a set of property values for the object.
+        /// Re-creates an <see cref='object'/> given a set of property values for the object.
         /// </summary>
         public object CreateInstance(IDictionary propertyValues)
         {
@@ -185,7 +185,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Re-creates an <see cref='System.Object'/> given a set of property values for the object.
+        /// Re-creates an <see cref='object'/> given a set of property values for the object.
         /// </summary>
         public virtual object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) => null;
 

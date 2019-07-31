@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal unsafe static partial class SafeNativeMethods
+    internal static unsafe partial class SafeNativeMethods
     {
         internal static partial class Gdip
         {

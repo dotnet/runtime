@@ -28,7 +28,7 @@ namespace System.DirectoryServices
             }
         }
 
-    	public DirectoryVirtualListViewContext Copy()
+        public DirectoryVirtualListViewContext Copy()
         {
             return new DirectoryVirtualListViewContext(_context);
         }

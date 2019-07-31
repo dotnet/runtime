@@ -22,67 +22,67 @@ namespace System.Reflection.Metadata
         Void = CorElementType.ELEMENT_TYPE_VOID,
 
         /// <summary>
-        /// Represents <see cref="System.Boolean"/> in signatures.
+        /// Represents <see cref="bool"/> in signatures.
         /// </summary>
         Boolean = CorElementType.ELEMENT_TYPE_BOOLEAN,
 
         /// <summary>
-        /// Represents <see cref="System.Char"/> in signatures.
+        /// Represents <see cref="char"/> in signatures.
         /// </summary>
         Char = CorElementType.ELEMENT_TYPE_CHAR,
 
         /// <summary>
-        /// Represents <see cref="System.SByte"/> in signatures.
+        /// Represents <see cref="sbyte"/> in signatures.
         /// </summary>
         SByte = CorElementType.ELEMENT_TYPE_I1,
 
         /// <summary>
-        /// Represents <see cref="System.Byte"/> in signatures.
+        /// Represents <see cref="byte"/> in signatures.
         /// </summary>
         Byte = CorElementType.ELEMENT_TYPE_U1,
 
         /// <summary>
-        /// Represents <see cref="System.Int16"/> in signatures.
+        /// Represents <see cref="short"/> in signatures.
         /// </summary>
         Int16 = CorElementType.ELEMENT_TYPE_I2,
 
         /// <summary>
-        /// Represents <see cref="System.UInt16"/> in signatures.
+        /// Represents <see cref="ushort"/> in signatures.
         /// </summary>
         UInt16 = CorElementType.ELEMENT_TYPE_U2,
 
         /// <summary>
-        /// Represents <see cref="System.Int32"/> in signatures.
+        /// Represents <see cref="int"/> in signatures.
         /// </summary>
         Int32 = CorElementType.ELEMENT_TYPE_I4,
 
         /// <summary>
-        /// Represents <see cref="System.UInt32"/> in signatures.
+        /// Represents <see cref="uint"/> in signatures.
         /// </summary>
         UInt32 = CorElementType.ELEMENT_TYPE_U4,
 
         /// <summary>
-        /// Represents <see cref="System.Int64"/> in signatures.
+        /// Represents <see cref="long"/> in signatures.
         /// </summary>
         Int64 = CorElementType.ELEMENT_TYPE_I8,
 
         /// <summary>
-        /// Represents <see cref="System.UInt64"/> in signatures.
+        /// Represents <see cref="ulong"/> in signatures.
         /// </summary>
         UInt64 = CorElementType.ELEMENT_TYPE_U8,
 
         /// <summary>
-        /// Represents <see cref="System.Single"/> in signatures.
+        /// Represents <see cref="float"/> in signatures.
         /// </summary>
         Single = CorElementType.ELEMENT_TYPE_R4,
 
         /// <summary>
-        /// Represents <see cref="System.Double"/> in signatures.
+        /// Represents <see cref="double"/> in signatures.
         /// </summary>
         Double = CorElementType.ELEMENT_TYPE_R8,
 
         /// <summary>
-        /// Represents <see cref="System.String"/> in signatures.
+        /// Represents <see cref="string"/> in signatures.
         /// </summary>
         String = CorElementType.ELEMENT_TYPE_STRING,
 
@@ -138,7 +138,7 @@ namespace System.Reflection.Metadata
         FunctionPointer = CorElementType.ELEMENT_TYPE_FNPTR,           // FNPTR <complete sig for the function including calling convention>
 
         /// <summary>
-        /// Represents <see cref="System.Object"/>
+        /// Represents <see cref="object"/>
         /// </summary>
         Object = CorElementType.ELEMENT_TYPE_OBJECT,
 

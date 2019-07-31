@@ -1610,7 +1610,7 @@ namespace System.Reflection.Tests
         public TI_SubClass(string s) { }
         public TI_SubClass(short i2) { }
 
-        public new event EventHandler EventPublic; // Overrides event				
+        public new event EventHandler EventPublic; // Overrides event
         public event EventHandler EventPublicNew; // New event
 
         public new static string[] s_arrayField = new string[10];

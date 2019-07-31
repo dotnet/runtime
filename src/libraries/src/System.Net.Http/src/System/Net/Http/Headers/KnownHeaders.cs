@@ -378,7 +378,7 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal unsafe static KnownHeader TryGetKnownHeader(ReadOnlySpan<byte> name)
+        internal static unsafe KnownHeader TryGetKnownHeader(ReadOnlySpan<byte> name)
         {
             fixed (byte* p = &MemoryMarshal.GetReference(name))
             {

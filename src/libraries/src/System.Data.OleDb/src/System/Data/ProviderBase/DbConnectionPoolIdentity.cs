@@ -16,13 +16,13 @@ using System.Runtime.Versioning;
 
 namespace System.Data.ProviderBase
 {
-    sealed internal class DbConnectionPoolIdentity
+    internal sealed class DbConnectionPoolIdentity
     {
         private const int E_NotImpersonationToken = unchecked((int)0x8007051D);
         private const int Win32_CheckTokenMembership = 1;
         private const int Win32_CreateWellKnownSid = 5;
 
-        static public readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(String.Empty, false, true);
+        static public readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(string.Empty, false, true);
 
         private readonly string _sidString;
         private readonly bool _isRestricted;

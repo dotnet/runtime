@@ -37,7 +37,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     the specified contract name and metadata.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="ExportDefinition"/>.
         /// </param>
         /// <param name="metadata">
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the contract name of the export definition.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="ExportDefinition"/>.
         /// </value>
         /// <exception cref="NotImplementedException">
@@ -127,7 +127,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Returns a string representation of the export definition.
         /// </summary>
         /// <returns>
-        ///     A <see cref="String"/> containing the value of the <see cref="ContractName"/> property.
+        ///     A <see cref="string"/> containing the value of the <see cref="ContractName"/> property.
         /// </returns>
         public override string ToString()
         {

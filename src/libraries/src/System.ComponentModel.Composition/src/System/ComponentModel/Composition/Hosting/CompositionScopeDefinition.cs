@@ -165,13 +165,13 @@ namespace System.ComponentModel.Composition.Hosting
         /// by <paramref name="definition"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// 	<paramref name="definition"/> is <see langword="null"/>.
+        /// <paramref name="definition"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         /// The <see cref="ComposablePartCatalog"/> has been disposed of.
         /// </exception>
         /// <remarks>
-        /// 	<note type="inheritinfo">
+        /// <note type="inheritinfo">
         /// Overriders of this property should never return <see langword="null"/>, if no
         /// <see cref="ExportDefinition"/> match the conditions defined by
         /// <paramref name="definition"/>, return an empty <see cref="IEnumerable{T}"/>.

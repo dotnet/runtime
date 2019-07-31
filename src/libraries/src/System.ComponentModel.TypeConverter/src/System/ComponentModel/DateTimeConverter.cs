@@ -128,7 +128,7 @@ namespace System.ComponentModel
                 if (dt.Ticks == 0) 
                 {
                     // Special case for empty DateTime
-                    ConstructorInfo ctr = typeof(DateTime).GetConstructor(new Type[] { typeof(Int64) });
+                    ConstructorInfo ctr = typeof(DateTime).GetConstructor(new Type[] { typeof(long) });
                         
                     if (ctr != null) 
                     {

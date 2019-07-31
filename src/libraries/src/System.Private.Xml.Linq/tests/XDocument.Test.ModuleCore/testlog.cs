@@ -292,14 +292,14 @@ namespace Microsoft.Test.ModuleCore
             if (Internal != null)
             {
                 Internal.Error(result,
-                            TestLogFlags.Text,          	//flags        
-                            StringEx.Format(actual),		//actual
-                            StringEx.Format(expected),		//expected
-                            source,							//source
-                            message,						//message
-                            stack,	    					//stack
-                            filename,		                //filename
-                            lineno	                        //line
+                            TestLogFlags.Text,         //flags        
+                            StringEx.Format(actual),   //actual
+                            StringEx.Format(expected), //expected
+                            source,                    //source
+                            message,                   //message
+                            stack,                     //stack
+                            filename,                  //filename
+                            lineno                     //line
                         );
             }
             else

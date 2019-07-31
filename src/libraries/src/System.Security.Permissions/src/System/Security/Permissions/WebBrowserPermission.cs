@@ -9,7 +9,7 @@ namespace System.Security.Permissions
         Safe,
         Unrestricted
     }
-    sealed public class WebBrowserPermission : CodeAccessPermission, IUnrestrictedPermission
+    public sealed class WebBrowserPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public WebBrowserPermission() { }
         public WebBrowserPermission(PermissionState state) { }
@@ -25,7 +25,7 @@ namespace System.Security.Permissions
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
-    sealed public class WebBrowserPermissionAttribute : CodeAccessSecurityAttribute
+    public sealed class WebBrowserPermissionAttribute : CodeAccessSecurityAttribute
     {
         public WebBrowserPermissionAttribute(SecurityAction action) : base(action) { }
         public override IPermission CreatePermission() { return new WebBrowserPermission(); }

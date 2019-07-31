@@ -4,7 +4,7 @@
 // XmlDsigXPathTransformTest.cs - Test Cases for XmlDsigXPathTransform
 //
 // Author:
-//	Sebastien Pouliot <sebastien@ximian.com>
+//  Sebastien Pouliot <sebastien@ximian.com>
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -240,8 +240,8 @@ namespace System.Security.Cryptography.Xml.Tests
             // MS.NET bug - ms.net returns ns node even when the
             // current node is ns node (it is like returning
             // attribute from attribute nodes).
-            //			Assert.Equal (XmlNodeType.Attribute, nl [4].NodeType);
-            //			Assert.Equal ("xmlns", nl [4].LocalName);
+            //            Assert.Equal (XmlNodeType.Attribute, nl [4].NodeType);
+            //            Assert.Equal ("xmlns", nl [4].LocalName);
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDsigXPathTransform t = new XmlDsigXPathTransform();
             XmlDocument xpdoc = new XmlDocument();
             string ns = "http://www.w3.org/2000/09/xmldsig#";
-            //			string xpath = "<XPath xmlns='" + ns + "' xmlns:x='urn:foo'>here()</XPath>";
+            //            string xpath = "<XPath xmlns='" + ns + "' xmlns:x='urn:foo'>here()</XPath>";
             string xpath = "<XPath xmlns='" + ns + "' xmlns:x='urn:foo'></XPath>";
             xpdoc.LoadXml(xpath);
             t.LoadInnerXml(xpdoc.ChildNodes);

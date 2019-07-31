@@ -1054,7 +1054,7 @@ namespace System.IO.Ports
                     if (numCharsRead > 1)
                     {
                         for (int i = 0; i < numCharsRead; i++)
-                            Debug.Assert((Char.IsSurrogate(_singleCharBuffer[i])), "number of chars read should be more than one only for surrogate characters!");
+                            Debug.Assert((char.IsSurrogate(_singleCharBuffer[i])), "number of chars read should be more than one only for surrogate characters!");
                     }
 #endif
                     Debug.Assert((numCharsRead > 0), "possible bug in ReadBufferIntoChars, reading surrogate char?");

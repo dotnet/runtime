@@ -1239,7 +1239,7 @@ namespace Microsoft.SqlServer.Server
                 case TypeCode.Single: smd = new SqlMetaData(name, SqlDbType.Real); break;
                 case TypeCode.String:
                     {
-                        long maxLen = ((String)value).Length;
+                        long maxLen = ((string)value).Length;
                         if (maxLen < 1) maxLen = 1;
 
                         if (x_lServerMaxUnicode < maxLen)
@@ -1254,7 +1254,7 @@ namespace Microsoft.SqlServer.Server
                 case TypeCode.Object:
                     if (dataType == typeof(byte[]))
                     {
-                        long maxLen = ((System.Byte[])value).Length;
+                        long maxLen = ((byte[])value).Length;
                         if (maxLen < 1) maxLen = 1;
 
                         if (x_lServerMaxBinary < maxLen)
@@ -1264,7 +1264,7 @@ namespace Microsoft.SqlServer.Server
                     }
                     else if (dataType == typeof(char[]))
                     {
-                        long maxLen = ((System.Char[])value).Length;
+                        long maxLen = ((char[])value).Length;
                         if (maxLen < 1) maxLen = 1;
 
                         if (x_lServerMaxUnicode < maxLen)

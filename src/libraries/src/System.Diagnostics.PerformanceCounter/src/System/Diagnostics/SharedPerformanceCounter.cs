@@ -499,7 +499,7 @@ namespace System.Diagnostics
             return freeMemoryOffset;
         }
 
-        private unsafe static void PopulateLifetimeEntry(ProcessLifetimeEntry* lifetimeEntry, PerformanceCounterInstanceLifetime lifetime)
+        private static unsafe void PopulateLifetimeEntry(ProcessLifetimeEntry* lifetimeEntry, PerformanceCounterInstanceLifetime lifetime)
         {
 
             if (lifetime == PerformanceCounterInstanceLifetime.Process)
@@ -1385,7 +1385,7 @@ namespace System.Diagnostics
             return DecrementUnaligned(_counterEntryPointer);
         }
 
-        internal unsafe static void RemoveAllInstances(string categoryName)
+        internal static unsafe void RemoveAllInstances(string categoryName)
         {
             SharedPerformanceCounter spc = new SharedPerformanceCounter(categoryName, null, null);
             spc.RemoveAllInstances();

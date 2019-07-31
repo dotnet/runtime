@@ -66,7 +66,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public unsafe static void ClearByteUnalignedFixed()
+        public static unsafe void ClearByteUnalignedFixed()
         {
             const byte initial = 5;
             const int length = 32;
@@ -259,7 +259,7 @@ namespace System.SpanTests
         [Fact]
         [OuterLoop]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        unsafe static void ClearLongerThanUintMaxValueBytes()
+        static unsafe void ClearLongerThanUintMaxValueBytes()
         {
             if (sizeof(IntPtr) == sizeof(long))
             {

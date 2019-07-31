@@ -3,10 +3,10 @@
 
 //
 // ContextStackTest.cs - Unit tests for 
-//	System.ComponentModel.Design.Serialization.ContextStack
+//  System.ComponentModel.Design.Serialization.ContextStack
 //
 // Author:
-//	Ivan N. Zlatev <contact@i-nz.net>
+//  Ivan N. Zlatev <contact@i-nz.net>
 //
 // Copyright (C) 2007 Ivan N. Zlatev <contact@i-nz.net>
 //

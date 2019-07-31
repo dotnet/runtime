@@ -31,15 +31,15 @@ namespace System.Net.Sockets
             _buffer = null;
             _numBytes = 0;
 
-			if (errorCode == SocketError.Success)
-			{
-				Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
-				System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);
+            if (errorCode == SocketError.Success)
+            {
+                Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
+                System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);
 
-				_acceptedSocket = _listenSocket.CreateAcceptSocket(
-					SafeSocketHandle.CreateSocket(acceptedFileDescriptor),
-					_listenSocket._rightEndPoint.Create(remoteSocketAddress));
-			}
+                _acceptedSocket = _listenSocket.CreateAcceptSocket(
+                    SafeSocketHandle.CreateSocket(acceptedFileDescriptor),
+                    _listenSocket._rightEndPoint.Create(remoteSocketAddress));
+            }
 
             base.CompletionCallback(0, errorCode);
         }

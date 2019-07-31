@@ -189,8 +189,8 @@ namespace System.Xml.Schema
                 Type itemTypeDst = destinationType.GetElementType();
 
                 // Different StringSplitOption needs to be used because of following bugs:
-                // 566053: Behavior change between SL2 and Dev10 in the way string arrays are deserialized by the XmlReader.ReadContentsAs method	
-                // 643697: Deserialization of typed arrays by the XmlReader.ReadContentsAs method fails	
+                // 566053: Behavior change between SL2 and Dev10 in the way string arrays are deserialized by the XmlReader.ReadContentsAs method
+                // 643697: Deserialization of typed arrays by the XmlReader.ReadContentsAs method fails
                 //
                 // In Silverligt 2 the XmlConvert.SplitString was not using the StringSplitOptions, which is the same as using StringSplitOptions.None.
                 // What it meant is that whenever there is a double space between two values in the input string it turned into 

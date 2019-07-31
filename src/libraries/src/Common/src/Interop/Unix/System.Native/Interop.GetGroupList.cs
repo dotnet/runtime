@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal unsafe static uint[] GetGroupList(string userName, uint primaryGroupId)
+        internal static unsafe uint[] GetGroupList(string userName, uint primaryGroupId)
         {
             const int InitialGroupsLength =
 #if DEBUG

@@ -5,7 +5,7 @@
 // for System.Configuration.SubclassTypeValidator.
 //
 // Author:
-//	Chris Toshok  <toshok@ximian.com>
+//  Chris Toshok  <toshok@ximian.com>
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //

@@ -113,7 +113,7 @@ namespace Microsoft.Test.ModuleCore
         ITestItems Children { get; }
 
         // Execution
-        //		Control Flow:	Init->Execute->(recurse into children)->Terminate
+        //        Control Flow:    Init->Execute->(recurse into children)->Terminate
         TestResult Init();
         TestResult Execute();
         TestResult Terminate();

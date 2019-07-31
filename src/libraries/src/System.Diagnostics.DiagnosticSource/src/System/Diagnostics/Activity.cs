@@ -1103,7 +1103,7 @@ namespace System.Diagnostics
         /// Sets the bytes in 'outBytes' to be random values.   outBytes.Length must be less than or equal to 16
         /// </summary>
         /// <param name="outBytes"></param>
-        internal unsafe static void SetToRandomBytes(Span<byte> outBytes)
+        internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length <= sizeof(Guid));     // Guid is 16 bytes, and so is TraceId 
             Guid guid = Guid.NewGuid();
@@ -1219,7 +1219,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Create a new SpanId with at random number in it (very likely to be unique)
         /// </summary>
-        public unsafe static ActivitySpanId CreateRandom()
+        public static unsafe ActivitySpanId CreateRandom()
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));

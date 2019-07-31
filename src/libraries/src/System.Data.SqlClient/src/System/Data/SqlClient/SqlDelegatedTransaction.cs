@@ -13,7 +13,7 @@ using System.Transactions;
 
 namespace System.Data.SqlClient
 {
-    sealed internal partial class SqlDelegatedTransaction : IPromotableSinglePhaseNotification
+    internal sealed partial class SqlDelegatedTransaction : IPromotableSinglePhaseNotification
     {
         private static int _objectTypeCount;
         private readonly int _objectID = Interlocked.Increment(ref _objectTypeCount);

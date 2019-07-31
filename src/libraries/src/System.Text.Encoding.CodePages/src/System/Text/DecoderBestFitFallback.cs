@@ -73,7 +73,7 @@ namespace System.Text
                 if (s_InternalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange<object>(ref s_InternalSyncObject, o, null);
                 }
                 return s_InternalSyncObject;
             }

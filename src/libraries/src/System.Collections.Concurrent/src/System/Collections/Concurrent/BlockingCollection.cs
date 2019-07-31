@@ -324,7 +324,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection didn't accept the item.</exception>
         public bool TryAdd(T item, TimeSpan timeout)
         {
@@ -597,7 +597,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
@@ -888,7 +888,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instances has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">At least one underlying collection didn't accept the item.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
@@ -1248,7 +1248,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instances has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">At least one of the underlying collections was modified
         /// outside of its <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>

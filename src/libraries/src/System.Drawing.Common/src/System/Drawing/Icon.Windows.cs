@@ -160,7 +160,7 @@ namespace System.Drawing
 
         public static Icon ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);
 
-        private unsafe static Icon ExtractAssociatedIcon(string filePath, int index)
+        private static unsafe Icon ExtractAssociatedIcon(string filePath, int index)
         {
             if (filePath == null)
             {

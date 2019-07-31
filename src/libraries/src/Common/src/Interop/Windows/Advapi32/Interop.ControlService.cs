@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern unsafe static bool ControlService(SafeServiceHandle serviceHandle, int control, SERVICE_STATUS* pStatus);
+        internal extern static unsafe bool ControlService(SafeServiceHandle serviceHandle, int control, SERVICE_STATUS* pStatus);
 
     }
 }

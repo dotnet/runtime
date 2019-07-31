@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Data.OleDb
 {
-    sealed internal class OleDbReferenceCollection : DbReferenceCollection
+    internal sealed class OleDbReferenceCollection : DbReferenceCollection
     {
         internal const int Closing = 0;
         internal const int Canceling = -1;

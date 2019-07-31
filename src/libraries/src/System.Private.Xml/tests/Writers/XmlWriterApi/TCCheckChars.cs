@@ -254,7 +254,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef", true)]
         [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Name", true)]
         [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "NmToken", true)]
-        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", true)]		
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", true)]
         public void checkChars_4(XmlWriterUtils utils, string tokenType, bool checkCharacters)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

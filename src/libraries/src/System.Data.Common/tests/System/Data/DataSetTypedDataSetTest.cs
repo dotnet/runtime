@@ -659,7 +659,7 @@ namespace System.Data.Tests
             drOrders.ShipAddress = "Food Market";
             drOrders.ShipCity = "Baker Blvd.";
             drOrders.ShipRegion = "Eugene";
-            drOrders.ShipPostalCode = "OR	97403";
+            drOrders.ShipPostalCode = "OR 97403";
             drOrders.ShipCountry = "USA";
 
             i = tblOrders.Rows.Count;

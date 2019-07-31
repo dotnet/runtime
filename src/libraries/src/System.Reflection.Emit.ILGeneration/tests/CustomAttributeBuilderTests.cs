@@ -835,9 +835,9 @@ namespace System.Reflection.Emit.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in fieldValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(object value)
         {
-        	// Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
-        	// This created a blob that (probably) generates a CustomAttributeFormatException. In theory, this
-        	// could have been something more uncontrolled, so was fixed. See issue #11703.
+            // Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
+            // This created a blob that (probably) generates a CustomAttributeFormatException. In theory, this
+            // could have been something more uncontrolled, so was fixed. See issue #11703.
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), nameof(TestAttribute.ObjectField));
             object[] fieldValues = new object[] { value };

@@ -39,7 +39,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     with the specified contract name and exported value getter.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Export"/>.
         /// </param>
         /// <param name="exportedValueGetter">
@@ -66,7 +66,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     with the specified contract name, metadata and exported value getter.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="String"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the 
         ///     <see cref="Export"/>.
         /// </param>
         /// <param name="metadata">
@@ -181,7 +181,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Returns the exported value of the export.
         /// </summary>
         /// <returns>
-        ///     The exported <see cref="Object"/> of the <see cref="Export"/>.
+        ///     The exported <see cref="object"/> of the <see cref="Export"/>.
         /// </returns>
         /// <exception cref="CompositionException">
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will 
@@ -214,7 +214,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Returns the exported value of the export.
         /// </summary>
         /// <returns>
-        ///     The exported <see cref="Object"/> of the <see cref="Export"/>.
+        ///     The exported <see cref="object"/> of the <see cref="Export"/>.
         /// </returns>
         /// <exception cref="CompositionException">
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will 

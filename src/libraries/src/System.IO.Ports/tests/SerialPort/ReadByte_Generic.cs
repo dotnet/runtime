@@ -96,7 +96,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
 
                 com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-                //		com.Encoding = new System.Text.UTF7Encoding();
+                //        com.Encoding = new System.Text.UTF7Encoding();
                 com.Encoding = Encoding.Unicode;
 
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);
@@ -171,7 +171,7 @@ namespace System.IO.Ports.Tests
         {
             Random rndGen = new Random(-55);
 
-            //		if(!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF7Encoding())){
+            //        if(!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF7Encoding())){
             VerifyParityReplaceByte('\0', rndGen.Next(0, numRndByte - 1), new UTF32Encoding());
         }
 

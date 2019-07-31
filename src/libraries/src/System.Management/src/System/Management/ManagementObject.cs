@@ -2427,7 +2427,7 @@ namespace System.Management
         /// </returns>
         /// <remarks>
         ///    <para> Gets the object containing the input parameters to a 
-        ///       method, and then fills in the values and passes the object to the <see cref='System.Management.ManagementObject.InvokeMethod(String, ManagementBaseObject, InvokeMethodOptions)'/> call.</para>
+        ///       method, and then fills in the values and passes the object to the <see cref='System.Management.ManagementObject.InvokeMethod(string, ManagementBaseObject, InvokeMethodOptions)'/> call.</para>
         /// </remarks>
         public ManagementBaseObject GetMethodParameters(
             string methodName)

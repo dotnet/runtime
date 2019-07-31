@@ -4,8 +4,8 @@
 // System.Configuration.ConfigurationSectionTest.cs - Unit tests
 //
 // Author:
-//	Greg Smolyn
-//	Gonzalo Paniagua Javier <gonzalo@novell.com
+//  Greg Smolyn
+//  Gonzalo Paniagua Javier <gonzalo@novell.com
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //

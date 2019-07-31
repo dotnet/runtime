@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the display name of the composition element.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing a human-readable display name of the <see cref="ICompositionElement"/>.
+        ///     A <see cref="string"/> containing a human-readable display name of the <see cref="ICompositionElement"/>.
         /// </value>
         /// <remarks>
         ///     <note type="implementnotes">

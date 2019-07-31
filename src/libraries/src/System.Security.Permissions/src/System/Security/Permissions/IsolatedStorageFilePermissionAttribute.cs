@@ -7,7 +7,7 @@ namespace System.Security.Permissions
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor
      | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly,
     AllowMultiple = true, Inherited = false)]
-    sealed public class IsolatedStorageFilePermissionAttribute : IsolatedStoragePermissionAttribute
+    public sealed class IsolatedStorageFilePermissionAttribute : IsolatedStoragePermissionAttribute
     {
         public IsolatedStorageFilePermissionAttribute(SecurityAction action) : base(action) { }
         public override IPermission CreatePermission() { return null; }

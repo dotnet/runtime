@@ -322,7 +322,7 @@ namespace System.Text.Unicode
         private static int GetScalarValueFromUtf16Slow(char first, char? second, out bool wasSurrogatePair)
         {
 #if DEBUG
-            if (!Char.IsSurrogate(first))
+            if (!char.IsSurrogate(first))
             {
                 Debug.Assert(false, "This case should've been handled by the fast path.");
                 wasSurrogatePair = false;
