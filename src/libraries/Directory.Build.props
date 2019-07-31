@@ -106,20 +106,6 @@
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src'))</SourceDir>
   </PropertyGroup>
 
-  <!-- list of nuget package sources passed to nuget restore -->
-  <!-- Example to consume local CoreCLR package:
-       /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
-       -->
-  <PropertyGroup>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
-      https://api.nuget.org/v3/index.json;
-      $(OverridePackageSource);
-      $(RestoreSources)
-    </RestoreSources>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
