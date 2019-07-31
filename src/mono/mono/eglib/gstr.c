@@ -205,6 +205,13 @@ Last this was checked was June-2017.
 
 Apple is at 106.
 Android is at 133.
+
+Haiku starts numbering at 0x8000_7000 (like HRESULT on Win32) for POSIX errno,
+but errors from BeAPI or custom user libraries could be lower or higher.
+(Technically, this is C and old POSIX compliant, but not new POSIX compliant.)
+The big problem with this is that it effectively means errors start at a
+negative offset. As such, disable the whole strerror caching mechanism.
+
 */
 #define MONO_ERRNO_MAX 200
 #define str(s) #s
@@ -213,6 +220,14 @@ Android is at 133.
 static pthread_mutex_t strerror_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+#if defined(__HAIKU__)
+const gchar *
+g_strerror (gint errnum)
+{
+	/* returns a const char* on Haiku */
+	return strerror(errnum);
+}
+#else
 static char *error_messages [MONO_ERRNO_MAX];
 
 const gchar *
@@ -271,6 +286,7 @@ g_strerror (gint errnum)
 	}
 	return error_messages [errnum];
 }
+#endif
 
 gchar *
 g_strconcat (const gchar *first, ...)

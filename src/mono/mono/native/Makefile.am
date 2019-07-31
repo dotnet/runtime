@@ -73,6 +73,8 @@ aix_sources = $(unix_sources)
 
 freebsd_sources = $(unix_sources)
 
+haiku_sources = $(unix_sources)
+
 android_sources = \
 	pal-android.h \
 	pal-android.c \
@@ -110,7 +112,7 @@ macos_sources += $(gss_sources)
 ios_sources += $(gss_sources)
 endif
 
-EXTRA_libmono_native_la_SOURCES = $(common_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(aix_sources) $(freebsd) $(unix_sources) $(gss_sources)
+EXTRA_libmono_native_la_SOURCES = $(common_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(aix_sources) $(freebsd_sources) $(haiku_sources) $(unix_sources) $(gss_sources)
 
 if MONO_NATIVE_PLATFORM_MACOS
 platform_sources = $(macos_sources)
@@ -129,6 +131,10 @@ platform_sources = $(android_sources)
 else
 if MONO_NATIVE_PLATFORM_FREEBSD
 platform_sources = $(freebsd_sources)
+else
+if MONO_NATIVE_PLATFORM_HAIKU
+platform_sources = $(haiku_sources)
+endif
 endif
 endif
 endif
