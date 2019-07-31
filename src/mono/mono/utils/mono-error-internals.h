@@ -10,6 +10,7 @@
 
 /*Keep in sync with MonoError*/
 typedef struct {
+	// Written by JITted code
 	guint16 error_code;
 	guint16 flags;
 
