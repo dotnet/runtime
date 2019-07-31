@@ -111,7 +111,6 @@ namespace System.Net
             return Header;
         }
 
-        private const string CRLF = "\r\n";
         private static readonly byte[] s_CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
 
         internal HttpResponseStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)

@@ -57,8 +57,6 @@ namespace System.Diagnostics
         internal const string DllName = "EventLogMessages.dll";
         private const string eventLogMutexName = "netfxeventlog.1.0";
         private const int SecondsPerDay = 60 * 60 * 24;
-        private const int DefaultMaxSize = 512 * 1024;
-        private const int DefaultRetention = 7 * SecondsPerDay;
 
         private const int Flag_notifying = 0x1;           // keeps track of whether we're notifying our listeners - to prevent double notifications
         private const int Flag_forwards = 0x2;     // whether the cache contains entries in forwards order (true) or backwards (false)

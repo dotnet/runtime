@@ -45,8 +45,6 @@ namespace System.Threading
         // CDS Synchronization Event IDs (must be unique)
         //
 
-        private const int SPINLOCK_FASTPATHFAILED_ID = 1;
-        private const int SPINWAIT_NEXTSPINWILLYIELD_ID = 2;
         private const int BARRIER_PHASEFINISHED_ID = 3;
 
 

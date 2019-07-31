@@ -10,7 +10,6 @@ namespace System.Runtime.InteropServices
     {
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static readonly bool s_is64BitProcess = IntPtr.Size == 8;
         private static string s_osPlatformName;
         private static string s_osDescription;
         private static Architecture? s_osArch;

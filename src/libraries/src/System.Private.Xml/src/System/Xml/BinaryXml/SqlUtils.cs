@@ -35,9 +35,7 @@ namespace System.Xml
         private const byte s_maxPrecision = s_NUMERIC_MAX_PRECISION;  // max SS precision
 
         private const int s_cNumeMax = 4;
-        private const long s_lInt32Base = ((long)1) << 32;      // 2**32
         internal const ulong x_llMax = long.MaxValue;   // Max of Int64
-        private const double s_DUINT_BASE = (double)s_lInt32Base;     // 2**32
 
         public BinXmlSqlDecimal(byte[] data, int offset, bool trim)
         {

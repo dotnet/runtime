@@ -212,7 +212,6 @@ namespace System.Reflection.TypeLoading
             private readonly GetTypeCoreCache _owner;
 
             private const int _initialCapacity = 5;
-            private const double _growThreshold = 0.75;
         }
 
         private struct Entry

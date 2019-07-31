@@ -14,13 +14,6 @@ namespace System.Security.Claims
     /// </summary>
     public class ClaimsIdentity : IIdentity
     {
-        private const string PreFix = "System.Security.ClaimsIdentity.";
-        private const string AuthenticationTypeKey = PreFix + "authenticationType";
-        private const string LabelKey = PreFix + "label";
-        private const string NameClaimTypeKey = PreFix + "nameClaimType";
-        private const string RoleClaimTypeKey = PreFix + "roleClaimType";
-        private const string VersionKey = PreFix + "version";
-
         private enum SerializationMask
         {
             None = 0,

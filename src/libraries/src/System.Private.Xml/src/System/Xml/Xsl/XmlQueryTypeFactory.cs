@@ -953,7 +953,6 @@ namespace System.Xml.Xsl
 
             private XmlQueryType _prime;
             private XmlQueryCardinality _card;
-            private XmlValueConverter _converter;
 
             /// <summary>
             /// Create sequence type from prime and cardinality.

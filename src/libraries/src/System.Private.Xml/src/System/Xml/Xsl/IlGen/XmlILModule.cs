@@ -30,8 +30,6 @@ namespace System.Xml.Xsl.IlGen
         private Hashtable _methods;
         private bool _useLRE, _emitSymbols;
 
-        private static readonly Guid s_languageGuid = new Guid(0x462d4a3e, 0xb257, 0x4aee, 0x97, 0xcd, 0x59, 0x18, 0xc7, 0x53, 0x17, 0x58);
-        private static readonly Guid s_vendorGuid = new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
         private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
 
         private static ModuleBuilder CreateLREModule()

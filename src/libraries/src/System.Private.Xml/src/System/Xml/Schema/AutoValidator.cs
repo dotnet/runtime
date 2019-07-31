@@ -11,8 +11,6 @@ namespace System.Xml.Schema
 
     internal class AutoValidator : BaseValidator
     {
-        private const string x_schema = "x-schema";
-
         public AutoValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling) : base(reader, schemaCollection, eventHandling)
         {
             schemaInfo = new SchemaInfo();

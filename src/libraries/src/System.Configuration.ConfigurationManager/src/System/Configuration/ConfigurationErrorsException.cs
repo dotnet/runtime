@@ -18,7 +18,6 @@ namespace System.Configuration
     public class ConfigurationErrorsException : ConfigurationException
     {
         // Constants
-        private const string HttpPrefix = "http:";
         private const string SerializationParamFilename = "firstFilename";
         private const string SerializationParamLine = "firstLine";
         private const string SerializationParamErrorCount = "count";

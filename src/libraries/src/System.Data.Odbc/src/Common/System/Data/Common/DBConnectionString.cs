@@ -41,11 +41,13 @@ namespace System.Data.Common
 
         private readonly KeyRestrictionBehavior _behavior;
 
-#pragma warning disable 169
+#pragma warning disable CS0169
+#pragma warning disable CA1823
         // this field is no longer used, hence the warning was disabled
         // however, it can not be removed or it will break serialization with V1.1
         private readonly string _encryptedActualConnectionString;
-#pragma warning restore 169
+#pragma warning restore CA1823
+#pragma warning restore CS0169
 
         internal DBConnectionString(string value, string restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string> synonyms, bool useOdbcRules)
             : this(new DbConnectionOptions(value, synonyms, useOdbcRules), restrictions, behavior, synonyms, false)

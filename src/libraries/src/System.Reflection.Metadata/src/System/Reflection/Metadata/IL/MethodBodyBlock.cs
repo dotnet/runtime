@@ -90,9 +90,7 @@ namespace System.Reflection.Metadata
         private const byte ILFatFormatHeaderSize = 0x03;
         private const int ILFatFormatHeaderSizeShift = 4;
         private const byte SectEHTable = 0x01;
-        private const byte SectOptILTable = 0x02;
         private const byte SectFatFormat = 0x40;
-        private const byte SectMoreSects = 0x40;
 
         public static MethodBodyBlock Create(BlobReader reader)
         {

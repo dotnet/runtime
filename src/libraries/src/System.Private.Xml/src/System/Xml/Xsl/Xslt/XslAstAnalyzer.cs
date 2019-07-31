@@ -1325,8 +1325,6 @@ namespace System.Xml.Xsl.Xslt
 
     internal sealed class XslAstRewriter
     {
-        private static readonly QilName s_nullMode = AstFactory.QName(string.Empty);
-
         private CompilerScopeManager<VarPar> _scope;
         private Stack<Template> _newTemplates;
         private Compiler _compiler;

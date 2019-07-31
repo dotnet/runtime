@@ -488,7 +488,6 @@ namespace System.IO.Packaging
         #region Private Members
 
         private const int InitialPartListSize = 50;
-        private const int InitialPieceNameListSize = 50;
 
         private ZipArchive _zipArchive;
         private Stream _containerStream;      // stream we are opened in if Open(Stream) was called

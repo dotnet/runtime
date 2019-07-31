@@ -93,8 +93,6 @@ namespace System.Net
         }
         private const string ContinueHeader = "100-continue";
         private const string ChunkedHeader = "chunked";
-        private const string GZipHeader = "gzip";
-        private const string DeflateHeader = "deflate";
 
         public HttpWebRequest()
         {

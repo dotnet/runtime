@@ -135,7 +135,6 @@ namespace System.Transactions
 
         // Store the number of ticks.  A tick is a mark of 1 timer interval.  By counting ticks
         // we can avoid expensive calls to get the current time for every transaction creation.
-        private const long TicksPerMillisecond = 10000;
         private long _ticks;
         private long _lastTimerTime;
 

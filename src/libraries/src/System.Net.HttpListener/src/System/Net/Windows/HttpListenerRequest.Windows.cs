@@ -38,7 +38,6 @@ namespace System.Net
         private bool _isDisposed = false;
         internal const uint CertBoblSize = 1500;
         private string _serviceName;
-        private object _lock = new object();
 
         private enum SslStatus : byte
         {

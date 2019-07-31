@@ -2293,7 +2293,6 @@ namespace System.Xml.Serialization
     internal class ReflectionAwareILGen
     {
         private const string hexDigits = "0123456789ABCDEF";
-        private const string arrayMemberKey = "0";
         // reflectionVariables holds mapping between a reflection entity
         // referenced in the generated code (such as TypeInfo,
         // FieldInfo) and the variable which represent the entity (and

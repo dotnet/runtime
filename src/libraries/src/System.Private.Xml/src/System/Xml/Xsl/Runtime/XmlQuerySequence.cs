@@ -24,8 +24,6 @@ namespace System.Xml.Xsl.Runtime
     {
         public static readonly XmlQuerySequence<T> Empty = new XmlQuerySequence<T>();
 
-        private static readonly Type s_XPathItemType = typeof(XPathItem);
-
         private T[] _items;
         private int _size;
 

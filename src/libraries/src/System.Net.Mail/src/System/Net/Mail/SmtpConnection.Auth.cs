@@ -24,7 +24,6 @@ namespace System.Net.Mail
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
 
         // accounts for the '=' or ' ' character after AUTH
-        private const int SizeOfAuthString = 5;
         private const int SizeOfAuthExtension = 4;
 
         private static readonly char[] s_authExtensionSplitters = new char[] { ' ', '=' };

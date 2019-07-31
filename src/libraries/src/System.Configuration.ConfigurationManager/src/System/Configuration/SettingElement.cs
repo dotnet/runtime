@@ -23,7 +23,6 @@ namespace System.Configuration
             typeof(SettingValueElement),
             null,
             ConfigurationPropertyOptions.IsRequired);
-        private static readonly XmlDocument s_document = new XmlDocument();
         private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection() { s_propName, s_propSerializeAs, s_propValue };
 
         public SettingElement()

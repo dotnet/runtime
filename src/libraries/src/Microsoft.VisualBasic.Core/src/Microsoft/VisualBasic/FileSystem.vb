@@ -18,11 +18,7 @@ Namespace Microsoft.VisualBasic
 
     Public Module FileSystem
 
-        Private Const ERROR_ACCESS_DENIED As Integer = 5
         Private Const ERROR_FILE_NOT_FOUND As Integer = 2
-        Private Const ERROR_BAD_NETPATH As Integer = 53
-        Private Const ERROR_INVALID_PARAMETER As Integer = 87
-        Private Const ERROR_WRITE_PROTECT As Integer = 19
         Private Const ERROR_FILE_EXISTS As Integer = 80
         Private Const ERROR_ALREADY_EXISTS As Integer = 183
         Private Const ERROR_INVALID_ACCESS As Integer = 12
@@ -36,15 +32,6 @@ Namespace Microsoft.VisualBasic
 
         Friend Const FIRST_LOCAL_CHANNEL As Integer = 1
         Friend Const LAST_LOCAL_CHANNEL As Integer = 255
-
-        Private Const A_NORMAL As Integer = &H0I
-        Private Const A_RDONLY As Integer = &H1I
-        Private Const A_HIDDEN As Integer = &H2I
-        Private Const A_SYSTEM As Integer = &H4I
-        Private Const A_VOLID As Integer = &H8I
-        Private Const A_SUBDIR As Integer = &H10I
-        Private Const A_ARCH As Integer = &H20I
-        Private Const A_ALLBITS As Integer = (A_NORMAL Or A_RDONLY Or A_HIDDEN Or A_SYSTEM Or A_VOLID Or A_SUBDIR Or A_ARCH)
 
         Friend Const sTimeFormat As String = "T"
         Friend Const sDateFormat As String = "d"

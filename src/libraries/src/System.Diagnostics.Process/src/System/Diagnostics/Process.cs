@@ -65,8 +65,6 @@ namespace System.Diagnostics
         private StreamReader _standardError;
         private bool _disposed;
 
-        private static object s_createProcessLock = new object();
-
         private bool _standardInputAccessed;
 
         private StreamReadMode _outputStreamReadMode;

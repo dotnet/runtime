@@ -62,7 +62,6 @@ namespace Internal.Cryptography
         }
 
         private const int SizeOf_NCRYPT_KEY_BLOB_HEADER_SIZE = sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int);
-        private const int SizeOf_BCRYPT_KEY_DATA_BLOB_HEADER = sizeof(int) + sizeof(int) + sizeof(int);
 
         private static readonly CngKeyBlobFormat s_cipherKeyBlobFormat = new CngKeyBlobFormat(Interop.NCrypt.NCRYPT_CIPHER_KEY_BLOB);
     }

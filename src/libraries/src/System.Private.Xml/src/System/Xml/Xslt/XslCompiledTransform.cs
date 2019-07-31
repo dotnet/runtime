@@ -48,8 +48,10 @@ namespace System.Xml.Xsl
         // Reader settings used when creating XmlReader from inputUri
         private static readonly XmlReaderSettings s_readerSettings = new XmlReaderSettings();
 
+#if FEATURE_COMPILED_XSL
         // Version for GeneratedCodeAttribute
         private static readonly Version s_version = typeof(XslCompiledTransform).Assembly.GetName().Version;
+#endif
 
         // Options of compilation
         private bool _enableDebug = false;

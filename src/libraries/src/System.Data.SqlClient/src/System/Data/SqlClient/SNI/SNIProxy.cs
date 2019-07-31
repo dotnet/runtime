@@ -505,7 +505,6 @@ namespace System.Data.SqlClient.SNI
 
     internal class DataSource
     {
-        private const char CommaSeparator = ',';
         private const char BackSlashSeparator = '\\';
         private const string DefaultHostName = "localhost";
         private const string DefaultSqlServerInstanceName = "mssqlserver";

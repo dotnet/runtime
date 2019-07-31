@@ -44,8 +44,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType)
 
-        Private Shared ReadOnly s_resourceManagerSyncObj As Object = New Object
-
         Friend Shared m_achIntlSpace() As Char = {chSpace, chIntlSpace}
         Private Shared ReadOnly s_voidType As Type = System.Type.GetType("System.Void")
         Private Shared s_VBRuntimeAssembly As System.Reflection.Assembly

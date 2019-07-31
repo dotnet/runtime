@@ -23,7 +23,6 @@ namespace System.Xml.Schema
         private XmlSchemaObjectTable _identityConstraints = new XmlSchemaObjectTable();
         private Stack _complexTypeStack = new Stack();
         private Hashtable _schemasToCompile = new Hashtable();
-        private Hashtable _importedSchemas = new Hashtable();
 
         private XmlSchema _schemaForSchema;
 

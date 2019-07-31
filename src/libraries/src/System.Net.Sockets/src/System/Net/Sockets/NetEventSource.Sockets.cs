@@ -17,7 +17,6 @@ namespace System.Net
         private const int ConnectedId = AcceptedId + 1;
         private const int ConnectedAsyncDnsId = ConnectedId + 1;
         private const int NotLoggedFileId = ConnectedAsyncDnsId + 1;
-        private const int DumpArrayId = NotLoggedFileId + 1;
 
         [NonEvent]
         public static void Accepted(Socket socket, object remoteEp, object localEp)

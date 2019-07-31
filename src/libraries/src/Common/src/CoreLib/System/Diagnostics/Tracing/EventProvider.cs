@@ -111,9 +111,7 @@ namespace System.Diagnostics.Tracing
         private const int s_basicTypeAllocationBufferSize = 16;
         private const int s_etwMaxNumberArguments = 128;
         private const int s_etwAPIMaxRefObjCount = 8;
-        private const int s_maxEventDataDescriptors = 128;
         private const int s_traceEventMaximumSize = 65482;
-        private const int s_traceEventMaximumStringSize = 32724;
 
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         public enum WriteEventErrorCode : int
