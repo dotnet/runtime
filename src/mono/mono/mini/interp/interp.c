@@ -235,7 +235,7 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 static void
 set_resume_state (ThreadContext *context, InterpFrame *frame)
 {
-	/* We have thrown an exception from a finally block. Some of the leave targets were unwinded already */ \
+	/* We have thrown an exception from a finally block. Some of the leave targets were unwinded already */
 	while (frame->finally_ips &&
 		   frame->finally_ips->data >= context->handler_ei->try_start &&
 		   frame->finally_ips->data < context->handler_ei->try_end)
@@ -942,13 +942,9 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 
 #define THROW_EX(exception,ex_ip) THROW_EX_GENERAL ((exception), (ex_ip), FALSE)
 
-#define THROW_EX_OVF(ip) do { \
-	THROW_EX (mono_get_exception_overflow (), ip); \
-	} while (0)
+#define THROW_EX_OVF(ip) THROW_EX (mono_get_exception_overflow (), ip)
 
-#define THROW_EX_DIV_ZERO(ip) do { \
-	THROW_EX (mono_get_exception_divide_by_zero (), ip);	\
-	} while (0)
+#define THROW_EX_DIV_ZERO(ip) THROW_EX (mono_get_exception_divide_by_zero (), ip)
 
 #define NULL_CHECK(o) do { \
 	if (G_UNLIKELY (!(o))) \
@@ -2945,6 +2941,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	0 };
 #endif
 
+	MonoMethodPInvoke* piinfo = NULL;
+
 	frame->ex = NULL;
 	frame->finally_ips = NULL;
 	frame->endfinally_ip = NULL;
@@ -3259,14 +3257,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			child_frame.stack_args = sp;
 			if (imethod->method->dynamic && csignature->pinvoke) {
 				MonoMarshalSpec **mspecs;
-				MonoMethodPInvoke piinfo;
 				MonoMethod *m;
 
 				/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
 				mspecs = g_new0 (MonoMarshalSpec*, csignature->param_count + 1);
-				memset (&piinfo, 0, sizeof (piinfo));
 
-				m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &piinfo, mspecs, code);
+				piinfo = piinfo ? piinfo : g_newa (MonoMethodPInvoke, 1);
+				memset (piinfo, 0, sizeof (*piinfo));
+
+				m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, piinfo, mspecs, code);
 
 				for (int i = csignature->param_count; i >= 0; i--)
 					if (mspecs [i])
