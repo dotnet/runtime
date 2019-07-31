@@ -3,7 +3,7 @@
 
   <Import Project="Microsoft.NETCore.Runtime.CoreCLR.props" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.props))" />
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <Import Condition="'$(_packageTargetOSGroup)' != ''"  Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
-  
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.targets))" />
 </Project>
