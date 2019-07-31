@@ -28,6 +28,7 @@
 #include "marshal.h"
 #include "debug-helpers.h"
 #include "abi-details.h"
+#include "cominterop.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
@@ -6757,6 +6758,12 @@ handle_enum:
 			*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
 			return MONO_NATIVE_INT;
 		}
+#ifndef DISABLE_COM
+		if (t == MONO_TYPE_CLASS && mono_cominterop_is_interface (type->data.klass)){
+			*conv = MONO_MARSHAL_CONV_OBJECT_INTERFACE;
+			return MONO_NATIVE_INTERFACE;
+		}
+#endif
 		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
 		return MONO_NATIVE_STRUCT;
 	}

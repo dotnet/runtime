@@ -251,6 +251,12 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITestPresSig itest);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_ccw_itest")]
+	public static extern int mono_test_marshal_ccw_itest_nomarshal (ITest itest);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_ccw_itest")]
+	public static extern int mono_test_marshal_ccw_itest_nomarshal (ITestPresSig itest);
+
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_array_ccw_itest (int count, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] ITest[] ppUnk);
 
@@ -567,6 +573,7 @@ public class Tests
 			ManagedTest test = new ManagedTest ();
 
 			mono_test_marshal_ccw_itest (test);
+			mono_test_marshal_ccw_itest_nomarshal (test);
 
 			if (test.Status != 0)
 				return 200;
@@ -574,6 +581,7 @@ public class Tests
 			ManagedTestPresSig test_pres_sig = new ManagedTestPresSig ();
 
 			mono_test_marshal_ccw_itest (test_pres_sig);
+			mono_test_marshal_ccw_itest_nomarshal (test_pres_sig);
 
 			// test for Xamarin-47560
 			var tests = new[] { test.Test };

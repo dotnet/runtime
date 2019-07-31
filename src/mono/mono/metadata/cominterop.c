@@ -3767,3 +3767,32 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObjectHandle obj
 	g_assert_not_reached ();
 #endif
 }
+
+gboolean
+mono_cominterop_is_interface (MonoClass* klass)
+{
+#ifndef DISABLE_COM
+	ERROR_DECL (error);
+	MonoCustomAttrInfo* cinfo = NULL;
+	gboolean ret = FALSE;
+	int i;
+
+	cinfo = mono_custom_attrs_from_class_checked (klass, error);
+	mono_error_assert_ok (error);
+	if (cinfo) {
+		for (i = 0; i < cinfo->num_attrs; ++i) {
+			MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+			if (mono_class_has_parent (ctor_class, mono_class_get_interface_type_attribute_class ())) {
+				ret = TRUE;
+				break;
+			}
+		}
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+
+	return ret;
+#else
+	g_assert_not_reached ();
+#endif
+}

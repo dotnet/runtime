@@ -3288,9 +3288,10 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 #endif
 
 #if !defined(DISABLE_COM)
-		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
+		if ((spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
 			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE))
+			spec->native == MONO_NATIVE_INTERFACE)) ||
+			(t->type == MONO_TYPE_CLASS && mono_cominterop_is_interface(t->data.klass)))
 			return mono_cominterop_emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		if (spec && (spec->native == MONO_NATIVE_SAFEARRAY) && 
 			(spec->data.safearray_data.elem_type == MONO_VARIANT_VARIANT) && 

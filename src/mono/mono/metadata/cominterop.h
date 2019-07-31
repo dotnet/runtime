@@ -67,4 +67,7 @@ mono_class_try_get_com_object_class (void);
 void*
 mono_cominterop_get_com_interface (MonoObject* object, MonoClass* ic, MonoError *error);
 
+gboolean
+mono_cominterop_is_interface (MonoClass* klass);
+
 #endif /* __MONO_COMINTEROP_H__ */
