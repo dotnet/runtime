@@ -3008,7 +3008,7 @@ unload_thread_main (void *arg)
 
 	MonoString *thread_name_str = mono_string_new_checked (mono_domain_get (), "Domain unloader", error);
 	if (is_ok (error))
-		mono_thread_set_name_internal (internal, thread_name_str, TRUE, FALSE, error);
+		mono_thread_set_name_internal (internal, thread_name_str, MonoSetThreadNameFlag_Permanent, error);
 	if (!is_ok (error)) {
 		data->failure_reason = g_strdup (mono_error_get_message (error));
 		goto failure;

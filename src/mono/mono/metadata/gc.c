@@ -948,7 +948,7 @@ finalizer_thread (gpointer unused)
 
 	MonoString *finalizer = mono_string_new_checked (mono_get_root_domain (), "Finalizer", error);
 	mono_error_assert_ok (error);
-	mono_thread_set_name_internal (mono_thread_internal_current (), finalizer, FALSE, FALSE, error);
+	mono_thread_set_name_internal (mono_thread_internal_current (), finalizer, MonoSetThreadNameFlag_None, error);
 	mono_error_assert_ok (error);
 
 	/* Register a hazard free queue pump callback */

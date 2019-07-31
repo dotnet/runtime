@@ -3164,7 +3164,7 @@ profiler_thread_begin (const char *name, gboolean send)
 
 	MonoString *name_str = mono_string_new_checked (mono_get_root_domain (), name, error);
 	mono_error_assert_ok (error);
-	mono_thread_set_name_internal (internal, name_str, FALSE, FALSE, error);
+	mono_thread_set_name_internal (internal, name_str, MonoSetThreadNameFlag_None, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);

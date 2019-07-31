@@ -361,7 +361,21 @@ MONO_API MonoException* mono_thread_get_undeniable_exception (void);
 ICALL_EXPORT
 void ves_icall_thread_finish_async_abort (void);
 
-MONO_PROFILER_API void mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, gboolean reset, MonoError *error);
+
+typedef enum {
+    MonoSetThreadNameFlag_None      = 0x0000,
+    MonoSetThreadNameFlag_Permanent = 0x0001,
+    MonoSetThreadNameFlag_Reset     = 0x0002,
+    //MonoSetThreadNameFlag_Constant  = 0x0004,
+} MonoSetThreadNameFlags;
+
+G_ENUM_FUNCTIONS (MonoSetThreadNameFlags)
+
+MONO_PROFILER_API
+void
+mono_thread_set_name_internal (MonoInternalThread *thread,
+			       MonoString *name,
+			       MonoSetThreadNameFlags flags, MonoError *error);
 
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);

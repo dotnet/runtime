@@ -1856,16 +1856,16 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 }
 #endif
 
-void 
-mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, gboolean reset, MonoError *error)
+void
+mono_thread_set_name_internal (MonoInternalThread *this_obj,
+			       MonoString *name,
+			       MonoSetThreadNameFlags flags, MonoError *error)
 {
 	MonoNativeThreadId tid = 0;
 
 	LOCK_THREAD (this_obj);
 
-	error_init (error);
-
-	if (reset) {
+	if (flags & MonoSetThreadNameFlag_Reset) {
 		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
 	} else if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
 		UNLOCK_THREAD (this_obj);
@@ -1881,7 +1881,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 		this_obj->name = g_memdup (mono_string_chars_internal (name), mono_string_length_internal (name) * sizeof (gunichar2));
 		this_obj->name_len = mono_string_length_internal (name);
 
-		if (permanent)
+		if (flags & MonoSetThreadNameFlag_Permanent)
 			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	}
 	else
@@ -1905,7 +1905,7 @@ void
 ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
 {
 	ERROR_DECL (error);
-	mono_thread_set_name_internal (this_obj, name, TRUE, FALSE, error);
+	mono_thread_set_name_internal (this_obj, name, MonoSetThreadNameFlag_Permanent, error);
 	mono_error_set_pending_exception (error);
 }
 
