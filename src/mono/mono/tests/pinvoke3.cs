@@ -1168,7 +1168,7 @@ public class Tests {
 			while (!stop) {
 				for (int i = 0; i < 100; i++) {
 					var a = new double[80000];
-					Thread.Sleep (0);
+					Thread.Sleep (1);
 				}
 				GC.Collect ();
 			}
