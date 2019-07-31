@@ -442,7 +442,8 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 	HANDLE_FUNCTION_ENTER ();						\
 										\
 	/* FIXME Should be ERROR_DECL but for fragile test. */			\
-	error_init (error);							\
+	/* Managed wrapper already does this. */				\
+	/* error_init (error); */						\
 										\
 	MONO_HANDLE_RETURN_BEGIN (rettype)					\
 										\
