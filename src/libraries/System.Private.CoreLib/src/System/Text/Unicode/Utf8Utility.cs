@@ -32,7 +32,7 @@ namespace System.Text.Unicode
         /// comes first) is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int GetIndexOfFirstInvalidUtf8Sequence(ReadOnlySpan<byte> utf8Data, out bool isAscii)
+        public static unsafe int GetIndexOfFirstInvalidUtf8Sequence(ReadOnlySpan<byte> utf8Data, out bool isAscii)
         {
             fixed (byte* pUtf8Data = &MemoryMarshal.GetReference(utf8Data))
             {

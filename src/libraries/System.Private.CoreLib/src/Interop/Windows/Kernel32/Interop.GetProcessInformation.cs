@@ -18,6 +18,6 @@ internal partial class Interop
         }
 
         [DllImport(Libraries.Kernel32)]
-        internal static unsafe extern Interop.BOOL GetProcessInformation(IntPtr hProcess, int ProcessInformationClass, void* ProcessInformation, int ProcessInformationSize);
+        internal static extern unsafe Interop.BOOL GetProcessInformation(IntPtr hProcess, int ProcessInformationClass, void* ProcessInformation, int ProcessInformationSize);
     }
 }

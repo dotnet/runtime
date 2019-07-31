@@ -9,7 +9,7 @@ namespace System.Buffers
     [EventSource(Guid = "0866B2B8-5CEF-5DB9-2612-0C0FFD814A44", Name = "System.Buffers.ArrayPoolEventSource")]
     internal sealed class ArrayPoolEventSource : EventSource
     {
-        internal readonly static ArrayPoolEventSource Log = new ArrayPoolEventSource();
+        internal static readonly ArrayPoolEventSource Log = new ArrayPoolEventSource();
 
         /// <summary>The reason for a BufferAllocated event.</summary>
         internal enum BufferAllocatedReason : int

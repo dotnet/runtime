@@ -66,7 +66,7 @@ namespace System.Threading
         private static readonly Task<bool> s_trueTask =
             new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
         // A pre-completed task with Result==false
-        private readonly static Task<bool> s_falseTask =
+        private static readonly Task<bool> s_falseTask =
             new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
