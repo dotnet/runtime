@@ -36,7 +36,6 @@
     <ClInclude Include="$(MonoSourceLocation)\support\map.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\crypt.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\ioapi.h" />
-    <ClInclude Include="$(MonoSourceLocation)\support\minizip\iowin32.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\unzip.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\zip.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\mph.h" />

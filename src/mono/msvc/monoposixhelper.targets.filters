@@ -114,9 +114,6 @@
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\unzip.h">
       <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\support\minizip\iowin32.h">
-      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
-    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\support\minizip\zip.h">
       <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClInclude>
