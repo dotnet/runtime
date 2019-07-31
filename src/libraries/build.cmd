@@ -9,7 +9,7 @@ powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0eng\build.ps1" %*
 goto end
 
 :help
-powershell -ExecutionPolicy ByPass -NoProfile -Command "& { . %~dp0eng\build.ps1; Get-Help }"
+powershell -ExecutionPolicy ByPass -NoProfile -Command "& { . '%~dp0eng\build.ps1'; Get-Help }"
 
 :end
 exit /b %ERRORLEVEL%

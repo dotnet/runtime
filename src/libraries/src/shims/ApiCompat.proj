@@ -79,7 +79,7 @@
     <PropertyGroup Condition="$(UpdateNETStandardBaseline)">
     </PropertyGroup>
 
-    <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) $(ApiCompatNSOnlyBaselineFile)"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) &quot;$(ApiCompatNSOnlyBaselineFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
