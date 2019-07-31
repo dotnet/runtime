@@ -20,13 +20,9 @@ namespace System.Data.ProviderBase
     {
         private const int E_NotImpersonationToken = unchecked((int)0x8007051D);
         private const int Win32_CheckTokenMembership = 1;
-        private const int Win32_GetTokenInformation_1 = 2;
-        private const int Win32_GetTokenInformation_2 = 3;
-        private const int Win32_ConvertSidToStringSidW = 4;
         private const int Win32_CreateWellKnownSid = 5;
 
         static public readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(String.Empty, false, true);
-        static private readonly byte[] NetworkSid = (ADP.IsWindowsNT ? CreateWellKnownSid(WellKnownSidType.NetworkSid) : null);
 
         private readonly string _sidString;
         private readonly bool _isRestricted;

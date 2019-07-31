@@ -14,7 +14,6 @@ namespace System.Windows.Forms
     /// </summary>
     internal static class DpiHelper
     {
-        private const string EnableHighDpiConfigurationValueName = "EnableWindowsFormsHighDpiAutoResizing";
         private const double LogicalDpi = 96.0;
         private static bool s_isInitialized = false;
         /// <summary>

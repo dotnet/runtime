@@ -44,7 +44,6 @@ namespace System.ComponentModel.Design
     internal class RuntimeLicenseContext : LicenseContext
     {
         private static TraceSwitch s_runtimeLicenseContextSwitch = new TraceSwitch("RuntimeLicenseContextTrace", "RuntimeLicenseContext tracing");
-        private const int ReadBlock = 400;
 
         internal Hashtable _savedLicenseKeys;
 

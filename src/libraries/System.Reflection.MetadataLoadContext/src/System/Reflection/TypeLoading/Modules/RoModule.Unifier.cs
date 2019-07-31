@@ -45,7 +45,6 @@ namespace System.Reflection.TypeLoading
         {
             return _pointerDict.GetOrAdd(elementType, (e) => new RoPointerType(e));
         }
-        private static readonly Func<RoType, RoPointerType> s_pointerTypeFactory = (e) => new RoPointerType(e);
         private readonly ConcurrentDictionary<RoType, RoPointerType> _pointerDict = new ConcurrentDictionary<RoType, RoPointerType>();
 
         //

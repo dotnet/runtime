@@ -11,7 +11,6 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class ProcessingInstructionAction : ContainerAction
     {
-        private const int NameEvaluated = 2;
         private const int NameReady = 3;
 
         private Avt _nameAvt;

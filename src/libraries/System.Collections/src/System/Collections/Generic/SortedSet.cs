@@ -62,19 +62,6 @@ namespace System.Collections.Generic
         private const string ItemsName = "Items"; // Do not rename (binary serialization)
         private const string VersionName = "Version"; // Do not rename (binary serialization)
 
-        // Needed for enumerator
-        private const string TreeName = "Tree";
-        private const string NodeValueName = "Item";
-        private const string EnumStartName = "EnumStarted";
-        private const string ReverseName = "Reverse";
-        private const string EnumVersionName = "EnumVersion";
-
-        // Needed for TreeSubset
-        private const string MinName = "Min";
-        private const string MaxName = "Max";
-        private const string LowerBoundActiveName = "lBoundActive";
-        private const string UpperBoundActiveName = "uBoundActive";
-
         internal const int StackAllocThreshold = 100;
 
         #endregion
@@ -1916,8 +1903,6 @@ namespace System.Collections.Generic
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
-            private static readonly Node s_dummyNode = new Node(default(T)!, NodeColor.Red);
-
             private SortedSet<T> _tree;
             private int _version;
 

@@ -382,12 +382,6 @@ namespace System.IO.Packaging
         #endregion Internal Methods
 
         #region Private Methods
-
-        private static readonly char[] HexUpperChars = {
-            '0', '1', '2', '3', '4', '5', '6', '7',
-            '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-        };
-
         private static Exception GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
             partUriString = string.Empty;
@@ -587,12 +581,6 @@ namespace System.IO.Packaging
 
         //we use this dummy Uri to represent the root of the container.
         private static readonly Uri s_packageRootUri = new Uri("/", UriKind.Relative);
-
-        // We need to perform Escaping for the following - '%'; '@'; ',' and '?' 
-        // !!Important!! - The order is important - The '%' sign should be escaped first.
-        // If any more characters need to be added to the array below they should be added at the end.
-        // All of these arrays must maintain the same ordering.
-        private static readonly char[] s_specialCharacterChars = { '%', '@', ',', '?' };
 
         //Rels segment and extension
         private const string RelationshipPartSegmentName = "_rels";

@@ -45,7 +45,6 @@ namespace System.Resources
     {
         // An initial size for our internal sorted list, to avoid extra resizes.
         private const int AverageNameSize = 20 * 2;  // chars in little endian Unicode
-        private const int AverageValueSize = 40;
         internal const string ResourceReaderFullyQualifiedName = "System.Resources.ResourceReader, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         private const string ResSetTypeName = "System.Resources.RuntimeResourceSet";
         private const int ResSetVersion = 2;

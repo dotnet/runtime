@@ -288,10 +288,7 @@ namespace System.Xml
         private const int MaxBytesToMove = 128;
         private const int ApproxXmlDeclLength = 80;
         private const int NodesInitialSize = 8;
-        private const int InitialAttributesCount = 4;
-        private const int InitialParsingStateStackSize = 2;
         private const int InitialParsingStatesDepth = 2;
-        private const int DtdChidrenInitialSize = 2;
         private const int MaxByteSequenceLen = 6;  // max bytes per character
         private const int MaxAttrDuplWalkCount = 250;
         private const int MinWhitespaceLookahedCount = 4096;

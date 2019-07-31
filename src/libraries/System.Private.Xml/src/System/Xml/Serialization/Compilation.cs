@@ -2,28 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Collections;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Security;
+using System.Globalization;
+using System.Collections.Generic;
+
 namespace System.Xml.Serialization
 {
-    using System.Configuration;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Collections;
-    using System.IO;
-    using System;
-    using System.Text;
-    using System.Xml;
-    using System.Threading;
-    using System.Security;
-    using System.Xml.Serialization.Configuration;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Collections.Generic;
-    using System.Xml.Extensions;
-    using System.Linq;
-    using System.Xml.Serialization;
-
     internal class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
@@ -32,7 +22,6 @@ namespace System.Xml.Serialization
         private IDictionary _writerMethods;
         private IDictionary _readerMethods;
         private TempMethodDictionary _methods;
-        private Hashtable _assemblies = new Hashtable();
 
         internal class TempMethod
         {

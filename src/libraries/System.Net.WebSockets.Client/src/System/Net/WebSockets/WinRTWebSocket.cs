@@ -30,7 +30,6 @@ namespace System.Net.WebSockets
     {
         #region Constants
         private const string HeaderNameCookie = "Cookie";
-        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         #endregion
 
         private static readonly Lazy<bool> s_MessageWebSocketClientCertificateSupported =

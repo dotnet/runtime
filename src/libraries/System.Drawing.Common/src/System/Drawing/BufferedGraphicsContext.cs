@@ -13,7 +13,6 @@ namespace System.Drawing
     public sealed partial class BufferedGraphicsContext : IDisposable
     {
         private Size _maximumBuffer;
-        private Size _bufferSize = Size.Empty;
 
         /// <summary>
         /// Basic constructor.

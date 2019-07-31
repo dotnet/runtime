@@ -14,8 +14,6 @@ namespace System.Composition.Convention
     /// </summary>
     public class ConventionBuilder : AttributedModelProvider
     {
-        private static readonly List<object> s_emptyList = new List<object>();
-
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private readonly List<PartConventionBuilder> _conventions = new List<PartConventionBuilder>();
 

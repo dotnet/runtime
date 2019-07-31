@@ -15,7 +15,6 @@ namespace System.Configuration
     {
         private NameValueCollection _map;
         private static Type s_stringType = typeof(string);
-        private static Type[] _paramsArray = new Type[] { s_stringType };
         private static string NullString = "None";
 
         public AppSettingsReader()

@@ -14,9 +14,6 @@ namespace System.Data.SqlClient
 {
     sealed internal class SqlConnectionFactory : DbConnectionFactory
     {
-
-        private const string _metaDataXml = "MetaDataXml";
-
         private SqlConnectionFactory() : base() { }
 
         public static readonly SqlConnectionFactory SingletonInstance = new SqlConnectionFactory();

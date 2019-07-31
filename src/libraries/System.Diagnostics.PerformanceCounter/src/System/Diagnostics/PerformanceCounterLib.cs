@@ -25,7 +25,6 @@ namespace System.Diagnostics
     {
         internal const string PerfShimName = "netfxperf.dll";
         private const string PerfShimFullNameSuffix = @"\netfxperf.dll";
-        private const string PerfShimPathExp = @"%systemroot%\system32\netfxperf.dll";
         internal const string OpenEntryPoint = "OpenPerformanceData";
         internal const string CollectEntryPoint = "CollectPerformanceData";
         internal const string CloseEntryPoint = "ClosePerformanceData";

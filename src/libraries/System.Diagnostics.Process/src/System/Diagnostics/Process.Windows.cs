@@ -5,7 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -16,6 +15,8 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        private static readonly object s_createProcessLock = new object();
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
@@ -466,6 +467,7 @@ namespace System.Diagnostics
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
             SafeProcessHandle procSH = new SafeProcessHandle();
             SafeThreadHandle threadSH = new SafeThreadHandle();
+            
             // handles used in parent process
             SafeFileHandle parentInputPipeHandle = null;
             SafeFileHandle childInputPipeHandle = null;
@@ -473,6 +475,7 @@ namespace System.Diagnostics
             SafeFileHandle childOutputPipeHandle = null;
             SafeFileHandle parentErrorPipeHandle = null;
             SafeFileHandle childErrorPipeHandle = null;
+
             lock (s_createProcessLock)
             {
                 try

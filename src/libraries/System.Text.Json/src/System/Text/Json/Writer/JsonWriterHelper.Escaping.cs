@@ -32,7 +32,6 @@ namespace System.Text.Json
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, // U+0070..U+007F
         };
 
-        private const string HexFormatString = "X4";
         private static readonly StandardFormat s_hexStandardFormat = new StandardFormat('X', 4);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -596,7 +595,7 @@ namespace System.Text.Json
                     destination[written++] = 'u';
 #if BUILDING_INBOX_LIBRARY
                     int intChar = value;
-                    intChar.TryFormat(destination.Slice(written), out int charsWritten, HexFormatString);
+                    intChar.TryFormat(destination.Slice(written), out int charsWritten, "X4");
                     Debug.Assert(charsWritten == 4);
                     written += charsWritten;
 #else

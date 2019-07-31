@@ -474,6 +474,5 @@ namespace System.Diagnostics
         }
 
         private static readonly DateTime beginningOfTime = new DateTime(1970, 1, 1, 0, 0, 0);
-        private const int OFFSETFIXUP = 4 + 4 + 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4;
     }
 }

@@ -13,15 +13,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private const string OidPbes2 = "1.2.840.113549.1.5.13";
-        private const string OidPbkdf2 = "1.2.840.113549.1.5.12";
-        private const string OidSha1 = "1.3.14.3.2.26";
-        private const string OidTripleDesCbc = "1.2.840.113549.3.7";
-
         private static readonly SafeCreateHandle s_nullExportString = new SafeCreateHandle();
-
-        private static readonly SafeCreateHandle s_emptyExportString =
-            CoreFoundation.CFStringCreateWithCString("");
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(

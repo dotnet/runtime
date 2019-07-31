@@ -222,9 +222,6 @@ namespace System.Data.SqlClient
         private static Dictionary<string, Dictionary<IdentityUserNamePair, List<DatabaseServicePair>>> s_serverUserHash =
                    new Dictionary<string, Dictionary<IdentityUserNamePair, List<DatabaseServicePair>>>(StringComparer.OrdinalIgnoreCase);
         private static SqlDependencyProcessDispatcher s_processDispatcher = null;
-        // The following two strings are used for AppDomain.CreateInstance.
-        private static readonly string s_assemblyName = (typeof(SqlDependencyProcessDispatcher)).Assembly.FullName;
-        private static readonly string s_typeName = (typeof(SqlDependencyProcessDispatcher)).FullName;
 
         // Constructors
 

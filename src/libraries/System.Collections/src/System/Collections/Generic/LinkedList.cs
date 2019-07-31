@@ -535,11 +535,6 @@ namespace System.Collections.Generic
             [AllowNull] private T _current;
             private int _index;
 
-            const string LinkedListName = "LinkedList";
-            const string CurrentValueName = "Current";
-            const string VersionName = "Version";
-            const string IndexName = "Index";
-
             internal Enumerator(LinkedList<T> list)
             {
                 _list = list;

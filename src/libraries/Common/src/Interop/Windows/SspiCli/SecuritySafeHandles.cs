@@ -156,8 +156,6 @@ namespace System.Net.Security
             this.handle = value;
         }
 
-        private const uint CRYPT_ACQUIRE_SILENT_FLAG = 0x00000040;
-
         protected override bool ReleaseHandle()
         {
             Interop.Crypt32.CertFreeCertificateContext(handle);

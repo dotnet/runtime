@@ -17,6 +17,8 @@ using System.Runtime.InteropServices;
 using System.Security;
 #endif
 
+#pragma warning disable CA1823 // not all IDs are used by all partial providers
+
 namespace System.Net
 {
     // Implementation:

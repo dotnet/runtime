@@ -71,8 +71,6 @@ namespace System.Collections
         private KeyList keyList; // Do not rename (binary serialization)
         private ValueList valueList; // Do not rename (binary serialization)
 
-        private const int _defaultCapacity = 16;
-
         // Copy of Array.MaxArrayLength
         internal const int MaxArrayLength = 0X7FEFFFFF;
 

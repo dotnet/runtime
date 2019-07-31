@@ -13,11 +13,8 @@ namespace System.Data.SqlClient
 {
     internal sealed class SqlMetaDataFactory : DbMetaDataFactory
     {
-
         private const string _serverVersionNormalized90 = "09.00.0000";
-        private const string _serverVersionNormalized90782 = "09.00.0782";
         private const string _serverVersionNormalized10 = "10.00.0000";
-
 
         public SqlMetaDataFactory(Stream XMLStream,
                                     string serverVersion,

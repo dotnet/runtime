@@ -27,8 +27,9 @@ namespace System.Xml.Xsl.Qil
     ///
     internal class QilValidationVisitor : QilScopedVisitor
     {
-        private SubstitutionList _subs = new SubstitutionList();
+#if DEBUG
         private QilTypeChecker _typeCheck = new QilTypeChecker();
+#endif
 
         //-----------------------------------------------
         // Entry

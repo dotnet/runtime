@@ -109,9 +109,6 @@ namespace System.Xml
         private string _xsiSchemaLocation;
         private string _xsiNoNamespaceSchemaLocation;
 
-        //XmlCharType instance
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         //Underlying reader's IXmlLineInfo
         private IXmlLineInfo _lineInfo;
 

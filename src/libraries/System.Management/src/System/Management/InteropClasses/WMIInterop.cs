@@ -27,7 +27,6 @@ namespace System.Management
         // the correct path and succeed in loading the DLL. Once the DllImport occurs, the DLL will
         // already be in the cache.
         // 
-        const string SerializationBlobName = "flatWbemClassObject";
         static readonly string name = typeof(IWbemClassObjectFreeThreaded).FullName;
         public static Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
 
@@ -424,7 +423,6 @@ namespace System.Management
 
     sealed class IWbemQualifierSetFreeThreaded : IDisposable
     {
-        const string SerializationBlobName = "flatWbemClassObject";
         static readonly string name = typeof(IWbemQualifierSetFreeThreaded).FullName;
         public static Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
 

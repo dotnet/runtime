@@ -6,6 +6,11 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpEnvironmentProxy : IWebProxy
     {
+        private const string EnvAllProxyLC = "all_proxy";
+        private const string EnvHttpProxyLC = "http_proxy";
+        private const string EnvHttpsProxyLC = "https_proxy";
+        private const string EnvNoProxyLC = "no_proxy";
+
         public static bool TryCreate(out IWebProxy proxy)
         {
             // Get environment variables. Protocol specific take precedence over

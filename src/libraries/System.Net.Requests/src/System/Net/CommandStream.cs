@@ -37,9 +37,6 @@ namespace System.Net
         private ResponseDescription _currentResponseDescription;
         protected string _abortReason;
 
-        private const int WaitingForPipeline = 1;
-        private const int CompletedPipeline = 2;
-
         internal CommandStream(TcpClient client)
             : base(client)
         {
