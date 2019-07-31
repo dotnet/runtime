@@ -44,6 +44,8 @@
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
 
+//#define TEST_ICALL_SYMBOL_MAP 1
+
 // Generate Icall_ constants
 enum {
 #define ICALL_TYPE(id,name,first)	/* nothing */
@@ -132,27 +134,25 @@ static const guint16 icall_names_idx [] = {
 
 #define icall_name_get(id) ((const char*)&icall_names_str + icall_names_idx [(id)])
 
-static const gconstpointer icall_functions [] = {
+typedef struct MonoICallFunction {
+	gpointer func;
+#if ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
+	const char *name;
+#endif
+} MonoICallFunction;
+
+static const MonoICallFunction icall_functions [] = {
 #define ICALL_TYPE(id,name,first)	/* nothing */
-#define ICALL(id,name,func) ((gpointer)(func)),
+#if ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
+#define ICALL(id, name, func) { (gpointer)func, #func },
+#else
+#define ICALL(id, name, func) { (gpointer)func },
+#endif
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-	NULL
+	{ NULL },
 };
-
-#ifdef ENABLE_ICALL_SYMBOL_MAP
-
-static const gconstpointer icall_symbols [] = {
-#define ICALL_TYPE(id,name,first)	/* nothing */
-#define ICALL(id,name,func) #func,
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-#undef ICALL
-	NULL
-};
-
-#endif // ENABLE_ICALL_SYMBOL_MAP
 
 #undef HANDLES
 #undef NOHANDLES
@@ -179,7 +179,7 @@ compare_method_imap (const void *key, const void *elem)
 	return strcmp ((const char*)key, method_name);
 }
 
-static gsize
+static gssize
 find_slot_icall (const IcallTypeDesc *imap, const char *name)
 {
 	const guint16 *nameslot = (const guint16 *)mono_binary_search (name, icall_names_idx + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names_idx [0]), compare_method_imap);
@@ -191,7 +191,7 @@ find_slot_icall (const IcallTypeDesc *imap, const char *name)
 static gboolean
 find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
 {
-	gsize slotnum = find_slot_icall (imap, name);
+	const gssize slotnum = find_slot_icall (imap, name);
 	if (slotnum == -1)
 		return FALSE;
 	return (gboolean)icall_uses_handles [slotnum];
@@ -200,10 +200,10 @@ find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
 static gpointer
 find_method_icall (const IcallTypeDesc *imap, const char *name)
 {
-	gsize slotnum = find_slot_icall (imap, name);
+	const gssize slotnum = find_slot_icall (imap, name);
 	if (slotnum == -1)
 		return NULL;
-	return (gpointer)icall_functions [slotnum];
+	return icall_functions [slotnum].func;
 }
 
 static int
@@ -253,57 +253,66 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	return NULL;
 }
 
-#ifdef ENABLE_ICALL_SYMBOL_MAP
-static int
-func_cmp (gconstpointer key, gconstpointer p)
-{
-	return (gsize)key - (gsize)*(gsize*)p;
-}
+#if ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
+
+static
+int
+#if _WIN32
+__cdecl
 #endif
-
-static const char*
-lookup_icall_symbol (gpointer func)
+mono_qsort_icall_function_compare_indirect (gconstpointer va, gconstpointer vb)
 {
-#ifdef ENABLE_ICALL_SYMBOL_MAP
-	int i;
-	gpointer slot;
-	static gconstpointer *functions_sorted;
-	static const char**symbols_sorted;
-	static gboolean inited;
+	const gpointer a = icall_functions [*(const guint16*)va].func;
+	const gpointer b = icall_functions [*(const guint16*)vb].func;
+	return (a < b) ? -1 : (a > b) ? 1 : 0;
+}
 
-	if (!inited) {
-		gboolean changed;
+static
+int
+#if _WIN32
+__cdecl
+#endif
+mono_bsearch_icall_function_compare_indirect (gconstpointer a, gconstpointer vb)
+{
+	const gpointer b = icall_functions [*(const guint16*)vb].func;
+	return (a < b) ? -1 : (a > b) ? 1 : 0;
+}
 
-		functions_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		memcpy (functions_sorted, icall_functions, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		symbols_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		memcpy (symbols_sorted, icall_symbols, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		/* Bubble sort the two arrays */
-		changed = TRUE;
-		while (changed) {
-			changed = FALSE;
-			for (i = 0; i < G_N_ELEMENTS (icall_functions) - 1; ++i) {
-				if (functions_sorted [i] > functions_sorted [i + 1]) {
-					gconstpointer tmp;
+#endif // ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
 
-					tmp = functions_sorted [i];
-					functions_sorted [i] = functions_sorted [i + 1];
-					functions_sorted [i + 1] = tmp;
-					tmp = symbols_sorted [i];
-					symbols_sorted [i] = symbols_sorted [i + 1];
-					symbols_sorted [i + 1] = (const char*)tmp;
-					changed = TRUE;
-				}
-			}
-		}
-		inited = TRUE;
+#if !TEST_ICALL_SYMBOL_MAP
+static
+#endif
+const char*
+mono_lookup_icall_symbol_internal (gpointer func)
+{
+#if ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
+	typedef guint16 T;
+	const gsize N = G_N_ELEMENTS (icall_functions) - 1; // skip terminal null element
+	g_static_assert (N <= 0xFFFF); // If this fails, change T to guint32
+	static T *static_functions_sorted;
+
+	if (!func)
+		return NULL;
+
+	if (!static_functions_sorted) {
+
+		T *functions_sorted = g_new (T, N);
+
+		// Initialize with identity mapping. One line is easier to step over.
+		for (T i = 0; i < N; ++i) functions_sorted [i] = i;
+
+		qsort (functions_sorted, N, sizeof (T), mono_qsort_icall_function_compare_indirect);
+
+		gpointer old = mono_atomic_cas_ptr ((gpointer*)&static_functions_sorted, functions_sorted, NULL);
+		if (old)
+			g_free (functions_sorted);
 	}
 
-	slot = mono_binary_search (func, functions_sorted, G_N_ELEMENTS (icall_functions), sizeof (gpointer), func_cmp);
+	T const * const slot = (const T*)bsearch (func, static_functions_sorted, N, sizeof (T), mono_bsearch_icall_function_compare_indirect);
 	if (!slot)
 		return NULL;
-	g_assert (slot);
-	return symbols_sorted [(gpointer*)slot - (gpointer*)functions_sorted];
+	return icall_functions [*slot].name;
 #else
 	fprintf (stderr, "icall symbol maps not enabled, pass --enable-icall-symbol-map to configure.\n");
 	g_assert_not_reached ();
@@ -345,7 +354,7 @@ mono_icall_table_init (void)
 	{
 		MONO_ICALL_TABLE_CALLBACKS_VERSION,
 		icall_table_lookup,
-		lookup_icall_symbol,
+		mono_lookup_icall_symbol_internal,
 	};
 	mono_install_icall_table_callbacks (&mono_icall_table_callbacks);
 }

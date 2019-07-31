@@ -37,6 +37,8 @@
 #  endif
 #endif
 
+//#define TEST_ICALL_SYMBOL_MAP 1
+
 /*
  * If the MONO_ENV_OPTIONS environment variable is set, it uses this as a
  * source of command line arguments that are passed to Mono before the
@@ -369,6 +371,15 @@ doclose:
 	return status;
 }
 
+#if TEST_ICALL_SYMBOL_MAP
+
+const char*
+mono_lookup_icall_symbol_internal (gpointer func);
+
+ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
+
+#endif
+
 #ifdef HOST_WIN32
 
 #include <shellapi.h>
@@ -405,6 +416,13 @@ int
 main (int argc, char* argv[])
 {
 	mono_build_date = build_date;
+
+#if TEST_ICALL_SYMBOL_MAP
+	const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);
+	printf ("%s\n", p ? p : "null");
+	p  = mono_lookup_icall_symbol_internal (ves_icall_Interop_Sys_DoubleToString);
+	printf ("%s\n", p ? p : "null");
+#endif
 
 	probe_embedded (argv [0], &argc, &argv);
 	return mono_main_with_options (argc, argv);
