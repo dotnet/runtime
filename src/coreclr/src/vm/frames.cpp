@@ -1001,6 +1001,51 @@ VOID GCFrame::Pop()
 #endif
 }
 
+#ifndef CROSSGEN_COMPILE
+// GCFrame destructor removes the GCFrame from the current thread's explicit frame list.
+// This prevents issues in functions that have HELPER_METHOD_FRAME_BEGIN / END around 
+// GCPROTECT_BEGIN / END and where the C++ compiler places some local variables over 
+// the stack location of the GCFrame local variable after the variable goes out of scope. 
+GCFrame::~GCFrame()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_Next != NULL)
+    {
+        GCX_COOP_THREAD_EXISTS(m_pCurThread);
+        // When the frame is destroyed, make sure it is no longer in the
+        // frame chain managed by the Thread.
+        Pop();
+    }
+}
+
+ExceptionFilterFrame::~ExceptionFilterFrame()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_Next != NULL)
+    {
+        GCX_COOP();
+        // When the frame is destroyed, make sure it is no longer in the
+        // frame chain managed by the Thread.
+        Pop();
+    }
+}
+
+#endif // !CROSSGEN_COMPILE
+
 #ifdef FEATURE_INTERPRETER
 // Methods of IntepreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp) 
