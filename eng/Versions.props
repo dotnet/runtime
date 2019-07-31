@@ -67,7 +67,7 @@
     <SystemThreadingAccessControlVersion>5.0.0-alpha1.19381.1</SystemThreadingAccessControlVersion>
     <SystemWindowsExtensionsPackageVersion>5.0.0-alpha1.19381.1</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->
-    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19380.2</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19381.1</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19381.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- winforms -->
