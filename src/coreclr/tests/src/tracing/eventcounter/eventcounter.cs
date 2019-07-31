@@ -76,6 +76,7 @@ namespace BasicEventSourceTests
                             if (payload.Key.Equals("Mean"))
                             {
                                 int mean = Int32.Parse(payload.Value.ToString());
+                                Console.WriteLine("Adding " + mean + " to known list of means");
                                 means.Add(mean);
                             }
                             else if (payload.Key.Equals("DisplayName"))
@@ -95,17 +96,12 @@ namespace BasicEventSourceTests
             public bool validateMean()
             {
                 // we expect to see 1 because we wrote only 1s
+                // we *might* also see 0 because there is a period of time we didn't write stuff and got callback
                 if (!means.Contains(1)) 
                 {
+                    Console.WriteLine("Mean doesn't have a 1");
                     return false;
                 }
-
-                // we also expect to see 0 because there is a period of time we didn't write stuff and got callback
-                if (!means.Contains(0)) 
-                {
-                    return false;
-                }
-
                 return true;
             }
         }
