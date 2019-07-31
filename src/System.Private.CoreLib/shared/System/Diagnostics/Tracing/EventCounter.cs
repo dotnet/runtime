@@ -116,12 +116,14 @@ namespace System.Diagnostics.Tracing
 
         internal void ResetStatistics()
         {
-            Debug.Assert(Monitor.IsEntered(this));
-            _count = 0;
-            _sum = 0;
-            _sumSquared = 0;
-            _min = double.PositiveInfinity;
-            _max = double.NegativeInfinity;
+            lock(this)
+            {
+                _count = 0;
+                _sum = 0;
+                _sumSquared = 0;
+                _min = double.PositiveInfinity;
+                _max = double.NegativeInfinity;
+            }
         }
 
         #endregion // Statistics Calculation
