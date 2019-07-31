@@ -3932,6 +3932,21 @@ collect_thread_ids (MonoNativeThreadId *thread_ids, int max_threads)
 	return ud.nthreads;
 }
 
+void
+mono_gstring_append_thread_name (GString* text, MonoInternalThread* thread)
+{
+	// FIXME Conversion here is temporary. thread->name will change to UTF8.
+	char* const name = thread->name
+				? g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, NULL)
+				: NULL;
+	g_string_append (text, "\n\"");
+	g_string_append (text,               name ? name :
+			thread->threadpool_thread ? "<threadpool thread>" :
+						    "<unnamed thread>");
+	g_string_append (text, "\"");
+	g_free (name);
+}
+
 static void
 dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_file)
 {
@@ -3953,17 +3968,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 	/*
 	 * Do all the non async-safe work outside of get_thread_dump.
 	 */
-	if (thread->name) {
-		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &gerror);
-		g_assert (!gerror);
-		g_string_append_printf (text, "\n\"%s\"", name);
-		g_free (name);
-	}
-	else if (thread->threadpool_thread) {
-		g_string_append (text, "\n\"<threadpool thread>\"");
-	} else {
-		g_string_append (text, "\n\"<unnamed thread>\"");
-	}
+	mono_gstring_append_thread_name (text, thread);
 
 	for (i = 0; i < ud->nframes; ++i) {
 		MonoStackFrameInfo *frame = &ud->frames [i];
