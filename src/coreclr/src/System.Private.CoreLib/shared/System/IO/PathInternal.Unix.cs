@@ -16,12 +16,7 @@ namespace System.IO
         internal const char AltDirectorySeparatorChar = '/';
         internal const char VolumeSeparatorChar = '/';
         internal const char PathSeparator = ':';
-
         internal const string DirectorySeparatorCharAsString = "/";
-
-        // There is only one invalid path character in Unix
-        private const char InvalidPathChar = '\0';
-
         internal const string ParentDirectoryPrefix = @"../";
 
         internal static int GetRootLength(ReadOnlySpan<char> path)

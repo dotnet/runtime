@@ -131,7 +131,6 @@ namespace System.Diagnostics.Tracing
         // Values buffering
         private const int BufferedSize = 10;
         private const double UnusedBufferSlotValue = double.NegativeInfinity;
-        private const int UnsetIndex = -1;
         private volatile double[] _bufferedValues = null!;
         private volatile int _bufferedValuesIndex;
 
