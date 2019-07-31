@@ -895,50 +895,51 @@ bool HasSuppressingAttribute()
 #endif
 void DumpMscorlib(void* GUICookie)
 {
-    if(g_pAssemblyImport==NULL) g_pAssemblyImport = GetAssemblyImport(GUICookie);
-    if(g_pAssemblyImport!=NULL)
+    // In the CoreCLR with reference assemblies and redirection it is more difficult to determine if
+    // a particular Assembly is the System assembly, like mscorlib.dll is for the Desktop CLR.
+    // In the CoreCLR runtimes, the System assembly can be System.Private.CoreLib.dll, System.Runtime.dll
+    // or netstandard.dll and in the future a different Assembly name could be used.
+    // We now determine the identity of the System assembly by querying if the Assembly defines the
+    // well known type System.Object as that type must be defined by the System assembly
+    // If this type is defined then we will output the ".mscorlib" directive to indicate that this 
+    // assembly is the System assembly.
+    //
+    mdTypeDef tkObjectTypeDef = mdTypeDefNil;
+
+    // Lookup the type System.Object and see it it has a type definition in this assembly
+    if (SUCCEEDED(g_pPubImport->FindTypeDefByName(W("System.Object"), mdTypeDefNil, &tkObjectTypeDef)))
     {
-        mdAssembly  tkAsm;
-        if(SUCCEEDED(g_pAssemblyImport->GetAssemblyFromScope(&tkAsm))&&(tkAsm != mdAssemblyNil))
+        if (tkObjectTypeDef != mdTypeDefNil)
         {
-            const void* pPublicKey;
-            ULONG       cbPublicKey = 0;
-            ULONG       ulHashAlgId;
-            WCHAR       wzName[1024];
-            ULONG       ulNameLen=0;
-            ASSEMBLYMETADATA    md;
-            WCHAR       wzLocale[1024];
-            DWORD       dwFlags;
-            //char        szString[4096];
-            
-            md.szLocale = wzLocale;
-            md.cbLocale = 1024;
-            md.rProcessor = NULL;
-            md.ulProcessor = 0;
-            md.rOS = NULL;
-            md.ulOS = 0;
-    
-            if(SUCCEEDED(g_pAssemblyImport->GetAssemblyProps(            // S_OK or error.
-                                                            tkAsm,       // [IN] The Assembly for which to get the properties.
-                                                            &pPublicKey, // [OUT] Pointer to the public key.
-                                                            &cbPublicKey,// [OUT] Count of bytes in the public key.
-                                                            &ulHashAlgId,// [OUT] Hash Algorithm.
-                                                            wzName,      // [OUT] Buffer to fill with name.
-                                                            1024,        // [IN] Size of buffer in wide chars.
-                                                            &ulNameLen,  // [OUT] Actual # of wide chars in name.
-                                                            &md,         // [OUT] Assembly MetaData.
-                                                            &dwFlags)))  // [OUT] Flags.
+            // We do have a type definition for System.Object in this assembly
+            //
+            DWORD dwClassAttrs = 0;
+            mdToken tkExtends = mdTypeDefNil;
+
+            // Retrieve the type def properties as well, so that we can check a few more things about 
+            // the System.Object type
+            //
+            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, NULL, 0, &dwClassAttrs, &tkExtends)))
             {
-                if(wcscmp(wzName,W("mscorlib")) == 0)
+                bool bExtends = g_pPubImport->IsValidToken(tkExtends);
+                bool isClass = ((dwClassAttrs & tdClassSemanticsMask) == tdClass);
+
+                // We also check the type properties to make sure that we have a class and not a Value type definition
+                // and that this type definition isn't extending another type.
+                // 
+                if (isClass & !bExtends)
                 {
-                    printLine(GUICookie,"");
-                    sprintf_s(szString,SZSTRING_SIZE,"%s%s ",g_szAsmCodeIndent,KEYWORD(".mscorlib"));
-                    printLine(GUICookie,szString);
-                    printLine(GUICookie,"");
+                    // We will mark this assembly with the System assembly directive: .mscorlib
+                    //
+                    printLine(GUICookie, "");
+                    sprintf_s(szString, SZSTRING_SIZE, "%s%s ", g_szAsmCodeIndent, KEYWORD(".mscorlib"));
+                    printLine(GUICookie, szString);
+                    printLine(GUICookie, "");                
                 }
             }
         }
     }
+
 }
 void DumpTypelist(void* GUICookie)
 {
