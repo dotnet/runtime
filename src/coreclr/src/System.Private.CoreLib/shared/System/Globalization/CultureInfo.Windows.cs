@@ -39,7 +39,7 @@ namespace System.Globalization
             return GetCultureByName(strDefault);
         }
 
-        private unsafe static CultureInfo GetUserDefaultUICulture()
+        private static unsafe CultureInfo GetUserDefaultUICulture()
         {
 #if !ENABLE_WINRT
             if (GlobalizationMode.Invariant)

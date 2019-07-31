@@ -38,7 +38,7 @@ internal partial class Interop
         }
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventWriteTransfer")]
-        private static unsafe extern int EventWriteTransfer_PInvoke(
+        private static extern unsafe int EventWriteTransfer_PInvoke(
             long registrationHandle,
             in EventDescriptor eventDescriptor,
             Guid* activityId,
