@@ -29,6 +29,7 @@
     <ClInclude Include="$(MonoSourceLocation)\support\inffast.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\crc32.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\deflate.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\gzguts.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\inffixed.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\inflate.h" />
     <ClInclude Include="$(MonoSourceLocation)\support\inftrees.h" />

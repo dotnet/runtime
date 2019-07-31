@@ -107,6 +107,7 @@ zlib_sources = \
 	../../support/crc32.h \
 	../../support/deflate.c \
 	../../support/deflate.h \
+	../../support/gzguts.h	\
 	../../support/infback.c \
 	../../support/inffast.c \
 	../../support/inffast.h \

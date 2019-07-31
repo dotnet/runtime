@@ -78,6 +78,9 @@
     <ClInclude Include="$(MonoSourceLocation)\support\deflate.h">
       <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\gzguts.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\support\inffast.h">
       <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClInclude>
