@@ -663,12 +663,12 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
-        private readonly static ContextCallback s_invokeContextCallback = (state) =>
+        private static readonly ContextCallback s_invokeContextCallback = (state) =>
         {
             Debug.Assert(state is Action);
             ((Action)state)();
         };
-        private readonly static Action<Action> s_invokeAction = (action) => action();
+        private static readonly Action<Action> s_invokeAction = (action) => action();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static ContextCallback GetInvokeActionCallback() => s_invokeContextCallback;

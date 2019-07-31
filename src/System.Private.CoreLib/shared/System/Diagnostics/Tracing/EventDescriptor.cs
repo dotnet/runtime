@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tracing
 #endif
     struct EventDescriptor
     {
-        # region private
+        #region private
         [FieldOffset(0)]
         private int m_traceloggingId;
         [FieldOffset(0)]

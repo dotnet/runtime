@@ -6,7 +6,7 @@ namespace System.Runtime.CompilerServices
 {
     // Custom attribute to specify additional method properties.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    sealed public class MethodImplAttribute : Attribute
+    public sealed class MethodImplAttribute : Attribute
     {
         public MethodCodeType MethodCodeType;
 
