@@ -281,6 +281,21 @@ namespace System.Net.Http.Functional.Tests
                     "  Content-Type: text/plain; charset=utf-8\r\n" +
                     "  Custom-Content-Header: value2\r\n" +
                     "}", rm.ToString());
+
+                rm.TrailingHeaders.Add("Custom-Trailing-Header", "value3");
+
+                Assert.Equal(
+                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:\r\n" +
+                    "{\r\n" +
+                    "  Accept-Ranges: bytes\r\n" +
+                    "  Accept-Ranges: pages\r\n" +
+                    "  Custom-Response-Header: value1\r\n" +
+                    "  Content-Type: text/plain; charset=utf-8\r\n" +
+                    "  Custom-Content-Header: value2\r\n" +
+                    "}, Trailing Headers:\r\n" +
+                    "{\r\n" +
+                    "  Custom-Trailing-Header: value3\r\n" +
+                    "}", rm.ToString());
             }
         }
 
