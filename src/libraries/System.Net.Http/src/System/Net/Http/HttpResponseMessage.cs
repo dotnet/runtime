@@ -198,6 +198,12 @@ namespace System.Net.Http
             sb.Append(", Headers:\r\n");
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
+            if (_trailingHeaders != null)
+            {
+                sb.Append(", Trailing Headers:\r\n");
+                HeaderUtilities.DumpHeaders(sb, _trailingHeaders);
+            }
+
             return sb.ToString();
         }
 
