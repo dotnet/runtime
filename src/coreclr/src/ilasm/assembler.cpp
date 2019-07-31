@@ -276,6 +276,14 @@ mdToken Assembler::GetAsmRef(__in __nullterminated const char* szName)
 
 mdToken Assembler::GetBaseAsmRef()
 {
+    // First we check for "System.Private.CoreLib" as the base or System assembly
+    //
+    AsmManAssembly* coreLibAsm = m_pManifest->GetAsmRefByAsmName("System.Private.CoreLib");
+    if(coreLibAsm != NULL)
+    {
+        return GetAsmRef(coreLibAsm->szAlias ? coreLibAsm->szAlias : coreLibAsm->szName);
+    }
+
     AsmManAssembly* sysRuntime = m_pManifest->GetAsmRefByAsmName("System.Runtime");
     if(sysRuntime != NULL)
     {
