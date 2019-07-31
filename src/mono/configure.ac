@@ -142,7 +142,6 @@ case "$host" in
 	wasm32*)
 		CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -s WASM=1"
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -s WASM=1"
-		libdl="-ldl"
 		libgc_threads=pthreads
 		platform_wasm=yes
 		;;
@@ -181,7 +180,6 @@ case "$host" in
 		LDFLAGS="$LDFLAGS $WIN32_LDFLAGS"
 		libmono_cflags="-mms-bitfields -mwindows"
 		libmono_ldflags="-mms-bitfields -mwindows"
-		libdl=
 		libgc_threads=win32
 		with_sigaltstack=no
 		with_tls=pthread
@@ -198,7 +196,6 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DHOST_BSD"
 		libmono_ldflags="-pthread"
 		need_link_unlink=yes
-		libdl="-ldl"
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		use_sigposix=yes
@@ -208,7 +205,6 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_cflags="-D_REENTRANT -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_ldflags="-lpthread -pthread"
-		libdl="-ldl"
 		libgc_threads=pthreads
 		need_link_unlink=yes
 		with_sigaltstack=no
@@ -235,7 +231,6 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DHOST_BSD -D_WITH_GETLINE"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
-		libdl=
 		libgc_threads=pthreads
 		use_sigposix=yes
 		has_dtrace=yes
@@ -261,7 +256,6 @@ case "$host" in
 		LDFLAGS="$LDFLAGS -pthread"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
-		libdl=
 		libgc_threads=pthreads
 		with_tls=pthread
 		with_sigaltstack=no
@@ -278,7 +272,6 @@ case "$host" in
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
-		libdl="-ldl"
 		libgc_threads=pthreads
 		use_sigposix=yes
 
@@ -316,7 +309,6 @@ case "$host" in
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
-		libdl="-ldl"
 		libgc_threads=pthreads
 		CORETARGETS="-p:TargetsUnix=true"
 		use_sigposix=yes
@@ -411,7 +403,6 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
 		CORETARGETS="-p:TargetsUnix=true -p:TargetsOSX=true"
-		libdl=
 		libgc_threads=pthreads
 		has_dtrace=yes
 		if test "x$cross_compiling" = "xyes"; then
@@ -453,7 +444,6 @@ case "$host" in
 		dnl BSD_SOURCE is for getifaddrs
 		CPPFLAGS="$CPPFLAGS -D_BSD_SOURCE -D_REENTRANT -D_THREAD_SAFE"
 		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
-		libdl=
 		LIBS="$LIBS -lnetwork -ltextencoding"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
@@ -544,7 +534,6 @@ case "$host" in
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])
-		libdl="-ldl"
 		;;
 esac
 
