@@ -268,6 +268,8 @@ typedef struct {
 #endif
 } MonoMarshalByRefObject;
 
+TYPED_HANDLE_DECL (MonoMarshalByRefObject);
+
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
@@ -350,6 +352,8 @@ typedef struct {
 	MonoException base;
 } MonoSystemException;
 
+TYPED_HANDLE_DECL (MonoSystemException);
+
 #ifndef ENABLE_NETCORE
 typedef struct {
 	MonoSystemException base;
@@ -373,10 +377,14 @@ typedef struct {
 	gint64	     add_time;
 } MonoAsyncResult;
 
+TYPED_HANDLE_DECL (MonoAsyncResult);
+
 typedef struct {
 	MonoMarshalByRefObject object;
 	gpointer     handle;
 } MonoWaitHandle;
+
+TYPED_HANDLE_DECL (MonoWaitHandle);
 
 /* This is a copy of System.Runtime.Remoting.Messaging.CallType */
 typedef enum {
@@ -420,6 +428,8 @@ typedef struct {
 	MonoReflectionType type;
 	MonoObject *type_info;
 } MonoReflectionMonoType;
+
+TYPED_HANDLE_DECL (MonoReflectionMonoType);
 
 typedef struct {
 	MonoObject  object;
@@ -498,6 +508,8 @@ typedef struct {
 	guint32	    call_type;
 } MonoMethodMessage;
 
+TYPED_HANDLE_DECL (MonoMethodMessage);
+
 /* Keep in sync with the System.MonoAsyncCall */
 typedef struct {
 	MonoObject object;
@@ -509,12 +521,16 @@ typedef struct {
 	MonoArray *out_args;
 } MonoAsyncCall;
 
+TYPED_HANDLE_DECL (MonoAsyncCall);
+
 typedef struct {
 	MonoObject obj;
 	MonoArray *frames;
 	MonoArray *captured_traces;
 	MonoBoolean debug_info;
 } MonoStackTrace;
+
+TYPED_HANDLE_DECL (MonoStackTrace);
 
 typedef struct {
 	MonoObject obj;
@@ -528,6 +544,8 @@ typedef struct {
 	gint32 column;
 	MonoString *internal_method_name;
 } MonoStackFrame;
+
+TYPED_HANDLE_DECL (MonoStackFrame);
 
 typedef enum {
 	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
