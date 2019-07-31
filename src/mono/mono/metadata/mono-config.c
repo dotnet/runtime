@@ -661,35 +661,29 @@ mono_config_for_assembly_internal (MonoImage *assembly)
  * (or the file in the \c MONO_CONFIG env var).
  */
 void
-mono_config_parse (const char *filename) {
-	const char *home;
-	char *mono_cfg;
-#ifndef TARGET_WIN32
-	char *user_cfg;
-#endif
-
+mono_config_parse (const char *filename)
+{
 	if (filename) {
 		mono_config_parse_file (filename);
 		return;
 	}
 
-	// FIXME: leak, do we store any references to home
-	char *env_home = g_getenv ("MONO_CONFIG");
-	if (env_home) {
-		mono_config_parse_file (env_home);
+	const char *home = g_getenv ("MONO_CONFIG");
+	if (home) {
+		mono_config_parse_file (home);
 		return;
 	}
 
 	const char *cfg_dir = mono_get_config_dir ();
 	if (cfg_dir) {
-		mono_cfg = g_build_filename (cfg_dir, "mono", "config", NULL);
+		char *mono_cfg = g_build_filename (cfg_dir, "mono", "config", (const char *)NULL);
 		mono_config_parse_file (mono_cfg);
 		g_free (mono_cfg);
 	}
 
 #if !defined(TARGET_WIN32)
 	home = g_get_home_dir ();
-	user_cfg = g_strconcat (home, G_DIR_SEPARATOR_S, ".mono/config", NULL);
+	char *user_cfg = g_strconcat (home, G_DIR_SEPARATOR_S, ".mono/config", (const char *)NULL);
 	mono_config_parse_file (user_cfg);
 	g_free (user_cfg);
 #endif
