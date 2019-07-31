@@ -30,8 +30,7 @@ namespace System.Collections
         private int _growFactor; // 100 == 1.0, 130 == 1.3, 200 == 2.0. Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
-        private const int _MinimumGrow = 4;
-        private const int _ShrinkThreshold = 32;
+        private const int MinimumGrow = 4;
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
@@ -161,9 +160,9 @@ namespace System.Collections
             if (_size == _array.Length)
             {
                 int newcapacity = (int)((long)_array.Length * (long)_growFactor / 100);
-                if (newcapacity < _array.Length + _MinimumGrow)
+                if (newcapacity < _array.Length + MinimumGrow)
                 {
-                    newcapacity = _array.Length + _MinimumGrow;
+                    newcapacity = _array.Length + MinimumGrow;
                 }
                 SetCapacity(newcapacity);
             }

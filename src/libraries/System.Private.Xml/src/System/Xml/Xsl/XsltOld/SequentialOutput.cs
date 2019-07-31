@@ -37,7 +37,6 @@ namespace System.Xml.Xsl.XsltOld
         private const string s_EncodingStart = " encoding=\"";
         private const string s_Public = "PUBLIC ";
         private const string s_System = "SYSTEM ";
-        private const string s_Html = "html";
         private const string s_QuoteSpace = "\" ";
         private const string s_CDataSplit = "]]]]><![CDATA[>";
 

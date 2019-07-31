@@ -668,7 +668,6 @@ namespace System
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
         private const string RFC2396ReservedMarks = @";/?:@&=+$,";
         private const string RFC3986UnreservedMarks = @"-_.~";
-        private const string RFC2396UnreservedMarks = @"-_.~*'()!";
         private const string AdditionalUnsafeToUnescape = @"%\#";// While not specified as reserved, these are still unsafe to unescape.
 
         // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:

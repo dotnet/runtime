@@ -19,7 +19,6 @@ namespace System.Runtime.Caching
         static internal readonly ExpiresEntryRef INVALID = new ExpiresEntryRef(0, 0);
 
         private const uint ENTRY_MASK = 0x000000ffu;
-        private const uint PAGE_MASK = 0xffffff00u;
         private const int PAGE_SHIFT = 8;
 
         private uint _ref;

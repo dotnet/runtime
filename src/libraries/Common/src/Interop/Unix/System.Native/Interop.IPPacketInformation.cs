@@ -4,6 +4,8 @@
 
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1823 // unused private padding fields in MulticastOption structs
+
 internal static partial class Interop
 {
     internal static partial class Sys
@@ -12,7 +14,7 @@ internal static partial class Interop
         {
             public IPAddress Address;  // Destination IP Address
             public int InterfaceIndex; // Interface index
-            private int Padding;       // Pad out to 8-byte alignment
+            private int _padding;       // Pad out to 8-byte alignment
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]

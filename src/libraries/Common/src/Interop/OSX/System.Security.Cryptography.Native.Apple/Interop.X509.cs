@@ -15,6 +15,9 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private static readonly SafeCreateHandle s_emptyExportString =
+            CoreFoundation.CFStringCreateWithCString("");
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509ImportCertificate(
             byte[] pbKeyBlob,

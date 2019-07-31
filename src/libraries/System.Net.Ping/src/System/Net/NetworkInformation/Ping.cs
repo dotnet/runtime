@@ -15,7 +15,6 @@ namespace System.Net.NetworkInformation
         private const int DefaultSendBufferSize = 32;  // Same as ping.exe on Windows.
         private const int DefaultTimeout = 5000;       // 5 seconds: same as ping.exe on Windows.
         private const int MaxBufferSize = 65500;       // Artificial constraint due to win32 api limitations.
-        private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(Icmp6EchoReply)) * 2 + ip header info;
 
         private readonly ManualResetEventSlim _lockObject = new ManualResetEventSlim(initialState: true); // doubles as the ability to wait on the current operation
         private SendOrPostCallback _onPingCompletedDelegate;

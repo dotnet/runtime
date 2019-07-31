@@ -290,8 +290,6 @@ namespace System.Globalization
 
             internal const int DECIMAL_PRECISION = 29; // Decimal.DecCalc also uses this value
 
-            private const int MIN_SB_BUFFER_SIZE = 105;
-
             private static bool IsWhite(char ch)
             {
                 return (((ch) == 0x20) || ((ch) >= 0x09 && (ch) <= 0x0D));

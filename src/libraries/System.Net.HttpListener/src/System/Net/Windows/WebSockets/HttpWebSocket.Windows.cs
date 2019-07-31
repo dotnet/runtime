@@ -14,8 +14,6 @@ namespace System.Net.WebSockets
 {
     internal static partial class HttpWebSocket
     {
-        private static readonly Random s_keyGenerator = new Random();
-
         internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(HttpListenerContext context,
             string subProtocol,
             int receiveBufferSize,

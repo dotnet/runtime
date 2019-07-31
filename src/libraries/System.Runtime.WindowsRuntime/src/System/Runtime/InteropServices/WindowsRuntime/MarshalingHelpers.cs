@@ -107,9 +107,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         const string WinRTNotifyCollectionChangedEventArgsName = "Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs";
 
-        // IBindableVector Guid
-        static Guid IID_IBindableVector = new Guid("393de7de-6fd0-4c0d-bb71-47244a113e93");
-
         static INotifyCollectionChangedEventArgsFactory s_EventArgsFactory;
 
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to

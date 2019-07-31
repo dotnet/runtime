@@ -15,11 +15,6 @@ namespace System.Security.Authentication.ExtendedProtection
     /// </summary>
     public class ExtendedProtectionPolicy : ISerializable
     {
-        private const string policyEnforcementName = "policyEnforcement";
-        private const string protectionScenarioName = "protectionScenario";
-        private const string customServiceNamesName = "customServiceNames";
-        private const string customChannelBindingName = "customChannelBinding";
-
         private ServiceNameCollection _customServiceNames;
         private PolicyEnforcement _policyEnforcement;
         private ProtectionScenario _protectionScenario;

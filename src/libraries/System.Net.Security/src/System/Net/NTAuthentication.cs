@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
 using System.Threading;
@@ -14,8 +11,6 @@ namespace System.Net
 {
     internal partial class NTAuthentication
     {
-        private static ContextCallback s_InitializeCallback = new ContextCallback(InitializeCallback);
-
         internal string AssociatedName
         {
             get

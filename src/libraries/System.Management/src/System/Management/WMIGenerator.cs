@@ -102,33 +102,7 @@ namespace System.Management
         private SortedList PublicNamesUsed    = new SortedList(StringComparer.OrdinalIgnoreCase);
         private SortedList PrivateNamesUsed = new SortedList(StringComparer.OrdinalIgnoreCase);
         
-        private ArrayList CommentsString = new ArrayList(5);
         private bool        bHasEmbeddedProperties = false;
-
-        const int IDS_CommentShouldSerialize        = 0;
-        const int IDS_CommentIsPropNull            = 1;
-        const int IDS_CommentResetProperty                = 2;
-        const int IDS_CommentAttributeProperty            = 3;
-        const int IDS_CommentDateConversionFunction            = 4;
-        const int IDS_CommentGetInstances            = 5;
-        const int IDS_CommentClassBegin            = 6;
-        const int IDS_COMMENT_PRIV_AUTOCOMMIT        = 7;
-        const int IDS_CommentConstructors            = 8;
-        const int IDS_COMMENT_ORIG_NAMESPACE        = 9;
-        const int IDS_COMMENT_CLASSNAME                = 10;
-        const int IDS_CommentSystemObject                = 11;
-        const int IDS_CommentLateBoundObject            = 12;
-        const int IDS_CommentManagementScope                = 13;
-        const int IDS_CommentAutoCommitProperty        = 14;
-        const int IDS_CommentManagementPath                = 15;
-        const int IDS_COMMENT_PROP_TYPECONVERTER    = 16;
-        const int IDS_CommentSystemPropertiesClass            = 17;
-        const int IDS_CommentEnumeratorImplementation                = 18;
-        const int IDS_CommentLateBoundProperty            = 19;
-        const int IDS_COMMENTS_CREATEDCLASS            = 20;
-        const int IDS_CommentEmbeddedObject            = 21;
-        const int IDS_CommentCurrentObject            = 22;
-        const int IDS_CommentFlagForEmbedded        = 23;
         
 
         /// <summary>
@@ -5230,79 +5204,105 @@ namespace System.Management
             }
             return retFunctionName;
         }
+
         /*
-            /// <summary>
-            /// Function to initialize the comments to be put in the generated code
-            /// Later can be moved to Resource once resource for System.management.dll is setup
-            /// </summary>
-            private void InitializeComments()
-            {
-                string strComment = "Functions ShouldSerialize<PropertyName> are functions used by VS property browser to check if"; 
+        const int IDS_CommentShouldSerialize        = 0;
+        const int IDS_CommentIsPropNull            = 1;
+        const int IDS_CommentResetProperty                = 2;
+        const int IDS_CommentAttributeProperty            = 3;
+        const int IDS_CommentDateConversionFunction            = 4;
+        const int IDS_CommentGetInstances            = 5;
+        const int IDS_CommentClassBegin            = 6;
+        const int IDS_COMMENT_PRIV_AUTOCOMMIT        = 7;
+        const int IDS_CommentConstructors            = 8;
+        const int IDS_COMMENT_ORIG_NAMESPACE        = 9;
+        const int IDS_COMMENT_CLASSNAME                = 10;
+        const int IDS_CommentSystemObject                = 11;
+        const int IDS_CommentLateBoundObject            = 12;
+        const int IDS_CommentManagementScope                = 13;
+        const int IDS_CommentAutoCommitProperty        = 14;
+        const int IDS_CommentManagementPath                = 15;
+        const int IDS_COMMENT_PROP_TYPECONVERTER    = 16;
+        const int IDS_CommentSystemPropertiesClass            = 17;
+        const int IDS_CommentEnumeratorImplementation                = 18;
+        const int IDS_CommentLateBoundProperty            = 19;
+        const int IDS_COMMENTS_CREATEDCLASS            = 20;
+        const int IDS_CommentEmbeddedObject            = 21;
+        const int IDS_CommentCurrentObject            = 22;
+        const int IDS_CommentFlagForEmbedded        = 23;
+
+        /// <summary>
+        /// Function to initialize the comments to be put in the generated code
+        /// Later can be moved to Resource once resource for System.management.dll is setup
+        /// </summary>
+        private void InitializeComments()
+        {
+            string strComment = "Functions ShouldSerialize<PropertyName> are functions used by VS property browser to check if"; 
             
-                strComment = strComment  + " a particular property has to be serialized. These functions are added for all ValueType";
-                strComment = strComment  + " properties ( properties of type Int32, BOOL etc.. which cannot be set to null). These functions";
-                strComment = strComment  + " uses Is<PropertyName>Null function. These functions are also used in the TypeConverter implementation";
-                strComment = strComment  + " for the properties to check for NULL value of property so that a empty value can be shown";
-                strComment = strComment  + " in Property browser in case of Drag and Drop in Visual studio.";
+            strComment = strComment  + " a particular property has to be serialized. These functions are added for all ValueType";
+            strComment = strComment  + " properties ( properties of type Int32, BOOL etc.. which cannot be set to null). These functions";
+            strComment = strComment  + " uses Is<PropertyName>Null function. These functions are also used in the TypeConverter implementation";
+            strComment = strComment  + " for the properties to check for NULL value of property so that a empty value can be shown";
+            strComment = strComment  + " in Property browser in case of Drag and Drop in Visual studio.";
 
-                CommentsString.Add(strComment);    // IDS_CommentShouldSerialize
+            CommentsString.Add(strComment);    // IDS_CommentShouldSerialize
 
-                strComment = "Functions Is<PropertyName>Null() are functions . These functions are to be used to check if a property is NULL.";
-                CommentsString.Add(strComment);    // IDS_CommentIsPropNull
+            strComment = "Functions Is<PropertyName>Null() are functions . These functions are to be used to check if a property is NULL.";
+            CommentsString.Add(strComment);    // IDS_CommentIsPropNull
 
-                strComment = "Functions Reset<PropertyName> are added for Nullable Read/Write properties. These functions are used in VS designere in"; 
-                strComment = strComment + " property browser to set a property to NULL.";
-                CommentsString.Add(strComment);    // IDS_CommentResetProperty
+            strComment = "Functions Reset<PropertyName> are added for Nullable Read/Write properties. These functions are used in VS designere in"; 
+            strComment = strComment + " property browser to set a property to NULL.";
+            CommentsString.Add(strComment);    // IDS_CommentResetProperty
 
-                strComment = "Every property added to the class for WMI property has attributes set to define its behaviour in Visual Studio";
-                strComment = strComment + " designer and as well as to define a TypeConverter to be used.";
-                CommentsString.Add(strComment);    // IDS_CommentAttributeProperty
+            strComment = "Every property added to the class for WMI property has attributes set to define its behaviour in Visual Studio";
+            strComment = strComment + " designer and as well as to define a TypeConverter to be used.";
+            CommentsString.Add(strComment);    // IDS_CommentAttributeProperty
 
-                strComment = "DateTime Conversions are added for the class to convert DMTF date to System.DateTime and Vise-versa. Conversion from DMTF";
-                strComment = strComment + " to System.DateTime conversion ignores the microseconds as System.DateTime doesn't have the microseconds part in it.";
-                CommentsString.Add(strComment);    // IDS_CommentDateConversionFunction
+            strComment = "DateTime Conversions are added for the class to convert DMTF date to System.DateTime and Vise-versa. Conversion from DMTF";
+            strComment = strComment + " to System.DateTime conversion ignores the microseconds as System.DateTime doesn't have the microseconds part in it.";
+            CommentsString.Add(strComment);    // IDS_CommentDateConversionFunction
 
-                strComment = "Different flavours of GetInstances() help in enumerating instances of the WMI class.";
-                CommentsString.Add(strComment);    // IDS_CommentGetInstances
+            strComment = "Different flavours of GetInstances() help in enumerating instances of the WMI class.";
+            CommentsString.Add(strComment);    // IDS_CommentGetInstances
 
-                strComment = "An Early Bound class generated for the WMI class "; 
-                CommentsString.Add(strComment);    // IDS_CommentClassBegin
+            strComment = "An Early Bound class generated for the WMI class "; 
+            CommentsString.Add(strComment);    // IDS_CommentClassBegin
 
-                CommentsString.Add("Member variable to store the autocommit behaviour for the class"); // IDS_COMMENT_PRIV_AUTOCOMMIT
+            CommentsString.Add("Member variable to store the autocommit behaviour for the class"); // IDS_COMMENT_PRIV_AUTOCOMMIT
 
-                CommentsString.Add("Below are different flavours of constructors to initialize the instance with a WMI object"); // IDS_CommentConstructors
+            CommentsString.Add("Below are different flavours of constructors to initialize the instance with a WMI object"); // IDS_CommentConstructors
 
-                CommentsString.Add("Property returns the namespace of the WMI class"); // IDS_COMMENT_ORIG_NAMESPACE
+            CommentsString.Add("Property returns the namespace of the WMI class"); // IDS_COMMENT_ORIG_NAMESPACE
 
-                CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
+            CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
 
-                CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
+            CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
 
-                CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
+            CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
 
-                CommentsString.Add(" ManagementScope of the object"); //  IDS_CommentManagementScope
+            CommentsString.Add(" ManagementScope of the object"); //  IDS_CommentManagementScope
 
-                strComment = "Property to show the autocommit behaviour for the WMI object. If this is";
-                strComment = strComment + "true then WMI object is saved to WMI then for change in every";
-                strComment = strComment + "property (ie Put is called after modification of a property) ";
-                CommentsString.Add(strComment); // IDS_CommentAutoCommitProperty
+            strComment = "Property to show the autocommit behaviour for the WMI object. If this is";
+            strComment = strComment + "true then WMI object is saved to WMI then for change in every";
+            strComment = strComment + "property (ie Put is called after modification of a property) ";
+            CommentsString.Add(strComment); // IDS_CommentAutoCommitProperty
 
-                CommentsString.Add("The ManagementPath of the underlying WMI object"); // IDS_CommentManagementPath
+            CommentsString.Add("The ManagementPath of the underlying WMI object"); // IDS_CommentManagementPath
 
-                CommentsString.Add("TypeConverter to handle null values for ValueType properties"); // IDS_COMMENT_PROP_TYPECONVERTER
+            CommentsString.Add("TypeConverter to handle null values for ValueType properties"); // IDS_COMMENT_PROP_TYPECONVERTER
 
-                CommentsString.Add(" Embedded class to represent WMI system Properties"); // IDS_CommentSystemPropertiesClass
+            CommentsString.Add(" Embedded class to represent WMI system Properties"); // IDS_CommentSystemPropertiesClass
 
-                CommentsString.Add("Enumerator implementation for enumerating instances of the class"); // IDS_CommentEnumeratorImplementation
-                CommentsString.Add("Property returning the underlying lateBound object"); // IDS_CommentLateBoundProperty
+            CommentsString.Add("Enumerator implementation for enumerating instances of the class"); // IDS_CommentEnumeratorImplementation
+            CommentsString.Add("Property returning the underlying lateBound object"); // IDS_CommentLateBoundProperty
 
-                CommentsString.Add("Private property to hold the name of WMI class which created this class"); // IDS_COMMENTS_CREATEDCLASS
-                CommentsString.Add("Private variable to hold the embedded property representing the instance"); // IDS_CommentEmbeddedObject
-                CommentsString.Add("The current WMI object used"); //IDS_CommentCurrentObject
-                CommentsString.Add("Flag to indicate if an instance is an embedded object"); // IDS_CommentFlagForEmbedded
-
-            }
+            CommentsString.Add("Private property to hold the name of WMI class which created this class"); // IDS_COMMENTS_CREATEDCLASS
+            CommentsString.Add("Private variable to hold the embedded property representing the instance"); // IDS_CommentEmbeddedObject
+            CommentsString.Add("The current WMI object used"); //IDS_CommentCurrentObject
+            CommentsString.Add("Flag to indicate if an instance is an embedded object"); // IDS_CommentFlagForEmbedded
+        }
         */
+
         /// <summary>
         /// Adds comments at the begining of the class defination
         /// </summary>

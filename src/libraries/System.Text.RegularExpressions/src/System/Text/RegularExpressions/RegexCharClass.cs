@@ -37,7 +37,6 @@ namespace System.Text.RegularExpressions
         private const string NullCharString = "\0";
         private const char NullChar = '\0';
         private const char LastChar = '\uFFFF';
-        private const char GroupChar = (char)0;
 
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
@@ -1219,6 +1218,7 @@ namespace System.Text.RegularExpressions
                 {
                     bool found = false;
 
+                    const char GroupChar = (char)0;
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     string group = set.Substring(index, lastindex - index + 1);
 

@@ -13,35 +13,18 @@ Namespace Microsoft.VisualBasic
 
     Public Module Conversion
 
-        Private Const NUMPRS_LEADING_WHITE As Integer = &H1I
-        Private Const NUMPRS_TRAILING_WHITE As Integer = &H2I
         Private Const NUMPRS_LEADING_PLUS As Integer = &H4I
-        Private Const NUMPRS_TRAILING_PLUS As Integer = &H8I
         Private Const NUMPRS_LEADING_MINUS As Integer = &H10I
-        Private Const NUMPRS_TRAILING_MINUS As Integer = &H20I
         Private Const NUMPRS_HEX_OCT As Integer = &H40I
-        Private Const NUMPRS_PARENS As Integer = &H80I
         Private Const NUMPRS_DECIMAL As Integer = &H100I
-        Private Const NUMPRS_THOUSANDS As Integer = &H200I
-        Private Const NUMPRS_CURRENCY As Integer = &H400I
         Private Const NUMPRS_EXPONENT As Integer = &H800I
-        Private Const NUMPRS_USE_ALL As Integer = &H1000I
-        Private Const NUMPRS_STD As Integer = &H1FFFI
-
-        ' flags used by dwOutFlags only:
-        '
-        Private Const NUMPRS_NEG As Integer = &H10000I
-        Private Const NUMPRS_INEXACT As Integer = &H20000I
 
         ' flags used by VarNumFromParseNum to indicate acceptable result types:
         '
-        Private Const VTBIT_EMPTY As Integer = &H0
-        Private Const VTBIT_NULL As Integer = &H2
         Private Const VTBIT_I2 As Integer = &H4
         Private Const VTBIT_I4 As Integer = &H8
         Private Const VTBIT_R4 As Integer = &H10
         Private Const VTBIT_R8 As Integer = &H20
-        Private Const VTBIT_CY As Integer = &H40
         Private Const VTBIT_DATE As Integer = &H80
         Private Const VTBIT_BSTR As Integer = &H100
         Private Const VTBIT_OBJECT As Integer = &H200
@@ -59,7 +42,6 @@ Namespace Microsoft.VisualBasic
         Private Const LCID_US_ENGLISH As Integer = &H409I
         Private Const PRSFLAGS As Integer _
             = (NUMPRS_LEADING_PLUS Or NUMPRS_LEADING_MINUS Or NUMPRS_HEX_OCT Or NUMPRS_DECIMAL Or NUMPRS_EXPONENT)
-        'Private Const VTBITS As Integer = (VTBIT_I2 Or VTBIT_I4 Or VTBIT_R8 Or VTBIT_CY Or VTBIT_DECIMAL)
         Private Const VTBITS As Integer = (VTBIT_I2 Or VTBIT_I4 Or VTBIT_R8 Or VTBIT_DECIMAL)
 
         Private Const TYPE_INDICATOR_INT16 As Char = "%"c
@@ -1079,9 +1061,7 @@ NextOctCharacter:
         Private Function ShiftVTBits(ByVal vt As Integer) As Integer
             Select Case vt
                 'Case VariantType.Empty     
-                'Fall through VTBIT_EMPTY
                 'Case VariantType.Null
-                'Fall through VTBIT_NULL
                 Case VariantType.Short
                     Return VTBIT_I2
                 Case VariantType.Integer

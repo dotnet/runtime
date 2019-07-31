@@ -22,7 +22,6 @@ namespace System.ComponentModel.Composition
     [DebuggerDisplay("{Message}")]
     public class CompositionException : Exception
     {
-        private const string ErrorsKey = "Errors";
         private ReadOnlyCollection<CompositionError> _errors;
 
         /// <summary>

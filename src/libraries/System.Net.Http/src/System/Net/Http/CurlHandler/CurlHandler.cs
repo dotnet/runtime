@@ -90,9 +90,6 @@ namespace System.Net.Http
     {
         #region Constants
 
-        private const char SpaceChar = ' ';
-        private const int StatusCodeLength = 3;
-
         private const string UriSchemeHttp = "http";
         private const string UriSchemeHttps = "https";
         private const string EncodingNameGzip = "gzip";
@@ -102,8 +99,6 @@ namespace System.Net.Http
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
         private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
         private const string NoExpect = HttpKnownHeaderNames.Expect + ":";
-        private const int CurlAge = 5;
-        private const int MinCurlAge = 3;
 
         #endregion
 
@@ -116,10 +111,6 @@ namespace System.Net.Http
             new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
         };
 
-        // Max timeout value used by WinHttp handler, so mapping to that here.
-        private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-
-        private static readonly char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
         private static readonly bool s_supportsAutomaticDecompression;
         private static readonly bool s_supportsSSL;
         private static readonly bool s_supportsHttp2Multiplexing;
@@ -141,7 +132,6 @@ namespace System.Net.Http
         private bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
         private CookieContainer _cookieContainer = new CookieContainer();
         private bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
-        private TimeSpan _connectTimeout = Timeout.InfiniteTimeSpan;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;

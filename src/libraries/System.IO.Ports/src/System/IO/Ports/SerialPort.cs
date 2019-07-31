@@ -35,8 +35,6 @@ namespace System.IO.Ports
         private const int MinDataBits = 5;
         private const string DefaultNewLine = "\n";
 
-        private const string SERIAL_NAME = @"\Device\Serial";
-
         // --------- members supporting exposed properties ------------*
         private int _baudRate = DefaultBaudRate;
         private int _dataBits = DefaultDataBits;

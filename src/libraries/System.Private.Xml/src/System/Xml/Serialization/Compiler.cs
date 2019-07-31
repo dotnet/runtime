@@ -23,7 +23,6 @@ namespace System.Xml.Serialization
 
     internal class Compiler
     {
-        private bool _debugEnabled = DiagnosticsSwitches.KeepTempFiles.Enabled;
         private StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.

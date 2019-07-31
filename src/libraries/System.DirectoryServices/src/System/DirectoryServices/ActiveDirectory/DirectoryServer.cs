@@ -33,7 +33,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DS_REPSYNC_ALL_SOURCES = 0x00000010;
         internal const int DS_REPSYNCALL_ID_SERVERS_BY_DN = 0x00000004;
         internal const int DS_REPL_NOTSUPPORTED = 50;
-        private const int DS_REPL_INFO_FLAG_IMPROVE_LINKED_ATTRS = 0x00000001;
         private ReplicationConnectionCollection _inbound = null;
         private ReplicationConnectionCollection _outbound = null;
 

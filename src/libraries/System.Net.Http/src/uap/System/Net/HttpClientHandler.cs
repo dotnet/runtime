@@ -35,7 +35,6 @@ namespace System.Net.Http
     {
         private const string RequestMessageLookupKey = "System.Net.Http.HttpRequestMessage";
         private const string SavedExceptionDispatchInfoLookupKey = "System.Runtime.ExceptionServices.ExceptionDispatchInfo";
-        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
             new Lazy<bool>(InitRTCookieUsageBehaviorSupported);

@@ -13,6 +13,12 @@ namespace System.IO.Packaging
     /// </summary>
     public static partial class PackUriHelper
     {
+        // We need to perform Escaping for the following - '%'; '@'; ',' and '?' 
+        // !!Important!! - The order is important - The '%' sign should be escaped first.
+        // If any more characters need to be added to the array below they should be added at the end.
+        // All of these arrays must maintain the same ordering.
+        private static readonly char[] s_specialCharacterChars = { '%', '@', ',', '?' };
+
         #region Public Methods
 
         /// <summary>

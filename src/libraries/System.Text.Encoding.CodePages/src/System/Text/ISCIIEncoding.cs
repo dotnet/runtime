@@ -7,9 +7,7 @@
 //  Ported from windows c_iscii.  If you find bugs here, there are likely similar
 //  bugs in the windows version
 
-using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.Serialization;
 
 namespace System.Text
@@ -30,17 +28,7 @@ namespace System.Text
     internal class ISCIIEncoding : EncodingNLS, ISerializable
     {
         // Constants
-        private const int CodeDefault = 0;    // 0x40       Default
-        private const int CodeRoman = 1;    // 0x41       Roman Transliteration (not supported)
         private const int CodeDevanagari = 2;    // 0x42 57002
-        private const int CodeBengali = 3;    // 0x43 57003
-        private const int CodeTamil = 4;    // 0x44 57004
-        private const int CodeTelugu = 5;    // 0x45 57005
-        private const int CodeAssamese = 6;    // 0x46 57006 Assamese (Bengali)
-        private const int CodeOriya = 7;    // 0x47 57007
-        private const int CodeKannada = 8;    // 0x48 57008
-        private const int CodeMalayalam = 9;    // 0x49 57009
-        private const int CodeGujarati = 10;   // 0x4a 57010
         private const int CodePunjabi = 11;   // 0x4b 57011 Punjabi (Gurmukhi)
 
         // Ranges

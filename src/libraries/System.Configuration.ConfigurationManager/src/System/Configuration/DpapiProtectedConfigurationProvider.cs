@@ -11,8 +11,6 @@ namespace System.Configuration
 {
     public sealed class DpapiProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
-        private const int CRYPTPROTECT_UI_FORBIDDEN = 0x1;
-        private const int CRYPTPROTECT_LOCAL_MACHINE = 0x4;
         private bool _useMachineProtection = true;
         private string _keyEntropy;
 

@@ -19,6 +19,11 @@ namespace System.Runtime.Caching
         internal static void Trace(string tagName, string message, Exception e = null)
         {
 #if DEBUG
+            if (!s_tracingEnabled)
+            {
+                return;
+            }
+
             string exceptionMessage =
                 e is null ? null :
                 e is ExternalException ee ? "Exception " + e + Environment.NewLine + "_hr=0x" + ee.ErrorCode.ToString("x", CultureInfo.InvariantCulture) :

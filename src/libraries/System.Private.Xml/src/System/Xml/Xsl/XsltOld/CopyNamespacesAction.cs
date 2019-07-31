@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-
     internal sealed class CopyNamespacesAction : Action
     {
         private const int BeginEvent = 2;
-        private const int TextEvent = 3;
         private const int EndEvent = 4;
         private const int Advance = 5;
 

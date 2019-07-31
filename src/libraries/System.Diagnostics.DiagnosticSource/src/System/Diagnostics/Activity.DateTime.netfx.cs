@@ -42,7 +42,9 @@ namespace System.Diagnostics
         private static TimeSync timeSync = new TimeSync();
 
         // sync DateTime and Stopwatch ticks every 2 hours
-        private static Timer syncTimeUpdater = InitalizeSyncTimer();
+#pragma warning disable CA1823 // suppress unused field warning, as it's used to keep the timer alive
+        private static readonly Timer syncTimeUpdater = InitalizeSyncTimer();
+#pragma warning restore CA1823
 
         [System.Security.SecuritySafeCritical]
         private static Timer InitalizeSyncTimer()

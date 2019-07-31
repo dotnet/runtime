@@ -103,7 +103,6 @@ namespace System.Text.RegularExpressions
         // indices for unique code fragments
         private const int Stackpop = 0;    // pop one
         private const int Stackpop2 = 1;    // pop two
-        private const int Stackpop3 = 2;    // pop three
         private const int Capback = 3;    // uncapture
         private const int Capback2 = 4;    // uncapture 2
         private const int Branchmarkback2 = 5;    // back2 part of branchmark

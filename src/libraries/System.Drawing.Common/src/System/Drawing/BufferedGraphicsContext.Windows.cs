@@ -12,6 +12,7 @@ namespace System.Drawing
 {
     public sealed partial class BufferedGraphicsContext : IDisposable
     {
+        private Size _bufferSize = Size.Empty;
         private Size _virtualSize;
         private Point _targetLoc;
         private IntPtr _compatDC;

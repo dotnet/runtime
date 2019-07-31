@@ -1432,7 +1432,6 @@ namespace System.Xml.Serialization
 
     internal static class DynamicAssemblies
     {
-        private static ArrayList s_assembliesInConfig = new ArrayList();
         private static volatile Hashtable s_nameToAssemblyMap = new Hashtable();
         private static volatile Hashtable s_assemblyToNameMap = new Hashtable();
         private static Hashtable s_tableIsTypeDynamic = Hashtable.Synchronized(new Hashtable());

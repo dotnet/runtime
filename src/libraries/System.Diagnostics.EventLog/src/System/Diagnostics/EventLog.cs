@@ -26,8 +26,6 @@ namespace System.Diagnostics
         internal const string DllName = "EventLogMessages.dll";
         private const string eventLogMutexName = "netfxeventlog.1.0";
         private const int DefaultMaxSize = 512 * 1024;
-        private const int DefaultRetention = 7 * SecondsPerDay;
-        private const int SecondsPerDay = 60 * 60 * 24;
 
         private EventLogInternal _underlyingEventLog;
 

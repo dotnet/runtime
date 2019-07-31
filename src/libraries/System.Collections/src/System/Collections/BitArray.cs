@@ -708,7 +708,6 @@ namespace System.Collections
 
         // XPerY=n means that n Xs can be stored in 1 Y. 
         private const int BitsPerInt32 = 32;
-        private const int BytesPerInt32 = 4;
         private const int BitsPerByte = 8;
 
         private const int BitShiftPerInt32 = 5;
