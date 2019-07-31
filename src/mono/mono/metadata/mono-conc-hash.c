@@ -65,6 +65,8 @@ conc_table_new (MonoConcGHashTable *hash, int size)
 static void
 conc_table_free (gpointer ptr)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	conc_table *table = (conc_table *)ptr;
 	if (table->gc_type & MONO_HASH_KEY_GC)
 		mono_gc_deregister_root ((char*)table->keys);

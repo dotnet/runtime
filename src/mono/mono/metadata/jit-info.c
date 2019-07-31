@@ -91,6 +91,8 @@ mono_jit_info_table_new (MonoDomain *domain)
 static void
 jit_info_table_free (MonoJitInfoTable *table, gboolean duplicate)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	int i;
 	int num_chunks = table->num_chunks;
 	MonoDomain *domain = table->domain;
