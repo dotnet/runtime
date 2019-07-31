@@ -47,9 +47,9 @@ namespace System.Buffers.Text
                         Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, pDigits, Number.DecimalNumberBufferLength);
 
                         Number.DecimalToNumber(ref value, ref number);
-                        if (number.Digits[0] == 0)	
-                        {	
-                            number.IsNegative = false; // For Decimals, -0 must print as normal 0.	
+                        if (number.Digits[0] == 0)
+                        {
+                            number.IsNegative = false; // For Decimals, -0 must print as normal 0.
                         }
                         bool success = TryFormatDecimalG(ref number, destination, out bytesWritten);
 #if DEBUG

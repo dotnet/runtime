@@ -15,8 +15,8 @@ namespace System.Reflection
 {
     public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
-        private readonly static Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
-        private readonly static List<string> s_loadFromAssemblyList = new List<string>();
+        private static readonly Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
+        private static readonly List<string> s_loadFromAssemblyList = new List<string>();
         private static bool s_loadFromHandlerSet;
         private static int s_cachedSerializationSwitch;
 
