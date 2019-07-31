@@ -199,7 +199,7 @@ jobs:
                 helixQueues: $(_helixQueues)
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
-                testScope: ${{ parameters.testScope }}
+                testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
 
                 ${{ if eq(parameters.isOfficialBuild, 'true') }}:
                   officialBuildId: $(Build.BuildNumber)
