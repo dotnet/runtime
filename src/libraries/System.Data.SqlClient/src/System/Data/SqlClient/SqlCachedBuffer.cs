@@ -17,7 +17,7 @@ using System.Data.Common;
 namespace System.Data.SqlClient
 {
     // Caches the bytes returned from partial length prefixed datatypes, like XML
-    sealed internal class SqlCachedBuffer : System.Data.SqlTypes.INullable
+    internal sealed class SqlCachedBuffer : System.Data.SqlTypes.INullable
     {
         public static readonly SqlCachedBuffer Null = new SqlCachedBuffer();
         private const int _maxChunkSize = 2048; // Arbitrary value for chunk size. Revisit this later for better perf

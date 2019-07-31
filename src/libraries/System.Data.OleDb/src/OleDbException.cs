@@ -131,7 +131,7 @@ namespace System.Data.OleDb
             }
         }
 
-        sealed internal class ErrorCodeConverter : Int32Converter
+        internal sealed class ErrorCodeConverter : Int32Converter
         {
             // converter classes should have public ctor
             public ErrorCodeConverter()
@@ -144,7 +144,7 @@ namespace System.Data.OleDb
                 {
                     throw ADP.ArgumentNull("destinationType");
                 }
-                if ((destinationType == typeof(string)) && (value != null) && (value is Int32))
+                if ((destinationType == typeof(string)) && (value != null) && (value is int))
                 {
                     return ODB.ELookup((OleDbHResult)value);
                 }

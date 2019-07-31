@@ -292,7 +292,7 @@ namespace System.Net
                 // or the query fails for some reason, don't add an SPN.
                 try
                 {
-                    string machineName = Dns.GetHostEntry(String.Empty).HostName;
+                    string machineName = Dns.GetHostEntry(string.Empty).HostName;
                     return new string[] { "HTTP/" + machineName };
                 }
                 catch (System.Net.Sockets.SocketException)

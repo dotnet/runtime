@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // Author:
-//	Sebastien Pouliot (spouliot@motus.com)
+//  Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2003 Motus Technologies Inc. (http://www.motus.com)
 

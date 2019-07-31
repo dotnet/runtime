@@ -216,7 +216,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestCustomModifiers1()
+        public static unsafe void TestCustomModifiers1()
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new CoreMetadataAssemblyResolver(), "mscorlib"))
             {

@@ -60,7 +60,7 @@ internal partial class Interop
             /// <summary>
             /// Gets the next info pointer or null if there are no more.
             /// </summary>
-            public unsafe static FILE_FULL_DIR_INFORMATION* GetNextInfo(FILE_FULL_DIR_INFORMATION* info)
+            public static unsafe FILE_FULL_DIR_INFORMATION* GetNextInfo(FILE_FULL_DIR_INFORMATION* info)
             {
                 if (info == null)
                     return null;

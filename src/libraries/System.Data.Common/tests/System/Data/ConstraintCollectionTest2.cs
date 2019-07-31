@@ -504,7 +504,7 @@ namespace System.Data.Tests
                 ds.Tables.Add(DataProvider.CreateChildDataTable());
                 Constraint badConstraint = new UniqueConstraint(ds.Tables[0].Columns[0]);
 
-                ds.Tables[1].Constraints.AddRange(new Constraint[] { badConstraint }); //Cuz foreign key belongs to child table	
+                ds.Tables[1].Constraints.AddRange(new Constraint[] { badConstraint }); //Cuz foreign key belongs to child table
             });
         }
 

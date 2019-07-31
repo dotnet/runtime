@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Dispose(true);
         }
 
-        // private Dispose method		
+        // private Dispose method
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    sealed internal class RowBinding : System.Data.ProviderBase.DbBuffer
+    internal sealed class RowBinding : System.Data.ProviderBase.DbBuffer
     {
         private readonly int _bindingCount;
         private readonly int _headerLength;

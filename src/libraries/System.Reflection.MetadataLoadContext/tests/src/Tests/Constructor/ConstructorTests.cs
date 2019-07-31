@@ -10,7 +10,7 @@ namespace System.Reflection.Tests
     public static partial class ConstructorTests
     {
         [Fact]
-        public unsafe static void TestConstructors1()
+        public static unsafe void TestConstructors1()
         {
             TestConstructors1Worker(typeof(ClassWithConstructor1<>).Project());
             TestConstructors1Worker(typeof(ClassWithConstructor1<int>).Project());

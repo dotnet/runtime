@@ -9,11 +9,11 @@ using System.CodeDom;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//	
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
     ///    <para> Represents a CIM management class from WMI. CIM (Common Information Model) classes 
-    ///			represent management information including hardware, software, processes, etc.
-    ///			For more information about the CIM classes available in Windows search for �win32 classes�.</para>
+    ///            represent management information including hardware, software, processes, etc.
+    ///            For more information about the CIM classes available in Windows search for �win32 classes�.</para>
     /// </summary>
     /// <example>
     ///    <code lang='C#'>using System;
@@ -103,8 +103,8 @@ namespace System.Management
                 // (Options, Path and Scope) would mark it as unbound
                 //
                 // ***
-                // *	Changed isBound flag to wbemObject==null check.
-                // *	newClass.IsBound = true;
+                // *    Changed isBound flag to wbemObject==null check.
+                // *    newClass.IsBound = true;
                 // ***
             }
 
@@ -466,8 +466,8 @@ namespace System.Management
             //The only flags in EnumerationOptions not valid for enumerations are EnsureLocatable & PrototypeOnly.
             o.EnsureLocatable = false; o.PrototypeOnly = false;
 
-            SecurityHandler securityHandler	= null;
-            int status						= (int)ManagementStatus.NoError;
+            SecurityHandler securityHandler = null;
+            int status                      = (int)ManagementStatus.NoError;
 
             try
             {
@@ -602,8 +602,8 @@ namespace System.Management
             
             WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
-            SecurityHandler securityHandler	= null;
-            int status						= (int)ManagementStatus.NoError;
+            SecurityHandler securityHandler = null;
+            int status                      = (int)ManagementStatus.NoError;
 
             securityHandler = Scope.GetSecurityHandler();
 
@@ -691,7 +691,7 @@ namespace System.Management
             o.EnsureLocatable = false; o.PrototypeOnly = false;
 
             SecurityHandler securityHandler = null;
-            int status						= (int)ManagementStatus.NoError;
+            int status                      = (int)ManagementStatus.NoError;
 
             try
             {
@@ -736,7 +736,7 @@ namespace System.Management
         /// <param name='options'>The specified additional options to use in the derived class retrieval.</param>
         public void GetSubclasses(ManagementOperationObserver watcher,
                                         EnumerationOptions options) 
-        { 				
+        {
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
             
@@ -762,7 +762,7 @@ namespace System.Management
             WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
             SecurityHandler securityHandler = null;
-            int status						= (int)ManagementStatus.NoError;
+            int status                      = (int)ManagementStatus.NoError;
 
             securityHandler = Scope.GetSecurityHandler();
 
@@ -1040,7 +1040,7 @@ namespace System.Management
             //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
-            RelatedObjectQuery q = new RelatedObjectQuery(true,	Path.Path, 
+            RelatedObjectQuery q = new RelatedObjectQuery(true,    Path.Path, 
                                                             relatedClass,
                                                             relationshipClass, 
                                                             relatedQualifier,
@@ -1048,7 +1048,7 @@ namespace System.Management
                                                             relatedRole, thisRole);
 
             SecurityHandler securityHandler = null;
-            int status						= (int)ManagementStatus.NoError;
+            int status                      = (int)ManagementStatus.NoError;
 
             try
             {
@@ -1159,7 +1159,7 @@ namespace System.Management
                                                                 relatedRole, thisRole);
             
                 SecurityHandler securityHandler = null;
-                int status						= (int)ManagementStatus.NoError;
+                int status                      = (int)ManagementStatus.NoError;
 
                 securityHandler = Scope.GetSecurityHandler();
 
@@ -1254,7 +1254,7 @@ namespace System.Management
                                                         relationshipQualifier, thisRole);
             
             SecurityHandler securityHandler = null;
-            int status						= (int)ManagementStatus.NoError;
+            int status                      = (int)ManagementStatus.NoError;
 
             //Execute WMI query
             try
@@ -1359,7 +1359,7 @@ namespace System.Management
                         relationshipQualifier, thisRole);
 
                 SecurityHandler securityHandler = null;
-                int status						= (int)ManagementStatus.NoError;
+                int status                      = (int)ManagementStatus.NoError;
 
                 securityHandler = Scope.GetSecurityHandler();
 

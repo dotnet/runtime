@@ -13,7 +13,7 @@ internal partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/hh449422.aspx
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal unsafe static extern IntPtr CreateFile2(
+        internal static extern unsafe IntPtr CreateFile2(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
@@ -85,7 +85,7 @@ internal partial class Interop
             }
         }
 
-        internal unsafe static IntPtr CreateFile_IntPtr(
+        internal static unsafe IntPtr CreateFile_IntPtr(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,

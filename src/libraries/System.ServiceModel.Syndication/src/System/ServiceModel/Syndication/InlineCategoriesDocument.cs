@@ -45,6 +45,6 @@ namespace System.ServiceModel.Syndication
 
         internal override bool IsInline => true;
 
-        internal protected virtual SyndicationCategory CreateCategory() => new SyndicationCategory();
+        protected internal virtual SyndicationCategory CreateCategory() => new SyndicationCategory();
     }
 }

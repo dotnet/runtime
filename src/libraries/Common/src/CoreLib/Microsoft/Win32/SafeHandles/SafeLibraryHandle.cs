@@ -4,7 +4,7 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
-    sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeLibraryHandle() : base(true) { }
 

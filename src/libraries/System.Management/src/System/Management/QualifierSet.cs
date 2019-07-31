@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//	
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
     /// <para> Represents a collection of <see cref='System.Management.QualifierData'/> objects.</para>
     /// </summary>
@@ -83,8 +83,8 @@ namespace System.Management
         /// </summary>
         private IWbemQualifierSetFreeThreaded GetTypeQualifierSet(QualifierType qualifierSetType)
         {
-            IWbemQualifierSetFreeThreaded qualifierSet	= null;
-            int status						= (int)ManagementStatus.NoError;
+            IWbemQualifierSetFreeThreaded qualifierSet    = null;
+            int status                        = (int)ManagementStatus.NoError;
 
             switch (qualifierSetType) 
             {
@@ -98,7 +98,7 @@ namespace System.Management
                     status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
                     break;
                 default :
-                    throw new ManagementException(ManagementStatus.Unexpected, null, null);	// Is this the best fit error ??
+                    throw new ManagementException(ManagementStatus.Unexpected, null, null);    // Is this the best fit error ??
             }
 
             if (status < 0)
@@ -315,13 +315,13 @@ namespace System.Management
             internal QualifierDataEnumerator(ManagementBaseObject parent, string propertyOrMethodName, 
                                                         QualifierType qualifierType)
             {
-                this.parent						= parent;
-                this.propertyOrMethodName		= propertyOrMethodName;
-                this.qualifierType				= qualifierType;
-                this.qualifierNames				= null;
+                this.parent               = parent;
+                this.propertyOrMethodName = propertyOrMethodName;
+                this.qualifierType        = qualifierType;
+                this.qualifierNames       = null;
 
-                IWbemQualifierSetFreeThreaded qualifierSet	= null;
-                int status						= (int)ManagementStatus.NoError;
+                IWbemQualifierSetFreeThreaded qualifierSet = null;
+                int status = (int)ManagementStatus.NoError;
 
                 switch (qualifierType) 
                 {
@@ -335,13 +335,13 @@ namespace System.Management
                         status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
                         break;
                     default :
-                        throw new ManagementException(ManagementStatus.Unexpected, null, null);	// Is this the best fit error ??
+                        throw new ManagementException(ManagementStatus.Unexpected, null, null);    // Is this the best fit error ??
                 }
 
                 // If we got an error code back, assume there are NO qualifiers for this object/property/method
                 if(status < 0)
                 {
-                    qualifierNames = Array.Empty<String>();
+                    qualifierNames = Array.Empty<string>();
                 }
                 else
                 {

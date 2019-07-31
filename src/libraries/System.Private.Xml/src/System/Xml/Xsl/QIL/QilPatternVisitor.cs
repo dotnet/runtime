@@ -269,7 +269,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// A bit vector holding a set of rewrites.
         /// </summary>
-        sealed internal class QilPatterns
+        internal sealed class QilPatterns
         {
             private readonly BitArray _bits;
 

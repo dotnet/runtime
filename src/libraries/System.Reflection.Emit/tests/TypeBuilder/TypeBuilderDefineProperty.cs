@@ -25,11 +25,11 @@ namespace System.Reflection.Emit.Tests
         
             // Invalid unicode
             yield return new object[] { "\uDC00", (PropertyAttributes)0x8000, typeof(EmptyGenericStruct<string>), new Type[] { typeof(EmptyGenericClass<string>) }, "\uFFFD", PropertyAttributes.None };
-			yield return new object[] { "\uD800", PropertyAttributes.None, typeof(int).MakeByRefType(), new Type[] { typeof(int).MakeByRefType() }, "\uFFFD", PropertyAttributes.None };
-			yield return new object[] { "1A\0\t\v\r\n\n\uDC81\uDC91", PropertyAttributes.None, typeof(int).MakePointerType(), new Type[] { typeof(int).MakePointerType() }, "1A", PropertyAttributes.None };
-		}
+            yield return new object[] { "\uD800", PropertyAttributes.None, typeof(int).MakeByRefType(), new Type[] { typeof(int).MakeByRefType() }, "\uFFFD", PropertyAttributes.None };
+            yield return new object[] { "1A\0\t\v\r\n\n\uDC81\uDC91", PropertyAttributes.None, typeof(int).MakePointerType(), new Type[] { typeof(int).MakePointerType() }, "1A", PropertyAttributes.None };
+        }
 
-		[Theory]
+        [Theory]
         [MemberData(nameof(TestData))]
         public void DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[] parameterTypes, string expectedName, PropertyAttributes expectedPropertyAttributes)
         {

@@ -13,7 +13,7 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe extern SocketError WSARecv(
+        internal static extern unsafe SocketError WSARecv(
             SafeHandle socketHandle,
             WSABuffer* buffer,
             int bufferCount,

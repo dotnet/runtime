@@ -11,7 +11,7 @@ namespace System
         /// <summary>
         /// Returns a string from the given span, terminating the string at null if present.
         /// </summary>
-        internal unsafe static string GetStringFromFixedBuffer(this ReadOnlySpan<char> span)
+        internal static unsafe string GetStringFromFixedBuffer(this ReadOnlySpan<char> span)
         {
             fixed (char* c = &MemoryMarshal.GetReference(span))
             {
@@ -22,7 +22,7 @@ namespace System
         /// <summary>
         /// Gets the null-terminated string length of the given span.
         /// </summary>
-        internal unsafe static int GetFixedBufferStringLength(this ReadOnlySpan<char> span)
+        internal static unsafe int GetFixedBufferStringLength(this ReadOnlySpan<char> span)
         {
             int length = span.IndexOf('\0');
             return length < 0 ? span.Length : length;
@@ -32,7 +32,7 @@ namespace System
         /// Returns true if the given string equals the given span.
         /// The span's logical length is to the first null if present.
         /// </summary>
-        internal unsafe static bool FixedBufferEqualsString(this ReadOnlySpan<char> span, string value)
+        internal static unsafe bool FixedBufferEqualsString(this ReadOnlySpan<char> span, string value)
         {
             if (value == null || value.Length > span.Length)
                 return false;

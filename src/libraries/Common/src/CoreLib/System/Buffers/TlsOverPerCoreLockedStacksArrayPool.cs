@@ -50,7 +50,7 @@ namespace System.Buffers
 
         private int _callbackCreated;
 
-        private readonly static bool s_trimBuffers = GetTrimBuffers();
+        private static readonly bool s_trimBuffers = GetTrimBuffers();
 
         /// <summary>
         /// Used to keep track of all thread local buckets for trimming if needed

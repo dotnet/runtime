@@ -36,7 +36,7 @@ namespace System.Threading
         private readonly CancellationTokenSource? _source;
         //!! warning. If more fields are added, the assumptions in CreateLinkedToken may no longer be valid
 
-        private readonly static Action<object?> s_actionToActionObjShunt = obj =>
+        private static readonly Action<object?> s_actionToActionObjShunt = obj =>
         {
             Debug.Assert(obj is Action, $"Expected {typeof(Action)}, got {obj}");
             ((Action)obj)();

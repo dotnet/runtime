@@ -257,7 +257,7 @@ namespace System.Data.Tests
             {
                 DataSet ds = DataProvider.CreateForeignConstraint();
 
-                ds.Tables[0].Rows.Clear(); //Try to clear the parent table		
+                ds.Tables[0].Rows.Clear(); //Try to clear the parent table
             });
         }
 

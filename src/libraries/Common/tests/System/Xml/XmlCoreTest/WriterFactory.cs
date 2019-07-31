@@ -27,10 +27,10 @@ namespace XmlCoreTest.Common
         Async = 1024,
         NoAsync = 2048,
 
-        UTF8Writer = 1,	          // V2 writer with Encoding.UTF8
+        UTF8Writer = 1,           // V2 writer with Encoding.UTF8
         UnicodeWriter = 2,        // V2 writer with Encoding.Unicode
         CustomWriter = 4,         // CustomWriter implemented in this same folder
-        CharCheckingWriter = 8,	  // CharCheckingWriter implemented in this same folder
+        CharCheckingWriter = 8,   // CharCheckingWriter implemented in this same folder
         UTF8WriterIndent = 16,    // UTF8WriterIndent implemented in this same folder
         UnicodeWriterIndent = 32, // UnicodeWriterIndent implemented in this same folder
         WrappedWriter = 64        // WrappedWriter implemented in this same folder

@@ -51,34 +51,34 @@ namespace System.DirectoryServices.ActiveDirectory
 
         /*
 
-		#define LANG_ENGLISH                     0x09
-		#define SUBLANG_ENGLISH_US               0x01    // English (USA)	
-		#define SORT_DEFAULT                     0x0     // sorting default	
+        #define LANG_ENGLISH                     0x09
+        #define SUBLANG_ENGLISH_US               0x01    // English (USA)
+        #define SORT_DEFAULT                     0x0     // sorting default
 
-		#define NORM_IGNORECASE           0x00000001  // ignore case
-		#define NORM_IGNORENONSPACE       0x00000002  // ignore nonspacing chars
-		#define NORM_IGNORESYMBOLS        0x00000004  // ignore symbols
-		#define NORM_IGNOREKANATYPE       0x00010000  // ignore kanatype
-		#define NORM_IGNOREWIDTH          0x00020000  // ignore width	
+        #define NORM_IGNORECASE           0x00000001  // ignore case
+        #define NORM_IGNORENONSPACE       0x00000002  // ignore nonspacing chars
+        #define NORM_IGNORESYMBOLS        0x00000004  // ignore symbols
+        #define NORM_IGNOREKANATYPE       0x00010000  // ignore kanatype
+        #define NORM_IGNOREWIDTH          0x00020000  // ignore width
 
-		#define SORT_STRINGSORT           0x00001000  // use string sort method
-		
-		#define MAKELANGID(p, s)       ((((WORD  )(s)) << 10) | (WORD  )(p))
+        #define SORT_STRINGSORT           0x00001000  // use string sort method
+        
+        #define MAKELANGID(p, s)       ((((WORD  )(s)) << 10) | (WORD  )(p))
 
-		#define MAKELCID(lgid, srtid)  ((DWORD)((((DWORD)((WORD  )(srtid))) << 16) |  \
-	                                         ((DWORD)((WORD  )(lgid)))))
+        #define MAKELCID(lgid, srtid)  ((DWORD)((((DWORD)((WORD  )(srtid))) << 16) |  \
+                                             ((DWORD)((WORD  )(lgid)))))
 
-		#define DS_DEFAULT_LOCALE                                           \
-							(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),  \
-							SORT_DEFAULT))
+        #define DS_DEFAULT_LOCALE                                           \
+                            (MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),  \
+                            SORT_DEFAULT))
 
-		#define DS_DEFAULT_LOCALE_COMPARE_FLAGS    (NORM_IGNORECASE     |   \
-													NORM_IGNOREKANATYPE |   \
-													NORM_IGNORENONSPACE |   \
-													NORM_IGNOREWIDTH    |   \
-													SORT_STRINGSORT )
+        #define DS_DEFAULT_LOCALE_COMPARE_FLAGS    (NORM_IGNORECASE     |   \
+                                                    NORM_IGNOREKANATYPE |   \
+                                                    NORM_IGNORENONSPACE |   \
+                                                    NORM_IGNOREWIDTH    |   \
+                                                    SORT_STRINGSORT )
 
-		*/
+        */
         private static uint s_LANG_ENGLISH = 0x09;
         private static uint s_SUBLANG_ENGLISH_US = 0x01;
         private static uint s_SORT_DEFAULT = 0x0;
@@ -257,9 +257,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         //
         // DN is of the form cn=NTDS Settings, cn={dc name}, cn=Servers, cn={site name}, cn=Sites,
-        //								cn=Configuration, {defaultNamingContext}
-        //	Bind to the NTDS-DSA (parent) object for and get the dnsHostName
-        //	from there
+        //                                cn=Configuration, {defaultNamingContext}
+        //    Bind to the NTDS-DSA (parent) object for and get the dnsHostName
+        //    from there
         //
         internal static string GetDnsHostNameFromNTDSA(DirectoryContext context, string dn)
         {

@@ -11,7 +11,7 @@ namespace System.CodeDom.Compiler
 {
     public partial class CompilerResults
     {
-    	private Evidence _evidence;
+        private Evidence _evidence;
 
         [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework. Please see https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
         public Evidence Evidence

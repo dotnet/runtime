@@ -5,10 +5,10 @@
 //
 // Author:
 //  original:
-//	Sebastien Pouliot <sebastien@ximian.com>
-//	Aleksey Sanin (aleksey@aleksey.com)
+//  Sebastien Pouliot <sebastien@ximian.com>
+//  Aleksey Sanin (aleksey@aleksey.com)
 //  this file:
-//	Gert Driesen <drieseng@users.sourceforge.net>
+//  Gert Driesen <drieseng@users.sourceforge.net>
 //
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
 // (C) 2004 Novell (http://www.novell.com)
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(typeof(string)));
         }
-		
+
         [Fact]
         public static void ItDecryptsLicense()
         {

@@ -4,8 +4,8 @@
 // XmlDsigXsltTransformTest.cs - Test Cases for XmlDsigXsltTransform
 //
 // Author:
-//	Sebastien Pouliot <sebastien@ximian.com>
-//	Atsushi Enomoto <atsushi@ximian.com>
+//  Sebastien Pouliot <sebastien@ximian.com>
+//  Atsushi Enomoto <atsushi@ximian.com>
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell (http://www.novell.com)

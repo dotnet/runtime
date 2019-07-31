@@ -1004,7 +1004,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 conn.Open();
 
-                // select with SqlChars	parameter
+                // select with SqlChars parameter
                 SqlCommand cmd;
                 SqlDataReader reader;
                 using (cmd = conn.CreateCommand())
@@ -1022,7 +1022,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                 }
 
-                // select with SqlBytes	parameter
+                // select with SqlBytes parameter
                 using (cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "select EmployeeID, FirstName, LastName from Employees where EmployeeID = 2 and Convert(binary(5), Photo) = @bn ";

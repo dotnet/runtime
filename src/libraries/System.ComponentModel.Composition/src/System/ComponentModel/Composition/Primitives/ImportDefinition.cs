@@ -124,9 +124,9 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the contract name of the export required by the import definition.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing the contract name of the <see cref="Export"/> 
+        ///     A <see cref="string"/> containing the contract name of the <see cref="Export"/> 
         ///     required by the <see cref="ContractBasedImportDefinition"/>. This property should
-        ///     return <see cref="String.Empty"/> for imports that do not require a specific 
+        ///     return <see cref="string.Empty"/> for imports that do not require a specific 
         ///     contract name.
         /// </value>
         public virtual string ContractName
@@ -279,7 +279,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Returns a string representation of the import definition.
         /// </summary>
         /// <returns>
-        ///     A <see cref="String"/> containing the value of the <see cref="Constraint"/> property.
+        ///     A <see cref="string"/> containing the value of the <see cref="Constraint"/> property.
         /// </returns>
         public override string ToString()
         {

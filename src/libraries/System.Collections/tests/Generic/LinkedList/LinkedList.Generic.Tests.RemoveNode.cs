@@ -68,7 +68,7 @@ namespace System.Collections.Tests
             tempNode1 = linkedList.First;
             tempNode2 = linkedList.Last;
 
-            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
 
             InitialItems_Tests(linkedList, new T[0]);
@@ -93,7 +93,7 @@ namespace System.Collections.Tests
             linkedList.AddLast(headItems[2]);
             tempNode1 = linkedList.First.Next;
 
-            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved
             InitialItems_Tests(linkedList, new T[] { headItems[0], headItems[2] });
             VerifyRemovedNode(linkedList, new T[] { headItems[0], headItems[2] }, tempNode1, headItems[1]);
 
@@ -104,7 +104,7 @@ namespace System.Collections.Tests
             linkedList.AddLast(headItems[2]);
             tempNode1 = linkedList.Last;
 
-            linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
             InitialItems_Tests(linkedList, new T[] { headItems[0], headItems[1] });
             VerifyRemovedNode(linkedList, new T[] { headItems[0], headItems[1] }, tempNode1, headItems[2]);
 
@@ -117,9 +117,9 @@ namespace System.Collections.Tests
             tempNode2 = linkedList.First.Next;
             tempNode3 = linkedList.Last;
 
-            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved
-            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved
 
             InitialItems_Tests(linkedList, new T[0]);
             VerifyRemovedNode(tempNode1, headItems[0]);
@@ -133,7 +133,7 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < arraySize; ++i)
             {
-                linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
+                linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved
                 int startIndex = i + 1;
                 int length = arraySize - i - 1;
                 T[] expectedItems = new T[length];
@@ -148,7 +148,7 @@ namespace System.Collections.Tests
 
             for (int i = arraySize - 1; 0 <= i; --i)
             {
-                linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved		
+                linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
                 T[] expectedItems = new T[i];
                 Array.Copy(headItems, 0, expectedItems, 0, i);
                 InitialItems_Tests(linkedList, expectedItems);
@@ -159,11 +159,11 @@ namespace System.Collections.Tests
             for (int i = 0; i < arraySize; ++i)
                 linkedList.AddFirst(headItems[i]);
 
-            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved		
-            linkedList.Remove(linkedList.Last.Previous.Previous); //Remove when  VS Whidbey: 234648 is resolved		
-            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved
+            linkedList.Remove(linkedList.Last.Previous.Previous); //Remove when  VS Whidbey: 234648 is resolved
+            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.Last.Previous);
-            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
 
             //With the above remove we should have removed the first and last 3 items 
@@ -223,11 +223,11 @@ namespace System.Collections.Tests
                 ++index;
             }
 
-            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved		
-            linkedList.Remove(linkedList.Last.Previous.Previous); //Remove when  VS Whidbey: 234648 is resolved		
-            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First.Next.Next); //Remove when  VS Whidbey: 234648 is resolved
+            linkedList.Remove(linkedList.Last.Previous.Previous); //Remove when  VS Whidbey: 234648 is resolved
+            linkedList.Remove(linkedList.First.Next); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.Last.Previous);
-            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
+            linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved
             linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
 
             //[] Verify that the duplicates were removed from the beginning of the collection

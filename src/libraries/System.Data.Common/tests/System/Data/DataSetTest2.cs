@@ -278,7 +278,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("Failed to enable constraints. One or more rows contain values " + 
-                //		"violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
+                //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
             }
         }
 
@@ -301,7 +301,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("Failed to enable constraints. One or more rows contain values " + 
-                //		"violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
+                //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
             }
         }
 
@@ -341,10 +341,10 @@ namespace System.Data.Tests
             //make some changes
 
             // can't check detached
-            //		dr = ds.Tables[0].Rows[0];
-            //		arrDetached = dr.ItemArray;
-            //		dr.Delete();
-            //		ds.Tables[0].AcceptChanges();
+            //        dr = ds.Tables[0].Rows[0];
+            //        arrDetached = dr.ItemArray;
+            //        dr.Delete();
+            //        ds.Tables[0].AcceptChanges();
 
             dr = ds.Tables[0].Rows[1];
             arrDeleted = dr.ItemArray;
@@ -370,11 +370,11 @@ namespace System.Data.Tests
             object[] tmp = new object[] { dr[0, DataRowVersion.Original], dr[1, DataRowVersion.Original], dr[2, DataRowVersion.Original], dr[3, DataRowVersion.Original], dr[4, DataRowVersion.Original], dr[5, DataRowVersion.Original] };
             Assert.Equal(arrDeleted, tmp);
 
-            //	can't check it	
-            //		// GetChanges Detached
-            //		dr = ds.GetChanges(DataRowState.Detached).Tables[0].Rows[0];
-            //		object[] tmp = new object[] {dr[0,DataRowVersion.Original],dr[1,DataRowVersion.Original],dr[2,DataRowVersion.Original]};
-            //		Assert.Equal(arrDetached, tmp);
+            //    can't check it    
+            //        // GetChanges Detached
+            //        dr = ds.GetChanges(DataRowState.Detached).Tables[0].Rows[0];
+            //        object[] tmp = new object[] {dr[0,DataRowVersion.Original],dr[1,DataRowVersion.Original],dr[2,DataRowVersion.Original]};
+            //        Assert.Equal(arrDetached, tmp);
 
             // GetChanges Modified
             Assert.Equal(arrModified, ds.GetChanges(DataRowState.Modified).Tables[0].Rows[0].ItemArray);
@@ -577,7 +577,7 @@ namespace System.Data.Tests
             MemoryStream myStream = new MemoryStream(new ASCIIEncoding().GetBytes(sb.ToString()));
 
             var ds = new DataSet();
-            //	ds.ReadXml(myStream);
+            //    ds.ReadXml(myStream);
             ds.InferXmlSchema(myStream, new string[] { "urn:schemas-microsoft-com:officedata" });
             Assert.Equal(2, ds.Tables.Count);
             Assert.Equal("CategoryID", ds.Tables[0].Columns[0].ColumnName);
@@ -634,7 +634,7 @@ namespace System.Data.Tests
             MemoryStream myStream = new MemoryStream(new ASCIIEncoding().GetBytes(sb.ToString()));
 
             var ds = new DataSet();
-            //	ds.ReadXml(myStream);
+            //    ds.ReadXml(myStream);
             ds.InferXmlSchema(myStream, new string[] { "urn:schemas-microsoft-com:officedata" });
             Assert.Equal(3, ds.Tables.Count);
 
@@ -675,8 +675,8 @@ namespace System.Data.Tests
             ds.InferXmlSchema(myStream, new string[] { "http://www.xml.com/books", "http://www.w3.org/HTML/1998/html4" });
             //Assert.Equal(8, ds.Tables.Count);
 
-            //			string str1 = tempDs.GetXmlSchema(); //DataProvider.GetDSSchema(tempDs);
-            //			string str2 = ds.GetXmlSchema(); //DataProvider.GetDSSchema(ds);
+            //            string str1 = tempDs.GetXmlSchema(); //DataProvider.GetDSSchema(tempDs);
+            //            string str2 = ds.GetXmlSchema(); //DataProvider.GetDSSchema(ds);
             Assert.Equal(3, ds.Tables.Count);
             Assert.Equal("bookreview", ds.Tables[2].TableName);
             Assert.Equal(2, ds.Tables[2].Columns.Count);
@@ -1351,23 +1351,23 @@ namespace System.Data.Tests
             Assert.True(dsTarget1.Tables.Contains("NewTable"));
 
             //failed, should be success by MSDN Library documentation
-            //		// Merge MissingSchemaAction.Add - PrimaryKey
-            //		Assert.Equal(0, dsTarget1.Tables["NewTable"].PrimaryKey.Length);
+            //        // Merge MissingSchemaAction.Add - PrimaryKey
+            //        Assert.Equal(0, dsTarget1.Tables["NewTable"].PrimaryKey.Length);
             #endregion
 
             #region "ds,false,MissingSchemaAction.AddWithKey)"
             //MissingSchemaAction.Add,MissingSchemaAction.AddWithKey - behave the same, checked only Add
 
-            //		DataSet dsTarget2 = dsTarget.Copy();
-            //		dsTarget2.Merge(ds,false,MissingSchemaAction.AddWithKey);
-            //		// Merge MissingSchemaAction.AddWithKey - Column
-            //		Assert.True(dsTarget2.Tables["Table1"].Columns.Contains("NewColumn"));
+            //        DataSet dsTarget2 = dsTarget.Copy();
+            //        dsTarget2.Merge(ds,false,MissingSchemaAction.AddWithKey);
+            //        // Merge MissingSchemaAction.AddWithKey - Column
+            //        Assert.True(dsTarget2.Tables["Table1"].Columns.Contains("NewColumn"));
             //
-            //		// Merge MissingSchemaAction.AddWithKey - Table
-            //		Assert.True(dsTarget2.Tables.Contains("NewTable"));
+            //        // Merge MissingSchemaAction.AddWithKey - Table
+            //        Assert.True(dsTarget2.Tables.Contains("NewTable"));
             //
-            //		// Merge MissingSchemaAction.AddWithKey - PrimaryKey
-            //		Assert.Equal(dsTarget2.Tables["NewTable"].Columns["NewColumn1"], dsTarget2.Tables["NewTable"].PrimaryKey[0]);
+            //        // Merge MissingSchemaAction.AddWithKey - PrimaryKey
+            //        Assert.Equal(dsTarget2.Tables["NewTable"].Columns["NewColumn1"], dsTarget2.Tables["NewTable"].PrimaryKey[0]);
             #endregion
 
             #region "ds,false,MissingSchemaAction.Ignore )"
@@ -2206,19 +2206,19 @@ namespace System.Data.Tests
 
             input += "<?xml version=\"1.0\"?>";
             input += "<Stock name=\"MSFT\">";
-            input += "		<Company name=\"Microsoft Corp.\"/>";
-            input += "		<Price type=\"high\">";
-            input += "			<Value>10.0</Value>";
-            input += "			<Date>01/20/2000</Date>";
-            input += "		</Price>";
-            input += "		<Price type=\"low\">";
-            input += "			<Value>1.0</Value>";
-            input += "			<Date>03/21/2002</Date>";
-            input += "		</Price>";
-            input += "		<Price type=\"current\">";
-            input += "			<Value>3.0</Value>";
-            input += "			<Date>TODAY</Date>";
-            input += "		</Price>";
+            input += "        <Company name=\"Microsoft Corp.\"/>";
+            input += "        <Price type=\"high\">";
+            input += "            <Value>10.0</Value>";
+            input += "            <Date>01/20/2000</Date>";
+            input += "        </Price>";
+            input += "        <Price type=\"low\">";
+            input += "            <Value>1.0</Value>";
+            input += "            <Date>03/21/2002</Date>";
+            input += "        </Price>";
+            input += "        <Price type=\"current\">";
+            input += "            <Value>3.0</Value>";
+            input += "            <Date>TODAY</Date>";
+            input += "        </Price>";
             input += "</Stock>";
 
             sr = new StringReader(input);
@@ -2305,69 +2305,69 @@ namespace System.Data.Tests
 
             input += "<?xml version=\"1.0\"?>";
             input += "<Stocks>";
-            input += "		<Stock name=\"MSFT\">";
-            input += "			<Company name=\"Microsoft Corp.\" />";
-            input += "			<Company name=\"General Electric\"/>";
-            input += "			<Price type=\"high\">";
-            input += "				<Value>10.0</Value>";
-            input += "				<Date>01/20/2000</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"low\">";
-            input += "				<Value>1.0</Value>";
-            input += "				<Date>03/21/2002</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"current\">";
-            input += "				<Value>3.0</Value>";
-            input += "				<Date>TODAY</Date>";
-            input += "			</Price>";
-            input += "		</Stock>";
-            input += "		<Stock name=\"GE\">";
-            input += "			<Company name=\"GE company\"/>";
-            input += "			<Price type=\"high\">";
-            input += "				<Value>22.23</Value>";
-            input += "				<Date>02/12/2001</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"low\">";
-            input += "				<Value>1.97</Value>";
-            input += "				<Date>04/20/2003</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"current\">";
-            input += "				<Value>3.0</Value>";
-            input += "				<Date>TODAY</Date>";
-            input += "			</Price>";
-            input += "		</Stock>";
-            input += "		<Stock name=\"Intel\">";
-            input += "			<Company name=\"Intel Corp.\"/>";
-            input += "			<Company name=\"Test1\" />";
-            input += "			<Company name=\"Test2\"/>";
-            input += "			<Price type=\"high\">";
-            input += "				<Value>15.0</Value>";
-            input += "				<Date>01/25/2000</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"low\">";
-            input += "				<Value>1.0</Value>";
-            input += "				<Date>03/23/2002</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"current\">";
-            input += "				<Value>3.0</Value>";
-            input += "				<Date>TODAY</Date>";
-            input += "			</Price>";
-            input += "		</Stock>";
-            input += "		<Stock name=\"Mainsoft\">";
-            input += "			<Company name=\"Mainsoft Corp.\"/>";
-            input += "			<Price type=\"high\">";
-            input += "				<Value>30.0</Value>";
-            input += "				<Date>01/26/2000</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"low\">";
-            input += "				<Value>1.0</Value>";
-            input += "				<Date>03/26/2002</Date>";
-            input += "			</Price>";
-            input += "			<Price type=\"current\">";
-            input += "				<Value>27.0</Value>";
-            input += "				<Date>TODAY</Date>";
-            input += "			</Price>";
-            input += "		</Stock>";
+            input += "        <Stock name=\"MSFT\">";
+            input += "            <Company name=\"Microsoft Corp.\" />";
+            input += "            <Company name=\"General Electric\"/>";
+            input += "            <Price type=\"high\">";
+            input += "                <Value>10.0</Value>";
+            input += "                <Date>01/20/2000</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"low\">";
+            input += "                <Value>1.0</Value>";
+            input += "                <Date>03/21/2002</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"current\">";
+            input += "                <Value>3.0</Value>";
+            input += "                <Date>TODAY</Date>";
+            input += "            </Price>";
+            input += "        </Stock>";
+            input += "        <Stock name=\"GE\">";
+            input += "            <Company name=\"GE company\"/>";
+            input += "            <Price type=\"high\">";
+            input += "                <Value>22.23</Value>";
+            input += "                <Date>02/12/2001</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"low\">";
+            input += "                <Value>1.97</Value>";
+            input += "                <Date>04/20/2003</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"current\">";
+            input += "                <Value>3.0</Value>";
+            input += "                <Date>TODAY</Date>";
+            input += "            </Price>";
+            input += "        </Stock>";
+            input += "        <Stock name=\"Intel\">";
+            input += "            <Company name=\"Intel Corp.\"/>";
+            input += "            <Company name=\"Test1\" />";
+            input += "            <Company name=\"Test2\"/>";
+            input += "            <Price type=\"high\">";
+            input += "                <Value>15.0</Value>";
+            input += "                <Date>01/25/2000</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"low\">";
+            input += "                <Value>1.0</Value>";
+            input += "                <Date>03/23/2002</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"current\">";
+            input += "                <Value>3.0</Value>";
+            input += "                <Date>TODAY</Date>";
+            input += "            </Price>";
+            input += "        </Stock>";
+            input += "        <Stock name=\"Mainsoft\">";
+            input += "            <Company name=\"Mainsoft Corp.\"/>";
+            input += "            <Price type=\"high\">";
+            input += "                <Value>30.0</Value>";
+            input += "                <Date>01/26/2000</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"low\">";
+            input += "                <Value>1.0</Value>";
+            input += "                <Date>03/26/2002</Date>";
+            input += "            </Price>";
+            input += "            <Price type=\"current\">";
+            input += "                <Value>27.0</Value>";
+            input += "                <Date>TODAY</Date>";
+            input += "            </Price>";
+            input += "        </Stock>";
             input += "</Stocks>";
 
             sr = new StringReader(input);
@@ -3034,30 +3034,30 @@ namespace System.Data.Tests
             }
             catch (InvalidOperationException e)
             {
-                //ok 	
+                //ok     
             }
         }
 
         ///<?xml version="1.0" encoding="utf-16"?>
         ///<xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-        ///	<xs:element name="NewDataSet" msdata:IsDataSet="true">
-        ///		<xs:complexType>
-        ///			<xs:choice maxOccurs="unbounded">
-        ///				<xs:element name="Parent">
-        ///					<xs:complexType>
-        ///						<xs:sequence>
-        ///							<xs:element name="ParentId" type="xs:int" minOccurs="0"/>
-        ///							<xs:element name="String1" type="xs:string" minOccurs="0"/>
-        ///							<xs:element name="String2" type="xs:string" minOccurs="0"/>
-        ///							<xs:element name="ParentDateTime" type="xs:dateTime" minOccurs="0"/>
-        ///							<xs:element name="ParentDouble" type="xs:double" minOccurs="0"/>
-        ///							<xs:element name="ParentBool" type="xs:boolean" minOccurs="0"/>
-        ///						</xs:sequence>
-        ///					</xs:complexType>
-        ///				</xs:element>
-        ///			</xs:choice>
-        ///		</xs:complexType>
-        ///	</xs:element>
+        ///    <xs:element name="NewDataSet" msdata:IsDataSet="true">
+        ///        <xs:complexType>
+        ///            <xs:choice maxOccurs="unbounded">
+        ///                <xs:element name="Parent">
+        ///                    <xs:complexType>
+        ///                        <xs:sequence>
+        ///                            <xs:element name="ParentId" type="xs:int" minOccurs="0"/>
+        ///                            <xs:element name="String1" type="xs:string" minOccurs="0"/>
+        ///                            <xs:element name="String2" type="xs:string" minOccurs="0"/>
+        ///                            <xs:element name="ParentDateTime" type="xs:dateTime" minOccurs="0"/>
+        ///                            <xs:element name="ParentDouble" type="xs:double" minOccurs="0"/>
+        ///                            <xs:element name="ParentBool" type="xs:boolean" minOccurs="0"/>
+        ///                        </xs:sequence>
+        ///                    </xs:complexType>
+        ///                </xs:element>
+        ///            </xs:choice>
+        ///        </xs:complexType>
+        ///    </xs:element>
         ///</xs:schema>
 
         [Fact]

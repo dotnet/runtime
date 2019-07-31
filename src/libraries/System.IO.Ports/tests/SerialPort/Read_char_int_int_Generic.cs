@@ -110,7 +110,7 @@ namespace System.IO.Ports.Tests
 
 
                 com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-                //		com.Encoding = new System.Text.UTF7Encoding();
+                //        com.Encoding = new System.Text.UTF7Encoding();
                 com.Encoding = Encoding.Unicode;
 
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);

@@ -12,7 +12,7 @@ using System.Runtime.Versioning;
 
 namespace System.Data.OleDb
 {
-    sealed internal class OleDbConnectionFactory : DbConnectionFactory
+    internal sealed class OleDbConnectionFactory : DbConnectionFactory
     {
         private OleDbConnectionFactory() : base() { }
         // At this time, the OleDb Managed Provider doesn't have any connection pool
@@ -56,7 +56,7 @@ namespace System.Data.OleDb
 
             NameValueCollection settings = (NameValueCollection)ConfigurationManager.GetSection("system.data.oledb");
             Stream XMLStream = null;
-            String providerFileName = oleDbOuterConnection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_PROVIDERFILENAME) as string;
+            string providerFileName = oleDbOuterConnection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_PROVIDERFILENAME) as string;
 
             if (settings != null)
             {

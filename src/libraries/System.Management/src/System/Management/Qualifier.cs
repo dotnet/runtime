@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//	
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
     ///    <para> Contains information about a WMI qualifier.</para>
     /// </summary>
@@ -55,7 +55,7 @@ namespace System.Management
         private int qualifierFlavor;
         private IWbemQualifierSetFreeThreaded qualifierSet;
 
-        internal QualifierData(ManagementBaseObject parent, string propName, string qualName, QualifierType type)		
+        internal QualifierData(ManagementBaseObject parent, string propName, string qualName, QualifierType type)
         {
             this.parent = parent;
             this.propertyOrMethodName = propName;

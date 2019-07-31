@@ -1052,10 +1052,10 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets or sets the <see cref="System.Object"/> at the specified index.
+            /// Gets or sets the <see cref="object"/> at the specified index.
             /// </summary>
             /// <value>
-            /// The <see cref="System.Object"/>.
+            /// The <see cref="object"/>.
             /// </value>
             /// <param name="index">The index.</param>
             /// <returns></returns>
@@ -1100,7 +1100,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
+                        System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;

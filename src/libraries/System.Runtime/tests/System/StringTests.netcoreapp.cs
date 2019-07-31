@@ -841,7 +841,7 @@ namespace System.Tests
         [Theory]
         [InlineData("")] // empty string
         [InlineData("hello")] // non-empty string
-        public unsafe static void GetPinnableReference_ReturnsSameAsGCHandleAndLegacyFixed(string input)
+        public static unsafe void GetPinnableReference_ReturnsSameAsGCHandleAndLegacyFixed(string input)
         {
             Assert.NotNull(input); // test shouldn't have null input
 
@@ -896,7 +896,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public unsafe static void GetPinnableReference_WithNullInput_ThrowsNullRef()
+        public static unsafe void GetPinnableReference_WithNullInput_ThrowsNullRef()
         {
             // This test uses an explicit call instead of the normal callvirt that C# would emit.
             // This allows us to make sure the NullReferenceException is coming from *within*
@@ -1241,7 +1241,7 @@ namespace System.Tests
         /// <summary>
         /// Returns true only if U+0020 SPACE is represented as the single byte 0x20 in the active code page.
         /// </summary>
-        public unsafe static bool IsSimpleActiveCodePage
+        public static unsafe bool IsSimpleActiveCodePage
         {
             get
             {

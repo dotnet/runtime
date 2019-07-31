@@ -5,10 +5,10 @@
 //
 // Author:
 //  original:
-//	Sebastien Pouliot <sebastien@ximian.com>
-//	Aleksey Sanin (aleksey@aleksey.com)
+//  Sebastien Pouliot <sebastien@ximian.com>
+//  Aleksey Sanin (aleksey@aleksey.com)
 //  this file:
-//	Atsushi Enomoto <atsushi@ximian.com>
+//  Atsushi Enomoto <atsushi@ximian.com>
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        //		[Ignore ("This test should be fine, but it does not pass under MS.NET")]
+        //        [Ignore ("This test should be fine, but it does not pass under MS.NET")]
         public void ExcC14NSpecExample4()
         {
             string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample4Input);
@@ -456,7 +456,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "       <e7 xmlns=\"http://www.ietf.org\">\n" +
                 "           <e8 xmlns=\"\">\n" +
                 "               <e9 attr=\"default\"></e9>\n" +
-                //	    	        "               <e9 xmlns:a=\"http://www.ietf.org\"></e9>\n" +
+                //                    "               <e9 xmlns:a=\"http://www.ietf.org\"></e9>\n" +
                 "           </e8>\n" +
                 "       </e7>\n" +
                 "   </e6>\n" +

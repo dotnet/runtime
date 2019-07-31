@@ -26,7 +26,7 @@ namespace System.Tests
         /// <summary>
         /// Mimics returning a literal <see cref="Utf8String"/> instance.
         /// </summary>
-        public unsafe static Utf8String u8(string str)
+        public static unsafe Utf8String u8(string str)
         {
             if (str is null)
             {

@@ -6,13 +6,13 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-	public class CodeTypeConstructorTests : CodeObjectTestBase<CodeTypeConstructor>
-	{
-		[Fact]
-		public void Ctor_Default()
-		{
-			var constructor = new CodeTypeConstructor();
-			Assert.Equal(".cctor", constructor.Name);
-		}
-	}
+    public class CodeTypeConstructorTests : CodeObjectTestBase<CodeTypeConstructor>
+    {
+        [Fact]
+        public void Ctor_Default()
+        {
+            var constructor = new CodeTypeConstructor();
+            Assert.Equal(".cctor", constructor.Name);
+        }
+    }
 }

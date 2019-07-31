@@ -290,7 +290,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe static void NarrowUtf16ToAscii_EmptyInput_NullReferences()
+        public static unsafe void NarrowUtf16ToAscii_EmptyInput_NullReferences()
         {
             Assert.Equal(UIntPtr.Zero, _fnNarrowUtf16ToAscii.Delegate(null, null, UIntPtr.Zero));
         }

@@ -81,7 +81,7 @@ namespace System.Reflection.Internal
 
         [DllImport(@"kernel32.dll", EntryPoint = "ReadFile", ExactSpelling = true, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe extern bool ReadFile(
+        internal static extern unsafe bool ReadFile(
              SafeHandle fileHandle,
              byte* buffer,
              int byteCount,

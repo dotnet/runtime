@@ -82,13 +82,13 @@ namespace System.Reflection.Tests
     //Metadata for Reflection
     public class TypeInfoEventBaseClass
     {
-        public event EventHandler EventPublic;					// inherited
+        public event EventHandler EventPublic;     // inherited
         public static event EventHandler EventPublicStatic;
     }
 
     public class TypeInfoEventSubClass : TypeInfoEventBaseClass
     {
-        public new event EventHandler EventPublic;	//overrides event				
+        public new event EventHandler EventPublic; //overrides event                
         public event EventHandler EventPublicNew;  // new event
     }
 }

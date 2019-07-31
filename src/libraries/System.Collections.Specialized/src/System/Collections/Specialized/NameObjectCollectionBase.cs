@@ -17,8 +17,8 @@ using System.Runtime.Serialization;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    /// <para>Provides the <see langword='abstract '/>base class for a sorted collection of associated <see cref='System.String' qualify='true'/> keys
-    ///    and <see cref='System.Object' qualify='true'/> values that can be accessed either with the hash code of
+    /// <para>Provides the <see langword='abstract '/>base class for a sorted collection of associated <see cref='string' qualify='true'/> keys
+    ///    and <see cref='object' qualify='true'/> values that can be accessed either with the hash code of
     ///    the key or with the index.</para>
     /// </devdoc>
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
@@ -395,7 +395,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        /// <para>Returns a <see cref='System.String' qualify='true'/> array containing all the keys in the
+        /// <para>Returns a <see cref='string' qualify='true'/> array containing all the keys in the
         /// <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected string[] BaseGetAllKeys()
@@ -410,7 +410,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Returns an <see cref='System.Object' qualify='true'/> array containing all the values in the
+        /// <para>Returns an <see cref='object' qualify='true'/> array containing all the values in the
         /// <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected object[] BaseGetAllValues()
@@ -541,7 +541,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        /// <para>Represents a collection of the <see cref='System.String' qualify='true'/> keys of a collection.</para>
+        /// <para>Represents a collection of the <see cref='string' qualify='true'/> keys of a collection.</para>
         /// </devdoc>
         public class KeysCollection : ICollection
         {

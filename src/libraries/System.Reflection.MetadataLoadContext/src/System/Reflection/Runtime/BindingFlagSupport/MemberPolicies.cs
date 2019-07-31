@@ -190,32 +190,32 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (t.Equals(typeof(FieldInfo)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Field;
-                Default = (MemberPolicies<M>)(Object)(new FieldPolicies());
+                Default = (MemberPolicies<M>)(object)(new FieldPolicies());
             }
             else if (t.Equals(typeof(MethodInfo)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Method;
-                Default = (MemberPolicies<M>)(Object)(new MethodPolicies());
+                Default = (MemberPolicies<M>)(object)(new MethodPolicies());
             }
             else if (t.Equals(typeof(ConstructorInfo)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Constructor;
-                Default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
+                Default = (MemberPolicies<M>)(object)(new ConstructorPolicies());
             }
             else if (t.Equals(typeof(PropertyInfo)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property; ;
-                Default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
+                Default = (MemberPolicies<M>)(object)(new PropertyPolicies());
             }
             else if (t.Equals(typeof(EventInfo)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Event;
-                Default = (MemberPolicies<M>)(Object)(new EventPolicies());
+                Default = (MemberPolicies<M>)(object)(new EventPolicies());
             }
             else if (t.Equals(typeof(Type)))
             {
                 MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.NestedType;
-                Default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
+                Default = (MemberPolicies<M>)(object)(new NestedTypePolicies());
             }
             else
             {

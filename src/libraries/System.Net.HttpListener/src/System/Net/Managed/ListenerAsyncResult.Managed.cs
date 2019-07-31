@@ -4,7 +4,7 @@
 // System.Net.ListenerAsyncResult
 //
 // Authors:
-//	Gonzalo Paniagua Javier (gonzalo@ximian.com)
+//  Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //
 // Copyright (c) 2005 Ximian, Inc (http://www.ximian.com)
 //

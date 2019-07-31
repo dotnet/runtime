@@ -40,7 +40,7 @@ namespace System.Data.SqlTypes
 
         public SqlXml(XmlReader value)
         {
-            // whoever pass in the XmlReader is responsible for closing it			  
+            // whoever pass in the XmlReader is responsible for closing it
             if (value == null)
             {
                 SetNull();
@@ -208,7 +208,7 @@ namespace System.Data.SqlTypes
                 ww.WriteNode(reader, true);
             }
             ww.Flush();
-            // set the stream to the beginning			
+            // set the stream to the beginning
             writerStream.Seek(0, SeekOrigin.Begin);
             return writerStream;
         }
@@ -269,17 +269,17 @@ namespace System.Data.SqlTypes
         {
             return new XmlQualifiedName("anyType", XmlSchema.Namespace);
         }
-    } // SqlXml 		
+    } // SqlXml
 
     // two purposes for this class
     // 1) keep its internal position so one reader positions on the orginial stream 
-    //	  will not interface with the other
+    //    will not interface with the other
     // 2) when xmlreader calls close, do not close the orginial stream
     //
     internal sealed class SqlXmlStreamWrapper : Stream
     {
         // --------------------------------------------------------------
-        //	  Data members
+        //      Data members
         // --------------------------------------------------------------
 
         private Stream _stream;
@@ -287,7 +287,7 @@ namespace System.Data.SqlTypes
         private bool _isClosed;
 
         // --------------------------------------------------------------
-        //	  Constructor(s)
+        //      Constructor(s)
         // --------------------------------------------------------------
 
         internal SqlXmlStreamWrapper(Stream stream)
@@ -299,7 +299,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public properties
+        //      Public properties
         // --------------------------------------------------------------
 
         // Always can read/write/seek, unless stream is null, 
@@ -365,7 +365,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public methods
+        //      Public methods
         // --------------------------------------------------------------
 
         public override long Seek(long offset, SeekOrigin origin)

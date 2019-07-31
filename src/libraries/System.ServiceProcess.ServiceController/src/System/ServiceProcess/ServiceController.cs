@@ -132,7 +132,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (String.IsNullOrEmpty(_displayName))
+                if (string.IsNullOrEmpty(_displayName))
                     GenerateNames();
                 return _displayName;
             }
@@ -241,7 +241,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (String.IsNullOrEmpty(_name))
+                if (string.IsNullOrEmpty(_name))
                     GenerateNames();
                 return _name;
             }
@@ -481,13 +481,13 @@ namespace System.ServiceProcess
         {
             GetDataBaseHandleWithConnectAccess();
 
-            if (String.IsNullOrEmpty(_name))
+            if (string.IsNullOrEmpty(_name))
             {
                 // Figure out the _name based on the information we have. 
                 // We must either have _displayName or the constructor parameter _eitherName.
-                string userGivenName = String.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
+                string userGivenName = string.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
 
-                if (String.IsNullOrEmpty(userGivenName))
+                if (string.IsNullOrEmpty(userGivenName))
                     throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString()));
 
                 // Try it as a display name
@@ -514,7 +514,7 @@ namespace System.ServiceProcess
                 _displayName = result;
                 _eitherName = null;
             }
-            else if (String.IsNullOrEmpty(_displayName))
+            else if (string.IsNullOrEmpty(_displayName))
             {
                 // We must have _name
                 string result = GetServiceDisplayName(_serviceManagerHandle, _name);

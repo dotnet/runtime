@@ -36,11 +36,11 @@ namespace System.Xml.Resolvers
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
             {
-                return Task.FromResult<Object>(data.AsStream());
+                return Task.FromResult<object>(data.AsStream());
             }
             else if (ofObjectToReturn == typeof(TextReader))
             {
-                return Task.FromResult<Object>(data.AsTextReader());
+                return Task.FromResult<object>(data.AsTextReader());
             }
             else
             {

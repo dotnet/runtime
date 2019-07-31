@@ -54,7 +54,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
                             // Check the client context for encryption state
                             if (Client.Context.Encryption != TDSEncryptionType.Off)
                             {
-                                // Turn on encryption before sending the response								
+                                // Turn on encryption before sending the response
                                 EnableClientTransportEncryption(Client.Context.ServerHost);
                             }
 

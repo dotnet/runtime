@@ -75,5 +75,5 @@ namespace System.Reflection.Context.Virtual
                 return GetCustomAttributes(attributeType, inherit).Length > 0;
             }
         }
-	}
+    }
 }

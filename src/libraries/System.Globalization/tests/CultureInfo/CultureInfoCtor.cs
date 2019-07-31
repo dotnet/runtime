@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
 
             if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
-            	Assert.Throws<CultureNotFoundException>(() => new CultureInfo("no-such-culture"));
+                Assert.Throws<CultureNotFoundException>(() => new CultureInfo("no-such-culture"));
                 Assert.Throws<CultureNotFoundException>(() => new CultureInfo("en-US-CUSTOM"));
                 Assert.Throws<CultureNotFoundException>(() => new CultureInfo("xx-XX"));
             }

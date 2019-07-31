@@ -103,7 +103,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfterWriteAsync)
                 {
-					Release();
+                    Release();
                 }
 
                 // Completed

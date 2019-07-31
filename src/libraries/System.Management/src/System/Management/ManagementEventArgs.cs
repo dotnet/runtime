@@ -188,9 +188,9 @@ public class ObjectPutEventArgs : ManagementEventArgs
 /// </summary>
 public class ProgressEventArgs : ManagementEventArgs
 {
-    private int			upperBound;
-    private int			current;
-    private string		message;
+    private int    upperBound;
+    private int    current;
+    private string message;
     
     /// <summary>
     /// Constructor

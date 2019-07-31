@@ -100,38 +100,38 @@ namespace System.IO.Tests
             }
         }
 
-	[Fact]
-	public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
-	{
-	    DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-	    var names = new List<string>();
+    [Fact]
+    public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
+    {
+        DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+        var names = new List<string>();
 
-	    for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
-	    {
-	        string name = new string('a', length);
-	        try { File.Create(Path.Join(testDirectory.FullName, name)).Dispose(); }
-	        catch { break; }
-	        names.Add(name);
-	    }
-	    Assert.InRange(names.Count, 1, int.MaxValue);
-	    Assert.Equal(names.OrderBy(n => n), Directory.GetFiles(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
-	}
+        for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
+        {
+            string name = new string('a', length);
+            try { File.Create(Path.Join(testDirectory.FullName, name)).Dispose(); }
+            catch { break; }
+            names.Add(name);
+        }
+        Assert.InRange(names.Count, 1, int.MaxValue);
+        Assert.Equal(names.OrderBy(n => n), Directory.GetFiles(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
+    }
 
-	[Fact]
-	public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
-	{
-	    DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-	    var names = new List<string>();
+    [Fact]
+    public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
+    {
+        DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+        var names = new List<string>();
 
-	    for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
-	    {
-	        string name = new string('a', length);
-	        try { Directory.CreateDirectory(Path.Join(testDirectory.FullName, name)); }
-	        catch { break; }
-	        names.Add(name);
-	    }
-	    Assert.InRange(names.Count, 1, int.MaxValue);
-	    Assert.Equal(names.OrderBy(n => n), Directory.GetDirectories(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
-	}
+        for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
+        {
+            string name = new string('a', length);
+            try { Directory.CreateDirectory(Path.Join(testDirectory.FullName, name)); }
+            catch { break; }
+            names.Add(name);
+        }
+        Assert.InRange(names.Count, 1, int.MaxValue);
+        Assert.Equal(names.OrderBy(n => n), Directory.GetDirectories(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
+    }
     }
 }

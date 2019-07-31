@@ -2,8 +2,8 @@
 // See the LICENSE file in the project root for more information.
 //
 // Authors:
-//	Lawrence Pit (loz@cable.a2000.nl)
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Lawrence Pit (loz@cable.a2000.nl)
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Portions (C) 2004 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)

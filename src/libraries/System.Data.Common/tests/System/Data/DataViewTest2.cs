@@ -690,15 +690,15 @@ namespace System.Data.Tests
         public void RowStateFilter()
         {
             /*
-				Added			A new row. 4 
-				CurrentRows		Current rows including unchanged, new, and modified rows. 22 
-				Deleted			A deleted row. 8 
-				ModifiedCurrent A current version, which is a modified version of original data (see ModifiedOriginal). 16 
-				ModifiedOriginal The original version (although it has since been modified and is available as ModifiedCurrent). 32 
-				None			None. 0 
-				OriginalRows	Original rows including unchanged and deleted rows. 42 
-				Unchanged		An unchanged row. 2 
-			 */
+                Added           A new row. 4 
+                CurrentRows     Current rows including unchanged, new, and modified rows. 22 
+                Deleted         A deleted row. 8 
+                ModifiedCurrent A current version, which is a modified version of original data (see ModifiedOriginal). 16 
+                ModifiedOriginal The original version (although it has since been modified and is available as ModifiedCurrent). 32 
+                None            None. 0 
+                OriginalRows    Original rows including unchanged and deleted rows. 42 
+                Unchanged       An unchanged row. 2 
+             */
 
             //DataRowView[] drvResult = null;
             ArrayList al = new ArrayList();
@@ -748,12 +748,12 @@ namespace System.Data.Tests
             // Deleted
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
             /*
-					//---------- OriginalRows -------- 
-					dv.RowStateFilter = DataViewRowState.OriginalRows ;
-					drResult = GetResultRows(dt,DataRowState.Unchanged | DataRowState.Deleted );
-						// OriginalRows
-						Assert.Equal(true , CompareSortedRowsByParentId(dv,drResult));
-			*/
+                    //---------- OriginalRows -------- 
+                    dv.RowStateFilter = DataViewRowState.OriginalRows ;
+                    drResult = GetResultRows(dt,DataRowState.Unchanged | DataRowState.Deleted );
+                        // OriginalRows
+                        Assert.Equal(true , CompareSortedRowsByParentId(dv,drResult));
+            */
         }
 
         private DataRow[] GetResultRows(DataTable dt, DataRowState State)
@@ -762,11 +762,11 @@ namespace System.Data.Tests
             ArrayList al = new ArrayList();
             DataRowVersion drVer = DataRowVersion.Current;
 
-            //From MSDN -	The row the default version for the current DataRowState.
-            //				For a DataRowState value of Added, Modified or Current, 
-            //				the default version is Current. 
-            //				For a DataRowState of Deleted, the version is Original.
-            //				For a DataRowState value of Detached, the version is Proposed.
+            //From MSDN -    The row the default version for the current DataRowState.
+            //                For a DataRowState value of Added, Modified or Current, 
+            //                the default version is Current. 
+            //                For a DataRowState of Deleted, the version is Original.
+            //                For a DataRowState value of Detached, the version is Proposed.
 
             if (((State & DataRowState.Added) > 0)
                 | ((State & DataRowState.Modified) > 0)
@@ -991,9 +991,9 @@ namespace System.Data.Tests
 
             dv = dt.DefaultView;
 
-            //	public DataViewManager DataViewManager {get;} -	The DataViewManager that created this view. 
-            //	If this is the default DataView for a DataTable, the DataViewManager property returns the default DataViewManager for the DataSet.
-            //	Otherwise, if the DataView was created without a DataViewManager, this property is a null reference (Nothing in Visual Basic).
+            //    public DataViewManager DataViewManager {get;} -    The DataViewManager that created this view. 
+            //    If this is the default DataView for a DataTable, the DataViewManager property returns the default DataViewManager for the DataSet.
+            //    Otherwise, if the DataView was created without a DataViewManager, this property is a null reference (Nothing in Visual Basic).
 
             dvm = dv.DataViewManager;
             Assert.Same(ds.DefaultViewManager, dvm);
@@ -1204,7 +1204,7 @@ namespace System.Data.Tests
             {
                 // Never premise English.
                 //Assert.Equal ("'columnNames' argument cannot be null." + Environment.NewLine + 
-                //		"Parameter name: columnNames", e.Message, "#1");
+                //        "Parameter name: columnNames", e.Message, "#1");
             }
             DataTable newTable1 = view.ToTable(false, new string[] { });
             Assert.Equal(10, newTable1.Rows.Count);

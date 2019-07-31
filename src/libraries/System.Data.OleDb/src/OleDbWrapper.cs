@@ -12,7 +12,7 @@ namespace System.Data.OleDb
 {
     // SafeHandle wrapper around 'DataLinks' object which pools the native OLE DB providers.
     // expect 1 per app-domain
-    sealed internal class OleDbServicesWrapper : WrappedIUnknown
+    internal sealed class OleDbServicesWrapper : WrappedIUnknown
     {
         // we expect to store IDataInitialize instance pointer in base.handle
 
@@ -88,7 +88,7 @@ namespace System.Data.OleDb
 
     // SafeHandle wrapper around 'Data Source' object which represents the connection
     // expect 1 per OleDbConnectionInternal
-    sealed internal class DataSourceWrapper : WrappedIUnknown
+    internal sealed class DataSourceWrapper : WrappedIUnknown
     {
         // we expect to store IDBInitialize instance pointer in base.handle
 
@@ -219,7 +219,7 @@ namespace System.Data.OleDb
 
     // SafeHandle wrapper around 'Session' object which represents the session on the connection
     // expect 1 per OleDbConnectionInternal
-    sealed internal class SessionWrapper : WrappedIUnknown
+    internal sealed class SessionWrapper : WrappedIUnknown
     {
         // base.handle will either reference the IUnknown interface or IDBCreateCommand interface
         // if OleDbConnectionString.DangerousIDBCreateCommandCreateCommand exists

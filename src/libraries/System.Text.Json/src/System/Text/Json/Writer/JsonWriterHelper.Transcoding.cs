@@ -26,7 +26,7 @@ namespace System.Text.Json
         /// <param name="bytesConsumed">On exit, contains the number of bytes that were consumed from the <paramref name="utf16Source"/>.</param>
         /// <param name="bytesWritten">On exit, contains the number of bytes written to <paramref name="utf8Destination"/></param>
         /// <returns>A <see cref="OperationStatus"/> value representing the state of the conversion.</returns>
-        public unsafe static OperationStatus ToUtf8(ReadOnlySpan<byte> utf16Source, Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten)
+        public static unsafe OperationStatus ToUtf8(ReadOnlySpan<byte> utf16Source, Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten)
         {
             //
             //
@@ -319,14 +319,14 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe static int PtrDiff(char* a, char* b)
+        private static unsafe int PtrDiff(char* a, char* b)
         {
             return (int)(((uint)((byte*)a - (byte*)b)) >> 1);
         }
 
         // byte* flavor just for parity
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe static int PtrDiff(byte* a, byte* b)
+        private static unsafe int PtrDiff(byte* a, byte* b)
         {
             return (int)(a - b);
         }

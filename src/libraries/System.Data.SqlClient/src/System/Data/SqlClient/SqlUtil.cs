@@ -1031,7 +1031,7 @@ namespace System.Data.SqlClient
         internal const string SqlNotificationStoredProcedureDefault = "SqlQueryNotificationStoredProcedure";
     }
 
-    sealed internal class SQLMessage
+    internal sealed class SQLMessage
     {
         private SQLMessage() { /* prevent utility class from being instantiated*/ }
 

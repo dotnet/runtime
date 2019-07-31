@@ -91,7 +91,7 @@ namespace System.Data.OleDb
         internal OleDbConnectionString(string connectionString, bool validate) : base(connectionString)
         {
             string prompt = this[KEY.Prompt];
-            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (0 != String.Compare(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase)))
+            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (0 != string.Compare(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase)))
                               || !ADP.IsEmpty(this[KEY.WindowHandle]));
 
             if (!IsEmpty)
@@ -180,7 +180,7 @@ namespace System.Data.OleDb
             if (!_hasSqlSupport)
             {
                 object value = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_SQLSUPPORT);
-                if (value is Int32)
+                if (value is int)
                 { // not OleDbPropertyStatus
                     sqlSupport = (int)value;
                 }
@@ -211,7 +211,7 @@ namespace System.Data.OleDb
             if (!_hasSupportMultipleResults)
             {
                 object value = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_MULTIPLERESULTS);
-                if (value is Int32)
+                if (value is int)
                 {// not OleDbPropertyStatus
                     supportMultipleResults = (ODB.DBPROPVAL_MR_NOTSUPPORTED != (int)value);
                 }
@@ -230,7 +230,7 @@ namespace System.Data.OleDb
                 if (!UDL._PoolSizeInit)
                 {
                     object value = ADP.LocalMachineRegistryValue(UDL.Location, UDL.Pooling);
-                    if (value is Int32)
+                    if (value is int)
                     {
                         poolsize = (int)value;
                         poolsize = ((0 < poolsize) ? poolsize : 0);
@@ -310,7 +310,7 @@ namespace System.Data.OleDb
                     }
                     else
                     {
-                        byte[] bytes = new Byte[hdrlength];
+                        byte[] bytes = new byte[hdrlength];
                         int count = fstream.Read(bytes, 0, bytes.Length);
                         if (count < hdrlength)
                         {
@@ -322,7 +322,7 @@ namespace System.Data.OleDb
                         }
                         else
                         { // please verify header before allocating memory block for connection string
-                            bytes = new Byte[length - hdrlength];
+                            bytes = new byte[length - hdrlength];
                             count = fstream.Read(bytes, 0, bytes.Length);
                             connectionString = System.Text.Encoding.Unicode.GetString(bytes, 0, count);
                         }
@@ -389,7 +389,7 @@ namespace System.Data.OleDb
             bool hasOleDBServices = (base.ContainsKey(KEY.Ole_DB_Services) && !ADP.IsEmpty((string)base[KEY.Ole_DB_Services]));
             if (!hasOleDBServices)
             { // don't touch registry if they have OLE DB Services
-                string classid = (string)ADP.ClassesRootRegistryValue(progid + "\\CLSID", String.Empty);
+                string classid = (string)ADP.ClassesRootRegistryValue(progid + "\\CLSID", string.Empty);
                 if ((null != classid) && (0 < classid.Length))
                 {
                     // CLSID detection of 'Microsoft OLE DB Provider for ODBC Drivers'

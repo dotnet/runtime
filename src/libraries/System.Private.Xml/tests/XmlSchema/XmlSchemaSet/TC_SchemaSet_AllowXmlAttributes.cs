@@ -85,7 +85,7 @@ namespace System.Xml.Tests
         }
 
         /*
-         *	Attribute Wildcards
+         *  Attribute Wildcards
          */
 
         [Theory]
@@ -134,7 +134,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v8.1.1- Attributes Wildcards(1), allowXmlAttribute=false", Priority = 1, id = 59, Params = new object[] { "v9-1.xml", "v9-1.xsd", false, 0, 0, 2 })]
         [InlineData("v9-1.xml", "v9-1.xsd", false, 0, 0, 2)]
         /*
-         *	Required and Prohibited Attributes
+         *  Required and Prohibited Attributes
          */
         //[Variation(Desc = "v7.1.8- Required and Prohibited Attributes(4), allowXmlAttribute=true", Priority = 1, id = 58, Params = new object[] { "v8-4.xml", "v8-3.xsd", true, 0, 1, 2 })]
         [InlineData("v8-4.xml", "v8-3.xsd", true, 0, 1, 2)]

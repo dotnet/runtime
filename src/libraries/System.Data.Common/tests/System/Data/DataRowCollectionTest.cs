@@ -207,7 +207,7 @@ namespace System.Data.Tests
             catch (ArgumentException e)
             {
                 // MSDN says this exception is InvalidCastException
-                //				Assert.Equal (typeof (ArgumentException), e.GetType ());
+                //                Assert.Equal (typeof (ArgumentException), e.GetType ());
             }
 
             object[] obs1 = new object[5];

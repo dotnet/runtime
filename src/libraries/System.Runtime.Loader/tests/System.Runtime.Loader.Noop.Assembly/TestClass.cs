@@ -8,11 +8,11 @@ namespace System.Runtime.Loader.Tests
 {
     public class TestClass
     {
-    	public static Assembly LoadFromDefaultContext(string assemblyNameStr)
-    	{
-    		var assemblyName = new AssemblyName(assemblyNameStr);
+        public static Assembly LoadFromDefaultContext(string assemblyNameStr)
+        {
+            var assemblyName = new AssemblyName(assemblyNameStr);
             return Assembly.Load(assemblyName);
-    	}
+        }
 
         public static Assembly GetRefEmitAssembly(string assemblyNameStr, AssemblyBuilderAccess builderType)
         {

@@ -18,6 +18,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe extern bool SetFileCompletionNotificationModes(SafeHandle handle, FileCompletionNotificationModes flags);
+        internal static extern unsafe bool SetFileCompletionNotificationModes(SafeHandle handle, FileCompletionNotificationModes flags);
     }
 }

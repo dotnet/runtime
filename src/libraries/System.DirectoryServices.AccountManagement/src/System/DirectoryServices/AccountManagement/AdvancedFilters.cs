@@ -14,7 +14,7 @@ namespace System.DirectoryServices.AccountManagement
 {
     public class AdvancedFilters
     {
-        internal protected AdvancedFilters(Principal p)
+        protected internal AdvancedFilters(Principal p)
         {
             _p = p;
         }

@@ -25,10 +25,10 @@ namespace CoreXml.Test.XLinq
         private const string COMMENT = "COMMENT_";
 
         private long _eCount = 0;    //element indexer
-        private long _aCount = 0;	//attribute indexer
+        private long _aCount = 0;    //attribute indexer
         private long _cCount = 0;    //Cdata indexer
-        private long _tCount = 0;	//Text indexer 
-        private long _pCount = 0;	//PI Indexer
+        private long _tCount = 0;    //Text indexer 
+        private long _pCount = 0;    //PI Indexer
         private long _mCount = 0;    //Comment Indexer
 
         private StreamWriter _textWriter = null;
@@ -183,7 +183,7 @@ namespace CoreXml.Test.XLinq
 
         /// Writing text.
         /// Note : This is basically equivalent to WriteRaw and the string may contain any number of embedded tags.
-        ///			No checking is performed on them either.
+        ///        No checking is performed on them either.
         public void PutText(string myStr)
         {
             _nodeQueue.Append(myStr);
@@ -248,23 +248,23 @@ namespace CoreXml.Test.XLinq
 
         /// <summary>
         /// This method is a convenience method and a shortcut to create an XML string. Each character in the pattern
-        ///	maps to a particular Put/Open function and calls it for you. For e.g. XEAA/ will call PutDecl, OpenElement, 
-        ///	PutAttribute, PutAttribute and CloseElement for you.
-        ///	The following is the list of all allowed characters and their function mappings :
+        /// maps to a particular Put/Open function and calls it for you. For e.g. XEAA/ will call PutDecl, OpenElement, 
+        /// PutAttribute, PutAttribute and CloseElement for you.
+        /// The following is the list of all allowed characters and their function mappings :
         ///
-        ///'X' :	PutDecl()
-        ///'E' :	OpenElement()
-        ///'M' :	CloseEmptyElement()
-        ///'/' :	CloseElement()
-        ///'e' :	PutEndElement()
-        ///'A' :	PutAttribute()
-        ///'P' :	PutPI()
-        ///'T' :	PutText()
-        ///'C' :	PutComment()
-        ///'R' :	PutRoot()
-        ///'r' :	PutEndRoot()
-        ///'B' :	PutEndRoot()
-        ///'W' :	PutWhiteSpace()
+        ///'X' :    PutDecl()
+        ///'E' :    OpenElement()
+        ///'M' :    CloseEmptyElement()
+        ///'/' :    CloseElement()
+        ///'e' :    PutEndElement()
+        ///'A' :    PutAttribute()
+        ///'P' :    PutPI()
+        ///'T' :    PutText()
+        ///'C' :    PutComment()
+        ///'R' :    PutRoot()
+        ///'r' :    PutEndRoot()
+        ///'B' :    PutEndRoot()
+        ///'W' :    PutWhiteSpace()
         ///
         /// </summary>
         /// <param name="pattern">String containing the pattern which you want to use to create

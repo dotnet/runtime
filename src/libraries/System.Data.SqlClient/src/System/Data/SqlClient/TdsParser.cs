@@ -3371,7 +3371,7 @@ namespace System.Data.SqlClient
             if (0 != collation.sortId)
             {
                 codePage = TdsEnums.CODE_PAGE_FROM_SORT_ID[collation.sortId];
-                Debug.Assert(0 != codePage, "GetCodePage accessed codepage array and produced 0!, sortID =" + ((Byte)(collation.sortId)).ToString((IFormatProvider)null));
+                Debug.Assert(0 != codePage, "GetCodePage accessed codepage array and produced 0!, sortID =" + ((byte)(collation.sortId)).ToString((IFormatProvider)null));
             }
             else
             {
@@ -8699,7 +8699,7 @@ namespace System.Data.SqlClient
                             return true;
                     }
                 }
-                else if ((currentType == typeof(string)) && (((String)value).Length > 0))
+                else if ((currentType == typeof(string)) && (((string)value).Length > 0))
                 {
                     if ((value != null) && (((string)value)[0] & 0xff) != 0xff)
                         return true;

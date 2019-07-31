@@ -5,9 +5,9 @@
 // System.ComponentModel.LicenseManagerTests test cases
 //
 // Authors:
-//	Ivan Hamilton (ivan@chimerical.com.au)
-//	Gonzalo Paniagua Javier (gonzalo@ximian.com)
-//	Martin Willemoes Hansen (mwh@sysrq.dk)
+//  Ivan Hamilton (ivan@chimerical.com.au)
+//  Gonzalo Paniagua Javier (gonzalo@ximian.com)
+//  Martin Willemoes Hansen (mwh@sysrq.dk)
 //
 // (c) 2002 Ximian, Inc. (http://www.ximian.com)
 // (c) 2003 Martin Willemoes Hansen

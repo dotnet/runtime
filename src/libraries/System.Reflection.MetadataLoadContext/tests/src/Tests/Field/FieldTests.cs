@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
     public static partial class FieldTests
     {
         [Fact]
-        public unsafe static void TestFields1()
+        public static unsafe void TestFields1()
         {
             TestField1Worker(typeof(ClassWithFields1<>).Project());
             TestField1Worker(typeof(ClassWithFields1<int>).Project());
@@ -111,7 +111,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestLiteralFields1()
+        public static unsafe void TestLiteralFields1()
         {
             Type t = typeof(ClassWithLiteralFields).Project();
             FieldInfo[] fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
@@ -385,7 +385,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestCustomModifiers1()
+        public static unsafe void TestCustomModifiers1()
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(
                 new FuncMetadataAssemblyResolver(
@@ -419,7 +419,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestCustomModifiers2()
+        public static unsafe void TestCustomModifiers2()
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new CoreMetadataAssemblyResolver(), "mscorlib"))
             {

@@ -4211,7 +4211,7 @@ namespace System.Xml.Serialization
                     Writer.Write('\'');
                 }
                 else if (type == typeof(int))
-                    Writer.Write(((Int32)value).ToString(null, NumberFormatInfo.InvariantInfo));
+                    Writer.Write(((int)value).ToString(null, NumberFormatInfo.InvariantInfo));
                 else if (type == typeof(double))
                 {
                     if (double.IsNaN((double)value))
@@ -4228,7 +4228,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        Writer.Write(((Double)value).ToString("R", NumberFormatInfo.InvariantInfo));
+                        Writer.Write(((double)value).ToString("R", NumberFormatInfo.InvariantInfo));
                     }
                 }
                 else if (type == typeof(bool))
@@ -4258,13 +4258,13 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        Writer.Write(((Single)value).ToString("R", NumberFormatInfo.InvariantInfo));
+                        Writer.Write(((float)value).ToString("R", NumberFormatInfo.InvariantInfo));
                         Writer.Write("f");
                     }
                 }
                 else if (type == typeof(decimal))
                 {
-                    Writer.Write(((Decimal)value).ToString(null, NumberFormatInfo.InvariantInfo));
+                    Writer.Write(((decimal)value).ToString(null, NumberFormatInfo.InvariantInfo));
                     Writer.Write("m");
                 }
                 else if (type == typeof(DateTime))

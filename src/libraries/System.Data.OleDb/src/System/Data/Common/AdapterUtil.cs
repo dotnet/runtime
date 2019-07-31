@@ -1036,7 +1036,7 @@ namespace System.Data.Common
             return FileVersionInfo.GetVersionInfo(filename);
         }
 
-        static internal Stream GetXmlStreamFromValues(String[] values, String errorString)
+        static internal Stream GetXmlStreamFromValues(string[] values, string errorString)
         {
             if (values.Length != 1)
             {
@@ -1048,7 +1048,7 @@ namespace System.Data.Common
         // metadata files are opened from <.NetRuntimeFolder>\CONFIG\<metadatafilename.xml>
         // this operation is safe in SxS because the file is opened in read-only mode and each NDP runtime accesses its own copy of the metadata
         // under the runtime folder.
-        static internal Stream GetXmlStream(String value, String errorString)
+        static internal Stream GetXmlStream(string value, string errorString)
         {
             Stream XmlStream;
             const string config = "config\\";
@@ -1062,7 +1062,7 @@ namespace System.Data.Common
             tempstring.Append(rootPath);
             tempstring.Append(config);
             tempstring.Append(value);
-            String fullPath = tempstring.ToString();
+            string fullPath = tempstring.ToString();
 
             // don't allow relative paths
             if (ADP.GetFullPath(fullPath) != fullPath)
@@ -1145,10 +1145,10 @@ namespace System.Data.Common
                 else
                 {
                     string[] parts = version.Split('.');
-                    major = Int32.Parse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture);
-                    minor = Int32.Parse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture);
-                    build = Int32.Parse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture);
-                    Int32.Parse(parts[3], NumberStyles.None, CultureInfo.InvariantCulture);
+                    major = int.Parse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture);
+                    minor = int.Parse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture);
+                    build = int.Parse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture);
+                    int.Parse(parts[3], NumberStyles.None, CultureInfo.InvariantCulture);
                 }
             }
             catch (Exception e)
@@ -1179,7 +1179,7 @@ namespace System.Data.Common
 
         // the return value is true if the string was quoted and false if it was not
         // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
-        static internal Boolean RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
+        static internal bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
         {
             int prefixLength;
             if (quotePrefix == null)
@@ -1249,7 +1249,7 @@ namespace System.Data.Common
             return true;
         }
 
-        static internal IntPtr IntPtrOffset(IntPtr pbase, Int32 offset)
+        static internal IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
             if (4 == ADP.PtrSize)
             {
@@ -1268,8 +1268,8 @@ namespace System.Data.Common
             else
             {
                 long lval = (long)value;
-                lval = Math.Min((long)Int32.MaxValue, lval);
-                lval = Math.Max((long)Int32.MinValue, lval);
+                lval = Math.Min((long)int.MaxValue, lval);
+                lval = Math.Max((long)int.MinValue, lval);
                 return (int)lval;
             }
         }

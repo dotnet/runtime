@@ -40,19 +40,19 @@ namespace Microsoft.SqlServer.TDS.EndPoint
         /// <summary>
         /// It is called when SPNEGO response arrives
         /// </summary>
-        /// <param name="packet">TDS message received</param>		
+        /// <param name="packet">TDS message received</param>
         TDSMessage OnSSPIResponse(TDSMessage message);
 
         /// <summary>
         /// It is called when FedAuthInfoToken response arrives
         /// </summary>
-        /// <param name="packet">TDS message received</param>		
+        /// <param name="packet">TDS message received</param>
         TDSMessage OnFedAuthInfoTokenResponse(TDSMessage message);
 
         /// <summary>
         /// It is called when login acknowledgement arrives.
         /// </summary>
-        /// <param name="packet">TDS message received</param>		
+        /// <param name="packet">TDS message received</param>
         void OnLoginResponse(TDSMessage message);
 
         /// <summary>

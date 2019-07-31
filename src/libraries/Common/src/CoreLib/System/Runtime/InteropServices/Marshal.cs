@@ -924,7 +924,7 @@ namespace System.Runtime.InteropServices
             FreeBSTR(s);
         }
 
-        public unsafe static void ZeroFreeCoTaskMemAnsi(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemAnsi(IntPtr s)
         {
             ZeroFreeCoTaskMemUTF8(s);
         }
@@ -949,7 +949,7 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        public unsafe static void ZeroFreeGlobalAllocAnsi(IntPtr s)
+        public static unsafe void ZeroFreeGlobalAllocAnsi(IntPtr s)
         {
             if (s == IntPtr.Zero)
             {

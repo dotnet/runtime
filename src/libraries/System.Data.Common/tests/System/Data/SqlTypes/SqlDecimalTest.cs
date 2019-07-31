@@ -194,16 +194,16 @@ namespace System.Data.Tests.SqlTypes
 
             // Divide() => Notworking
             /*
-			Assert.Equal ((SqlDecimal)(-1077.441066m), SqlDecimal.Divide (Test1, Test4));
-			Assert.Equal (1.54687501546m, SqlDecimal.Divide (Test2, Test1).Value);
+            Assert.Equal ((SqlDecimal)(-1077.441066m), SqlDecimal.Divide (Test1, Test4));
+            Assert.Equal (1.54687501546m, SqlDecimal.Divide (Test2, Test1).Value);
 
-			try {
-				SqlDecimal test = SqlDecimal.Divide(Test1, new SqlDecimal(0)).Value;
+            try {
+                SqlDecimal test = SqlDecimal.Divide(Test1, new SqlDecimal(0)).Value;
 Assert.False(true);
-			} catch (DivideByZeroException e) {
-				Assert.Equal (typeof (DivideByZeroException), e.GetType ());
-			}
-			*/
+            } catch (DivideByZeroException e) {
+                Assert.Equal (typeof (DivideByZeroException), e.GetType ());
+            }
+            */
 
             Assert.Equal(6464m, SqlDecimal.Floor(_test1));
 
@@ -329,13 +329,13 @@ Assert.False(true);
         }
 
         /* Don't do such environment-dependent test. It will never succeed under Portable.NET and MS.NET
-		[Fact]
-		public void GetHashCodeTest()
-		{
-			// FIXME: Better way to test HashCode
-			Assert.Equal (-1281249885, Test1.GetHashCode ());
-		}
-		*/
+        [Fact]
+        public void GetHashCodeTest()
+        {
+            // FIXME: Better way to test HashCode
+            Assert.Equal (-1281249885, Test1.GetHashCode ());
+        }
+        */
 
         [Fact]
         public void GetTypeTest()
@@ -423,8 +423,8 @@ Assert.False(true);
             // 6464.6464 --> 64646464 ??? with windows
             // MS.NET seems to return the first 32 bit integer (i.e. 
             // Data [0]) but we don't have to follow such stupidity.
-            //			Assert.Equal ((int)64646464, Test1.ToSqlInt32 ().Value);
-            //			Assert.Equal ((int)1212, new SqlDecimal(12.12m).ToSqlInt32 ().Value);
+            //            Assert.Equal ((int)64646464, Test1.ToSqlInt32 ().Value);
+            //            Assert.Equal ((int)1212, new SqlDecimal(12.12m).ToSqlInt32 ().Value);
 
             try
             {

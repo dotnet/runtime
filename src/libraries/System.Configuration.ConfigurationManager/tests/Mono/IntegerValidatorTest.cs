@@ -5,8 +5,8 @@
 // for System.Configuration.IntegerValidator.
 //
 // Author:
-//	Chris Toshok  <toshok@ximian.com>
-//	Andres G. Aragoneses  <andres@7digital.com>
+//  Chris Toshok  <toshok@ximian.com>
+//    Andres G. Aragoneses  <andres@7digital.com>
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 // Copyright (C) 2012 7digital Media, Ltd (http://www.7digital.com)

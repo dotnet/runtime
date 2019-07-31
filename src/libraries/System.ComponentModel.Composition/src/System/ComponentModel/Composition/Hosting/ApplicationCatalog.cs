@@ -187,7 +187,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Returns a string representation of the directory catalog.
         /// </summary>
         /// <returns>
-        ///     A <see cref="String"/> containing the string representation of the <see cref="DirectoryCatalog"/>.
+        ///     A <see cref="string"/> containing the string representation of the <see cref="DirectoryCatalog"/>.
         /// </returns>
         public override string ToString()
         {
@@ -198,7 +198,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the display name of the ApplicationCatalog.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing a human-readable display name of the <see cref="ApplicationCatalog"/>.
+        ///     A <see cref="string"/> containing a human-readable display name of the <see cref="ApplicationCatalog"/>.
         /// </value>
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName

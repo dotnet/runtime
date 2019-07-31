@@ -26,9 +26,9 @@ namespace System.Text.Encodings.Tests
 
             byte [] bytes = new byte[50];
 
-	        int bytesUsed;
-	        int charsUsed;
-	        bool completed;
+            int bytesUsed;
+            int charsUsed;
+            bool completed;
 
             fixed (char *pChars1 = s1)
             fixed (char *pChars2 = s2)
@@ -78,9 +78,9 @@ namespace System.Text.Encodings.Tests
         public static unsafe void ConvertNegativeTest()
         {
             Encoder encoder = Encoding.UTF8.GetEncoder();
-	        int bytesUsed;
-	        int charsUsed;
-	        bool completed;
+            int bytesUsed;
+            int charsUsed;
+            bool completed;
 
             string chars = "\u0D800\uDC00";
             byte [] bytes = new byte[4];

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;	//StackFrame
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -29,7 +29,7 @@ namespace OLEDB.Test.ModuleCore
         {
             set
             {
-                //Set the static Error interface...	
+                //Set the static Error interface...
                 s_rIError = value;
 
                 //Setup the standard c# Console to log to LTM instead...
@@ -343,12 +343,12 @@ namespace OLEDB.Test.ModuleCore
                 if (TestConsole != null)
                 {
                     //ITestConsole.Log
-                    TestConsole.Log(Common.Format(actual),			//actual
-                                        Common.Format(expected),		//expected
-                                        source,							//source
-                                        message,						//message
-                                        details,						//details
-                                        tagCONSOLEFLAGS.CONSOLE_TEXT,	//flags
+                    TestConsole.Log(Common.Format(actual),              //actual
+                                        Common.Format(expected),        //expected
+                                        source,                         //source
+                                        message,                        //message
+                                        details,                        //details
+                                        tagCONSOLEFLAGS.CONSOLE_TEXT,   //flags
                                         "fake_filename",
                                         999
                                     );

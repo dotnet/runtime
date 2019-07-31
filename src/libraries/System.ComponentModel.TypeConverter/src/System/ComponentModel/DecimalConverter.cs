@@ -10,7 +10,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a type converter to convert <see cref='System.Decimal'/>
+    /// Provides a type converter to convert <see cref='decimal'/>
     /// objects to and from various other representations.
     /// </summary>
     public class DecimalConverter : BaseNumberConverter

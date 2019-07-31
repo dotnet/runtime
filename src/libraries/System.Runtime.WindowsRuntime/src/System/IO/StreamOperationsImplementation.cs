@@ -50,11 +50,11 @@ namespace System.IO
                 if (dataBuffer.Length > 0)
                     memStream.Seek(dataBuffer.Length, SeekOrigin.Current);
 
-                return AsyncInfo.CreateCompletedOperation<IBuffer, UInt32>(dataBuffer);
+                return AsyncInfo.CreateCompletedOperation<IBuffer, uint>(dataBuffer);
             }
             catch (Exception ex)
             {
-                return AsyncInfo.CreateFaultedOperation<IBuffer, UInt32>(ex);
+                return AsyncInfo.CreateFaultedOperation<IBuffer, uint>(ex);
             }
         }  // ReadAsync_MemoryStream
 
@@ -150,7 +150,7 @@ namespace System.IO
                 return dataBuffer;
             };  // readOperation
 
-            return AsyncInfo.Run<IBuffer, UInt32>(readOperation);
+            return AsyncInfo.Run<IBuffer, uint>(readOperation);
         }  // ReadAsync_AbstractStream
 
         #endregion ReadAsync implementations
@@ -214,7 +214,7 @@ namespace System.IO
             }  // if-else
 
             // Construct and run the async operation:
-            return AsyncInfo.Run<UInt32, UInt32>(writeOperation);
+            return AsyncInfo.Run<uint, uint>(writeOperation);
         }  // WriteAsync_AbstractStream
 
         #endregion WriteAsync implementations
@@ -237,7 +237,7 @@ namespace System.IO
             };
 
             // Construct and run the async operation:
-            return AsyncInfo.Run<Boolean>(flushOperation);
+            return AsyncInfo.Run<bool>(flushOperation);
         }
         #endregion FlushAsync implementations
 

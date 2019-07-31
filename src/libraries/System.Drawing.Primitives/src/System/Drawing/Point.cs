@@ -167,7 +167,7 @@ namespace System.Drawing
         /// <summary>
         ///    <para>
         ///       Specifies whether this <see cref='System.Drawing.Point'/> contains
-        ///       the same coordinates as the specified <see cref='System.Object'/>.
+        ///       the same coordinates as the specified <see cref='object'/>.
         ///    </para>
         /// </summary>
         public override bool Equals(object obj) => obj is Point && Equals((Point)obj);

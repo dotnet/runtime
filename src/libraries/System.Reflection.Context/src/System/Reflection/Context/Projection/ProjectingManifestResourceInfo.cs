@@ -24,5 +24,5 @@ namespace System.Reflection.Context.Projection
         {
             get { return _projector.ProjectAssembly(base.ReferencedAssembly); }
         }
-	}
+    }
 }

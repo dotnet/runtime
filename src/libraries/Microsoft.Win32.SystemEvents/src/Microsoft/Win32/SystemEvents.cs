@@ -73,7 +73,7 @@ namespace Microsoft.Win32
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
         private static volatile bool s_isUserInteractive = false;
-        private unsafe static bool UserInteractive
+        private static unsafe bool UserInteractive
         {
             get
             {

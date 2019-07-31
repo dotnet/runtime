@@ -83,7 +83,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl = new RawAcl(revision, capacity);
             sidStr = "BG";
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(sidStr));
-            //199 has all aceflags but inheritonly and inherited					
+            //199 has all aceflags but inheritonly and inherited
             gAce = new CommonAce((AceFlags)199, AceQualifier.AccessAllowed, 1, sid, false, null);
             rawAcl.InsertAce(0, gAce);
             isContainer = false;
@@ -117,7 +117,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl = new RawAcl(revision, capacity);
             sidStr = "BG";
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(sidStr));
-            //215 has all aceflags but inheritedonly				
+            //215 has all aceflags but inheritedonly
             gAce = new CommonAce((AceFlags)215, AceQualifier.AccessAllowed, 1, sid, false, null);
             rawAcl.InsertAce(0, gAce);
             isContainer = false;
@@ -152,7 +152,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl = new RawAcl(revision, capacity);
             sidStr = "BG";
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(sidStr));
-            //207 has all AceFlags but inherited				
+            //207 has all AceFlags but inherited
             gAce = new CommonAce((AceFlags)207, AceQualifier.AccessAllowed, 1, sid, false, null);
             rawAcl.InsertAce(0, gAce);
             gAce = new CommonAce(AceFlags.None, AceQualifier.AccessDenied, 2, sid, false, null);
@@ -194,7 +194,7 @@ namespace System.Security.AccessControl.Tests
             revision = 127;
             capacity = 1;
             rawAcl = new RawAcl(revision, capacity);
-            //207 has all AceFlags but inherited				
+            //207 has all AceFlags but inherited
             aceFlag = (AceFlags)207;
             accessMask = 1;
             compoundAceType = CompoundAceType.Impersonation;
@@ -220,7 +220,7 @@ namespace System.Security.AccessControl.Tests
             capacity = 1;
             rawAcl = new RawAcl(revision, capacity);
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BG"));
-            //207 has all AceFlags but inherited						
+            //207 has all AceFlags but inherited
             aceFlag = (AceFlags)207;
             aceQualifier = AceQualifier.AccessAllowed;
             accessMask = 1;

@@ -240,8 +240,8 @@ namespace System.Data.Tests
             }
             catch (ArgumentException e)
             {
-                //				Assert.Equal (typeof (ArgumentException), e.GetType ());
-                //				Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
+                //                Assert.Equal (typeof (ArgumentException), e.GetType ());
+                //                Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
             }
 
             try
@@ -251,8 +251,8 @@ namespace System.Data.Tests
             }
             catch (ArgumentException e)
             {
-                //				Assert.Equal (typeof (ArgumentException), e.GetType ());
-                //				Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
+                //                Assert.Equal (typeof (ArgumentException), e.GetType ());
+                //                Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
             }
 
             DataColumn C2 = new DataColumn("test");
@@ -264,8 +264,8 @@ namespace System.Data.Tests
             }
             catch (DuplicateNameException e)
             {
-                //				Assert.Equal (typeof (DuplicateNameException), e.GetType ());
-                //				Assert.Equal ("A DataColumn named 'test' already belongs to this DataTable.", e.Message);
+                //                Assert.Equal (typeof (DuplicateNameException), e.GetType ());
+                //                Assert.Equal ("A DataColumn named 'test' already belongs to this DataTable.", e.Message);
             }
 
             try
@@ -275,8 +275,8 @@ namespace System.Data.Tests
             }
             catch (InvalidExpressionException e)
             {
-                //				Assert.True (e is InvalidExpressionException);
-                //				Assert.Equal ("Expression 'substring ('fdsafewq', 2)' is invalid.", e.Message);
+                //                Assert.True (e is InvalidExpressionException);
+                //                Assert.Equal ("Expression 'substring ('fdsafewq', 2)' is invalid.", e.Message);
             }
         }
 

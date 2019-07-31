@@ -248,11 +248,11 @@ namespace System.Reflection.Tests
 
         }
         //private helper methods
-        private static void VerifyIsAssignableFrom(string TestName, TypeInfo left, TypeInfo right, Boolean expected)
+        private static void VerifyIsAssignableFrom(string TestName, TypeInfo left, TypeInfo right, bool expected)
         {
             {
                 //Fix to initialize Reflection
-                string str = typeof(Object).Project().Name;
+                string str = typeof(object).Project().Name;
 
                 bool actual = left.IsAssignableFrom(right);
                 Assert.Equal(expected, actual);

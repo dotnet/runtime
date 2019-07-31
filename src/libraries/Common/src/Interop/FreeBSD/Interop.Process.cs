@@ -398,7 +398,7 @@ internal static partial class Interop
         /// Returns basic info about thread. If tis is 0, it will return
         /// info for process e.g. main thread.
         /// </returns>
-        public unsafe static proc_stats GetThreadInfo(int pid, int tid)
+        public static unsafe proc_stats GetThreadInfo(int pid, int tid)
         {
             proc_stats ret = new proc_stats();
             kinfo_proc* info = null;

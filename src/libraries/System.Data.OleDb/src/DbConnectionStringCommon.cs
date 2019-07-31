@@ -50,7 +50,7 @@ namespace System.Data.Common
             get { return false; }
         }
 
-        Object System.Collections.ICollection.SyncRoot
+        object System.Collections.ICollection.SyncRoot
         {
             get { return _items; }
         }
@@ -113,7 +113,7 @@ namespace System.Data.Common
                 }
             }
 
-            Object System.Collections.IEnumerator.Current
+            object System.Collections.IEnumerator.Current
             {
                 get
                 {
@@ -148,7 +148,7 @@ namespace System.Data.Common
                     else if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "false") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "no"))
                         return false;
                 }
-                return Boolean.Parse(svalue);
+                return bool.Parse(svalue);
             }
             try
             {
@@ -156,7 +156,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(Boolean), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(bool), e);
             }
         }
 
@@ -168,7 +168,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(Int32), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(int), e);
             }
         }
 
@@ -180,7 +180,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(String), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(string), e);
             }
         }
     }

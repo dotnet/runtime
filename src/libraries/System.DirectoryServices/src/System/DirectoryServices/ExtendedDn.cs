@@ -9,8 +9,8 @@ namespace System.DirectoryServices
     /// </devdoc>
     public enum ExtendedDN
     {
-    	None = -1,
-    	HexString = 0,
-    	Standard = 1
+        None = -1,
+        HexString = 0,
+        Standard = 1
     }
 }

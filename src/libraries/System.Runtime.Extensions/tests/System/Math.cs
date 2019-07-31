@@ -266,22 +266,22 @@ namespace System.Tests
             }
         }
 
-        private unsafe static bool IsNegativeZero(double value)
+        private static unsafe bool IsNegativeZero(double value)
         {
             return (*(ulong*)(&value)) == 0x8000000000000000;
         }
 
-        private unsafe static bool IsNegativeZero(float value)
+        private static unsafe bool IsNegativeZero(float value)
         {
             return (*(uint*)(&value)) == 0x80000000;
         }
 
-        private unsafe static bool IsPositiveZero(double value)
+        private static unsafe bool IsPositiveZero(double value)
         {
             return (*(ulong*)(&value)) == 0x0000000000000000;
         }
 
-        private unsafe static bool IsPositiveZero(float value)
+        private static unsafe bool IsPositiveZero(float value)
         {
             return (*(uint*)(&value)) == 0x00000000;
         }

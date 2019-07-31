@@ -694,7 +694,7 @@ namespace System.IO.Ports.Tests
                 bytesRead = com1.Encoding.GetByteCount(rcvCharBuffer, 0, charsRead);
                 totalBytesRead += bytesRead + numNewLineBytes;
 
-                //			indexOfNewLine = strToWrite.IndexOf(com1.NewLine, lastIndexOfNewLine + newLineStringLength);
+                //            indexOfNewLine = strToWrite.IndexOf(com1.NewLine, lastIndexOfNewLine + newLineStringLength);
                 indexOfNewLine = TCSupport.OrdinalIndexOf(expectedString, lastIndexOfNewLine + newLineStringLength, newLine);
                 //SerialPort does a Ordinal comparison
 

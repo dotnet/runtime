@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Data.OleDb
 {
-    sealed internal class ColumnBinding
+    internal sealed class ColumnBinding
     {
         // shared with other ColumnBindings
         private readonly OleDbDataReader _dataReader; // HCHAPTER
@@ -273,7 +273,7 @@ namespace System.Data.OleDb
             RowBinding.WriteInt64(ValueOffset, 0); // safe because AlignDataSize forces 8 byte blocks
         }
 
-        internal Object Value()
+        internal object Value()
         {
             object value = _value;
             if (null == value)
@@ -342,7 +342,7 @@ namespace System.Data.OleDb
                                 value = Value_I8(); // Int64
                                 break;
                             case NativeDBType.UI8:
-                                value = (Decimal)Value_UI8(); // UInt64->Decimal
+                                value = (decimal)Value_UI8(); // UInt64->Decimal
                                 break;
                             case NativeDBType.FILETIME:
                                 value = Value_FILETIME(); // DateTime
@@ -456,34 +456,34 @@ namespace System.Data.OleDb
                         SetValueDBNull();
                         break;
                     case NativeDBType.I2:
-                        Value_I2((Int16)value);
+                        Value_I2((short)value);
                         break;
                     case NativeDBType.I4:
-                        Value_I4((Int32)value);
+                        Value_I4((int)value);
                         break;
                     case NativeDBType.R4:
-                        Value_R4((Single)value);
+                        Value_R4((float)value);
                         break;
                     case NativeDBType.R8:
-                        Value_R8((Double)value);
+                        Value_R8((double)value);
                         break;
                     case NativeDBType.CY:
-                        Value_CY((Decimal)value);
+                        Value_CY((decimal)value);
                         break;
                     case NativeDBType.DATE:
                         Value_DATE((DateTime)value);
                         break;
                     case NativeDBType.BSTR:
-                        Value_BSTR((String)value);
+                        Value_BSTR((string)value);
                         break;
                     case NativeDBType.IDISPATCH:
                         Value_IDISPATCH(value);
                         break;
                     case NativeDBType.ERROR:
-                        Value_ERROR((Int32)value);
+                        Value_ERROR((int)value);
                         break;
                     case NativeDBType.BOOL:
-                        Value_BOOL((Boolean)value);
+                        Value_BOOL((bool)value);
                         break;
                     case NativeDBType.VARIANT:
                         Value_VARIANT(value);
@@ -492,52 +492,52 @@ namespace System.Data.OleDb
                         Value_IUNKNOWN(value);
                         break;
                     case NativeDBType.DECIMAL:
-                        Value_DECIMAL((Decimal)value);
+                        Value_DECIMAL((decimal)value);
                         break;
                     case NativeDBType.I1:
-                        if (value is Int16)
+                        if (value is short)
                         {
-                            Value_I1(Convert.ToSByte((Int16)value, CultureInfo.InvariantCulture));
+                            Value_I1(Convert.ToSByte((short)value, CultureInfo.InvariantCulture));
                         }
                         else
                         {
-                            Value_I1((SByte)value);
+                            Value_I1((sbyte)value);
                         }
                         break;
                     case NativeDBType.UI1:
-                        Value_UI1((Byte)value);
+                        Value_UI1((byte)value);
                         break;
                     case NativeDBType.UI2:
-                        if (value is Int32)
+                        if (value is int)
                         {
-                            Value_UI2(Convert.ToUInt16((Int32)value, CultureInfo.InvariantCulture));
+                            Value_UI2(Convert.ToUInt16((int)value, CultureInfo.InvariantCulture));
                         }
                         else
                         {
-                            Value_UI2((UInt16)value);
+                            Value_UI2((ushort)value);
                         }
                         break;
                     case NativeDBType.UI4:
-                        if (value is Int64)
+                        if (value is long)
                         {
-                            Value_UI4(Convert.ToUInt32((Int64)value, CultureInfo.InvariantCulture));
+                            Value_UI4(Convert.ToUInt32((long)value, CultureInfo.InvariantCulture));
                         }
                         else
                         {
-                            Value_UI4((UInt32)value);
+                            Value_UI4((uint)value);
                         }
                         break;
                     case NativeDBType.I8:
-                        Value_I8((Int64)value);
+                        Value_I8((long)value);
                         break;
                     case NativeDBType.UI8:
-                        if (value is Decimal)
+                        if (value is decimal)
                         {
-                            Value_UI8(Convert.ToUInt64((Decimal)value, CultureInfo.InvariantCulture));
+                            Value_UI8(Convert.ToUInt64((decimal)value, CultureInfo.InvariantCulture));
                         }
                         else
                         {
-                            Value_UI8((UInt64)value);
+                            Value_UI8((ulong)value);
                         }
                         break;
                     case NativeDBType.FILETIME:
@@ -547,12 +547,12 @@ namespace System.Data.OleDb
                         Value_GUID((Guid)value);
                         break;
                     case NativeDBType.BYTES:
-                        Value_BYTES((Byte[])value);
+                        Value_BYTES((byte[])value);
                         break;
                     case NativeDBType.WSTR:
                         if (value is string)
                         {
-                            Value_WSTR((String)value);
+                            Value_WSTR((string)value);
                         }
                         else
                         {
@@ -560,7 +560,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     case NativeDBType.NUMERIC:
-                        Value_NUMERIC((Decimal)value);
+                        Value_NUMERIC((decimal)value);
                         break;
                     case NativeDBType.DBDATE:
                         Value_DBDATE((DateTime)value);
@@ -575,12 +575,12 @@ namespace System.Data.OleDb
                         Value_VARIANT(value);
                         break;
                     case (NativeDBType.BYREF | NativeDBType.BYTES):
-                        Value_ByRefBYTES((Byte[])value);
+                        Value_ByRefBYTES((byte[])value);
                         break;
                     case (NativeDBType.BYREF | NativeDBType.WSTR):
                         if (value is string)
                         {
-                            Value_ByRefWSTR((String)value);
+                            Value_ByRefWSTR((string)value);
                         }
                         else
                         {
@@ -610,14 +610,14 @@ namespace System.Data.OleDb
                 }
         }
 
-        internal Boolean Value_BOOL()
+        internal bool Value_BOOL()
         {
             Debug.Assert((NativeDBType.BOOL == DbType), "Value_BOOL");
             Debug.Assert((DBStatus.S_OK == StatusValue()), "Value_BOOL");
-            Int16 value = RowBinding.ReadInt16(ValueOffset);
+            short value = RowBinding.ReadInt16(ValueOffset);
             return (0 != value);
         }
-        private void Value_BOOL(Boolean value)
+        private void Value_BOOL(bool value)
         {
             Debug.Assert((NativeDBType.BOOL == DbType), "Value_BOOL");
             LengthValue(0);
@@ -625,7 +625,7 @@ namespace System.Data.OleDb
             RowBinding.WriteInt16(ValueOffset, (short)(value ? ODB.VARIANT_TRUE : ODB.VARIANT_FALSE));
         }
 
-        private String Value_BSTR()
+        private string Value_BSTR()
         {
             Debug.Assert((NativeDBType.BSTR == DbType), "Value_BSTR");
             Debug.Assert((DBStatus.S_OK == StatusValue()), "Value_BSTR");
@@ -651,7 +651,7 @@ namespace System.Data.OleDb
             }
             return value;
         }
-        private void Value_BSTR(String value)
+        private void Value_BSTR(string value)
         {
             Debug.Assert((null != value), "Value_BSTR null");
             Debug.Assert((NativeDBType.BSTR == DbType), "Value_BSTR");
@@ -660,7 +660,7 @@ namespace System.Data.OleDb
             RowBinding.SetBstrValue(ValueOffset, value);
         }
 
-        private Byte[] Value_ByRefBYTES()
+        private byte[] Value_ByRefBYTES()
         {
             Debug.Assert(((NativeDBType.BYREF | NativeDBType.BYTES) == DbType), "Value_ByRefBYTES");
             Debug.Assert((DBStatus.S_OK == StatusValue()), "Value_ByRefBYTES");
@@ -687,7 +687,7 @@ namespace System.Data.OleDb
             }
             return ((null != value) ? value : Array.Empty<byte>());
         }
-        private void Value_ByRefBYTES(Byte[] value)
+        private void Value_ByRefBYTES(byte[] value)
         {
             Debug.Assert(null != value, "Value_ByRefBYTES null");
             Debug.Assert((NativeDBType.BYREF | NativeDBType.BYTES) == DbType, "Value_ByRefBYTES");
@@ -708,7 +708,7 @@ namespace System.Data.OleDb
             RowBinding.SetByRefValue(ValueOffset, ptr);
         }
 
-        private String Value_ByRefWSTR()
+        private string Value_ByRefWSTR()
         {
             Debug.Assert((NativeDBType.BYREF | NativeDBType.WSTR) == DbType, "Value_ByRefWSTR");
             Debug.Assert((DBStatus.S_OK == StatusValue()) || (DBStatus.S_TRUNCATED == StatusValue()), "Value_ByRefWSTR");
@@ -735,7 +735,7 @@ namespace System.Data.OleDb
             }
             return value;
         }
-        private void Value_ByRefWSTR(String value)
+        private void Value_ByRefWSTR(string value)
         {
             Debug.Assert(null != value, "Value_ByRefWSTR null");
             Debug.Assert((NativeDBType.BYREF | NativeDBType.WSTR) == DbType, "Value_ByRefWSTR");
@@ -774,7 +774,7 @@ namespace System.Data.OleDb
             RowBinding.SetByRefValue(ValueOffset, ptr);
         }
 
-        private Byte[] Value_BYTES()
+        private byte[] Value_BYTES()
         {
             Debug.Assert(NativeDBType.BYTES == DbType, "Value_BYTES");
             Debug.Assert((DBStatus.S_OK == StatusValue()) || (DBStatus.S_TRUNCATED == StatusValue()), "Value_BYTES");
@@ -783,7 +783,7 @@ namespace System.Data.OleDb
             RowBinding.ReadBytes(ValueOffset, value, 0, byteCount);
             return value;
         }
-        private void Value_BYTES(Byte[] value)
+        private void Value_BYTES(byte[] value)
         {
             Debug.Assert(null != value, "Value_BYTES null");
             // we silently truncate when the user has specified a given Size
@@ -796,18 +796,18 @@ namespace System.Data.OleDb
             }
         }
 
-        private Decimal Value_CY()
+        private decimal Value_CY()
         {
             Debug.Assert(NativeDBType.CY == DbType, "Value_CY");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_CY");
-            return Decimal.FromOACurrency(RowBinding.ReadInt64(ValueOffset));
+            return decimal.FromOACurrency(RowBinding.ReadInt64(ValueOffset));
         }
-        private void Value_CY(Decimal value)
+        private void Value_CY(decimal value)
         {
             Debug.Assert(NativeDBType.CY == DbType, "Value_CY");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            RowBinding.WriteInt64(ValueOffset, Decimal.ToOACurrency(value));
+            RowBinding.WriteInt64(ValueOffset, decimal.ToOACurrency(value));
         }
 
         private DateTime Value_DATE()
@@ -866,20 +866,20 @@ namespace System.Data.OleDb
             RowBinding.WriteDateTime(ValueOffset, value);
         }
 
-        private Decimal Value_DECIMAL()
+        private decimal Value_DECIMAL()
         {
             Debug.Assert(NativeDBType.DECIMAL == DbType, "Value_DECIMAL");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_DECIMAL");
             int[] buffer = new int[4];
             RowBinding.ReadInt32Array(ValueOffset, buffer, 0, 4);
-            return new Decimal(
+            return new decimal(
                 buffer[2],  // low
                 buffer[3],  // mid
                 buffer[1],  // high
                 (0 != (buffer[0] & unchecked((int)0x80000000))), // sign
                 unchecked((byte)((buffer[0] & unchecked((int)0x00FF0000)) >> 16))); // scale
         }
-        private void Value_DECIMAL(Decimal value)
+        private void Value_DECIMAL(decimal value)
         {
             Debug.Assert(NativeDBType.DECIMAL == DbType, "Value_DECIMAL");
 
@@ -892,20 +892,20 @@ namespace System.Data.OleDb
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
 
-            int[] tmp = Decimal.GetBits(value);
+            int[] tmp = decimal.GetBits(value);
             int[] buffer = new int[4] {
                 tmp[3], tmp[2], tmp[0], tmp[1]
             };
             RowBinding.WriteInt32Array(ValueOffset, buffer, 0, 4);
         }
 
-        private Int32 Value_ERROR()
+        private int Value_ERROR()
         {
             Debug.Assert(NativeDBType.ERROR == DbType, "Value_ERROR");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_ERROR");
             return RowBinding.ReadInt32(ValueOffset);
         }
-        private void Value_ERROR(Int32 value)
+        private void Value_ERROR(int value)
         {
             Debug.Assert(NativeDBType.ERROR == DbType, "Value_ERROR");
             LengthValue(0);
@@ -917,7 +917,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(NativeDBType.FILETIME == DbType, "Value_FILETIME");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_FILETIME");
-            Int64 tmp = RowBinding.ReadInt64(ValueOffset);
+            long tmp = RowBinding.ReadInt64(ValueOffset);
             return DateTime.FromFileTime(tmp);
         }
         private void Value_FILETIME(DateTime value)
@@ -925,7 +925,7 @@ namespace System.Data.OleDb
             Debug.Assert(NativeDBType.FILETIME == DbType, "Value_FILETIME");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            Int64 tmp = value.ToFileTime();
+            long tmp = value.ToFileTime();
             RowBinding.WriteInt64(ValueOffset, tmp);
         }
 
@@ -952,28 +952,28 @@ namespace System.Data.OleDb
             return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset);
         }
 
-        private SByte Value_I1()
+        private sbyte Value_I1()
         {
             Debug.Assert(NativeDBType.I1 == DbType, "Value_I1");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_I1");
             byte value = RowBinding.ReadByte(ValueOffset);
-            return unchecked((SByte)value);
+            return unchecked((sbyte)value);
         }
-        private void Value_I1(SByte value)
+        private void Value_I1(sbyte value)
         {
             Debug.Assert(NativeDBType.I1 == DbType, "Value_I1");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            RowBinding.WriteByte(ValueOffset, unchecked((Byte)value));
+            RowBinding.WriteByte(ValueOffset, unchecked((byte)value));
         }
 
-        internal Int16 Value_I2()
+        internal short Value_I2()
         {
             Debug.Assert(NativeDBType.I2 == DbType, "Value_I2");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_I2");
             return RowBinding.ReadInt16(ValueOffset);
         }
-        private void Value_I2(Int16 value)
+        private void Value_I2(short value)
         {
             Debug.Assert(NativeDBType.I2 == DbType, "Value_I2");
             LengthValue(0);
@@ -981,13 +981,13 @@ namespace System.Data.OleDb
             RowBinding.WriteInt16(ValueOffset, value);
         }
 
-        private Int32 Value_I4()
+        private int Value_I4()
         {
             Debug.Assert(NativeDBType.I4 == DbType, "Value_I4");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_I4");
             return RowBinding.ReadInt32(ValueOffset);
         }
-        private void Value_I4(Int32 value)
+        private void Value_I4(int value)
         {
             Debug.Assert(NativeDBType.I4 == DbType, "Value_I4");
             LengthValue(0);
@@ -995,13 +995,13 @@ namespace System.Data.OleDb
             RowBinding.WriteInt32(ValueOffset, value);
         }
 
-        private Int64 Value_I8()
+        private long Value_I8()
         {
             Debug.Assert(NativeDBType.I8 == DbType, "Value_I8");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_I8");
             return RowBinding.ReadInt64(ValueOffset);
         }
-        private void Value_I8(Int64 value)
+        private void Value_I8(long value)
         {
             Debug.Assert(NativeDBType.I8 == DbType, "Value_I8");
             LengthValue(0);
@@ -1089,13 +1089,13 @@ namespace System.Data.OleDb
             RowBinding.WriteIntPtr(ValueOffset, ptr);
         }
 
-        private Decimal Value_NUMERIC()
+        private decimal Value_NUMERIC()
         {
             Debug.Assert(NativeDBType.NUMERIC == DbType, "Value_NUMERIC");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_NUMERIC");
             return RowBinding.ReadNumeric(ValueOffset);
         }
-        private void Value_NUMERIC(Decimal value)
+        private void Value_NUMERIC(decimal value)
         {
             Debug.Assert(NativeDBType.NUMERIC == DbType, "Value_NUMERIC");
 
@@ -1110,14 +1110,14 @@ namespace System.Data.OleDb
             RowBinding.WriteNumeric(ValueOffset, value, ColumnBindingPrecision);
         }
 
-        private Single Value_R4()
+        private float Value_R4()
         {
             Debug.Assert(NativeDBType.R4 == DbType, "Value_R4");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_R4");
 
             return RowBinding.ReadSingle(ValueOffset);
         }
-        private void Value_R4(Single value)
+        private void Value_R4(float value)
         {
             Debug.Assert(NativeDBType.R4 == DbType, "Value_R4");
             LengthValue(0);
@@ -1125,14 +1125,14 @@ namespace System.Data.OleDb
             RowBinding.WriteSingle(ValueOffset, value);
         }
 
-        private Double Value_R8()
+        private double Value_R8()
         {
             Debug.Assert(NativeDBType.R8 == DbType, "Value_R8");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_R8");
 
             return RowBinding.ReadDouble(ValueOffset);
         }
-        private void Value_R8(Double value)
+        private void Value_R8(double value)
         {
             Debug.Assert(NativeDBType.R8 == DbType, "Value_I4");
             LengthValue(0);
@@ -1140,13 +1140,13 @@ namespace System.Data.OleDb
             RowBinding.WriteDouble(ValueOffset, value);
         }
 
-        private Byte Value_UI1()
+        private byte Value_UI1()
         {
             Debug.Assert(NativeDBType.UI1 == DbType, "Value_UI1");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_UI1");
             return RowBinding.ReadByte(ValueOffset);
         }
-        private void Value_UI1(Byte value)
+        private void Value_UI1(byte value)
         {
             Debug.Assert(NativeDBType.UI1 == DbType, "Value_UI1");
             LengthValue(0);
@@ -1154,49 +1154,49 @@ namespace System.Data.OleDb
             RowBinding.WriteByte(ValueOffset, value);
         }
 
-        internal UInt16 Value_UI2()
+        internal ushort Value_UI2()
         {
             Debug.Assert(NativeDBType.UI2 == DbType, "Value_UI2");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_UI2");
-            return unchecked((UInt16)RowBinding.ReadInt16(ValueOffset));
+            return unchecked((ushort)RowBinding.ReadInt16(ValueOffset));
         }
-        private void Value_UI2(UInt16 value)
+        private void Value_UI2(ushort value)
         {
             Debug.Assert(NativeDBType.UI2 == DbType, "Value_UI2");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            RowBinding.WriteInt16(ValueOffset, unchecked((Int16)value));
+            RowBinding.WriteInt16(ValueOffset, unchecked((short)value));
         }
 
-        internal UInt32 Value_UI4()
+        internal uint Value_UI4()
         {
             Debug.Assert(NativeDBType.UI4 == DbType, "Value_UI4");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_UI4");
-            return unchecked((UInt32)RowBinding.ReadInt32(ValueOffset));
+            return unchecked((uint)RowBinding.ReadInt32(ValueOffset));
         }
-        private void Value_UI4(UInt32 value)
+        private void Value_UI4(uint value)
         {
             Debug.Assert(NativeDBType.UI4 == DbType, "Value_UI4");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            RowBinding.WriteInt32(ValueOffset, unchecked((Int32)value));
+            RowBinding.WriteInt32(ValueOffset, unchecked((int)value));
         }
 
-        internal UInt64 Value_UI8()
+        internal ulong Value_UI8()
         {
             Debug.Assert(NativeDBType.UI8 == DbType, "Value_UI8");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_UI8");
-            return unchecked((UInt64)RowBinding.ReadInt64(ValueOffset));
+            return unchecked((ulong)RowBinding.ReadInt64(ValueOffset));
         }
-        private void Value_UI8(UInt64 value)
+        private void Value_UI8(ulong value)
         {
             Debug.Assert(NativeDBType.UI8 == DbType, "Value_UI8");
             LengthValue(0);
             StatusValue(DBStatus.S_OK);
-            RowBinding.WriteInt64(ValueOffset, unchecked((Int64)value));
+            RowBinding.WriteInt64(ValueOffset, unchecked((long)value));
         }
 
-        private String Value_WSTR()
+        private string Value_WSTR()
         {
             Debug.Assert(NativeDBType.WSTR == DbType, "Value_WSTR");
             Debug.Assert((DBStatus.S_OK == StatusValue()) || (DBStatus.S_TRUNCATED == StatusValue()), "Value_WSTR");
@@ -1204,7 +1204,7 @@ namespace System.Data.OleDb
             int byteCount = Math.Min(LengthValue(), ColumnBindingMaxLen - 2);
             return RowBinding.PtrToStringUni(ValueOffset, byteCount / 2);
         }
-        private void Value_WSTR(String value)
+        private void Value_WSTR(string value)
         {
             Debug.Assert(null != value, "Value_BYTES null");
             Debug.Assert(NativeDBType.WSTR == DbType, "Value_WSTR");
@@ -1247,9 +1247,9 @@ namespace System.Data.OleDb
             RowBinding.SetVariantValue(ValueOffset, value);
         }
 
-        internal Boolean ValueBoolean()
+        internal bool ValueBoolean()
         {
-            Boolean value;
+            bool value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1259,14 +1259,14 @@ namespace System.Data.OleDb
                             value = Value_BOOL();
                             break;
                         case NativeDBType.VARIANT:
-                            value = (Boolean)ValueVariant();
+                            value = (bool)ValueVariant();
                             break;
                         default:
                             throw ODB.ConversionRequired();
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Boolean));
+                    throw CheckTypeValueStatusValue(typeof(bool));
             }
             return value;
         }
@@ -1315,9 +1315,9 @@ namespace System.Data.OleDb
             return value;
         }
 
-        internal Byte ValueByte()
+        internal byte ValueByte()
         {
-            Byte value;
+            byte value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1327,14 +1327,14 @@ namespace System.Data.OleDb
                             value = Value_UI1();
                             break;
                         case NativeDBType.VARIANT:
-                            value = (Byte)ValueVariant();
+                            value = (byte)ValueVariant();
                             break;
                         default:
                             throw ODB.ConversionRequired();
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Byte));
+                    throw CheckTypeValueStatusValue(typeof(byte));
             }
             return value;
         }
@@ -1357,7 +1357,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        throw CheckTypeValueStatusValue(typeof(String));
+                        throw CheckTypeValueStatusValue(typeof(string));
                 }
                 _value = value;
             }
@@ -1392,14 +1392,14 @@ namespace System.Data.OleDb
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int16));
+                    throw CheckTypeValueStatusValue(typeof(short));
             }
             return value;
         }
 
-        internal Decimal ValueDecimal()
+        internal decimal ValueDecimal()
         {
-            Decimal value;
+            decimal value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1415,17 +1415,17 @@ namespace System.Data.OleDb
                             value = Value_NUMERIC();
                             break;
                         case NativeDBType.UI8:
-                            value = (Decimal)Value_UI8();
+                            value = (decimal)Value_UI8();
                             break;
                         case NativeDBType.VARIANT:
-                            value = (Decimal)ValueVariant();
+                            value = (decimal)ValueVariant();
                             break;
                         default:
                             throw ODB.ConversionRequired();
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int16));
+                    throw CheckTypeValueStatusValue(typeof(short));
             }
             return value;
         }
@@ -1446,14 +1446,14 @@ namespace System.Data.OleDb
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int16));
+                    throw CheckTypeValueStatusValue(typeof(short));
             }
             return value;
         }
 
-        internal Int16 ValueInt16()
+        internal short ValueInt16()
         {
-            Int16 value;
+            short value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1463,17 +1463,17 @@ namespace System.Data.OleDb
                             value = Value_I2();
                             break;
                         case NativeDBType.I1:
-                            value = (Int16)Value_I1();
+                            value = (short)Value_I1();
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is SByte)
+                            if (variant is sbyte)
                             {
-                                value = (Int16)(SByte)variant;
+                                value = (short)(sbyte)variant;
                             }
                             else
                             {
-                                value = (Int16)variant;
+                                value = (short)variant;
                             }
                             break;
                         default:
@@ -1481,14 +1481,14 @@ namespace System.Data.OleDb
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int16));
+                    throw CheckTypeValueStatusValue(typeof(short));
             }
             return value;
         }
 
-        internal Int32 ValueInt32()
+        internal int ValueInt32()
         {
-            Int32 value;
+            int value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1498,17 +1498,17 @@ namespace System.Data.OleDb
                             value = Value_I4();
                             break;
                         case NativeDBType.UI2:
-                            value = (Int32)Value_UI2();
+                            value = (int)Value_UI2();
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is UInt16)
+                            if (variant is ushort)
                             {
-                                value = (Int32)(UInt16)variant;
+                                value = (int)(ushort)variant;
                             }
                             else
                             {
-                                value = (Int32)variant;
+                                value = (int)variant;
                             }
                             break;
                         default:
@@ -1516,14 +1516,14 @@ namespace System.Data.OleDb
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int32));
+                    throw CheckTypeValueStatusValue(typeof(int));
             }
             return value;
         }
 
-        internal Int64 ValueInt64()
+        internal long ValueInt64()
         {
-            Int64 value;
+            long value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1533,17 +1533,17 @@ namespace System.Data.OleDb
                             value = Value_I8();
                             break;
                         case NativeDBType.UI4:
-                            value = (Int64)Value_UI4();
+                            value = (long)Value_UI4();
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is UInt32)
+                            if (variant is uint)
                             {
-                                value = (Int64)(UInt32)variant;
+                                value = (long)(uint)variant;
                             }
                             else
                             {
-                                value = (Int64)variant;
+                                value = (long)variant;
                             }
                             break;
                         default:
@@ -1551,14 +1551,14 @@ namespace System.Data.OleDb
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Int64));
+                    throw CheckTypeValueStatusValue(typeof(long));
             }
             return value;
         }
 
-        internal Single ValueSingle()
+        internal float ValueSingle()
         {
-            Single value;
+            float value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1568,21 +1568,21 @@ namespace System.Data.OleDb
                             value = Value_R4();
                             break;
                         case NativeDBType.VARIANT:
-                            value = (Single)ValueVariant();
+                            value = (float)ValueVariant();
                             break;
                         default:
                             throw ODB.ConversionRequired();
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Single));
+                    throw CheckTypeValueStatusValue(typeof(float));
             }
             return value;
         }
 
-        internal Double ValueDouble()
+        internal double ValueDouble()
         {
-            Double value;
+            double value;
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
@@ -1592,21 +1592,21 @@ namespace System.Data.OleDb
                             value = Value_R8();
                             break;
                         case NativeDBType.VARIANT:
-                            value = (Double)ValueVariant();
+                            value = (double)ValueVariant();
                             break;
                         default:
                             throw ODB.ConversionRequired();
                     }
                     break;
                 default:
-                    throw CheckTypeValueStatusValue(typeof(Double));
+                    throw CheckTypeValueStatusValue(typeof(double));
             }
             return value;
         }
 
         internal string ValueString()
         {
-            string value = (String)_value;
+            string value = (string)_value;
             if (null == value)
             {
                 switch (StatusValue())
@@ -1618,7 +1618,7 @@ namespace System.Data.OleDb
                                 value = Value_BSTR(); // String
                                 break;
                             case NativeDBType.VARIANT:
-                                value = (String)ValueVariant(); // Object
+                                value = (string)ValueVariant(); // Object
                                 break;
                             case NativeDBType.WSTR:
                                 value = Value_WSTR(); // String
@@ -1644,7 +1644,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        throw CheckTypeValueStatusValue(typeof(String));
+                        throw CheckTypeValueStatusValue(typeof(string));
                 }
                 _value = value;
             }

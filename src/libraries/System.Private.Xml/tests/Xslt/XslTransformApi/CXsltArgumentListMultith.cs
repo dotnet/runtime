@@ -16,10 +16,10 @@ namespace System.Xml.Tests
     public class CSameInstanceXsltArgTestCase : XsltApiTestCaseBase
     {
         // Variables from init string
-        protected string _strPath;				// Path of the data files
+        protected string _strPath;                // Path of the data files
 
         // Other global variables
-        public XsltArgumentList xsltArg1;					// Shared XsltArgumentList for same instance testing
+        public XsltArgumentList xsltArg1;         // Shared XsltArgumentList for same instance testing
 
         private ITestOutputHelper _output;
         public CSameInstanceXsltArgTestCase(ITestOutputHelper output) : base(output)

@@ -180,7 +180,7 @@ namespace System.Data.OleDb
             return FillFromADODB((object)dataSet, ADODBRecordSet, srcTable, true);
         }
 
-        private int FillFromADODB(Object data, object adodb, string srcTable, bool multipleResults)
+        private int FillFromADODB(object data, object adodb, string srcTable, bool multipleResults)
         {
             Debug.Assert(null != data, "FillFromADODB: null data object");
             Debug.Assert(null != adodb, "FillFromADODB: null ADODB");
@@ -261,7 +261,7 @@ namespace System.Data.OleDb
                                 UnsafeNativeMethods.IErrorInfo errorInfo = null;
                                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
 
-                                string message = String.Empty;
+                                string message = string.Empty;
                                 if (null != errorInfo)
                                 {
                                     OleDbHResult hresult = ODB.GetErrorDescription(errorInfo, hr, out message);
@@ -309,7 +309,7 @@ namespace System.Data.OleDb
         //    return base.Fill(dataTable, dataReader);
         //}
 
-        private int FillFromRecordset(Object data, UnsafeNativeMethods.ADORecordsetConstruction recordset, string srcTable, out bool incrementResultCount)
+        private int FillFromRecordset(object data, UnsafeNativeMethods.ADORecordsetConstruction recordset, string srcTable, out bool incrementResultCount)
         {
             incrementResultCount = false;
 
@@ -370,7 +370,7 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private int FillFromRecord(Object data, UnsafeNativeMethods.ADORecordConstruction record, string srcTable)
+        private int FillFromRecord(object data, UnsafeNativeMethods.ADORecordConstruction record, string srcTable)
         {
             object result = null;
             try
@@ -435,7 +435,7 @@ namespace System.Data.OleDb
             {
                 UnsafeNativeMethods.IErrorInfo errorInfo = null;
                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
-                string message = String.Empty;
+                string message = string.Empty;
                 if (null != errorInfo)
                 {
                     OleDbHResult hresult = ODB.GetErrorDescription(errorInfo, hr, out message);

@@ -4,7 +4,7 @@
 // System.Net.HttpStreamAsyncResult
 //
 // Authors:
-//	Gonzalo Paniagua Javier (gonzalo@novell.com)
+//  Gonzalo Paniagua Javier (gonzalo@novell.com)
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //

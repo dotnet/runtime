@@ -27,8 +27,8 @@ namespace System.DirectoryServices.AccountManagement
         /// Performs bytewise comparison of two byte[] arrays
         /// </summary>
         /// <param name="src">Array to compare</param>
-        /// <param name="tgt">Array to compare against src</param>		
-        /// <returns>true if identical, false otherwise</returns>		
+        /// <param name="tgt">Array to compare against src</param>
+        /// <returns>true if identical, false otherwise</returns>
         internal static bool AreBytesEqual(byte[] src, byte[] tgt)
         {
             if (src.Length != tgt.Length)

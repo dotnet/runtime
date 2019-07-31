@@ -516,7 +516,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             dFirst.DoNothing();
             dynamic d = new DerivedOuterHidingNested();
             Assert.Equal(42, d.Inner());
-		}
+        }
 
         [Fact]
         public void CannotCallOperatorDirectly()

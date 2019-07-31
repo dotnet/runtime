@@ -14,7 +14,7 @@ namespace MS.Internal.Xml.Cache
     /// information about that node's page.  The other fields in the 0th node are undefined and should never
     /// be used.
     /// </summary>
-    sealed internal class XPathNodePageInfo
+    internal sealed class XPathNodePageInfo
     {
         private int _pageNum;
         private int _nodeCount;
@@ -76,7 +76,7 @@ namespace MS.Internal.Xml.Cache
     /// string.Intern() operation.  If a node's name, type, or parent/sibling pages are modified, then a new
     /// InfoAtom needs to be obtained, since other nodes may still be referencing the old InfoAtom.
     /// </summary>
-    sealed internal class XPathNodeInfoAtom : IEquatable<XPathNodeInfoAtom>
+    internal sealed class XPathNodeInfoAtom : IEquatable<XPathNodeInfoAtom>
     {
         private string _localName;
         private string _namespaceUri;
@@ -375,7 +375,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// An atomization table for XPathNodeInfoAtom.
     /// </summary>
-    sealed internal class XPathNodeInfoTable
+    internal sealed class XPathNodeInfoTable
     {
         private XPathNodeInfoAtom[] _hashTable;
         private int _sizeTable;

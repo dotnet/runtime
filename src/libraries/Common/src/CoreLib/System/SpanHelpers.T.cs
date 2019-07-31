@@ -52,7 +52,7 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public unsafe static bool Contains<T>(ref T searchSpace, T value, int length)
+        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length)
 #nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
             where T : IEquatable<T>
 #nullable restore

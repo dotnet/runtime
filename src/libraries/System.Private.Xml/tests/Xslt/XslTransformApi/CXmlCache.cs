@@ -1047,14 +1047,14 @@ public class CXmlCache
             }
             else
             {
-                rNewNode._eFlags |= NodeFlags.Indent;		// Turn on Indent for current Node
+                rNewNode._eFlags |= NodeFlags.Indent;        // Turn on Indent for current Node
             }
 
             // Set all Depth 0 nodes to No Mixed Content and Indent True
             if (_rXmlReader.Depth == 0)
             {
-                rNewNode._eFlags |= NodeFlags.Indent;			// Turn on Indent
-                rNewNode._eFlags &= ~NodeFlags.MixedContent;	// Turn off MixedContent
+                rNewNode._eFlags |= NodeFlags.Indent;        // Turn on Indent
+                rNewNode._eFlags &= ~NodeFlags.MixedContent; // Turn off MixedContent
             }
 
             rParentNode.InsertNode(rNewNode);
@@ -1123,10 +1123,10 @@ public class CXmlCache
                         {
                             int nEnd;
 
-                            nPos = strValue.IndexOf("=", nPos);			//Find the = sign
-                            nEnd = strValue.IndexOf("\"", nPos) + 1;	//Find the next " character
-                            nPos = strValue.IndexOf("'", nPos) + 1;		//Find the next ' character
-                            if (nEnd == 0 || (nPos < nEnd && nPos > 0))	//Pick the one that's closer to the = sign
+                            nPos = strValue.IndexOf("=", nPos);         //Find the = sign
+                            nEnd = strValue.IndexOf("\"", nPos) + 1;    //Find the next " character
+                            nPos = strValue.IndexOf("'", nPos) + 1;     //Find the next ' character
+                            if (nEnd == 0 || (nPos < nEnd && nPos > 0)) //Pick the one that's closer to the = sign
                             {
                                 nEnd = strValue.IndexOf("'", nPos);
                             }
@@ -1154,17 +1154,17 @@ public class CXmlCache
                     {
                         rNewNode._eFlags = _eDefaultFlags | NodeFlags.AttributeTextNode;
                     }
-                    rNewNode._eFlags |= NodeFlags.MixedContent;		// turn on Mixed Content for current node
-                    rNewNode._eFlags &= ~NodeFlags.Indent;			// turn off Indent for current node
-                    rParentNode._eFlags |= NodeFlags.MixedContent;	// turn on Mixed Content for Parent Node
+                    rNewNode._eFlags |= NodeFlags.MixedContent;       // turn on Mixed Content for current node
+                    rNewNode._eFlags &= ~NodeFlags.Indent;            // turn off Indent for current node
+                    rParentNode._eFlags |= NodeFlags.MixedContent;    // turn on Mixed Content for Parent Node
                     break;
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.CDATA:
-                    rNewNode._eFlags |= NodeFlags.MixedContent;		// turn on Mixed Content for current node
-                    rNewNode._eFlags &= ~NodeFlags.Indent;			// turn off Indent for current node
-                    rParentNode._eFlags |= NodeFlags.MixedContent;	// turn on Mixed Content for Parent Node
+                    rNewNode._eFlags |= NodeFlags.MixedContent;       // turn on Mixed Content for current node
+                    rNewNode._eFlags &= ~NodeFlags.Indent;            // turn off Indent for current node
+                    rParentNode._eFlags |= NodeFlags.MixedContent;    // turn on Mixed Content for Parent Node
                     break;
 
                 case XmlNodeType.Comment:
@@ -1202,7 +1202,7 @@ public class CXmlCache
     private void ValidationCallback(object sender, ValidationEventArgs args)
     {
         //  commented by ROCHOA -- don't know where ValidationEventArgs comes from
-        //	_hr = Convert.ToInt16(args.ErrorCode);
+        //  _hr = Convert.ToInt16(args.ErrorCode);
         throw (new Exception("[" + Convert.ToString(_hr) + "] " + args.Message));
     }
 }

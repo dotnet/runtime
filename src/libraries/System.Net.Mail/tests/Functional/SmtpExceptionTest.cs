@@ -4,7 +4,7 @@
 // SmtpExceptionTest.cs - NUnit Test Cases for System.Net.Mail.SmtpException
 //
 // Authors:
-//	Gert Driesen (drieseng@users.sourceforge.net)
+//  Gert Driesen (drieseng@users.sourceforge.net)
 //
 // (C) 2008 Gert Driesen
 //

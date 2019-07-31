@@ -16,7 +16,7 @@ internal static class DllImport
        FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);
 #else
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-    internal static unsafe extern Win32Handle CreateFile2(string lpFileName,
+    internal static extern unsafe Win32Handle CreateFile2(string lpFileName,
         FileAccess dwDesiredAccess, FileShare dwShareMode,
         CreationDisposition dwCreationDisposition, CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams);
 

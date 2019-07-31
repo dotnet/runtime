@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//	
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
     ///    <para> Represents the set of properties of a WMI object.</para>
     /// </summary>
@@ -172,7 +172,7 @@ namespace System.Management
         /// <param name=' index'>The index in the destination array from which to start copying.</param>
         public void CopyTo(PropertyData[] propertyArray, int index)
         {
-            CopyTo((Array)propertyArray, index);	
+            CopyTo((Array)propertyArray, index);
         }
         //
         // IEnumerable

@@ -74,12 +74,12 @@ namespace System.Data.OleDb
             // 3) the provider does not support the necessary schema rowset
 
             DataColumn populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism];
-            if ((null == populationMechanism) || (typeof(System.String) != populationMechanism.DataType))
+            if ((null == populationMechanism) || (typeof(string) != populationMechanism.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _populationMechanism);
             }
             DataColumn collectionName = metaDataCollectionsTable.Columns[_collectionName];
-            if ((null == collectionName) || (typeof(System.String) != collectionName.DataType))
+            if ((null == collectionName) || (typeof(string) != collectionName.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _collectionName);
             }
@@ -87,7 +87,7 @@ namespace System.Data.OleDb
             if (restrictionsTable != null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
-                if ((null == restrictionCollectionName) || (typeof(System.String) != restrictionCollectionName.DataType))
+                if ((null == restrictionCollectionName) || (typeof(string) != restrictionCollectionName.DataType))
                 {
                     throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.Restrictions, _collectionName);
                 }
@@ -176,7 +176,7 @@ namespace System.Data.OleDb
 
         }
 
-        private String BuildRegularExpression(string invalidChars, string invalidStartingChars)
+        private string BuildRegularExpression(string invalidChars, string invalidStartingChars)
         {
             StringBuilder regularExpression = new StringBuilder("[^");
             ADP.EscapeSpecialCharacters(invalidStartingChars, regularExpression);
@@ -435,7 +435,7 @@ namespace System.Data.OleDb
                     newRow[isSearchableWithLike] = DBNull.Value;
                     if (DBNull.Value != sourceRow[searchable])
                     {
-                        Int64 searchableValue = (Int64)(sourceRow[searchable]);
+                        long searchableValue = (long)(sourceRow[searchable]);
                         switch (searchableValue)
                         {
                             case ODB.DB_UNSEARCHABLE:
@@ -496,7 +496,7 @@ namespace System.Data.OleDb
             return reservedWordsTable;
         }
 
-        protected override DataTable PrepareCollection(String collectionName, String[] restrictions, DbConnection connection)
+        protected override DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
         {
             OleDbConnection oleDbConnection = (OleDbConnection)connection;
             OleDbConnectionInternal oleDbInternalConnection = (OleDbConnectionInternal)(oleDbConnection.InnerConnection);
@@ -572,7 +572,7 @@ namespace System.Data.OleDb
                                     mungedRestrictions[j] = restrictions[j];
                                 }
 
-                                UInt16 indexTypeValue;
+                                ushort indexTypeValue;
 
                                 if ((restrictions[indexRestrictionTypeSlot] == "DBPROPVAL_IT_BTREE") ||
                                     (restrictions[indexRestrictionTypeSlot] == "1"))
@@ -616,7 +616,7 @@ namespace System.Data.OleDb
                                     mungedRestrictions[j] = restrictions[j];
                                 }
 
-                                Int16 procedureTypeValue;
+                                short procedureTypeValue;
 
                                 if ((restrictions[procedureRestrictionTypeSlot] == "DB_PT_UNKNOWN") ||
                                     (restrictions[procedureRestrictionTypeSlot] == "1"))

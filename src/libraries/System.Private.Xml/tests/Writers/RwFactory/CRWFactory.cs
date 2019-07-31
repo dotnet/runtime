@@ -101,10 +101,10 @@ namespace System.Xml.Tests
             Initial, //At Start.
             PreTest, //After PreTest is called and finished successfully.
             CreateSuccess, //After Create method is called.
-            Consume,	//Before starting to use the object.
+            Consume,    //Before starting to use the object.
             Skip, //The case is skipped.
-            Error,		// In case of an error. Should throw CTestFailedException anyways.
-            Pass,	// Test() is successful.
+            Error,        // In case of an error. Should throw CTestFailedException anyways.
+            Pass,    // Test() is successful.
             Complete //After Successful PostTest.
         };
 

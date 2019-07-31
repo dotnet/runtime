@@ -205,7 +205,7 @@ namespace System.Collections
         public virtual object[] ToArray()
         {
             if (_size == 0)
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
 
             object[] objArray = new object[_size];
             int i = 0;

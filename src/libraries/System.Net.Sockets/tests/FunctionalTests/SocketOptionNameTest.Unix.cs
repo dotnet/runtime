@@ -9,6 +9,6 @@ namespace System.Net.Sockets.Tests
     public partial class SocketOptionNameTest
     {
         [DllImport("libc", SetLastError = true)]
-        private unsafe static extern int setsockopt(int socket, int level, int option_name, void* option_value, uint option_len);
+        private static extern unsafe int setsockopt(int socket, int level, int option_name, void* option_value, uint option_len);
     }
 }

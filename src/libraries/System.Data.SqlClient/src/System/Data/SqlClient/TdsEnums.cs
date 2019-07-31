@@ -541,7 +541,7 @@ namespace System.Data.SqlClient
         public const short SNI_WSAECONNRESET = 10054;    // An existing connection was forcibly closed by the remote host.
 
         // SNI internal errors (shouldn't overlap with Win32 / socket errors)
-        public const uint SNI_QUEUE_FULL = 1048576;		 // Packet queue is full
+        public const uint SNI_QUEUE_FULL = 1048576;         // Packet queue is full
 
         // SNI flags
         public const uint SNI_SSL_VALIDATE_CERTIFICATE = 1;   // This enables validation of server certificate

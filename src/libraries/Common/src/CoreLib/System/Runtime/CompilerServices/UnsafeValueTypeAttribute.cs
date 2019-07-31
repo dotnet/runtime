@@ -5,7 +5,7 @@
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Struct)]
-    sealed public class UnsafeValueTypeAttribute : Attribute
+    public sealed class UnsafeValueTypeAttribute : Attribute
     {
     }
 }

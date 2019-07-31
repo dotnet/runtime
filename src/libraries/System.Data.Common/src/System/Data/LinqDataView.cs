@@ -88,7 +88,7 @@ namespace System.Data
                 if (value == null) 
                 {
                     base.RowPredicate = null;
-                    base.RowFilter = String.Empty; // INDEX rebuild twice
+                    base.RowFilter = string.Empty; // INDEX rebuild twice
                 }
                 else
                 {
@@ -108,10 +108,10 @@ namespace System.Data
         internal override int FindByKey(object key)
         {
             Debug.Assert(base.Sort != null);
-            Debug.Assert(!(!String.IsNullOrEmpty(base.Sort) && base.SortComparison != null),
+            Debug.Assert(!(!string.IsNullOrEmpty(base.Sort) && base.SortComparison != null),
                 "string and expression based sort cannot both be set");
 
-            if (!String.IsNullOrEmpty(base.Sort))  // use find for DV's sort string
+            if (!string.IsNullOrEmpty(base.Sort))  // use find for DV's sort string
             {
                 return base.FindByKey(key);
             }
@@ -144,7 +144,7 @@ namespace System.Data
         internal override int FindByKey(object[] key)
         {
             // must have string or expression based sort specified
-            if (base.SortComparison == null && String.IsNullOrEmpty(base.Sort)) 
+            if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort)) 
             {
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
@@ -184,7 +184,7 @@ namespace System.Data
         internal override DataRowView[] FindRowsByKey(object[] key)
         {
             // must have string or expression based sort specified
-            if (base.SortComparison == null && String.IsNullOrEmpty(base.Sort))
+            if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort))
             {
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
@@ -237,7 +237,7 @@ namespace System.Data
         /// </summary>
         void IBindingList.RemoveSort()
         {
-            base.Sort = String.Empty;
+            base.Sort = string.Empty;
             base.SortComparison = null;
         }
 

@@ -4,8 +4,8 @@
 
 using System;
 using System.IO;
-using System.Text;			//Encoding
-using System.Diagnostics;	//TraceListener
+using System.Text;
+using System.Diagnostics;
 
 namespace OLEDB.Test.ModuleCore
 {

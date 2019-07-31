@@ -17,7 +17,7 @@ namespace System.Data.Common
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
         static internal extern System.Data.OleDb.OleDbHResult GetErrorInfo(
-            [In] Int32 dwReserved,
+            [In] int dwReserved,
             [Out, MarshalAs(UnmanagedType.Interface)] out IErrorInfo ppIErrorInfo);
 
         [Guid("00000567-0000-0010-8000-00AA006D2EA4"), InterfaceType(ComInterfaceType.InterfaceIsDual), ComImport, SuppressUnmanagedCodeSecurity]
@@ -231,10 +231,10 @@ namespace System.Data.Common
             [Obsolete("not used", true)] void GetBindings(/*deleted parameters signature*/);
 
             /*[local]
-        	HRESULT ReleaseAccessor(
-        		[in] HACCESSOR hAccessor,
-        		[in, out, unique] DBREFCOUNT * pcRefCount
-        	);*/
+            HRESULT ReleaseAccessor(
+                [in] HACCESSOR hAccessor,
+                [in, out, unique] DBREFCOUNT * pcRefCount
+            );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult ReleaseAccessor(
                 [In] IntPtr hAccessor,
@@ -261,10 +261,10 @@ namespace System.Data.Common
         internal interface IColumnsInfo
         {
             /*[local]
-        	HRESULT GetColumnInfo(
-        		[in, out] DBORDINAL * pcColumns,
-        		[out, size_is(,(ULONG)*pcColumns)] DBCOLUMNINFO ** prgInfo,
-        		[out] OLECHAR ** ppStringsBuffer
+            HRESULT GetColumnInfo(
+                [in, out] DBORDINAL * pcColumns,
+                [out, size_is(,(ULONG)*pcColumns)] DBCOLUMNINFO ** prgInfo,
+                [out] OLECHAR ** ppStringsBuffer
             );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetColumnInfo(
@@ -329,12 +329,12 @@ namespace System.Data.Common
         internal interface ICommandProperties
         {
             /*[local]
-        	HRESULT GetProperties(
-        		[in] const ULONG cPropertyIDSets,
-        		[in, size_is(cPropertyIDSets)] const DBPROPIDSET rgPropertyIDSets[],
-        		[in, out] ULONG * pcPropertySets,
-        		[out, size_is(,*pcPropertySets)] DBPROPSET ** prgPropertySets
-        	);*/
+            HRESULT GetProperties(
+                [in] const ULONG cPropertyIDSets,
+                [in, size_is(cPropertyIDSets)] const DBPROPIDSET rgPropertyIDSets[],
+                [in, out] ULONG * pcPropertySets,
+                [out, size_is(,*pcPropertySets)] DBPROPSET ** prgPropertySets
+            );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetProperties(
                 [In] int cPropertyIDSets,
@@ -419,9 +419,9 @@ namespace System.Data.Common
         internal interface IDBInfo
         {
             /*[local]
-        	HRESULT	GetKeywords(
-        		[out] LPOLESTR * ppwszKeywords
-        	);*/
+            HRESULT    GetKeywords(
+                [out] LPOLESTR * ppwszKeywords
+            );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetKeywords(
                 [Out, MarshalAs(UnmanagedType.LPWStr)] out string ppwszKeywords);
@@ -500,11 +500,11 @@ namespace System.Data.Common
                 [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppRowset);
 
             /*[local]
-        	HRESULT GetSchemas(
-        		[in, out] ULONG * pcSchemas,
-        		[out, size_is(,*pcSchemas)] GUID ** prgSchemas,
-        		[out, size_is(,*pcSchemas)] ULONG ** prgRestrictionSupport
-        	);*/
+            HRESULT GetSchemas(
+                [in, out] ULONG * pcSchemas,
+                [out, size_is(,*pcSchemas)] GUID ** prgSchemas,
+                [out, size_is(,*pcSchemas)] ULONG ** prgRestrictionSupport
+            );*/
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetSchemas(
                 [Out] out int pcSchemas,
@@ -553,18 +553,18 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetCustomErrorObject( // may return E_NOINTERFACE when asking for IID_ISQLErrorInfo
-                [In] Int32 ulRecordNum,
+                [In] int ulRecordNum,
                 [In] ref Guid riid,
                 [Out, MarshalAs(UnmanagedType.Interface)] out ISQLErrorInfo ppObject);
 
             [return: MarshalAs(UnmanagedType.Interface)]
             IErrorInfo GetErrorInfo(
-                [In] Int32 ulRecordNum,
-                [In] Int32 lcid);
+                [In] int ulRecordNum,
+                [In] int lcid);
 
             [Obsolete("not used", true)] void GetErrorParameters(/*deleted parameter signature*/);
 
-            Int32 GetRecordCount();
+            int GetRecordCount();
         }
 #if false
     MIDL_INTERFACE("0c733a67-2a1c-11ce-ade5-00aa0044773d")
@@ -734,8 +734,8 @@ namespace System.Data.Common
         internal interface ISQLErrorInfo
         {
             [return: MarshalAs(UnmanagedType.I4)]
-            Int32 GetSQLInfo(
-                [Out, MarshalAs(UnmanagedType.BStr)] out String pbstrSQLState);
+            int GetSQLInfo(
+                [Out, MarshalAs(UnmanagedType.BStr)] out string pbstrSQLState);
         }
 
         [Guid("0C733A5F-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]

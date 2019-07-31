@@ -40,7 +40,7 @@ namespace System.Diagnostics
                 if (_initializedLock == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<Object>(ref _initializedLock, o, null);
+                    Interlocked.CompareExchange<object>(ref _initializedLock, o, null);
                 }
 
                 return _initializedLock;

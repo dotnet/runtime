@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
     public static partial class MethodTests
     {
         [Fact]
-        public unsafe static void TestMethods1()
+        public static unsafe void TestMethods1()
         {
             TestMethods1Worker(typeof(ClassWithMethods1<>).Project());
             TestMethods1Worker(typeof(ClassWithMethods1<int>).Project());
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestAllCoreTypes()
+        public static unsafe void TestAllCoreTypes()
         {
             const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
             MethodInfo m = typeof(ClassWithMethods1<>).Project().GetMethod("TestPrimitives1", bf);
@@ -245,7 +245,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe static void TestCustomModifiers1()
+        public static unsafe void TestCustomModifiers1()
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new CoreMetadataAssemblyResolver(), "mscorlib"))
             {

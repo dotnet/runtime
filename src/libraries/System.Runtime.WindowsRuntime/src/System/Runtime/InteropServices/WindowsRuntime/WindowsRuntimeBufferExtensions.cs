@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (source.Capacity - sourceIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInSourceBuffer);
 
             if (count == 0)
-                return Array.Empty<Byte>();
+                return Array.Empty<byte>();
 
             byte[] destination = new byte[count];
             source.CopyTo(sourceIndex, destination, 0, count);

@@ -4,8 +4,8 @@
 // TIFF Codec class testing unit
 //
 // Authors:
-//	Jordi Mas i Hernàndez (jordi@ximian.com)
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006, 2007 Novell, Inc (http://www.novell.com)
 //
@@ -49,7 +49,7 @@ namespace MonoTests.System.Drawing.Imaging
                 GraphicsUnit unit = GraphicsUnit.World;
                 RectangleF rect = bmp.GetBounds(ref unit);
                 // MS reports 24 bpp while we report 32 bpp
-                //				Assert.Equal (PixelFormat.Format24bppRgb, bmp.PixelFormat);
+                //                Assert.Equal (PixelFormat.Format24bppRgb, bmp.PixelFormat);
                 Assert.Equal(173, bmp.Width);
                 Assert.Equal(183, bmp.Height);
 
@@ -249,7 +249,7 @@ namespace MonoTests.System.Drawing.Imaging
         {
             string sOutFile = $"linerect-{expected}.tif";
 
-            // Save		
+            // Save
             Bitmap bmp = new Bitmap(100, 100, original);
             Graphics gr = Graphics.FromImage(bmp);
 

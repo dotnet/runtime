@@ -24,7 +24,7 @@ namespace System.Security.Permissions
         SafeImage,
         AllImage,
     }
-    sealed public class MediaPermission : CodeAccessPermission, IUnrestrictedPermission
+    public sealed class MediaPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public MediaPermission() { }
         public MediaPermission(PermissionState state) { }
@@ -47,7 +47,7 @@ namespace System.Security.Permissions
         public MediaPermissionImage Image { get { return MediaPermissionImage.AllImage; } }
     }
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
-    sealed public class MediaPermissionAttribute : CodeAccessSecurityAttribute
+    public sealed class MediaPermissionAttribute : CodeAccessSecurityAttribute
     {
         public MediaPermissionAttribute(SecurityAction action) : base(action) { }
         public override IPermission CreatePermission() { return new MediaPermission(); }
