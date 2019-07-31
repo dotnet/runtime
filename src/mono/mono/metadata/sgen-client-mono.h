@@ -716,12 +716,6 @@ sgen_client_binary_protocol_ephemeron_ref (gpointer list, gpointer key, gpointer
 
 guint64 mono_time_since_last_stw (void);
 
-typedef MonoSemType SgenSemaphore;
-
-#define SGEN_SEMAPHORE_INIT(sem,initial)	mono_os_sem_init ((sem), (initial))
-#define SGEN_SEMAPHORE_POST(sem)		mono_os_sem_post ((sem))
-#define SGEN_SEMAPHORE_WAIT(sem)		mono_os_sem_wait ((sem), MONO_SEM_FLAGS_NONE)
-
 gboolean sgen_has_critical_method (void);
 gboolean sgen_is_critical_method (MonoMethod *method);
 
