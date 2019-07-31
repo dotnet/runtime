@@ -7,8 +7,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	public class ConstructorUsedViaReflection {
 		public static void Main ()
 		{
-			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, null, new Type[]{}, new ParameterModifier[]{});
+			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type[]{}, new ParameterModifier[]{});
 			constructor.Invoke (null, new object[] { });
+		}
+
+		[Kept]
+		static Binder GetNullValue (string str, int i, long g)
+		{
+			return null;
 		}
 
 		[Kept]

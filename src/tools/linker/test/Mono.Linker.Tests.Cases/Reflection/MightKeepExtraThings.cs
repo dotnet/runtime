@@ -3,7 +3,9 @@ using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Reflection {
-	public class MightKeepExtraThings {
+	[IgnoreTestCase ("Reflection tracking for simple locals loads")]
+	public class MightKeepExtraThings
+	{
 		public static void Main ()
 		{
 			new A (); // Needed to avoid lazy body marking stubbing
@@ -25,8 +27,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			}
 		}
 
-		[Kept]
-		[KeptMember (".ctor()")]
 		public class B {
 			[Kept]
 			public int Foo ()
