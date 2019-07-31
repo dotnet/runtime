@@ -254,6 +254,12 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_array_ccw_itest (int count, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] ITest[] ppUnk);
 
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_retval_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITest itest, bool test_null);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_retval_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITestPresSig itest, bool test_null);
+
 	[DllImport("libtest")]
 	public static extern int mono_test_cominterop_ccw_queryinterface ([MarshalAs (UnmanagedType.Interface)] IOtherTest itest);
 
@@ -578,6 +584,13 @@ public class Tests
 			if (mono_test_cominterop_ccw_queryinterface (otherTest) != 0)
 				return 202;
 
+			if (mono_test_marshal_retval_ccw_itest(test, true) != 0)
+				return 203;
+
+			/* Passing NULL to an out parameter will crash. */
+			if (mono_test_marshal_retval_ccw_itest(test_pres_sig, false) != 0)
+				return 204;
+
 			#endregion // COM Callable Wrapper Tests
 
 			#region SAFEARRAY tests
@@ -794,6 +807,8 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		void ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITest val);
 		int Return22NoICall();
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		int IntOut();
 	}
 
 	[ComImport ()]
@@ -847,6 +862,9 @@ public class Tests
 		int ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITestPresSig val);
 		[PreserveSig ()]
 		int Return22NoICall();
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int IntOut (out int val);
 	}
 
 	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
@@ -886,9 +904,10 @@ public class Tests
 		public virtual extern void ITestIn ([MarshalAs (UnmanagedType.Interface)]ITest val);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern void ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITest val);
-
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern int Return22NoICall();
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern int IntOut();
 	}
 
 	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
@@ -1033,6 +1052,12 @@ public class Tests
 		{
 			return 88;
 		}
+
+		public int IntOut(out int val)
+		{
+			val = 33;
+			return 0;
+		}
 	}
 
 	public class ManagedTest : ITest
@@ -1126,6 +1151,11 @@ public class Tests
 		public int Return22NoICall()
 		{
 			return 99;
+		}
+
+		public int IntOut()
+		{
+			return 33;
 		}
 	}
 

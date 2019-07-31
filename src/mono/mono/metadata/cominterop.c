@@ -2298,8 +2298,8 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig, *sig_native;
 	MonoExceptionClause *main_clause = NULL;
+	int hr = 0, retval = 0;
 	int pos_leave;
-	int hr = 0;
 	int i;
 	gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
 
@@ -2334,18 +2334,17 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	mspecs [0] = NULL;
 
 #ifndef DISABLE_JIT
-	if (!preserve_sig)
+	if (!preserve_sig) {
+		if (!MONO_TYPE_IS_VOID (sig->ret))
+			retval = mono_mb_add_local (mb, sig->ret);
 		hr = mono_mb_add_local (mb, mono_get_int32_type ());
+	}
 	else if (!MONO_TYPE_IS_VOID (sig->ret))
 		hr = mono_mb_add_local (mb, sig->ret);
 
 	/* try */
 	main_clause = g_new0 (MonoExceptionClause, 1);
 	main_clause->try_offset = mono_mb_get_label (mb);
-
-	/* load last param to store result if not preserve_sig and not void */
-	if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret))
-		mono_mb_emit_ldarg (mb, sig_native->param_count-1);
 
 	/* the CCW -> object conversion */
 	mono_mb_emit_ldarg (mb, 0);
@@ -2359,12 +2358,21 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		if (!preserve_sig) {
+			mono_mb_emit_stloc (mb, retval);
+			mono_mb_emit_ldarg (mb, sig_native->param_count - 1);
+			const int pos_null = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+			mono_mb_emit_ldarg (mb, sig_native->param_count - 1);
+			mono_mb_emit_ldloc (mb, retval);
+
 			MonoClass *rclass = mono_class_from_mono_type_internal (sig->ret);
 			if (m_class_is_valuetype (rclass)) {
 				mono_mb_emit_op (mb, CEE_STOBJ, rclass);
 			} else {
 				mono_mb_emit_byte (mb, mono_type_to_stind (sig->ret));
 			}
+
+			mono_mb_patch_branch (mb, pos_null);
 		} else
 			mono_mb_emit_stloc (mb, hr);
 	}
