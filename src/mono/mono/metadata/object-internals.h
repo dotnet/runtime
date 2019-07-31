@@ -564,11 +564,11 @@ struct _MonoThread {
 #else
 struct _MonoInternalThread {
 #endif
+	// FIXME: Mechanize keeping this in sync with managed.
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	MonoThreadHandle *handle;
 	gpointer native_handle;
-	gpointer unused3;
 	gunichar2  *name;
 	guint32	    name_len;
 	guint32	    state;      /* must be accessed while longlived->synch_cs is locked */
@@ -597,7 +597,6 @@ struct _MonoInternalThread {
 	gint32 managed_id;
 	guint32 small_id;
 	MonoThreadManageCallback manage_callback;
-	gpointer unused4;
 	gsize    flags;
 	gpointer thread_pinning_ref;
 	gsize __abort_protected_block_count;
@@ -605,20 +604,14 @@ struct _MonoInternalThread {
 	GPtrArray *owned_mutexes;
 	MonoOSEvent *suspended;
 	gint32 self_suspended; // TRUE | FALSE
-
 	gsize thread_state;
+
 #ifdef ENABLE_NETCORE
 	struct _MonoThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
 #else
-	/* 
-	 * These fields are used to avoid having to increment corlib versions
-	 * when a new field is added to this structure.
-	 * Please synchronize any changes with InternalThread in Thread.cs, i.e. add the
-	 * same field there.
-	 */
-	gsize unused2;
+	void* unused [3]; // same size as netcore
 #endif
 	/* This is used only to check that we are in sync between the representation
 	 * of MonoInternalThread in native and InternalThread in managed
