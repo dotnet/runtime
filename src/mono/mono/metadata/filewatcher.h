@@ -26,11 +26,6 @@ ICALL_EXPORT
 gint ves_icall_System_IO_FSW_SupportsFSW (void);
 
 ICALL_EXPORT
-gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
-							MonoString **filename,
-							gint *code,
-							gint *reqnum);
-ICALL_EXPORT
 int ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq, gpointer changelist, int nchanges, gpointer eventlist, int nevents);
 
 #endif

@@ -267,40 +267,13 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double);
 
 ICALL_EXPORT
-gint8 ves_icall_System_Threading_Volatile_Read1 (void *ptr);
-
-ICALL_EXPORT
-gint16 ves_icall_System_Threading_Volatile_Read2 (void *ptr);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_Volatile_Read4 (void *ptr);
-
-ICALL_EXPORT
 gint64 ves_icall_System_Threading_Volatile_Read8 (void *ptr);
 
 ICALL_EXPORT
 guint64 ves_icall_System_Threading_Volatile_ReadU8 (void *ptr);
 
 ICALL_EXPORT
-void * ves_icall_System_Threading_Volatile_ReadIntPtr (void *ptr);
-
-ICALL_EXPORT
 double ves_icall_System_Threading_Volatile_ReadDouble (void *ptr);
-
-ICALL_EXPORT
-float ves_icall_System_Threading_Volatile_ReadFloat (void *ptr);
-
-ICALL_EXPORT
-MonoObject* ves_icall_System_Threading_Volatile_Read_T (void *ptr);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write1 (void *ptr, gint8);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write2 (void *ptr, gint16);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write4 (void *ptr, gint32);
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64);
@@ -309,16 +282,7 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64);
 
 ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteIntPtr (void *ptr, void *);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteFloat (void *ptr, float);
-
-ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value);
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);

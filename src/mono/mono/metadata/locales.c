@@ -308,9 +308,9 @@ construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, M
 	mono_handle_setval (this_obj, lcid, ci->lcid);
 
 #define SET_STR_FIELD(obj,field,domain,expr,error) do {					\
-	MonoStringHandle _str = mono_string_new_handle ((domain), (expr), (error));	\
+	MonoString *_str = mono_string_new_checked ((domain), (expr), (error));	\
 	return_val_if_nok (error, FALSE);										\
-	MONO_HANDLE_SET ((obj), field, _str);	\
+	MONO_HANDLE_SETRAW ((obj), field, _str);	\
 	} while (0)
 
 	SET_STR_FIELD (this_obj, name, domain, idx2string (ci->name), error);

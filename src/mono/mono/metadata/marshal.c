@@ -5538,10 +5538,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 	return res;
 }
 
-void*
-ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index)
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArrayHandle arrayobj, int index, MonoError *error)
 {
-	return mono_array_addr_with_size_fast (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
+	int esize = mono_array_element_size (mono_handle_class (arrayobj));
+	return mono_array_addr_with_size_fast (MONO_HANDLE_RAW (arrayobj), esize, index);
 }
 
 MonoDelegateHandle

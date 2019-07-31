@@ -600,10 +600,6 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr);
 
 ICALL_EXPORT
-void*
-ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
-
-ICALL_EXPORT
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk);
 

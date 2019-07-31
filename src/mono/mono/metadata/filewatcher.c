@@ -27,6 +27,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/icall-decl.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/w32error.h>
@@ -43,11 +44,11 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	return 1;
 }
 
-gboolean
+int
 ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
-					       MonoString **filename,
-					       gint *code,
-					       gint *reqnum)
+											   MonoStringHandleOut filename,
+											   int *code,
+											   int *reqnum, MonoError *error)
 {
 	return FALSE;
 }
@@ -113,21 +114,20 @@ typedef struct FAMEvent {
 	gint code;
 } FAMEvent;
 
-gboolean
+int
 ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
-					       MonoString **filename,
-					       gint *code,
-					       gint *reqnum)
+											   MonoStringHandleOut filename,
+											   int *code,
+											   int *reqnum,
+											   MonoError *error)
 {
-	ERROR_DECL (error);
 	FAMEvent ev;
 
 	if (FAMNextEvent (conn, &ev) == 1) {
-		*filename = mono_string_new_checked (mono_domain_get (), ev.filename, error);
+		MONO_HANDLE_ASSIGN_RAW (filename, mono_string_new_checked (mono_domain_get (), ev.filename, error));
+		return_val_if_nok (error, FALSE);
 		*code = ev.code;
 		*reqnum = ev.fr.reqnum;
-		if (mono_error_set_pending_exception (error))
-			return FALSE;
 		return TRUE;
 	}
 

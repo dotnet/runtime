@@ -47,7 +47,7 @@ typedef int *int_ptr;
 typedef int **int_ptr_ref;
 typedef guint8 **guint8_ptr_ref;
 typedef GPtrArray *GPtrArray_ptr;
-typedef void *HANDLE;
+typedef gpointer PROCESS_HANDLE;
 typedef MonoAssemblyName *MonoAssemblyName_ptr;
 typedef MonoBoolean *MonoBoolean_ptr;
 typedef MonoClass *MonoClass_ptr;
@@ -182,7 +182,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoStackCrawlMark_ptr  	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gint32_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gpointer_ptr		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_HANDLE			ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_PROCESS_HANDLE			ICALL_HANDLES_WRAP_NONE
 
 // Please keep this sorted (grep ICALL_HANDLES_WRAP_OBJ$ | sort)
 #define MONO_HANDLE_TYPE_WRAP_MonoAppContext 			ICALL_HANDLES_WRAP_OBJ
@@ -220,6 +220,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoString			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoStringBuilder			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoThreadObject			ICALL_HANDLES_WRAP_OBJ
+#define MONO_HANDLE_TYPE_WRAP_MonoTransparentProxy			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoW32ProcessStartInfo		ICALL_HANDLES_WRAP_OBJ
 
 #define MONO_HANDLE_TYPE_WRAP_MonoObjectOut		ICALL_HANDLES_WRAP_OBJ_OUT

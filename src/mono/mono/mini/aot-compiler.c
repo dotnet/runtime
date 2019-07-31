@@ -5669,28 +5669,6 @@ add_generic_instances (MonoAotCompile *acfg)
 			}
 		}
 
-		/* Same for Volatile.Read/Write<T> */
-		{
-			MonoGenericContext ctx;
-			MonoType *args [16];
-			MonoMethod *m;
-			MonoClass *volatile_klass = mono_class_try_load_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
-			gpointer iter = NULL;
-
-			if (volatile_klass) {
-				while ((m = mono_class_get_methods (volatile_klass, &iter))) {
-					if ((!strcmp (m->name, "Read") || !strcmp (m->name, "Write")) && m->is_generic) {
-						ERROR_DECL (error);
-						memset (&ctx, 0, sizeof (ctx));
-						args [0] = object_type;
-						ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-						add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE));
-						g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
-					}
-				}
-			}
-		}
-
 		/* object[] accessor wrappers. */
 		for (i = 1; i < 4; ++i) {
 			MonoClass *obj_array_class = mono_class_create_array (mono_defaults.object_class, i);
@@ -11697,6 +11675,9 @@ should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 		/* The SIMD fallback code in Vector<T> is very large, and not likely to be used */
 		return FALSE;
 #endif
+	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Volatile"))
+		/* Read<T>/Write<T> are not needed and cause JIT failures */
+		return FALSE;
 	return TRUE;
 }
 
