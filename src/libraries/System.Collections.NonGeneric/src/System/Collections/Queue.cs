@@ -257,7 +257,7 @@ namespace System.Collections
         public virtual object[] ToArray()
         {
             if (_size == 0)
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
 
             object[] arr = new object[_size];
             if (_head < _tail)

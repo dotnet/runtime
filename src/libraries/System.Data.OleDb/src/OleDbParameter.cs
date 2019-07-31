@@ -59,8 +59,8 @@ namespace System.Data.OleDb
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public OleDbParameter(string parameterName,
                               OleDbType dbType, int size,
-                              ParameterDirection direction, Boolean isNullable,
-                              Byte precision, Byte scale,
+                              ParameterDirection direction, bool isNullable,
+                              byte precision, byte scale,
                               string srcColumn, DataRowVersion srcVersion,
                               object value) : this()
         { // V1.0 everything
@@ -80,7 +80,7 @@ namespace System.Data.OleDb
         public OleDbParameter(string parameterName,
                               OleDbType dbType, int size,
                               ParameterDirection direction,
-                              Byte precision, Byte scale,
+                              byte precision, byte scale,
                               string sourceColumn, DataRowVersion sourceVersion, bool sourceColumnNullMapping,
                               object value) : this()
         { // V2.0 everything - round trip all browsable properties + precision/scale
@@ -178,8 +178,8 @@ namespace System.Data.OleDb
             }
         }
 
-        [DefaultValue((Byte)0)]
-        public new Byte Precision
+        [DefaultValue((byte)0)]
+        public new byte Precision
         {
             get
             {
@@ -215,8 +215,8 @@ namespace System.Data.OleDb
             return (0 != _precision);
         }
 
-        [DefaultValue((Byte)0)]
-        public new Byte Scale
+        [DefaultValue((byte)0)]
+        public new byte Scale
         {
             get
             {
@@ -341,15 +341,15 @@ namespace System.Data.OleDb
                 {
                     if (NativeDBType.STR == dbtype.dbType)
                     {
-                        size = Int32.MaxValue;
+                        size = int.MaxValue;
                     }
                     else if (NativeDBType.WSTR == dbtype.dbType)
                     {
-                        size = Int32.MaxValue / 2;
+                        size = int.MaxValue / 2;
                     }
                     else
                     {
-                        size = Int32.MaxValue;
+                        size = int.MaxValue;
                     }
                 }
                 wtype |= NativeDBType.BYREF;
@@ -476,7 +476,7 @@ namespace System.Data.OleDb
                         }
                         else if ((NativeDBType.CY == destinationType.dbType) && (typeof(string) == currentType))
                         {
-                            value = Decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null);
+                            value = decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null);
                         }
                         else
                         {
@@ -620,7 +620,7 @@ namespace System.Data.OleDb
         }
 
         // implemented as nested class to take advantage of the private/protected ShouldSerializeXXX methods
-        sealed internal class OleDbParameterConverter : System.ComponentModel.ExpandableObjectConverter
+        internal sealed class OleDbParameterConverter : System.ComponentModel.ExpandableObjectConverter
         {
             // converter classes should have public ctor
             public OleDbParameterConverter()

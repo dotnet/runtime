@@ -55,7 +55,7 @@ namespace System.IO.Ports.Tests
                                     Math.Min(xmitCharBuffer.Length, maxNumberOfCharactes) + 1);
                                 int expectedBytesToRead = com2.BytesToRead + 2 * numberOfCharacters;
 
-                                //						Debug.WriteLine("Writing {0,5} characters BytesToRead={1,5}", numberOfCharacters, com2.BytesToRead);
+                                //                        Debug.WriteLine("Writing {0,5} characters BytesToRead={1,5}", numberOfCharacters, com2.BytesToRead);
                                 com1.Write(xmitCharBuffer, 0, numberOfCharacters);
                                 buffer.Append(xmitCharBuffer, 0, numberOfCharacters);
 
@@ -74,7 +74,7 @@ namespace System.IO.Ports.Tests
                                 int actualNumberOfCharactersRead;
                                 int expectedBytesToRead = com2.BytesToRead - (2 * numberOfCharacters);
 
-                                //						Debug.WriteLine("Reading {0,5} characters BytesToRead={1,5}", numberOfCharacters, com2.BytesToRead);
+                                //                        Debug.WriteLine("Reading {0,5} characters BytesToRead={1,5}", numberOfCharacters, com2.BytesToRead);
                                 actualNumberOfCharactersRead = com2.Read(rcvCharBuffer, 0, numberOfCharacters);
 
                                 if (actualNumberOfCharactersRead == numberOfCharacters)

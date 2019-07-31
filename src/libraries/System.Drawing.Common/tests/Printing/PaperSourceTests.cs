@@ -23,7 +23,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Author:
-// 	Andy Hume <andyhume32@yahoo.co.uk>
+//  Andy Hume <andyhume32@yahoo.co.uk>
 //
 
 using Xunit;

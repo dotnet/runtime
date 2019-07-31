@@ -13,8 +13,8 @@ namespace System.Net.Security
         private const int ProtocolVersionSize = 2;
         private const int UInt24Size = 3;
         private const int RandomSize = 32;
-        private readonly static IdnMapping s_idnMapping = CreateIdnMapping();
-        private readonly static Encoding s_encoding = CreateEncoding();
+        private static readonly IdnMapping s_idnMapping = CreateIdnMapping();
+        private static readonly Encoding s_encoding = CreateEncoding();
 
         public static string GetServerName(byte[] clientHello)
         {

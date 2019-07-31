@@ -1027,7 +1027,7 @@ namespace System.Diagnostics.Tests
         }
 
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private unsafe static extern int AssocQueryStringW(
+        private static extern unsafe int AssocQueryStringW(
             int flags,
             int str,
             string pszAssoc,
@@ -1035,7 +1035,7 @@ namespace System.Diagnostics.Tests
             char* pszOut,
             ref uint pcchOut);
 
-        private unsafe static string GetAssociationString(int flags, int str, string pszAssoc, string pszExtra)
+        private static unsafe string GetAssociationString(int flags, int str, string pszAssoc, string pszExtra)
         {
             uint count = 0;
             int result = AssocQueryStringW(flags, str, pszAssoc, pszExtra, null, ref count);

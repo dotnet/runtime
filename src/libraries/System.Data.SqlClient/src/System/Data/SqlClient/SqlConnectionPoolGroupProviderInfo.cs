@@ -11,7 +11,7 @@ using System.Data.ProviderBase;
 
 namespace System.Data.SqlClient
 {
-    sealed internal class SqlConnectionPoolGroupProviderInfo : DbConnectionPoolGroupProviderInfo
+    internal sealed class SqlConnectionPoolGroupProviderInfo : DbConnectionPoolGroupProviderInfo
     {
         private string _alias;
         private string _failoverPartner;

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable SA1121 // we don't want to simplify built-ins here as we're using aliasing
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;

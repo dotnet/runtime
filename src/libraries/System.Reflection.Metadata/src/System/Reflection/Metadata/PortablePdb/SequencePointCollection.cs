@@ -66,7 +66,7 @@ namespace System.Reflection.Metadata
                 {
                     // header (skip local signature rid):
                     _reader.ReadCompressedInteger();
-					
+
                     if (document.IsNil)
                     {
                         document = ReadDocumentHandle();

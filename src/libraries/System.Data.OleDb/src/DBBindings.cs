@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Data.OleDb
 {
-    sealed internal class Bindings
+    internal sealed class Bindings
     {
         private readonly tagDBPARAMBINDINFO[] _bindInfo;
         private readonly tagDBBINDING[] _dbbindings;

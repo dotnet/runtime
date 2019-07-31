@@ -8,7 +8,7 @@ namespace System.Net.Test.Common
 {
     public class TestLogging : ITestOutputHelper
     {
-        private readonly static TestLogging s_instance = new TestLogging();
+        private static readonly TestLogging s_instance = new TestLogging();
 
         private TestLogging()
         {

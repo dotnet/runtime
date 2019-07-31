@@ -203,7 +203,7 @@ namespace System.Memory.Tests
 
         public static TheoryData<Action<ReadOnlySequence<byte>>> OutOfRangeSliceCases => new TheoryData<Action<ReadOnlySequence<byte>>>
         {
-            // negative start	
+            // negative start
             b => b.Slice(-1), // no length
             b => b.Slice(-1, -1), // negative length
             b => b.Slice(-1, 0), // zero length

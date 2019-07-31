@@ -5,7 +5,7 @@
 // for System.Configuration.ConfigurationElement.
 //
 // Author:
-//	Konstantin Triger <kostat@mainsoft.com>
+//  Konstantin Triger <kostat@mainsoft.com>
 //
 // Copyright (C) 2006 Mainsoft, Inc (http://www.mainsoft.com)
 //

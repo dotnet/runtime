@@ -1142,7 +1142,7 @@ namespace System.Data.OleDb
             {
                 OleDbHResult hr;
 
-                String commandText = ExpandCommandText();
+                string commandText = ExpandCommandText();
 
                 hr = _icommandText.SetCommandText(ref ODB.DBGUID_DEFAULT, commandText);
 

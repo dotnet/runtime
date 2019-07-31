@@ -16,7 +16,7 @@ using System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    sealed internal partial class DbConnectionPool
+    internal sealed partial class DbConnectionPool
     {
         private enum State
         {

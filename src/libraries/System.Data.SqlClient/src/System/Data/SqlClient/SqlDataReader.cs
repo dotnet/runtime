@@ -1063,7 +1063,7 @@ namespace System.Data.SqlClient
             {
                 if (_parser.State == TdsParserState.Broken || _parser.State == TdsParserState.Closed)
                 {
-                    // Happened for DEVDIV2:180509	(SqlDataReader.ConsumeMetaData Hangs In 100% CPU Loop Forever When TdsParser._state == TdsParserState.Broken)
+                    // Happened for DEVDIV2:180509    (SqlDataReader.ConsumeMetaData Hangs In 100% CPU Loop Forever When TdsParser._state == TdsParserState.Broken)
                     // during request for DTC address.
                     // NOTE: We doom connection for TdsParserState.Closed since it indicates that it is in some abnormal and unstable state, probably as a result of
                     // closing from another thread. In general, TdsParserState.Closed does not necessitate dooming the connection.

@@ -13,8 +13,8 @@ namespace System.Numerics.Tests
 {
     public partial class parseTest
     {
-        private readonly static int s_samples = 10;
-        private readonly static Random s_random = new Random(100);
+        private static readonly int s_samples = 10;
+        private static readonly Random s_random = new Random(100);
 
         // Invariant culture is commonly used for (de-)serialization and similar to en-US
         // Ukrainian (Ukraine) added to catch regressions (issue #1642)

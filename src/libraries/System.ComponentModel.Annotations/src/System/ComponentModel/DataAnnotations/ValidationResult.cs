@@ -98,7 +98,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Override the string representation of this instance, returning
         ///     the <see cref="ErrorMessage" /> if not <c>null</c>, otherwise
-        ///     the base <see cref="Object.ToString" /> result.
+        ///     the base <see cref="object.ToString" /> result.
         /// </summary>
         /// <remarks>
         ///     If the <see cref="ErrorMessage" /> is empty, it will still qualify
@@ -106,7 +106,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </remarks>
         /// <returns>
         ///     The <see cref="ErrorMessage" /> property value if specified,
-        ///     otherwise, the base <see cref="Object.ToString" /> result.
+        ///     otherwise, the base <see cref="object.ToString" /> result.
         /// </returns>
         public override string ToString() => ErrorMessage ?? base.ToString();
         #endregion Methods

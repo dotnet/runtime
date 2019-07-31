@@ -2228,17 +2228,17 @@ namespace System.Data.Tests
             // Item - columnn,Current
             Assert.Equal(1, (int)myRow[dc, DataRowVersion.Current]);
 
-            //	testMore();
+            //  testMore();
         }
 
         /*public void testMore()
-		{
-			DataTable dt = DataProvider.CreateParentDataTable();
-			dt.Rows[0].BeginEdit();
-			dt.Rows[0][0] = 10;
-			dt.Rows[0].EndEdit();
-			dt.AcceptChanges();
-		}*/
+        {
+            DataTable dt = DataProvider.CreateParentDataTable();
+            dt.Rows[0].BeginEdit();
+            dt.Rows[0][0] = 10;
+            dt.Rows[0].EndEdit();
+            dt.AcceptChanges();
+        }*/
 
         [Fact]
         public void RejectChanges()

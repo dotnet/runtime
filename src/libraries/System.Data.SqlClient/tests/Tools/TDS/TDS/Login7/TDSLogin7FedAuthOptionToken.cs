@@ -138,7 +138,7 @@ namespace Microsoft.SqlServer.TDS.Login7
 
         /// <summary>
         /// Inflating constructor
-        /// </summary>		
+        /// </summary>
         public TDSLogin7FedAuthOptionToken(Stream source)
             : this()
         {

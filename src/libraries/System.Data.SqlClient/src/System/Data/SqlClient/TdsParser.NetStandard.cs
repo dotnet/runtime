@@ -9,23 +9,23 @@ namespace System.Data.SqlClient
 {
     internal sealed partial class TdsParser
     {
-		internal static void FillGuidBytes(Guid guid, Span<byte> buffer)
+        internal static void FillGuidBytes(Guid guid, Span<byte> buffer)
         {
             byte[] bytes = guid.ToByteArray();
             bytes.AsSpan().CopyTo(buffer);
         }
 
-		internal static void FillDoubleBytes(double value, Span<byte> buffer)
-		{
-			byte[] bytes = BitConverter.GetBytes(value);
-			bytes.AsSpan().CopyTo(buffer);
-		}
+        internal static void FillDoubleBytes(double value, Span<byte> buffer)
+        {
+            byte[] bytes = BitConverter.GetBytes(value);
+            bytes.AsSpan().CopyTo(buffer);
+        }
 
-		internal static void FillFloatBytes(float value, Span<byte> buffer)
-		{
-			byte[] bytes = BitConverter.GetBytes(value);
-			bytes.AsSpan().CopyTo(buffer);
-		}
+        internal static void FillFloatBytes(float value, Span<byte> buffer)
+        {
+            byte[] bytes = BitConverter.GetBytes(value);
+            bytes.AsSpan().CopyTo(buffer);
+        }
 
         internal static Guid ConstructGuid(ReadOnlySpan<byte> bytes)
         {

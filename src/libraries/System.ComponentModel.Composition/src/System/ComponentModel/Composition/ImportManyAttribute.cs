@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition
         ///     set of exports with the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="String"/> containing the contract name of the exports to import, or 
+        ///      A <see cref="string"/> containing the contract name of the exports to import, or 
         ///      <see langword="null"/> or an empty string ("") to use the default contract name.
         /// </param>
         /// <remarks>
@@ -98,7 +98,7 @@ namespace System.ComponentModel.Composition
         ///     Gets the contract name of the exports to import.
         /// </summary>
         /// <value>
-        ///      A <see cref="String"/> containing the contract name of the exports to import. The 
+        ///      A <see cref="string"/> containing the contract name of the exports to import. The 
         ///      default value is an empty string ("").
         /// </value>
         public string ContractName { get; private set; }

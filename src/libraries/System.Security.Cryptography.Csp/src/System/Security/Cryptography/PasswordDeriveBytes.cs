@@ -189,7 +189,7 @@ namespace System.Security.Cryptography
                 _hash.TransformBlock(_salt, 0, _salt.Length, _salt, 0);
             }
 
-            _hash.TransformFinalBlock(Array.Empty<Byte>(), 0, 0);
+            _hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
             _baseValue = _hash.Hash;
             _hash.Initialize();
 

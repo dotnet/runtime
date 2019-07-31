@@ -34,7 +34,7 @@ namespace Microsoft.SqlServer.TDS.Login7
         /// <summary>
         /// Initialization constructor
         /// </summary>
-		public TDSLogin7TokenOffsetProperty(PropertyInfo property, ushort position, ushort length)
+        public TDSLogin7TokenOffsetProperty(PropertyInfo property, ushort position, ushort length)
         {
             Property = property;
             Position = position;
@@ -44,7 +44,7 @@ namespace Microsoft.SqlServer.TDS.Login7
         /// <summary>
         /// Initialization constructor
         /// </summary>
-		public TDSLogin7TokenOffsetProperty(PropertyInfo property, ushort position, ushort length, bool isOffsetOffset) :
+        public TDSLogin7TokenOffsetProperty(PropertyInfo property, ushort position, ushort length, bool isOffsetOffset) :
             this(property, position, length)
         {
             IsOffsetOffset = isOffsetOffset;

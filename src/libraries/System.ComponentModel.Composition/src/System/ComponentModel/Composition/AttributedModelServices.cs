@@ -224,7 +224,7 @@ namespace System.ComponentModel.Composition
         /// <param name="part">The part.</param>
         /// <param name="contractType">Type of the contract.</param>
         /// <returns>
-        /// 	<c>true</c> if the specified part exports the specified contract; otherwise, <c>false</c>.
+        ///    <c>true</c> if the specified part exports the specified contract; otherwise, <c>false</c>.
         /// </returns>
         public static bool Exports(this ComposablePartDefinition part, Type contractType)
         {
@@ -240,7 +240,7 @@ namespace System.ComponentModel.Composition
         /// <typeparam name="T">Type of the contract.</typeparam>
         /// <param name="part">The part.</param>
         /// <returns>
-        /// 	<c>true</c> if the specified part exports the specified contract; otherwise, <c>false</c>.
+        ///     <c>true</c> if the specified part exports the specified contract; otherwise, <c>false</c>.
         /// </returns>
         public static bool Exports<T>(this ComposablePartDefinition part)
         {
@@ -255,7 +255,7 @@ namespace System.ComponentModel.Composition
         /// <param name="part">The part.</param>
         /// <param name="contractType">Type of the contract.</param>
         /// <returns>
-        /// 	<c>true</c> if the specified part imports the specified contract; otherwise, <c>false</c>.
+        ///     <c>true</c> if the specified part imports the specified contract; otherwise, <c>false</c>.
         /// </returns>
         public static bool Imports(this ComposablePartDefinition part, Type contractType)
         {
@@ -271,7 +271,7 @@ namespace System.ComponentModel.Composition
         /// <param name="part">The part.</param>
         /// <typeparam name="T">Type of the contract.</typeparam>
         /// <returns>
-        /// 	<c>true</c> if the specified part imports the specified contract; otherwise, <c>false</c>.
+        ///     <c>true</c> if the specified part imports the specified contract; otherwise, <c>false</c>.
         /// </returns>
         public static bool Imports<T>(this ComposablePartDefinition part)
         {
@@ -287,7 +287,7 @@ namespace System.ComponentModel.Composition
         /// <param name="contractType">Type of the contract.</param>
         /// <param name="importCardinality">The import cardinality.</param>
         /// <returns>
-        /// 	<c>true</c> if the specified part imports the specified contract with the given cardinality; otherwise, <c>false</c>.
+        ///     <c>true</c> if the specified part imports the specified contract with the given cardinality; otherwise, <c>false</c>.
         /// </returns>
         public static bool Imports(this ComposablePartDefinition part, Type contractType, ImportCardinality importCardinality)
         {
@@ -304,7 +304,7 @@ namespace System.ComponentModel.Composition
         /// <typeparam name="T">Type of the contract.</typeparam>
         /// <param name="importCardinality">The import cardinality.</param>
         /// <returns>
-        /// 	<c>true</c> if the specified part imports the specified contract with the given cardinality; otherwise, <c>false</c>.
+        ///     <c>true</c> if the specified part imports the specified contract with the given cardinality; otherwise, <c>false</c>.
         /// </returns>
         public static bool Imports<T>(this ComposablePartDefinition part, ImportCardinality importCardinality)
         {

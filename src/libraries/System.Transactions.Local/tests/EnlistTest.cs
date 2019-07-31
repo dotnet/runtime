@@ -63,7 +63,7 @@ namespace System.Transactions.Tests
                 irm.Value = 2;
 
                 /* Not completing this..
-				scope.Complete ();*/
+                scope.Complete ();*/
             }
 
             irm.Check(0, 0, 0, 1, 0, 0, 0, "irm");
@@ -151,8 +151,8 @@ namespace System.Transactions.Tests
         }
 
         /* We support only 1 durable with 2PC
-		 * On .net, this becomes a distributed transaction
-		 */
+         * On .net, this becomes a distributed transaction
+         */
         [ActiveIssue(13532)] //Distributed transactions are not supported.
         [Fact]
         public void Vol0_Dur1_2PC()
@@ -160,8 +160,8 @@ namespace System.Transactions.Tests
             IntResourceManager irm = new IntResourceManager(1);
 
             /* Durable resource enlisted with a IEnlistedNotification
-			 * object
-			 */
+             * object
+             */
             irm.Type = ResourceManagerType.Durable;
 
             using (TransactionScope scope = new TransactionScope())
@@ -178,8 +178,8 @@ namespace System.Transactions.Tests
             IntResourceManager irm = new IntResourceManager(1);
 
             /* Durable resource enlisted with a IEnlistedNotification
-			 * object
-			 */
+             * object
+             */
             irm.Type = ResourceManagerType.Durable;
             irm.FailSPC = true;
             irm.UseSingle = true;
@@ -229,8 +229,8 @@ namespace System.Transactions.Tests
         }
 
         /* >1vol + 1 durable
-		 * Durable fails SPC
-		 */
+         * Durable fails SPC
+         */
         [Fact]
         public void Vol2_Dur1_Fail1()
         {
@@ -247,7 +247,7 @@ namespace System.Transactions.Tests
                 irm[i].UseSingle = true;
 
             /* Durable RM irm[0] does Abort on SPC, so
-			 * all volatile RMs get Rollback */
+             * all volatile RMs get Rollback */
             Assert.Throws<TransactionAbortedException>(() =>
             {
                 using (TransactionScope scope = new TransactionScope())
@@ -267,8 +267,8 @@ namespace System.Transactions.Tests
         }
 
         /* >1vol + 1 durable
-		 * Volatile fails Prepare
-		 */
+         * Volatile fails Prepare
+         */
         [Fact]
         public void Vol2_Dur1_Fail3()
         {
@@ -285,7 +285,7 @@ namespace System.Transactions.Tests
                 irm[i].UseSingle = true;
 
             /* Durable RM irm[2] does on SPC, so
-			 * all volatile RMs get Rollback */
+             * all volatile RMs get Rollback */
             Assert.Throws<TransactionAbortedException>(() =>
             {
                 using (TransactionScope scope = new TransactionScope())
@@ -324,7 +324,7 @@ namespace System.Transactions.Tests
                 irm[i].UseSingle = true;
 
             /* Durable RM irm[2] does on SPC, so
-			 * all volatile RMs get Rollback */
+             * all volatile RMs get Rollback */
             TransactionAbortedException e = Assert.Throws<TransactionAbortedException>(() =>
             {
                 using (TransactionScope scope = new TransactionScope())
@@ -358,7 +358,7 @@ namespace System.Transactions.Tests
                 irm[i].UseSingle = true;
 
             /* Durable RM irm[2] does on SPC, so
-			 * all volatile RMs get Rollback */
+             * all volatile RMs get Rollback */
 
             using (TransactionScope scope = new TransactionScope())
             {
@@ -455,9 +455,9 @@ namespace System.Transactions.Tests
 
         #region Others
         /* >1vol  
-		 * > 1 durable, On .net this becomes a distributed transaction
-		 * We don't support this in mono yet. 
-		 */
+         * > 1 durable, On .net this becomes a distributed transaction
+         * We don't support this in mono yet. 
+         */
         [ActiveIssue(13532)] //Distributed transactions are not supported.
         [Fact]
         public void Vol0_Dur2()

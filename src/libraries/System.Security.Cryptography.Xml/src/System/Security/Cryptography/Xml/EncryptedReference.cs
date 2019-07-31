@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal protected bool CacheValid
+        protected internal bool CacheValid
         {
             get
             {

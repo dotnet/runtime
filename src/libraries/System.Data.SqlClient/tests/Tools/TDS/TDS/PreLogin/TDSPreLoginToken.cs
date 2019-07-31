@@ -115,7 +115,7 @@ namespace Microsoft.SqlServer.TDS.PreLogin
 
         /// <summary>
         /// Initialization constructor
-        /// </summary>		
+        /// </summary>
         public TDSPreLoginToken(Version version, TDSPreLoginTokenEncryptionType encryption, bool isMARS, uint threadID, TdsPreLoginFedAuthRequiredOption fedAuthRequired) :
             this(version, encryption, isMARS, threadID)
         {

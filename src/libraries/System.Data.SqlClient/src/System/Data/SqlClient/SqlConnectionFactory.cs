@@ -12,7 +12,7 @@ using System.IO;
 
 namespace System.Data.SqlClient
 {
-    sealed internal class SqlConnectionFactory : DbConnectionFactory
+    internal sealed class SqlConnectionFactory : DbConnectionFactory
     {
         private SqlConnectionFactory() : base() { }
 

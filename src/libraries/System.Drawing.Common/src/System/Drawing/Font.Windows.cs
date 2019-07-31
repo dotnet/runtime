@@ -286,7 +286,7 @@ namespace System.Drawing
         /// <param name="lf">A boxed LOGFONT.</param>
         /// <param name="hdc">Handle to a device context (HDC).</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
-        public unsafe static Font FromLogFont(object lf, IntPtr hdc)
+        public static unsafe Font FromLogFont(object lf, IntPtr hdc)
         {
             if (lf == null)
             {

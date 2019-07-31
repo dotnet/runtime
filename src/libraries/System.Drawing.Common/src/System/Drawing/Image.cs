@@ -371,7 +371,7 @@ namespace System.Drawing
             }
         }
 
-        internal unsafe static void EnsureSave(Image image, string filename, Stream dataStream)
+        internal static unsafe void EnsureSave(Image image, string filename, Stream dataStream)
         {
             if (image.RawFormat.Equals(ImageFormat.Gif))
             {

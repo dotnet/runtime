@@ -57,19 +57,19 @@ namespace System.Data.Tests
         {
             string schema = @"<?xml version='1.0'?>
 <xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'>
-	<xsd:attribute name='foo' type='xsd:string'/>
-	<xsd:attribute name='bar' type='xsd:string'/>
-	<xsd:complexType name='attRef'>
-		<xsd:attribute name='att1' type='xsd:int'/>
-		<xsd:attribute name='att2' type='xsd:string'/>
-	</xsd:complexType>
-	<xsd:element name='doc'>
-		<xsd:complexType>
-			<xsd:choice>
-				<xsd:element name='elem' type='attRef'/>
-			</xsd:choice>
-		</xsd:complexType>
-	</xsd:element>
+    <xsd:attribute name='foo' type='xsd:string'/>
+    <xsd:attribute name='bar' type='xsd:string'/>
+    <xsd:complexType name='attRef'>
+        <xsd:attribute name='att1' type='xsd:int'/>
+        <xsd:attribute name='att2' type='xsd:string'/>
+    </xsd:complexType>
+    <xsd:element name='doc'>
+        <xsd:complexType>
+            <xsd:choice>
+                <xsd:element name='elem' type='attRef'/>
+            </xsd:choice>
+        </xsd:complexType>
+    </xsd:element>
 </xsd:schema>";
             var ds = new DataSet();
             ds.Tables.Add(new DataTable("elem"));
@@ -81,18 +81,18 @@ namespace System.Data.Tests
         public void UnusedComplexTypesIgnored()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' id='hoge'>
-	<xs:element name='Root'>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name='Child' type='xs:string' />
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	<xs:complexType name='unusedType'>
-		<xs:sequence>
-			<xs:element name='Orphan' type='xs:string' />
-		</xs:sequence>
-	</xs:complexType>
+    <xs:element name='Root'>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name='Child' type='xs:string' />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name='unusedType'>
+        <xs:sequence>
+            <xs:element name='Orphan' type='xs:string' />
+        </xs:sequence>
+    </xs:complexType>
 </xs:schema>";
 
             AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -111,13 +111,13 @@ namespace System.Data.Tests
         public void IsDataSetAndTypeIgnored()
         {
             string xsbase = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
-	<xs:element name='Root' type='unusedType' msdata:IsDataSet='{0}'>
-	</xs:element>
-	<xs:complexType name='unusedType'>
-		<xs:sequence>
-			<xs:element name='Child' type='xs:string' />
-		</xs:sequence>
-	</xs:complexType>
+    <xs:element name='Root' type='unusedType' msdata:IsDataSet='{0}'>
+    </xs:element>
+    <xs:complexType name='unusedType'>
+        <xs:sequence>
+            <xs:element name='Child' type='xs:string' />
+        </xs:sequence>
+    </xs:complexType>
 </xs:schema>";
 
             AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -143,20 +143,20 @@ namespace System.Data.Tests
         public void NestedReferenceNotAllowed()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
-	<xs:element name='Root' type='unusedType' msdata:IsDataSet='true'>
-	</xs:element>
-	<xs:complexType name='unusedType'>
-		<xs:sequence>
-			<xs:element name='Child' type='xs:string' />
-		</xs:sequence>
-	</xs:complexType>
-	<xs:element name='Foo'>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref='Root' />
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name='Root' type='unusedType' msdata:IsDataSet='true'>
+    </xs:element>
+    <xs:complexType name='unusedType'>
+        <xs:sequence>
+            <xs:element name='Child' type='xs:string' />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name='Foo'>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref='Root' />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>";
 
             AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -173,14 +173,14 @@ namespace System.Data.Tests
         public void LocaleOnRootWithoutIsDataSet()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
-	<xs:element name='Root' msdata:Locale='ja-JP'>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name='Child' type='xs:string' />
-			</xs:sequence>
-			<xs:attribute name='Attr' type='xs:integer' />
-		</xs:complexType>
-	</xs:element>
+    <xs:element name='Root' msdata:Locale='ja-JP'>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name='Child' type='xs:string' />
+            </xs:sequence>
+            <xs:attribute name='Attr' type='xs:integer' />
+        </xs:complexType>
+    </xs:element>
 </xs:schema>";
 
             var ds = new DataSet();
@@ -197,49 +197,49 @@ namespace System.Data.Tests
         public void PrefixedTargetNS()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata' xmlns:x='urn:foo' targetNamespace='urn:foo' elementFormDefault='qualified'>
-	<xs:element name='DS' msdata:IsDataSet='true'>
-		<xs:complexType>
-			<xs:choice>
-				<xs:element ref='x:R1' />
-				<xs:element ref='x:R2' />
-			</xs:choice>
-		</xs:complexType>
-		<xs:key name='key'>
-			<xs:selector xpath='./any/string_is_OK/x:R1'/>
-			<xs:field xpath='x:Child2'/>
-		</xs:key>
-		<xs:keyref name='kref' refer='x:key'>
-			<xs:selector xpath='.//x:R2'/>
-			<xs:field xpath='x:Child2'/>
-		</xs:keyref>
-	</xs:element>
-	<xs:element name='R3' type='x:RootType' />
-	<xs:complexType name='extracted'>
-		<xs:choice>
-			<xs:element ref='x:R1' />
-			<xs:element ref='x:R2' />
-		</xs:choice>
-	</xs:complexType>
-	<xs:element name='R1' type='x:RootType'>
-		<xs:unique name='Rkey'>
-			<xs:selector xpath='.//x:Child1'/>
-			<xs:field xpath='.'/>
-		</xs:unique>
-		<xs:keyref name='Rkref' refer='x:Rkey'>
-			<xs:selector xpath='.//x:Child2'/>
-			<xs:field xpath='.'/>
-		</xs:keyref>
-	</xs:element>
-	<xs:element name='R2' type='x:RootType'>
-	</xs:element>
-	<xs:complexType name='RootType'>
-		<xs:choice>
-			<xs:element name='Child1' type='xs:string'>
-			</xs:element>
-			<xs:element name='Child2' type='xs:string' />
-		</xs:choice>
-		<xs:attribute name='Attr' type='xs:integer' />
-	</xs:complexType>
+    <xs:element name='DS' msdata:IsDataSet='true'>
+        <xs:complexType>
+            <xs:choice>
+                <xs:element ref='x:R1' />
+                <xs:element ref='x:R2' />
+            </xs:choice>
+        </xs:complexType>
+        <xs:key name='key'>
+            <xs:selector xpath='./any/string_is_OK/x:R1'/>
+            <xs:field xpath='x:Child2'/>
+        </xs:key>
+        <xs:keyref name='kref' refer='x:key'>
+            <xs:selector xpath='.//x:R2'/>
+            <xs:field xpath='x:Child2'/>
+        </xs:keyref>
+    </xs:element>
+    <xs:element name='R3' type='x:RootType' />
+    <xs:complexType name='extracted'>
+        <xs:choice>
+            <xs:element ref='x:R1' />
+            <xs:element ref='x:R2' />
+        </xs:choice>
+    </xs:complexType>
+    <xs:element name='R1' type='x:RootType'>
+        <xs:unique name='Rkey'>
+            <xs:selector xpath='.//x:Child1'/>
+            <xs:field xpath='.'/>
+        </xs:unique>
+        <xs:keyref name='Rkref' refer='x:Rkey'>
+            <xs:selector xpath='.//x:Child2'/>
+            <xs:field xpath='.'/>
+        </xs:keyref>
+    </xs:element>
+    <xs:element name='R2' type='x:RootType'>
+    </xs:element>
+    <xs:complexType name='RootType'>
+        <xs:choice>
+            <xs:element name='Child1' type='xs:string'>
+            </xs:element>
+            <xs:element name='Child2' type='xs:string' />
+        </xs:choice>
+        <xs:attribute name='Attr' type='xs:integer' />
+    </xs:complexType>
 </xs:schema>";
             // No prefixes on tables and columns
             var ds = new DataSet();
@@ -315,21 +315,21 @@ namespace System.Data.Tests
             ds.Tables[0].ReadXmlSchema(new StringReader(
                 @"<!-- Modified w3ctests attQ014.xsd -->
                 <xsd:schema xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" targetNamespace=""http://xsdtesting"" xmlns:x=""http://xsdtesting"">
-	                <xsd:element name=""root"">
-		                <xsd:complexType>
-			                <xsd:sequence>
-				                <xsd:element name=""e"">
-					                <xsd:complexType>
-						                <xsd:simpleContent>
-							                <xsd:extension base=""xsd:decimal"">
-								                <xsd:attribute name=""a"" type=""xsd:string""/>
-							                </xsd:extension>
-						                </xsd:simpleContent>
-					                </xsd:complexType>
-				                </xsd:element>
-			                </xsd:sequence>
-		                </xsd:complexType>
-	                </xsd:element>
+                    <xsd:element name=""root"">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name=""e"">
+                                    <xsd:complexType>
+                                        <xsd:simpleContent>
+                                            <xsd:extension base=""xsd:decimal"">
+                                                <xsd:attribute name=""a"" type=""xsd:string""/>
+                                            </xsd:extension>
+                                        </xsd:simpleContent>
+                                    </xsd:complexType>
+                                </xsd:element>
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:element>
                 </xsd:schema>"));
             DataTable dt = ds.Tables[0];
             DataSetAssertion.AssertDataTable("root", dt, "e", 2, 0, 0, 0, 0, 0);
@@ -345,38 +345,38 @@ namespace System.Data.Tests
             ds.Tables[0].ReadXmlSchema(new StringReader(
                 @"<?xml version=""1.0"" encoding=""utf-8"" ?>
                     <xs:schema targetNamespace=""http://neurosaudio.com/Tracks.xsd"" xmlns=""http://neurosaudio.com/Tracks.xsd"" xmlns:mstns=""http://neurosaudio.com/Tracks.xsd"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"" elementFormDefault=""qualified"" id=""Tracks"">
-	                    <xs:element name=""Tracks"">
-		                    <xs:complexType>
-			                    <xs:sequence>
-				                    <xs:element name=""Track"" minOccurs=""0"" maxOccurs=""unbounded"">
-					                    <xs:complexType>
-						                    <xs:sequence>
-							                    <xs:element name=""Title"" type=""xs:string"" />
-							                    <xs:element name=""Artist"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Album"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Performer"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Sequence"" type=""xs:unsignedInt"" minOccurs=""0"" />
-							                    <xs:element name=""Genre"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Comment"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Year"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""Duration"" type=""xs:unsignedInt"" minOccurs=""0"" />
-							                    <xs:element name=""Path"" type=""xs:string"" />
-							                    <xs:element name=""DevicePath"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""FileSize"" type=""xs:unsignedInt"" minOccurs=""0"" />
-							                    <xs:element name=""Source"" type=""xs:string"" minOccurs=""0"" />
-							                    <xs:element name=""FlashStatus"" type=""xs:unsignedInt"" />
-							                    <xs:element name=""HDStatus"" type=""xs:unsignedInt"" />
-						                    </xs:sequence>
-						                    <xs:attribute name=""ID"" type=""xs:unsignedInt"" msdata:AutoIncrement=""true"" msdata:AutoIncrementSeed=""1"" />
-					                    </xs:complexType>
-				                    </xs:element>
-			                    </xs:sequence>
-		                    </xs:complexType>
-		                    <xs:key name=""TrackPK"" msdata:PrimaryKey=""true"">
-			                    <xs:selector xpath="".//mstns:Track"" />
-			                    <xs:field xpath=""@ID"" />
-		                    </xs:key>
-	                    </xs:element>
+                        <xs:element name=""Tracks"">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name=""Track"" minOccurs=""0"" maxOccurs=""unbounded"">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name=""Title"" type=""xs:string"" />
+                                                <xs:element name=""Artist"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Album"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Performer"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Sequence"" type=""xs:unsignedInt"" minOccurs=""0"" />
+                                                <xs:element name=""Genre"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Comment"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Year"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""Duration"" type=""xs:unsignedInt"" minOccurs=""0"" />
+                                                <xs:element name=""Path"" type=""xs:string"" />
+                                                <xs:element name=""DevicePath"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""FileSize"" type=""xs:unsignedInt"" minOccurs=""0"" />
+                                                <xs:element name=""Source"" type=""xs:string"" minOccurs=""0"" />
+                                                <xs:element name=""FlashStatus"" type=""xs:unsignedInt"" />
+                                                <xs:element name=""HDStatus"" type=""xs:unsignedInt"" />
+                                            </xs:sequence>
+                                            <xs:attribute name=""ID"" type=""xs:unsignedInt"" msdata:AutoIncrement=""true"" msdata:AutoIncrementSeed=""1"" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                            </xs:complexType>
+                            <xs:key name=""TrackPK"" msdata:PrimaryKey=""true"">
+                                <xs:selector xpath="".//mstns:Track"" />
+                                <xs:field xpath=""@ID"" />
+                            </xs:key>
+                        </xs:element>
                     </xs:schema>"));
         }
 

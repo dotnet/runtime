@@ -52,7 +52,7 @@ namespace System.Reflection.Runtime.General
             return _items;
         }
 
-        public void CopyTo(Object[] array, int index)
+        public void CopyTo(object[] array, int index)
         {
             if (_count == 0)
                 return;

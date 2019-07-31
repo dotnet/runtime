@@ -115,7 +115,7 @@ namespace MonoTests.System.Data
                         Assert.True(false, "should match only one raw");
                         break;
                 }
-	            prevID = ql.StudentID;
+                prevID = ql.StudentID;
             }
         }
 

@@ -5,7 +5,7 @@
 // System.ComponentModel.Container test cases
 //
 // Authors:
-// 	Gonzalo Paniagua Javier (gonzalo@ximian.com)
+//  Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //  Ivan N. Zlatev (contact i-nZ.net)
 
 // Copyright (c) 2006 Novell, Inc. (http://www.novell.com)

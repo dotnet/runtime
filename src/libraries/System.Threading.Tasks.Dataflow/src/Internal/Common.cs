@@ -341,7 +341,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // By using these same tasks, we're a bit more robust against disposals,
             // in that such a disposed task's ((IAsyncResult)task).AsyncWaitHandle
             // is still valid.
-            var atmb = System.Runtime.CompilerServices.AsyncTaskMethodBuilder<Boolean>.Create();
+            var atmb = System.Runtime.CompilerServices.AsyncTaskMethodBuilder<bool>.Create();
             atmb.SetResult(value);
             return atmb.Task; // must be accessed after SetResult to get the cached task
         }

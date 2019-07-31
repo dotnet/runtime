@@ -14,10 +14,10 @@ namespace System.Xml.Tests
     public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2
     {
         // Variables from init string
-        protected string _strPath;					// Path of the data files
+        protected string _strPath;                    // Path of the data files
 
         // Other global variables
-        public XslCompiledTransform xsltSameInstance;				// Used for same instance testing of XsltArgumentList
+        public XslCompiledTransform xsltSameInstance; // Used for same instance testing of XsltArgumentList
 
         private ITestOutputHelper _output;
         public SameInstanceXslTransformTestCase(ITestOutputHelper output) : base(output)
@@ -37,7 +37,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
-        private XPathDocument _xd;			// Loads XML file
+        private XPathDocument _xd;           // Loads XML file
         private XmlReader _xrData;           // Loads XML File
 
         private ITestOutputHelper _output;
@@ -321,8 +321,8 @@ namespace System.Xml.Tests
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
-        private XPathDocument _xd;		// Loads XML file
-        private XmlReader _xrData;	    // Loads XML file
+        private XPathDocument _xd; // Loads XML file
+        private XmlReader _xrData; // Loads XML file
 
         private ITestOutputHelper _output;
         public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)

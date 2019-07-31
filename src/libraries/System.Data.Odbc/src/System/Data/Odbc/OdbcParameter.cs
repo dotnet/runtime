@@ -344,7 +344,7 @@ namespace System.Data.Odbc
                         }
                         else if (value is string)
                         {
-                            cch = ((String)value).Length - offset;
+                            cch = ((string)value).Length - offset;
 
                             if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                             {
@@ -490,7 +490,7 @@ namespace System.Data.Odbc
                         }
                         else if (value is string)
                         {
-                            ccb = (((String)value).Length - offset) * 2 + 2;
+                            ccb = (((string)value).Length - offset) * 2 + 2;
                         }
                         else if (value is char[])
                         {
@@ -512,10 +512,10 @@ namespace System.Data.Odbc
                     }
                     else if (ODBC32.SQL_C.WCHAR == _bindtype._sql_c)
                     {
-                        if ((value is string) && (ccb < ((String)value).Length) && (_bindtype == _originalbindtype))
+                        if ((value is string) && (ccb < ((string)value).Length) && (_bindtype == _originalbindtype))
                         {
                             // silently truncate ... MDAC 84408 ... do not truncate upgraded values ... MDAC 84706
-                            ccb = ((String)value).Length;
+                            ccb = ((string)value).Length;
                         }
                         ccb = (ccb * 2) + 2; // allow for null termination
                     }
@@ -679,7 +679,7 @@ namespace System.Data.Odbc
                         _bindtype = TypeMap._VarChar;
                         if ((null != value) && !Convert.IsDBNull(value))
                         {
-                            value = ((Decimal)value).ToString(CultureInfo.CurrentCulture);
+                            value = ((decimal)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
                             offset = 0;
                         }
@@ -693,7 +693,7 @@ namespace System.Data.Odbc
                         _bindtype = TypeMap._VarChar;
                         if ((null != value) && !Convert.IsDBNull(value))
                         {
-                            value = ((Int64)value).ToString(CultureInfo.CurrentCulture);
+                            value = ((long)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
                             offset = 0;
                         }

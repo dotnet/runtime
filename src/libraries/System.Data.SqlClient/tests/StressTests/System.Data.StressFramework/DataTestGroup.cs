@@ -185,7 +185,7 @@ namespace Stress.Data
         }
 
 
-        #region	CommandExecute and Consume methods
+        #region CommandExecute and Consume methods
 
         /// <summary>
         /// Utility function used by command tests
@@ -466,7 +466,7 @@ namespace Stress.Data
 
         #endregion
 
-        #region	Command and Parameter Tests
+        #region Command and Parameter Tests
 
         /// <summary>
         /// Command Reader Test: Executes a simple SELECT statement without parameters

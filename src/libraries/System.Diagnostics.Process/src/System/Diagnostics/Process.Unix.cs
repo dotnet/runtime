@@ -911,7 +911,7 @@ namespace System.Diagnostics
             return (userId.Value, groupId.Value, groups);
         }
 
-        private unsafe static (uint? userId, uint? groupId) GetUserAndGroupIds(string userName)
+        private static unsafe (uint? userId, uint? groupId) GetUserAndGroupIds(string userName)
         {
             Interop.Sys.Passwd? passwd;
             // First try with a buffer that should suffice for 99% of cases.

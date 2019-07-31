@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    sealed internal class DBPropSet : SafeHandle
+    internal sealed class DBPropSet : SafeHandle
     {
-        private readonly Int32 propertySetCount;
+        private readonly int propertySetCount;
 
         // stores the exception with last error.HRESULT from IDBProperties.GetProperties
         private Exception lastErrorFromProvider;
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
             UnsafeNativeMethods.IErrorInfo errorInfo = null;
-            string message = String.Empty;
+            string message = string.Empty;
 
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))

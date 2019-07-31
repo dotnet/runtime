@@ -309,7 +309,7 @@ namespace System.Diagnostics
                 // Write out the value characters, escaping things as needed.  
                 foreach(var c in keyValue.Value)
                 {
-                    if (Char.IsControl(c))
+                    if (char.IsControl(c))
                     {
                         if (c == '\n')
                             sb.Append("\\n");

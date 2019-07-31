@@ -32,7 +32,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public unsafe static void MemoryOfByte_WithUtf8String_Pin()
+        public static unsafe void MemoryOfByte_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
             ReadOnlyMemory<byte> rom = theString.AsMemoryBytes();
@@ -56,7 +56,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public unsafe static void MemoryOfChar8_WithUtf8String_Pin()
+        public static unsafe void MemoryOfChar8_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
             ReadOnlyMemory<Char8> rom = theString.AsMemory();
@@ -80,7 +80,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public unsafe static void ReadOnlyMemoryOfByte_WithUtf8String_Pin()
+        public static unsafe void ReadOnlyMemoryOfByte_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
             ReadOnlyMemory<byte> rom = theString.AsMemoryBytes();
@@ -103,7 +103,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public unsafe static void ReadOnlyMemoryOfChar8_WithUtf8String_Pin()
+        public static unsafe void ReadOnlyMemoryOfChar8_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
             ReadOnlyMemory<Char8> rom = theString.AsMemory();

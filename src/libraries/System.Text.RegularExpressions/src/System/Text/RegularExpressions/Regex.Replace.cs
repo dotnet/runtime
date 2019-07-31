@@ -188,7 +188,7 @@ namespace System.Text.RegularExpressions
                         prevat = match.Index + match.Length;
                         string result = evaluator(match);
                         if (!string.IsNullOrEmpty(result))
-	                        vsb.Append(result);
+                            vsb.Append(result);
 
                         if (--count == 0)
                             break;

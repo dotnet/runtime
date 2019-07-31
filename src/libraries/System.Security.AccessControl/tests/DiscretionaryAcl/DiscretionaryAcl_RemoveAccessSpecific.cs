@@ -49,7 +49,7 @@ namespace System.Security.AccessControl.Tests
                 if (!Utils.IsBinaryFormEqual(dAclBinaryForm, rAclBinaryForm))
                     result = false;
 
-                //redundant index check					
+                //redundant index check
                 for (int i = 0; i < discretionaryAcl.Count; i++)
                 {
                     if (!Utils.IsAceEqual(discretionaryAcl[i], rawAcl[i]))

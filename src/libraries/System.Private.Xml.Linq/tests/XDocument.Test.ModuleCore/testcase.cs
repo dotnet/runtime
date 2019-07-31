@@ -50,7 +50,7 @@ namespace Microsoft.Test.ModuleCore
             base.DetermineChildren();
 
             //Sort
-            //Default sort is based upon IComparable of each item	
+            //Default sort is based upon IComparable of each item
             Children.Sort();
         }
 

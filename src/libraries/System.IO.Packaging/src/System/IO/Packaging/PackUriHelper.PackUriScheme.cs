@@ -101,7 +101,7 @@ namespace System.IO.Packaging
             absolutePackageUri = absolutePackageUri.Replace('/', ',');
 
             // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far            
-            absolutePackageUri = String.Concat(PackUriHelper.UriSchemePack, Uri.SchemeDelimiter, absolutePackageUri);
+            absolutePackageUri = string.Concat(PackUriHelper.UriSchemePack, Uri.SchemeDelimiter, absolutePackageUri);
 
             Uri packUri = new Uri(absolutePackageUri);
 
@@ -111,7 +111,7 @@ namespace System.IO.Packaging
 
             // Step 7 - Append fragment if present
             if (fragment != null)
-                packUri = new Uri(String.Concat(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped), fragment));
+                packUri = new Uri(string.Concat(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped), fragment));
 
             // We want to ensure that internal content of resulting Uri has canonical form
             // i.e.  result.OrignalString would appear as perfectly formatted Uri string 
@@ -302,7 +302,7 @@ namespace System.IO.Packaging
             Debug.Assert(packUri != null, "packUri parameter cannot be null");
 
             //Step 1 - Get the authority part of the URI. This section represents that package URI
-            String hostAndPort = packUri.GetComponents(UriComponents.HostAndPort, UriFormat.UriEscaped);
+            string hostAndPort = packUri.GetComponents(UriComponents.HostAndPort, UriFormat.UriEscaped);
 
             //Step 2 - Replace the ',' with '/' to reconstruct the package URI
             hostAndPort = hostAndPort.Replace(',', '/');
@@ -310,7 +310,7 @@ namespace System.IO.Packaging
             //Step 3 - Unescape the special characters that we had escaped to construct the packUri
             Uri packageUri = new Uri(Uri.UnescapeDataString(hostAndPort));
 
-            if (packageUri.Fragment != String.Empty)
+            if (packageUri.Fragment != string.Empty)
                 throw new ArgumentException(SR.InnerPackageUriHasFragment);
 
             return packageUri;
@@ -323,7 +323,7 @@ namespace System.IO.Packaging
             
             string partName = GetStringForPartUriFromAnyUri(packUri);
 
-            if (partName == String.Empty)
+            if (partName == string.Empty)
                 return null;
             else
                 return ValidatePartUri(new Uri(partName, UriKind.Relative));

@@ -43,9 +43,9 @@ namespace System.Data.OleDb
         internal IntPtr pwszDataSourceType;
         internal IntPtr pwszName;
         internal IntPtr ulParamSize;
-        internal Int32 dwFlags;
-        internal Byte bPrecision;
-        internal Byte bScale;
+        internal int dwFlags;
+        internal byte bPrecision;
+        internal byte bScale;
 
 #if DEBUG
         public override string ToString()
@@ -101,14 +101,14 @@ namespace System.Data.OleDb
         internal IntPtr pObject;
         internal IntPtr pBindExt;
 
-        internal Int32 dwPart;
-        internal Int32 dwMemOwner;
-        internal Int32 eParamIO;
+        internal int dwPart;
+        internal int dwMemOwner;
+        internal int eParamIO;
 
         internal IntPtr cbMaxLen;
 
-        internal Int32 dwFlags;
-        internal Int16 wType;
+        internal int dwFlags;
+        internal short wType;
         internal byte bPrecision;
         internal byte bScale;
 
@@ -158,12 +158,12 @@ namespace System.Data.OleDb
         internal IntPtr pData;
         internal tagDBIDX columnid;
         internal IntPtr cbDataLen;
-        internal Int32 dwStatus;
+        internal int dwStatus;
         internal IntPtr cbMaxLen;
         internal IntPtr dwReserved;
-        internal Int16 wType;
-        internal Byte bPrecision;
-        internal Byte bScale;
+        internal short wType;
+        internal byte bPrecision;
+        internal byte bScale;
     }
 
 #if false
@@ -190,7 +190,7 @@ namespace System.Data.OleDb
     internal struct tagDBIDX
     {
         internal Guid uGuid;
-        internal Int32 eKind;
+        internal int eKind;
         internal IntPtr ulPropid;
     }
 
@@ -202,7 +202,7 @@ namespace System.Data.OleDb
     internal sealed class tagDBID
     {
         internal Guid uGuid;
-        internal Int32 eKind;
+        internal int eKind;
         internal IntPtr ulPropid;
     }
 
@@ -221,22 +221,22 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBLITERALINFO
+    internal sealed class tagDBLITERALINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal String pwszLiteralValue = null;
+        internal string pwszLiteralValue = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal String pwszInvalidChars = null;
+        internal string pwszInvalidChars = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal String pwszInvalidStartingChars = null;
+        internal string pwszInvalidStartingChars = null;
 
-        internal Int32 it;
+        internal int it;
 
-        internal Int32 fSupported;
+        internal int fSupported;
 
-        internal Int32 cchMaxLen;
+        internal int cchMaxLen;
 
         internal tagDBLITERALINFO()
         {
@@ -255,10 +255,10 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBPROPSET
+    internal sealed class tagDBPROPSET
     {
         internal IntPtr rgProperties;
-        internal Int32 cProperties;
+        internal int cProperties;
         internal Guid guidPropertySet;
 
         internal tagDBPROPSET()
@@ -286,10 +286,10 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBPROP
+    internal sealed class tagDBPROP
     {
-        internal Int32 dwPropertyID;
-        internal Int32 dwOptions;
+        internal int dwPropertyID;
+        internal int dwOptions;
         internal OleDbPropertyStatus dwStatus;
 
         internal tagDBIDX columnid;
@@ -321,10 +321,10 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBPARAMS
+    internal sealed class tagDBPARAMS
     {
         internal IntPtr pData;
-        internal Int32 cParamSets;
+        internal int cParamSets;
         internal IntPtr hAccessor;
 
         internal tagDBPARAMS()
@@ -350,25 +350,25 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBCOLUMNINFO
+    internal sealed class tagDBCOLUMNINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal String pwszName = null;
+        internal string pwszName = null;
 
         //[MarshalAs(UnmanagedType.Interface)]
         internal IntPtr pTypeInfo = (IntPtr)0;
 
         internal IntPtr iOrdinal = (IntPtr)0;
 
-        internal Int32 dwFlags = 0;
+        internal int dwFlags = 0;
 
         internal IntPtr ulColumnSize = (IntPtr)0;
 
-        internal Int16 wType = 0;
+        internal short wType = 0;
 
-        internal Byte bPrecision = 0;
+        internal byte bPrecision = 0;
 
-        internal Byte bScale = 0;
+        internal byte bScale = 0;
 
         internal tagDBIDX columnid;
 
@@ -404,10 +404,10 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBPROPINFOSET
+    internal sealed class tagDBPROPINFOSET
     {
         internal IntPtr rgPropertyInfos;
-        internal Int32 cPropertyInfos;
+        internal int cPropertyInfos;
         internal Guid guidPropertySet;
 
         internal tagDBPROPINFOSET()
@@ -429,14 +429,14 @@ namespace System.Data.OleDb
 #else
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
 #endif
-    sealed internal class tagDBPROPINFO
+    internal sealed class tagDBPROPINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
 
-        internal Int32 dwPropertyID;
-        internal Int32 dwFlags;
+        internal int dwPropertyID;
+        internal int dwFlags;
 
-        internal Int16 vtType;
+        internal short vtType;
 
         [MarshalAs(UnmanagedType.Struct)] internal object vValue;
 
@@ -460,7 +460,7 @@ namespace System.Data.OleDb
     internal struct tagDBPROPIDSET
     {
         internal IntPtr rgPropertyIDs;
-        internal Int32 cPropertyIDs;
+        internal int cPropertyIDs;
         internal Guid guidPropertySet;
     }
 }

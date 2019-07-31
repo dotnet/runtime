@@ -66,13 +66,13 @@ namespace System.Data.Tests
    <child_after_significant_space />
 </root>";
         // This is useless ... since xml:space becomes a DataColumn here.
-        //		string xml12 = "<root xml:space='preserve'>     </root>";
+        //        string xml12 = "<root xml:space='preserve'>     </root>";
         // The result is silly under MS.NET. It never ignores comment, so
         // They differ:
         //   1) <root>simple string.</root>
         //   2) <root>simple <!-- comment -->string.</root>
         // The same applies to PI.
-        //		string xml13 = "<root><tab><col>test <!-- out --> comment</col></tab></root>";
+        //        string xml13 = "<root><tab><col>test <!-- out --> comment</col></tab></root>";
 
         // simple namespace/prefix support
         private string _xml14 = "<p:root xmlns:p='urn:foo'>test string</p:root>";

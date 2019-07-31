@@ -138,7 +138,7 @@ namespace System.Data.Tests
             Assert.Equal(typeof(UniqueConstraint), Table.Constraints[0].GetType());
         }
 
-        // Tests ctor (string, DataColumn [], DataColumn [])	
+        // Tests ctor (string, DataColumn [], DataColumn [])
         [Fact]
         public void Ctor4()
         {
@@ -228,7 +228,7 @@ namespace System.Data.Tests
 #if false // FIXME: Here this test crashes under MS.NET.
                         // OK - So AddRange() is the only way!
                         table2.Constraints.AddRange (constraints);
-			   // After AddRange(), Check the properties of ForeignKeyConstraint object
+               // After AddRange(), Check the properties of ForeignKeyConstraint object
                         Assert.True(fkc.RelatedColumns [0].ColumnName.Equals ("col1"));
                         Assert.True(fkc.RelatedColumns [1].ColumnName.Equals ("col2"));
                         Assert.True(fkc.RelatedColumns [2].ColumnName.Equals ("col3"));

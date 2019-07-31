@@ -172,7 +172,7 @@ namespace System.Xml.Schema
             { //attribute group is the redefinition of existingObject
                 if (existingAttGroup.AttributeUses.Count == 0)
                 { //If the existing one is not already compiled, then replace.
-                    table.Insert(attGroup.QualifiedName, attGroup); //Update with redefined entry			
+                    table.Insert(attGroup.QualifiedName, attGroup); //Update with redefined entry
                     return true;
                 }
             }
@@ -191,7 +191,7 @@ namespace System.Xml.Schema
             { //group is the redefinition of existingObject
                 if (existingGroup.CanonicalParticle == null)
                 { //If the existing one is not already compiled, then replace.
-                    table.Insert(group.QualifiedName, group); //Update with redefined entry			
+                    table.Insert(group.QualifiedName, group); //Update with redefined entry
                     return true;
                 }
             }
@@ -210,7 +210,7 @@ namespace System.Xml.Schema
             { //schemaType is the redefinition of existingObject
                 if (existingType.ElementDecl == null)
                 { //If the existing one is not already compiled, then replace.
-                    table.Insert(schemaType.QualifiedName, schemaType); //Update with redefined entry			
+                    table.Insert(schemaType.QualifiedName, schemaType); //Update with redefined entry
                     return true;
                 }
             }

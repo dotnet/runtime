@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // Authors:
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2007 Novell, Inc (http://www.novell.com)
 //

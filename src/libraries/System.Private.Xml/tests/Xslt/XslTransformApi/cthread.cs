@@ -92,10 +92,10 @@ namespace System.Xml.Tests
         {
             //Note: We have a "wrapper" thread function thats always called.
             //This allows us much greater control than the normal System.Thread class.
-            //	1.  It allows us to call the function repeatedly (iterations)
+            //  1.  It allows us to call the function repeatedly (iterations)
             //  2.  It allows parameters to be passed into the thread function
-            //	3.  It allows a return code from the thread function
-            //	4.  etc...
+            //  3.  It allows a return code from the thread function
+            //  4.  etc...
 
             //Iterate the specified number of times
             for (int i = 0; i < Iterations; i++)

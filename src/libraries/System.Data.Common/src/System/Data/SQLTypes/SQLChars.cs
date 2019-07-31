@@ -17,22 +17,22 @@ namespace System.Data.SqlTypes
     public sealed class SqlChars : INullable, IXmlSerializable, ISerializable
     {
         // --------------------------------------------------------------
-        //	  Data members
+        //      Data members
         // --------------------------------------------------------------
 
         // SqlChars has five possible states
         // 1) SqlChars is Null
-        //		- m_stream must be null, m_lCuLen must be x_lNull
+        //        - m_stream must be null, m_lCuLen must be x_lNull
         // 2) SqlChars contains a valid buffer, 
-        //		- m_rgchBuf must not be null, and m_stream must be null
+        //        - m_rgchBuf must not be null, and m_stream must be null
         // 3) SqlChars contains a valid pointer
-        //		- m_rgchBuf could be null or not,
-        //			if not null, content is garbage, should never look into it.
+        //        - m_rgchBuf could be null or not,
+        //            if not null, content is garbage, should never look into it.
         //      - m_stream must be null.
         // 4) SqlChars contains a SqlStreamChars
         //      - m_stream must not be null
         //      - m_rgchBuf could be null or not. if not null, content is garbage, should never look into it.
-        //		- m_lCurLen must be x_lNull.
+        //        - m_lCurLen must be x_lNull.
         // 5) SqlChars contains a Lazy Materialized Blob (ie, StorageState.Delayed)
         //
         internal char[] _rgchBuf;  // Data buffer
@@ -48,7 +48,7 @@ namespace System.Data.SqlTypes
         private const long x_lNull = -1L;
 
         // --------------------------------------------------------------
-        //	  Constructor(s)
+        //      Constructor(s)
         // --------------------------------------------------------------
 
         // Public default constructor used for XML serialization
@@ -97,7 +97,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public properties
+        //      Public properties
         // --------------------------------------------------------------
 
         // INullable
@@ -110,7 +110,7 @@ namespace System.Data.SqlTypes
         }
 
         // Property: the in-memory buffer of SqlChars
-        //		Return Buffer even if SqlChars is Null.
+        //        Return Buffer even if SqlChars is Null.
 
         public char[] Buffer
         {
@@ -144,9 +144,9 @@ namespace System.Data.SqlTypes
         }
 
         // Property: the max length of the data
-        //		Return MaxLength even if SqlChars is Null.
-        //		When the buffer is also null, return -1.
-        //		If containing a Stream, return -1.
+        //        Return MaxLength even if SqlChars is Null.
+        //        When the buffer is also null, return -1.
+        //        If containing a Stream, return -1.
 
         public long MaxLength
         {
@@ -257,7 +257,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public methods
+        //      Public methods
         // --------------------------------------------------------------
 
         public void SetNull()
@@ -421,7 +421,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Conversion operators
+        //      Conversion operators
         // --------------------------------------------------------------
 
         // Alternative method: ToSqlString()
@@ -437,7 +437,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Private utility functions
+        //      Private utility functions
         // --------------------------------------------------------------
 
         [Conditional("DEBUG")]
@@ -499,7 +499,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        // 		XML Serialization
+        //         XML Serialization
         // --------------------------------------------------------------
 
 
@@ -546,7 +546,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        // 		Serialization using ISerializable
+        //         Serialization using ISerializable
         // --------------------------------------------------------------
 
         // State information is not saved. The current state is converted to Buffer and only the underlying
@@ -557,7 +557,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Static fields, properties
+        //      Static fields, properties
         // --------------------------------------------------------------
 
         // Get a Null instance. 
@@ -577,14 +577,14 @@ namespace System.Data.SqlTypes
     internal sealed class SqlStreamChars
     {
         // --------------------------------------------------------------
-        //	  Data members
+        //      Data members
         // --------------------------------------------------------------
 
         private SqlChars _sqlchars;        // the SqlChars object 
         private long _lPosition;
 
         // --------------------------------------------------------------
-        //	  Constructor(s)
+        //      Constructor(s)
         // --------------------------------------------------------------
 
         internal SqlStreamChars(SqlChars s)
@@ -594,7 +594,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public properties
+        //      Public properties
         // --------------------------------------------------------------
 
         public long Length
@@ -624,7 +624,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Public methods
+        //      Public methods
         // --------------------------------------------------------------
 
         public long Seek(long offset, SeekOrigin origin)
@@ -705,7 +705,7 @@ namespace System.Data.SqlTypes
         }
 
         // --------------------------------------------------------------
-        //	  Private utility functions
+        //      Private utility functions
         // --------------------------------------------------------------
 
         private bool FClosed()

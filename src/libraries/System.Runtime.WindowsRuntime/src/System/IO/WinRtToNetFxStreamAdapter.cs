@@ -147,7 +147,7 @@ namespace System.IO
 
 
 #if DEBUG
-        private static void AssertValidStream(Object winRtStream)
+        private static void AssertValidStream(object winRtStream)
         {
             Debug.Assert(winRtStream != null,
                             "This to-NetFx Stream adapter must not be disposed and the underlying WinRT stream must be of compatible type for this operation");

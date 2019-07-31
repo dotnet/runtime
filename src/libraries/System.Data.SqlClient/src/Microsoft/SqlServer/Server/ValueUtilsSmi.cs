@@ -3725,7 +3725,7 @@ namespace Microsoft.SqlServer.Server
         {
             // set up writer
             XmlWriterSettings WriterSettings = new XmlWriterSettings();
-            WriterSettings.CloseOutput = false;		// don't close the memory stream
+            WriterSettings.CloseOutput = false; // don't close the memory stream
             WriterSettings.ConformanceLevel = ConformanceLevel.Fragment;
             WriterSettings.Encoding = System.Text.Encoding.Unicode;
             WriterSettings.OmitXmlDeclaration = true;

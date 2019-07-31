@@ -198,7 +198,7 @@ namespace System.Numerics.Tests
 
             StackCalc sc2 = new StackCalc(opstring2);
             while (sc2.DoNextOperation())
-            {	
+            {
                 //Run the full calculation
                 sc2.DoNextOperation();
             }

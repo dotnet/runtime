@@ -52,7 +52,7 @@ internal partial class Interop
         internal const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
 
         [DllImport(Libraries.Shell32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal unsafe static extern bool ShellExecuteExW(
+        internal static extern unsafe bool ShellExecuteExW(
             SHELLEXECUTEINFO* pExecInfo);
     }
 }

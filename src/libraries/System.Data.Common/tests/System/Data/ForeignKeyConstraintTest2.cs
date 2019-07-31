@@ -157,7 +157,7 @@ namespace System.Data.Tests
             DataSet ds1 = new DataSet();
             ds1.Tables.Add(DataProvider.CreateParentDataTable());
             ds1.Tables.Add(DataProvider.CreateChildDataTable());
-            //	ds1.Tables.Add(DataProvider.CreateChildDataTable());
+            //    ds1.Tables.Add(DataProvider.CreateChildDataTable());
             ds1.Tables[0].PrimaryKey = new DataColumn[] { ds1.Tables[0].Columns[0] };
 
             return ds1;
@@ -376,9 +376,9 @@ namespace System.Data.Tests
             DataRow[] arr = ds1.Tables[1].Select("ChildId is null");
 
             /*foreach (DataRow dr in arr)
-					{
-						Assert.Null(dr["ChildId"]);
-					}*/
+                    {
+                        Assert.Null(dr["ChildId"]);
+                    }*/
 
             Assert.Equal(4, arr.Length);
 

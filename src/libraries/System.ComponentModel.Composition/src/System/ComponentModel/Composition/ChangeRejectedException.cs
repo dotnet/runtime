@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition
         ///     Gets a message that describes the exception.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the 
         ///     <see cref="ChangeRejectedException"/>.
         /// </value>
         public override string Message

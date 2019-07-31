@@ -245,5 +245,5 @@ namespace System.PrivateUri.Tests
             Uri.HexUnescape("%75", ref index);
             Assert.Throws<ArgumentOutOfRangeException>(() => Uri.HexUnescape("%75", ref index));
         }
-	}
+    }
 }

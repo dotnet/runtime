@@ -154,7 +154,7 @@ namespace System.ComponentModel
         public virtual bool DesignMode => _site?.DesignMode ?? false;
 
         /// <summary>
-        /// Returns a <see cref='System.String'/> containing the name of the <see cref='System.ComponentModel.Component'/> , if any. This method should not be
+        /// Returns a <see cref='string'/> containing the name of the <see cref='System.ComponentModel.Component'/> , if any. This method should not be
         /// overridden. For
         /// internal use only.
         /// </summary>

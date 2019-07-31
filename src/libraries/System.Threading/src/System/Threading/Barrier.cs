@@ -193,7 +193,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="participantCount">The number of participating threads.</param>
         /// <exception cref="ArgumentOutOfRangeException"> <paramref name="participantCount"/> is less than 0
-        /// or greater than <see cref="System.Int16.MaxValue"/>.</exception>
+        /// or greater than <see cref="short.MaxValue"/>.</exception>
         public Barrier(int participantCount)
             : this(participantCount, null)
         {
@@ -206,7 +206,7 @@ namespace System.Threading
         /// <param name="postPhaseAction">The <see cref="System.Action{Barrier}"/> to be executed after each
         /// phase.</param>
         /// <exception cref="System.ArgumentOutOfRangeException"> <paramref name="participantCount"/> is less than 0
-        /// or greater than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// or greater than <see cref="int.MaxValue"/>.</exception>
         /// <remarks>
         /// The <paramref name="postPhaseAction"/> delegate will be executed after
         /// all participants have arrived at the barrier in one phase.  The participants
@@ -277,7 +277,7 @@ namespace System.Threading
         /// participate.</returns>
         /// <exception cref="System.InvalidOperationException">
         /// Adding a participant would cause the barrier's participant count to 
-        /// exceed <see cref="System.Int16.MaxValue"/>.
+        /// exceed <see cref="short.MaxValue"/>.
         /// </exception>
         /// <exception cref="System.InvalidOperationException">
         /// The method was invoked from within a post-phase action.
@@ -306,7 +306,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="participantCount"/> is less than
         /// 0.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">Adding <paramref name="participantCount"/> participants would cause the
-        /// barrier's participant count to exceed <see cref="System.Int16.MaxValue"/>.</exception>
+        /// barrier's participant count to exceed <see cref="short.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">
         /// The method was invoked from within a post-phase action.
         /// </exception>
@@ -526,7 +526,7 @@ namespace System.Threading
         /// <returns>true if all other participants reached the barrier; otherwise, false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/>is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out, or it is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">
         /// The method was invoked from within a post-phase action, the barrier currently has 0 participants,
         /// or the barrier is being used by more threads than are registered as participants.

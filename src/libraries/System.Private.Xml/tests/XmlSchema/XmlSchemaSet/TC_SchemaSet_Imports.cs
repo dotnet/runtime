@@ -183,7 +183,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));                   // should be already present in the set
 
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -219,7 +219,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));                   // should be already present in the set
 
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -775,7 +775,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));                   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -821,7 +821,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));                   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -1474,7 +1474,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "ReprocessCount");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));                   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1521,7 +1521,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "ReprocessCount");
 
             XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
-            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));                   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 

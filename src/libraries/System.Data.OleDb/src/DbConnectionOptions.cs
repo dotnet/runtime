@@ -211,7 +211,7 @@ namespace System.Data.Common
                 if (useOdbcRules)
                 {
                     if ((0 < keyValue.Length) &&
-                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (0 == String.Compare(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
+                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (0 == string.Compare(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
                         !ConnectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
                         // always quote Driver value (required for ODBC Version 2.65 and earlier)
@@ -294,7 +294,7 @@ namespace System.Data.Common
         {
             try
             {
-                return System.Int32.Parse(stringValue, System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return int.Parse(stringValue, System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (FormatException e)
             {
@@ -501,7 +501,7 @@ namespace System.Data.Common
         static private string GetKeyName(StringBuilder buffer)
         {
             int count = buffer.Length;
-            while ((0 < count) && Char.IsWhiteSpace(buffer[count - 1]))
+            while ((0 < count) && char.IsWhiteSpace(buffer[count - 1]))
             {
                 count--; // trailing whitespace
             }
@@ -514,11 +514,11 @@ namespace System.Data.Common
             int index = 0;
             if (trimWhitespace)
             {
-                while ((index < count) && Char.IsWhiteSpace(buffer[index]))
+                while ((index < count) && char.IsWhiteSpace(buffer[index]))
                 {
                     index++; // leading whitespace
                 }
-                while ((0 < count) && Char.IsWhiteSpace(buffer[count - 1]))
+                while ((0 < count) && char.IsWhiteSpace(buffer[count - 1]))
                 {
                     count--; // trailing whitespace
                 }
@@ -563,13 +563,13 @@ namespace System.Data.Common
                 switch (parserState)
                 {
                     case ParserState.NothingYet: // [\\s;]*
-                        if ((';' == currentChar) || Char.IsWhiteSpace(currentChar))
+                        if ((';' == currentChar) || char.IsWhiteSpace(currentChar))
                         {
                             continue;
                         }
                         if ('\0' == currentChar)
                         { parserState = ParserState.NullTermination; continue; }
-                        if (Char.IsControl(currentChar))
+                        if (char.IsControl(currentChar))
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         startposition = currentPosition;
                         if ('=' != currentChar)
@@ -586,9 +586,9 @@ namespace System.Data.Common
                     case ParserState.Key: // (?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}]|\\s+==|==)+)
                         if ('=' == currentChar)
                         { parserState = ParserState.KeyEqual; continue; }
-                        if (Char.IsWhiteSpace(currentChar))
+                        if (char.IsWhiteSpace(currentChar))
                         { break; }
-                        if (Char.IsControl(currentChar))
+                        if (char.IsControl(currentChar))
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         break;
 
@@ -603,7 +603,7 @@ namespace System.Data.Common
                         goto case ParserState.KeyEnd;
 
                     case ParserState.KeyEnd:
-                        if (Char.IsWhiteSpace(currentChar))
+                        if (char.IsWhiteSpace(currentChar))
                         { continue; }
                         if (useOdbcRules)
                         {
@@ -621,15 +621,15 @@ namespace System.Data.Common
                         { goto ParserExit; }
                         if ('\0' == currentChar)
                         { goto ParserExit; }
-                        if (Char.IsControl(currentChar))
+                        if (char.IsControl(currentChar))
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         parserState = ParserState.UnquotedValue;
                         break;
 
                     case ParserState.UnquotedValue: // "((?![\"'\\s])" + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*" + "(?<![\"']))"
-                        if (Char.IsWhiteSpace(currentChar))
+                        if (char.IsWhiteSpace(currentChar))
                         { break; }
-                        if (Char.IsControl(currentChar) || ';' == currentChar)
+                        if (char.IsControl(currentChar) || ';' == currentChar)
                         { goto ParserExit; }
                         break;
 
@@ -676,7 +676,7 @@ namespace System.Data.Common
                         goto case ParserState.QuotedValueEnd;
 
                     case ParserState.QuotedValueEnd:
-                        if (Char.IsWhiteSpace(currentChar))
+                        if (char.IsWhiteSpace(currentChar))
                         { continue; }
                         if (';' == currentChar)
                         { goto ParserExit; }
@@ -687,7 +687,7 @@ namespace System.Data.Common
                     case ParserState.NullTermination: // [\\s;\u0000]*
                         if ('\0' == currentChar)
                         { continue; }
-                        if (Char.IsWhiteSpace(currentChar))
+                        if (char.IsWhiteSpace(currentChar))
                         { continue; }
                         throw ADP.ConnectionStringSyntax(currentPosition);
 
@@ -767,9 +767,9 @@ namespace System.Data.Common
             {
 #if DEBUG
                 bool compValue = ConnectionStringValidKeyRegex.IsMatch(keyname);
-                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !Char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
+                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
 #endif
-                return ((0 < keyname.Length) && (';' != keyname[0]) && !Char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
+                return ((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
             }
             return false;
         }

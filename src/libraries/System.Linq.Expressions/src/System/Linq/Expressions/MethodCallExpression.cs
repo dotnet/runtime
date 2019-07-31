@@ -1400,7 +1400,7 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="array"/> or <paramref name="indexes"/> is null.</exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="array"/>.Type does not represent an array type.-or-The rank of <paramref name="array"/>.Type does not match the number of elements in <paramref name="indexes"/>.-or-The <see cref="Expression.Type"/> property of one or more elements of <paramref name="indexes"/> does not represent the <see cref="Int32"/> type.</exception>
+        /// <paramref name="array"/>.Type does not represent an array type.-or-The rank of <paramref name="array"/>.Type does not match the number of elements in <paramref name="indexes"/>.-or-The <see cref="Expression.Type"/> property of one or more elements of <paramref name="indexes"/> does not represent the <see cref="int"/> type.</exception>
         public static MethodCallExpression ArrayIndex(Expression array, IEnumerable<Expression> indexes)
         {
             ExpressionUtils.RequiresCanRead(array, nameof(array), -1);

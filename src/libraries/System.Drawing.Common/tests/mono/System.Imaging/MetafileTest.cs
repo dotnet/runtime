@@ -4,7 +4,7 @@
 // Metafile class unit tests
 //
 // Authors:
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2007 Novell, Inc (http://www.novell.com)
 //

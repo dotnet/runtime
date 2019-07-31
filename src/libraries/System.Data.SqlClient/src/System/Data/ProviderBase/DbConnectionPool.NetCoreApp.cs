@@ -8,7 +8,7 @@ using System.Data.SqlClient;
 
 namespace System.Data.ProviderBase
 {
-    sealed internal partial class DbConnectionPool
+    internal sealed partial class DbConnectionPool
     {
         partial void CheckPoolBlockingPeriod(Exception e)
         {

@@ -52,7 +52,7 @@ namespace System.Resources
         private static volatile CultureInfo s_globalResourceContextBestFitCultureInfo;
         private static volatile global::Windows.ApplicationModel.Resources.Core.ResourceManager s_globalResourceManager;
 
-        private static Object s_objectForLock = new Object(); // Used by InitializeStatics
+        private static object s_objectForLock = new object(); // Used by InitializeStatics
 
         private static bool InitializeStatics()
         {
@@ -121,7 +121,7 @@ namespace System.Resources
 #pragma warning restore 618
                             if (globalResourceContext != null)
                             {
-                                List<String> languages = new List<string>(globalResourceContext.Languages);
+                                List<string> languages = new List<string>(globalResourceContext.Languages);
 
                                 s_globalResourceContextBestFitCultureInfo = GetBestFitCultureFromLanguageList(languages);
                                 s_globalResourceContextFallBackList = ReadOnlyListToString(languages);
@@ -247,7 +247,7 @@ namespace System.Resources
                 return;
             }
 
-            List<String> languages = new List<string>(langs);
+            List<string> languages = new List<string>(langs);
             
             if (languages.Count > 0 && languages[0] == c_InvariantCulturePrivateName)
             {
@@ -258,13 +258,13 @@ namespace System.Resources
             s_globalResourceContextFallBackList = ReadOnlyListToString(languages);
         }
 
-        private static bool LibpathMatchesPackagepath(String libpath, String packagepath)
+        private static bool LibpathMatchesPackagepath(string libpath, string packagepath)
         {
             Debug.Assert(libpath != null);
             Debug.Assert(packagepath != null);
 
             return packagepath.Length < libpath.Length &&
-                   String.Compare(packagepath, 0,
+                   string.Compare(packagepath, 0,
                                   libpath, 0,
                                   packagepath.Length,
                                   StringComparison.OrdinalIgnoreCase) == 0 &&
@@ -275,7 +275,7 @@ namespace System.Resources
 
 #if netstandard
         /* Returns true if libpath is path to an ni image and if the path contains packagename as a subfolder */
-        private static bool LibpathContainsPackagename(String libpath, String packagename)
+        private static bool LibpathContainsPackagename(string libpath, string packagename)
         {
             Debug.Assert(libpath != null);
             Debug.Assert(packagename != null);
@@ -356,7 +356,7 @@ namespace System.Resources
                 // exceptionInfo structure at this point since we don't have any
                 // reliable information to include in it.
 
-                IReadOnlyDictionary<String, ResourceMap>
+                IReadOnlyDictionary<string, ResourceMap>
                     resourceMapDictionary = s_globalResourceManager.AllResourceMaps;
 
                 if (resourceMapDictionary != null)
@@ -435,7 +435,7 @@ namespace System.Resources
         {
             Debug.Assert(list != null);
 
-            return String.Join(";", list);
+            return string.Join(";", list);
         }
 
         public override CultureInfo GlobalResourceContextBestFitCultureInfo
@@ -472,7 +472,7 @@ namespace System.Resources
                 return true;
             }
 
-            List<String> languages = new List<String>(s_globalResourceContext.Languages);
+            List<string> languages = new List<string>(s_globalResourceContext.Languages);
             languages.Insert(0, ci.Name == CultureInfo.InvariantCulture.Name ? c_InvariantCulturePrivateName : ci.Name);
 
             // remove any duplication in the list
@@ -501,8 +501,8 @@ namespace System.Resources
         // continue to be thread-safe.
 
         // Throws exceptions
-        public override String GetString(String stringName,
-                 String startingCulture, String neutralResourcesCulture)
+        public override string GetString(string stringName,
+                 string startingCulture, string neutralResourcesCulture)
         {
             Debug.Assert(stringName != null);
             Debug.Assert(_resourceMap != null); // Should have been initialized by now
@@ -543,7 +543,7 @@ namespace System.Resources
                     // The worst that can happen is that a string is unexpectedly missing
                     // or in the wrong language.
 
-                    if (!String.Equals(newResourceFallBackList, _clonedResourceContextFallBackList, StringComparison.Ordinal))
+                    if (!string.Equals(newResourceFallBackList, _clonedResourceContextFallBackList, StringComparison.Ordinal))
                     {
                         _clonedResourceContext.Languages = StringToReadOnlyList(newResourceFallBackList);
                         _clonedResourceContextFallBackList = newResourceFallBackList;

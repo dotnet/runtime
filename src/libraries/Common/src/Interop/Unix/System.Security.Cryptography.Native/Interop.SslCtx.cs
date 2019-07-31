@@ -33,7 +33,7 @@ internal static partial class Interop
         internal static extern int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, IntPtr protos, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
-        internal static unsafe extern void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, SslCtxSetAlpnCallback callback, IntPtr arg);
+        internal static extern unsafe void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, SslCtxSetAlpnCallback callback, IntPtr arg);
 
         internal static unsafe int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, List<SslApplicationProtocol> protocols)
         {

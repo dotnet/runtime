@@ -43,9 +43,9 @@ namespace System.Linq.Expressions
         public int ArgumentCount => Arguments.Count;
 
         /// <summary>
-        /// Creates a <see cref="String"/> representation of the node.
+        /// Creates a <see cref="string"/> representation of the node.
         /// </summary>
-        /// <returns>A <see cref="String"/> representation of the node.</returns>
+        /// <returns>A <see cref="string"/> representation of the node.</returns>
         public override string ToString()
         {
             return ExpressionStringBuilder.ElementInitBindingToString(this);

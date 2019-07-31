@@ -139,12 +139,12 @@ namespace System.Tests
             }
         }
 
-        private unsafe static bool IsNegativeZero(float value)
+        private static unsafe bool IsNegativeZero(float value)
         {
             return (*(uint*)(&value)) == 0x80000000;
         }
 
-        private unsafe static bool IsPositiveZero(float value)
+        private static unsafe bool IsPositiveZero(float value)
         {
             return (*(uint*)(&value)) == 0x00000000;
         }

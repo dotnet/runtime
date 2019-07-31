@@ -116,7 +116,7 @@ namespace System.ComponentModel
         protected bool DesignMode => _site?.DesignMode ?? false;
 
         /// <summary>
-        /// Returns a <see cref='System.String'/> containing the name of the
+        /// Returns a <see cref='string'/> containing the name of the
         /// <see cref='System.ComponentModel.Component'/>, if any.
         /// This method should not be overridden.
         /// </summary>

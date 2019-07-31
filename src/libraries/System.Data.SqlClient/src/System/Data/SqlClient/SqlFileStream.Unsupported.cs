@@ -14,7 +14,7 @@ namespace System.Data.SqlTypes
             throw new PlatformNotSupportedException(SR.SqlFileStream_NotSupported);
         }
 
-        public SqlFileStream(string path, byte[] transactionContext, FileAccess access, FileOptions options, Int64 allocationSize)
+        public SqlFileStream(string path, byte[] transactionContext, FileAccess access, FileOptions options, long allocationSize)
         {
             throw new PlatformNotSupportedException(SR.SqlFileStream_NotSupported);
         }

@@ -182,7 +182,7 @@ namespace Microsoft.Test.ModuleCore
             //plus this allows both teams to have a identical (similar as possible) queries/filters.
 
             //Xml Spec Format:
-            //	Example:
+            //    Example:
             /*
                 <TestModule Name="Functional" Created="10 October 2001" Modified="10 October 2001" Version="1">
                 <-- Owner type is an enum, "test", "dev" or "pm" -->

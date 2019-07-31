@@ -815,7 +815,7 @@ namespace System.Xml.Serialization
                         Ldstr((string)o);
                         break;
                     case TypeCode.Decimal:
-                        ConstructorInfo Decimal_ctor = typeof(Decimal).GetConstructor(
+                        ConstructorInfo Decimal_ctor = typeof(decimal).GetConstructor(
                              CodeGenerator.InstanceBindingFlags,
                              new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }
                              );

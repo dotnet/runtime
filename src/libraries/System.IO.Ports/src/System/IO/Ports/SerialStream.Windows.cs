@@ -57,7 +57,7 @@ namespace System.IO.Ports
         private byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
 
         // called whenever any async i/o operation completes.
-        private unsafe static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
+        private static unsafe readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
 
         // ----- new get-set properties -----------------*
 

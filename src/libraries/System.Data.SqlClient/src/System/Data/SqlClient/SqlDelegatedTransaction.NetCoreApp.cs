@@ -6,7 +6,7 @@ using System.Transactions;
 
 namespace System.Data.SqlClient
 {
-    sealed internal partial class SqlDelegatedTransaction : IPromotableSinglePhaseNotification
+    internal sealed partial class SqlDelegatedTransaction : IPromotableSinglePhaseNotification
     {
         // Get the server-side Global Transaction Id from the PromotedDTCToken
         // Skip first 4 bytes since they contain the version

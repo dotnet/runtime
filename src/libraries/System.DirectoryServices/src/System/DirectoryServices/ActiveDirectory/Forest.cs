@@ -997,8 +997,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 foreach (SearchResult res in resCol)
                 {
-                    //	add the name of the appNC only if it is not 
-                    //	the Schema or Configuration partition
+                    // add the name of the appNC only if it is not 
+                    // the Schema or Configuration partition
                     string nCName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.NCName);
                     if ((!(nCName.Equals(schemaNamingContext)))
                         && (!(nCName.Equals(configurationNamingContext))))

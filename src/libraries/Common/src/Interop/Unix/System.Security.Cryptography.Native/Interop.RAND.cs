@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        internal unsafe static bool GetRandomBytes(byte* pbBuffer, int count)
+        internal static unsafe bool GetRandomBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count >= 0);
 
@@ -18,6 +18,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private unsafe static extern bool CryptoNative_GetRandomBytes(byte* buf, int num);
+        private static extern unsafe bool CryptoNative_GetRandomBytes(byte* buf, int num);
     }
 }

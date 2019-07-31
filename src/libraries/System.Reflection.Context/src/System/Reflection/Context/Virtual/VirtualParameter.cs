@@ -52,5 +52,5 @@ namespace System.Reflection.Context.Virtual
                 Position.GetHashCode() ^
                 ParameterType.GetHashCode();
         }
-	}
+    }
 }

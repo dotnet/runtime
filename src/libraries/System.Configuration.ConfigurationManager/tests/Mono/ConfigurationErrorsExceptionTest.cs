@@ -4,7 +4,7 @@
 // ConfigurationErrorsExceptionTest.cs
 //
 // Author:
-//	Gert Driesen  <drieseng@users.sourceforge.net>
+//  Gert Driesen  <drieseng@users.sourceforge.net>
 //
 // Copyright (C) 2008 Gert Driesen
 //

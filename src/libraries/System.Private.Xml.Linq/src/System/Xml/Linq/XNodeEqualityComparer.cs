@@ -46,7 +46,7 @@ namespace System.Xml.Linq
         /// <param name="obj">The node to hash.</param>
         /// <returns>A value-based hash code for the node.</returns>
         /// <remarks>
-        /// The <see cref="XNode"/> class's implementation of <see cref="Object.GetHashCode"/>
+        /// The <see cref="XNode"/> class's implementation of <see cref="object.GetHashCode"/>
         /// is based on the referential identity of the node. This method computes a
         /// hash code based on the value of the node.
         /// </remarks>
@@ -89,7 +89,7 @@ namespace System.Xml.Linq
         /// <param name="obj">The node to hash.</param>
         /// <returns>A value-based hash code for the node.</returns>
         /// <remarks>
-        /// The <see cref="XNode"/> class's implementation of <see cref="Object.GetHashCode"/>
+        /// The <see cref="XNode"/> class's implementation of <see cref="object.GetHashCode"/>
         /// is based on the referential identity of the node. This method computes a
         /// hash code based on the value of the node.
         /// </remarks>

@@ -605,7 +605,7 @@ namespace System
             }
         }
 
-        public unsafe static string Title
+        public static unsafe string Title
         {
             get
             {

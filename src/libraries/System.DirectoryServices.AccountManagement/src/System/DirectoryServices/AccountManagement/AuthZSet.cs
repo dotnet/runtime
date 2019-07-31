@@ -102,7 +102,7 @@ namespace System.DirectoryServices.AccountManagement
                         // Extract the group SIDs from the user's context.  Determine the size of the buffer we need.
                         f = UnsafeNativeMethods.AuthzGetInformationFromContext(
                                                     pClientContext,
-                                                    2,	                // AuthzContextInfoGroupsSids 
+                                                    2,                    // AuthzContextInfoGroupsSids 
                                                     0,
                                                     out bufferSize,
                                                     IntPtr.Zero
@@ -119,7 +119,7 @@ namespace System.DirectoryServices.AccountManagement
                             // Extract the group SIDs from the user's context, into our buffer.0
                             f = UnsafeNativeMethods.AuthzGetInformationFromContext(
                                                         pClientContext,
-                                                        2,	                // AuthzContextInfoGroupsSids 
+                                                        2,                    // AuthzContextInfoGroupsSids 
                                                         bufferSize,
                                                         out bufferSize,
                                                         pBuffer

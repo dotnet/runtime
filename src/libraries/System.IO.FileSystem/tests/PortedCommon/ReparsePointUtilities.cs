@@ -97,17 +97,17 @@ public static class MountHelper
     /// For standalone debugging help. Change Main0 to Main
      public static void Main0(string[] args)
     {
-	 	try
+         try
         {
-			if(args[0]=="-m")
-				Mount(args[1], args[2]);
-			if(args[0]=="-u")
-				Unmount(args[1]);
- 		}
+            if(args[0]=="-m")
+                Mount(args[1], args[2]);
+            if(args[0]=="-u")
+                Unmount(args[1]);
+         }
         catch(Exception ex)
         {
-	 		Console.WriteLine(ex);
-		}
-    }	
+             Console.WriteLine(ex);
+        }
+    }    
 
 }

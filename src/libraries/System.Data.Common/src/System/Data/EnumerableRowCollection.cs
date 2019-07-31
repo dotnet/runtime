@@ -162,7 +162,7 @@ namespace System.Data
                 finalPredicate =
                     (DataRow row) =>
                     {
-                        if (!Object.ReferenceEquals(row, _selector((TRow)(object)row)))
+                        if (!object.ReferenceEquals(row, _selector((TRow)(object)row)))
                         {
                             throw DataSetUtil.NotSupported(SR.ToLDVUnsupported);
                         }
@@ -182,7 +182,7 @@ namespace System.Data
                 finalPredicate =
                     (DataRow row) =>
                     {
-                        if (!Object.ReferenceEquals(row, _selector((TRow)(object)row)))
+                        if (!object.ReferenceEquals(row, _selector((TRow)(object)row)))
                         {
                             throw DataSetUtil.NotSupported(SR.ToLDVUnsupported);
                         }

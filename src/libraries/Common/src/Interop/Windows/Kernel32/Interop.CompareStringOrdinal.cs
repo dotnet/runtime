@@ -10,7 +10,7 @@ internal partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/dd317762.aspx
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        public unsafe static extern int CompareStringOrdinal(
+        public static extern unsafe int CompareStringOrdinal(
             ref char lpString1,
             int cchCount1,
             ref char lpString2,

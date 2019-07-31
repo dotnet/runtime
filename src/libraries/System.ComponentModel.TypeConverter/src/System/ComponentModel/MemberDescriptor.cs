@@ -193,7 +193,7 @@ namespace System.ComponentModel
         public virtual string Name => _name ?? "";
 
         /// <summary>
-        /// Gets the hash code for the name of the member as specified in <see cref='System.String.GetHashCode()'/>.
+        /// Gets the hash code for the name of the member as specified in <see cref='string.GetHashCode()'/>.
         /// </summary>
         protected virtual int NameHashCode => _nameHash;
 

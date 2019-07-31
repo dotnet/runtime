@@ -355,7 +355,7 @@ namespace System.Data.Tests
             string sColName, sExp;
             dc = new DataColumn();
 
-            //ToString = ColumnName 			
+            //ToString = ColumnName
             sColName = "Test1";
             dc.ColumnName = sColName;
             // ToString - ColumnName

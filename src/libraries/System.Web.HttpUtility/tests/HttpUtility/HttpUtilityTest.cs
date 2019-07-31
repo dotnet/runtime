@@ -5,7 +5,7 @@
 // System.Web.HttpUtilityTest.cs - Unit tests for System.Web.HttpUtility
 //
 // Author:
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //

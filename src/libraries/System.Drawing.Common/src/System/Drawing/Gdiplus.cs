@@ -917,7 +917,7 @@ namespace System.Drawing
         public static extern IntPtr SelectObject(HandleRef hdc, HandleRef obj);
 
         [DllImport(ExternDll.User32, ExactSpelling = true, SetLastError = true)]
-        public unsafe static extern IntPtr CreateIconFromResourceEx(
+        public static extern unsafe IntPtr CreateIconFromResourceEx(
             byte* pbIconBits,
             uint cbIconBits,
             bool fIcon,
@@ -927,7 +927,7 @@ namespace System.Drawing
             int flags);
 
         [DllImport(ExternDll.Shell32, CharSet = CharSet.Unicode)]
-        public unsafe static extern IntPtr ExtractAssociatedIcon(HandleRef hInst, char* iconPath, ref int index);
+        public static extern unsafe IntPtr ExtractAssociatedIcon(HandleRef hInst, char* iconPath, ref int index);
 
         [DllImport(ExternDll.User32, SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern IntPtr LoadIcon(HandleRef hInst, IntPtr iconId);
@@ -945,7 +945,7 @@ namespace System.Drawing
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int GetObject(HandleRef hObject, int nSize, ref LOGFONT lf);
 
-        public unsafe static int GetObject(HandleRef hObject, ref LOGFONT lp)
+        public static unsafe int GetObject(HandleRef hObject, ref LOGFONT lp)
             => GetObject(hObject, sizeof(LOGFONT), ref lp);
 
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true)]

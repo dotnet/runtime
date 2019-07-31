@@ -60,14 +60,14 @@ namespace OLEDB.Test.ModuleCore
         // These two methods get/set the ErrorLevel property. This property affects the
         // behavior of the 'Validate' method. The enum values have the following 
         // effects on that method:
-        //	HR_STRICT:	The 'hrActual' parameter MUST match the 'hrExpected' parameter,
-        //				or else the error count in incremented.
-        //  HR_SUCCEED: The 'hrActual' MUST be a success code, or else the error count
-        //				is incremented.
-        //	HR_FAIL:	The 'hrActual' MUST be an error code, or else the error count
-        //				is incremented.
-        //	HR_OPTIONAL:The error count will not be incremented, regardless of the
-        //				parameters passed in to 'Validate.'
+        //    HR_STRICT:  The 'hrActual' parameter MUST match the 'hrExpected' parameter,
+        //                or else the error count in incremented.
+        //  HR_SUCCEED:   The 'hrActual' MUST be a success code, or else the error count
+        //                is incremented.
+        //    HR_FAIL:    The 'hrActual' MUST be an error code, or else the error count
+        //                is incremented.
+        //    HR_OPTIONAL:The error count will not be incremented, regardless of the
+        //                parameters passed in to 'Validate.'
         // 
         tagERRORLEVEL GetErrorLevel();
         void SetErrorLevel(tagERRORLEVEL ErrorLevel);
@@ -175,19 +175,19 @@ namespace OLEDB.Test.ModuleCore
         // the provider they are running against (if any.)
         //
         // The properties are described as follows:
-        //	>Name:			The name the provider gives itself. For Kagera this is MSDASQL.
-        //	>FriendlyName:	A special name the user has given this provider configuration.
-        //	>InitString:	A string which contains initialization data. The interpretation
-        //					of this string is Test Module-specific -- so you simply must
-        //					make users of LTM aware of what your particular Test Module
-        //					wants to see in this string.
-        //	>MachineName:	If you will be testing a remote provider, the user will pass
-        //					the machine name the provider is located on to you through
-        //					this property.
-        //	>CLSID:			This is the CLSID of the provider you are to run against.
-        //	>CLSCTX:		This tells you whether the provider will be InProc, Local, or
-        //					Remote (values of this property are identical to the values
-        //					of the CLSCTX enumeration in wtypes.h)
+        //    >Name:          The name the provider gives itself. For Kagera this is MSDASQL.
+        //    >FriendlyName:  A special name the user has given this provider configuration.
+        //    >InitString:    A string which contains initialization data. The interpretation
+        //                    of this string is Test Module-specific -- so you simply must
+        //                    make users of LTM aware of what your particular Test Module
+        //                    wants to see in this string.
+        //    >MachineName:   If you will be testing a remote provider, the user will pass
+        //                    the machine name the provider is located on to you through
+        //                    this property.
+        //    >CLSID:         This is the CLSID of the provider you are to run against.
+        //    >CLSCTX:        This tells you whether the provider will be InProc, Local, or
+        //                    Remote (values of this property are identical to the values
+        //                    of the CLSCTX enumeration in wtypes.h)
         string GetName();
         void SetName(string bstrProviderName);
         string GetFriendlyName();

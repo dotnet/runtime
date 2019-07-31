@@ -4,8 +4,8 @@
 // ICO Codec class testing unit
 //
 // Authors:
-// 	Jordi Mas i Hernàndez (jordi@ximian.com)
-//	Sebastien Pouliot  <sebastien@ximian.com>
+//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
 //
@@ -2034,7 +2034,7 @@ namespace MonoTests.System.Drawing.Imaging
         {
             string sOutFile = $"linerect-{expected}.ico";
 
-            // Save		
+            // Save
             Bitmap bmp = new Bitmap(100, 100, original);
             Graphics gr = Graphics.FromImage(bmp);
 

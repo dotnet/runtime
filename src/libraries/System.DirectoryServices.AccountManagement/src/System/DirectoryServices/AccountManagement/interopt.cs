@@ -611,7 +611,7 @@ namespace System.DirectoryServices.AccountManagement
                                         );
 
         /*
-                [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]				
+                [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]                
                 static extern public bool AuthzInitializeContextFromToken(
                                                 int Flags,
                                                 IntPtr TokenHandle,
