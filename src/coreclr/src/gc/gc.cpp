@@ -34781,7 +34781,11 @@ HRESULT GCHeap::Initialize()
         return CLR_E_GC_BAD_AFFINITY_CONFIG;
     }
 
-    if ((cpu_index_ranges_holder.Get() != nullptr) || (config_affinity_mask != 0))
+    if ((cpu_index_ranges_holder.Get() != nullptr)
+#ifdef PLATFORM_WINDOWS
+        || (config_affinity_mask != 0)
+#endif
+    )
     {
         affinity_config_specified_p = true;
     }
@@ -34801,12 +34805,7 @@ HRESULT GCHeap::Initialize()
 
     nhp = min (nhp, MAX_SUPPORTED_CPUS);
 #ifndef FEATURE_REDHAWK
-    gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ? false : (GCConfig::GetNoAffinitize() != 0));
-
-    if (gc_heap::heap_hard_limit)
-    {
-        gc_heap::gc_thread_no_affinitize_p = ((config_affinity_set.Count() == 0) && (config_affinity_mask == 0));
-    }
+    gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ? !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
 
     if (!(gc_heap::gc_thread_no_affinitize_p))
     {
@@ -34816,10 +34815,10 @@ HRESULT GCHeap::Initialize()
         {
             nhp = min(nhp, num_affinitized_processors);
         }
-#ifdef FEATURE_PAL
+#ifndef PLATFORM_WINDOWS
         // Limit the GC heaps to the number of processors available in the system.
         nhp = min (nhp, GCToOSInterface::GetTotalProcessorCount());
-#endif // FEATURE_PAL
+#endif // !PLATFORM_WINDOWS
     }
 #endif //!FEATURE_REDHAWK
 #endif //MULTIPLE_HEAPS
