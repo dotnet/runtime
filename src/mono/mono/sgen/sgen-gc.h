@@ -932,7 +932,7 @@ void sgen_clear_nursery_fragments (void);
 void sgen_nursery_allocator_prepare_for_pinning (void);
 void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, size_t min_size, size_t max_size);
 void sgen_resize_nursery (gboolean need_shrink);
-mword sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue);
+mword sgen_build_nursery_fragments (GCMemSection *nursery_section);
 void sgen_init_nursery_allocator (void);
 void sgen_nursery_allocator_init_heavy_stats (void);
 void sgen_init_allocator (void);
@@ -1093,7 +1093,7 @@ void sgen_check_whole_heap_stw (void)
 	MONO_PERMIT (need (sgen_gc_locked, sgen_stop_world));
 void sgen_check_objref (char *obj);
 void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
-void sgen_check_nursery_objects_pinned (gboolean pinned);
+void sgen_check_nursery_objects_untag (void);
 void sgen_check_for_xdomain_refs (void);
 GCObject* sgen_find_object_for_ptr (char *ptr);
 

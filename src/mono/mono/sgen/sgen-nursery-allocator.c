@@ -711,7 +711,7 @@ add_nursery_frag_checks (SgenFragmentAllocator *allocator, char *frag_start, cha
 }
 
 mword
-sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue)
+sgen_build_nursery_fragments (GCMemSection *nursery_section)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -747,10 +747,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 			addr1 = frags_ranges->fragment_start;
 
 		if (addr0 < addr1) {
-			if (unpin_queue)
-				GRAY_OBJECT_ENQUEUE_SERIAL (unpin_queue, (GCObject*)addr0, sgen_obj_get_descriptor_safe ((GCObject*)addr0));
-			else
-				SGEN_UNPIN_OBJECT (addr0);
+			SGEN_UNPIN_OBJECT (addr0);
 			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)addr0));
 			CANARIFY_SIZE (size);
 			sgen_set_nursery_scan_start (addr0);

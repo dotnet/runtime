@@ -597,23 +597,18 @@ sgen_check_heap_marked (gboolean nursery_must_be_pinned)
 }
 
 static void
-check_nursery_objects_pinned_callback (char *obj, size_t size, void *data /* ScanCopyContext *ctx */)
+check_nursery_objects_untag_callback (char *obj, size_t size, void *data)
 {
-	gboolean pinned = (gboolean) (size_t) data;
-
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
-	if (pinned)
-		g_assert (SGEN_OBJECT_IS_PINNED (obj));
-	else
-		g_assert (!SGEN_OBJECT_IS_PINNED (obj));
+	g_assert (!SGEN_OBJECT_IS_PINNED (obj));
 }
 
 void
-sgen_check_nursery_objects_pinned (gboolean pinned)
+sgen_check_nursery_objects_untag (void)
 {
 	sgen_clear_nursery_fragments ();
 	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
-			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE, TRUE);
+			(IterateObjectCallbackFunc)check_nursery_objects_untag_callback, NULL, FALSE, TRUE);
 }
 
 static void
@@ -1249,7 +1244,7 @@ sgen_check_mod_union_consistency (void)
 }
 
 void
-sgen_check_nursery_objects_pinned (gboolean pinned)
+sgen_check_nursery_objects_untag (void)
 {
 }
 
