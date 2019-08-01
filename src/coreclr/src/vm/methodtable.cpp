@@ -2832,6 +2832,24 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             }
             continue;
         }
+        else if (cls == NFT_DECIMAL)
+        {
+            bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
+            helperPtr->inEmbeddedStruct = true;
+            bool structRet = MscorlibBinder::GetClass(CLASS__DECIMAL)->ClassifyEightBytesWithNativeLayout(
+                helperPtr,
+                nestingLevel + 1,
+                normalizedFieldOffset,
+                useNativeLayout);
+            helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
+
+            if (!structRet)
+            {
+                // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
+                return false;
+            }
+            continue;
+        }
         else if (cls == NFT_COPY1)
         {
             // The following CorElementTypes are the only ones handled with FieldMarshaler_Copy1. 
