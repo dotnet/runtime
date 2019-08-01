@@ -83,8 +83,10 @@ namespace System.Net.Http
 
                         // Calculate SPN (Service Principal Name) using the host name of the request.
                         // Use the request's 'Host' header if available. Otherwise, use the request uri.
+                        // Ignore the 'Host' header if this is proxy authentication since we need to use
+                        // the host name of the proxy itself for SPN calculation.
                         string hostName;
-                        if (request.HasHeaders && request.Headers.Host != null)
+                        if (!isProxyAuth && request.HasHeaders && request.Headers.Host != null)
                         {
                             // Use the host name without any normalization.
                             hostName = request.Headers.Host;
