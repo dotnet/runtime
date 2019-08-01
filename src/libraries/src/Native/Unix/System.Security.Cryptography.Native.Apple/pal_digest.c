@@ -46,7 +46,10 @@ DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* 
     {
         case PAL_MD5:
             *pcbDigest = CC_MD5_DIGEST_LENGTH;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations" 
             CC_MD5_Init(&digestCtx->d.md5);
+#pragma clang diagnostic pop
             break;
         case PAL_SHA1:
             *pcbDigest = CC_SHA1_DIGEST_LENGTH;
@@ -86,7 +89,10 @@ int32_t AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cb
     switch (ctx->algorithm)
     {
         case PAL_MD5:
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
             return CC_MD5_Update(&ctx->d.md5, pBuf, bufSize);
+#pragma clang diagnostic pop
         case PAL_SHA1:
             return CC_SHA1_Update(&ctx->d.sha1, pBuf, bufSize);
         case PAL_SHA256:
@@ -110,7 +116,10 @@ int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t 
     switch (ctx->algorithm)
     {
         case PAL_MD5:
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
             ret = CC_MD5_Final(pOutput, &ctx->d.md5);
+#pragma clang diagnostic pop
             break;
         case PAL_SHA1:
             ret = CC_SHA1_Final(pOutput, &ctx->d.sha1);
@@ -137,7 +146,10 @@ int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t 
     switch (ctx->algorithm)
     {
         case PAL_MD5:
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
             return CC_MD5_Init(&ctx->d.md5);
+#pragma clang diagnostic pop
         case PAL_SHA1:
             return CC_SHA1_Init(&ctx->d.sha1);
         case PAL_SHA256:
