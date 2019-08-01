@@ -1087,6 +1087,9 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		case STACK_I8:
 			ins->opcode = OP_LCONV_TO_R_UN; 
 			break;
+		case STACK_R8:
+			ins->opcode = OP_FMOVE;
+			break;
 		}
 		break;
 	case MONO_CEE_CONV_OVF_I1:

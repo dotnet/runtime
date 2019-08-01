@@ -3136,6 +3136,15 @@ L_3:
        ret
   }
 
+  .method public hidebysig static int32 test_3_github_issue_15794 () cil managed
+  {
+      .maxstack 8
+      ldc.r8 3.4
+      conv.r.un
+      conv.i4
+      ret
+  }
+
   .method public hidebysig static int32 test_1_box_r8_r4_autoconv () cil managed
   {
 		ldc.r8 1.234
