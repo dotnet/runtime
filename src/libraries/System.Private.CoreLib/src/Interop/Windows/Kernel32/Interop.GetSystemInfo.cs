@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        internal extern static void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
+        internal static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
     }
 }

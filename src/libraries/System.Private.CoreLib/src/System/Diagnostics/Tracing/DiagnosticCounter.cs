@@ -79,25 +79,25 @@ namespace System.Diagnostics.Tracing
         private string _displayName = "";
         public string DisplayName
         {
+            get { return _displayName; }
             set
             {
                 if (value == null)
                     throw new ArgumentException("Cannot set null as DisplayName");
                 _displayName = value;
             }
-            get { return _displayName; }
         }
 
         private string _displayUnits = "";
         public string DisplayUnits
         {
+            get { return _displayUnits; }
             set
             {
                 if (value == null)
                     throw new ArgumentException("Cannot set null as DisplayUnits");
                 _displayUnits = value;
             }
-            get { return _displayUnits; }
         }
 
         public string Name { get; }
