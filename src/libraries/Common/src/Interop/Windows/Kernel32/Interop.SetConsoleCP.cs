@@ -9,6 +9,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static bool SetConsoleCP(int codePage);
+        internal static extern bool SetConsoleCP(int codePage);
     }
 }

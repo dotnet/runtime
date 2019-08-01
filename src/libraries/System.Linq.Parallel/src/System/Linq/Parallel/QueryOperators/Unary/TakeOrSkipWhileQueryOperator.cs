@@ -396,7 +396,7 @@ namespace System.Linq.Parallel
 
         class OperatorState<TKey>
         {
-            volatile internal int _updatesDone = 0;
+            internal volatile int _updatesDone = 0;
             internal TKey _currentLowKey;
         }
     }

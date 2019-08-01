@@ -139,17 +139,17 @@ namespace System.Xml.Schema
         internal static XmlSchemaSimpleType AnyAtomicType { get { return s__anyAtomicType; } }
         internal static XmlSchemaSimpleType UntypedAtomicType { get { return s__untypedAtomicType; } }
 
-        internal new static DatatypeImplementation FromXmlTokenizedType(XmlTokenizedType token)
+        internal static new DatatypeImplementation FromXmlTokenizedType(XmlTokenizedType token)
         {
             return s_tokenizedTypes[(int)token];
         }
 
-        internal new static DatatypeImplementation FromXmlTokenizedTypeXsd(XmlTokenizedType token)
+        internal static new DatatypeImplementation FromXmlTokenizedTypeXsd(XmlTokenizedType token)
         {
             return s_tokenizedTypesXsd[(int)token];
         }
 
-        internal new static DatatypeImplementation FromXdrName(string name)
+        internal static new DatatypeImplementation FromXdrName(string name)
         {
             int i = Array.BinarySearch(s_xdrTypes, name, null);
             return i < 0 ? null : (DatatypeImplementation)s_xdrTypes[i];
@@ -396,7 +396,7 @@ namespace System.Xml.Schema
             return dt;
         }
 
-        internal new static DatatypeImplementation DeriveByUnion(XmlSchemaSimpleType[] types, XmlSchemaType schemaType)
+        internal static new DatatypeImplementation DeriveByUnion(XmlSchemaSimpleType[] types, XmlSchemaType schemaType)
         {
             DatatypeImplementation dt = new Datatype_union(types);
             dt._baseType = s_anySimpleType; //Base type of a union is anySimpleType

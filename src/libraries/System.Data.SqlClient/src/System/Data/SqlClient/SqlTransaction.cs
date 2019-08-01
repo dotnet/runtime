@@ -44,7 +44,7 @@ namespace System.Data.SqlClient
         // PROPERTIES
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        new public SqlConnection Connection
+        public new SqlConnection Connection
         {
             get
             {

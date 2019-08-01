@@ -65,22 +65,22 @@ namespace System.Diagnostics.Tests
         public static extern int GetProcessId(SafeProcessHandle nativeHandle);
 
         [DllImport("kernel32.dll")]
-        internal extern static int GetConsoleCP();
+        internal static extern int GetConsoleCP();
 
         [DllImport("kernel32.dll")]
-        internal extern static int GetConsoleOutputCP();
+        internal static extern int GetConsoleOutputCP();
 
         [DllImport("kernel32.dll")]
-        internal extern static int SetConsoleCP(int codePage);
+        internal static extern int SetConsoleCP(int codePage);
 
         [DllImport("kernel32.dll")]
-        internal extern static int SetConsoleOutputCP(int codePage);
+        internal static extern int SetConsoleOutputCP(int codePage);
 
         [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static uint NetUserAdd(string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
+        internal static extern uint NetUserAdd(string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
 
         [DllImport("netapi32.dll")]
-        internal extern static uint NetUserDel(string servername, string username);
+        internal static extern uint NetUserDel(string servername, string username);
 
         [DllImport("advapi32.dll")]
         internal static extern bool OpenProcessToken(SafeProcessHandle ProcessHandle, uint DesiredAccess, out SafeProcessHandle TokenHandle);

@@ -15,7 +15,7 @@ namespace SerializationTestTypes
         public SelfRef1 data;
 
         [NonSerialized]
-        static public SelfRef1 containedData = new SelfRef1();
+        public static SelfRef1 containedData = new SelfRef1();
 
         public DCExplicitInterfaceIObjRef() { }
         public DCExplicitInterfaceIObjRef(bool init)

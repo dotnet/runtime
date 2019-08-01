@@ -82,10 +82,10 @@ namespace System.Reflection.Tests
 
     public class MethodTestSubClass : MethodTestBaseClass
     {
-        public new static int Members = 31;
-        public new static int MembersEverything = 51;
+        public static new int Members = 31;
+        public static new int MembersEverything = 51;
 
-        public new static string[] DeclaredMethodNames = new string[]{  "Void PubMeth1()",
+        public static new string[] DeclaredMethodNames = new string[]{  "Void PubMeth1()",
                                                                     "Void PubMeth2()",
                                                                     "Void PubMeth3()",
                                                                     "Void IntMeth1()",
@@ -104,14 +104,14 @@ namespace System.Reflection.Tests
                                                                     "Void ProMeth2ToOverride()",
                                                                     "Void ProIntMeth2ToOverride()"};
 
-        public new static string[] InheritedMethodNames = new string[] {    "Void PubBaseMeth1()",
+        public static new string[] InheritedMethodNames = new string[] {    "Void PubBaseMeth1()",
                                                                         "Void PubBaseMeth1(System.String)",
                                                                         "Void IntBaseMeth1()",
                                                                         "Void IntBaseMeth1(System.String)",
                                                                         "Void ProtectedBaseMeth1()",
                                                                         "Void ProtectedBaseMeth1(System.String)"};
 
-        public new static string[] PublicMethodNames = new string[]{ "Void PubMeth1()",
+        public static new string[] PublicMethodNames = new string[]{ "Void PubMeth1()",
                                                                  "Void PubMeth2()",
                                                                  "Void PubMeth3()",
                                                                  "Void PubMeth2ToOverride()"};
@@ -128,22 +128,22 @@ namespace System.Reflection.Tests
         public new void PubMeth1() { }
         public new virtual void PubMeth2() { }
         public override void PubMeth2ToOverride() { }
-        public new static void PubMeth3() { }
+        public static new void PubMeth3() { }
 
         internal new void IntMeth1() { }
         internal new virtual void IntMeth2() { }
         internal override void IntMeth2ToOverride() { }
-        internal new static void IntMeth3() { }
+        internal static new void IntMeth3() { }
 
         protected new void ProMeth1() { }
         protected new virtual void ProMeth2() { }
         protected override void ProMeth2ToOverride() { }
-        protected new static void ProMeth3() { }
+        protected static new void ProMeth3() { }
 
         protected internal new void ProIntMeth1() { }
         protected internal new virtual void ProIntMeth2() { }
         protected internal override void ProIntMeth2ToOverride() { }
-        protected internal new static void ProIntMeth3() { }
+        protected internal static new void ProIntMeth3() { }
 
         private void PrivMeth1() { }
         private static void PrivMeth3() { }
@@ -166,11 +166,11 @@ namespace System.Reflection.Tests
 
     public abstract class MethodTestAbsSubClass : MethodTestAbsBaseClass
     {
-        public new static int Members = 7;
-        public new static int MembersEverything = 17;
+        public static new int Members = 7;
+        public static new int MembersEverything = 17;
 
-        public new static string[] DeclaredMethodNames = new string[] { };
-        public new static string[] InheritedMethodNames = new string[] { "Void meth1()", "Void meth2()", "Void meth3()", "Void meth4()" };
-        public new static string[] PublicMethodNames = new string[] { };
+        public static new string[] DeclaredMethodNames = new string[] { };
+        public static new string[] InheritedMethodNames = new string[] { "Void meth1()", "Void meth2()", "Void meth3()", "Void meth4()" };
+        public static new string[] PublicMethodNames = new string[] { };
     }
 }

@@ -84,7 +84,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Given a property name, constructs and returns the appropriate individual property
         // filter
-        static public object CreateFilter(string propertyName)
+        public static object CreateFilter(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "QbeFilterDescription", "FilterFactory.CreateFilter: name=" + propertyName);
 

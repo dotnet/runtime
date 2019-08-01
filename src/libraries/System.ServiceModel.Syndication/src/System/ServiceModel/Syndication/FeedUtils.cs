@@ -20,7 +20,7 @@ namespace System.ServiceModel.Syndication
             return error;
         }
 
-        static internal Collection<SyndicationCategory> CloneCategories(Collection<SyndicationCategory> categories)
+        internal static Collection<SyndicationCategory> CloneCategories(Collection<SyndicationCategory> categories)
         {
             if (categories == null)
             {
@@ -34,7 +34,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        static internal Collection<SyndicationLink> CloneLinks(Collection<SyndicationLink> links)
+        internal static Collection<SyndicationLink> CloneLinks(Collection<SyndicationLink> links)
         {
             if (links == null)
             {
@@ -48,7 +48,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        static internal Collection<SyndicationPerson> ClonePersons(Collection<SyndicationPerson> persons)
+        internal static Collection<SyndicationPerson> ClonePersons(Collection<SyndicationPerson> persons)
         {
             if (persons == null)
             {
@@ -62,7 +62,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        static internal TextSyndicationContent CloneTextContent(TextSyndicationContent content)
+        internal static TextSyndicationContent CloneTextContent(TextSyndicationContent content)
         {
             if (content == null)
             {
@@ -112,7 +112,7 @@ namespace System.ServiceModel.Syndication
             return uriToWrite;
         }
 
-        static internal string GetUriString(Uri uri)
+        internal static string GetUriString(Uri uri)
         {
             if (uri == null)
             {
@@ -128,7 +128,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        static internal bool IsXmlns(string name, string ns)
+        internal static bool IsXmlns(string name, string ns)
         {
             return name == "xmlns" || ns == "http://www.w3.org/2000/xmlns/";
         }

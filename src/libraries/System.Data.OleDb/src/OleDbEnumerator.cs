@@ -22,18 +22,18 @@ namespace System.Data.OleDb
             return dataTable;
         }
 
-        static public OleDbDataReader GetEnumerator(Type type)
+        public static OleDbDataReader GetEnumerator(Type type)
         {
             return GetEnumeratorFromType(type);
         }
 
-        static internal OleDbDataReader GetEnumeratorFromType(Type type)
+        internal static OleDbDataReader GetEnumeratorFromType(Type type)
         {
             object value = Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
             return GetEnumeratorReader(value);
         }
 
-        static private OleDbDataReader GetEnumeratorReader(object value)
+        private static OleDbDataReader GetEnumeratorReader(object value)
         {
             NativeMethods.ISourcesRowset srcrowset = null;
 
@@ -68,7 +68,7 @@ namespace System.Data.OleDb
             return dataReader;
         }
 
-        static public OleDbDataReader GetRootEnumerator()
+        public static OleDbDataReader GetRootEnumerator()
         {
             //readonly Guid CLSID_MSDAENUM = new Guid(0xc8b522d0,0x5cf3,0x11ce,0xad,0xe5,0x00,0xaa,0x00,0x44,0x77,0x3d);
             //Type msdaenum = Type.GetTypeFromCLSID(CLSID_MSDAENUM, true);

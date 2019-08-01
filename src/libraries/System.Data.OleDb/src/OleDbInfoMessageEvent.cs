@@ -8,7 +8,7 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbInfoMessageEventArgs : System.EventArgs
     {
-        readonly private OleDbException exception;
+        private readonly OleDbException exception;
 
         internal OleDbInfoMessageEventArgs(OleDbException exception)
         {

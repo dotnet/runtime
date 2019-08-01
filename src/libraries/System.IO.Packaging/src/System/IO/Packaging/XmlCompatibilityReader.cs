@@ -426,9 +426,6 @@ namespace System.IO.Packaging
         /// <param name="i">
         /// The index of the attribute. The index is zero-based. (The first attribute has index 0.)
         /// </param>
-        /// <returns>
-        /// true if the attribute is found; otherwise, false. If false, the reader's position does not change.
-        /// </returns>
         public override void MoveToAttribute(int i)
         {
             if (_ignoredAttributeCount == 0)

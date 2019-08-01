@@ -42,8 +42,8 @@ namespace System.Reflection.Tests
 
     public class ConstructorTestSubClass : ConstructorTestBaseClass
     {
-        public new static int Members = 5; //.cctor is added
-        public new static int MembersEverything = 11;
+        public static new int Members = 5; //.cctor is added
+        public static new int MembersEverything = 11;
 
         public ConstructorTestSubClass(string s) { }
         public ConstructorTestSubClass(short i2) { }

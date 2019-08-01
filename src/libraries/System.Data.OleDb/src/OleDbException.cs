@@ -65,7 +65,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static internal OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception inner)
+        internal static OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception inner)
         {
             OleDbErrorCollection errors = new OleDbErrorCollection(errorInfo);
             string message = null;
@@ -109,7 +109,7 @@ namespace System.Data.OleDb
             return new OleDbException(message, inner, source, errorCode, errors);
         }
 
-        static internal OleDbException CombineExceptions(List<OleDbException> exceptions)
+        internal static OleDbException CombineExceptions(List<OleDbException> exceptions)
         {
             Debug.Assert(0 < exceptions.Count, "missing exceptions");
             if (1 < exceptions.Count)

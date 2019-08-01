@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, EntryPoint = "EnumDependentServicesW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static bool EnumDependentServices(
+        internal static extern bool EnumDependentServices(
             SafeServiceHandle serviceHandle,
             int serviceState,
             IntPtr bufferOfENUM_SERVICE_STATUS,

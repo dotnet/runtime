@@ -182,7 +182,7 @@ namespace SerializationTestTypes
     {
         static RuntimeTypeHandleEqualityComparer comparer;
 
-        static public RuntimeTypeHandleEqualityComparer Comparer
+        public static RuntimeTypeHandleEqualityComparer Comparer
         {
             get
             {
@@ -682,7 +682,7 @@ namespace SerializationTestTypes
             return true;
         }
 
-        static internal string EncodeLocalName(string localName)
+        internal static string EncodeLocalName(string localName)
         {
             if (IsAsciiLocalName(localName))
                 return localName;
@@ -1182,13 +1182,13 @@ namespace SerializationTestTypes
             Add(new PrimitiveDataContract(typeof(Uri)));
             Add(objectContract);
         }
-        static public void Add(PrimitiveDataContract primitiveContract)
+        public static void Add(PrimitiveDataContract primitiveContract)
         {
             typeToContract.Add(primitiveContract.UnderlyingType, primitiveContract);
             nameToContract.Add(primitiveContract.StableName, primitiveContract);
         }
 
-        static public PrimitiveDataContract GetPrimitiveDataContract(Type type)
+        public static PrimitiveDataContract GetPrimitiveDataContract(Type type)
         {
             PrimitiveDataContract retVal = null;
             if (type.IsInterface)
@@ -1198,7 +1198,7 @@ namespace SerializationTestTypes
             return retVal;
         }
 
-        static public PrimitiveDataContract GetPrimitiveDataContract(string name, string ns)
+        public static PrimitiveDataContract GetPrimitiveDataContract(string name, string ns)
         {
             PrimitiveDataContract retVal = null;
             nameToContract.TryGetValue(new XmlQualifiedName(name, ns), out retVal);

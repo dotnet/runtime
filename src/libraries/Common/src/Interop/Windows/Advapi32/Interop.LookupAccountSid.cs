@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "LookupAccountSidW", SetLastError = true)]
-        public extern static unsafe int LookupAccountSid(
+        public static extern unsafe int LookupAccountSid(
             string lpSystemName,
             byte[] Sid,
             char* Name,

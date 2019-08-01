@@ -16,7 +16,7 @@ namespace System.Data.Common
         //
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        static internal extern System.Data.OleDb.OleDbHResult GetErrorInfo(
+        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
             [In] int dwReserved,
             [Out, MarshalAs(UnmanagedType.Interface)] out IErrorInfo ppIErrorInfo);
 
@@ -827,7 +827,7 @@ namespace System.Data.Common
         }
 
         [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        static internal extern int CreateWellKnownSid(
+        internal static extern int CreateWellKnownSid(
             int sidType,
             byte[] domainSid,
             [Out] byte[] resultSid,

@@ -66,7 +66,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("es-MX", "Spanish (Mexico) language Main description 1.0.0")]
         [InlineData("fr", "Neutral language Main description 1.0.0")]
         [InlineData("fr-FR", "Neutral language Main description 1.0.0")]
-        static public void mainResources(string lang, string expected)
+        public static void mainResources(string lang, string expected)
         {
             Assert.Equal(expected, Describe(lang));
         }

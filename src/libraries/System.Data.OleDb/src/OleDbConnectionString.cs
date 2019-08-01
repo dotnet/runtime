@@ -48,11 +48,11 @@ namespace System.Data.OleDb
             internal const string Location = "SOFTWARE\\Microsoft\\DataAccess\\Udl Pooling";
             internal const string Pooling = "Cache Size";
 
-            static internal volatile bool _PoolSizeInit;
-            static internal int _PoolSize;
+            internal static volatile bool _PoolSizeInit;
+            internal static int _PoolSize;
 
-            static internal volatile Dictionary<string, string> _Pool;
-            static internal object _PoolLock = new object();
+            internal static volatile Dictionary<string, string> _Pool;
+            internal static object _PoolLock = new object();
         }
 
         private static class VALUES
@@ -221,7 +221,7 @@ namespace System.Data.OleDb
             return supportMultipleResults;
         }
 
-        static private int UdlPoolSize
+        private static int UdlPoolSize
         {
             // SxS: UdpPoolSize reads registry value to get the pool size
             get
@@ -242,7 +242,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static private string LoadStringFromStorage(string udlfilename)
+        private static string LoadStringFromStorage(string udlfilename)
         {
             string udlConnectionString = null;
             Dictionary<string, string> udlcache = UDL._Pool;
@@ -289,7 +289,7 @@ namespace System.Data.OleDb
             return udlConnectionString;
         }
 
-        static private string LoadStringFromFileStorage(string udlfilename)
+        private static string LoadStringFromFileStorage(string udlfilename)
         {
             // Microsoft Data Link File Format
             // The first two lines of a .udl file must have exactly the following contents in order to work properly:
@@ -438,7 +438,7 @@ namespace System.Data.OleDb
             return (("msdasql" == progid) || progid.StartsWith("msdasql.", StringComparison.Ordinal) || ("microsoft ole db provider for odbc drivers" == progid));
         }
 
-        static private void ValidateProvider(string progid)
+        private static void ValidateProvider(string progid)
         {
             if (ADP.IsEmpty(progid))
             {
@@ -456,7 +456,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static internal void ReleaseObjectPool()
+        internal static void ReleaseObjectPool()
         {
             UDL._PoolSizeInit = false;
             UDL._Pool = null;

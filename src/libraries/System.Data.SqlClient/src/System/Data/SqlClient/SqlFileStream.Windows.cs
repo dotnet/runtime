@@ -390,7 +390,7 @@ namespace System.Data.SqlTypes
         #endregion
 
         [Conditional("DEBUG")]
-        static private void AssertPathFormat(string path)
+        private static void AssertPathFormat(string path)
         {
             Debug.Assert(path != null);
             Debug.Assert(path == path.Trim());
@@ -398,7 +398,7 @@ namespace System.Data.SqlTypes
             Debug.Assert(path.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase));
         }
 
-        static private string GetFullPathInternal(string path)
+        private static string GetFullPathInternal(string path)
         {
             //-----------------------------------------------------------------
             // precondition validation should be validated by callers of this method
@@ -647,7 +647,7 @@ namespace System.Data.SqlTypes
         // This method exists to ensure that the requested path name is unique so that SMB/DNS is prevented
         // from collapsing a file open request to a file handle opened previously. In the SQL FILESTREAM case,
         // this would likely be a file open in another transaction, so this mechanism ensures isolation.
-        static private string InitializeNtPath(string path)
+        private static string InitializeNtPath(string path)
         {
             // Ensure we have validated and normalized the path before
             AssertPathFormat(path);

@@ -89,19 +89,19 @@ namespace System.Reflection.Tests
 
     public class TypeInfoFieldSubClass : TypeInfoFieldBaseClass
     {
-        public new static int Members = 10;
+        public static new int Members = 10;
 
         public static string[] InheritedFieldNames = new string[] { "SubPubfld1" };
 
         public static string[] NewFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3" };
 
-        public new static string[] PublicFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
+        public static new string[] PublicFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
                                                                  "Members", "InheritedFieldNames", "NewFieldNames", "PublicFieldNames"};
         public new string Pubfld1 = "";
         public new readonly string Pubfld2 = "";
         public new volatile string Pubfld3 = "";
-        public new static string Pubfld4 = "";
-        public new static readonly string Pubfld5 = "";
-        public new static volatile string Pubfld6 = "";
+        public static new string Pubfld4 = "";
+        public static new readonly string Pubfld5 = "";
+        public static new volatile string Pubfld6 = "";
     }
 }

@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
         public object MyStringImmutablQueueT { get; set; }
         public object MyStringImmutableSortedSetT { get; set; }
 
-        public new static readonly string s_json =
+        public static new readonly string s_json =
                 @"{" +
                 @"""MyInt16"" : 1," +
                 @"""MyInt32"" : 2," +
@@ -133,7 +133,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyStringImmutableSortedSetT"" : [""Hello""]" +
                 @"}";
 
-        public new static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+        public static new readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
         public override void Initialize()
         {

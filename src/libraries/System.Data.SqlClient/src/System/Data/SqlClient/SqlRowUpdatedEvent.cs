@@ -15,7 +15,7 @@ namespace System.Data.SqlClient
         {
         }
 
-        new public SqlCommand Command
+        public new SqlCommand Command
         {
             get
             {

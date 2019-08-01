@@ -301,7 +301,7 @@ namespace System.Data.SqlClient
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ChangePasswordRequiresYukon));
         }
-        static internal Exception ChangePasswordUseOfUnallowedKey(string key)
+        internal static Exception ChangePasswordUseOfUnallowedKey(string key)
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ChangePasswordUseOfUnallowedKey, key));
         }
@@ -492,15 +492,15 @@ namespace System.Data.SqlClient
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingError));
         }
-        static internal Exception ParsingError(ParsingErrorState state)
+        internal static Exception ParsingError(ParsingErrorState state)
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorWithState, ((int)state).ToString(CultureInfo.InvariantCulture)));
         }
-        static internal Exception ParsingErrorValue(ParsingErrorState state, int value)
+        internal static Exception ParsingErrorValue(ParsingErrorState state, int value)
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorValue, ((int)state).ToString(CultureInfo.InvariantCulture), value));
         }
-        static internal Exception ParsingErrorFeatureId(ParsingErrorState state, int featureId)
+        internal static Exception ParsingErrorFeatureId(ParsingErrorState state, int featureId)
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorFeatureId, ((int)state).ToString(CultureInfo.InvariantCulture), featureId));
         }
@@ -1227,7 +1227,7 @@ namespace System.Data.SqlClient
     /// <summary>
     /// This class holds methods invoked on System.Transactions through reflection for Global Transactions
     /// </summary>
-    static internal class SysTxForGlobalTransactions
+    internal static class SysTxForGlobalTransactions
     {
         private static readonly Lazy<MethodInfo> _enlistPromotableSinglePhase = new Lazy<MethodInfo>(() =>
             typeof(Transaction).GetMethod("EnlistPromotableSinglePhase", new Type[] { typeof(IPromotableSinglePhaseNotification), typeof(Guid) }));

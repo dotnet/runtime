@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public extern static bool DeleteService(SafeServiceHandle serviceHandle);
+        public static extern bool DeleteService(SafeServiceHandle serviceHandle);
     }
 }

@@ -844,13 +844,13 @@ namespace SerializationTypes
     {
         public override string Name1 { get; set; }
 
-        new public string Name2 { get; set; }
+        public new string Name2 { get; set; }
 
-        new public string Name3 { get; set; }
+        public new string Name3 { get; set; }
 
         new internal string Name4 { get; set; }
 
-        new public string Name5 { get; set; }
+        public new string Name5 { get; set; }
 
         public override string Name6 { get; set; }
     }
@@ -859,9 +859,9 @@ namespace SerializationTypes
     {
         public override string Name1 { get; set; }
 
-        new public string Name2 { get; set; }
+        public new string Name2 { get; set; }
 
-        new public string Name3 { get; set; }
+        public new string Name3 { get; set; }
 
         new internal string Name4 { get; set; }
 

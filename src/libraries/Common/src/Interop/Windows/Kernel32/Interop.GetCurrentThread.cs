@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [DllImport(Interop.Libraries.Kernel32)]
-        internal extern static IntPtr GetCurrentThread();
+        internal static extern IntPtr GetCurrentThread();
     }
 }

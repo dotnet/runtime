@@ -70,7 +70,6 @@ namespace System.Data
         ///   DataTable.LoadDataRow threw an exception, i.e. wrong # of columns in source row
         /// Unrecoverable errors include:
         ///   exceptions from IEnumerator, DataTable.BeginLoadData or DataTable.EndLoadData</param>
-        /// <returns>DataTable containing copies of the source DataRows.</returns>
         /// <exception cref="ArgumentNullException">if source is null</exception>
         /// <exception cref="ArgumentNullException">if table is null</exception>
         /// <exception cref="InvalidOperationException">if source DataRow is in Deleted or Detached state</exception>

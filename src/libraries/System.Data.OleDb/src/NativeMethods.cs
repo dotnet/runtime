@@ -36,30 +36,30 @@ namespace System.Data.Common
         }
 
         [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        static internal extern IntPtr MapViewOfFile(IntPtr hFileMappingObject, int dwDesiredAccess, int dwFileOffsetHigh, int dwFileOffsetLow, IntPtr dwNumberOfBytesToMap);
+        internal static extern IntPtr MapViewOfFile(IntPtr hFileMappingObject, int dwDesiredAccess, int dwFileOffsetHigh, int dwFileOffsetLow, IntPtr dwNumberOfBytesToMap);
 
         // OpenFileMappingA contains a security venerability, in the unicode->ansi conversion 
         // Its possible to spoof the directory and construct ../ sequeences,  See FxCop Warrning
         // Specify marshaling for pinvoke string arguments
         [DllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         //        [DllImport(Interop.Libraries.Kernel32, CharSet=System.Runtime.InteropServices.CharSet.Ansi)]
-        static internal extern IntPtr OpenFileMappingA(int dwDesiredAccess, bool bInheritHandle, [MarshalAs(UnmanagedType.LPStr)] string lpName);
+        internal static extern IntPtr OpenFileMappingA(int dwDesiredAccess, bool bInheritHandle, [MarshalAs(UnmanagedType.LPStr)] string lpName);
 
         // CreateFileMappingA contains a security venerability, in the unicode->ansi conversion 
         // Its possible to spoof the directory and construct ../ sequeences,  See FxCop Warrning
         // Specify marshaling for pinvoke string arguments        
         [DllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         //        [DllImport(Interop.Libraries.Kernel32, CharSet=System.Runtime.InteropServices.CharSet.Ansi)]
-        static internal extern IntPtr CreateFileMappingA(IntPtr hFile, IntPtr pAttr, int flProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, [MarshalAs(UnmanagedType.LPStr)] string lpName);
+        internal static extern IntPtr CreateFileMappingA(IntPtr hFile, IntPtr pAttr, int flProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, [MarshalAs(UnmanagedType.LPStr)] string lpName);
 
         [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        static internal extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
+        internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
 
         [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool CloseHandle(IntPtr handle);
+        internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool AllocateAndInitializeSid(
+        internal static extern bool AllocateAndInitializeSid(
             IntPtr pIdentifierAuthority, // authority
             byte nSubAuthorityCount,                        // count of subauthorities
             int dwSubAuthority0,                          // subauthority 0
@@ -73,42 +73,42 @@ namespace System.Data.Common
             ref IntPtr pSid);                                   // SID
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern int GetLengthSid(
+        internal static extern int GetLengthSid(
                     IntPtr pSid);   // SID to query
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool InitializeAcl(
+        internal static extern bool InitializeAcl(
             IntPtr pAcl,            // ACL
             int nAclLength,     // size of ACL
             int dwAclRevision);  // revision level of ACL
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool AddAccessDeniedAce(
+        internal static extern bool AddAccessDeniedAce(
             IntPtr pAcl,            // access control list
             int dwAceRevision,  // ACL revision level
             int AccessMask,     // access mask
             IntPtr pSid);           // security identifier
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool AddAccessAllowedAce(
+        internal static extern bool AddAccessAllowedAce(
             IntPtr pAcl,            // access control list
             int dwAceRevision,  // ACL revision level
             uint AccessMask,     // access mask
             IntPtr pSid);           // security identifier
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool InitializeSecurityDescriptor(
+        internal static extern bool InitializeSecurityDescriptor(
             IntPtr pSecurityDescriptor, // SD
             int dwRevision);                         // revision level
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern bool SetSecurityDescriptorDacl(
+        internal static extern bool SetSecurityDescriptorDacl(
             IntPtr pSecurityDescriptor, // SD
             bool bDaclPresent,                        // DACL presence
             IntPtr pDacl,                               // DACL
             bool bDaclDefaulted);                       // default DACL
 
         [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        static internal extern IntPtr FreeSid(
+        internal static extern IntPtr FreeSid(
             IntPtr pSid);   // SID to free
     }
 }

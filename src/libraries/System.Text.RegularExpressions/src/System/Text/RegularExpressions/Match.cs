@@ -373,7 +373,7 @@ namespace System.Text.RegularExpressions
     internal class MatchSparse : Match
     {
         // the lookup hashtable
-        new internal readonly Hashtable _caps;
+        internal new readonly Hashtable _caps;
 
         internal MatchSparse(Regex regex, Hashtable caps, int capcount, string text, int begpos, int len, int startpos)
             : base(regex, capcount, text, begpos, len, startpos)

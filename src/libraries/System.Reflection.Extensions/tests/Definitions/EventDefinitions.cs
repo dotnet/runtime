@@ -35,23 +35,23 @@ namespace System.Reflection.Tests
 
     public class EventTestSubClass : EventTestBaseClass
     {
-        new public static int Members = 7;
-        new public static int MembersEverything = 22;
-        new public static string[] DeclaredEvents = new string[] { };
-        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected" };
-        new public static string[] InheritedButHiddenEvents = new string[] { };
-        new public static string[] PublicEvents = new string[] { };
+        public static new int Members = 7;
+        public static new int MembersEverything = 22;
+        public static new string[] DeclaredEvents = new string[] { };
+        public static new string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected" };
+        public static new string[] InheritedButHiddenEvents = new string[] { };
+        public static new string[] PublicEvents = new string[] { };
     }
 
     public class EventTestSubClassWithNewEvents : EventTestSubClass
     {
-        new public static int Members = 15;
-        new public static int MembersEverything = 29;
+        public static new int Members = 15;
+        public static new int MembersEverything = 29;
 
-        new public static string[] DeclaredEvents = new string[] { "EventProtected", "EventPublicNew" };
-        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal" };
-        new public static string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
-        new public static string[] PublicEvents = new string[] { "EventPublic", "EventPublicNew" };
+        public static new string[] DeclaredEvents = new string[] { "EventProtected", "EventPublicNew" };
+        public static new string[] InheritedEvents = new string[] { "EventPublic", "EventInternal" };
+        public static new string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
+        public static new string[] PublicEvents = new string[] { "EventPublic", "EventPublicNew" };
 
         new protected event EventHandler EventProtected;        // overrides the ProEvent from EventFieldTest parent        
         public event EventHandler EventPublicNew;
@@ -59,13 +59,13 @@ namespace System.Reflection.Tests
 
     public class EventFieldTestWithIgnoreCase : EventTestSubClassWithNewEvents
     {
-        new public static int Members = 23;
-        new public static int MembersEverything = 43;
+        public static new int Members = 23;
+        public static new int MembersEverything = 43;
 
-        new public static string[] DeclaredEvents = new string[] { "eVentProtected", "eVentPublicNew", "eVENTInternal", "eVentPriVate" };
-        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected", "EventPublicNew" };
-        new public static string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
-        new public static string[] PublicEvents = new string[] { "eVentPublicNew", "EventPublic", "EventPublicNew" };
+        public static new string[] DeclaredEvents = new string[] { "eVentProtected", "eVentPublicNew", "eVENTInternal", "eVentPriVate" };
+        public static new string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected", "EventPublicNew" };
+        public static new string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
+        public static new string[] PublicEvents = new string[] { "eVentPublicNew", "EventPublic", "EventPublicNew" };
 
         protected event EventHandler eVentProtected;        // overrides the ProEvent from EventFieldTest parent        
         public event EventHandler eVentPublicNew;

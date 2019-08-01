@@ -58,7 +58,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        new public SqlDataAdapter DataAdapter
+        public new SqlDataAdapter DataAdapter
         {
             get
             {
@@ -123,22 +123,22 @@ namespace System.Data.SqlClient
             base.RowUpdatingHandler(ruevent);
         }
 
-        new public SqlCommand GetInsertCommand()
+        public new SqlCommand GetInsertCommand()
             => (SqlCommand)base.GetInsertCommand();
 
-        new public SqlCommand GetInsertCommand(bool useColumnsForParameterNames)
+        public new SqlCommand GetInsertCommand(bool useColumnsForParameterNames)
             => (SqlCommand)base.GetInsertCommand(useColumnsForParameterNames);
 
-        new public SqlCommand GetUpdateCommand()
+        public new SqlCommand GetUpdateCommand()
             => (SqlCommand)base.GetUpdateCommand();
 
-        new public SqlCommand GetUpdateCommand(bool useColumnsForParameterNames)
+        public new SqlCommand GetUpdateCommand(bool useColumnsForParameterNames)
             => (SqlCommand)base.GetUpdateCommand(useColumnsForParameterNames);
 
-        new public SqlCommand GetDeleteCommand()
+        public new SqlCommand GetDeleteCommand()
             => (SqlCommand)base.GetDeleteCommand();
 
-        new public SqlCommand GetDeleteCommand(bool useColumnsForParameterNames)
+        public new SqlCommand GetDeleteCommand(bool useColumnsForParameterNames)
             => (SqlCommand)base.GetDeleteCommand(useColumnsForParameterNames);
 
         protected override void ApplyParameterInfo(DbParameter parameter, DataRow datarow, StatementType statementType, bool whereClause)

@@ -161,8 +161,8 @@ namespace System.Reflection.Tests
         private class Derived : Base
         {
             public new event Action<int> MyEvent { add { } remove { } }
-            public new static event Action<double> MyStaticEvent { add { } remove { } }
-            public new static event Action<float> MyEventInstanceStatic { add { } remove { } }
+            public static new event Action<double> MyStaticEvent { add { } remove { } }
+            public static new event Action<float> MyEventInstanceStatic { add { } remove { } }
             public new event Action<long> MyEventStaticInstance { add { } remove { } }
         }
     }
@@ -193,7 +193,7 @@ namespace System.Reflection.Tests
         private class Derived : Base
         {
             public new int MyField;
-            public new static int MyStaticField;
+            public static new int MyStaticField;
         }
     }
 
@@ -223,7 +223,7 @@ namespace System.Reflection.Tests
         private class Derived : Base
         {
             public new int MyMethod() { throw null; }
-            public new static int MyStaticMethod() { throw null; }
+            public static new int MyStaticMethod() { throw null; }
         }
     }
 
@@ -261,8 +261,8 @@ namespace System.Reflection.Tests
         private abstract class Derived : Base
         {
             public new int MyProp { get; }
-            public new static int MyStaticProp { get; }
-            public new static int MyInstanceThenStaticProp { get; }
+            public static new int MyStaticProp { get; }
+            public static new int MyInstanceThenStaticProp { get; }
             public new int MyStaticThenInstanceProp { get; }
             public new double MyStringThenDoubleProp { get;}
             public abstract int this[double x] { get; }
@@ -332,7 +332,7 @@ namespace System.Reflection.Tests
 
         private class StaticDerived : StaticBase
         {
-            public new static event Action MyEvent { add { } remove { } }
+            public static new event Action MyEvent { add { } remove { } }
         }
 
         private class StaticDerived2 : StaticDerived

@@ -499,7 +499,7 @@ namespace System.Data.SqlClient
             get { return s_singletonEncoding; }
         }
 
-        sealed private class SqlUnicodeDecoder : Decoder
+        private sealed class SqlUnicodeDecoder : Decoder
         {
             public override int GetCharCount(byte[] bytes, int index, int count)
             {

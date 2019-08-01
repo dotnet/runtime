@@ -800,7 +800,7 @@ namespace MonoTests.System.Configuration
                 set { base["World"] = value; }
             }
 
-            new public bool IsModified
+            public new bool IsModified
             {
                 get { return base.IsModified(); }
             }
@@ -885,7 +885,7 @@ namespace MonoTests.System.Configuration
                 get { return (MyElement)this["test"]; }
             }
 
-            new public bool IsModified
+            public new bool IsModified
             {
                 get { return base.IsModified(); }
             }

@@ -32,7 +32,7 @@ namespace System.Data.SqlClient
         }
         public override bool IsFixedSize => ((System.Collections.IList)InnerList).IsFixedSize;
         public override bool IsReadOnly => ((System.Collections.IList)InnerList).IsReadOnly;
-        new public SqlParameter this[int index]
+        public new SqlParameter this[int index]
         {
             get
             {
@@ -44,7 +44,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        new public SqlParameter this[string parameterName]
+        public new SqlParameter this[string parameterName]
         {
             get
             {

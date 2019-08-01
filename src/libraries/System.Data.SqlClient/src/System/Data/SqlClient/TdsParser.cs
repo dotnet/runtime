@@ -116,7 +116,7 @@ namespace System.Data.SqlClient
 
         // SSPI variables
 
-        private volatile static uint s_maxSSPILength = 0;     // variable to hold max SSPI data size, keep for token from server
+        private static volatile uint s_maxSSPILength = 0;     // variable to hold max SSPI data size, keep for token from server
 
         // textptr sequence
         private static readonly byte[] s_longDataHeader = { 0x10, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };

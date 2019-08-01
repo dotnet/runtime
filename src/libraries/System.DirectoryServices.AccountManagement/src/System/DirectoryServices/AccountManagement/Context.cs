@@ -35,7 +35,7 @@ namespace System.DirectoryServices.AccountManagement
         WinLH = 3
     };
 
-    static internal class CapabilityMap
+    internal static class CapabilityMap
     {
         public const string LDAP_CAP_ACTIVE_DIRECTORY_OID = "1.2.840.113556.1.4.800";
         public const string LDAP_CAP_ACTIVE_DIRECTORY_V51_OID = "1.2.840.113556.1.4.1670";
@@ -938,7 +938,7 @@ namespace System.DirectoryServices.AccountManagement
 
 #if TESTHOOK
 
-        static public PrincipalContext Test
+        public static PrincipalContext Test
         {
             get
             {
@@ -952,7 +952,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        static public PrincipalContext TestAltValidation
+        public static PrincipalContext TestAltValidation
         {
             get
             {
@@ -967,7 +967,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        static public PrincipalContext TestNoTimeLimited
+        public static PrincipalContext TestNoTimeLimited
         {
             get
             {
