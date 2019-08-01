@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <xplatform.h>
+#include "xplatform.h"
 
-#pragma warning( push )
-#pragma warning( disable : 4996)
-
-extern "C" DLL_EXPORT int __cdecl Sum(int a, int b)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE GetZero()
 {
-    return a + b;
+    return 0;
 }
+
+#ifdef EXE
 
 extern "C" int __cdecl main(int argc,  char **argv)
 {
     return 0;
 }
+
+#endif
