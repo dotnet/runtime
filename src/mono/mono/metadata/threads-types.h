@@ -325,6 +325,20 @@ MONO_API MonoException* mono_thread_get_undeniable_exception (void);
 ICALL_EXPORT
 void ves_icall_thread_finish_async_abort (void);
 
+#if HOST_WIN32
+
+void
+mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name);
+
+#define MONO_THREAD_NAME_WINDOWS_CONSTANT(x) L ## x
+
+#else
+
+#define mono_thread_set_name_windows(thread_handle, thread_name) /* nothing */
+
+#define MONO_THREAD_NAME_WINDOWS_CONSTANT(x) NULL
+
+#endif
 
 typedef enum {
     MonoSetThreadNameFlag_None      = 0x0000,

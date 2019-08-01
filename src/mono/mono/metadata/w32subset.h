@@ -210,3 +210,24 @@
 #define HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS 0
 #endif
 #endif
+
+#ifndef HAVE_LOADLIBRARY
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#define HAVE_LOADLIBRARY 1
+#else
+#define HAVE_LOADLIBRARY 0
+#endif
+#endif
+
+#ifndef HAVE_SET_THREAD_DESCRIPTION
+#define HAVE_SET_THREAD_DESCRIPTION 0
+#endif
+
+#ifndef HAVE_SET_THREAD_NAME
+// https://github.com/microsoft/xbox-live-api/blob/90b38b434d9c13ce4916c116cd28a98b239e38e2/InProgressSamples/Kits/ATGTK/ThreadHelpers.h#L21
+#if defined(_XBOX_ONE) && defined(_TITLE)
+#define HAVE_SET_THREAD_NAME 1
+#else
+#define HAVE_SET_THREAD_NAME 0
+#endif
+#endif

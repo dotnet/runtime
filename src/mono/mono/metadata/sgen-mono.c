@@ -2123,6 +2123,7 @@ sgen_client_thread_register_worker (void)
 {
 	mono_thread_info_register_small_id ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "SGen worker");
+	mono_thread_set_name_windows (GetCurrentThread (), L"SGen worker");
 }
 
 /* Variables holding start/end nursery so it won't have to be passed at every call */

@@ -1899,6 +1899,8 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj,
 		mono_native_thread_set_name (tid, tname);
 		mono_free (tname);
 	}
+
+	mono_thread_set_name_windows (this_obj->native_handle, name ? mono_string_chars_internal (name) : NULL);
 }
 
 void 
