@@ -10,9 +10,9 @@ namespace System.Data.Common
 {
     internal static class AdapterSwitches
     {
-        static private TraceSwitch _dataSchema;
+        private static TraceSwitch _dataSchema;
 
-        static internal TraceSwitch DataSchema
+        internal static TraceSwitch DataSchema
         {
             get
             {

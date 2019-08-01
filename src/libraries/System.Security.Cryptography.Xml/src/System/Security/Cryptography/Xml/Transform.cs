@@ -73,17 +73,16 @@ namespace System.Security.Cryptography.Xml
 
         public XmlResolver Resolver
         {
-            // This property only has a setter. The rationale for this is that we don't have a good value
+            internal get
+            {
+                return _xmlResolver;
+            }
+            // This property only has a public setter. The rationale for this is that we don't have a good value
             // to return when it has not been explicitely set, as we are using XmlSecureResolver by default
             set
             {
                 _xmlResolver = value;
                 _bResolverSet = true;
-            }
-
-            internal get
-            {
-                return _xmlResolver;
             }
         }
 

@@ -15,13 +15,13 @@ namespace System.Diagnostics.PerformanceData
     /// </summary>    
     public sealed class CounterData
     {
-        unsafe private long* _offset;
+        private unsafe long* _offset;
 
         /// <summary>
         /// CounterData constructor
         /// </summary>
         /// <param name="pCounterData"> The memory location to store raw counter data </param>        
-        unsafe internal CounterData(long* pCounterData)
+        internal unsafe CounterData(long* pCounterData)
         {
             _offset = pCounterData;
             *_offset = 0;
@@ -105,7 +105,7 @@ namespace System.Diagnostics.PerformanceData
         internal CounterSetInstance _instance;
         private Dictionary<int, CounterData> _counters;
         private int _disposed;
-        unsafe internal byte* _dataBlock;
+        internal unsafe byte* _dataBlock;
         
         internal CounterSetInstanceCounterDataSet(CounterSetInstance thisInst)
         {

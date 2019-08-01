@@ -13,7 +13,8 @@ namespace System.ComponentModel.Composition.Primitives
     /// </summary>
     public abstract class ComposablePartDefinition
     {
-        static internal readonly IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> _EmptyExports = Enumerable.Empty<Tuple<ComposablePartDefinition, ExportDefinition>>();
+        internal static readonly IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> _EmptyExports = Enumerable.Empty<Tuple<ComposablePartDefinition, ExportDefinition>>();
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="ComposablePartDefinition"/> class.
         /// </summary>

@@ -57,12 +57,12 @@ internal static class DataSetUtil
         return TraceExceptionAsReturnValue(new NotSupportedException(message));
     }
 
-    static internal ArgumentOutOfRangeException InvalidEnumerationValue(Type type, int value)
+    internal static ArgumentOutOfRangeException InvalidEnumerationValue(Type type, int value)
     {
         return ArgumentOutOfRange(SR.Format(SR.DataSetLinq_InvalidEnumerationValue, type.Name, value.ToString(System.Globalization.CultureInfo.InvariantCulture)), type.Name);
     }
 
-    static internal ArgumentOutOfRangeException InvalidDataRowState(DataRowState value)
+    internal static ArgumentOutOfRangeException InvalidDataRowState(DataRowState value)
     {
 #if DEBUG
         switch (value)
@@ -79,7 +79,7 @@ internal static class DataSetUtil
         return InvalidEnumerationValue(typeof(DataRowState), (int)value);
     }
 
-    static internal ArgumentOutOfRangeException InvalidLoadOption(LoadOption value)
+    internal static ArgumentOutOfRangeException InvalidLoadOption(LoadOption value)
     {
 #if DEBUG
         switch (value)
@@ -102,7 +102,7 @@ internal static class DataSetUtil
     private static readonly Type s_accessViolationType = typeof(AccessViolationException);
     private static readonly Type s_securityType = typeof(System.Security.SecurityException);
 
-    static internal bool IsCatchableExceptionType(Exception e)
+    internal static bool IsCatchableExceptionType(Exception e)
     {
         // a 'catchable' exception is defined by what it is not.
         Type type = e.GetType();

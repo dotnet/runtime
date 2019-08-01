@@ -160,7 +160,7 @@ namespace System.Data.OleDb
             return columns;
         }
 
-        static internal int AlignDataSize(int value)
+        internal static int AlignDataSize(int value)
         {
             // buffer data to start on 8-byte boundary
             return Math.Max(8, (value + 7) & ~0x7);
@@ -470,7 +470,7 @@ namespace System.Data.OleDb
             _haveData = false;
         }
 
-        static private void FreeChapter(IntPtr buffer, int valueOffset, object iaccessor)
+        private static void FreeChapter(IntPtr buffer, int valueOffset, object iaccessor)
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
@@ -483,7 +483,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static private void FreeBstr(IntPtr buffer, int valueOffset)
+        private static void FreeBstr(IntPtr buffer, int valueOffset)
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
@@ -512,7 +512,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static private void FreeCoTaskMem(IntPtr buffer, int valueOffset)
+        private static void FreeCoTaskMem(IntPtr buffer, int valueOffset)
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
@@ -538,7 +538,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static private void FreeVariant(IntPtr buffer, int valueOffset)
+        private static void FreeVariant(IntPtr buffer, int valueOffset)
         {
             // two contigous VARIANT structures that need to be freed
             // the second should only be freed if different from the first
@@ -570,7 +570,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static unsafe private void FreePropVariant(IntPtr buffer, int valueOffset)
+        private static unsafe void FreePropVariant(IntPtr buffer, int valueOffset)
         {
             // two contigous PROPVARIANT structures that need to be freed
             // the second should only be freed if different from the first

@@ -9,6 +9,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        internal extern static int GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
+        internal static extern int GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
     }
 }

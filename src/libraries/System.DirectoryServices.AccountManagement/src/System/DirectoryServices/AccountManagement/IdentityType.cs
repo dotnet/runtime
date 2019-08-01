@@ -29,7 +29,7 @@ namespace System.DirectoryServices.AccountManagement
          {IdentityType.Sid, IdentityTypeStringMap.Sid},
          {IdentityType.Guid, IdentityTypeStringMap.Guid}};
     }
-    static internal class IdentityTypeStringMap
+    internal static class IdentityTypeStringMap
     {
         public const string Guid = "ms-guid";
         public const string Sid = "ms-sid";

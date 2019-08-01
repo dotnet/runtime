@@ -13,7 +13,7 @@ namespace System.IO.Tests
     public partial class NullTests
     {
         [Fact]
-        public async static Task TestNullStream_Flush()
+        public static async Task TestNullStream_Flush()
         {
             // Neither of these methods should have
             // side effects, so call them twice to
@@ -35,7 +35,7 @@ namespace System.IO.Tests
         }
         
         [Fact]
-        public async static Task TestNullStream_CopyTo()
+        public static async Task TestNullStream_CopyTo()
         {
             Stream source = Stream.Null;
             
@@ -55,7 +55,7 @@ namespace System.IO.Tests
         }
         
         [Fact]
-        public async static Task TestNullStream_CopyToAsyncValidation()
+        public static async Task TestNullStream_CopyToAsyncValidation()
         {
             // Since Stream.Null previously inherited its CopyToAsync
             // implementation from the base class, which did check its
@@ -77,7 +77,7 @@ namespace System.IO.Tests
         
         [Theory]
         [MemberData(nameof(NullStream_ReadWriteData))]
-        public async static Task TestNullStream_Read(byte[] buffer, int offset, int count)
+        public static async Task TestNullStream_Read(byte[] buffer, int offset, int count)
         {
             byte[] copy = buffer?.ToArray();
             Stream source = Stream.Null;
@@ -105,7 +105,7 @@ namespace System.IO.Tests
         
         [Theory]
         [MemberData(nameof(NullStream_ReadWriteData))]
-        public async static Task TestNullStream_Write(byte[] buffer, int offset, int count)
+        public static async Task TestNullStream_Write(byte[] buffer, int offset, int count)
         {
             byte[] copy = buffer?.ToArray();
             Stream source = Stream.Null;

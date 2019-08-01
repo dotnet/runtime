@@ -502,25 +502,25 @@ namespace System.Globalization.Tests
         internal const int CAL_UMALQURA = 23;
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetLocaleInfoEx(string lpLocaleName, uint LCType, StringBuilder data, int cchData);
+        internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, StringBuilder data, int cchData);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetLocaleInfoEx(string lpLocaleName, uint LCType, ref int data, int cchData);
+        internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, ref int data, int cchData);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, IntPtr lParam, IntPtr reserved);
+        internal static extern bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, IntPtr lParam, IntPtr reserved);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetCalendarInfoEx(string lpLocaleName, int Calendar, IntPtr lpReserved, uint CalType, StringBuilder lpCalData, int cchData, IntPtr lpValue);
+        internal static extern int GetCalendarInfoEx(string lpLocaleName, int Calendar, IntPtr lpReserved, uint CalType, StringBuilder lpCalData, int cchData, IntPtr lpValue);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetCalendarInfoEx(string lpLocaleName, int Calendar, IntPtr lpReserved, uint CalType, StringBuilder lpCalData, int cchData, ref uint lpValue);
+        internal static extern int GetCalendarInfoEx(string lpLocaleName, int Calendar, IntPtr lpReserved, uint CalType, StringBuilder lpCalData, int cchData, ref uint lpValue);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, IntPtr lParam);
+        internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, IntPtr lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, IntPtr lParam);
+        internal static extern bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, IntPtr lParam);
 
         public static IEnumerable<object[]> CultureInfo_TestData()
         {

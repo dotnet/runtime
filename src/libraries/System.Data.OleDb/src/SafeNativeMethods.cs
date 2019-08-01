@@ -14,13 +14,13 @@ namespace System.Data.Common
     internal static class SafeNativeMethods
     {
         [DllImport(Interop.Libraries.Ole32, SetLastError = false)]
-        static internal extern IntPtr CoTaskMemAlloc(IntPtr cb);
+        internal static extern IntPtr CoTaskMemAlloc(IntPtr cb);
 
         [DllImport(Interop.Libraries.Ole32, SetLastError = false)]
-        static internal extern void CoTaskMemFree(IntPtr handle);
+        internal static extern void CoTaskMemFree(IntPtr handle);
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        static internal extern int GetUserDefaultLCID();
+        internal static extern int GetUserDefaultLCID();
 
         internal static void ZeroMemory(IntPtr ptr, int length)
         {
@@ -28,7 +28,7 @@ namespace System.Data.Common
             Marshal.Copy(zeroes, 0, ptr, length);
         }
 
-        static internal unsafe IntPtr InterlockedExchangePointer(
+        internal static unsafe IntPtr InterlockedExchangePointer(
                 IntPtr lpAddress,
                 IntPtr lpValue)
         {
@@ -46,13 +46,13 @@ namespace System.Data.Common
         }
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        static internal extern int GetCurrentProcessId();
+        internal static extern int GetCurrentProcessId();
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        static internal extern IntPtr LocalAlloc(int flags, IntPtr countOfBytes);
+        internal static extern IntPtr LocalAlloc(int flags, IntPtr countOfBytes);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        static internal extern IntPtr LocalFree(IntPtr handle);
+        internal static extern IntPtr LocalFree(IntPtr handle);
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static extern IntPtr SysAllocStringLen(string src, int len);  // BSTR
@@ -63,29 +63,29 @@ namespace System.Data.Common
         // only using this to clear existing error info with null
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = false)]
         // TLS values are preserved between threads, need to check that we use this API to clear the error state only.
-        static private extern void SetErrorInfo(int dwReserved, IntPtr pIErrorInfo);
+        private static extern void SetErrorInfo(int dwReserved, IntPtr pIErrorInfo);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        static internal extern int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
+        internal static extern int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        static internal extern int WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
+        internal static extern int WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
         [DllImport(Interop.Libraries.Kernel32/*, SetLastError=true*/)]
-        static internal extern int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, bool bAlertable);
+        internal static extern int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, bool bAlertable);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        static internal extern void PropVariantClear(IntPtr pObject);
+        internal static extern void PropVariantClear(IntPtr pObject);
 
         [DllImport(Interop.Libraries.OleAut32, PreserveSig = false)]
-        static internal extern void VariantClear(IntPtr pObject);
+        internal static extern void VariantClear(IntPtr pObject);
 
         internal sealed class Wrapper
         {
             private Wrapper() { }
 
             // SxS: clearing error information is considered safe
-            static internal void ClearErrorInfo()
+            internal static void ClearErrorInfo()
             {
                 SafeNativeMethods.SetErrorInfo(0, ADP.PtrZero);
             }

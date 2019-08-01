@@ -254,7 +254,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// Do not change the values of this instance.  It is shared by all of our blocks when no options are provided by the user.
         /// </remarks>
-        internal new static readonly ExecutionDataflowBlockOptions Default = new ExecutionDataflowBlockOptions();
+        internal static new readonly ExecutionDataflowBlockOptions Default = new ExecutionDataflowBlockOptions();
 
         /// <summary>Returns this <see cref="ExecutionDataflowBlockOptions"/> instance if it's the default instance or else a cloned instance.</summary>
         /// <returns>An instance of the options that may be cached by the block.</returns>
@@ -386,7 +386,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// Do not change the values of this instance.  It is shared by all of our blocks when no options are provided by the user.
         /// </remarks>
-        internal new static readonly GroupingDataflowBlockOptions Default = new GroupingDataflowBlockOptions();
+        internal static new readonly GroupingDataflowBlockOptions Default = new GroupingDataflowBlockOptions();
 
         /// <summary>Returns this <see cref="GroupingDataflowBlockOptions"/> instance if it's the default instance or else a cloned instance.</summary>
         /// <returns>An instance of the options that may be cached by the block.</returns>

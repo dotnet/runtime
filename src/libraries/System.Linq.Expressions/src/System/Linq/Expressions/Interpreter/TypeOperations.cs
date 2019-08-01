@@ -278,7 +278,7 @@ namespace System.Linq.Expressions.Interpreter
                 _t = t;
             }
 
-            public new static CastInstruction Create(Type t)
+            public static new CastInstruction Create(Type t)
             {
                 if (t.IsValueType && !t.IsNullableType())
                 {

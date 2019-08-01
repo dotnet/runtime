@@ -208,7 +208,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private async static Task<bool> IsLocalHost(string hostname)
+        private static async Task<bool> IsLocalHost(string hostname)
         {
             IPAddress[] hostAddresses = await Dns.GetHostAddressesAsync(hostname);
             IPAddress[] localHostAddresses = await Dns.GetHostAddressesAsync(Dns.GetHostName());

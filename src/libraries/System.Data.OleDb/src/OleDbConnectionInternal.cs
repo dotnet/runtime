@@ -16,8 +16,8 @@ namespace System.Data.OleDb
 
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
-        static private volatile OleDbServicesWrapper idataInitialize;
-        static private object dataInitializeLock = new object();
+        private static volatile OleDbServicesWrapper idataInitialize;
+        private static object dataInitializeLock = new object();
 
         internal readonly OleDbConnectionString ConnectionString; // parsed connection string attributes
 
@@ -692,7 +692,7 @@ namespace System.Data.OleDb
             return false;
         }
 
-        static private object CreateInstanceDataLinks()
+        private static object CreateInstanceDataLinks()
         {
             Type datalink = Type.GetTypeFromCLSID(ODB.CLSID_DataLinks, true);
             return Activator.CreateInstance(datalink, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
@@ -701,7 +701,7 @@ namespace System.Data.OleDb
         // @devnote: should be multithread safe access to OleDbConnection.idataInitialize,
         // though last one wins for setting variable.  It may be different objects, but
         // OLE DB will ensure I'll work with just the single pool
-        static private OleDbServicesWrapper GetObjectPool()
+        private static OleDbServicesWrapper GetObjectPool()
         {
             OleDbServicesWrapper wrapper = OleDbConnectionInternal.idataInitialize;
             if (null == wrapper)
@@ -741,7 +741,7 @@ namespace System.Data.OleDb
             return wrapper;
         }
 
-        static private void VersionCheck()
+        private static void VersionCheck()
         {
             // $REVIEW: do we still need this?
             // if ApartmentUnknown, then CoInitialize may not have been called yet
@@ -754,14 +754,14 @@ namespace System.Data.OleDb
         }
 
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static private void SetMTAApartmentState()
+        private static void SetMTAApartmentState()
         {
             // we are defaulting to a multithread apartment state
             Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
         }
 
         // @devnote: should be multithread safe
-        static public void ReleaseObjectPool()
+        public static void ReleaseObjectPool()
         {
             OleDbConnectionInternal.idataInitialize = null;
         }

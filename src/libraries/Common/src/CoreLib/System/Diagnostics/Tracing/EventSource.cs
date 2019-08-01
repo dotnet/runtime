@@ -5335,7 +5335,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Instance fields
-        readonly internal EventListener m_Listener;   // The dispatcher this entry is for
+        internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
         // Only guaranteed to exist after a InsureInit()

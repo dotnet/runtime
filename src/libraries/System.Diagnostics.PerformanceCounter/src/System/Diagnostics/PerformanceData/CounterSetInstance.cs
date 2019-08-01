@@ -16,7 +16,7 @@ namespace System.Diagnostics.PerformanceData
         internal CounterSet _counterSet;
         internal string _instName;
         private int _active;
-        unsafe internal Interop.PerfCounter.PerfCounterSetInstanceStruct* _nativeInst;
+        internal unsafe Interop.PerfCounter.PerfCounterSetInstanceStruct* _nativeInst;
         
         internal unsafe CounterSetInstance(CounterSet counterSetDefined, string instanceName)
         {

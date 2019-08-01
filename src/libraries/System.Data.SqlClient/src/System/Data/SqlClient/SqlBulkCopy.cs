@@ -220,13 +220,13 @@ namespace System.Data.SqlClient
         internal static bool _setAlwaysTaskOnWrite = false; //when set and in DEBUG mode, TdsParser::WriteBulkCopyValue will always return a task
         internal static bool SetAlwaysTaskOnWrite
         {
-            set
-            {
-                _setAlwaysTaskOnWrite = value;
-            }
             get
             {
                 return _setAlwaysTaskOnWrite;
+            }
+            set
+            {
+                _setAlwaysTaskOnWrite = value;
             }
         }
 #endif

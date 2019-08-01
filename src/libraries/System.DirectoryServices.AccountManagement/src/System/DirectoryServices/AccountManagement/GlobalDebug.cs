@@ -45,23 +45,23 @@ namespace System.DirectoryServices.AccountManagement
 #endif
         }
 
-        static public bool Error
+        public static bool Error
         {
             get { return DebugLevel.Error >= GlobalDebug.s_debugLevel; }
         }
 
-        static public bool Warn
+        public static bool Warn
         {
             get { return DebugLevel.Warn >= GlobalDebug.s_debugLevel; }
         }
 
-        static public bool Info
+        public static bool Info
         {
             get { return DebugLevel.Info >= GlobalDebug.s_debugLevel; }
         }
 
         [ConditionalAttribute("DEBUG")]
-        static public void WriteLineIf(bool f, string category, string message, params object[] args)
+        public static void WriteLineIf(bool f, string category, string message, params object[] args)
         {
             message = "[" + SafeNativeMethods.GetCurrentThreadId().ToString("x", CultureInfo.InvariantCulture) + "] " + message;
 
@@ -75,7 +75,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         [ConditionalAttribute("DEBUG")]
-        static public void WriteLineIf(bool f, string category, string message)
+        public static void WriteLineIf(bool f, string category, string message)
         {
             message = "[" + SafeNativeMethods.GetCurrentThreadId().ToString("x", CultureInfo.InvariantCulture) + "] " + message;
 

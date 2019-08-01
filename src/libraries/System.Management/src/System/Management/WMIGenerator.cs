@@ -4911,7 +4911,6 @@ namespace System.Management
         /// Function which checks if the language supports Unsigned numbers
         /// </summary>
         /// <param name="Language">Language</param>
-        /// <returns>true - if unsigned is supported</returns>
         void GetUnsignedSupport(CodeLanguage Language)
         {
             switch(Language)

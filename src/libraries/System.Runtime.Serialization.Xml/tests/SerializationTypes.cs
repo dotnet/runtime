@@ -1078,7 +1078,7 @@ public class BaseClass1
 public class DerivedClass1 : BaseClass1
 {
     [XmlElement]
-    new public MyCollection1 Prop;
+    public new MyCollection1 Prop;
 }
 
 public class MyCollection1 : IEnumerable<DateTime>, IEnumerable

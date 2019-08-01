@@ -262,7 +262,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Asynchronous version of time-consuming method (End part)
-        new public T EndDoTask(IAsyncResult asyncResult)
+        public new T EndDoTask(IAsyncResult asyncResult)
         {
             // We know that the IAsyncResult is really a Task object
             Task<T> task = (Task<T>)asyncResult;

@@ -88,13 +88,13 @@ namespace System.Reflection.Tests
 
     public class TypeInfoMethodSubClass : TypeInfoMethodBaseClass
     {
-        public new static string[] PublicMethodNames = new string[]{ "PubMeth1",
+        public static new string[] PublicMethodNames = new string[]{ "PubMeth1",
                                                                  "PubMeth2",
                                                                  "PubMeth3",
                                                                  "PubMeth2ToOverride"};
         public new void PubMeth1() { }
         public new virtual void PubMeth2() { }
         public override void PubMeth2ToOverride() { }
-        public new static void PubMeth3() { }
+        public static new void PubMeth3() { }
     }
 }

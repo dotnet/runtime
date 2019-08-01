@@ -911,11 +911,11 @@ namespace System.Data.Common
         {
             return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndIntegratedSecurity));
         }
-        static internal InvalidOperationException InvalidMixedUsageOfAccessTokenAndUserIDPassword()
+        internal static InvalidOperationException InvalidMixedUsageOfAccessTokenAndUserIDPassword()
         {
             return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndUserIDPassword));
         }
-        static internal Exception InvalidMixedUsageOfCredentialAndAccessToken()
+        internal static Exception InvalidMixedUsageOfCredentialAndAccessToken()
         {
             return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfCredentialAndAccessToken));
         }

@@ -269,7 +269,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static internal DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
+        internal static DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
         {
             tagDBPROP dbprop = new tagDBPROP(propertyId, required, value);
             DBPropSet propertyset = new DBPropSet(1);

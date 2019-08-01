@@ -1447,7 +1447,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async static void OnKeepAlive(object sender)
+        private static async void OnKeepAlive(object sender)
         {
             Debug.Assert(sender != null, "'sender' MUST NOT be NULL.");
             Debug.Assert((sender as WebSocketBase) != null, "'sender as WebSocketBase' MUST NOT be NULL.");

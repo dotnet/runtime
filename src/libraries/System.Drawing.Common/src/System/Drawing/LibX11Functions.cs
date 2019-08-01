@@ -12,39 +12,39 @@ namespace System.Drawing
     {
         // Some special X11 stuff
         [DllImport("libX11", EntryPoint = "XOpenDisplay")]
-        internal extern static IntPtr XOpenDisplay(IntPtr display);
+        internal static extern IntPtr XOpenDisplay(IntPtr display);
 
         [DllImport("libX11", EntryPoint = "XCloseDisplay")]
-        internal extern static int XCloseDisplay(IntPtr display);
+        internal static extern int XCloseDisplay(IntPtr display);
 
         [DllImport("libX11", EntryPoint = "XRootWindow")]
-        internal extern static IntPtr XRootWindow(IntPtr display, int screen);
+        internal static extern IntPtr XRootWindow(IntPtr display, int screen);
 
         [DllImport("libX11", EntryPoint = "XDefaultScreen")]
-        internal extern static int XDefaultScreen(IntPtr display);
+        internal static extern int XDefaultScreen(IntPtr display);
 
         [DllImport("libX11", EntryPoint = "XDefaultDepth")]
-        internal extern static uint XDefaultDepth(IntPtr display, int screen);
+        internal static extern uint XDefaultDepth(IntPtr display, int screen);
 
         [DllImport("libX11", EntryPoint = "XGetImage")]
-        internal extern static IntPtr XGetImage(IntPtr display, IntPtr drawable, int src_x, int src_y, int width, int height, int pane, int format);
+        internal static extern IntPtr XGetImage(IntPtr display, IntPtr drawable, int src_x, int src_y, int width, int height, int pane, int format);
 
         [DllImport("libX11", EntryPoint = "XGetPixel")]
-        internal extern static int XGetPixel(IntPtr image, int x, int y);
+        internal static extern int XGetPixel(IntPtr image, int x, int y);
 
         [DllImport("libX11", EntryPoint = "XDestroyImage")]
-        internal extern static int XDestroyImage(IntPtr image);
+        internal static extern int XDestroyImage(IntPtr image);
 
         [DllImport("libX11", EntryPoint = "XDefaultVisual")]
-        internal extern static IntPtr XDefaultVisual(IntPtr display, int screen);
+        internal static extern IntPtr XDefaultVisual(IntPtr display, int screen);
 
         [DllImport("libX11", EntryPoint = "XGetVisualInfo")]
-        internal extern static IntPtr XGetVisualInfo(IntPtr display, int vinfo_mask, ref XVisualInfo vinfo_template, ref int nitems);
+        internal static extern IntPtr XGetVisualInfo(IntPtr display, int vinfo_mask, ref XVisualInfo vinfo_template, ref int nitems);
 
         [DllImport("libX11", EntryPoint = "XVisualIDFromVisual")]
-        internal extern static IntPtr XVisualIDFromVisual(IntPtr visual);
+        internal static extern IntPtr XVisualIDFromVisual(IntPtr visual);
 
         [DllImport("libX11", EntryPoint = "XFree")]
-        internal extern static void XFree(IntPtr data);
+        internal static extern void XFree(IntPtr data);
     }
 }

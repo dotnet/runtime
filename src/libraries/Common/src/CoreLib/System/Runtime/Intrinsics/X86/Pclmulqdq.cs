@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Pclmulqdq() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)

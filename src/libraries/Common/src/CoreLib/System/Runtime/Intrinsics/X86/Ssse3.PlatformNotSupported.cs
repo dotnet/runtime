@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Ssse3() { }
 
-        public new static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// __m128i _mm_abs_epi8 (__m128i a)

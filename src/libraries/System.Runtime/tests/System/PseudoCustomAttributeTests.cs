@@ -159,7 +159,7 @@ namespace System.Tests
             [PreserveSigAttribute]
             [return: MarshalAsAttribute(UnmanagedType.Bool)]
             [DllImportAttribute("nonexistent", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, SetLastError = true, PreserveSig = true, EntryPoint = "MyEntryPoint")]
-            public extern static bool TestMethod([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I4), In, Out, Optional] int[] x);
+            public static extern bool TestMethod([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I4), In, Out, Optional] int[] x);
         }
 
         public class TestTypeWithoutAttributes

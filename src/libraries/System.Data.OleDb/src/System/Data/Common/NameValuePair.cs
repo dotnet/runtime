@@ -8,9 +8,9 @@ namespace System.Data.Common
 {
     internal sealed class NameValuePair
     {
-        readonly private string _name;
-        readonly private string _value;
-        readonly private int _length;
+        private readonly string _name;
+        private readonly string _value;
+        private readonly int _length;
         private NameValuePair _next;
 
         internal NameValuePair(string name, string value, int length)

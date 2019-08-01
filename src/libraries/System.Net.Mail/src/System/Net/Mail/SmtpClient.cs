@@ -363,8 +363,8 @@ namespace System.Net.Mail
 
         public string TargetName
         {
-            set { _targetName = value; }
             get { return _targetName; }
+            set { _targetName = value; }
         }
 
         private bool ServerSupportsEai

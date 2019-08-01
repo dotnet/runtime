@@ -528,13 +528,13 @@ namespace System.Data.SqlClient
         // PUBLIC METHODS
         //
 
-        new public SqlTransaction BeginTransaction()
+        public new SqlTransaction BeginTransaction()
         {
             // this is just a delegate. The actual method tracks executiontime
             return BeginTransaction(IsolationLevel.Unspecified, null);
         }
 
-        new public SqlTransaction BeginTransaction(IsolationLevel iso)
+        public new SqlTransaction BeginTransaction(IsolationLevel iso)
         {
             // this is just a delegate. The actual method tracks executiontime
             return BeginTransaction(iso, null);
@@ -713,7 +713,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        new public SqlCommand CreateCommand()
+        public new SqlCommand CreateCommand()
         {
             return new SqlCommand(null, this);
         }

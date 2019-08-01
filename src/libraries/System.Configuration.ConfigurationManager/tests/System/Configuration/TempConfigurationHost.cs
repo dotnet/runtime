@@ -78,7 +78,7 @@ public class TempConfigurationHost : DelegatingConfigHost
         get { return "System.Configuration.Internal.InternalConfigHost, " + s_assemblyName; }
     }
 
-    static internal IInternalConfigConfigurationFactory ConfigurationFactory 
+    internal static IInternalConfigConfigurationFactory ConfigurationFactory 
     {
         get 
         {    

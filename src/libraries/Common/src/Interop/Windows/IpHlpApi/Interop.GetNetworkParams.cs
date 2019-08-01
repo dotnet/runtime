@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class IpHlpApi
     {
         [DllImport(Interop.Libraries.IpHlpApi, ExactSpelling = true)]
-        internal extern static uint GetNetworkParams(SafeLocalAllocHandle pFixedInfo, ref uint pOutBufLen);
+        internal static extern uint GetNetworkParams(SafeLocalAllocHandle pFixedInfo, ref uint pOutBufLen);
     }
 }

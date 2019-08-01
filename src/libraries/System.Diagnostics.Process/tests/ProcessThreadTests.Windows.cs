@@ -55,6 +55,6 @@ namespace System.Diagnostics.Tests
         }
 
         [DllImport("kernel32")]
-        private extern static int GetCurrentThreadId();
+        private static extern int GetCurrentThreadId();
     }
 }

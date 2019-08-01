@@ -29,7 +29,7 @@ namespace System.Data.ProviderBase
         // This class is a way to stash our cloned Tx key for later disposal when it's no longer needed.
         // We can't get at the key in the dictionary without enumerating entries, so we stash an extra
         // copy as part of the value.
-        sealed private class TransactedConnectionList : List<DbConnectionInternal>
+        private sealed class TransactedConnectionList : List<DbConnectionInternal>
         {
             private SysTx.Transaction _transaction;
             internal TransactedConnectionList(int initialAllocation, SysTx.Transaction tx) : base(initialAllocation)
@@ -60,7 +60,7 @@ namespace System.Data.ProviderBase
             public DbConnectionOptions UserOptions { get; private set; }
         }
 
-        sealed private class TransactedConnectionPool
+        private sealed class TransactedConnectionPool
         {
             Dictionary<SysTx.Transaction, TransactedConnectionList> _transactedCxns;
 

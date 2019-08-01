@@ -9,10 +9,10 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbError
     {
-        readonly private string message;
-        readonly private string source;
-        readonly private string sqlState;
-        readonly private int nativeError;
+        private readonly string message;
+        private readonly string source;
+        private readonly string sqlState;
+        private readonly int nativeError;
 
         internal OleDbError(UnsafeNativeMethods.IErrorRecords errorRecords, int index)
         {

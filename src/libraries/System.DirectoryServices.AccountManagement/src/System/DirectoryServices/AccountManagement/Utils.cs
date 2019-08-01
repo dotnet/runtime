@@ -665,7 +665,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        static internal Principal ConstructFakePrincipalFromSID(
+        internal static Principal ConstructFakePrincipalFromSID(
                                                             byte[] sid,
                                                             PrincipalContext ctx,
                                                             string serverName,

@@ -68,7 +68,6 @@ namespace System.Data.SqlClient.SNI
         /// <param name="receivedBuff">Receive buffer</param>
         /// <param name="sendBuff">Send buffer</param>
         /// <param name="serverName">Service Principal Name buffer</param>
-        /// <returns>SNI error code</returns>
         public void GenSspiClientContext(SspiClientContextStatus sspiClientContextStatus, byte[] receivedBuff, ref byte[] sendBuff, byte[] serverName)
         {
             SafeDeleteContext securityContext = sspiClientContextStatus.SecurityContext;

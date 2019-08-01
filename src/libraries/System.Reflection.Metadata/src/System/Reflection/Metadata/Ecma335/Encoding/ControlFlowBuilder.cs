@@ -143,7 +143,6 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="tryEnd">Label marking the instruction immediately following the try block.</param>
         /// <param name="handlerStart">Label marking the first instruction of the handler.</param>
         /// <param name="handlerEnd">Label marking the instruction immediately following the handler.</param>
-        /// <returns>Encoder for the next clause.</returns>
         /// <exception cref="ArgumentException">A label was not defined by an instruction encoder this builder is associated with.</exception>
         /// <exception cref="ArgumentNullException">A label has default value.</exception>
         public void AddFinallyRegion(LabelHandle tryStart, LabelHandle tryEnd, LabelHandle handlerStart, LabelHandle handlerEnd) => 

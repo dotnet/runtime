@@ -197,7 +197,7 @@ namespace System.Data.OleDb
     [Guid("0c733a93-2a1c-11ce-ade5-00aa0044773d")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
-    unsafe internal interface ITransactionLocal : ITransaction
+    internal unsafe interface ITransactionLocal : ITransaction
     {
         [PreserveSig]
         new int Commit

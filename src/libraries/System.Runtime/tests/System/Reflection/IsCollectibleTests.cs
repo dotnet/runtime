@@ -20,17 +20,17 @@ namespace System.Reflection.Tests
 
     public class IsCollectibleTests
     {
-        static public string asmNameString = "TestCollectibleAssembly";
-        static public string asmPath = Path.Combine(Environment.CurrentDirectory, "TestCollectibleAssembly.dll");
+        public static string asmNameString = "TestCollectibleAssembly";
+        public static string asmPath = Path.Combine(Environment.CurrentDirectory, "TestCollectibleAssembly.dll");
 
-        static public Func<AssemblyName, Assembly> assemblyResolver = (asmName) => 
+        public static Func<AssemblyName, Assembly> assemblyResolver = (asmName) => 
             asmName.Name == asmNameString ? Assembly.LoadFrom(asmPath) : null;
         
-        static public Func<AssemblyName, Assembly> collectibleAssemblyResolver(AssemblyLoadContext alc) => 
+        public static Func<AssemblyName, Assembly> collectibleAssemblyResolver(AssemblyLoadContext alc) => 
             (asmName) => 
                 asmName.Name == asmNameString ? alc.LoadFromAssemblyPath(asmPath) : null;
 
-        static public Func<Assembly, string, bool, Type> typeResolver(bool shouldThrowIfNotFound) => 
+        public static Func<Assembly, string, bool, Type> typeResolver(bool shouldThrowIfNotFound) => 
             (asm, simpleTypeName, isCaseSensitive) => asm == null ? 
                 Type.GetType(simpleTypeName, shouldThrowIfNotFound, isCaseSensitive) : 
                 asm.GetType(simpleTypeName, shouldThrowIfNotFound, isCaseSensitive);

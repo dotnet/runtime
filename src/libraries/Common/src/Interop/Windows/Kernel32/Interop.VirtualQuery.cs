@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "VirtualQuery", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static UIntPtr VirtualQuery(SafeMemoryMappedViewHandle lpAddress, ref MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
+        internal static extern UIntPtr VirtualQuery(SafeMemoryMappedViewHandle lpAddress, ref MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
     }
 }

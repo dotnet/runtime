@@ -138,7 +138,7 @@ namespace System.Data.OleDb
             _isolationLevel = isolevel;
         }
 
-        new public OleDbConnection Connection
+        public new OleDbConnection Connection
         {
             get
             {
@@ -350,7 +350,7 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        static internal OleDbTransaction TransactionLast(OleDbTransaction head)
+        internal static OleDbTransaction TransactionLast(OleDbTransaction head)
         {
             if (null != head._nestedTransaction)
             {
@@ -363,7 +363,7 @@ namespace System.Data.OleDb
             return head;
         }
 
-        static internal OleDbTransaction TransactionUpdate(OleDbTransaction transaction)
+        internal static OleDbTransaction TransactionUpdate(OleDbTransaction transaction)
         {
             if ((null != transaction) && (null == transaction._transaction))
             {

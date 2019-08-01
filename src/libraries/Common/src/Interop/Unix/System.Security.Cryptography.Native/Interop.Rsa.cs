@@ -37,7 +37,7 @@ internal static partial class Interop
             RsaPublicEncrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPublicEncrypt")]
-        private extern static int RsaPublicEncrypt(
+        private static extern int RsaPublicEncrypt(
             int flen,
             ref byte from,
             ref byte to,
@@ -53,7 +53,7 @@ internal static partial class Interop
             RsaPrivateDecrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
-        private extern static int RsaPrivateDecrypt(
+        private static extern int RsaPrivateDecrypt(
             int flen,
             ref byte from,
             ref byte to,

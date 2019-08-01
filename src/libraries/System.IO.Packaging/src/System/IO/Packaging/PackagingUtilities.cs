@@ -27,7 +27,6 @@ namespace System.IO.Packaging
         /// UTF-16 (Little Endian and Big Endian)
         /// </summary>
         /// <param name="reader">XmlReader</param>
-        /// <returns>throws an exception if the encoding is not UTF-8 or UTF-16</returns>
         internal static void PerformInitialReadAndVerifyEncoding(XmlReader reader)
         {
             Debug.Assert(reader != null && reader.ReadState == ReadState.Initial);

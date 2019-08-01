@@ -30,7 +30,7 @@ namespace System.Net.Http.Headers
 
         // This is only used internally to enumerate the collection
         // without the enumerator allocation.
-        new public List<T>.Enumerator GetEnumerator()
+        public new List<T>.Enumerator GetEnumerator()
         {
             return ((List<T>)Items).GetEnumerator();
         }

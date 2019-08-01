@@ -118,7 +118,7 @@ namespace System.Net.Http.Headers
         }
 
         // Can't use Span here as it's unsupported.
-        private unsafe readonly struct BytePtrAccessor : IHeaderNameAccessor
+        private readonly unsafe struct BytePtrAccessor : IHeaderNameAccessor
         {
             private readonly byte* _p;
             private readonly int _length;

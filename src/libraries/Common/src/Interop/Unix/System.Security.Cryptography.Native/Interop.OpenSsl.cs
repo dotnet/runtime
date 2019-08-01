@@ -23,7 +23,7 @@ internal static partial class Interop
     internal static partial class OpenSsl
     {
         private static readonly Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
-        private static unsafe readonly Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
+        private static readonly unsafe Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         #region internal methods

@@ -5346,7 +5346,7 @@ namespace SerializationTestTypes
             base.Add(item.ToString());
         }
 
-        public new static CDC_NewAddToPrivate CreateInstance()
+        public static new CDC_NewAddToPrivate CreateInstance()
         {
             CDC_NewAddToPrivate list = new CDC_NewAddToPrivate();
             list.Insert(0, "223213");

@@ -9,6 +9,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        internal extern static uint GetConsoleOutputCP();
+        internal static extern uint GetConsoleOutputCP();
     }
 }

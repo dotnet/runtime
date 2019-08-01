@@ -134,12 +134,10 @@
     <Rule Id="SA1203" Action="None" /> <!-- Constants should appear before fields -->
     <Rule Id="SA1204" Action="None" /> <!-- Static elements should appear before instance elements -->
     <Rule Id="SA1205" Action="None" /> <!-- Partial elements should declare an access modifier -->
-    <Rule Id="SA1206" Action="None" /> <!-- Modifer ordering -->
     <Rule Id="SA1208" Action="None" /> <!-- Using directive ordering -->
     <Rule Id="SA1209" Action="None" /> <!-- Using alias directives should be placed after all using namespace directives -->
     <Rule Id="SA1210" Action="None" /> <!-- Using directives should be ordered alphabetically by the namespaces -->
     <Rule Id="SA1211" Action="None" /> <!-- Using alias directive ordering -->
-    <Rule Id="SA1212" Action="None" /> <!-- A get accessor appears after a set accessor within a property or indexer -->
     <Rule Id="SA1214" Action="None" /> <!-- Readonly fields should appear before non-readonly fields -->
     <Rule Id="SA1216" Action="None" /> <!-- Using static directives should be placed at the correct location -->
     <Rule Id="SA1300" Action="None" /> <!-- Element should begin with an uppercase letter -->
@@ -198,7 +196,6 @@
     <Rule Id="SA1614" Action="None" /> <!-- Element parameter documentation should have text -->
     <Rule Id="SA1615" Action="None" /> <!-- Element return value should be documented -->
     <Rule Id="SA1616" Action="None" /> <!-- Element return value documentation should have text -->
-    <Rule Id="SA1617" Action="None" /> <!-- Void return value should not be documented -->
     <Rule Id="SA1618" Action="None" /> <!-- The documentation for type parameter is missing -->
     <Rule Id="SA1619" Action="None" /> <!-- The documentation for type parameter is missing -->
     <Rule Id="SA1622" Action="None" /> <!-- Generic type parameter documentation should have text -->

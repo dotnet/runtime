@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static bool UnmapViewOfFile(IntPtr lpBaseAddress);
+        internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
     }
 }

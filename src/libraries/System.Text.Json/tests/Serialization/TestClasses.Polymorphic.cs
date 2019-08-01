@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Tests
             base.Verify();
         }
 
-        new public void VerifyNonVirtual()
+        public new void VerifyNonVirtual()
         {
             Assert.Equal(500, CreditLimit);
         }

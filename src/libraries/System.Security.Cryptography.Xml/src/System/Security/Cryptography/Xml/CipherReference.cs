@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
             return GetXml(document);
         }
 
-        new internal XmlElement GetXml(XmlDocument document)
+        internal new XmlElement GetXml(XmlDocument document)
         {
             if (ReferenceType == null)
                 throw new CryptographicException(SR.Cryptography_Xml_ReferenceTypeRequired);

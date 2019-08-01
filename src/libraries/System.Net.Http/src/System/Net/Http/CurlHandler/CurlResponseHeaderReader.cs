@@ -139,7 +139,7 @@ namespace System.Net.Http
             return c == ' ' || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
         }
 
-        private unsafe readonly struct HeaderBufferSpan
+        private readonly unsafe struct HeaderBufferSpan
         {
             private readonly byte* _pointer;
             public readonly int Length;

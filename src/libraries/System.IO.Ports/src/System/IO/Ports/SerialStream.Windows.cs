@@ -57,7 +57,7 @@ namespace System.IO.Ports
         private byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
 
         // called whenever any async i/o operation completes.
-        private static unsafe readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
+        private static readonly unsafe IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
 
         // ----- new get-set properties -----------------*
 
@@ -1306,7 +1306,7 @@ namespace System.IO.Ports
 
         // ----SUBSECTION: internal methods supporting public read/write methods-------*
 
-        unsafe private SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        private unsafe SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
             // Create and store async stream class library specific data in the
             // async result
@@ -1353,7 +1353,7 @@ namespace System.IO.Ports
             return asyncResult;
         }
 
-        unsafe private SerialStreamAsyncResult BeginWriteCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        private unsafe SerialStreamAsyncResult BeginWriteCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
             // Create and store async stream class library specific data in the
             // async result
@@ -1501,7 +1501,7 @@ namespace System.IO.Ports
         // ----SUBSECTION: internal methods supporting events/async operation------*
 
         // This is a the callback prompted when a thread completes any async I/O operation.
-        unsafe private static void AsyncFSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+        private static unsafe void AsyncFSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
         {
             // Extract async the result from overlapped structure
             SerialStreamAsyncResult asyncResult =
@@ -1814,7 +1814,7 @@ namespace System.IO.Ports
         // This is an internal object implementing IAsyncResult with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by AsyncFSCallback and all async methods.
-        unsafe internal sealed class SerialStreamAsyncResult : IAsyncResult
+        internal unsafe sealed class SerialStreamAsyncResult : IAsyncResult
         {
             // User code callback
             internal AsyncCallback _userCallback;

@@ -942,7 +942,7 @@ namespace System.Data.OleDb
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        new public OleDbDataReader GetData(int ordinal)
+        public new OleDbDataReader GetData(int ordinal)
         {
             ColumnBinding binding = GetColumnBinding(ordinal);
             return binding.ValueChapter();
@@ -1202,7 +1202,7 @@ namespace System.Data.OleDb
             { throw e; }
         }
 
-        static private IntPtr AddRecordsAffected(IntPtr recordsAffected, IntPtr affected)
+        private static IntPtr AddRecordsAffected(IntPtr recordsAffected, IntPtr affected)
         {
 #if WIN32
             if (0 <= (int)affected) {
@@ -1242,7 +1242,7 @@ namespace System.Data.OleDb
             _isRead = false;
         }
 
-        static internal OleDbException NextResults(UnsafeNativeMethods.IMultipleResults imultipleResults, OleDbConnection connection, OleDbCommand command, out IntPtr recordsAffected)
+        internal static OleDbException NextResults(UnsafeNativeMethods.IMultipleResults imultipleResults, OleDbConnection connection, OleDbCommand command, out IntPtr recordsAffected)
         {
             recordsAffected = ADP.RecordsUnaffected;
             List<OleDbException> exceptions = null;
@@ -1315,7 +1315,7 @@ namespace System.Data.OleDb
             return null;
         }
 
-        static private void NextResultsInfinite()
+        private static void NextResultsInfinite()
         {
             // edtriou's suggestion is that we debug assert so that users will learn of MSOLAP's misbehavior and not call ExecuteNonQuery
             Debug.Assert(false, "<oledb.OleDbDataReader.NextResultsInfinite|INFO> System.Data.OleDb.OleDbDataReader: 2000 IMultipleResult.GetResult(NULL, DBRESULTFLAG_DEFAULT, IID_NULL, NULL, NULL) iterations with 0 records affected. Stopping suspect infinite loop. To work-around try using ExecuteReader() and iterating through results with NextResult().\n");
@@ -2529,7 +2529,7 @@ namespace System.Data.OleDb
             _metadata = metainfo.ToArray();
         }
 
-        static internal void GenerateSchemaTable(OleDbDataReader dataReader, object handle, CommandBehavior behavior)
+        internal static void GenerateSchemaTable(OleDbDataReader dataReader, object handle, CommandBehavior behavior)
         {
             if (0 != (CommandBehavior.KeyInfo & behavior))
             {
@@ -2547,31 +2547,31 @@ namespace System.Data.OleDb
             }
         }
 
-        static private bool DoColumnDropFilter(int flags)
+        private static bool DoColumnDropFilter(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISBOOKMARK & flags));
         }
-        static private bool IsLong(int flags)
+        private static bool IsLong(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISLONG & flags));
         }
-        static private bool IsFixed(int flags)
+        private static bool IsFixed(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISFIXEDLENGTH & flags));
         }
-        static private bool IsRowVersion(int flags)
+        private static bool IsRowVersion(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISROWID_DBCOLUMNFLAGS_ISROWVER & flags));
         }
-        static private bool AllowDBNull(int flags)
+        private static bool AllowDBNull(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISNULLABLE & flags));
         }
-        static private bool AllowDBNullMaybeNull(int flags)
+        private static bool AllowDBNullMaybeNull(int flags)
         {
             return (0 != (ODB.DBCOLUMNFLAGS_ISNULLABLE_DBCOLUMNFLAGS_MAYBENULL & flags));
         }
-        static private bool IsReadOnly(int flags)
+        private static bool IsReadOnly(int flags)
         {
             return (0 == (ODB.DBCOLUMNFLAGS_WRITE_DBCOLUMNFLAGS_WRITEUNKNOWN & flags));
         }

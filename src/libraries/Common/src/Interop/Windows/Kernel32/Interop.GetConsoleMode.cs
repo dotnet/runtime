@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static bool GetConsoleMode(IntPtr handle, out int mode);
+        internal static extern bool GetConsoleMode(IntPtr handle, out int mode);
 
         internal static bool IsGetConsoleModeCallSuccessful(IntPtr handle)
         {

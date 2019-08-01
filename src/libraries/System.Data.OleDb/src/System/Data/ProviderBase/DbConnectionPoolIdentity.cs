@@ -22,7 +22,7 @@ namespace System.Data.ProviderBase
         private const int Win32_CheckTokenMembership = 1;
         private const int Win32_CreateWellKnownSid = 5;
 
-        static public readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(string.Empty, false, true);
+        public static readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(string.Empty, false, true);
 
         private readonly string _sidString;
         private readonly bool _isRestricted;
@@ -42,7 +42,7 @@ namespace System.Data.ProviderBase
             get { return _isRestricted; }
         }
 
-        static private byte[] CreateWellKnownSid(WellKnownSidType sidType)
+        private static byte[] CreateWellKnownSid(WellKnownSidType sidType)
         {
             // Passing an array as big as it can ever be is a small price to pay for
             // not having to P/Invoke twice (once to get the buffer, once to get the data)
@@ -80,7 +80,7 @@ namespace System.Data.ProviderBase
             return _hashCode;
         }
 
-        static private void IntegratedSecurityError(int caller)
+        private static void IntegratedSecurityError(int caller)
         {
             // passing 1,2,3,4,5 instead of true/false so that with a debugger
             // we could determine more easily which Win32 method call failed

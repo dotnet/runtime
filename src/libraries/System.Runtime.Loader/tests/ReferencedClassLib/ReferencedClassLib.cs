@@ -9,7 +9,7 @@ namespace ReferencedClassLib
 {
     public class Program
     {
-        static public string Describe(string lang)
+        public static string Describe(string lang)
         {
             try
             {

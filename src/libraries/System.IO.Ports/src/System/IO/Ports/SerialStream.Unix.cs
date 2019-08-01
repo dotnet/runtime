@@ -102,6 +102,10 @@ namespace System.IO.Ports
 
         internal int BaudRate
         {
+            get
+            {
+                return Interop.Termios.TermiosGetSpeed(_handle);
+            }
             set
             {
                 if (value != _baudRate)
@@ -115,11 +119,6 @@ namespace System.IO.Ports
 
                     _baudRate = value;
                 }
-            }
-
-            get
-            {
-                return Interop.Termios.TermiosGetSpeed(_handle);
             }
         }
 
