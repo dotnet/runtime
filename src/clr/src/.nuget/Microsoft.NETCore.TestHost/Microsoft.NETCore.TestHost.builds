@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.props))" />
 
   <ItemGroup>
     <!-- identity project, runtime specific projects are included by props above -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), builds.targets))\builds.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(builds.targets))" />
 </Project>
