@@ -42,8 +42,8 @@ namespace System.Runtime.Serialization
 
         internal object TopObject
         {
-            set { _topObject = value; }
             get { return _topObject; }
+            set { _topObject = value; }
         }
 
         internal ObjectHolderList SpecialFixupObjects =>

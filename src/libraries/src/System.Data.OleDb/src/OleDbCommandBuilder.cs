@@ -22,7 +22,7 @@ namespace System.Data.OleDb
         }
 
         [DefaultValue(null)]
-        new public OleDbDataAdapter DataAdapter
+        public new OleDbDataAdapter DataAdapter
         {
             get
             {
@@ -39,29 +39,29 @@ namespace System.Data.OleDb
             RowUpdatingHandler(ruevent);
         }
 
-        new public OleDbCommand GetInsertCommand()
+        public new OleDbCommand GetInsertCommand()
         {
             return (OleDbCommand)base.GetInsertCommand();
         }
-        new public OleDbCommand GetInsertCommand(bool useColumnsForParameterNames)
+        public new OleDbCommand GetInsertCommand(bool useColumnsForParameterNames)
         {
             return (OleDbCommand)base.GetInsertCommand(useColumnsForParameterNames);
         }
 
-        new public OleDbCommand GetUpdateCommand()
+        public new OleDbCommand GetUpdateCommand()
         {
             return (OleDbCommand)base.GetUpdateCommand();
         }
-        new public OleDbCommand GetUpdateCommand(bool useColumnsForParameterNames)
+        public new OleDbCommand GetUpdateCommand(bool useColumnsForParameterNames)
         {
             return (OleDbCommand)base.GetUpdateCommand(useColumnsForParameterNames);
         }
 
-        new public OleDbCommand GetDeleteCommand()
+        public new OleDbCommand GetDeleteCommand()
         {
             return (OleDbCommand)base.GetDeleteCommand();
         }
-        new public OleDbCommand GetDeleteCommand(bool useColumnsForParameterNames)
+        public new OleDbCommand GetDeleteCommand(bool useColumnsForParameterNames)
         {
             return (OleDbCommand)base.GetDeleteCommand(useColumnsForParameterNames);
         }
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
             }
         }
 
-        static public void DeriveParameters(OleDbCommand command)
+        public static void DeriveParameters(OleDbCommand command)
         {
             if (null == command)
             {
@@ -147,7 +147,7 @@ namespace System.Data.OleDb
         // known difference: when getting the parameters for a sproc, the
         //   return value gets marked as a return value but for a sql stmt
         //   the return value gets marked as an output parameter.
-        static private OleDbParameter[] DeriveParametersFromStoredProcedure(OleDbConnection connection, OleDbCommand command)
+        private static OleDbParameter[] DeriveParametersFromStoredProcedure(OleDbConnection connection, OleDbCommand command)
         {
             OleDbParameter[] plist = Array.Empty<OleDbParameter>();
 
@@ -343,7 +343,7 @@ namespace System.Data.OleDb
             return plist;
         }
 
-        static private ParameterDirection ConvertToParameterDirection(int value)
+        private static ParameterDirection ConvertToParameterDirection(int value)
         {
             switch (value)
             {

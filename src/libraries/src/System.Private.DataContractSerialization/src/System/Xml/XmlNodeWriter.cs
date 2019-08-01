@@ -17,7 +17,7 @@ namespace System.Xml
     {
         private static XmlNodeWriter s_nullNodeWriter;
 
-        static public XmlNodeWriter Null
+        public static XmlNodeWriter Null
         {
             get
             {

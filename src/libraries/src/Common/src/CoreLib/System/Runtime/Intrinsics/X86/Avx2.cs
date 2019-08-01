@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx2() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m256i _mm256_abs_epi8 (__m256i a)
@@ -797,49 +797,49 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<byte> ExtractVector128(Vector256<byte> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<byte> ExtractVector128(Vector256<byte> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<short> ExtractVector128(Vector256<short> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<short> ExtractVector128(Vector256<short> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<ushort> ExtractVector128(Vector256<ushort> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<ushort> ExtractVector128(Vector256<ushort> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<int> ExtractVector128(Vector256<int> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<int> ExtractVector128(Vector256<int> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<uint> ExtractVector128(Vector256<uint> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<uint> ExtractVector128(Vector256<uint> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<long> ExtractVector128(Vector256<long> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<long> ExtractVector128(Vector256<long> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public new static Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) => ExtractVector128(value, index);
+        public static new Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
@@ -1889,49 +1889,49 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public new static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) => InsertVector128(value, data, index);
+        public static new Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_stream_load_si256 (__m256i const* mem_addr)
@@ -2265,42 +2265,42 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, byte control) => Permute2x128(left, right, control);
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public new static Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) => Permute2x128(left, right, control);
+        public static new Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) => Permute2x128(left, right, control);
 
         /// <summary>
         /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)

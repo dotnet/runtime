@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static int SetConsoleTextAttribute(IntPtr hConsoleOutput, short wAttributes);
+        internal static extern int SetConsoleTextAttribute(IntPtr hConsoleOutput, short wAttributes);
     }
 }

@@ -2206,7 +2206,6 @@ namespace System.Data
         /// </summary>
         /// <param name="root"></param>
         /// <param name="type">non-special type to resolve</param>
-        /// <returns>type.AssemblyQualifiedName or targeted to a different version</returns>
         /// <exception cref="DataException">if multipleTargetConverter throws or returns an empty result</exception>
         private void SetMSDataAttribute(XmlElement root, Type type)
         {

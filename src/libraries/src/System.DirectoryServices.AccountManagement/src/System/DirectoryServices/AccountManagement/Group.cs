@@ -238,7 +238,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal "constructor": Used for constructing Groups returned by a query
         //
-        static internal GroupPrincipal MakeGroup(PrincipalContext ctx)
+        internal static GroupPrincipal MakeGroup(PrincipalContext ctx)
         {
             GroupPrincipal g = new GroupPrincipal(ctx);
             g.unpersisted = false;

@@ -20,7 +20,7 @@ internal static partial class Interop
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe readonly struct TcpGlobalStatistics
+        public readonly unsafe struct TcpGlobalStatistics
         {
             public readonly ulong ConnectionsAccepted;
             public readonly ulong ConnectionsInitiated;
@@ -38,7 +38,7 @@ internal static partial class Interop
         public static extern unsafe int GetTcpGlobalStatistics(out TcpGlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe readonly struct IPv4GlobalStatistics
+        public readonly unsafe struct IPv4GlobalStatistics
         {
             public readonly ulong OutboundPackets;
             public readonly ulong OutputPacketsNoRoute;
@@ -60,7 +60,7 @@ internal static partial class Interop
         public static extern unsafe int GetIPv4GlobalStatistics(out IPv4GlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe readonly struct UdpGlobalStatistics
+        public readonly unsafe struct UdpGlobalStatistics
         {
             public readonly ulong DatagramsReceived;
             public readonly ulong DatagramsSent;
@@ -73,7 +73,7 @@ internal static partial class Interop
         public static extern unsafe int GetUdpGlobalStatistics(out UdpGlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe readonly struct Icmpv4GlobalStatistics
+        public readonly unsafe struct Icmpv4GlobalStatistics
         {
             public readonly ulong AddressMaskRepliesReceived;
             public readonly ulong AddressMaskRepliesSent;
@@ -103,7 +103,7 @@ internal static partial class Interop
         public static extern unsafe int GetIcmpv4GlobalStatistics(out Icmpv4GlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe readonly struct Icmpv6GlobalStatistics
+        public readonly unsafe struct Icmpv6GlobalStatistics
         {
             public readonly ulong DestinationUnreachableMessagesReceived;
             public readonly ulong DestinationUnreachableMessagesSent;

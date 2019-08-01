@@ -138,7 +138,7 @@ namespace System.Reflection.Tests
 
     public class TestNestDerived : TestNest
     {
-        new public static int iDeclaredNests = 4;
+        public static new int iDeclaredNests = 4;
 
         public new class NestPublic { }
         public class NestPublic3 { }

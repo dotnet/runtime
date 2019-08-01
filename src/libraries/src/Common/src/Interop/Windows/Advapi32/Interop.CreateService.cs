@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public extern static IntPtr CreateService(SafeServiceHandle databaseHandle, string serviceName, string displayName, int access, int serviceType,
+        public static extern IntPtr CreateService(SafeServiceHandle databaseHandle, string serviceName, string displayName, int access, int serviceType,
             int startType, int errorControl, string binaryPath, string loadOrderGroup, IntPtr pTagId, string dependencies,
             string servicesStartName, string password);
 

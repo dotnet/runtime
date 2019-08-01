@@ -338,7 +338,7 @@ internal static partial class Interop
         /// Returns a valid ProcessInfo struct for valid processes that the caller
         /// has permission to access; otherwise, returns null
         /// </returns>
-        static public unsafe ProcessInfo GetProcessInfoById(int pid)
+        public static unsafe ProcessInfo GetProcessInfoById(int pid)
         {
             kinfo_proc* kinfo = null;
             int count;

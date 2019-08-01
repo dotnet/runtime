@@ -583,7 +583,7 @@ namespace System.Data.SqlClient
 
         protected abstract byte[] GetDTCAddress();
 
-        static private byte[] GetTransactionCookie(Transaction transaction, byte[] whereAbouts)
+        private static byte[] GetTransactionCookie(Transaction transaction, byte[] whereAbouts)
         {
             byte[] transactionCookie = null;
             if (null != transaction)

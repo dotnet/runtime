@@ -312,7 +312,7 @@ namespace System.Data.Common
             return ((null != value) ? value : defaultValue);
         }
 
-        static private bool CompareInsensitiveInvariant(string strvalue, string strconst)
+        private static bool CompareInsensitiveInvariant(string strvalue, string strconst)
         {
             return (0 == StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst));
         }
@@ -498,7 +498,7 @@ namespace System.Data.Common
             }
         }
 
-        static private string GetKeyName(StringBuilder buffer)
+        private static string GetKeyName(StringBuilder buffer)
         {
             int count = buffer.Length;
             while ((0 < count) && char.IsWhiteSpace(buffer[count - 1]))
@@ -508,7 +508,7 @@ namespace System.Data.Common
             return buffer.ToString(0, count).ToLower(CultureInfo.InvariantCulture);
         }
 
-        static private string GetKeyValue(StringBuilder buffer, bool trimWhitespace)
+        private static string GetKeyValue(StringBuilder buffer, bool trimWhitespace)
         {
             int count = buffer.Length;
             int index = 0;
@@ -544,7 +544,7 @@ namespace System.Data.Common
             NullTermination,
         };
 
-        static internal int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string keyname, out string keyvalue)
+        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string keyname, out string keyvalue)
         {
             int startposition = currentPosition;
 
@@ -748,7 +748,7 @@ namespace System.Data.Common
             return currentPosition;
         }
 
-        static private bool IsValueValidInternal(string keyvalue)
+        private static bool IsValueValidInternal(string keyvalue)
         {
             if (null != keyvalue)
             {
@@ -761,7 +761,7 @@ namespace System.Data.Common
             return true;
         }
 
-        static private bool IsKeyNameValid(string keyname)
+        private static bool IsKeyNameValid(string keyname)
         {
             if (null != keyname)
             {

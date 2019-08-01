@@ -83,7 +83,7 @@ public partial class SafeHandle_4000_Tests
     }
 
     [DllImport("Kernel32", SetLastError = true)]
-    private extern static void SetLastError(int error);
+    private static extern void SetLastError(int error);
 
     private class LastErrorSafeHandle : SafeHandle
     {

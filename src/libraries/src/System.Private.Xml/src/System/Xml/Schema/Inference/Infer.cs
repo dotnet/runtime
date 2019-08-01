@@ -137,25 +137,25 @@ namespace System.Xml.Schema
 
         public InferenceOption Occurrence
         {
-            set
-            {
-                _occurrence = value;
-            }
             get
             {
                 return _occurrence;
+            }
+            set
+            {
+                _occurrence = value;
             }
         }
 
         public InferenceOption TypeInference
         {
-            set
-            {
-                _typeInference = value;
-            }
             get
             {
                 return _typeInference;
+            }
+            set
+            {
+                _typeInference = value;
             }
         }
 

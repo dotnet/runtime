@@ -607,7 +607,7 @@ namespace System.ServiceModel.Syndication
                 return SR.Format(SR.XmlFoundNodeType, reader.NodeType);
             }
 
-            static public void ThrowStartElementExpected(XmlDictionaryReader reader)
+            public static void ThrowStartElementExpected(XmlDictionaryReader reader)
             {
                 ThrowXmlException(reader, SR.XmlStartElementExpected, GetWhatWasFound(reader));
             }

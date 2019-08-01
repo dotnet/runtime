@@ -275,7 +275,7 @@ namespace System.Composition.Hosting.Tests
         [Export]
         public class Derived : Base
         {
-            new public string Prop { get; set; } = "Derived";
+            public new string Prop { get; set; } = "Derived";
         }
 
         public class Base

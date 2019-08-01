@@ -11,8 +11,8 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
-        static private readonly object EventRowUpdated = new object();
-        static private readonly object EventRowUpdating = new object();
+        private static readonly object EventRowUpdated = new object();
+        private static readonly object EventRowUpdating = new object();
 
         private OleDbCommand _deleteCommand, _insertCommand, _selectCommand, _updateCommand;
 
@@ -45,7 +45,7 @@ namespace System.Data.OleDb
         [
         DefaultValue(null),
         ]
-        new public OleDbCommand DeleteCommand
+        public new OleDbCommand DeleteCommand
         {
             get { return _deleteCommand; }
             set { _deleteCommand = value; }
@@ -60,7 +60,7 @@ namespace System.Data.OleDb
         [
         DefaultValue(null)
         ]
-        new public OleDbCommand InsertCommand
+        public new OleDbCommand InsertCommand
         {
             get { return _insertCommand; }
             set { _insertCommand = value; }
@@ -75,7 +75,7 @@ namespace System.Data.OleDb
         [
         DefaultValue(null)
         ]
-        new public OleDbCommand SelectCommand
+        public new OleDbCommand SelectCommand
         {
             get { return _selectCommand; }
             set { _selectCommand = value; }
@@ -90,7 +90,7 @@ namespace System.Data.OleDb
         [
         DefaultValue(null)
         ]
-        new public OleDbCommand UpdateCommand
+        public new OleDbCommand UpdateCommand
         {
             get { return _updateCommand; }
             set { _updateCommand = value; }
@@ -464,7 +464,7 @@ namespace System.Data.OleDb
             base.OnRowUpdating(value);
         }
 
-        static private string GetSourceTableName(string srcTable, int index)
+        private static string GetSourceTableName(string srcTable, int index)
         {
             //if ((null != srcTable) && (0 <= index) && (index < srcTable.Length)) {
             if (0 == index)

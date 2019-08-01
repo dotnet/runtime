@@ -738,10 +738,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern IntPtr LoadLibrary(string name);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        public extern static uint FreeLibrary(IntPtr libName);
+        public static extern uint FreeLibrary(IntPtr libName);
 
         [DllImport("kernel32.dll", EntryPoint = "GetProcAddress", SetLastError = true, BestFitMapping = false)]
-        public extern static IntPtr GetProcAddress(LoadLibrarySafeHandle hModule, string entryPoint);
+        public static extern IntPtr GetProcAddress(LoadLibrarySafeHandle hModule, string entryPoint);
 
         /*
         DWORD DsRoleGetPrimaryDomainInformation(
@@ -784,7 +784,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern bool CopySid(int destinationLength, IntPtr pSidDestination, IntPtr pSidSource);
 
         [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]
-        static extern public bool OpenThreadToken(
+        public static extern bool OpenThreadToken(
                                         IntPtr threadHandle,
                                         int desiredAccess,
                                         bool openAsSelf,
@@ -792,20 +792,20 @@ namespace System.DirectoryServices.ActiveDirectory
                                         );
 
         [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenProcessToken", CharSet = CharSet.Unicode)]
-        static extern public bool OpenProcessToken(
+        public static extern bool OpenProcessToken(
                                         IntPtr processHandle,
                                         int desiredAccess,
                                         ref IntPtr tokenHandle
                                         );
 
         [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThread", CharSet = CharSet.Unicode)]
-        static extern public IntPtr GetCurrentThread();
+        public static extern IntPtr GetCurrentThread();
 
         [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentProcess", CharSet = CharSet.Unicode)]
-        static extern public IntPtr GetCurrentProcess();
+        public static extern IntPtr GetCurrentProcess();
 
         [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetTokenInformation", CharSet = CharSet.Unicode)]
-        static extern public bool GetTokenInformation(
+        public static extern bool GetTokenInformation(
                                         IntPtr tokenHandle,
                                         int tokenInformationClass,
                                         IntPtr buffer,
@@ -814,14 +814,14 @@ namespace System.DirectoryServices.ActiveDirectory
                                         );
 
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
-        static extern public int LsaOpenPolicy(
+        public static extern int LsaOpenPolicy(
                                         IntPtr lsaUnicodeString,
                                         IntPtr lsaObjectAttributes,
                                         int desiredAccess,
                                         ref IntPtr policyHandle);
 
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
-        static extern public int LsaQueryInformationPolicy(
+        public static extern int LsaQueryInformationPolicy(
                                         IntPtr policyHandle,
                                         int policyInformationClass,
                                         ref IntPtr buffer

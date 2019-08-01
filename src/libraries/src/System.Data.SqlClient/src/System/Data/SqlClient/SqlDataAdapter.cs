@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -45,7 +46,7 @@ namespace System.Data.SqlClient
             GC.SuppressFinalize(this);
         }
 
-        new public SqlCommand DeleteCommand
+        public new SqlCommand DeleteCommand
         {
             get { return _deleteCommand; }
             set { _deleteCommand = value; }
@@ -57,7 +58,7 @@ namespace System.Data.SqlClient
             set { _deleteCommand = (SqlCommand)value; }
         }
 
-        new public SqlCommand InsertCommand
+        public new SqlCommand InsertCommand
         {
             get { return _insertCommand; }
             set { _insertCommand = value; }
@@ -69,7 +70,7 @@ namespace System.Data.SqlClient
             set { _insertCommand = (SqlCommand)value; }
         }
 
-        new public SqlCommand SelectCommand
+        public new SqlCommand SelectCommand
         {
             get { return _selectCommand; }
             set { _selectCommand = value; }
@@ -81,7 +82,7 @@ namespace System.Data.SqlClient
             set { _selectCommand = (SqlCommand)value; }
         }
 
-        new public SqlCommand UpdateCommand
+        public new SqlCommand UpdateCommand
         {
             get { return _updateCommand; }
             set { _updateCommand = value; }

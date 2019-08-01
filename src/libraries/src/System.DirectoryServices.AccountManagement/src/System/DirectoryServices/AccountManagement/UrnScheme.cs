@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    static internal class UrnScheme
+    internal static class UrnScheme
     {
         public const string GuidScheme = IdentityTypeStringMap.Guid;
         public const string SidScheme = IdentityTypeStringMap.Sid;

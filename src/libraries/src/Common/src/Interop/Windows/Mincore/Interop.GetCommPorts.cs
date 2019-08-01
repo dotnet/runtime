@@ -10,12 +10,12 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.CoreComm_L1_1_2, SetLastError = true)]
-        unsafe private static extern int GetCommPorts(
+        private static extern unsafe int GetCommPorts(
              uint* lpPortNumbers,
              uint uPortNumbersCount,
              out uint puPortNumbersFound);
 
-        unsafe internal static int GetCommPorts(
+        internal static unsafe int GetCommPorts(
             Span<uint> portNumbers,
             out uint portNumbersFound)
         {

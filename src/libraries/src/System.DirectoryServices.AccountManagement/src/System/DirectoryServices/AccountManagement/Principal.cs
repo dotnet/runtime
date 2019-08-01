@@ -744,13 +744,13 @@ namespace System.DirectoryServices.AccountManagement
 
         internal bool Loaded
         {
-            set
-            {
-                _loaded = value;
-            }
             get
             {
                 return _loaded;
+            }
+            set
+            {
+                _loaded = value;
             }
         }
 
@@ -772,7 +772,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        static internal Principal MakePrincipal(PrincipalContext ctx, Type principalType)
+        internal static Principal MakePrincipal(PrincipalContext ctx, Type principalType)
         {
             Principal p = null;
 

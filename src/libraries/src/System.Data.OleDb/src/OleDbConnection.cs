@@ -24,7 +24,7 @@ namespace System.Data.OleDb
     [DefaultEvent("InfoMessage")]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
-        static private readonly object EventInfoMessage = new object();
+        private static readonly object EventInfoMessage = new object();
 
         public OleDbConnection(string connectionString) : this()
         {
@@ -306,12 +306,12 @@ namespace System.Data.OleDb
 
         internal bool ForceNewConnection { get { return false; } set {; } }
 
-        new public OleDbTransaction BeginTransaction()
+        public new OleDbTransaction BeginTransaction()
         {
             return BeginTransaction(IsolationLevel.Unspecified);
         }
 
-        new public OleDbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        public new OleDbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             return (OleDbTransaction)InnerConnection.BeginTransaction(isolationLevel);
         }
@@ -347,7 +347,7 @@ namespace System.Data.OleDb
             // does not require GC.KeepAlive(this) because of OnStateChange
         }
 
-        new public OleDbCommand CreateCommand()
+        public new OleDbCommand CreateCommand()
         {
             return new OleDbCommand("", this);
         }
@@ -584,7 +584,7 @@ namespace System.Data.OleDb
             return GetOpenConnection().ValidateTransaction(transaction, method);
         }
 
-        static internal Exception ProcessResults(OleDbHResult hresult, OleDbConnection connection, object src)
+        internal static Exception ProcessResults(OleDbHResult hresult, OleDbConnection connection, object src)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
             {
@@ -643,14 +643,14 @@ namespace System.Data.OleDb
         }
 
         // @devnote: should be multithread safe
-        static public void ReleaseObjectPool()
+        public static void ReleaseObjectPool()
         {
             OleDbConnectionString.ReleaseObjectPool();
             OleDbConnectionInternal.ReleaseObjectPool();
             OleDbConnectionFactory.SingletonInstance.ClearAllPools();
         }
 
-        static private void ResetState(OleDbConnection connection)
+        private static void ResetState(OleDbConnection connection)
         {
             if (null != connection)
             {

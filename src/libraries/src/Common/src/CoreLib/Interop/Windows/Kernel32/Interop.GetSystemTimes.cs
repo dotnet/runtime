@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static bool GetSystemTimes(out long idle, out long kernel, out long user);
+        internal static extern bool GetSystemTimes(out long idle, out long kernel, out long user);
     }
 }

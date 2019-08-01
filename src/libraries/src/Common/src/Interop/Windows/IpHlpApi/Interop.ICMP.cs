@@ -93,20 +93,20 @@ internal static partial class Interop
         }
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static SafeCloseIcmpHandle IcmpCreateFile();
+        internal static extern SafeCloseIcmpHandle IcmpCreateFile();
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static SafeCloseIcmpHandle Icmp6CreateFile();
+        internal static extern SafeCloseIcmpHandle Icmp6CreateFile();
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static bool IcmpCloseHandle(IntPtr handle);
+        internal static extern bool IcmpCloseHandle(IntPtr handle);
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
+        internal static extern uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             uint ipAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
+        internal static extern uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
     }
 }

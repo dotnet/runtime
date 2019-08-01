@@ -16,7 +16,7 @@ namespace System.Runtime.Caching
 {
     internal struct UsageEntryRef
     {
-        static internal readonly UsageEntryRef INVALID = new UsageEntryRef(0, 0);
+        internal static readonly UsageEntryRef INVALID = new UsageEntryRef(0, 0);
 
         private const uint ENTRY_MASK = 0x000000ffu;
         private const int PAGE_SHIFT = 8;

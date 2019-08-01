@@ -1321,10 +1321,6 @@ namespace System.Management
         /// <param name=' relationshipQualifier'>The qualifier which the resulting relationship classes must have.</param>
         /// <param name=' thisRole'>The role which the source class must have in the resulting relationship classes.</param>
         /// <param name=' options'> The options for retrieving the results.</param>
-        /// <returns>
-        ///    <para>A collection of association classes
-        ///       relating this class to others, according to the given options.</para>
-        /// </returns>
         public void GetRelationshipClasses(
             ManagementOperationObserver watcher, 
             string relationshipClass,

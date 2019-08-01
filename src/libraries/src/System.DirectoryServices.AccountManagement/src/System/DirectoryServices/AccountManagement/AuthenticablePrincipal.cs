@@ -350,7 +350,7 @@ namespace System.DirectoryServices.AccountManagement
             this.Enabled = enabled;
         }
 
-        static internal AuthenticablePrincipal MakeAuthenticablePrincipal(PrincipalContext ctx)
+        internal static AuthenticablePrincipal MakeAuthenticablePrincipal(PrincipalContext ctx)
         {
             AuthenticablePrincipal ap = new AuthenticablePrincipal(ctx);
             ap.unpersisted = false;

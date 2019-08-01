@@ -38,7 +38,7 @@ namespace System.DirectoryServices.AccountManagement
             _disposeDirEntry = disposeDirEntry;
         }
 
-        new public IEnumerator GetEnumerator()
+        public new IEnumerator GetEnumerator()
         {
             return this;
         }

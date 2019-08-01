@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Sse3() { }
 
-        public new static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// __m128 _mm_addsub_ps (__m128 a, __m128 b)

@@ -45,7 +45,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        static internal string ReadStructuralObjectClass(Type principalType)
+        internal static string ReadStructuralObjectClass(Type principalType)
         {
             DirectoryObjectClassAttribute[] MyAttribute =
             (DirectoryObjectClassAttribute[])Attribute.GetCustomAttributes(principalType, typeof(DirectoryObjectClassAttribute), false);

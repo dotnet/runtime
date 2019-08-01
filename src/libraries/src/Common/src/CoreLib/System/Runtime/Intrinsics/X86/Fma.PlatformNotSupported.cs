@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Fma() { }
 
-        public new static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// __m128 _mm_fmadd_ps (__m128 a, __m128 b, __m128 c)

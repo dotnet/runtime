@@ -11,7 +11,7 @@ namespace System.Data.OleDb
     [Serializable, ListBindable(false)]
     public sealed class OleDbErrorCollection : System.Collections.ICollection
     {
-        readonly private ArrayList items;
+        private readonly ArrayList items;
 
         internal OleDbErrorCollection(UnsafeNativeMethods.IErrorInfo errorInfo)
         {

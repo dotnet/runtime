@@ -57,49 +57,49 @@ namespace System.Reflection.Tests
 
     public class FieldTestSubClass : FieldTestBaseClass
     {
-        public new static int Members = 32;
-        public new static int MembersEverything = 54;
+        public static new int Members = 32;
+        public static new int MembersEverything = 54;
 
-        public new static string[] DeclaredFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
+        public static new string[] DeclaredFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
                                                                    "Profld1", "Profld2", "Profld3", "ProIntfld1", "ProIntfld2", "ProIntfld3",
                                                                    "Pubfld4", "Pubfld5", "Pubfld6", "Intfld4", "Intfld5", "Intfld6", "Profld4", "Profld5",
                                                                    "Profld6", "ProIntfld4", "ProIntfld5", "ProIntfld6",
                                                                     "Members", "DeclaredFieldNames", "InheritedFieldNames", "NewFieldNames", "MembersEverything", "PublicFieldNames"};
 
 
-        public new static string[] InheritedFieldNames = new string[] { "SubPubfld1", "SubIntfld1", "SubProfld1", "SubProIntfld1" };
+        public static new string[] InheritedFieldNames = new string[] { "SubPubfld1", "SubIntfld1", "SubProfld1", "SubProIntfld1" };
 
         public static string[] NewFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
                                                               "Profld1", "Profld2", "Profld3", "ProIntfld1", "ProIntfld2", "ProIntfld3"};
 
-        public new static string[] PublicFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
+        public static new string[] PublicFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
                                                                  "Members", "DeclaredFieldNames", "InheritedFieldNames", "NewFieldNames", "MembersEverything", "PublicFieldNames"};
         public new string Pubfld1 = "";
         public new readonly string Pubfld2 = "";
         public new volatile string Pubfld3 = "";
-        public new static string Pubfld4 = "";
-        public new static readonly string Pubfld5 = "";
-        public new static volatile string Pubfld6 = "";
+        public static new string Pubfld4 = "";
+        public static new readonly string Pubfld5 = "";
+        public static new volatile string Pubfld6 = "";
 
         internal new string Intfld1 = "";
         internal new readonly string Intfld2 = "";
         internal new volatile string Intfld3 = "";
-        internal new static string Intfld4 = "";
-        internal new static readonly string Intfld5 = "";
-        internal new static volatile string Intfld6 = "";
+        internal static new string Intfld4 = "";
+        internal static new readonly string Intfld5 = "";
+        internal static new volatile string Intfld6 = "";
 
         protected new string Profld1 = "";
         protected new readonly string Profld2 = "";
         protected new volatile string Profld3 = "";
-        protected new static string Profld4 = "";
-        protected new static readonly string Profld5 = "";
-        protected new static volatile string Profld6 = "";
+        protected static new string Profld4 = "";
+        protected static new readonly string Profld5 = "";
+        protected static new volatile string Profld6 = "";
 
         protected internal new string ProIntfld1 = "";
         protected internal new readonly string ProIntfld2 = "";
         protected internal new volatile string ProIntfld3 = "";
-        protected internal new static string ProIntfld4 = "";
-        protected internal new static readonly string ProIntfld5 = "";
-        protected internal new static volatile string ProIntfld6 = "";
+        protected internal static new string ProIntfld4 = "";
+        protected internal static new readonly string ProIntfld5 = "";
+        protected internal static new volatile string ProIntfld6 = "";
     }
 }

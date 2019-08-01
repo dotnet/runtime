@@ -121,13 +121,13 @@ internal static partial class Interop
         /// <param name="ptr">The CFType object to retain. This value must not be NULL</param>
         /// <returns>The input value</returns>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        internal extern static IntPtr CFRetain(IntPtr ptr);
+        internal static extern IntPtr CFRetain(IntPtr ptr);
 
         /// <summary>
         /// Decrements the reference count on the specified object and, if the ref count hits 0, cleans up the object.
         /// </summary>
         /// <param name="ptr">The pointer on which to decrement the reference count.</param>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        internal extern static void CFRelease(IntPtr ptr);
+        internal static extern void CFRelease(IntPtr ptr);
     }
 }

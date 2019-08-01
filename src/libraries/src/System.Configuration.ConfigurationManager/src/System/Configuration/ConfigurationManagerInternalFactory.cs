@@ -8,9 +8,9 @@ namespace System.Configuration
 {
     internal static class ConfigurationManagerInternalFactory
     {
-        static private volatile IConfigurationManagerInternal s_instance;
+        private static volatile IConfigurationManagerInternal s_instance;
 
-        static internal IConfigurationManagerInternal Instance
+        internal static IConfigurationManagerInternal Instance
         {
             get
             {

@@ -13,7 +13,7 @@ namespace System.Data.OleDb
         {
         }
 
-        new public OleDbCommand Command
+        public new OleDbCommand Command
         {
             get { return (base.Command as OleDbCommand); }
             set { base.Command = value; }

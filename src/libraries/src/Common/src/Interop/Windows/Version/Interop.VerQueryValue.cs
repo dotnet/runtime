@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Version
     {
         [DllImport(Libraries.Version, CharSet = CharSet.Unicode, EntryPoint = "VerQueryValueW")]
-        internal extern static bool VerQueryValue(IntPtr pBlock, string lpSubBlock, out IntPtr lplpBuffer, out uint puLen);
+        internal static extern bool VerQueryValue(IntPtr pBlock, string lpSubBlock, out IntPtr lplpBuffer, out uint puLen);
     }
 }

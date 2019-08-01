@@ -589,7 +589,7 @@ namespace System.Data.OleDb
             return ValueSizeCore(value);
         }
 
-        static private int GetBindDirection(ParameterDirection direction)
+        private static int GetBindDirection(ParameterDirection direction)
         {
             return (ODB.ParameterDirectionFlag & (int)direction);
             /*switch(Direction) {
@@ -604,7 +604,7 @@ namespace System.Data.OleDb
             }*/
         }
 
-        static private int GetBindFlags(ParameterDirection direction)
+        private static int GetBindFlags(ParameterDirection direction)
         {
             return (ODB.ParameterDirectionFlag & (int)direction);
             /*switch(Direction) {

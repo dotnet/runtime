@@ -77,8 +77,8 @@ public partial class ConsoleEncoding
     }
 
     [DllImport("kernel32.dll")]
-    public extern static uint GetConsoleCP();
+    public static extern uint GetConsoleCP();
 
     [DllImport("kernel32.dll")]
-    public extern static uint GetConsoleOutputCP();
+    public static extern uint GetConsoleOutputCP();
 }

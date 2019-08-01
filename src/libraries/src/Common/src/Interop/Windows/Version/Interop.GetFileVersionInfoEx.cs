@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Version
     {
         [DllImport(Libraries.Version, CharSet = CharSet.Unicode, EntryPoint = "GetFileVersionInfoExW")]
-        internal extern static bool GetFileVersionInfoEx(
+        internal static extern bool GetFileVersionInfoEx(
                     uint dwFlags,
                     string lpwstrFilename,
                     uint dwHandle,

@@ -96,7 +96,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal "constructor": Used for constructing Computer returned by a query
         //
-        static internal ComputerPrincipal MakeComputer(PrincipalContext ctx)
+        internal static ComputerPrincipal MakeComputer(PrincipalContext ctx)
         {
             ComputerPrincipal computer = new ComputerPrincipal(ctx);
             computer.unpersisted = false;

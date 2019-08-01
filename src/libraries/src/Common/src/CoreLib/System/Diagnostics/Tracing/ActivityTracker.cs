@@ -549,16 +549,16 @@ namespace System.Diagnostics.Tracing
 
             #endregion // CreateGuidForActivityPath
 
-            readonly internal string m_name;                        // The name used in the 'start' and 'stop' APIs to help match up
-            readonly long m_uniqueId;                               // a small number that makes this activity unique among its siblings
+            internal readonly string m_name;                        // The name used in the 'start' and 'stop' APIs to help match up
+            private readonly long m_uniqueId;                               // a small number that makes this activity unique among its siblings
             internal readonly Guid m_guid;                          // Activity Guid, it is basically an encoding of the Path() (see CreateActivityPathGuid)
             internal readonly int m_activityPathGuidOffset;         // Keeps track of where in m_guid the causality path stops (used to generated child GUIDs)
             internal readonly int m_level;                          // current depth of the Path() of the activity (used to keep recursion under control)
-            readonly internal EventActivityOptions m_eventOptions;  // Options passed to start. 
+            internal readonly EventActivityOptions m_eventOptions;  // Options passed to start. 
             internal long m_lastChildID;                            // used to create a unique ID for my children activities
             internal int m_stopped;                                 // This work item has stopped
-            readonly internal ActivityInfo? m_creator;               // My parent (creator).  Forms the Path() for the activity.
-            readonly internal Guid m_activityIdToRestore;           // The Guid to restore after a stop.
+            internal readonly ActivityInfo? m_creator;               // My parent (creator).  Forms the Path() for the activity.
+            internal readonly Guid m_activityIdToRestore;           // The Guid to restore after a stop.
             #endregion
         }
 

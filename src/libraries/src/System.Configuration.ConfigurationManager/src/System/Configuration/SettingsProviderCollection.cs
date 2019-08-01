@@ -23,7 +23,7 @@ namespace System.Configuration
             base.Add(provider);
         }
 
-        new public SettingsProvider this[string name]
+        public new SettingsProvider this[string name]
         {
             get
             {

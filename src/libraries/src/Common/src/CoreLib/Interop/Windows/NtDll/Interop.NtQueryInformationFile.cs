@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class NtDll
     {
         [DllImport(Libraries.NtDll, ExactSpelling = true)]
-        unsafe internal static extern int NtQueryInformationFile(
+        internal static extern unsafe int NtQueryInformationFile(
             SafeFileHandle FileHandle,
             out IO_STATUS_BLOCK IoStatusBlock,
             void* FileInformation,

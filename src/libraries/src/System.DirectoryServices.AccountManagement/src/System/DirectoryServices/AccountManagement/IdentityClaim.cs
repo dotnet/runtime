@@ -17,8 +17,8 @@ namespace System.DirectoryServices.AccountManagement
 
         public string UrnScheme
         {
-            set { _urnScheme = value; }
             get { return _urnScheme; }
+            set { _urnScheme = value; }
         }
 
         private string _urnValue;

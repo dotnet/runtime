@@ -175,7 +175,7 @@ namespace System.Data.OleDb
         }
 
         [DefaultValue(null)]
-        new public OleDbConnection Connection
+        public new OleDbConnection Connection
         {
             get
             {
@@ -273,7 +273,7 @@ namespace System.Data.OleDb
         [
         DesignerSerializationVisibility(DesignerSerializationVisibility.Content)
         ]
-        new public OleDbParameterCollection Parameters
+        public new OleDbParameterCollection Parameters
         {
             get
             {
@@ -299,7 +299,7 @@ namespace System.Data.OleDb
         Browsable(false),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        new public OleDbTransaction Transaction
+        public new OleDbTransaction Transaction
         {
             get
             {
@@ -539,7 +539,7 @@ namespace System.Data.OleDb
             }
         }
 
-        new public OleDbParameter CreateParameter()
+        public new OleDbParameter CreateParameter()
         {
             return new OleDbParameter();
         }
@@ -570,7 +570,7 @@ namespace System.Data.OleDb
             base.Dispose(disposing); // notify base classes
         }
 
-        new public OleDbDataReader ExecuteReader()
+        public new OleDbDataReader ExecuteReader()
         {
             return ExecuteReader(CommandBehavior.Default);
         }
@@ -580,7 +580,7 @@ namespace System.Data.OleDb
             return ExecuteReader(CommandBehavior.Default);
         }
 
-        new public OleDbDataReader ExecuteReader(CommandBehavior behavior)
+        public new OleDbDataReader ExecuteReader(CommandBehavior behavior)
         {
             _executeQuery = true;
             return ExecuteReaderInternal(behavior, ADP.ExecuteReader);

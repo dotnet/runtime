@@ -102,7 +102,7 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        new public void SetOutput(Stream stream, bool ownsStream, Encoding encoding)
+        public new void SetOutput(Stream stream, bool ownsStream, Encoding encoding)
         {
             Encoding utf8Encoding = null;
             if (encoding != null && encoding.CodePage == Encoding.UTF8.CodePage)

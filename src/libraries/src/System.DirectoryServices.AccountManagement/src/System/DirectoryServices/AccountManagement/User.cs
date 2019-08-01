@@ -280,7 +280,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal "constructor": Used for constructing Users returned by a query
         //
-        static internal UserPrincipal MakeUser(PrincipalContext ctx)
+        internal static UserPrincipal MakeUser(PrincipalContext ctx)
         {
             UserPrincipal u = new UserPrincipal(ctx);
             u.unpersisted = false;
