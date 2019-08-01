@@ -2450,6 +2450,114 @@ namespace Mono.Linker.Steps {
 
 					continue;
 				}
+
+				//
+				// System.Linq.Expressions.Expression
+				//
+				if (methodCalledType.Name == "Expression" && methodCalledType.Namespace == "System.Linq.Expressions") {
+					Instruction second_argument;
+					TypeDefinition declaringType;
+
+					if (!methodCalledDefinition.IsStatic)
+						break;
+
+					switch (methodCalled.Name) {
+
+					//
+					// Call (Type, String, Type[], Expression[])
+					//
+					case "Call":
+						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 4);
+						if (first_arg_instr < 0) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
+							continue;
+						}
+
+						first_arg = instructions [first_arg_instr];
+
+						if (first_arg.OpCode != OpCodes.Ldtoken) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 1st argument which cannot be analyzed");
+							continue;
+						}
+
+						declaringType = (instructions [first_arg_instr].Operand as TypeReference).Resolve ();
+						if (declaringType == null)
+							continue;
+
+						second_argument = instructions [first_arg_instr + 2];
+						if (second_argument.OpCode != OpCodes.Ldstr) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 2nd argument which cannot be analyzed");
+							continue;
+						}
+
+						name = (string)second_argument.Operand;
+
+						MarkMethodsFromReflectionCall (declaringType, name, null, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+						break;
+
+					//
+					// Field (Expression, Type, String)
+					// Property(Expression, Type, String)
+					//
+					case "Property":
+					case "Field":
+
+						var second_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 2);
+						if (second_arg_instr < 0) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
+							continue;
+						}
+
+						var second_arg = instructions [second_arg_instr];
+
+						if (second_arg.OpCode != OpCodes.Ldtoken) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 2nd argument which cannot be analyzed");
+							continue;
+						}
+
+						declaringType = (instructions [second_arg_instr].Operand as TypeReference).Resolve ();
+						if (declaringType == null)
+							continue;
+
+						var third_argument = instructions [second_arg_instr + 2];
+						if (third_argument.OpCode != OpCodes.Ldstr) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 3rd argument which cannot be analyzed");
+							continue;
+						}
+
+						name = (string)third_argument.Operand;
+
+						//
+						// The first argument can be any expression but we are looking only for simple null
+						// which we can convert to static only field lookup
+						//
+						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 3);
+						bool staticOnly = false;
+
+						if (first_arg_instr >= 0) {
+							first_arg = instructions [first_arg_instr];
+							if (first_arg.OpCode == OpCodes.Ldnull)
+								staticOnly = true;
+						}
+
+						if (methodCalled.Name [0] == 'P')
+							MarkPropertiesFromReflectionCall (declaringType, name, staticOnly);
+						else
+							MarkFieldsFromReflectionCall (declaringType, name, staticOnly);
+
+						break;
+
+					//
+					// New (Type)
+					//
+					case "New":
+						// TODO: Same as Activator
+						break;
+					}
+
+					continue;
+				}
 			}
 		}
 
@@ -2487,14 +2595,24 @@ namespace Mono.Linker.Steps {
 					switch (instruction.OpCode.Code) {
 					case Code.Call:
 					case Code.Calli:
-					case Code.Newobj:
+					case Code.Callvirt:
 						if (instruction.Operand is MethodReference mr) {
 							stackSizeToBacktrace += mr.Parameters.Count;
+							if (mr.Resolve ()?.IsStatic == false)
+								stackSizeToBacktrace++;
+						}
+
+						break;
+					case Code.Newobj:
+						if (instruction.Operand is MethodReference ctor) {
+							stackSizeToBacktrace += ctor.Parameters.Count;
 						}
 						break;
 					case Code.Ret:
 						// TODO: Need method return type for correct stack size but this path should not be hit yet
 						break;
+					default:
+						return -3;
 					}
 					break;
 				}
@@ -2536,14 +2654,13 @@ namespace Mono.Linker.Steps {
 		//
 		// arity == null for name match regardless of arity
 		//
-		void MarkMethodsFromReflectionCall (TypeDefinition declaringType, string name, int? arity, BindingFlags bindingFlags)
+		void MarkMethodsFromReflectionCall (TypeDefinition declaringType, string name, int? arity, BindingFlags? bindingFlags)
 		{
 			foreach (var method in declaringType.Methods) {
-				if (method.Name != name) {
-					if (arity == null && method.Name.Contains ('`')) {
-						// TODO:
-					}
+				var mname = method.Name;
 
+				// Either exact match or generic method with any arity when unspecified
+				if (mname != name && !(arity == null && mname.StartsWith (name, StringComparison.Ordinal) && mname.Length > name.Length + 2 && mname [name.Length + 1] == '`')) {
 					continue;
 				}
 
@@ -2568,7 +2685,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void MarkPropertiesFromReflectionCall (TypeDefinition declaringType, string name)
+		void MarkPropertiesFromReflectionCall (TypeDefinition declaringType, string name, bool staticOnly = false)
 		{
 			foreach (var property in declaringType.Properties) {
 				if (property.Name != name)
@@ -2576,15 +2693,24 @@ namespace Mono.Linker.Steps {
 
 				Tracer.Push ($"Reflection-{property}");
 				try {
+					bool markedAny = false;
+
 					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
 					// Be conservative and mark everything for the property.
-					MarkProperty (property);
+					var getter  = property.GetMethod;
+					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
+						MarkIndirectlyCalledMethod (getter);
+						markedAny = true;
+					}
 
-					if (property.GetMethod != null)
-						MarkIndirectlyCalledMethod (property.GetMethod);
+					var setter = property.SetMethod;
+					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
+						MarkIndirectlyCalledMethod (setter);
+						markedAny = true;
+					}
 
-					if (property.SetMethod != null)
-						MarkIndirectlyCalledMethod (property.SetMethod);
+					if (markedAny)
+						MarkProperty (property);
 
 				} finally {
 					Tracer.Pop ();
@@ -2592,10 +2718,13 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void MarkFieldsFromReflectionCall (TypeDefinition declaringType, string name)
+		void MarkFieldsFromReflectionCall (TypeDefinition declaringType, string name, bool staticOnly = false)
 		{
 			foreach (var field in declaringType.Fields) {
 				if (field.Name != name)
+					continue;
+
+				if (staticOnly && !field.IsStatic)
 					continue;
 
 				Tracer.Push ($"Reflection-{field}");
@@ -2622,30 +2751,6 @@ namespace Mono.Linker.Steps {
 					Tracer.Pop ();
 				}
 			}
-		}
-
-		static TOperand OperandOfNearestInstructionBefore<TOperand> (int startingInstructionIndex, OpCode opCode, IList<Instruction> instructions)
-		{
-			for (var i = startingInstructionIndex; i >= 0; i--) {
-				if (instructions [i].OpCode == opCode)
-					return (TOperand) instructions [i].Operand;
-			}
-
-			return default (TOperand);
-		}
-
-		static List<TypeReference> OperandsOfInstructionsBefore (int startingInstructionIndex, OpCode opCode, IList<Instruction> instructions)
-		{
-			var operands = new List<TypeReference> ();
-			for (var i = startingInstructionIndex; i >= 0; i--) {
-				if (instructions [i].OpCode == opCode) {
-					var type = instructions [i].Operand as TypeReference;
-					if (type != null)
-						operands.Add (type);
-				}
-			}
-
-			return operands;
 		}
 
 		protected class AttributeProviderPair {
@@ -2684,13 +2789,5 @@ namespace Mono.Linker.Steps {
 		SuppressChangeType = 131072,
 		OptionalParamBinding = 262144,
 		IgnoreReturn = 16777216
-	}
-
-	static class BindingFlagsExtensions
-	{
-		public static bool IsSet(this BindingFlags flags, BindingFlags check)
-		{
-			return (flags & check) == check;
-		}
 	}
 }
