@@ -3491,7 +3491,8 @@ cc_signed_table [] = {
 static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
-	if (size == 8)
+	// Use 8 as register size to get Nan/Inf conversion to uint result truncated to 0
+	if (size == 8 || (!is_signed && size == 4))
 		amd64_sse_cvttsd2si_reg_reg (code, dreg, sreg);
 	else
 		amd64_sse_cvttsd2si_reg_reg_size (code, dreg, sreg, 4);
@@ -5403,7 +5404,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_RCONV_TO_U4:
-			amd64_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			// Use 8 as register size to get Nan/Inf conversion result truncated to 0
+			amd64_sse_cvtss2si_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_RCONV_TO_I8:
 		case OP_RCONV_TO_I:

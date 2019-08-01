@@ -236,6 +236,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #endif
 
+#define MONO_ARCH_EMULATE_FCONV_TO_U8 1
+
 /*
  * mips backend misses some instructions that enable emitting of optimal
  * code on other targets and, additionally, the register allocator gets

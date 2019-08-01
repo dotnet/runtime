@@ -95,6 +95,7 @@ typedef struct MonoCompileArch {
 /*#define MONO_ARCH_SIGSEGV_ON_ALTSTACK*/
 #endif
 
+#define MONO_ARCH_EMULATE_FCONV_TO_U8   1
 #define MONO_ARCH_EMULATE_FCONV_TO_I8   1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8   1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4   1

@@ -128,15 +128,6 @@
 -nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
 -nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
 
-# Expected Float to uint to be 2147483648 but got 0... https://github.com/mono/mono/issues/14931
--nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToUIntTest
--nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToUIntTest
--nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToNullableUIntTest
--nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToNullableUIntTest
--noclass System.Linq.Expressions.Tests.LambdaTests
--noclass System.Linq.Expressions.Tests.LambdaDivideNullableTests
--nomethod System.Linq.Expressions.Tests.BinaryCoalesceTests.VerifyIL_NullableIntCoalesceToNullableInt
-
 # OOM Exception.  Weird
 # https://github.com/mono/mono/issues/14933
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.SingleNegativeBoundErrorMessage

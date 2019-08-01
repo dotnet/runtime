@@ -49,6 +49,7 @@
 // mono_icall_sig_ptr_ptr
 // mono_icall_sig_uint16_double
 // mono_icall_sig_uint32_double
+// mono_icall_sig_uint32_float
 // mono_icall_sig_uint8_double
 // mono_icall_sig_ulong_double
 // mono_icall_sig_ulong_float
@@ -173,6 +174,7 @@ ICALL_SIG (2, (ptr, object))			\
 ICALL_SIG (2, (ptr, ptr))			\
 ICALL_SIG (2, (uint16, double))			\
 ICALL_SIG (2, (uint32, double))			\
+ICALL_SIG (2, (uint32, float))			\
 ICALL_SIG (2, (uint8, double))			\
 ICALL_SIG (2, (ulong, double))			\
 ICALL_SIG (2, (ulong, float))			\

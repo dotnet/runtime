@@ -80,6 +80,8 @@ G_EXTERN_C gint64 mono_fconv_i8 (double v);
 G_EXTERN_C guint32 mono_fconv_u4 (double v);
 G_EXTERN_C guint32 mono_fconv_u4_2 (double v);
 
+G_EXTERN_C gint32 mono_rconv_u4 (float v);
+
 G_EXTERN_C gint64 mono_fconv_ovf_i8 (double v);
 
 G_EXTERN_C guint64 mono_fconv_ovf_u8 (double v);

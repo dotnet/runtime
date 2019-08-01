@@ -116,6 +116,7 @@ MONO_JIT_ICALL (__emul_rconv_to_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_u8_un) \
+MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
 MONO_JIT_ICALL (cominterop_get_ccw) \

@@ -4245,25 +4245,19 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R4)
-			/* needed on arm64 */
-			if (isinf (sp [-1].data.f_r4))
-				sp [-1].data.i = 0;
-			/* needed by wasm */
-			else if (isnan (sp [-1].data.f_r4))
-				sp [-1].data.i = 0;
-			else
-				sp [-1].data.i = (guint32) sp [-1].data.f_r4;
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
+			sp [-1].data.i = mono_rconv_u4 (sp [-1].data.f_r4);
+#else
+			sp [-1].data.i = (guint32) sp [-1].data.f_r4;
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
-			/* needed on arm64 */
-			if (mono_isinf (sp [-1].data.f))
-				sp [-1].data.i = 0;
-			/* needed by wasm */
-			else if (isnan (sp [-1].data.f))
-				sp [-1].data.i = 0;
-			else
-				sp [-1].data.i = (guint32)sp [-1].data.f;
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
+			sp [-1].data.i = mono_fconv_u4_2 (sp [-1].data.f);
+#else
+			sp [-1].data.i = (guint32) sp [-1].data.f;
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I8_I4)
@@ -4319,11 +4313,19 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R4)
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
+			sp [-1].data.l = mono_rconv_u8 (sp [-1].data.f_r4);
+#else
 			sp [-1].data.l = (guint64) sp [-1].data.f_r4;
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R8)
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
+			sp [-1].data.l = mono_fconv_u8_2 (sp [-1].data.f);
+#else
 			sp [-1].data.l = (guint64)sp [-1].data.f;
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPOBJ) {
