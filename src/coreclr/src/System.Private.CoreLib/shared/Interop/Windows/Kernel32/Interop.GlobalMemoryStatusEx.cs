@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        unsafe internal static bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX buffer)
+        internal static unsafe bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX buffer)
         {
             buffer.length = sizeof(MEMORYSTATUSEX);
             return GlobalMemoryStatusExNative(ref buffer);

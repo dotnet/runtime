@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal SafeLibraryHandle() : base(true) { }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.FreeLibrary(handle);
         }

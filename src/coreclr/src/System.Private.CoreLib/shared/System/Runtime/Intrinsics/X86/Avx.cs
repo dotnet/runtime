@@ -18,7 +18,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m256 _mm256_add_ps (__m256 a, __m256 b)

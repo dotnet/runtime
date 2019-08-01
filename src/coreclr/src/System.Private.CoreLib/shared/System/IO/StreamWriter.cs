@@ -28,7 +28,7 @@ namespace System.IO
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
-        public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
+        public static new readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
 
         private readonly Stream _stream;
         private readonly Encoding _encoding;
