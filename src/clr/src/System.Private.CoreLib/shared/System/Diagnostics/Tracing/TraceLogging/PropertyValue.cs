@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing
 #else
     internal
 #endif
-    unsafe readonly struct PropertyValue
+    readonly unsafe struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.
