@@ -30,6 +30,7 @@ struct SignalHandlerWorkerReturnPoint
 };
 
 extern bool g_registered_signal_handlers;
+extern bool g_enable_alternate_stack_check;
 
 /*++
 Function :
