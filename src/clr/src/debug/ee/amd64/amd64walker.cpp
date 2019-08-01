@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: Amd64walker.cpp
-// 
+//
 
 //
 // AMD64 instruction decoding/stepping logic
@@ -32,7 +32,7 @@ void NativeWalker::Decode()
     m_nextIP = NULL;
 
     BYTE rex = NULL;
-    
+
     LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%x\n", m_ip));
 
     BYTE prefix = *ip;
@@ -45,7 +45,7 @@ void NativeWalker::Decode()
     //
     // Skip instruction prefixes
     //
-    do 
+    do
     {
         switch (prefix)
         {
@@ -53,7 +53,7 @@ void NativeWalker::Decode()
         case 0x26: // ES
         case 0x2E: // CS
         case 0x36: // SS
-        case 0x3E: // DS 
+        case 0x3E: // DS
         case 0x64: // FS
         case 0x65: // GS
 
@@ -66,13 +66,13 @@ void NativeWalker::Decode()
 
         // String REP prefixes
         case 0xf2: // REPNE/REPNZ
-        case 0xf3: 
+        case 0xf3:
             LOG((LF_CORDB, LL_INFO10000, "NW:Decode: prefix:%0.2x ", prefix));
             ip++;
             continue;
 
         // REX register extension prefixes
-        case 0x40:            
+        case 0x40:
         case 0x41:
         case 0x42:
         case 0x43:
@@ -89,7 +89,7 @@ void NativeWalker::Decode()
         case 0x4e:
         case 0x4f:
             LOG((LF_CORDB, LL_INFO10000, "NW:Decode: REX prefix:%0.2x ", prefix));
-            // make sure to set rex to prefix, not *ip because *ip still represents the 
+            // make sure to set rex to prefix, not *ip because *ip still represents the
             // codestream which has a 0xcc in it.
             rex = prefix;
             ip++;
@@ -106,7 +106,7 @@ void NativeWalker::Decode()
     LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%x, m_opcode:%0.2x\n", ip, m_opcode));
 
     // Don't remove this, when we did the check above for the prefix we didn't modify the codestream
-    // and since m_opcode was just taken directly from the code stream it will be patched if we 
+    // and since m_opcode was just taken directly from the code stream it will be patched if we
     // didn't have a prefix
     if (m_opcode == 0xcc)
     {
@@ -136,7 +136,7 @@ void NativeWalker::Decode()
             // Ignore "inc dword ptr [reg]" instructions
             if (modrm == 0)
                 break;
-            
+
             BYTE mod = (modrm & 0xC0) >> 6;
             BYTE reg = (modrm & 0x38) >> 3;
             BYTE rm  = (modrm & 0x07);
@@ -148,27 +148,27 @@ void NativeWalker::Decode()
                 // not a valid register for a CALL or BRANCH
                 return;
             }
-            
+
             BYTE *result;
             WORD displace;
 
             // See: Tables A-15,16,17 in AMD Dev Manual 3 for information
             //      about how the ModRM/SIB/REX bytes interact.
 
-            switch (mod) 
+            switch (mod)
             {
             case 0:
             case 1:
-            case 2:     
+            case 2:
                 if ((rm & 0x07) == 4) // we have an SIB byte following
-                {   
+                {
                     //
                     // Get values from the SIB byte
                     //
                     BYTE sib   = *ip;
 
                     _ASSERT(sib != NULL);
-                    
+
                     BYTE ss    = (sib & 0xC0) >> 6;
                     BYTE index = (sib & 0x38) >> 3;
                     BYTE base  = (sib & 0x07);
@@ -184,16 +184,16 @@ void NativeWalker::Decode()
                     if ((mod == 0) && ((base & 0x07) == 5))
                     {
                         result = 0;
-                    } 
-                    else 
+                    }
+                    else
                     {
                         result = (BYTE *)(size_t)GetRegisterValue(base);
-                    } 
+                    }
 
                     //
                     // Add in the [index]
                     //
-                    if (index != 0x4) 
+                    if (index != 0x4)
                     {
                         result = result + (GetRegisterValue(index) << ss);
                     }
@@ -201,55 +201,55 @@ void NativeWalker::Decode()
                     //
                     // Finally add in the offset
                     //
-                    if (mod == 0) 
+                    if (mod == 0)
                     {
-                        if ((base & 0x07) == 5) 
+                        if ((base & 0x07) == 5)
                         {
                             result = result + *((INT32*)ip);
                             displace = 7;
-                        } 
-                        else 
+                        }
+                        else
                         {
                             displace = 3;
                         }
-                    } 
-                    else if (mod == 1) 
+                    }
+                    else if (mod == 1)
                     {
                         result = result + *((INT8*)ip);
                         displace = 4;
-                    } 
+                    }
                     else // mod == 2
                     {
                         result = result + *((INT32*)ip);
                         displace = 7;
                     }
 
-                } 
-                else 
+                }
+                else
                 {
                     //
                     // Get the value we need from the register.
                     //
 
                     // Check for RIP-relative addressing mode.
-                    if ((mod == 0) && ((rm & 0x07) == 5)) 
+                    if ((mod == 0) && ((rm & 0x07) == 5))
                     {
                         displace = 6;   // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
                         result = const_cast<BYTE *>(m_ip) + displace + *(reinterpret_cast<const INT32*>(ip));
-                    } 
-                    else 
+                    }
+                    else
                     {
                         result = (BYTE *)GetRegisterValue(rm);
 
-                        if (mod == 0) 
+                        if (mod == 0)
                         {
                             displace = 2;
-                        } 
-                        else if (mod == 1) 
+                        }
+                        else if (mod == 1)
                         {
                             result = result + *((INT8*)ip);
                             displace = 3;
-                        } 
+                        }
                         else // mod == 2
                         {
                             result = result + *((INT32*)ip);
@@ -266,7 +266,7 @@ void NativeWalker::Decode()
                 break;
 
             case 3:
-            default:            
+            default:
                 // The operand is stored in a register.
                 result = (BYTE *)GetRegisterValue(rm);
                 displace = 2;
@@ -282,19 +282,19 @@ void NativeWalker::Decode()
                 displace++;
             }
 
-            // because we already checked register validity for CALL/BRANCH 
+            // because we already checked register validity for CALL/BRANCH
             // instructions above we can assume that there is no other option
-            if ((reg == 4) || (reg == 5)) 
+            if ((reg == 4) || (reg == 5))
             {
                 m_type = WALK_BRANCH;
             }
-            else 
+            else
             {
                 m_type = WALK_CALL;
             }
             m_nextIP = result;
             m_skipIP = m_ip + displace;
-            break; 
+            break;
         }
         case 0xe8:
         {
@@ -401,13 +401,13 @@ UINT64 NativeWalker::GetRegisterValue(int registerNumber)
 
 
 //          mod     reg     r/m
-// bits     7-6     5-3     2-0 
+// bits     7-6     5-3     2-0
 struct ModRMByte
 {
     BYTE rm :3;
     BYTE reg:3;
     BYTE mod:2;
-}; 
+};
 
 //         fixed    W       R       X       B
 // bits    7-4      3       2       1       0
@@ -451,12 +451,12 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     RexByte   rex   = {0};
     ModRMByte modrm = {0};
 
-    // We use 0x3 to indicate that we need to look at the operand-size override and the rex byte 
+    // We use 0x3 to indicate that we need to look at the operand-size override and the rex byte
     // to determine whether the immediate size is 2 bytes or 4 bytes.
-    BYTE      cbImmedSize = 0; 
+    BYTE      cbImmedSize = 0;
 
     const BYTE* originalAddr = address;
-    
+
     do
     {
         switch (*address)
@@ -495,7 +495,7 @@ LLegacyPrefix:
             continue;
 
         // REX register extension prefixes
-        case 0x40:            
+        case 0x40:
         case 0x41:
         case 0x42:
         case 0x43:
@@ -606,8 +606,8 @@ LLegacyPrefix:
         }
     }
 
-    // The following opcode decoding follows the tables in "Appendix A Opcode and Operand Encodings" of 
-    // "AMD64 Architecture Programmer's Manual Volume 3" 
+    // The following opcode decoding follows the tables in "Appendix A Opcode and Operand Encodings" of
+    // "AMD64 Architecture Programmer's Manual Volume 3"
 
     // one-byte opcodes
     if (opcode0 != 0x0F)
@@ -630,7 +630,7 @@ LLegacyPrefix:
             if ( (lowNibble <= 0x3) ||
                  ((lowNibble >= 0x8) && (lowNibble <= 0xB)) )
             {
-                fModRM = true;    
+                fModRM = true;
             }
 
             // ADD/XOR reg/mem, reg
@@ -660,7 +660,7 @@ LLegacyPrefix:
         case 0x5:
             break;
 
-        case 0x6:                
+        case 0x6:
             // IMUL
             if (lowNibble == 0x9)
             {
@@ -673,7 +673,7 @@ LLegacyPrefix:
                 cbImmedSize = 0x1;
             }
             else if (lowNibble == 0x3)
-            {                 
+            {
                 if (fRex)
                 {
                     // MOVSXD
@@ -785,7 +785,7 @@ LLegacyPrefix:
             break;
 
         case 0xD:
-            // Group 2 (part 2): lowNibble in [0x0, 0x3] 
+            // Group 2 (part 2): lowNibble in [0x0, 0x3]
             // RCL reg/mem, 1/reg
             if (lowNibble == 0x0 || lowNibble == 0x2)
             {
@@ -801,7 +801,7 @@ LLegacyPrefix:
             }
 
             // x87 instructions: lowNibble in [0x8, 0xF]
-            // - the entire ModRM byte is used to modify the opcode, 
+            // - the entire ModRM byte is used to modify the opcode,
             //   so the ModRM byte cannot be used in RIP-relative addressing
             break;
 
@@ -1047,7 +1047,7 @@ LLegacyPrefix:
                     pInstrAttrib->m_cOperandSize = 0x3;
                     pInstrAttrib->m_fIsWrite = true;
                 }
-                else if ( (lowNibble == 0x2) || 
+                else if ( (lowNibble == 0x2) ||
                      ((lowNibble >= 0x4) && (lowNibble <= 0x6)) )
                 {
                     cbImmedSize = 0x1;
@@ -1065,7 +1065,7 @@ LLegacyPrefix:
         address += 2;
         if (fModRM)
         {
-            modrm = *(ModRMByte*)address; 
+            modrm = *(ModRMByte*)address;
             address += 1;
         }
     }
