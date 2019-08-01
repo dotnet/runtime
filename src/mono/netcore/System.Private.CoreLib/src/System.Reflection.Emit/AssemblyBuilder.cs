@@ -451,7 +451,7 @@ namespace System.Reflection.Emit
 			if (name == null)
 				throw new ArgumentNullException (name);
 			if (name.Length == 0)
-			throw new ArgumentException ("name", "Name cannot be empty");
+			throw new ArgumentException ("Name cannot be empty", nameof (name));
 
 			var res = InternalGetType (null, name, throwOnError, ignoreCase);
 			if (res is TypeBuilder) {

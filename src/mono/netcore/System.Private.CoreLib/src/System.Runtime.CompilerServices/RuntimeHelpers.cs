@@ -19,9 +19,12 @@ namespace System.Runtime.CompilerServices
 			get;
 		}
 
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		static extern int InternalGetHashCode (object o);
+
 		public static int GetHashCode (object o)
 		{
-			return Object.InternalGetHashCode (o);
+			return InternalGetHashCode (o);
 		}
 
 		public static new bool Equals (object? o1, object? o2)

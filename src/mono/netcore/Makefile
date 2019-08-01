@@ -86,6 +86,9 @@ run-sample: prepare
 	$(DOTNET) build sample/HelloWorld
 	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 
+run-sample-coreclr:
+	cd sample/HelloWorld && $(DOTNET) run
+
 run-aspnet-sample: prepare
 	rm -rf sample/AspNetCore/{bin,obj}
 	$(DOTNET) publish sample/AspNetCore -c Debug -r $(RID)

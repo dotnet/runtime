@@ -14,10 +14,6 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		protected extern object MemberwiseClone ();
 
-		// TODO: Move to RuntimeHelpers
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		internal static extern int InternalGetHashCode (object o);
-
 		[Intrinsic]
 		internal ref byte GetRawData () => throw new NotImplementedException ();
 

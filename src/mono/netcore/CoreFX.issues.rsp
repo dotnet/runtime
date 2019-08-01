@@ -350,10 +350,6 @@
 # https://github.com/mono/mono/issues/15021
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
 
-# Typename string differs 
-# https://github.com/mono/mono/issues/15023
--nomethod System.Reflection.Tests.GetTypeTests.GetType_EmptyString
-
 # Expected ArgumentException, but none was thrown
 # https://github.com/mono/mono/issues/15024
 -nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
@@ -763,15 +759,6 @@
 # Assertion differences.  Expects -1, got 0
 # https://github.com/mono/mono/issues/15187
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
-
-####################################################################
-##  System.Drawing.Common.Tests
-####################################################################
-
-# Expects OOM, may be large array support?
-# https://github.com/mono/mono/issues/15189
--nomethod System.Drawing.Drawing2D.Tests.ColorBlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
--nomethod System.Drawing.Drawing2D.Tests.BlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
 
 ####################################################################
 ##  System.Numerics.Vectors.Tests
