@@ -803,7 +803,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public unsafe readonly void CopyTo(T[] destination)
+        public readonly unsafe void CopyTo(T[] destination)
         {
             CopyTo(destination, 0);
         }
@@ -817,7 +817,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException">If index is greater than end of the array or index is less than zero</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public unsafe readonly void CopyTo(T[] destination, int startIndex)
+        public readonly unsafe void CopyTo(T[] destination, int startIndex)
         {
             if (destination == null)
             {
@@ -1090,7 +1090,7 @@ namespace System.Numerics
         /// <summary>
         /// Returns the element at the given index.
         /// </summary>
-        public unsafe readonly T this[int index]
+        public readonly unsafe T this[int index]
         {
             [Intrinsic]
             get

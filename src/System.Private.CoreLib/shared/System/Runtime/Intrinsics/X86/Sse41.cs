@@ -17,14 +17,14 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Sse41() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
         public new abstract class X64 : Sse2.X64
         {
             internal X64() { }
 
-            public new static bool IsSupported { get => IsSupported; }
+            public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
