@@ -18,7 +18,10 @@
     <!-- Find bundle artifacts, which need multiple stages to fully sign. -->
     <BundleInstallerEngineArtifact Include="$(ArtifactsPackagesDir)**/*engine.exe" />
     <BundleInstallerExeArtifact Include="$(ArtifactsPackagesDir)**/*.exe" />
-  </ItemGroup>
+
+    <!-- apphost and comhost template files are not signed, by design. -->
+    <FileSignInfo Include="apphost.exe;comhost.dll" CertificateName="None" />
+  </ItemGroup>>
 
   <ItemGroup Condition="'$(SignBinaries)' == 'true'">
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/hostfxr.dll" />
@@ -27,7 +30,6 @@
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/ijwhost.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/winrthost.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
-    <!-- Note: apphost is not signed, by design. -->
 
     <ItemsToSign Include="$(CrossGenRootPath)**/*.dll" />
 
