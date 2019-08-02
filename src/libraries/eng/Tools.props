@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <!-- excluded from offline portion of source build -->
-  <ItemGroup Condition="'$(OfflineBuild)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildOffline)' != 'true'">
     <!-- arcade -->
     <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
   </ItemGroup>
