@@ -122,16 +122,14 @@ namespace System.Runtime.Loader
 		}
 
 		// Invoked by Mono to resolve using the Resolving event after
-		// trying the Load overried and TPA load context without
+		// trying the Load override and default load context without
 		// success.
 		private static Assembly? MonoResolveUsingResolvingEvent (IntPtr gchALC, string assemblyName)
 		{
 			return ResolveUsingResolvingEvent (gchALC, new AssemblyName (assemblyName));
 		}
 
-		// Invoked by Mono to resolve using the Resolving event after
-		// trying the Load overried and TPA load context without
-		// success.
+		// Invoked by Mono to resolve requests to load satellite assemblies. 
 		private static Assembly? MonoResolveUsingResolveSatelliteAssembly (IntPtr gchALC, string assemblyName)
 		{
 			return ResolveSatelliteAssembly (gchALC, new AssemblyName (assemblyName));
