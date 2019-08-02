@@ -579,7 +579,7 @@ clock_init (MonoProfilerSampleMode mode)
 	 * makes very little sense as we can only use nanosleep () to sleep on
 	 * real time.
 	 */
-#ifdef HAVE_CLOCK_NANOSLEEP
+#if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
 		struct timespec ts = { 0 };
 
 		/*
@@ -619,7 +619,7 @@ clock_get_time_ns (void)
 static void
 clock_sleep_ns_abs (guint64 ns_abs)
 {
-#ifdef HAVE_CLOCK_NANOSLEEP
+#if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
 	int ret;
 	struct timespec then;
 

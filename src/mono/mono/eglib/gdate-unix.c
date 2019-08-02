@@ -46,7 +46,7 @@ g_get_current_time (GTimeVal *result)
 void
 g_usleep (gulong microseconds)
 {
-#ifdef HAVE_CLOCK_NANOSLEEP
+#if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
 	struct timespec target;
 
 	/*
