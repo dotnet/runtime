@@ -699,17 +699,15 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToLocalTime_Ambiguous_TestData()
         {
-            yield return new object[] { new DateTime(2019, 11, 3, 8, 0, 0), new TimeSpan(-7, 0, 0) };
-            yield return new object[] { new DateTime(2019, 11, 3, 9, 0, 0), new TimeSpan(-8, 0, 0) };
+            yield return new object[] { new DateTimeOffset(2019, 11, 3, 1, 0, 0, new TimeSpan(-7, 0, 0)) };
+            yield return new object[] { new DateTimeOffset(2019, 11, 3, 1, 0, 0, new TimeSpan(-8, 0, 0)) };
         }
 
         [ConditionalTheory(nameof(IsPacificTime))]
         [MemberData(nameof(ToLocalTime_Ambiguous_TestData))]
-        public static void ToLocalTime_Ambiguous(DateTime utc, TimeSpan offset)
+        public static void ToLocalTime_Ambiguous(DateTimeOffset dateTimeOffset)
         {
-            DateTimeOffset expectedLocalTime = new DateTimeOffset(utc + offset, offset);
-            DateTimeOffset actualLocalTime = new DateTimeOffset(utc, default).ToLocalTime();
-            Assert.Equal(expectedLocalTime, actualLocalTime);
+            Assert.True(dateTimeOffset.EqualsExact(dateTimeOffset.ToLocalTime()));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
