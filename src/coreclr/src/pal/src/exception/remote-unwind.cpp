@@ -62,11 +62,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
-// Only used on the AMD64 build
-#if defined(_AMD64_) && defined(HAVE_UNW_GET_ACCESSORS)
+// Only used on the AMD64/ARM64 builds - ARM32 uses EXIDX which isn't currently supported
+#if (defined(_AMD64_) || defined(_ARM64_)) && defined(HAVE_UNW_GET_ACCESSORS)
 
 #include <elf.h>
 #include <link.h>
+
+#if defined(_X86_) || defined(_ARM_) 
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
+#define PRIxA PRIA PRIx
+#elif defined(_AMD64_) || defined(_ARM64_)
+#define PRIx PRIx64
+#define PRIu PRIu64
+#define PRId PRId64
+#define PRIA "016"
+#define PRIxA PRIA PRIx
+#endif
 
 #ifndef ElfW
 #define ElfW(foo) Elf_ ## foo
@@ -77,7 +91,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #define Nhdr   ElfW(Nhdr)
 #define Dyn    ElfW(Dyn)
 
-extern void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext);
 extern void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
 
 typedef struct _libunwindInfo
@@ -128,7 +141,7 @@ typedef struct _libunwindInfo
 #define DWARF_CIE_VERSION       3       // GCC emits version 1???
 
 // DWARF frame header
-typedef struct _eh_frame_hdr
+typedef struct __attribute__((packed)) _eh_frame_hdr
 {
     unsigned char version;
     unsigned char eh_frame_ptr_enc;
@@ -764,6 +777,57 @@ ExtractProcInfoFromFde(const libunwindInfo* info, unw_word_t* addrp, unw_proc_in
     return true;
 }
 
+static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
+{
+#if defined(_AMD64_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
+    unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
+    unw_get_reg(cursor, UNW_X86_64_RBX, (unw_word_t *) &winContext->Rbx);
+    unw_get_reg(cursor, UNW_X86_64_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
+    unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
+#elif defined(_X86_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
+    unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
+    unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
+    unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
+    unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
+#elif defined(_ARM_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_ARM_R4, (unw_word_t *) &winContext->R4);
+    unw_get_reg(cursor, UNW_ARM_R5, (unw_word_t *) &winContext->R5);
+    unw_get_reg(cursor, UNW_ARM_R6, (unw_word_t *) &winContext->R6);
+    unw_get_reg(cursor, UNW_ARM_R7, (unw_word_t *) &winContext->R7);
+    unw_get_reg(cursor, UNW_ARM_R8, (unw_word_t *) &winContext->R8);
+    unw_get_reg(cursor, UNW_ARM_R9, (unw_word_t *) &winContext->R9);
+    unw_get_reg(cursor, UNW_ARM_R10, (unw_word_t *) &winContext->R10);
+    unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
+    unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
+    TRACE("sp %p pc %p lr %p\n", winContext->Sp, winContext->Pc, winContext->Lr);
+#elif defined(_ARM64_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_AARCH64_X19, (unw_word_t *) &winContext->X19);
+    unw_get_reg(cursor, UNW_AARCH64_X20, (unw_word_t *) &winContext->X20);
+    unw_get_reg(cursor, UNW_AARCH64_X21, (unw_word_t *) &winContext->X21);
+    unw_get_reg(cursor, UNW_AARCH64_X22, (unw_word_t *) &winContext->X22);
+    unw_get_reg(cursor, UNW_AARCH64_X23, (unw_word_t *) &winContext->X23);
+    unw_get_reg(cursor, UNW_AARCH64_X24, (unw_word_t *) &winContext->X24);
+    unw_get_reg(cursor, UNW_AARCH64_X25, (unw_word_t *) &winContext->X25);
+    unw_get_reg(cursor, UNW_AARCH64_X26, (unw_word_t *) &winContext->X26);
+    unw_get_reg(cursor, UNW_AARCH64_X27, (unw_word_t *) &winContext->X27);
+    unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
+    unw_get_reg(cursor, UNW_AARCH64_X29, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_AARCH64_X30, (unw_word_t *) &winContext->Lr);
+    TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
+#else
+#error unsupported architecture
+#endif
+}
 
 static int
 get_dyn_info_list_addr(unw_addr_space_t as, unw_word_t *dilap, void *arg)
@@ -814,10 +878,14 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_X86_64_R13:   *valp = (unw_word_t)winContext->R13; break;
     case UNW_X86_64_R14:   *valp = (unw_word_t)winContext->R14; break;
     case UNW_X86_64_R15:   *valp = (unw_word_t)winContext->R15; break;
+#elif defined(_X86_)
+    case UNW_REG_IP,       *valp = (unw_word_t)winContext->Eip; break;
+    case UNW_REG_SP:       *valp = (unw_word_t)winContext->Esp; break;
+    case UNW_X86_EBX:      *valp = (unw_word_t)winContext->Ebx; break;
+    case UNW_X86_ESI:      *valp = (unw_word_t)winContext->Esi; break;
+    case UNW_X86_EDI:      *valp = (unw_word_t)winContext->Edi; break;
+    case UNW_X86_EBP:      *valp = (unw_word_t)winContext->Ebp; break;
 #elif defined(_ARM_)
-    case UNW_ARM_R13:      *valp = (unw_word_t)winContext->Sp; break;
-    case UNW_ARM_R14:      *valp = (unw_word_t)winContext->Lr; break;
-    case UNW_ARM_R15:      *valp = (unw_word_t)winContext->Pc; break;
     case UNW_ARM_R4:       *valp = (unw_word_t)winContext->R4; break;
     case UNW_ARM_R5:       *valp = (unw_word_t)winContext->R5; break;
     case UNW_ARM_R6:       *valp = (unw_word_t)winContext->R6; break;
@@ -826,11 +894,10 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_ARM_R9:       *valp = (unw_word_t)winContext->R9; break;
     case UNW_ARM_R10:      *valp = (unw_word_t)winContext->R10; break;
     case UNW_ARM_R11:      *valp = (unw_word_t)winContext->R11; break;
+    case UNW_ARM_R13:      *valp = (unw_word_t)winContext->Sp; break;
+    case UNW_ARM_R14:      *valp = (unw_word_t)winContext->Lr; break;
+    case UNW_ARM_R15:      *valp = (unw_word_t)winContext->Pc; break;
 #elif defined(_ARM64_)
-    case UNW_REG_IP:       *valp = (unw_word_t)winContext->Pc; break;
-    case UNW_REG_SP:       *valp = (unw_word_t)winContext->Sp; break;
-    case UNW_AARCH64_X29:  *valp = (unw_word_t)winContext->Fp; break;
-    case UNW_AARCH64_X30:  *valp = (unw_word_t)winContext->Lr; break;
     case UNW_AARCH64_X19:  *valp = (unw_word_t)winContext->X19; break;
     case UNW_AARCH64_X20:  *valp = (unw_word_t)winContext->X20; break;
     case UNW_AARCH64_X21:  *valp = (unw_word_t)winContext->X21; break;
@@ -841,13 +908,18 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_X26:  *valp = (unw_word_t)winContext->X26; break;
     case UNW_AARCH64_X27:  *valp = (unw_word_t)winContext->X27; break;
     case UNW_AARCH64_X28:  *valp = (unw_word_t)winContext->X28; break;
+    case UNW_AARCH64_X29:  *valp = (unw_word_t)winContext->Fp; break;
+    case UNW_AARCH64_X30:  *valp = (unw_word_t)winContext->Lr; break;
+    case UNW_AARCH64_SP:   *valp = (unw_word_t)winContext->Sp; break;
+    case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
 #else
 #error unsupported architecture
 #endif
     default:
-        ASSERT("Attempt to read an unknown register\n");
+        ASSERT("Attempt to read an unknown register %d\n", regnum);
         return -UNW_EBADREG;
     }
+    TRACE("REG: %d %p\n", regnum, *valp);
     return UNW_ESUCCESS;
 }
 
@@ -901,7 +973,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
             ERROR("ELF: reading phdrAddr %p\n", phdrAddr);
             return -UNW_EINVAL;
         }
-        TRACE("ELF: phdr %p type %d (%x) vaddr %p memsz %016llx paddr %p filesz %016llx offset %p align %016llx\n",
+        TRACE("ELF: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
             phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
 
         switch (ph.p_type)
@@ -941,6 +1013,11 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
             dynamicAddr++;
         }
     }
+
+    if (ehPhdr.p_offset == 0) {
+        ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
+        return -UNW_EINVAL;
+    }
     unw_word_t ehFrameHdrAddr = ehPhdr.p_offset + info->BaseAddress;
     eh_frame_hdr ehFrameHdr;
 
@@ -970,6 +1047,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
     TRACE("ehFrameStart %p fdeCount %p ip offset %08x\n", ehFrameStart, fdeCount, (int32_t)(ip - ehFrameHdrAddr));
 
+    // If there are no frame table entries
+    if (fdeCount == 0) {
+        TRACE("No frame table entries\n");
+        return -UNW_ENOINFO;
+    }
+
     // LookupTableEntry assumes this encoding
     if (ehFrameHdr.table_enc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
         ASSERT("Table encoding not supported %x\n", ehFrameHdr.table_enc);
@@ -996,7 +1079,10 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         return -UNW_EINVAL;
     }
 
-    _ASSERTE(ip >= pip->start_ip && ip <= pip->end_ip);
+    if (ip < pip->start_ip || ip >= pip->end_ip) {
+        TRACE("ip %p not in range start_ip %p end_ip %p\n", ip, pip->start_ip, pip->end_ip);
+        return -UNW_ENOINFO;
+    }
     return UNW_ESUCCESS;
 }
 
@@ -1066,7 +1152,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
         goto exit;
     }
 
-    UnwindContextToWinContext(&cursor, context);
+    UnwindContextToContext(&cursor, context);
 
     if (contextPointers != NULL)
     {

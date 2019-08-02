@@ -110,6 +110,8 @@ ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
 void
 ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
 {
+    uint64_t previousSp = 0;
+
     // For each native frame
     while (true)
     {
@@ -117,9 +119,10 @@ ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
         GetFrameLocation(pContext, &ip, &sp);
 
         TRACE("Unwind: sp %" PRIA PRIx64 " ip %" PRIA PRIx64 "\n", sp, ip);
-        if (ip == 0) {
+        if (ip == 0 || sp <= previousSp) {
             break;
         }
+
         // Add two pages around the instruction pointer to the core dump
         crashInfo.InsertMemoryRegion(ip - PAGE_SIZE, PAGE_SIZE * 2);
 
@@ -136,6 +139,7 @@ ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
             TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
             break;
         }
+        previousSp = sp;
     }
 }
 
