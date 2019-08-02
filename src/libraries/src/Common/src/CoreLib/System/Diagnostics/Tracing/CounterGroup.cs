@@ -236,7 +236,7 @@ namespace System.Diagnostics.Tracing
             AutoResetEvent? sleepEvent = null;
             while (true)
             {
-                int sleepDurationInMilliseconds = Int32.MaxValue;
+                int sleepDurationInMilliseconds = int.MaxValue;
                 lock (s_counterGroupLock)
                 {
                     sleepEvent = s_pollingThreadSleepEvent;
@@ -253,7 +253,7 @@ namespace System.Diagnostics.Tracing
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
                 }
-                if (sleepDurationInMilliseconds == Int32.MaxValue)
+                if (sleepDurationInMilliseconds == int.MaxValue)
                 {
                     sleepDurationInMilliseconds = -1; // WaitOne uses -1 to mean infinite
                 }
