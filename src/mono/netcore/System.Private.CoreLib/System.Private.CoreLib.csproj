@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\eng\Versions.props"/>
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -297,7 +298,7 @@
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" />
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Condition="'$(RoslynPropsFile)' != ''" Project="$(RoslynPropsFile)" />
+  <Import Project="../roslyn/packages/microsoft.net.compilers.toolset/$(MicrosoftNetCompilersVersion)/build/Microsoft.Net.Compilers.Toolset.props" />
 
   <ItemGroup>
     <EmbeddedResource LogicalName="System.Private.CoreLib.xml" Include="src\LinkerDescriptor\System.Private.CoreLib.xml"/>
