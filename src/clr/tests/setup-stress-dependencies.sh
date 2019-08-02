@@ -177,7 +177,7 @@ fi
 
 # Download the package
 echo Downloading CoreDisTools package
-bash -c -x "$dotnet restore $csprojPath --source https://dotnet.myget.org/F/dotnet-core/ --packages $packageDir"
+bash -c -x "$dotnet restore $csprojPath --packages $packageDir"
 if [ $? -ne 0 ]
 then
     exit_with_error 1 "Failed to restore the package"
