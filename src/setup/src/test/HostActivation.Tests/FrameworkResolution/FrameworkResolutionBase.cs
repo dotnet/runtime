@@ -46,11 +46,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 }
 
                 CommandResult result = command
-                    .EnvironmentVariable("COREHOST_TRACE", "1")
-                    .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", multiLevelLookup ? "1" : "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .MultilevelLookup(multiLevelLookup)
                     .Environment(settings.Environment)
-                    .CaptureStdOut()
-                    .CaptureStdErr()
                     .Execute();
 
                 resultAction?.Invoke(result);

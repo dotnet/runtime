@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.Cli.Build.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -35,6 +37,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             File.Copy(
                 Path.Combine(RepoDirectories.CorehostPackages, nethostName),
                 NethostPath);
+        }
+
+        public Command CreateNativeHostCommand(IEnumerable<string> args, string dotNetRoot)
+        {
+            return Command.Create(NativeHostPath, args)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(dotNetRoot)
+                .MultilevelLookup(false);
         }
 
         public void Dispose()
