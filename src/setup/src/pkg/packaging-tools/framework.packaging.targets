@@ -3,6 +3,60 @@
     Shared targets specific to projects building 'Microsoft.*.App*' packages.
   -->
 
+  <Target Name="GetTargetingPackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'targeting'"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+      <WixProductMoniker>$(TargetingPackBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>TargetingPack</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetAppHostPackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'apphost'"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-apphost-pack</InstallerName>
+      <WixProductMoniker>$(AppHostPackBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>AppHostPack</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetRuntimePackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'runtime'"
+          BeforeTargets="GetInstallerGenerationFlags">
+    <!-- Runtime packs are obtained only through NuGet. -->
+    <PropertyGroup>
+      <GenerateDeb>false</GenerateDeb>
+      <GenerateRpm>false</GenerateRpm>
+      <GeneratePkg>false</GeneratePkg>
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    This targets file is imported for all pkgproj files, but some (like DotNetHostPolicy) don't need
+    installers and just use the normal packaging tooling.
+  -->
+  <Target Name="DisableInstallerGenerationForPkgprojWithoutInstallers"
+          Condition="'$(FrameworkPackType)' == ''"
+          BeforeTargets="GetInstallerGenerationFlags">
+    <PropertyGroup>
+      <GenerateDeb>false</GenerateDeb>
+      <GenerateRpm>false</GenerateRpm>
+      <GeneratePkg>false</GeneratePkg>
+    </PropertyGroup>
+
+    <!--
+      Generate MSIs for projects that build a part of the shared framework (host, hostfxr) with this
+      tooling. Other installer types are not supported and Core-Setup infra generates them.
+    -->
+    <PropertyGroup Condition="'$(GenerateSharedFrameworkPart)' != 'true'">
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+  </Target>
+
   <!--
     Copy the files in the package's data/ dir to a layout directory. This is what the pack installer
     will place in the dotnet install dir.
