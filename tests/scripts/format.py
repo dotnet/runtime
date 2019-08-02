@@ -185,6 +185,9 @@ def main(argv):
         print("7. Unzip the patch file.")
         print("8. git apply format.patch")
 
+    if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
+        print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")
+
     return returncode
 
 if __name__ == '__main__':
