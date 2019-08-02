@@ -36,6 +36,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr();
         }
 
+        public static Command DotNetRoot(this Command command, string dotNetRoot)
+        {
+            return command
+                .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot);
+        }
+
+        public static Command MultilevelLookup(this Command command, bool enable)
+        {
+            return command.EnvironmentVariable(Constants.MultilevelLookup.EnvironmentVariable, enable ? "1" : "0");
+        }
+
         public static Command RuntimeId(this Command command, string rid)
         {
             return command.EnvironmentVariable(Constants.RuntimeId.EnvironmentVariable, rid);

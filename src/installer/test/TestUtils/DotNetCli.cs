@@ -67,7 +67,8 @@ namespace Microsoft.DotNet.Cli.Build
             }
 
             return Command.Create(DotnetExecutablePath, newArgs)
-                .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1");
+                .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0"); // Avoid looking at machine state by default
         }
 
         public Command Restore(params string[] args) => Exec("restore", args);
