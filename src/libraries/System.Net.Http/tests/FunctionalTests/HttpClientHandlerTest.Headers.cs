@@ -265,5 +265,23 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(m));
             }
         }
+
+        [Fact]
+        public async Task SendAsync_WithZeroLengthHeaderName_Throws()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                },
+                async server =>
+                {
+                    await server.HandleRequestAsync(headers: new[]
+                    {
+                        new HttpHeaderData("", "foo")
+                    });
+                });
+        }
     }
 }
