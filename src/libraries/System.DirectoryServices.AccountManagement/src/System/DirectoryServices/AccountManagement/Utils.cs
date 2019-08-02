@@ -589,7 +589,8 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(
                                     SR.Format(
                                             SR.UnableToRetrieveDomainInfo,
-                                            err));
+                                            err),
+                                    err);
                 }
 
                 UnsafeNativeMethods.DomainControllerInfo domainControllerInfo =
