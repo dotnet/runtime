@@ -63,26 +63,6 @@ namespace System.Net.Security
         private int _lockReadState;
         private object _queuedReadStateRequest;
 
-        /// <summary>Set as the _exception when the instance is disposed.</summary>
-        private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream), (string)null));
-
-        private void ThrowIfExceptional()
-        {
-            ExceptionDispatchInfo e = _exception;
-            if (e != null)
-            {
-                // If the stored exception just indicates disposal, throw a new ODE rather than the stored one,
-                // so as to not continually build onto the shared exception's stack.
-                if (ReferenceEquals(e, s_disposedSentinel))
-                {
-                    throw new ObjectDisposedException(nameof(SslStream));
-                }
-
-                // Throw the stored exception.
-                e.Throw();
-            }
-        }
-
         private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
         {
             ThrowIfExceptional();
@@ -163,21 +143,6 @@ namespace System.Net.Security
             _context?.Close();
         }
 
-        private void CheckThrow(bool authSuccessCheck, bool shutdownCheck = false)
-        {
-            ThrowIfExceptional();
-
-            if (authSuccessCheck && !IsAuthenticated)
-            {
-                throw new InvalidOperationException(SR.net_auth_noauth);
-            }
-
-            if (shutdownCheck && _shutdown)
-            {
-                throw new InvalidOperationException(SR.net_ssl_io_already_shutdown);
-            }
-        }
-
         //
         // This is to not depend on GC&SafeHandle class if the context is not needed anymore.
         //
@@ -211,13 +176,13 @@ namespace System.Net.Security
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
         {
-            CheckThrow(true);
+            ThrowIfExceptionalOrNotAuthenticated();
             return _context.Encrypt(buffer, ref outBuffer, out outSize);
         }
 
         private SecurityStatusPal DecryptData()
         {
-            CheckThrow(true);
+            ThrowIfExceptionalOrNotAuthenticated();
             return PrivateDecryptData(_internalBuffer, ref _decryptedBytesOffset, ref _decryptedBytesCount);
         }
 
@@ -258,7 +223,7 @@ namespace System.Net.Security
         //
         private int CheckOldKeyDecryptedData(Memory<byte> buffer)
         {
-            CheckThrow(true);
+            ThrowIfExceptionalOrNotAuthenticated();
             if (_queuedReadData != null)
             {
                 // This is inefficient yet simple and should be a REALLY rare case.
@@ -292,7 +257,7 @@ namespace System.Net.Security
 
             try
             {
-                CheckThrow(false);
+                ThrowIfExceptional();
                 AsyncProtocolRequest asyncRequest = null;
                 if (lazyResult != null)
                 {
@@ -1039,7 +1004,7 @@ namespace System.Net.Security
             {
                 if (_lockWriteState != LockHandshake)
                 {
-                    CheckThrow(authSuccessCheck: true);
+                    ThrowIfExceptionalOrNotAuthenticated();
                     return Task.CompletedTask;
                 }
 
@@ -1067,7 +1032,7 @@ namespace System.Net.Security
                 if (_lockWriteState != LockHandshake)
                 {
                     // Handshake has completed before we grabbed the lock.
-                    CheckThrow(authSuccessCheck: true);
+                    ThrowIfExceptionalOrNotAuthenticated();
                     return;
                 }
 
@@ -1079,7 +1044,7 @@ namespace System.Net.Security
 
             // Need to exit from lock before waiting.
             lazyResult.InternalWaitForCompletion();
-            CheckThrow(authSuccessCheck: true);
+            ThrowIfExceptionalOrNotAuthenticated();
             return;
         }
 
@@ -1500,7 +1465,7 @@ namespace System.Net.Security
         private async Task WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
-            CheckThrow(authSuccessCheck: true, shutdownCheck: true);
+            ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
             if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
             {
