@@ -34,7 +34,15 @@ namespace System.Net.Http.HPack
                     throw new IndexOutOfRangeException();
                 }
 
-                return _buffer[_insertIndex == 0 ? _buffer.Length - 1 : _insertIndex - index - 1];
+                index = _insertIndex - index - 1;
+
+                if (index < 0)
+                {
+                    // _buffer is circular; wrap the index back around.
+                    index += _buffer.Length;
+                }
+
+                return _buffer[index];
             }
         }
 

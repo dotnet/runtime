@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Functional.Tests;
 using System.Net.Security;
@@ -336,34 +337,6 @@ namespace System.Net.Test.Common
             return (2, prefixMask + b);
         }
 
-        private static int EncodeInteger(int value, byte prefix, byte prefixMask, Span<byte> headerBlock)
-        {
-            byte prefixLimit = (byte)(~prefixMask);
-
-            if (value < prefixLimit)
-            {
-                headerBlock[0] = (byte)(prefix | value);
-                return 1;
-            }
-
-            headerBlock[0] = (byte)(prefix | prefixLimit);
-            int bytesGenerated = 1;
-
-            value -= prefixLimit;
-
-            while (value >= 0x80)
-            {
-                headerBlock[bytesGenerated] = (byte)((value & 0x7F) | 0x80);
-                value = value >> 7;
-                bytesGenerated++;
-            }
-
-            headerBlock[bytesGenerated] = (byte)value;
-            bytesGenerated++;
-
-            return bytesGenerated;
-        }
-
         private static (int bytesConsumed, string value) DecodeString(ReadOnlySpan<byte> headerBlock)
         {
             (int bytesConsumed, int stringLength) = DecodeInteger(headerBlock, 0b01111111);
@@ -380,36 +353,6 @@ namespace System.Net.Test.Common
                 string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength));
                 return (bytesConsumed + stringLength, value);
             }
-        }
-
-        private static int EncodeString(string value, Span<byte> headerBlock, bool huffmanEncode)
-        {
-            byte[] data = Encoding.ASCII.GetBytes(value);
-            byte prefix;
-
-            if (!huffmanEncode)
-            {
-                prefix = 0;
-            }
-            else
-            {
-                int len = HuffmanEncoder.GetEncodedLength(data);
-
-                byte[] huffmanData = new byte[len];
-                HuffmanEncoder.Encode(data, huffmanData);
-
-                data = huffmanData;
-                prefix = 0x80;
-            }
-
-            int bytesGenerated = 0;
-
-            bytesGenerated += EncodeInteger(data.Length, prefix, 0x80, headerBlock);
-
-            data.AsSpan().CopyTo(headerBlock.Slice(bytesGenerated));
-            bytesGenerated += data.Length;
-
-            return bytesGenerated;
         }
 
         private static readonly HttpHeaderData[] s_staticTable = new HttpHeaderData[]
@@ -535,20 +478,6 @@ namespace System.Net.Test.Common
                 // Literal, never indexed
                 return DecodeLiteralHeader(headerBlock, 0b00001111);
             }
-        }
-
-        public static int EncodeHeader(HttpHeaderData headerData, Span<byte> headerBlock)
-        {
-            // Always encode as literal, no indexing.
-            int bytesGenerated = EncodeInteger(0, 0, 0b11110000, headerBlock);
-            bytesGenerated += EncodeString(headerData.Name, headerBlock.Slice(bytesGenerated), headerData.HuffmanEncoded);
-            bytesGenerated += EncodeString(headerData.Value, headerBlock.Slice(bytesGenerated), headerData.HuffmanEncoded);
-            return bytesGenerated;
-        }
-
-        public static int EncodeDynamicTableSizeUpdate(int newMaximumSize, Span<byte> headerBlock)
-        {
-            return EncodeInteger(newMaximumSize, 0b00100000, 0b11100000, headerBlock);
         }
 
         public async Task<byte[]> ReadBodyAsync()
@@ -679,14 +608,14 @@ namespace System.Net.Test.Common
             if (!isTrailingHeader)
             {
                 string statusCodeString = ((int)statusCode).ToString();
-                bytesGenerated += EncodeHeader(new HttpHeaderData(":status", statusCodeString), headerBlock.AsSpan());
+                bytesGenerated += HPackEncoder.EncodeHeader(":status", statusCodeString, HPackFlags.None, headerBlock.AsSpan());
             }
 
             if (headers != null)
             {
                 foreach (HttpHeaderData headerData in headers)
                 {
-                    bytesGenerated += EncodeHeader(headerData, headerBlock.AsSpan().Slice(bytesGenerated));
+                    bytesGenerated += HPackEncoder.EncodeHeader(headerData.Name, headerData.Value, headerData.HuffmanEncoded ? HPackFlags.HuffmanEncode : HPackFlags.None, headerBlock.AsSpan(bytesGenerated));
                 }
             }
 

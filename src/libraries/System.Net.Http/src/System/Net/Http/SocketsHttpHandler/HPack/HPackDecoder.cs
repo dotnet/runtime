@@ -254,6 +254,11 @@ namespace System.Net.Http.HPack
 
                         if (_integerDecoder.StartDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
                         {
+                            if (_integerDecoder.Value == 0)
+                            {
+                                throw new HPackDecodingException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+                            }
+
                             OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
                         }
                         else
@@ -265,6 +270,10 @@ namespace System.Net.Http.HPack
                     case State.HeaderNameLengthContinue:
                         if (_integerDecoder.Decode(b))
                         {
+                            // IntegerDecoder disallows overlong encodings, where an integer is encoded with more bytes than is strictly required.
+                            // 0 should always be represented by a single byte, so we shouldn't need to check for it in the continuation case.
+                            Debug.Assert(_integerDecoder.Value != 0, "A header name length of 0 should never be encoded with a continuation byte.");
+
                             OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
                         }
 
@@ -302,6 +311,10 @@ namespace System.Net.Http.HPack
                     case State.HeaderValueLengthContinue:
                         if (_integerDecoder.Decode(b))
                         {
+                            // IntegerDecoder disallows overlong encodings where an integer is encoded with more bytes than is strictly required.
+                            // 0 should always be represented by a single byte, so we shouldn't need to check for it in the continuation case.
+                            Debug.Assert(_integerDecoder.Value != 0, "A header value length of 0 should never be encoded with a continuation byte.");
+
                             OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
                         }
 

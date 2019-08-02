@@ -480,7 +480,7 @@ namespace System.Net.Http.Functional.Tests
         private static Frame MakeSimpleContinuationFrame(int streamId, bool endHeaders = false)
         {
             Memory<byte> headerBlock = new byte[Frame.MaxFrameLength];
-            int bytesGenerated = Http2LoopbackConnection.EncodeHeader(new HttpHeaderData("foo", "bar"), headerBlock.Span);
+            int bytesGenerated = HPackEncoder.EncodeHeader("foo", "bar", HPackFlags.None, headerBlock.Span);
 
             return new ContinuationFrame(headerBlock.Slice(0, bytesGenerated),
                 (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None),
@@ -3037,7 +3037,7 @@ namespace System.Net.Http.Functional.Tests
                     }
 
                     byte[] headerData = new byte[16];
-                    int headersLen = Http2LoopbackConnection.EncodeDynamicTableSizeUpdate(headerTableSize + 1, headerData);
+                    int headersLen = HPackEncoder.EncodeDynamicTableSizeUpdate(headerTableSize + 1, headerData);
                     HeadersFrame frame = new HeadersFrame(headerData.AsMemory(0, headersLen), FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId);
 
                     await con.WriteFrameAsync(frame);
