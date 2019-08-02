@@ -441,5 +441,11 @@ namespace System.Reflection
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern object GetFilesInternal (String name, bool getResourceModules);
+
+		internal string? GetSimpleName ()
+		{
+			// TODO: Make this cheaper and faster
+			return GetName ().Name;
+		}
 	}
 }

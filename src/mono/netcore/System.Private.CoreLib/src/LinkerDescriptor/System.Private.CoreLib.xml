@@ -19,6 +19,16 @@
 			<!-- appdomain.c mono_object_new_checked in mono_domain_create_appdomain_checked -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+		<!-- assembly-load-context.c: -->
+		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
+		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
+		  <method name="MonoResolveUsingLoad" />
+		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolving_event -->
+		  <method name="MonoResolveUsingResolvingEvent" />
+		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolve_satellite -->
+		  <method name="MonoResolveUsingResolveSatelliteAssembly" />
+		</type>
 		
 		<!-- marshal.c: emit_marshal_custom (should not be used on devices)
 		<type fullname="System.ApplicationException" />

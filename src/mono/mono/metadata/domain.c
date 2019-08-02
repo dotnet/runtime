@@ -2098,6 +2098,7 @@ mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, g
 {
 	g_assert (!collectible); /* TODO: implement collectible ALCs */
 	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE);
+	alc->gchandle = this_gchandle;
 	return alc;
 }
 #endif

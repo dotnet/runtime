@@ -37,6 +37,9 @@ void
 mono_assembly_name_free_internal (MonoAssemblyName *aname);
 
 gboolean
+mono_assembly_name_culture_is_neutral (const MonoAssemblyName *aname);
+
+gboolean
 mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoAssemblyNameEqFlags flags);
 
 gboolean

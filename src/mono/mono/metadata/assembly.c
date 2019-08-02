@@ -1464,6 +1464,7 @@ mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *an
 	}
 }
 
+#ifndef ENABLE_NETCORE
 static MonoAssembly*
 load_reference_by_aname_refonly_asmctx (MonoAssemblyName *aname, MonoAssembly *assm, MonoImageOpenStatus *status)
 {
@@ -1578,6 +1579,74 @@ load_reference_by_aname_individual_asmctx (MonoAssemblyName *aname, MonoAssembly
 		reference = (MonoAssembly*)REFERENCE_MISSING;
 	return reference;
 }
+#else
+static MonoAssembly*
+netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoImageOpenStatus *status)
+{
+	g_assert (status != NULL);
+	g_assert (requesting != NULL);
+	g_assert (alc != NULL);
+
+	MonoAssemblyName mapped_aname;
+	MonoAssemblyName mapped_name_pp;
+
+	aname = mono_assembly_remap_version (aname, &mapped_aname);
+	/* FIXME: netcore doesn't have binding redirects */
+	aname = mono_assembly_apply_binding (aname, &mapped_name_pp);
+
+	MonoAssembly *reference = NULL;
+
+	gboolean is_satellite = !mono_assembly_name_culture_is_neutral (aname);
+	gboolean is_default = mono_alc_is_default (alc);
+
+	/*
+	 * Try these until one of them succeeds (by returning a non-NULL reference):
+	 * 1. Check if it's already loaded by the ALC.
+	 * 2. If it's a non-default ALC, call the Load() method.
+	 *
+	 * 3. Try to load using the default ALC.
+	 *
+	 * 4. Call ALC Resolving event.
+	 *
+	 * 5. Return REFERNCE_MISSING
+	 */
+
+	reference = mono_assembly_loaded_internal (alc, aname, FALSE);
+	if (reference)
+		goto leave;
+
+	if (!is_default)
+		reference = mono_alc_invoke_resolve_using_load_nofail (alc, aname);
+	if (reference)
+		goto leave;
+
+	if (is_default || !is_satellite) {
+		MonoAssemblyByNameRequest req;
+		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+		req.request.alc = mono_domain_default_alc (mono_alc_domain (alc));
+		req.requesting_assembly = requesting;
+		reference = mono_assembly_request_byname (aname, &req, status);
+		if (reference)
+			goto leave;
+	}
+
+	if (is_satellite) {
+		reference = mono_alc_invoke_resolve_using_resolve_satellite_nofail (alc, aname);
+		if (reference)
+			goto leave;
+	}
+
+	reference = mono_alc_invoke_resolve_using_resolving_event_nofail (alc, aname);
+	if (reference)
+		goto leave;
+
+	reference = (MonoAssembly*)REFERENCE_MISSING;
+
+leave:
+	return reference;
+}
+
+#endif /* ENABLE_NETCORE */
 
 /**
  * mono_assembly_get_assemblyref:
@@ -1662,6 +1731,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 				    aname_str);
 			g_free (aname_str);
 		}
+#ifndef ENABLE_NETCORE
 		switch (mono_asmctx_get_kind (&image->assembly->context)) {
 		case MONO_ASMCTX_DEFAULT:
 			reference = load_reference_by_aname_default_asmctx (&aname, mono_image_get_alc (image), image->assembly, &status);
@@ -1679,9 +1749,16 @@ mono_assembly_load_reference (MonoImage *image, int index)
 			g_error ("Unexpected assembly load context kind %d for image %s.", mono_asmctx_get_kind (&image->assembly->context), image->name);
 			break;
 		}
+#else
+		reference = netcore_load_reference (&aname, mono_image_get_alc (image), image->assembly, &status);
+#endif
 	} else {
+#ifndef ENABLE_NETCORE
 		/* FIXME: can we establish that image->assembly is never NULL and this code is dead? */
 		reference = load_reference_by_aname_default_asmctx (&aname, mono_image_get_alc (image), image->assembly, &status);
+#else
+		g_assertf (image->assembly, "While loading reference %d MonoImage %s doesn't have a MonoAssembly", index, image->name);
+#endif
 	}
 
 	if (reference == NULL){
@@ -3567,6 +3644,12 @@ mono_assembly_name_get_version (MonoAssemblyName *aname, uint16_t *minor, uint16
 	if (revision)
 		*revision = aname->revision;
 	return aname->major;
+}
+
+gboolean
+mono_assembly_name_culture_is_neutral (const MonoAssemblyName *aname)
+{
+	return (!aname->culture || aname->culture [0] == 0);
 }
 
 static MonoAssembly*

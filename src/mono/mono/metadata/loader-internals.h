@@ -6,6 +6,7 @@
 #define _MONO_METADATA_LOADER_INTERNALS_H_
 
 #include <glib.h>
+#include <mono/metadata/image.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-error.h>
@@ -22,6 +23,10 @@ struct _MonoAssemblyLoadContext {
 	GSList *loaded_assemblies;
 	MonoCoopMutex assemblies_lock;
 #endif
+	/* Handle of the corresponding managed object.  If the ALC is
+	 * collectible, the handle is weak, otherwise it's strong.
+	 */
+	uint32_t gchandle;
 };
 #endif /* ENABLE_NETCORE */
 
@@ -43,6 +48,19 @@ mono_alc_domain (MonoAssemblyLoadContext *alc)
 {
 	return alc->domain;
 }
+
+gboolean
+mono_alc_is_default (MonoAssemblyLoadContext *alc);
+
+MonoAssembly*
+mono_alc_invoke_resolve_using_load_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
+
+MonoAssembly*
+mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
+
+MonoAssembly*
+mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
+
 #endif /* ENABLE_NETCORE */
 
 MonoLoadedImages *
