@@ -4,6 +4,7 @@
     Include common targets for specific project types. These files include BuildTools target
     overrides that shouldn't be applied to other projects.
   -->
+  <Import Project="framework.bundle.targets" Condition="'$(MSBuildProjectExtension)' == '.bundleproj'" />
   <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="framework.packaging.targets" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
   <Import Project="framework.sharedfx.targets" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />
@@ -14,51 +15,44 @@
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />
 
+  <Target Name="GetInstallerGenerationFlags">
+    <!-- Filter the installer generation/build flags for the current build machine. -->
+    <PropertyGroup>
+      <_supportsWixBasedInstallers>true</_supportsWixBasedInstallers>
+      <_supportsWixBasedInstallers Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</_supportsWixBasedInstallers>
+      <_supportsWixBasedInstallers Condition="'$(OSGroup)' != 'Windows_NT'">false</_supportsWixBasedInstallers>
+
+      <GenerateMSI Condition="'$(_supportsWixBasedInstallers)' != 'true'">false</GenerateMSI>
+      <GenerateExeBundle Condition="'$(_supportsWixBasedInstallers)' != 'true'">false</GenerateExeBundle>
+
+      <GeneratePkg Condition="'$(OSGroup)' != 'OSX'">false</GeneratePkg>
+    </PropertyGroup>
+
+    <!--
+      Apply the global Build*Package properties. These use distro-specific logic to determine if the
+      current distro should build RPM packages or Debian packages.
+
+      This logic is external because the legacy infra needs the values.
+    -->
+    <PropertyGroup>
+      <GenerateDeb Condition="'$(BuildDebPackage)' != 'true'">false</GenerateDeb>
+      <GenerateRpm Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateRpm>
+    </PropertyGroup>
+  </Target>
+
   <!--
-    Set up properties for installer file. These depend on properties defined in the project file.
-    (Unlike properties set up in packaging-tools.props, which shouldn't.)
+    Set up properties for installer generation. Project-type-specific properties are set up in
+    targets that use BeforeTargets="GetInstallerProperties".
   -->
   <Target Name="GetInstallerProperties"
           DependsOnTargets="
             GetInstallerBrandingNames;
             GetProductVersions">
-    <!-- Detect framework pack suffix and apply defaults. -->
-    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
-      <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
-      <WixProductMoniker>$(TargetingPackBrandName)</WixProductMoniker>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(FrameworkPackType)' == 'apphost'">
-      <InstallerName>$(ShortFrameworkName)-apphost-pack</InstallerName>
-      <WixProductMoniker>$(AppHostPackBrandName)</WixProductMoniker>
-    </PropertyGroup>
-
-    <!-- Runtime packs are obtained only through NuGet. -->
-    <PropertyGroup Condition="'$(FrameworkPackType)' == 'runtime'">
-      <BuildDebPackage>false</BuildDebPackage>
-      <BuildRpmPackage>false</BuildRpmPackage>
-      <GeneratePkg>false</GeneratePkg>
-      <GenerateMSI>false</GenerateMSI>
-    </PropertyGroup>
-
-    <!-- Non-framework pkgproj shouldn't build MSIs. -->
-    <PropertyGroup Condition="'$(FrameworkPackType)' == '' and '$(MSBuildProjectExtension)' == '.pkgproj'">
-      <GenerateMSI>false</GenerateMSI>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
-      <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
-      <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
-    </PropertyGroup>
-
     <Error
-      Text="InstallerName starts with a '-': missing ShortFrameworkName value."
-      Condition="$(InstallerName.StartsWith('-'))" />
+      Text="InstallerName '$(InstallerName)' is empty or starts with a '-': expected a value like 'dotnet-runtime'."
+      Condition="'$(InstallerName)' == '' or $(InstallerName.StartsWith('-'))" />
 
     <PropertyGroup>
-      <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
-      <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
-
       <VersionedInstallerName>$(InstallerName)-$(ProductBandVersion)</VersionedInstallerName>
       <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
       <InstallerPackageRelease>1</InstallerPackageRelease>
@@ -82,30 +76,16 @@
       <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
         >$(ProductVersion)-$(TargetArchitecture)</InstallerBuildPart>
 
-      <!-- Location to place the installer, in bin. -->
+      <!-- Location to place the installer, in artifacts. -->
       <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
       <InstallerFile Condition="'$(InstallerFile)' == ''">$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
+      <ExeBundleInstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension).exe</ExeBundleInstallerFile>
       <CompressedArchiveFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(CompressedFileExtension)</CompressedArchiveFile>
     </PropertyGroup>
 
     <!-- By default, a shared framework only has files in shared/, so archive that. -->
     <PropertyGroup>
       <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)shared/</SharedFrameworkArchiveSourceDir>
-    </PropertyGroup>
-
-    <!-- Only generate installers for packs and sfxproj. -->
-    <PropertyGroup Condition="'$(FrameworkPackType)' == '' and '$(GenerateSharedFramework)' != 'true'">
-      <GeneratePkg>false</GeneratePkg>
-      <BuildDebPackage>false</BuildDebPackage>
-      <BuildRpmPackage>false</BuildRpmPackage>
-      <GenerateMSI>false</GenerateMSI>
-    </PropertyGroup>
-
-    <!-- Use existing infra for non-Windows shared framework installers. -->
-    <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
-      <GeneratePkg>false</GeneratePkg>
-      <BuildDebPackage>false</BuildDebPackage>
-      <BuildRpmPackage>false</BuildRpmPackage>
     </PropertyGroup>
   </Target>
 
@@ -134,6 +114,24 @@
     <ItemGroup>
       <SyncInfoLines Include="$(LatestCommit)" />
     </ItemGroup>
+  </Target>
+
+  <!--
+    Acquire NuGet.exe, if not present.
+  -->
+  <Target Name="AcquireNuGetExe"
+          DependsOnTargets="GetAcquireNuGetExeProperties">
+    <MSBuild Projects="$(AcquireNuGetExeProjectFile)" Targets="AcquireNuGetExeCore" />
+  </Target>
+
+  <Target Name="GetAcquireNuGetExeProperties">
+    <PropertyGroup>
+      <AcquireNuGetExeProjectFile>$(PackagingToolsDir)acquire-nuget-exe\acquire-nuget-exe.proj</AcquireNuGetExeProjectFile>
+      <!-- Using 3.5.0 to workaround https://github.com/NuGet/Home/issues/5016 -->
+      <NuGetExeDownloadUrl>https://dist.nuget.org/win-x86-commandline/v3.5.0/nuget.exe</NuGetExeDownloadUrl>
+      <NuGetExeToolDir>$(IntermediateOutputRootPath)nuget\</NuGetExeToolDir>
+      <NuGetExeFile>$(NuGetExeToolDir)NuGet.exe</NuGetExeFile>
+    </PropertyGroup>
   </Target>
 
   <!--

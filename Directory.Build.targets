@@ -19,6 +19,13 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
+  <!-- Common target to find all sfxproj. In a target to avoid evaluating for every project. -->
+  <Target Name="GetSharedFrameworkProjects">
+    <ItemGroup>
+      <SharedFrameworkProject Include="$(SourceDir)pkg\projects\**\*.sfxproj" />
+    </ItemGroup>
+  </Target>
+
   <!--
     Arcade SDK versioning is defined by static properties in a targets file: work around this by
     moving properties based on versioning into a target.
@@ -220,12 +227,6 @@
     <!-- We shouldn't fail the build if we can't retreive the commit hash, so in this case just set it to N/A -->
     <PropertyGroup Condition="'$(LatestCommitExitCode)'!='0'">
       <LatestCommit>N/A</LatestCommit>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="GetBundleDisplayVersion">
-    <PropertyGroup>
-      <BundleDisplayVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).$(BuildNumberMajor)</BundleDisplayVersion>
     </PropertyGroup>
   </Target>
 

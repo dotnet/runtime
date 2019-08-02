@@ -95,8 +95,7 @@
     Acquire WiX tools, if not present.
   -->
   <Target Name="AcquireWix"
-          DependsOnTargets="GetAcquireWixProperties"
-          Condition="'$(GenerateMSI)' == 'true'">
+          DependsOnTargets="GetAcquireWixProperties">
     <MSBuild Projects="$(AcquireWixProjectFile)" Targets="AcquireWixCore" />
   </Target>
 

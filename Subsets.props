@@ -94,11 +94,22 @@
 
   <ItemGroup>
     <SubsetName
+      Include="Bundle"
+      Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('bundle'))">
+    <BundleProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" />
+    <ProjectToBuild Include="@(BundleProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
       Include="Installer"
       Description="Generates additional installers. This produces the shared frameworks and their installers." />
   </ItemGroup>
   <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('installer'))">
     <InstallerProjectToBuild Include="$(RepoRoot)src\pkg\packaging\installers.proj" />
+    <InstallerProjectToBuild Include="$(RepoRoot)src\pkg\packaging\vs-insertion-packages.proj" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" />
   </ItemGroup>
 

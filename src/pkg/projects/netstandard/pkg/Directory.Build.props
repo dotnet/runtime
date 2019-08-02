@@ -15,6 +15,8 @@
     <FrameworkListTargetFrameworkIdentifier>.NETStandard</FrameworkListTargetFrameworkIdentifier>
     <FrameworkListTargetFrameworkVersion>2.1</FrameworkListTargetFrameworkVersion>
     <FrameworkListFrameworkName>NETStandard.Library</FrameworkListFrameworkName>
+
+    <VSInsertionProductName>NetStandard</VSInsertionProductName>
   </PropertyGroup>
 
   <!-- Redistribute package content from other nuget packages. -->

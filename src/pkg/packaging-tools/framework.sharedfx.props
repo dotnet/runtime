@@ -4,6 +4,11 @@
   -->
 
   <PropertyGroup>
+    <GenerateMSI>true</GenerateMSI>
+    <GenerateCompressedArchive>true</GenerateCompressedArchive>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <PackageId>unused</PackageId>
 
