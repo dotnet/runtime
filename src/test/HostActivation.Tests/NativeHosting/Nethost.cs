@@ -35,8 +35,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
             CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
                 .EnableTracingAndCaptureOutputs()
-                .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot)
+                .DotNetRoot(dotNetRoot)
                 .Execute();
 
             result.Should().HaveStdErrContaining("Using environment variable");

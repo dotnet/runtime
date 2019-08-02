@@ -38,12 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 validType ? sharedState.ComponentTypeName : $"Component.BadType, {componentProject.AssemblyName}",
                 validMethod ? sharedState.ComponentEntryPoint1 : "BadMethod",
             };
-            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", sharedState.DotNetRoot)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.DotNetRoot)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute();
 
             result.Should()
@@ -90,12 +85,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 args = args.Concat(componentInfo);
             }
 
-            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", sharedState.DotNetRoot)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.DotNetRoot)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute();
 
             result.Should().Pass()
@@ -139,12 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 args = args.Concat(componentInfo);
             }
 
-            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", sharedState.DotNetRoot)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.DotNetRoot)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute();
 
             result.Should().Pass()

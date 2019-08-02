@@ -54,6 +54,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             DotNet.Exec("--roll-forward-on-no-candidate-fx", "2", appDll, "argumentOne", "arg2")
                 .CaptureStdOut()
                 .CaptureStdErr()
+                .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("mock coreclr_initialize() called")
