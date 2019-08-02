@@ -5,6 +5,19 @@
 
   <UsingTask TaskName="ProcessSharedFrameworkDeps" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
+  <Target Name="GetSharedFrameworkInstallerProperties"
+          Condition="'$(GenerateSharedFramework)' == 'true'"
+          DependsOnTargets="GetInstallerBrandingNames"
+          BeforeTargets="
+            GetInstallerGenerationFlags;
+            GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
+      <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>SharedFramework</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="GetPackageReference"
           DependsOnTargets="GetProductVersions"
           BeforeTargets="CollectPackageReferences">

@@ -41,6 +41,11 @@
     <RestoreAllBuildRids>true</RestoreAllBuildRids>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <VSInsertionProductName>NetCore</VSInsertionProductName>
+    <VSInsertionCommonPrefix>VS.Redist.Common</VSInsertionCommonPrefix>
+  </PropertyGroup>
+
   <!-- Most packages need the host to be built first. -->
   <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
     <OrderProjectReference Include="@(CorehostProjectToBuild)" />

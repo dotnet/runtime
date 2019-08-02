@@ -63,13 +63,6 @@
     <WixObjRoot>$(IntermediateOutputRootPath)wix/</WixObjRoot>
     <WixObjDir>$(WixObjRoot)$(MSBuildProjectName)/</WixObjDir>
     <MsiArch>$(TargetArchitecture)</MsiArch>
-    <MicrosoftEulaFile>$(MSBuildThisFileDirectory)packaging/windows/eula.rtf</MicrosoftEulaFile>
-
-    <GenerateMSI>true</GenerateMSI>
-    <GenerateMSI Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</GenerateMSI>
-    <GenerateMSI Condition="'$(OSGroup)' != 'Windows_NT'">false</GenerateMSI>
-
-    <GeneratePkg Condition="'$(OSGroup)' == 'OSX'">true</GeneratePkg>
 
     <!--
       Allow packaging one build's outputs for a different RID. For example, package portable bits

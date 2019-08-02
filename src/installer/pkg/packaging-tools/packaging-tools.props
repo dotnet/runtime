@@ -1,5 +1,6 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <Import Project="framework.bundle.props" Condition="'$(MSBuildProjectExtension)' == '.bundleproj'" />
   <Import Project="framework.dependency.props" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="framework.packaging.props" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
   <Import Project="framework.sharedfx.props" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />

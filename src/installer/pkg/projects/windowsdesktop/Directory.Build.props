@@ -12,6 +12,8 @@
 
     <FrameworkPackageName>Microsoft.WindowsDesktop.App</FrameworkPackageName>
 
+    <VSInsertionProductName>WindowsDesktop</VSInsertionProductName>
+
     <!--
       Disable FileVersion check for WindowsDesktop. Files with no FileVersion, as of writing:
 
