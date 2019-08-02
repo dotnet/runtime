@@ -29,6 +29,6 @@ namespace System.Net.Http.HPack
 
         public int Length => GetLength(Name.Length, Value.Length);
 
-        public static int GetLength(int nameLength, int valueLenth) => nameLength + valueLenth + 32;
+        public static int GetLength(int nameLength, int valueLenth) => nameLength + valueLenth + RfcOverhead;
     }
 }

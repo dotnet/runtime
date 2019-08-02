@@ -28,10 +28,10 @@
       <Link>ProductionCode\Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpDateParser.cs">
-      <Link>Common\System\Net\HttpDateParser.cs</Link>
+      <Link>ProductionCode\Common\System\Net\HttpDateParser.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -46,13 +46,19 @@
       <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+      <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
+      <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\HuffmanEncoder.cs">
+      <Link>Common\System\Net\Http\HuffmanEncoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
@@ -407,6 +413,7 @@
     <Compile Include="Headers\UriHeaderParserTest.cs" />
     <Compile Include="Headers\ViaHeaderValueTest.cs" />
     <Compile Include="Headers\WarningHeaderValueTest.cs" />
+    <Compile Include="HPack\DynamicTableTest.cs" />
     <Compile Include="HPack\HPackDecoderTest.cs" />
     <Compile Include="HPack\HPackIntegerTest.cs" />
     <Compile Include="HPack\HuffmanDecodingTests.cs" />
@@ -433,25 +440,25 @@
       <Link>ProductionCode\System\Net\Http\WinHttpTraceHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
-      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
+      <Link>ProductionCode\Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
+      <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
       <Link>WinHttpHandler\UnitTests\FakeInterop.cs</Link>
