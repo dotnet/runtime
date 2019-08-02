@@ -148,5 +148,12 @@ namespace System.IO.Tests
                 ignoreLineEndingDifferences: false,
                 ignoreWhiteSpaceDifferences: false);
         }
+
+        [Fact]
+        public static void GetRelativePath_InvalidArgs()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("relativeTo", null, () => Path.GetRelativePath(null, "."));
+            AssertExtensions.Throws<ArgumentException>("relativeTo", null, () => Path.GetRelativePath(string.Empty, "."));
+        }
     }
 }
