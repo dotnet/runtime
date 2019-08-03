@@ -9554,6 +9554,7 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 		source_file = g_strdup ("<unknown>");
 	dir = g_path_get_dirname (source_file);
 	filename = g_path_get_basename (source_file);
+	g_free (source_file);
 
 	return (LLVMValueRef)mono_llvm_di_create_function (module->di_builder, module->cu, method, cfg->method->name, name, dir, filename, n_seq_points ? sym_seq_points [0].line : 1);
 }
