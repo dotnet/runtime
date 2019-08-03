@@ -384,6 +384,12 @@ set_failure (EmitContext *ctx, const char *message)
 	ctx->cfg->disable_llvm = TRUE;
 }
 
+static LLVMValueRef
+ConstInt32 (int v)
+{
+	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
+}
+
 /*
  * IntPtrType:
  *
@@ -1283,6 +1289,22 @@ static LLVMValueRef
 convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 {
 	return convert_full (ctx, v, dtype, FALSE);
+}
+
+static void
+emit_memset (EmitContext *ctx, LLVMBuilderRef builder, LLVMValueRef v, LLVMValueRef size, int alignment)
+{
+	LLVMValueRef args [5];
+	int aindex = 0;
+
+	args [aindex ++] = v;
+	args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
+	args [aindex ++] = size;
+#if LLVM_API_VERSION < 900
+	args [aindex ++] = LLVMConstInt (LLVMInt32Type (), alignment, FALSE);
+#endif
+	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+	LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, aindex, "");
 }
 
 /*
@@ -5556,16 +5578,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), MONO_ARCH_FRAME_ALIGNMENT, "");
 
-			if (ins->flags & MONO_INST_INIT) {
-				LLVMValueRef args [5];
-
-				args [0] = v;
-				args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
-				args [2] = LLVMConstInt (LLVMInt32Type (), size, FALSE);
-				args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
-				args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
-				LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, 5, "");
-			}
+			if (ins->flags & MONO_INST_INIT)
+				emit_memset (ctx, builder, v, ConstInt32 (size), MONO_ARCH_FRAME_ALIGNMENT);
 
 			values [ins->dreg] = v;
 			break;
@@ -5577,16 +5591,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
-			if (ins->flags & MONO_INST_INIT) {
-				LLVMValueRef args [5];
-
-				args [0] = v;
-				args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
-				args [2] = size;
-				args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
-				args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
-				LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, 5, "");
-			}
+			if (ins->flags & MONO_INST_INIT)
+				emit_memset (ctx, builder, v, size, MONO_ARCH_FRAME_ALIGNMENT);
 			values [ins->dreg] = v;
 			break;
 		}
@@ -6214,7 +6220,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 */
 		case OP_VZERO: {
 			MonoClass *klass = ins->klass;
-			LLVMValueRef args [5];
 
 			if (!klass) {
 				// FIXME:
@@ -6224,13 +6229,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			if (!addresses [ins->dreg])
 				addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
-			args [0] = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
-			args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
-			args [2] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
-			// FIXME: Alignment
-			args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
-			LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, 5, "");
+			LLVMValueRef ptr = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
+			emit_memset (ctx, builder, ptr, ConstInt32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
 		case OP_DUMMY_VZERO:
@@ -6297,14 +6297,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (done)
 				break;
 
-			args [0] = dst;
-			args [1] = src;
-			args [2] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
-			args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			int aindex = 0;
+			args [aindex ++] = dst;
+			args [aindex ++] = src;
+			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
+#if LLVM_API_VERSION < 900
 			// FIXME: Alignment
-			args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
-			LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMCPY), args, 5, "");
+			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+#endif
+			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMCPY), args, aindex, "");
 			break;
 		}
 		case OP_LLVM_OUTARG_VT: {
@@ -8279,15 +8281,29 @@ add_intrinsic (LLVMModuleRef module, int id)
 
 	switch (id) {
 	case INTRINS_MEMSET: {
+#if LLVM_API_VERSION >= 900
+		/* No alignment argument */
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt1Type () };
+
+		AddFunc (module, name, LLVMVoidType (), params, 4);
+#else
 		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
 		AddFunc (module, name, LLVMVoidType (), params, 5);
+#endif
 		break;
 	}
 	case INTRINS_MEMCPY: {
+#if LLVM_API_VERSION >= 900
+		/* No alignment argument */
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt1Type () };
+
+		AddFunc (module, name, LLVMVoidType (), params, 4);
+#else
 		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
 		AddFunc (module, name, LLVMVoidType (), params, 5);
+#endif
 		break;
 	}
 	case INTRINS_SADD_OVF_I32:
