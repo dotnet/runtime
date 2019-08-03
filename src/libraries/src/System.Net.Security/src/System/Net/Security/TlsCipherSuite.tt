@@ -2,10 +2,12 @@
 <#@ assembly name="System.Core" #>
 <#@ assembly name="System.Xml" #>
 <#@ assembly name="System.Xml.Linq" #>
+<#@ assembly name="System.Net.Http" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="System.Xml.Linq" #>
+<#@ import namespace="System.Net.Http" #>
 <#@ output extension=".cs" #>
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
@@ -33,6 +35,9 @@ foreach (var record in GetIanaRecords())
     var rfcs = string.Join(", ", record.Refs.Where(IsPublicRfc));
     var rfcComment = string.IsNullOrEmpty(rfcs) ? "" : $" // {rfcs}";
 #>
+        /// <summary>
+        /// Represents the <#= record.Name #> cipher suite. 
+        /// </summary> 
         <#= record.Name #> = <#= record.Value #>,<#= rfcComment #>
 <#
 } // foreach (var record in GetIanaRecords())
@@ -64,7 +69,12 @@ static XElement ElementLN(XElement el, string localName)
 
 static IEnumerable<CipherSuiteInfo> GetIanaRecords()
 {
-    return XDocument.Load(source)
+    HttpClient client = new HttpClient();
+    //For some reason IANA returns 403 Forbidden when request does not contain User-Agent.
+    client.DefaultRequestHeaders.Add("User-Agent", "dotnet/corefx");
+    HttpResponseMessage response = client.GetAsync(source).Result;
+
+    return XDocument.Load(response.Content.ReadAsStreamAsync().Result)
         .Descendants()
         .Where((el) =>
             el.Name.LocalName == "registry" &&
