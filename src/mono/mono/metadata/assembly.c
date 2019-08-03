@@ -764,6 +764,7 @@ assembly_names_compare_versions (MonoAssemblyName *l, MonoAssemblyName *r, int m
 void
 mono_assembly_request_prepare (MonoAssemblyLoadRequest *req, size_t req_size, MonoAssemblyContextKind asmctx)
 {
+	// TODO: Shouldn't this be setting an ALC? Seems almost none of the callers do.
 	memset (req, 0, req_size);
 	req->asmctx = asmctx;
 }
@@ -2985,7 +2986,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		}
 	}
 
-	/* We need to check for ReferenceAssmeblyAttribute before we
+	/* We need to check for ReferenceAssemblyAttribute before we
 	 * mark the assembly as loaded and before we fire the load
 	 * hook. Otherwise mono_domain_fire_assembly_load () in
 	 * appdomain.c will cache a mapping from the assembly name to

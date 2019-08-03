@@ -22,14 +22,56 @@ mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain)
 	mono_loaded_images_init (li, alc);
 	alc->domain = domain;
 	alc->loaded_images = li;
+	alc->loaded_assemblies = NULL;
+	mono_coop_mutex_init (&alc->assemblies_lock);
 }
 
 void
 mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 {
+	/*
+	 * As it stands, ALC and domain cleanup is probably broken on netcore. Without ALC collectability, this should not
+	 * be hit. I've documented roughly the things that still need to be accomplish, but the implementation is TODO and
+	 * the ideal order and locking unclear.
+	 * 
+	 * For now, this makes two important assumptions:
+	 *   1. The minimum refcount on assemblies is 2: one for the domain and one for the ALC. The domain refcount might 
+	 *        be less than optimal on netcore, but its removal is too likely to cause issues for now.
+	 *   2. An ALC will have been removed from the domain before cleanup.
+	 */
+	GSList *tmp;
+	MonoDomain *domain = alc->domain;
+
+	/*
+	 * Missing steps:
+	 * 
+	 * + Release GC roots for all assemblies in the ALC
+	 * + Iterate over the domain_assemblies and remove ones that belong to the ALC, which will probably require
+	 *     converting domain_assemblies to a doubly-linked list, ideally GQueue
+	 * + Close dynamic and then remaining assemblies, potentially nulling the data field depending on refcount
+	 * + Second pass to call mono_assembly_close_finish on remaining assemblies
+	 * + Free the loaded_assemblies list itself
+	 */
+
+	alc->loaded_assemblies = NULL;
+	mono_coop_mutex_destroy (&alc->assemblies_lock);
+
 	mono_loaded_images_free (alc->loaded_images);
+
+	g_assert_not_reached ();
 }
 
+void
+mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_lock (&alc->assemblies_lock);
+}
+
+void
+mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_unlock (&alc->assemblies_lock);
+}
 
 gpointer
 ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)

@@ -1309,6 +1309,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
 	MonoDomain *domain = mono_object_domain (assemblyb);
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	
 	if (assemblyb->dynamic_assembly)
 		return;
@@ -1373,6 +1374,12 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 
 	mono_domain_assemblies_lock (domain);
 	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);
+#ifdef ENABLE_NETCORE
+	// TODO: potentially relax the locking here?
+	mono_alc_assemblies_lock (alc);
+	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, assembly);
+	mono_alc_assemblies_unlock (alc);
+#endif
 	mono_domain_assemblies_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);

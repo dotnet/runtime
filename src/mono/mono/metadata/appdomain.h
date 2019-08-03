@@ -103,7 +103,7 @@ mono_domain_from_appdomain (MonoAppDomain *appdomain);
 MONO_API void
 mono_domain_foreach        (MonoDomainFunc func, void* user_data);
 
-MONO_API MonoAssembly *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
 MONO_API mono_bool
