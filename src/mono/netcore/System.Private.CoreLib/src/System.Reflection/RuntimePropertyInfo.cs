@@ -192,6 +192,8 @@ namespace System.Reflection
 					return info.get_method.ReturnType;
 				} else {
 					ParameterInfo[] parameters = info.set_method.GetParametersInternal ();
+					if (parameters.Length == 0)
+						throw new ArgumentException	(SR.SetterHasNoParams, "indexer");
 					
 					return parameters [parameters.Length - 1].ParameterType;
 				}

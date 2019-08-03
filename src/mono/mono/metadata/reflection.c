@@ -2632,7 +2632,11 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 	mono_error_assert_ok (error);
 
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated)) {
+#if ENABLE_NETCORE
+		mono_error_set_argument (error, NULL, "Invalid generic arguments");
+#else
 		mono_error_set_argument (error, "typeArguments", "Invalid generic arguments");
+#endif
 		return NULL;
 	}
 

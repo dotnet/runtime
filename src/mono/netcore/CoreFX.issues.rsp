@@ -54,11 +54,6 @@
 # https://github.com/mono/mono/issues/14907
 -nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
 
-# Both tests below have a delegate binding error - signature is not compatible with that of the delegate type.
-# https://github.com/mono/mono/issues/14909
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents
-
 ####################################################################
 ##  System.Dynamic.Runtime.Tests
 ####################################################################
@@ -124,7 +119,6 @@
 -nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertyGetReturnsWrongType
 
 # Expected ArgumentException got IndexOutOfRangeException https://github.com/mono/mono/issues/14930
--nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterNoParams
 -nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
 -nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
 
@@ -135,12 +129,6 @@
 # Arithmetic operation resulted in an overflow.
 # https://github.com/mono/mono/issues/14934
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
-
-# Delegate creation w/ reflection https://github.com/mono/mono/issues/14950
--nomethod System.Linq.Expressions.Tests.CallTests.EnumArgAndReturn
-
-# Expected test Assertion fails https://github.com/mono/mono/issues/14951
--nomethod System.Linq.Expressions.Tests.CallTests.MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException
 
 ####################################################################
 ##  System.Linq.Parallel.Tests
