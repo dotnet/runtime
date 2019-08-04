@@ -9,6 +9,7 @@ set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
+set __BuildTarget="build"
 set __appContainer=""
 set __VCBuildArch=x86_amd64
 set __BuildOS=Windows_NT
@@ -34,6 +35,8 @@ if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [WebAssembly] ( set __BuildOS=WebAssembly&&shift&goto Arg_Loop)
 
+if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
+
 shift
 goto :Arg_Loop
 
@@ -55,7 +58,7 @@ if exist %_VSWHERE% (
 )
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
-call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+call "%_VSCOMNTOOLS%\VsDevCmd.bat" -no_logo
 
 :RunVCVars
 if "%VisualStudioVersion%"=="16.0" (
@@ -104,7 +107,7 @@ set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
-if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+if "%__BuildTarget%"=="rebuild" if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
 :: Write an empty Directory.Build.props/targets to ensure that msbuild doesn't pick up
@@ -141,7 +144,7 @@ goto :Failure
 :: Build the project created by Cmake
 set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
 
-call msbuild "%__IntermediatesDir%\install.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call msbuild "%__IntermediatesDir%\install.vcxproj" /t:%__BuildTarget% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
