@@ -525,4 +525,7 @@
   <data name="net_http_hpack_large_table_size_update" xml:space="preserve">
     <value>Dynamic table size update to {0} bytes exceeds limit of {1} bytes.</value>
   </data>
+  <data name="net_http_server_shutdown" xml:space="preserve">
+    <value>The server shut down the connection.</value>
+  </data>
 </root>
