@@ -116,13 +116,14 @@ The `DllRegisterServer()` and `DllUnregisterServer()` functions adhere to the [C
 
 #####  CLSID map format
 
-The `CLSID` mapping manifest is a JSON format (`.clsidmap` extension when on disk) that defines a mapping from `CLSID` to an assembly name and type name tuple. Each `CLSID` mapping is a key in the outer JSON object.
+The `CLSID` mapping manifest is a JSON format (`.clsidmap` extension when on disk) that defines a mapping from `CLSID` to an assembly name and type name tuple as well as an optional [ProgID](https://docs.microsoft.com/windows/win32/com/-progid--key). Each `CLSID` mapping is a key in the outer JSON object.
 
 ``` json
 {
     "<clsid>": {
         "assembly": "<assembly_name>",
-        "type": "<type_name>"
+        "type": "<type_name>",
+        "progid": "<prog_id>"
     }
 }
 ```
@@ -132,9 +133,9 @@ The `CLSID` mapping manifest is a JSON format (`.clsidmap` extension when on dis
 1) A new .NET Core class library project is created using [`dotnet.exe`][dotnet_link].
 1) A class is defined that has the [`GuidAttribute("<GUID>")`][guid_link] and the [`ComVisibleAttribute(true)`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.comvisibleattribute).
     - In .NET Core, unlike .NET Framework, there is no generated class interface generation (i.e. `IClassX`). This means it is advantageous for users to have the class implement a marshalable interface.
-1) The `UseComHost` property is added to the project file.
-    - i.e. `<UseComHost>true</UseComHost>`
-1) During class project build, the following actions occur if the `UseComHost` property is `true`:
+1) The `EnableComHosting` property is added to the project file.
+    - i.e. `<EnableComHosting>true</EnableComHosting>`
+1) During class project build, the following actions occur if the `EnableComHosting` property is `true`:
     1) A `.runtimeconfig.json` file is created for the assembly.
     1) The resulting assembly is interrogated for classes with the attributes defined above and a `CLSID` map is created on disk (`.clsidmap`).
     1) The target Framework's shim binary (i.e. `comhost.dll`) is copied to the local output directory.

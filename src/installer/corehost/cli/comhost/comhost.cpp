@@ -152,7 +152,8 @@ COM_API HRESULT STDMETHODCALLTYPE DllCanUnloadNow(void)
 
 namespace
 {
-    const WCHAR EntryKeyFmt[] = _X("SOFTWARE\\Classes\\CLSID\\%s");
+    const WCHAR ClsidKeyFmt[] = _X("SOFTWARE\\Classes\\CLSID\\%s");
+    const WCHAR ProgIDKeyFmt[] = _X("SOFTWARE\\Classes\\%s");
 
     struct OleStr : public std::unique_ptr<std::remove_pointer<LPOLESTR>::type, decltype(&::CoTaskMemFree)>
     {
@@ -168,17 +169,10 @@ namespace
         { }
     };
 
-    HRESULT RemoveClsid(_In_ REFCLSID clsid)
+    // Removes the key and all sub-keys
+    HRESULT RemoveRegistryKey(_In_z_ LPCWSTR regKeyPath)
     {
-        HRESULT hr;
-
-        LPOLESTR clsidAsStrRaw;
-        RETURN_IF_FAILED(::StringFromCLSID(clsid, &clsidAsStrRaw));
-
-        OleStr clsidAsStr{ clsidAsStrRaw };
-
-        WCHAR regKeyPath[1024];
-        ::swprintf_s(regKeyPath, EntryKeyFmt, clsidAsStr.get());
+        assert(regKeyPath != nullptr);
 
         LSTATUS res;
 
@@ -208,20 +202,125 @@ namespace
         return S_OK;
     }
 
-    HRESULT RegisterClsid(_In_ REFCLSID clsid, _In_opt_z_ const WCHAR *threadingModel)
+    HRESULT RemoveProgId(_In_ const comhost::clsid_map_entry &entry)
+    {
+        if (entry.progid.empty())
+            return S_OK;
+
+        HRESULT hr;
+
+        WCHAR regKeyPath[1024];
+        ::swprintf_s(regKeyPath, ProgIDKeyFmt, entry.progid.c_str());
+
+        // Remove ProgID key
+        RETURN_IF_FAILED(RemoveRegistryKey(regKeyPath));
+
+        return S_OK;
+    }
+
+    HRESULT RemoveClsid(_In_ const comhost::clsid_map_entry &entry)
+    {
+        HRESULT hr;
+
+        LPOLESTR clsidAsStrRaw;
+        RETURN_IF_FAILED(::StringFromCLSID(entry.clsid, &clsidAsStrRaw));
+
+        OleStr clsidAsStr{ clsidAsStrRaw };
+
+        WCHAR regKeyPath[1024];
+        ::swprintf_s(regKeyPath, ClsidKeyFmt, clsidAsStr.get());
+
+        // Remove CLSID key
+        RETURN_IF_FAILED(RemoveRegistryKey(regKeyPath));
+        RETURN_IF_FAILED(RemoveProgId(entry));
+
+        return S_OK;
+    }
+
+    HRESULT RegisterProgId(_In_ const comhost::clsid_map_entry &entry, _In_z_ LPOLESTR clsidAsStr)
+    {
+        assert(!entry.progid.empty() && clsidAsStr != nullptr);
+
+        WCHAR regKeyProgIdPath[1024];
+        ::swprintf_s(regKeyProgIdPath, ProgIDKeyFmt, entry.progid.c_str());
+
+        HKEY regKeyRaw;
+        DWORD disp;
+        LSTATUS res = ::RegCreateKeyExW(
+            HKEY_LOCAL_MACHINE,
+            regKeyProgIdPath,
+            0,
+            REG_NONE,
+            REG_OPTION_NON_VOLATILE,
+            (KEY_READ | KEY_WRITE),
+            nullptr,
+            &regKeyRaw,
+            &disp);
+        if (res != ERROR_SUCCESS)
+            return __HRESULT_FROM_WIN32(res);
+
+        RegKey regKey{ regKeyRaw };
+
+        // Set the default value for the ProgID to be the type name
+        // This value is only used for user consumption and has no
+        // functional impact.
+        res = ::RegSetValueExW(
+            regKey.get(),
+            nullptr,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(entry.type.c_str()),
+            static_cast<DWORD>(sizeof(entry.type.size() + 1) * sizeof(entry.type[0])));
+        if (res != ERROR_SUCCESS)
+            return __HRESULT_FROM_WIN32(res);
+
+        WCHAR regKeyProgIdClsidPath[ARRAYSIZE(regKeyProgIdPath) * 2];
+        ::swprintf_s(regKeyProgIdClsidPath, L"%s\\CLSID", regKeyProgIdPath);
+
+        HKEY regProgIdClsidRaw;
+        res = ::RegCreateKeyExW(
+            HKEY_LOCAL_MACHINE,
+            regKeyProgIdClsidPath,
+            0,
+            REG_NONE,
+            REG_OPTION_NON_VOLATILE,
+            (KEY_READ | KEY_WRITE),
+            nullptr,
+            &regProgIdClsidRaw,
+            &disp);
+        if (res != ERROR_SUCCESS)
+            return __HRESULT_FROM_WIN32(res);
+
+        regKey.reset(regProgIdClsidRaw);
+
+        // The value for the key is the CLSID
+        res = ::RegSetValueExW(
+            regKey.get(),
+            nullptr,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(clsidAsStr),
+            static_cast<DWORD>(::wcslen(clsidAsStr) + 1) * sizeof(clsidAsStr[0]));
+        if (res != ERROR_SUCCESS)
+            return __HRESULT_FROM_WIN32(res);
+
+        return S_OK;
+    }
+
+    HRESULT RegisterClsid(_In_ const comhost::clsid_map_entry &entry, _In_opt_z_ const WCHAR *threadingModel)
     {
         HRESULT hr;
 
         // Remove the CLSID in case it exists and has undesirable settings
-        RETURN_IF_FAILED(RemoveClsid(clsid));
+        RETURN_IF_FAILED(RemoveClsid(entry));
 
         LPOLESTR clsidAsStrRaw;
-        RETURN_IF_FAILED(::StringFromCLSID(clsid, &clsidAsStrRaw));
+        RETURN_IF_FAILED(::StringFromCLSID(entry.clsid, &clsidAsStrRaw));
 
         OleStr clsidAsStr{ clsidAsStrRaw };
 
         WCHAR regKeyClsidPath[1024];
-        ::swprintf_s(regKeyClsidPath, EntryKeyFmt, clsidAsStr.get());
+        ::swprintf_s(regKeyClsidPath, ClsidKeyFmt, clsidAsStr.get());
 
         HKEY regKeyRaw;
         DWORD disp;
@@ -309,6 +408,43 @@ namespace
                 return __HRESULT_FROM_WIN32(res);
         }
 
+        // Check if a Prog ID is defined
+        if (!entry.progid.empty())
+        {
+            // Register the ProgID in the CLSID key
+            WCHAR regKeyProgIdPath[ARRAYSIZE(regKeyClsidPath) * 2];
+            ::swprintf_s(regKeyProgIdPath, L"%s\\ProgID", regKeyClsidPath);
+
+            HKEY regProgIdKeyRaw;
+            res = ::RegCreateKeyExW(
+                HKEY_LOCAL_MACHINE,
+                regKeyProgIdPath,
+                0,
+                REG_NONE,
+                REG_OPTION_NON_VOLATILE,
+                (KEY_READ | KEY_WRITE),
+                nullptr,
+                &regProgIdKeyRaw,
+                &disp);
+            if (res != ERROR_SUCCESS)
+                return __HRESULT_FROM_WIN32(res);
+
+            regKey.reset(regProgIdKeyRaw);
+
+            // The default value for the key is the ProgID
+            res = ::RegSetValueExW(
+                regKey.get(),
+                nullptr,
+                0,
+                REG_SZ,
+                reinterpret_cast<const BYTE*>(entry.progid.c_str()),
+                static_cast<DWORD>(entry.progid.size() + 1) * sizeof(entry.progid[0]));
+            if (res != ERROR_SUCCESS)
+                return __HRESULT_FROM_WIN32(res);
+
+            RETURN_IF_FAILED(RegisterProgId(entry, clsidAsStr.get()));
+        }
+
         return S_OK;
     }
 }
@@ -345,7 +481,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
     for (clsid_map::const_reference p : map)
     {
         // Register the CLSID in registry
-        RETURN_IF_FAILED(RegisterClsid(p.first, _X("Both")));
+        RETURN_IF_FAILED(RegisterClsid(p.second, _X("Both")));
 
         // Call user-defined register function
         cxt.class_id = p.first;
@@ -395,7 +531,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
         RETURN_IF_FAILED(unreg(&cxt));
 
         // Unregister the CLSID from registry
-        RETURN_IF_FAILED(RemoveClsid(p.first));
+        RETURN_IF_FAILED(RemoveClsid(p.second));
     }
 
     return S_OK;
