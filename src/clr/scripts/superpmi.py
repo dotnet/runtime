@@ -69,24 +69,25 @@ subparsers = parser.add_subparsers(dest='mode')
 collect_parser = subparsers.add_parser("collect")
 
 # Add required arguments
-collect_parser.add_argument("collection_command", nargs=1, help=superpmi_collect_help)
-collect_parser.add_argument("collection_args", nargs=1, help="Arguments to pass to the SuperPMI collect command.")
+collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
+collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
 
-collect_parser.add_argument("--break_on_assert", dest="break_on_assert", default=False, action="store_true")
-collect_parser.add_argument("--break_on_error", dest="break_on_error", default=False, action="store_true")
+collect_parser.add_argument("--break_on_assert", dest="break_on_assert", default=False, action="store_true", help="While verifying a clean superpmi collection enable break on assert.")
+collect_parser.add_argument("--break_on_error", dest="break_on_error", default=False, action="store_true", help="While verifying a clean superpmi collection enable break on assert.")
 
-collect_parser.add_argument("-log_file", dest="log_file", default=None)
+collect_parser.add_argument("-log_file", dest="log_file", default=None, help="Write output to a log file")
 
-collect_parser.add_argument("-arch", dest="arch", nargs='?', default="x64") 
-collect_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
-collect_parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
-collect_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
-collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None)
-collect_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-collect_parser.add_argument("-test_env", dest="test_env", default=None)
-collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None)
-collect_parser.add_argument("-run_from_coreclr_dir", dest="run_from_coreclr_dir", default=False)
+collect_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help="Arch, default is x64") 
+collect_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help="Build type, Checked is default")
+collect_parser.add_argument("-test_location", dest="test_location", nargs="?", default=None, help="Test location. This is optional")
+collect_parser.add_argument("-pmi_assemblies", dest="pmi_assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recurisvely run pmi over while collecting.")
+collect_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None, help="Location of the Core_Root location. If not passed it will be deduced if possible.")
+collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built product, this is optional.")
+collect_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))), help="Location of the coreclr repo. Optional.")
+collect_parser.add_argument("-test_env", dest="test_env", default=None, help="Test env to pass to the coreclr tests if collecting over the tests.")
+collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to bin/mch/$(buildType).$(arch).$(config)/$(buildType).$(arch).$(config).mch")
 
+collect_parser.add_argument("--pmi", dest="pmi", default=False, action="store_true", help="Use pmi on a set of directories or assemblies")
 collect_parser.add_argument("--use_zapdisable", dest="use_zapdisable", default=False, action="store_true", help="Allow redundant calls to the systems libraries for more coverage.")
 
 collect_parser.add_argument("--assume_unclean_mch", dest="assume_unclean_mch", default=False, action="store_true", help="Force clean the mch file. This is useful if the dataset is large and there are expected dups.")
@@ -120,7 +121,6 @@ replay_parser.add_argument("-product_location", dest="product_location", nargs='
 replay_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 replay_parser.add_argument("-test_env", dest="test_env", default=None)
 replay_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None)
-replay_parser.add_argument("-run_from_coreclr_dir", dest="run_from_coreclr_dir", default=False)
 
 replay_parser.add_argument("--skip_collect_mc_files", dest="skip_collect_mc_files", default=False, action="store_true")
 replay_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true")
@@ -147,7 +147,6 @@ asm_diff_parser.add_argument("-product_location", dest="product_location", nargs
 asm_diff_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 asm_diff_parser.add_argument("-test_env", dest="test_env", default=None)
 asm_diff_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None)
-asm_diff_parser.add_argument("-run_from_coreclr_dir", dest="run_from_coreclr_dir", default=False)
 asm_diff_parser.add_argument("-previous_temp_location", dest="previous_temp_location", default=None, help="Reuse the existing temp dir location. This is useful if the previous run failed or was canceled.")
 
 asm_diff_parser.add_argument("--skip_collect_mc_files", dest="skip_collect_mc_files", default=False, action="store_true")
@@ -248,11 +247,12 @@ class AsyncSubprocessHelper:
 
         self.subproc_count_queue = subproc_count_queue
         tasks = []
+        size = diff_queue.qsize()
 
         count = 1
         item = diff_queue.get_nowait() if not diff_queue.empty() else None
         while item is not None:
-            tasks.append(self.__get_item__(item, count, diff_queue.qsize(), async_callback, *extra_args))
+            tasks.append(self.__get_item__(item, count, size, async_callback, *extra_args))
             count += 1
 
             item = diff_queue.get_nowait() if not diff_queue.empty() else None
@@ -320,8 +320,15 @@ class SuperPMICollect:
 
         self.coreclr_args = args
 
+        self.core_root = self.coreclr_args.core_root
+
         self.command = self.coreclr_args.collection_command
         self.args = self.coreclr_args.collection_args
+
+        if self.coreclr_args.pmi:
+            self.pmi_location = determine_pmi_location(self.coreclr_args)
+            self.pmi_assemblies = self.coreclr_args.pmi_assemblies
+            self.corerun = os.path.join(self.core_root, "corerun" if self.coreclr_args.host_os != "Windows_NT" else "corerun.exe")
 
     ############################################################################
     # Instance Methods
@@ -389,17 +396,15 @@ class SuperPMICollect:
                     self.final_mch_file = os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                     self.toc_file = "{}.mct".format(self.final_mch_file)
 
-
                 # If we have passed existing_temp_dir, then we have a few flags we need
                 # to check to see where we are in the collection process. Note that this
                 # functionality exists to help not lose progress during a SuperPMI collection.
-
 
                 # It is not unreasonable for the SuperPMI collection to take many hours
                 # therefore allow re-use of a collection in progress
 
                 if not self.coreclr_args.has_run_collection_command:
-                    self.__collect_mc_files__(self.command, self.args)
+                    self.__collect_mc_files__()
                 
                 if not self.coreclr_args.has_merged_mch:
                     self.__merge_mc_files__()
@@ -421,12 +426,8 @@ class SuperPMICollect:
     # Helper Methods
     ############################################################################
 
-    def __collect_mc_files__(self, command, args):
+    def __collect_mc_files__(self):
         """ Do the actual SuperPMI collection for a command
-
-        Args:
-            command (str)   : script/executable to run
-            args ([str])    : arguments to pass
         
         Returns:
             None
@@ -452,18 +453,71 @@ class SuperPMICollect:
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJit", "*")
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
             print("")
-            print("%s %s" % (command, " ".join(args)))
 
-            assert isinstance(command, str)
-            assert isinstance(args, list)
+            if self.command != None:
+                print("%s %s" % (self.command, " ".join(self.args)))
 
-            return_code = 1
+                assert isinstance(self.command, str)
+                assert isinstance(self.args, list)
 
-            command = [command] + args 
-            proc = subprocess.Popen(command, env=env_copy)
+                return_code = 1
 
-            proc.communicate()
-            return_code = proc.returncode
+                self.command = [self.command,] + self.args
+                proc = subprocess.Popen(self.command, env=env_copy)
+
+                proc.communicate()
+                return_code = proc.returncode
+
+            if self.coreclr_args.pmi is True:
+                def get_all_assemblies(location, root=True):
+                    """ Return all potential managed assemblies in a directory
+                    """
+
+                    assert os.path.isdir(location) or os.path.isfile(location)
+
+                    valid_extensions = [".dll", ".exe"]
+
+                    assemblies = []
+
+                    if os.path.isdir(location):
+                        for item in os.listdir(location):
+                            assemblies += get_all_assemblies(os.path.join(location, item), False)
+                    else:
+                        for item in valid_extensions:
+                            if location.endswith(item):
+                                assemblies.append(location)
+                    
+                    return assemblies
+
+                async def run_pmi(print_prefix, assembly, self):
+                    """ Run pmi over all dlls
+                    """
+
+                    command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
+                    print("{}{}".format(print_prefix, " ".join(command)))
+                    
+                    proc = await asyncio.create_subprocess_shell(
+                        " ".join(command),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE)
+
+                    await proc.communicate()
+
+                assemblies = []
+                for item in self.pmi_assemblies:
+                    if os.path.isdir(item):
+                        assemblies += get_all_assemblies(item)
+                    else:
+                        assemblies.append(item)
+
+                # Set environment variables.
+                old_env = os.environ.copy()
+                os.environ.update(env_copy)
+
+                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                helper.run_to_completion(run_pmi, self)
+
+                os.environ.update(old_env)
 
         contents = os.listdir(self.temp_location)
         mc_contents = [os.path.join(self.temp_location, item) for item in contents if ".mc" in item]
@@ -1369,7 +1423,7 @@ def determine_coredis_tools(coreclr_args):
         coredistools_location (str)     : path of libcoredistools.dylib|so|dll
 
     Notes:
-        If unable to find libcoredist tools, download it from azure storage.
+        If unable to find libcoredis tools, download it from azure storage.
     """
 
     coredistools_dll_name = None
@@ -1390,6 +1444,28 @@ def determine_coredis_tools(coreclr_args):
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
+
+def determine_pmi_location(coreclr_args):
+    """ Determine pmi location
+
+    Args:
+        coreclr_args (CoreclrArguments) : parsed args
+
+    Returns:
+        pmi_location (str)     : path of pmi.dll
+
+    Notes:
+        If unable to find pmi tools, download it from azure storage.
+    """
+    pmi_dll_name = "pmi.dll"
+    pmi_uri = "https://clrjit.blob.core.windows.net/superpmi/pmi/pmi.dll"
+
+    pmi_location = os.path.join(coreclr_args.core_root, pmi_dll_name)
+    if not os.path.isfile(pmi_location):
+        urllib.request.urlretrieve(pmi_uri, pmi_location)
+
+    assert os.path.isfile(pmi_location)
+    return pmi_location
 
 def determine_jit_name(coreclr_args):
     """ Determine the jit based on the os
@@ -1446,11 +1522,6 @@ def setup_args(args):
                         lambda mode: mode in ["collect", "replay", "asmdiffs"],
                         'Incorrect mode passed, please choose from ["collect", "replay", "asmdiffs"]')
 
-    coreclr_args.verify(args,
-                        "run_from_coreclr_dir",
-                        lambda unused: True,
-                        "Error setting run_from_coreclr_dir")
-
     default_coreclr_bin_mch_location = os.path.join(coreclr_args.bin_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
 
     def setup_mch_arg(arg):
@@ -1501,15 +1572,24 @@ def setup_args(args):
     if coreclr_args.mode == "collect":
         coreclr_args.verify(args,
                             "collection_command",
-                            lambda command_list: len(command_list) == 1,
-                            "Unable to find script.",
-                            modify_arg=lambda arg: arg[0],
-                            modify_after_validation=True)
+                            lambda command: command is None or os.path.isfile(command),
+                            "Unable to find script.")
         coreclr_args.verify(args,
                             "collection_args",
                             lambda unused: True,
                             "Unable to set collection_args",
-                            modify_arg=lambda collection_args: collection_args[0].split(" ") if collection_args is not None else collection_args)
+                            modify_arg=lambda collection_args: collection_args.split(" ") if collection_args is not None else collection_args)
+
+        coreclr_args.verify(args,
+                            "pmi",
+                            lambda unused: True,
+                            "Unable to set pmi")
+        
+        coreclr_args.verify(args,
+                            "pmi_assemblies",
+                            lambda items: args.pmi is False or len(items) > 0,
+                            "Unable to set pmi_assemblies",
+                            modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
 
         coreclr_args.verify(args,
                             "output_mch_path",
@@ -1568,6 +1648,12 @@ def setup_args(args):
 
         jit_location = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         assert(os.path.isfile(jit_location))
+
+        if args.collection_command is None:
+            assert args.collection_args is None
+
+            assert args.pmi is True
+            assert len(args.pmi_assemblies) > 0
     
     elif coreclr_args.mode == "replay":
         coreclr_args.verify(args,
