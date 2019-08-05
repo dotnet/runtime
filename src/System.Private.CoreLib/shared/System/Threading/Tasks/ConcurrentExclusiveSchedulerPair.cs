@@ -654,7 +654,7 @@ namespace System.Threading.Tasks
                 catch
                 {
                     Debug.Assert(t.IsFaulted, "Task should be faulted due to the scheduler faulting it and throwing the exception.");
-                    var ignored = t.Exception;
+                    _ = t.Exception;
                     throw;
                 }
                 finally { t.Dispose(); }
