@@ -12,6 +12,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -43,6 +44,29 @@ namespace System
 
         // We use this explicit definition to avoid the confusion between 0.0 and -0.0.
         internal const double NegativeZero = -0.0;
+
+        //
+        // Constants for manipulating the private bit-representation
+        //
+
+        internal const ulong SignMask = 0x8000_0000_0000_0000;
+        internal const int SignShift = 63;
+        internal const int ShiftedSignMask = (int)(SignMask >> SignShift);
+
+        internal const ulong ExponentMask = 0x7FF0_0000_0000_0000;
+        internal const int ExponentShift = 52;
+        internal const int ShiftedExponentMask = (int)(ExponentMask >> ExponentShift);
+
+        internal const ulong SignificandMask = 0x000F_FFFF_FFFF_FFFF;
+
+        internal const byte MinSign = 0;
+        internal const byte MaxSign = 1;
+
+        internal const ushort MinExponent = 0x0000;
+        internal const ushort MaxExponent = 0x07FF;
+
+        internal const ulong MinSignificand = 0x0000_0000_0000_0000;
+        internal const ulong MaxSignificand = 0x000F_FFFF_FFFF_FFFF;
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
@@ -113,6 +137,16 @@ namespace System
             var bits = BitConverter.DoubleToInt64Bits(d);
             bits &= 0x7FFFFFFFFFFFFFFF;
             return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) == 0);
+        }
+
+        internal static int ExtractExponentFromBits(ulong bits)
+        {
+            return (int)(bits >> ExponentShift) & ShiftedExponentMask;
+        }
+
+        internal static ulong ExtractSignificandFromBits(ulong bits)
+        {
+            return bits & SignificandMask;
         }
 
         // Compares this object to another object, returning an instance of System.Relation.

@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// ===================================================================================================
+// Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
+// ===================================================================================================
+
 /*============================================================
 **
 **
@@ -15,7 +19,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -802,29 +805,69 @@ namespace System
         public static double Round(double a)
         {
             // ************************************************************************************
-            // IMPORTANT: Do not change this implementation without also updating Math.Round(double),
+            // IMPORTANT: Do not change this implementation without also updating MathF.Round(float),
             //            FloatingPointUtils::round(double), and FloatingPointUtils::round(float)
             // ************************************************************************************
 
-            // If the number has no fractional part do nothing
-            // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+            // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
-            if (a == (double)((long)a))
+            ulong bits = (ulong)BitConverter.DoubleToInt64Bits(a);
+            int exponent = double.ExtractExponentFromBits(bits);
+
+            if (exponent <= 0x03FE)
             {
+                if ((bits << 1) == 0)
+                {
+                    // Exactly +/- zero should return the original value
+                    return a;
+                }
+
+                // Any value less than or equal to 0.5 will always round to exactly zero
+                // and any value greater than 0.5 will always round to exactly one. However,
+                // we need to preserve the original sign for IEEE compliance.
+
+                double result = ((exponent == 0x03FE) && (double.ExtractSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
+                return CopySign(result, a);
+            }
+
+            if (exponent >= 0x0433)
+            {
+                // Any value greater than or equal to 2^52 cannot have a fractional part,
+                // So it will always round to exactly itself.
+
                 return a;
             }
 
-            // We had a number that was equally close to 2 integers.
-            // We need to return the even one.
+            // The absolute value should be greater than or equal to 1.0 and less than 2^52
+            Debug.Assert((0x03FF <= exponent) && (exponent <= 0x0432));
 
-            double flrTempVal = Floor(a + 0.5);
+            // Determine the last bit that represents the integral portion of the value
+            // and the bits representing the fractional portion
 
-            if ((a == (Floor(a) + 0.5)) && (FMod(flrTempVal, 2.0) != 0))
+            ulong lastBitMask = 1UL << (0x0433 - exponent);
+            ulong roundBitsMask = lastBitMask - 1;
+
+            // Increment the first fractional bit, which represents the midpoint between
+            // two integral values in the current window.
+
+            bits += lastBitMask >> 1;
+
+            if ((bits & roundBitsMask) == 0)
             {
-                flrTempVal -= 1.0;
+                // If that overflowed and the rest of the fractional bits are zero
+                // then we were exactly x.5 and we want to round to the even result
+
+                bits &= ~lastBitMask;
+            }
+            else
+            {
+                // Otherwise, we just want to strip the fractional bits off, truncating
+                // to the current integer value.
+
+                bits &= ~roundBitsMask;
             }
 
-            return CopySign(flrTempVal, a);
+            return BitConverter.Int64BitsToDouble((long)bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
