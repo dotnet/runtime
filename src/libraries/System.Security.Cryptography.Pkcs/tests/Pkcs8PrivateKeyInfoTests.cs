@@ -361,5 +361,76 @@ D9fVWpuVzYpEDfZm");
             Assert.ThrowsAny<CryptographicException>(
                 () => info.TryEncrypt(new byte[3], pbeParameters, Span<byte>.Empty, out _));
         }
+
+        [Fact]
+        public static void PrivateKeyIsAnyValue()
+        {
+            byte[] keyBytes = { 1, 2, 3, 4, 5 };
+
+            Pkcs8PrivateKeyInfo info = new Pkcs8PrivateKeyInfo(
+                new Oid("0.0", null),
+                algorithmParameters: null,
+                keyBytes,
+                skipCopies: true);
+
+            Assert.True(info.PrivateKeyBytes.Span.SequenceEqual(keyBytes));
+
+            byte[] encoded = info.Encode();
+            
+            Pkcs8PrivateKeyInfo decoded = Pkcs8PrivateKeyInfo.Decode(encoded, out _, skipCopy: true);
+
+            Assert.True(decoded.PrivateKeyBytes.Span.SequenceEqual(keyBytes));
+        }
+
+        [Fact]
+        public static void EmptyPrivateKey()
+        {
+            byte[] keyBytes = Array.Empty<byte>();
+
+            Pkcs8PrivateKeyInfo info = new Pkcs8PrivateKeyInfo(
+                new Oid("0.0", null),
+                algorithmParameters: null,
+                keyBytes,
+                skipCopies: true);
+
+            Assert.True(info.PrivateKeyBytes.Span.SequenceEqual(keyBytes));
+
+            byte[] encoded = info.Encode();
+
+            Pkcs8PrivateKeyInfo decoded = Pkcs8PrivateKeyInfo.Decode(encoded, out _, skipCopy: true);
+
+            Assert.True(decoded.PrivateKeyBytes.Span.SequenceEqual(keyBytes));
+        }
+
+        [Theory]
+        [InlineData("0102030405")]
+        [InlineData("05000500")]
+        public static void AlgorithmParametersIsSingleBer(string parametersHex)
+        {
+            byte[] keyBytes = Array.Empty<byte>();
+            byte[] parameterBytes = parametersHex.HexToByteArray();
+
+            Assert.Throws<CryptographicException>(
+                () => new Pkcs8PrivateKeyInfo(
+                    new Oid("0.0", null),
+                    parameterBytes,
+                    keyBytes,
+                    skipCopies: true));
+        }
+
+        [Fact]
+        public static void OmitEmptyAlgorithmParameters()
+        {
+            byte[] encoded = new Pkcs8PrivateKeyInfo(
+                new Oid("0.0", null),
+                ReadOnlyMemory<byte>.Empty,
+                Array.Empty<byte>(),
+                skipCopies: true).Encode();
+
+            Assert.Equal("300A02010030030601000400", encoded.ByteArrayToHex());
+
+            Pkcs8PrivateKeyInfo decoded = Pkcs8PrivateKeyInfo.Decode(encoded, out _, skipCopy: true);
+            Assert.False(decoded.AlgorithmParameters.HasValue);
+        }
     }
 }
