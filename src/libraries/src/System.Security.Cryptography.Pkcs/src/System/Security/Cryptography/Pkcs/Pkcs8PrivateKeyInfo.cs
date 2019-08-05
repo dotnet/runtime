@@ -25,6 +25,14 @@ namespace System.Security.Cryptography.Pkcs
             if (algorithmId == null)
                 throw new ArgumentNullException(nameof(algorithmId));
 
+            if (algorithmParameters?.Length > 0)
+            {
+                // Read to ensure that there is precisely one legally encoded value.
+                AsnReader reader = new AsnReader(algorithmParameters.Value, AsnEncodingRules.BER);
+                reader.ReadEncodedValue();
+                reader.ThrowIfNotEmpty();
+            }
+
             AlgorithmId = algorithmId;
             AlgorithmParameters = skipCopies ? algorithmParameters : algorithmParameters?.ToArray();
             PrivateKeyBytes = skipCopies ? privateKey : privateKey.ToArray();
