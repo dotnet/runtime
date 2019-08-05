@@ -59,7 +59,7 @@ Ready? Set? Let's go!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancel</String>
   <String Id="WelcomeHeaderMessage">Windows Desktop Runtime</String>
-  <String Id="WelcomeDescription">.NET Core is a development platform that you can use to build command-line applications, microservices and modern websites. It is open source, cross-platform, and supported by Microsoft. We hope you enjoy it!</String>
+  <String Id="WelcomeDescription"></String>
   <String Id="LearnMoreTitle">Learn more about .NET Core</String>
   <String Id="SuccessInstallLocation">The following was installed at [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
