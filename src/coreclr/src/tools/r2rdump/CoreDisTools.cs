@@ -12,7 +12,7 @@ namespace R2RDump
 {
     public class CoreDisTools
     {
-        private const string _dll = "coredistools.dll";
+        private const string _dll = "coredistools";
 
         public enum TargetArch
         {
