@@ -12,7 +12,7 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'public') }}:
       name: Hosted VS2017
     ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: NetCoreInternal-Int-Pool
+      name: NetCoreInternal-Pool
       queue: buildpool.windows.10.amd64.vs2017
   # Double the default timeout. Publishing is subject to huge delays due to contention on the dotnet-core blob feed
   timeoutInMinutes: 120

@@ -164,5 +164,5 @@ stages:
     - template: /eng/common/templates/job/publish-build-assets.yml
       parameters:
         pool:
-          name: NetCoreInternal-Int-Pool
+          name: NetCoreInternal-Pool
           queue: buildpool.windows.10.amd64.vs2017
