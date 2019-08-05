@@ -3400,6 +3400,7 @@ leave:
 	return ret;
 }
 
+#ifndef ENABLE_NETCORE
 MonoBoolean
 ves_icall_System_RuntimeType_IsTypeExportedToWindowsRuntime (MonoError *error)
 {
@@ -3415,6 +3416,7 @@ ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType (MonoError *error)
 	mono_error_set_not_implemented (error, "%s", "System.RuntimeType.IsWindowsRuntimeObjectType");
 	return FALSE;
 }
+#endif /* ENABLE_NETCORE */
 
 void
 ves_icall_RuntimeMethodInfo_GetPInvoke (MonoReflectionMethodHandle ref_method, int* flags, MonoStringHandleOut entry_point, MonoStringHandleOut dll_name, MonoError *error)
@@ -7730,10 +7732,12 @@ ves_icall_System_Environment_get_HasShutdownStarted (void)
 
 #ifndef HOST_WIN32
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
 }
+#endif
 
 #endif
 
@@ -7752,11 +7756,13 @@ ves_icall_System_Environment_get_TickCount64 (void)
 }
 #endif
 
+#ifndef ENABLE_NETCORE
 gint32
 ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (MonoError *error)
 {
 	return 9;
 }
+#endif
 
 #ifndef DISABLE_REMOTING
 MonoBoolean
@@ -7841,14 +7847,17 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 
 #else /* DISABLE_REMOTING */
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionTypeHandle type, MonoBoolean enable, MonoError *error)
 {
 	g_assert_not_reached ();
 }
+#endif
 
 #endif
 
+#ifndef ENABLE_NETCORE
 MonoObjectHandle
 ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionTypeHandle type, MonoError *error)
 {
@@ -7874,15 +7883,13 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	}
 }
 
-#if !ENABLE_NETCORE
-
 MonoStringHandle
 ves_icall_System_IO_get_temp_path (MonoError *error)
 {
 	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
 
-#endif
+#endif /* ENABLE_NETCORE */
 
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 
@@ -7977,6 +7984,8 @@ ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError 
 	return mono_compile_method_checked (method, error);
 }
 
+#ifndef ENABLE_NETCORE
+
 MonoStringHandle
 ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError *error)
 {
@@ -8064,7 +8073,6 @@ ves_icall_System_Environment_get_bundled_machine_config (MonoError *error)
 	return get_bundled_machine_config (error);
 }
 
-
 MonoStringHandle
 ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (MonoError *error)
 {
@@ -8076,7 +8084,6 @@ ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_con
 {
 	return get_bundled_machine_config (error);
 }
-
 
 MonoStringHandle
 ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
@@ -8122,6 +8129,8 @@ ves_icall_get_resources_ptr (MonoReflectionAssemblyHandle assembly, gpointer *re
 	return TRUE;
 }
 
+#endif /* ENABLE_NETCORE */
+
 MonoBoolean
 ves_icall_System_Diagnostics_Debugger_IsAttached_internal (MonoError *error)
 {
@@ -8150,11 +8159,13 @@ mono_icall_write_windows_debug_string (const gunichar2 *message)
 }
 #endif /* !HOST_WIN32 */
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message, MonoError *error)
 {
 	mono_icall_write_windows_debug_string (message);
 }
+#endif
 
 /* Only used for value types */
 MonoObjectHandle
@@ -8376,6 +8387,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeH
 	}
 }
 
+#ifndef ENABLE_NETCORE
 /*
  * used by System.Runtime.InteropServices.RuntimeInformation.(OS|Process)Architecture;
  * which use them in different ways for filling in an enum
@@ -8396,6 +8408,7 @@ ves_icall_System_Runtime_InteropServices_RuntimeInformation_GetOSName (MonoError
 	error_init (error);
 	return mono_string_new_handle (mono_domain_get (), mono_config_get_os (), error);
 }
+#endif /* ENABLE_NETCORE */
 
 int
 ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, int bufferLength)
@@ -8680,6 +8693,7 @@ mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
 }
 #endif /* !HOST_WIN32 */
 
+#ifndef ENABLE_NETCORE
 gint32
 ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds, MonoError *error)
 {
@@ -8701,6 +8715,7 @@ ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (MonoError *error)
 	return FALSE;
 #endif
 }
+#endif /* ENABLE_NETCORE */
 
 #ifndef DISABLE_COM
 

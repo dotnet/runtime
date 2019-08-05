@@ -3210,11 +3210,13 @@ mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error)
 	MONO_PROFILER_RAISE (context_loaded, (MONO_HANDLE_RAW (ctx)));
 }
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContextHandle ctx, MonoError *error)
 {
 	mono_threads_register_app_context (ctx, error);
 }
+#endif
 
 void
 mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error)
@@ -3230,11 +3232,13 @@ mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error)
 	MONO_PROFILER_RAISE (context_unloaded, (ctx));
 }
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContextHandle ctx, MonoError *error)
 {
 	mono_threads_release_app_context (MONO_HANDLE_RAW (ctx), error); /* FIXME use handles in mono_threads_release_app_context */
 }
+#endif
 
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
@@ -3953,8 +3957,6 @@ static void
 dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_file)
 {
 	GString* text = g_string_new (0);
-	char *name;
-	GError *gerror = NULL;
 	int i;
 
 	ud->thread = thread;

@@ -5548,12 +5548,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 	return res;
 }
 
+#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArrayHandle arrayobj, int index, MonoError *error)
 {
 	int esize = mono_array_element_size (mono_handle_class (arrayobj));
 	return mono_array_addr_with_size_fast (MONO_HANDLE_RAW (arrayobj), esize, index);
 }
+#endif
 
 MonoDelegateHandle
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)

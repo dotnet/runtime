@@ -36,6 +36,11 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-errno.h>
+#include <mono/metadata/console-io.h>
+#include <mono/metadata/exception.h>
+#include "icall-decl.h"
+
+#ifndef ENABLE_NETCORE
 
 /* On solaris, curses.h must come before both termios.h and term.h */
 #ifdef HAVE_CURSES_H
@@ -56,10 +61,6 @@
 #    include <sys/ioctl.h>
 #endif
 
-#include <mono/metadata/console-io.h>
-#include <mono/metadata/exception.h>
-#include "icall-decl.h"
-
 static gboolean setup_finished;
 static gboolean atexit_called;
 
@@ -77,9 +78,7 @@ static struct termios mono_attr;
 /* static void console_restore_signal_handlers (void); */
 static void console_set_signal_handlers (void);
 
-
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (console, "System", "Console");
-
 
 void
 mono_console_init (void)
@@ -511,3 +510,17 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 
 	return TRUE;
 }
+
+#else /* ENABLE_NETCORE */
+
+void
+mono_console_init (void)
+{
+}
+
+void
+mono_console_handle_async_ops (void)
+{
+}
+
+#endif

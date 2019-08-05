@@ -88,8 +88,10 @@ typedef struct
 	gchar *filename;
 } RuntimeConfig;
 
+#ifndef ENABLE_NETCORE
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
+#endif
 
 static gboolean no_exec = FALSE;
 
@@ -998,6 +1000,7 @@ mono_domain_set_fast (MonoDomain *domain, gboolean force)
 	return TRUE;
 }
 
+#ifndef ENABLE_NETCORE
 MonoObjectHandle
 ves_icall_System_AppDomain_GetData (MonoAppDomainHandle ad, MonoStringHandle name, MonoError *error)
 {
@@ -1114,6 +1117,7 @@ ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (MonoError *error)
 
 	return domain->throw_unobserved_task_exceptions;
 }
+#endif
 
 static char*
 get_attribute_value (const gchar **attribute_names, 
@@ -1254,6 +1258,7 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 	g_free (config_file_path);
 }
 
+#ifndef ENABLE_NETCORE
 MonoAppDomainHandle
 ves_icall_System_AppDomain_createDomain (MonoStringHandle friendly_name, MonoAppDomainSetupHandle setup, MonoError *error)
 {
@@ -1272,6 +1277,7 @@ ves_icall_System_AppDomain_createDomain (MonoStringHandle friendly_name, MonoApp
 #endif
 	return ad;
 }
+#endif
 
 static gboolean
 add_assembly_to_array (MonoDomain *domain, MonoArrayHandle dest, int dest_idx, MonoAssembly* assm, MonoError *error)
@@ -2462,9 +2468,9 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 fail:
 	return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 }
-
 #endif
 
+#ifndef ENABLE_NETCORE
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoolean refOnly, MonoStackCrawlMark *stack_mark, MonoError *error)
 {
@@ -2509,6 +2515,7 @@ leave:
 	g_free (name);
 	return result;
 }
+#endif
 
 static
 MonoAssembly *
@@ -2694,6 +2701,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 	return ass;
 }
 
+#ifndef ENABLE_NETCORE
 MonoReflectionAssemblyHandle
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandle assRef, MonoObjectHandle evidence, MonoBoolean refOnly, MonoStackCrawlMark *stack_mark, MonoError *error)
 {
@@ -2948,6 +2956,7 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoStringHandle newguid, Mon
 	mono_domain_unlock (mono_root_domain);
 	return newguid;
 }
+#endif
 
 /**
  * mono_domain_is_unloading:

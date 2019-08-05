@@ -45,6 +45,7 @@ mono_environment_exitcode_set (gint32 value)
 	exitcode=value;
 }
 
+#ifndef ENABLE_NETCORE
 /* note: we better manipulate the string in managed code (easier and safer) */
 MonoStringHandle
 ves_icall_System_Environment_GetOSVersionString (MonoError *error)
@@ -89,4 +90,4 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 #endif
 	return mono_string_new_handle (mono_domain_get (), "0.0.0.0", error);
 }
-
+#endif
