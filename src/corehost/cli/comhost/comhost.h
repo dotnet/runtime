@@ -38,8 +38,10 @@ namespace comhost
 {
     struct clsid_map_entry
     {
+        CLSID clsid;
         pal::string_t assembly;
         pal::string_t type;
+        pal::string_t progid;
     };
 
     using clsid_map = std::map<CLSID, clsid_map_entry>;

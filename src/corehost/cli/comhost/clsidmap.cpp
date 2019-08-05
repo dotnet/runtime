@@ -77,9 +77,16 @@ namespace
 
             clsid_map_entry e{};
 
+            e.clsid = clsidMaybe;
+
             json::object &val = prop.second.as_object();
             e.assembly = val.at(_X("assembly")).as_string();
             e.type = val.at(_X("type")).as_string();
+
+            // Check if a ProgID was defined.
+            auto prodIdMaybe = val.find(_X("progid"));
+            if (prodIdMaybe != val.cend())
+                e.progid = prodIdMaybe->second.as_string();
 
             mapping[clsidMaybe] = std::move(e);
         }
@@ -210,7 +217,8 @@ clsid_map comhost::get_clsid_map()
     // {
     //      "<clsid>": {
     //          "assembly": <assembly_name>,
-    //          "type": <type_name>
+    //          "type": <type_name>,
+    //          "progid": <prog_id> [Optional]
     //      },
     //      ...
     // }
