@@ -7,6 +7,12 @@ set "__MsgPrefix=BUILDTEST: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
 
+REM Set variables used when running in an Azure DevOps task
+if defined TF_BUILD (
+    set __ArcadeScriptArgs="-ci"
+    set __ErrMsgPrefix=##vso[task.logissue type=error]
+)
+
 set __ThisScriptDir="%~dp0"
 
 call "%__ThisScriptDir%"\setup_vs_tools.cmd
@@ -181,7 +187,7 @@ REM ============================================================================
 
 call "%__TestDir%\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: setup-stress-dependencies failed.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
     goto     :Exit_Failure
 )
 @if defined _echo @echo on
@@ -207,7 +213,7 @@ call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildA
 @if defined _echo @echo on
 
 if not defined VSINSTALLDIR (
-    echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
     exit /b 1
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
@@ -219,7 +225,7 @@ call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" ""%__ProjectFilesDir%"" %__V
 popd
 
 if not exist "%__NativeTestIntermediatesDir%\install.vcxproj" (
-    echo %__MsgPrefix%Failed to generate test native component build project!
+    echo %__ErrMsgPrefix%%__MsgPrefix%Failed to generate test native component build project!
     exit /b 1
 )
 
@@ -233,13 +239,12 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 call "%__ProjectDir%\cmake_msbuild.cmd" /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   "%__NativeTestIntermediatesDir%\install.vcxproj"^
   !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed. Refer to the build log files for details.
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
@@ -270,12 +275,12 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-call "%__ProjectDir%\dotnet.cmd" msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+REM Disable warnAsError - coreclr issue 19922
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+  %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__ProjectDir%\tests\build.proj /t:BatchRestorePackages^
-  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
+  '!__Logging!' %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
 
 :SkipRestoreProduct
 
@@ -290,7 +295,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -314,14 +319,17 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
+    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     set __TestGroupToBuild=%%G
     echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
-    call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
+    REM Disable warnAsError - coreclr issue 19922
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        %__ProjectDir%\tests\build.proj -warnAsError:0 '!__Logging!' %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! '%__UnprocessedBuildArgs%'
 
     if errorlevel 1 (
-        echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: managed test build failed. Refer to the build log files for details:
         echo     %__BuildLog%
         echo     %__BuildWrn%
         echo     %__BuildErr%
@@ -340,9 +348,10 @@ REM Check that we've built about as many tests as we expect. This is primarily i
 REM drastically fewer Pri-1 tests than expected.
 echo %__MsgPrefix%Check the managed tests build
 echo Running: dotnet msbuild %__ProjectDir%\tests\runtest.proj /t:CheckTestBuild /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
-call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\runtest.proj /t:CheckTestBuild /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    %__ProjectDir%\tests\runtest.proj /t:CheckTestBuild /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Check Test Build failed.
     exit /b 1
 )
 
@@ -390,14 +399,13 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+  %__ProjectDir%\tests\runtest.proj /t:CreateTestOverlay /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__ProjectDir%\tests\runtest.proj /t:CreateTestOverlay^
   !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
@@ -424,14 +432,13 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+  %__ProjectDir%\tests\runtest.proj /t:CreateTestHost /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__ProjectDir%\tests\runtest.proj /t:CreateTestHost^
   !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Host failed. Refer to the build log files for details:
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
@@ -460,7 +467,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
 call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\runtest.proj /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/  /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: Xunit wrapper build failed. Refer to the build log files for details:
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
@@ -589,7 +596,7 @@ if %__exitCode% neq 0 (
 REM Delete original .dll & replace it with the Crossgened .dll
 del %1
 ren "%CORE_ROOT%\temp.ni.dll" %2
-    
+
 echo Successfully precompiled %2
 exit /b 0
 
