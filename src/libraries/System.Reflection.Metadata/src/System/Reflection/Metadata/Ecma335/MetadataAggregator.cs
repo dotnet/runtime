@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata.Ecma335
     public sealed class MetadataAggregator
     {
         // For each heap handle and each delta contains aggregate heap lengths.
-        // heapSizes[heap kind][reader index] == Sum { 0..index | reader[i].XxxHeapLength }
+        // heapSizes[heap kind][reader index] == Sum { 0..index | reader[i].XxxHeap.Block.Length }
         private readonly ImmutableArray<ImmutableArray<int>> _heapSizes;
 
         private readonly ImmutableArray<ImmutableArray<RowCounts>> _rowCounts;
@@ -238,6 +238,13 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
+        /// <summary>
+        /// Given a handle of an entity in an aggregate metadata calculates 
+        /// a handle of the entity within the metadata generation it is defined in.
+        /// </summary>
+        /// <param name="handle">Handle of an entity in an aggregate metadata.</param>
+        /// <param name="generation">The generation the entity is defined in.</param>
+        /// <returns>Handle of the entity within the metadata generation <paramref name="generation"/>.</returns>
         public Handle GetGenerationHandle(Handle handle, out int generation)
         {
             if (handle.IsVirtual)
@@ -256,17 +263,20 @@ namespace System.Reflection.Metadata.Ecma335
 
                 var sizes = _heapSizes[(int)heapIndex];
 
-                generation = sizes.BinarySearch(heapOffset);
+                // #Guid heap offset is 1-based, other heaps have 0-based offset:
+                var size = (handle.Type == HandleType.Guid) ? heapOffset - 1 : heapOffset;
+
+                generation = sizes.BinarySearch(size);
                 if (generation >= 0)
                 {
-                    Debug.Assert(sizes[generation] == heapOffset);
+                    Debug.Assert(sizes[generation] == size);
 
                     // the index points to the start of the next generation that added data to the heap:
                     do
                     {
                         generation++;
                     }
-                    while (generation < sizes.Length && sizes[generation] == heapOffset);
+                    while (generation < sizes.Length && sizes[generation] == size);
                 }
                 else
                 {
@@ -278,7 +288,7 @@ namespace System.Reflection.Metadata.Ecma335
                     throw new ArgumentException(SR.HandleBelongsToFutureGeneration, nameof(handle));
                 }
 
-                // GUID heap accumulates - previous heap is copied to the next generation 
+                // GUID heap accumulates - previous heap is copied to the next generation
                 int relativeHeapOffset = (handle.Type == HandleType.Guid || generation == 0) ? heapOffset : heapOffset - sizes[generation - 1];
 
                 return new Handle((byte)handle.Type, relativeHeapOffset);
