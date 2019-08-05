@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// ===================================================================================================
+// Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
+// ===================================================================================================
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -1891,25 +1895,65 @@ double FloatingPointUtils::round(double x)
     //            MathF.Round(float), and FloatingPointUtils::round(float)
     // ************************************************************************************
 
-    // If the number has no fractional part do nothing
-    // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
-    if (x == (double)((INT64)x))
+    uint64_t bits     = *reinterpret_cast<uint64_t*>(&x);
+    int32_t  exponent = (int32_t)(bits >> 52) & 0x07FF;
+
+    if (exponent <= 0x03FE)
     {
+        if ((bits << 1) == 0)
+        {
+            // Exactly +/- zero should return the original value
+            return x;
+        }
+
+        // Any value less than or equal to 0.5 will always round to exactly zero
+        // and any value greater than 0.5 will always round to exactly one. However,
+        // we need to preserve the original sign for IEEE compliance.
+
+        double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
+        return _copysign(result, x);
+    }
+
+    if (exponent >= 0x0433)
+    {
+        // Any value greater than or equal to 2^52 cannot have a fractional part,
+        // So it will always round to exactly itself.
+
         return x;
     }
 
-    // We had a number that was equally close to 2 integers.
-    // We need to return the even one.
+    // The absolute value should be greater than or equal to 1.0 and less than 2^52
+    assert((0x03FF <= exponent) && (exponent <= 0x0432));
 
-    double flrTempVal = floor(x + 0.5);
+    // Determine the last bit that represents the integral portion of the value
+    // and the bits representing the fractional portion
 
-    if ((x == (floor(x) + 0.5)) && (fmod(flrTempVal, 2.0) != 0))
+    uint64_t lastBitMask   = UI64(1) << (0x0433 - exponent);
+    uint64_t roundBitsMask = lastBitMask - 1;
+
+    // Increment the first fractional bit, which represents the midpoint between
+    // two integral values in the current window.
+
+    bits += lastBitMask >> 1;
+
+    if ((bits & roundBitsMask) == 0)
     {
-        flrTempVal -= 1.0;
+        // If that overflowed and the rest of the fractional bits are zero
+        // then we were exactly x.5 and we want to round to the even result
+
+        bits &= ~lastBitMask;
+    }
+    else
+    {
+        // Otherwise, we just want to strip the fractional bits off, truncating
+        // to the current integer value.
+
+        bits &= ~roundBitsMask;
     }
 
-    return _copysign(flrTempVal, x);
+    return *reinterpret_cast<double*>(&bits);
 }
 
 // Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
@@ -1933,25 +1977,65 @@ float FloatingPointUtils::round(float x)
     //            Math.Round(double), and FloatingPointUtils::round(double)
     // ************************************************************************************
 
-    // If the number has no fractional part do nothing
-    // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
-    if (x == (float)((INT32)x))
+    uint32_t bits     = *reinterpret_cast<uint32_t*>(&x);
+    int32_t  exponent = (int32_t)(bits >> 23) & 0xFF;
+
+    if (exponent <= 0x7E)
     {
+        if ((bits << 1) == 0)
+        {
+            // Exactly +/- zero should return the original value
+            return x;
+        }
+
+        // Any value less than or equal to 0.5 will always round to exactly zero
+        // and any value greater than 0.5 will always round to exactly one. However,
+        // we need to preserve the original sign for IEEE compliance.
+
+        float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
+        return _copysignf(result, x);
+    }
+
+    if (exponent >= 0x96)
+    {
+        // Any value greater than or equal to 2^52 cannot have a fractional part,
+        // So it will always round to exactly itself.
+
         return x;
     }
 
-    // We had a number that was equally close to 2 integers.
-    // We need to return the even one.
+    // The absolute value should be greater than or equal to 1.0 and less than 2^52
+    assert((0x7F <= exponent) && (exponent <= 0x95));
 
-    float flrTempVal = floorf(x + 0.5f);
+    // Determine the last bit that represents the integral portion of the value
+    // and the bits representing the fractional portion
 
-    if ((x == (floorf(x) + 0.5f)) && (fmodf(flrTempVal, 2.0f) != 0))
+    uint32_t lastBitMask   = 1U << (0x96 - exponent);
+    uint32_t roundBitsMask = lastBitMask - 1;
+
+    // Increment the first fractional bit, which represents the midpoint between
+    // two integral values in the current window.
+
+    bits += lastBitMask >> 1;
+
+    if ((bits & roundBitsMask) == 0)
     {
-        flrTempVal -= 1.0f;
+        // If that overflowed and the rest of the fractional bits are zero
+        // then we were exactly x.5 and we want to round to the even result
+
+        bits &= ~lastBitMask;
+    }
+    else
+    {
+        // Otherwise, we just want to strip the fractional bits off, truncating
+        // to the current integer value.
+
+        bits &= ~roundBitsMask;
     }
 
-    return _copysignf(flrTempVal, x);
+    return *reinterpret_cast<float*>(&bits);
 }
 
 namespace MagicDivide
