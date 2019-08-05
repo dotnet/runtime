@@ -201,7 +201,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 #if NETCOREAPP
 		protected virtual NPath CompileCSharpAssemblyWithRoslyn (CompilerOptions options)
 		{
-			var parseOptions = new CSharpParseOptions (preprocessorSymbols: options.Defines);
+			var languageVersion = LanguageVersion.Default;
 			var compilationOptions = new CSharpCompilationOptions (
 				outputKind: options.OutputPath.FileName.EndsWith (".exe") ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
 				assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
@@ -231,9 +231,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							emitPdb = true;
 							debugType = DebugInformationFormat.Embedded;
 							break;
+						case "/langversion:7.3":
+							languageVersion = LanguageVersion.CSharp7_3;
+							break;
+							
 					}
 				}
 			}
+			var parseOptions = new CSharpParseOptions (preprocessorSymbols: options.Defines, languageVersion: languageVersion);
 			var emitOptions = new EmitOptions (debugInformationFormat: debugType);
 			var pdbPath = (!emitPdb || debugType == DebugInformationFormat.Embedded) ? null : options.OutputPath.ChangeExtension (".pdb").ToString ();
 
