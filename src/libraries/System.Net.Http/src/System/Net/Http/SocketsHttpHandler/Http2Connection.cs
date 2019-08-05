@@ -655,11 +655,11 @@ namespace System.Net.Http
 
             if (protocolError == Http2ProtocolErrorCode.RefusedStream)
             {
-                http2Stream.OnReset(new Http2StreamException(protocolError), canRetry: true);
+                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: true);
             }
             else
             {
-                http2Stream.OnReset(new Http2StreamException(protocolError));
+                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError);
             }
         }
 
