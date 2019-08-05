@@ -14,11 +14,32 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
 {
     public static class Pkcs12InfoTests
     {
-        [Fact]
-        public static void ReadEmptyPfx()
+        private static ReadOnlyMemory<byte> PadContents(ReadOnlyMemory<byte> contents, int trailingByteCount)
         {
+            if (trailingByteCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(trailingByteCount));
+
+            if (trailingByteCount == 0)
+            {
+                return contents;
+            }
+
+            byte[] tmp = new byte[contents.Length + trailingByteCount];
+            contents.Span.CopyTo(tmp);
+            tmp.AsSpan(contents.Length).Fill(0xA5);
+            return tmp;
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        public static void ReadEmptyPfx(int trailingByteCount)
+        {
+            ReadOnlyMemory<byte> source = PadContents(Pkcs12Documents.EmptyPfx, trailingByteCount);
+
             Pkcs12Info info =
-                Pkcs12Info.Decode(Pkcs12Documents.EmptyPfx, out int bytesRead, skipCopy: true);
+                Pkcs12Info.Decode(source, out int bytesRead, skipCopy: true);
 
             Assert.Equal(Pkcs12Documents.EmptyPfx.Length, bytesRead);
             Assert.Equal(Pkcs12IntegrityMode.Password, info.IntegrityMode);
@@ -38,11 +59,16 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Assert.Equal(0, safes.Count);
         }
 
-        [Fact]
-        public static void ReadIndefiniteEncodingNoMac()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        public static void ReadIndefiniteEncodingNoMac(int trailingByteCount)
         {
+            ReadOnlyMemory<byte> source = PadContents(Pkcs12Documents.IndefiniteEncodingNoMac, trailingByteCount);
+
             Pkcs12Info info = Pkcs12Info.Decode(
-                Pkcs12Documents.IndefiniteEncodingNoMac,
+                source,
                 out int bytesRead,
                 skipCopy: true);
 
@@ -117,14 +143,20 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             }
         }
 
-        [Fact]
-        public static void ReadOracleWallet()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        public static void ReadOracleWallet(int trailingByteCount)
         {
+            ReadOnlyMemory<byte> source = PadContents(Pkcs12Documents.SimpleOracleWallet, trailingByteCount);
+
             Pkcs12Info info = Pkcs12Info.Decode(
-                Pkcs12Documents.SimpleOracleWallet,
+                source,
                 out int bytesRead,
                 skipCopy: true);
 
+            Assert.Equal(Pkcs12Documents.SimpleOracleWallet.Length, bytesRead);
             Assert.Equal(Pkcs12IntegrityMode.Password, info.IntegrityMode);
             Assert.False(info.VerifyMac(ReadOnlySpan<char>.Empty), "VerifyMac(no password)");
             Assert.False(info.VerifyMac(""), "VerifyMac(empty password)");
