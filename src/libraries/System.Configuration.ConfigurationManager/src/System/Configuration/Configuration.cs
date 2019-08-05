@@ -223,7 +223,7 @@ namespace System.Configuration
             foreach (ConfigurationSection configSection in group.Sections)
             {
                 // Force the section to be read into the cache
-                ConfigurationSection section = group.Sections[configSection.SectionInformation.Name];
+                _ = group.Sections[configSection.SectionInformation.Name];
             }
 
             foreach (ConfigurationSectionGroup sectionGroup in group.SectionGroups)

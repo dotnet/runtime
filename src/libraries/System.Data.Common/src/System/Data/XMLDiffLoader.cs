@@ -89,8 +89,6 @@ namespace System.Data
 
                 // the diffgramm always contains sql:before and sql:after pairs
 
-                int iTempDepth = ssync.Depth;
-
                 diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
                 bool hasErrors = ssync.GetAttribute(Keywords.HASERRORS, Keywords.DFFNS) == Keywords.TRUE;
                 oldRowRecord = ReadOldRowData(ds, ref tableBefore, ref pos, ssync);
@@ -141,8 +139,6 @@ namespace System.Data
                 oldRowRecord = -1;
 
                 // the diffgramm always contains sql:before and sql:after pairs
-
-                int iTempDepth = ssync.Depth;
 
                 diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
                 bool hasErrors = ssync.GetAttribute(Keywords.HASERRORS, Keywords.DFFNS) == Keywords.TRUE;

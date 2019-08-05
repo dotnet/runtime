@@ -350,10 +350,6 @@ namespace System.Data
             string strDefault;
             DataColumn column;
 
-            string strUse = node.GetAttribute(Keywords.USE);
-
-
-
             // Get the name
             if (node.Attributes.Count > 0)
             {

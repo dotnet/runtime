@@ -46,7 +46,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             int genericArity = 0;
             if (type.IsGenericType && type.ContainsGenericParameters)
             {
-                List<Type> pureGenericParameters = new List<Type>();
                 TraverseGenericType(type, (Type t) =>
                 {
                     if (t.IsGenericParameter)

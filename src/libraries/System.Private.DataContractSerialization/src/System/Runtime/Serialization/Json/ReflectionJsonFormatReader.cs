@@ -59,7 +59,7 @@ namespace System.Runtime.Serialization.Json
             context.IncrementItemCount(memberCount);
 
             DataMember[] members = new DataMember[memberCount];
-            int reflectedMemberCount = ReflectionGetMembers(classContract, members);
+            ReflectionGetMembers(classContract, members);
 
             int memberIndex = -1;
 
@@ -136,7 +136,6 @@ namespace System.Runtime.Serialization.Json
             Type valueType = keyValueTypes[1];
 
             int keyTypeNullableDepth = 0;
-            Type keyTypeOriginal = keyType;
             while (keyType.IsGenericType && keyType.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {
                 keyTypeNullableDepth++;

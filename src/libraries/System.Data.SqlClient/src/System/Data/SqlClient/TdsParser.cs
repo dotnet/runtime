@@ -706,10 +706,6 @@ namespace System.Data.SqlClient
                         payloadLength = payload[offset++] << 8 | payload[offset++];
 
                         byte majorVersion = payload[payloadOffset];
-                        byte minorVersion = payload[payloadOffset + 1];
-                        int level = (payload[payloadOffset + 2] << 8) |
-                                             payload[payloadOffset + 3];
-
                         isYukonOrLater = majorVersion >= 9;
                         if (!isYukonOrLater)
                         {

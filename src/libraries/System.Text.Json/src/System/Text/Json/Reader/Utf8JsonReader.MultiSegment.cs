@@ -989,7 +989,6 @@ namespace System.Text.Json
             int leftOver = _buffer.Length - idx;
             int leftOverFromConsumed = _buffer.Length - _consumed;
 
-            long prevTotalConsumed = _totalConsumed;
             long prevLineBytePosition = _bytePositionInLine;
             long prevLineNumber = _lineNumber;
 

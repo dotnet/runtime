@@ -120,7 +120,6 @@ namespace System.IO.Compression
             try
             {
                 int totalWritten = 0;
-                Memory<byte> source = Memory<byte>.Empty;
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
                 // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
                 while (buffer.Length > 0 && lastResult != OperationStatus.Done)

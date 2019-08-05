@@ -187,8 +187,6 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (exception is LdapException ldapException)
                 {
-                    LdapError errorCode = (LdapError)ldapException.ErrorCode;
-
                     if (asyncResult._response != null)
                     {
                         // add previous retrieved entries if available

@@ -286,7 +286,6 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            Type type = instance.GetType();
             AddProvider(provider, instance);
         }
 
@@ -2526,8 +2525,6 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(instance));
             }
-
-            Type type = instance.GetType();
 
             RemoveProvider(provider, instance);
         }

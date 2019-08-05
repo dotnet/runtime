@@ -367,9 +367,14 @@ namespace System.Threading.Channels
                     {
                         // The channel is full, and we're in a dropping mode.
                         // Drop either the oldest or the newest and write the new item.
-                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
-                            parent._items.DequeueTail() :
+                        if (parent._mode == BoundedChannelFullMode.DropNewest)
+                        {
+                            parent._items.DequeueTail();
+                        }
+                        else
+                        {
                             parent._items.DequeueHead();
+                        }
                         parent._items.EnqueueTail(item);
                         return true;
                     }
@@ -539,9 +544,14 @@ namespace System.Threading.Channels
                     {
                         // The channel is full, and we're in a dropping mode.
                         // Drop either the oldest or the newest and write the new item.
-                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
-                            parent._items.DequeueTail() :
+                        if (parent._mode == BoundedChannelFullMode.DropNewest)
+                        {
+                            parent._items.DequeueTail();
+                        }
+                        else
+                        {
                             parent._items.DequeueHead();
+                        }
                         parent._items.EnqueueTail(item);
                         return default;
                     }

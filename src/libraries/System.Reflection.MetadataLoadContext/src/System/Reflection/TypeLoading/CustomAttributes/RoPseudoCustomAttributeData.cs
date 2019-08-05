@@ -19,8 +19,6 @@ namespace System.Reflection.TypeLoading
         //
         internal RoPseudoCustomAttributeData(ConstructorInfo constructor, Func<CustomAttributeArguments> argumentsPromise)
         {
-            CustomAttributeArguments ca = argumentsPromise();
-
             _constructor = constructor;
             _argumentsPromise = argumentsPromise;
         }

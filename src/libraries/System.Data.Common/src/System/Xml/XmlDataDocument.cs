@@ -1237,7 +1237,7 @@ namespace System.Xml
                     foreach (DataRow r in t.Rows)
                     {
                         Debug.Assert(r.Element == null);
-                        XmlBoundElement rowElem = AttachBoundElementToDataRow(r);
+                        AttachBoundElementToDataRow(r);
 
                         switch (r.RowState)
                         {
@@ -1580,7 +1580,6 @@ namespace System.Xml
             {
                 DataRow row = args.Row;
                 DataColumn col = args.Column;
-                object oVal = args.ProposedValue;
 
                 if (row.RowState == DataRowState.Detached)
                 {
@@ -2444,7 +2443,6 @@ namespace System.Xml
 
             DataRow row = rowElement.Row;
             Debug.Assert(row != null);
-            DataTable table = row.Table;
 
             Hashtable foundColumns = new Hashtable();
             string xsi_attrVal = string.Empty;
@@ -3007,7 +3005,7 @@ namespace System.Xml
             // before iteration, so iteration will not cause foliation (and as a result of this, creation of new nodes).
             XmlNodeList tempNodeList = base.GetElementsByTagName(name);
 
-            int tempint = tempNodeList.Count;
+            _ = tempNodeList.Count;
             return tempNodeList;
         }
 

@@ -792,7 +792,7 @@ namespace System.Net.Sockets
                 {
                     responsibleForReturningToPool = _accessed;
                     _accessed = true;
-                    var ignored = _builder.Task; // force initialization under the lock (builder itself lazily initializes w/o synchronization)
+                    _ = _builder.Task; // force initialization under the lock (builder itself lazily initializes w/o synchronization)
                     return _builder;
                 }
             }

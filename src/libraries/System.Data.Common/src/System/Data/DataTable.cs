@@ -1969,8 +1969,6 @@ namespace System.Data
             {
                 if ((rel.Nested) && (rel.ChildTable != this))
                 {
-                    DataTable childTable = rel.ChildTable;
-
                     rel.ChildTable.DoRaiseNamespaceChange();
                 }
             }
@@ -2361,7 +2359,7 @@ namespace System.Data
             // start cloning relation
             foreach (DataRelation r in sourceTable.ChildRelations)
             {
-                DataTable childTable = CloneHierarchy(r.ChildTable, ds, visitedMap);
+                CloneHierarchy(r.ChildTable, ds, visitedMap);
             }
 
             return destinationTable;
@@ -6219,7 +6217,7 @@ namespace System.Data
         internal void ReadXDRSchema(XmlReader reader)
         {
             XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
-            XmlNode schNode = xdoc.ReadNode(reader); ;
+            xdoc.ReadNode(reader);
             //consume and ignore it - No support
         }
 
@@ -6511,7 +6509,7 @@ namespace System.Data
                         dataset.Tables.Add(this);
                     }
 
-                    DataTable targetTable = CloneHierarchy(currentTable, DataSet, null);
+                    CloneHierarchy(currentTable, DataSet, null);
 
                     foreach (DataTable tempTable in tableList)
                     {

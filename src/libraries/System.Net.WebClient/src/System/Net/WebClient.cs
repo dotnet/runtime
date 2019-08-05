@@ -265,7 +265,7 @@ namespace System.Net
             // be used to get the response, and it needs to be passed the IAsyncResult that was returned
             // from WebRequest.BeginGetResponse.
             var awaitable = new BeginEndAwaitableAdapter();
-            IAsyncResult iar = request.BeginGetResponse(BeginEndAwaitableAdapter.Callback, awaitable);
+            request.BeginGetResponse(BeginEndAwaitableAdapter.Callback, awaitable);
             return GetWebResponse(request, await awaitable);
         }
 

@@ -2350,7 +2350,6 @@ namespace System.Data.SqlTypes
 
             SqlDecimal ret = n;
 
-            int lPrecAdjust = precision - ret._bPrec;//Adjustment to precision
             int lScaleAdjust = scale - ret._bScale;//Adjustment to scale
 
             //Adjust scale
@@ -3230,7 +3229,6 @@ namespace System.Data.SqlTypes
             if (n.IsNull)
                 return SqlDecimal.Null;
 
-            byte prec = n.Precision;
             int scale = n.Scale;
             double dBaseNum = n.ToDouble();
 

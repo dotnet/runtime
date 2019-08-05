@@ -925,7 +925,6 @@ namespace System.Data.Common
 
                 int rowsAffected = 0;
 
-                System.Data.MissingMappingAction missingMapping = UpdateMappingAction;
                 DataTableMapping tableMapping = GetTableMappingBySchemaAction(srcTable, srcTable, UpdateMappingAction);
                 Debug.Assert(null != tableMapping, "null TableMapping when MissingMappingAction.Error");
 

@@ -205,7 +205,6 @@ namespace System.Reflection.Context.Custom
             if (name.Length > 4)
             {
                 // Right now we don't support adding fabricated indexers on types
-                string prefix = name.Substring(0, 4);
                 getPropertyGetter = (types == null || types.Length == 0) && name.StartsWith("get_", comparison);
 
                 if (!getPropertyGetter)

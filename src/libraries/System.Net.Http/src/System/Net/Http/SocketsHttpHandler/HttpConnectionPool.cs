@@ -243,7 +243,6 @@ namespace System.Net.Http
             }
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-            TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
             long nowTicks = Environment.TickCount64;
             List<CachedConnection> list = _idleConnections;
 

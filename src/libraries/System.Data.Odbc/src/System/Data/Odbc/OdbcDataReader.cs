@@ -1364,7 +1364,6 @@ namespace System.Data.Odbc
             Debug.Assert(buffer == null || bytesOrCharsLength <= (buffer.Length - bufferIndex), "Not enough space in user's buffer");
 
             int totalBytesOrCharsRead = 0;
-            string originalMethodName = isCharsBuffer ? "GetChars" : "GetBytes";
 
             // we need length in bytes, b/c that is what SQLGetData expects
             long cbLength = (isCharsBuffer) ? checked(bytesOrCharsLength * 2) : bytesOrCharsLength;
