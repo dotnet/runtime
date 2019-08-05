@@ -236,33 +236,16 @@ namespace System.Net.Test.Common
         }
 
         // Wait for the client to close the connection, e.g. after the HttpClient is disposed.
-        public async Task WaitForClientDisconnectAsync()
+        public async Task WaitForClientDisconnectAsync(bool ignoreUnexpectedFrames = false)
         {
-            Frame frame = await ReadFrameAsync(Timeout);
-            Assert.Null(frame);
-        }
-
-        public void ShutdownSend()
-        {
-            _connectionSocket.Shutdown(SocketShutdown.Send);
-        }
-
-        // This will wait for the client to close the connection,
-        // and ignore any meaningless frames -- i.e. WINDOW_UPDATE or expected SETTINGS ACK --
-        // that we see while waiting for the client to close.
-        // Only call this after sending a GOAWAY.
-        public async Task WaitForConnectionShutdownAsync(bool ignoreUnexpectedFrames = false)
-        {
-            // Shutdown our send side, so the client knows there won't be any more frames coming.
-            ShutdownSend();
-
             IgnoreWindowUpdates();
+
             Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             if (frame != null)
             {
                 if (!ignoreUnexpectedFrames)
                 {
-                    throw new Exception($"Unexpected frame received while waiting for client shutdown: {frame}");
+                    throw new Exception($"Unexpected frame received while waiting for client disconnect: {frame}");
                 }
             }
 
@@ -273,6 +256,22 @@ namespace System.Net.Test.Common
 
             _ignoredSettingsAckPromise = null;
             _ignoreWindowUpdates = false;
+        }
+
+        public void ShutdownSend()
+        {
+            _connectionSocket.Shutdown(SocketShutdown.Send);
+        }
+
+        // This will cause a server-initiated shutdown of the connection.
+        // For normal operation, you should send a GOAWAY and complete any remaining streams
+        // before calling this method.
+        public async Task WaitForConnectionShutdownAsync(bool ignoreUnexpectedFrames = false)
+        {
+            // Shutdown our send side, so the client knows there won't be any more frames coming.
+            ShutdownSend();
+
+            await WaitForClientDisconnectAsync(ignoreUnexpectedFrames: ignoreUnexpectedFrames);
         }
 
         // This is similar to WaitForConnectionShutdownAsync but will send GOAWAY for you
