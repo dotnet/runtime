@@ -67,7 +67,7 @@ build_test_wrappers()
         eval $nextCommand
 
         if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: XUnit wrapper build failed. Refer to the build log files for details (above)"
             exit 1
         else
             echo "XUnit Wrappers have been built."
@@ -160,7 +160,7 @@ generate_layout()
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
         if [ $? != 0 ]; then
-            echo "${__MsgPrefix}Error: setup-stress-dependencies failed."
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: setup-stress-dependencies failed."
             exit 1
         fi
     fi
@@ -324,7 +324,7 @@ build_Tests()
         build_native_projects "$__BuildArch" "${__NativeTestIntermediatesDir}"
 
         if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
             exit 1
         fi
     fi
@@ -335,7 +335,7 @@ build_Tests()
         build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up"
 
         if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
             exit 1
         else
             echo "Checking the Managed Tests Build..."
@@ -343,7 +343,7 @@ build_Tests()
             build_MSBuild_projects "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "/t:CheckTestBuild"
 
             if [ $? -ne 0 ]; then
-                echo "${__MsgPrefix}Error: Check Test Build failed."
+                echo "${__ErrMsgPrefix}${__MsgPrefix}Error: Check Test Build failed."
                 exit 1
             fi
         fi
@@ -376,13 +376,6 @@ build_MSBuild_projects()
     __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
     __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
 
-    # Use binclashlogger by default if no other logger is specified
-    if [[ "${extraBuildParameters[*]}" == *"/l:"* ]]; then
-        __msbuildEventLogging=
-    else
-        __msbuildEventLogging="/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log"
-    fi
-
     if [[ "$subDirectoryName" == "Tests_Managed" ]]; then
         # Execute msbuild managed test build in stages - workaround for excessive data retention in MSBuild ConfigCache
         # See https://github.com/Microsoft/msbuild/issues/2993
@@ -407,23 +400,23 @@ build_MSBuild_projects()
             export __TestGroupToBuild=$testGroupToBuild
 
             # Generate build command
-            buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")
+            buildArgs=("$projectName")
             buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
             buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
 
-            buildArgs+=("$projectName" "${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
-            buildArgs+=("$__msbuildEventLogging")
+            buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
             buildArgs+=("${extraBuildParameters[@]}")
             buildArgs+=("${__CommonMSBuildArgs[@]}")
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-            nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
+            # Disable warnAsError - coreclr issue 19922
+            nextCommand="\"$__ProjectRoot/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
             echo "Building step '$stepName' testGroupToBuild=$testGroupToBuild via $nextCommand"
             eval $nextCommand
 
             # Make sure everything is OK
             if [ $? -ne 0 ]; then
-                echo "${__MsgPrefix}Failed to build $stepName. See the build logs:"
+                echo "${__ErrMsgPrefix}${__MsgPrefix}Failed to build $stepName. See the build logs:"
                 echo "    $__BuildLog"
                 echo "    $__BuildWrn"
                 echo "    $__BuildErr"
@@ -439,23 +432,23 @@ build_MSBuild_projects()
         __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr}\""
 
         # Generate build command
-        buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")
+        buildArgs=("$projectName")
         buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
         buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
 
-        buildArgs+=("$projectName" "${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
-        buildArgs+=("$__msbuildEventLogging")
+        buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
         buildArgs+=("${extraBuildParameters[@]}")
         buildArgs+=("${__CommonMSBuildArgs[@]}")
         buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-        nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
+        # Disable warnAsError - coreclr issue 19922
+        nextCommand="\"$__ProjectRoot/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
         echo "Building step '$stepName' via $nextCommand"
         eval $nextCommand
 
         # Make sure everything is OK
         if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Failed to build $stepName. See the build logs:"
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Failed to build $stepName. See the build logs:"
             echo "    $__BuildLog"
             echo "    $__BuildWrn"
             echo "    $__BuildErr"
@@ -499,7 +492,7 @@ build_native_projects()
                                                  /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore \
                                                  $__CommonMSBuildArgs $__UnprocessedBuildArgs
             if [ $? -ne 0 ]; then
-                echo "Failed to generate native version file."
+                echo "${__ErrMsgPrefix}Failed to generate native version file."
                 exit $?
             fi
         else
@@ -528,7 +521,7 @@ build_native_projects()
     fi
 
     if [ ! -f "$intermediatesForBuild/$buildFile" ]; then
-        echo "Failed to generate $message build project!"
+        echo "${__ErrMsgPrefix}Failed to generate $message build project!"
         exit 1
     fi
 
@@ -544,7 +537,7 @@ build_native_projects()
 
     $buildTool install -j $__NumProc
     if [ $? != 0 ]; then
-        echo "Failed to build $message."
+        echo "${__ErrMsgPrefix}Failed to build $message."
         exit 1
     fi
 
@@ -662,6 +655,12 @@ case $OSName in
         __HostOS=Linux
         ;;
 esac
+
+# Set variables used when running in an Azure DevOps task
+if [[ ! -z $TF_BUILD ]]; then
+  __ArcadeScriptArgs="--ci"
+  __ErrMsgPrefix="##vso[task.logissue type=error]"
+fi
 
 __BuildType=Debug
 __CodeCoverage=

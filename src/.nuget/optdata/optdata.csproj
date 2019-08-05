@@ -11,13 +11,6 @@
     <PackageReference Include="optimization.IBC.CoreCLR" Version="$(optimizationIBCCoreCLRVersion)" Condition="'$(optimizationIBCCoreCLRVersion)'!=''" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <RestoreSources>
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      $(RestoreSources);
-    </RestoreSources>
-  </PropertyGroup>
-
   <!--                                                                       -->
   <!-- Task: DumpPgoDataPackageVersion                                       -->
   <!--                                                                       -->
@@ -25,7 +18,7 @@
   <!--                                                                       -->
   <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to be    -->
-  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- read back by build.cmd/sh. The path for the file is:                  -->
   <!-- $(PgoDataPackageVersionOutputFile)                                    -->
   <!--                                                                       -->
 
@@ -46,7 +39,7 @@
   <!--                                                                       -->
   <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to be    -->
-  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- read back by build.cmd/sh. The path for the file is:                  -->
   <!-- $(IbcDataPackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
