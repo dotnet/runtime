@@ -140,12 +140,13 @@ restore_optdata()
     local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
     if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
-        "$__ProjectRoot/dotnet.sh" restore /nologo /verbosity:minimal /clp:Summary /m \
-                                   $OptDataProjectFilePath \
-                                   $__CommonMSBuildArgs $__UnprocessedBuildArgs
-        if [ $? != 0 ]; then
-            echo "Failed to restore the optimization data package."
-            exit 1
+        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+                                               $OptDataProjectFilePath /t:Restore /m \
+                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs
+        local exit_code=$?
+        if [ $exit_code != 0 ]; then
+            echo "${__ErrMsgPrefix}Failed to restore the optimization data package."
+            exit $exit_code
         fi
     fi
 
@@ -156,19 +157,21 @@ restore_optdata()
         local IbcDataPackageVersionOutputFile="${__IntermediatesDir}/ibcoptdataversion.txt"
 
         # Writes into ${PgoDataPackageVersionOutputFile}
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion ${__CommonMSBuildArgs} /p:PgoDataPackageVersionOutputFile=${PgoDataPackageVersionOutputFile} /nologo 2>&1 > /dev/null
-        if [ $? != 0 ] || [ ! -f "${PgoDataPackageVersionOutputFile}" ]; then
-            echo "Failed to get PGO data package version."
-            exit $?
+        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackageVersion ${__CommonMSBuildArgs} /p:PgoDataPackageVersionOutputFile=${PgoDataPackageVersionOutputFile} 2>&1 > /dev/null
+        local exit_code=$?
+        if [ $exit_code != 0 ] || [ ! -f "${PgoDataPackageVersionOutputFile}" ]; then
+            echo "${__ErrMsgPrefix}Failed to get PGO data package version."
+            exit $exit_code
         fi
 
         __PgoOptDataVersion=$(<"${PgoDataPackageVersionOutputFile}")
 
         # Writes into ${IbcDataPackageVersionOutputFile}
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion ${__CommonMSBuildArgs} /p:IbcDataPackageVersionOutputFile=${IbcDataPackageVersionOutputFile} /nologo 2>&1 > /dev/null
-        if [ $? != 0 ] || [ ! -f "${IbcDataPackageVersionOutputFile}" ]; then
-            echo "Failed to get IBC data package version."
-            exit $?
+        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackageVersion ${__CommonMSBuildArgs} /p:IbcDataPackageVersionOutputFile=${IbcDataPackageVersionOutputFile} 2>&1 > /dev/null
+        local exit_code=$?
+        if [ $exit_code != 0 ] || [ ! -f "${IbcDataPackageVersionOutputFile}" ]; then
+            echo "${__ErrMsgPrefix}Failed to get IBC data package version."
+            exit $exit_code
         fi
 
         __IbcOptDataVersion=$(<"${IbcDataPackageVersionOutputFile}")
@@ -232,13 +235,14 @@ build_native()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__ProjectRoot/eng/common/msbuild.sh" $__ProjectRoot/eng/empty.csproj \
-                                        /p:NativeVersionFile=$__versionSourceFile \
-                                        /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore \
-                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
-            if [ $? -ne 0 ]; then
-                echo "Failed to generate native version file."
-                exit $?
+            "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $__ProjectRoot/eng/empty.csproj \
+                                                   /p:NativeVersionFile=$__versionSourceFile \
+                                                   /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore \
+                                                   $__CommonMSBuildArgs $__UnprocessedBuildArgs
+        local exit_code=$?
+        if [ $exit_code != 0 ]; then
+                echo "${__ErrMsgPrefix}Failed to generate native version file."
+                exit $exit_code
             fi
         else
             # Generate the dummy version.c, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
@@ -271,7 +275,7 @@ build_native()
     fi
 
     if [ ! -f "$intermediatesForBuild/$buildFile" ]; then
-        echo "Failed to generate $message build project!"
+        echo "${__ErrMsgPrefix}Failed to generate $message build project!"
         exit 1
     fi
 
@@ -291,9 +295,10 @@ build_native()
     echo "Executing $buildTool install -j $__NumProc"
 
     $buildTool install -j $__NumProc
-    if [ $? != 0 ]; then
-        echo "Failed to build $message."
-        exit 1
+    local exit_code=$?
+    if [ $exit_code != 0 ]; then
+        echo "${__ErrMsgPrefix}Failed to build $message."
+        exit $exit_code
     fi
 
     popd
@@ -378,18 +383,20 @@ build_CoreLib_ni()
     echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
     $__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-    if [ $? -ne 0 ]; then
-        echo "Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-        exit 1
+    local exit_code=$?
+    if [ $exit_code != 0 ]; then
+        echo "${__ErrMsgPrefix}Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
+        exit $exit_code
     fi
 
     if [ "$__BuildOS" == "Linux" ]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
         $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-        if [ $? -ne 0 ]; then
-            echo "Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-            exit 1
+        local exit_code=$?
+        if [ $exit_code != 0 ]; then
+            echo "${__ErrMsgPrefix}Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
+            exit $exit_code
         fi
     fi
 }
@@ -419,28 +426,30 @@ build_CoreLib()
         __ExtraBuildArgs="$__ExtraBuildArgs /p:BuildManagedTools=true"
     fi
 
-    $__ProjectRoot/dotnet.sh restore /nologo /verbosity:minimal /clp:Summary \
-                             /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true /p:ArcadeBuild=true\
-                             $__ProjectDir/src/build.proj \
-                             /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
-                             /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
-                             $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
+    "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+                                           $__ProjectDir/src/build.proj /t:Restore \
+                                           /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true /p:ArcadeBuild=true\
+                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                                           /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
+                                           $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
-    if [ $? -ne 0 ]; then
-        echo "Failed to restore managed components."
-        exit 1
+    local exit_code=$?
+    if [ $exit_code != 0 ]; then
+        echo "${__ErrMsgPrefix}Failed to restore managed components."
+        exit $exit_code
     fi
 
-    $__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
-                             /p:PortableBuild=true /maxcpucount /p:ArcadeBuild=true\
-                             $__ProjectDir/src/build.proj \
-                             /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
-                             /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
-                             $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
+    "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+                                           $__ProjectDir/src/build.proj \
+                                           /p:PortableBuild=true /maxcpucount /p:ArcadeBuild=true\
+                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                                           /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
+                                           $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
-    if [ $? -ne 0 ]; then
-        echo "Failed to build managed components."
-        exit 1
+    local exit_code=$?
+        if [ $exit_code != 0 ]; then
+        echo "${__ErrMsgPrefix}Failed to build managed components."
+        exit $exit_code
     fi
 
     local __CoreLibILDir=$__BinDir/IL
@@ -511,9 +520,10 @@ generate_NugetPackages()
                                        /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:__DoCrossArchBuild=$__CrossBuild \
                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
 
-    if [ $? -ne 0 ]; then
-        echo "Failed to generate Nuget packages."
-        exit 1
+    local exit_code=$?
+    if [ $exit_code != 0 ]; then
+        echo "${__ErrMsgPrefix}Failed to generate Nuget packages."
+        exit $exit_code
     fi
 }
 
@@ -609,6 +619,12 @@ case $OSName in
         __HostOS=Linux
         ;;
 esac
+
+# Set variables used when running in an Azure DevOps task
+if [[ ! -z $TF_BUILD ]]; then
+  __ArcadeScriptArgs="--ci"
+  __ErrMsgPrefix="##vso[task.logissue type=error]"
+fi
 
 __BuildType=Debug
 __CodeCoverage=
