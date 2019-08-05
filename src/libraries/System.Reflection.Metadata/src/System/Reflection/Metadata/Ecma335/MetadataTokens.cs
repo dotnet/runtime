@@ -164,8 +164,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// to the specified <paramref name="handle"/>.
         /// </summary>
         /// <returns>
-        /// Zero based offset, or -1 if <paramref name="handle"/> can only be interpreted in a context of a specific <see cref="MetadataReader"/> or <see cref="MetadataBuilder"/>.
-        /// See <see cref="GetHeapOffset(MetadataReader, Handle)"/>.
+        /// 1-based index into the #Guid heap. Unlike other heaps, which are essentially byte arrays, the #Guid heap is an array of 16-byte GUIDs.
         /// </returns>
         public static int GetHeapOffset(GuidHandle handle) => handle.Index;
 
@@ -174,8 +173,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// to the specified <paramref name="handle"/>.
         /// </summary>
         /// <returns>
-        /// Zero based offset, or -1 if <paramref name="handle"/> can only be interpreted in a context of a specific <see cref="MetadataReader"/> or <see cref="MetadataBuilder"/>.
-        /// See <see cref="GetHeapOffset(MetadataReader, Handle)"/>.
+        /// Zero based offset.
         /// </returns>
         public static int GetHeapOffset(UserStringHandle handle) => handle.GetHeapOffset();
 
