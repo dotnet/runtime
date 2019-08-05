@@ -75,11 +75,6 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                 // Always use ConnectionStringBuilder since in default case it is different from the 
                 // connection string used in the hashHelper.
                 _con = new SqlConnection(_hashHelper.ConnectionStringBuilder.ConnectionString); // Create connection and open.
-
-                // Assert permission for this particular connection string since it differs from the user passed string
-                // which we have already demanded upon.  
-                SqlConnectionString connStringObj = (SqlConnectionString)_con.ConnectionOptions;
-
                 _con.Open();
 
                 _cachedServer = _con.DataSource;
@@ -411,7 +406,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
         internal void IncrementStartCount(string appDomainKey, out bool appDomainStart)
         {
             appDomainStart = false; // Reset out param.
-            int result = Interlocked.Increment(ref _startCount); // Add to refCount.
+            Interlocked.Increment(ref _startCount); // Add to refCount.
 
             // Dictionary used to track how many times start has been called per app domain.
             // For each increment, add to count, and create entry if not present.
@@ -886,8 +881,6 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
         {
             using (XmlReader xmlReader = xmlMessage.CreateReader())
             {
-                string keyvalue = string.Empty;
-
                 MessageAttributes messageAttributes = MessageAttributes.None;
 
                 SqlNotificationType type = SqlNotificationType.Unknown;

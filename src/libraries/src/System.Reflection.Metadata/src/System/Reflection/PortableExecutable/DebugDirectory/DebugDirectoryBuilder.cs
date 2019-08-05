@@ -156,7 +156,6 @@ namespace System.Reflection.PortableExecutable
             builder.WriteInt32(age);
 
             // UTF-8 encoded zero-terminated path to PDB
-            int pathStart = builder.Count;
             builder.WriteUTF8(pdbPath, allowUnpairedSurrogates: true);
             builder.WriteByte(0);
 

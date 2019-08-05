@@ -1284,7 +1284,6 @@ namespace System.DirectoryServices.ActiveDirectory
             int count = 0;
             ArrayList unmanagedTrustList = new ArrayList();
             ArrayList tmpTrustList = new ArrayList();
-            TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection();
             int localDomainIndex = 0;
             string localDomainParent = null;
             int error = 0;

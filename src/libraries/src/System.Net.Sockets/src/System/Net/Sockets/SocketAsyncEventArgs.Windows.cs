@@ -1285,7 +1285,7 @@ namespace System.Net.Sockets
                     {
                         // The Async IO completed with a failure.
                         // here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
-                        bool success = Interop.Winsock.WSAGetOverlappedResult(
+                        Interop.Winsock.WSAGetOverlappedResult(
                             _currentSocket.SafeHandle,
                             nativeOverlapped,
                             out numBytes,

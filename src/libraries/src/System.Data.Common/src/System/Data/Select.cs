@@ -202,7 +202,6 @@ namespace System.Data
             try
             {
                 int count = _table._indexes.Count;
-                int rowsCount = _table.Rows.Count;
                 for (int i = 0; i < count; i++)
                 {
                     Index ndx = _table._indexes[i];
@@ -257,7 +256,6 @@ namespace System.Data
             try
             {
                 int count = _table._indexes.Count;
-                int rowsCount = _table.Rows.Count;
                 for (int i = 0; i < count; i++)
                 {
                     Index ndx = _table._indexes[i];
@@ -343,7 +341,6 @@ namespace System.Data
                         }
                     }
                     int indexNotInCandidates = lenIndexDesc - j;
-                    int candidatesNotInIndex = _nCandidates - j;
                     IndexField[] ndxFields = new IndexField[_nCandidates + indexNotInCandidates];
 
                     if (equalsOperator)

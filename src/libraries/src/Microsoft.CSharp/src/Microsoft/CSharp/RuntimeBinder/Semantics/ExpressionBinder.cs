@@ -1104,7 +1104,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int paramCount = mp.Params.Count;
             TypeArray @params = mp.Params;
             int iDst = 0;
-            MethodSymbol m = mp as MethodSymbol;
             int argCount = ExpressionIterator.Count(argsPtr);
 
             Debug.Assert(!@params.Items.Any(p => p is ArgumentListType)); // We should never have picked a varargs method to bind to.

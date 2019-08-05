@@ -209,7 +209,7 @@ namespace System.Configuration
                     _configPaths = null;
 
                     // Force loading of user.config file information under lock.
-                    ClientConfigPaths configPaths = ConfigPaths;
+                    _ = ConfigPaths;
                 }
             }
         }

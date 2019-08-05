@@ -423,7 +423,7 @@ namespace System.Collections.Immutable
             // if we are going to do anything with the array, we will need Length anyways
             // so touching it, and potentially causing a cache miss, is not going to be an
             // extra expense.
-            var unused = this.array.Length;
+            _ = this.array.Length;
         }
 
         /// <summary>

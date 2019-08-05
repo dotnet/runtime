@@ -107,7 +107,7 @@ namespace System.Diagnostics.PerformanceData
                     {
                         if (_counterSet._provider != null)
                         {
-                            uint Status = Interop.PerfCounter.PerfDeleteInstance(_counterSet._provider._hProvider, _nativeInst);
+                            Interop.PerfCounter.PerfDeleteInstance(_counterSet._provider._hProvider, _nativeInst);
                         }
                         _nativeInst = null;
                     }

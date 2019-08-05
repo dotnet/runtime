@@ -223,7 +223,7 @@ namespace System.Data.ProviderBase
             // the Deactivate method publicly.
 
 #if DEBUG
-            int activateCount = Interlocked.Decrement(ref _activateCount);
+            Interlocked.Decrement(ref _activateCount);
 #endif // DEBUG
 
 

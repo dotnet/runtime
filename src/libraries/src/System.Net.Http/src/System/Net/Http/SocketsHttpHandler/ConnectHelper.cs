@@ -90,7 +90,7 @@ namespace System.Net.Http
             {
                 CancellationToken = cancellationToken;
                 var b = new AsyncTaskMethodBuilder();
-                var ignored = b.Task; // force initialization
+                _ = b.Task; // force initialization
                 Builder = b;
             }
 

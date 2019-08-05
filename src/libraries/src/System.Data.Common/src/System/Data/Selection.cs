@@ -124,7 +124,6 @@ namespace System.Data
             _recordStates = recordStates;
             _comparison = comparison;
 
-            DataColumnCollection columns = table.Columns;
             _isSharable = (rowFilter == null) && (comparison == null); // a filter or comparison make an index unsharable
             if (null != rowFilter)
             {

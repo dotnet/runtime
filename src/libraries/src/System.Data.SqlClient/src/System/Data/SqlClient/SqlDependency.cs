@@ -843,8 +843,6 @@ namespace System.Data.SqlClient
         {
             if (cmd != null)
             {
-                SqlConnection connection = cmd.Connection;
-
                 if (cmd.Notification != null)
                 {
                     // Fail if cmd has notification that is not already associated with this dependency.

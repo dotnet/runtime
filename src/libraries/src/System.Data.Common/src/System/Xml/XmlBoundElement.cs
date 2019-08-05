@@ -397,7 +397,7 @@ namespace System.Xml
             // before iteration, so iteration will not cause foliation (and as a result of this, creation of new nodes).
             XmlNodeList tempNodeList = base.GetElementsByTagName(name);
 
-            int tempint = tempNodeList.Count;
+            _ = tempNodeList.Count;
             return tempNodeList;
         }
     }

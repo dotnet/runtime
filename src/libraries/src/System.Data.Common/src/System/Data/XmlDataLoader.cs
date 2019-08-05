@@ -127,7 +127,6 @@ namespace System.Data
             int count = 0;
             for (int i = 0; i < node.Attributes.Count; i++)
             {
-                XmlAttribute attr = node.Attributes[i];
                 if (!FExcludedNamespace(node.Attributes[i].NamespaceURI))
                     count++;
             }

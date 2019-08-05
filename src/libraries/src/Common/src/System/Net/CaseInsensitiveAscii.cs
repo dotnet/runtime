@@ -112,7 +112,6 @@ namespace System.Net
                 {
                     if (FastGetHashCode(firstString) == FastGetHashCode(secondString))
                     {
-                        int comparisons = firstString.Length;
                         while (index > 0)
                         {
                             index--;

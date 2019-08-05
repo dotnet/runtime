@@ -1026,7 +1026,6 @@ namespace System.Data.SqlClient
 
         private void WaitForAsyncResults(IAsyncResult asyncResult)
         {
-            Task completionTask = (Task)asyncResult;
             if (!asyncResult.IsCompleted)
             {
                 asyncResult.AsyncWaitHandle.WaitOne();

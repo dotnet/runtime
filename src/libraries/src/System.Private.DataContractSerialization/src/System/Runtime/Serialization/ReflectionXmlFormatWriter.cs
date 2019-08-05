@@ -132,7 +132,6 @@ namespace System.Runtime.Serialization
 
             childElementIndex += memberCount;
 
-            Type classType = classContract.UnadaptedClassType;
             XmlDictionaryString[] memberNames = classContract.MemberNames;
             XmlDictionaryString ns = classContract.Namespace;
             context.IncrementItemCount(classContract.Members.Count);

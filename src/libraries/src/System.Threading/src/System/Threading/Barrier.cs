@@ -764,8 +764,6 @@ namespace System.Threading
                     _actionCallerID = Environment.CurrentManagedThreadId;
                     if (_ownerThreadContext != null)
                     {
-                        var currentContext = _ownerThreadContext;
-
                         ContextCallback? handler = s_invokePostPhaseAction;
                         if (handler == null)
                         {

@@ -417,10 +417,6 @@ namespace System.Data
             //  This is not valid for Whidbey anymore so the code has been removed
 
             // 2. There is no loop in nested relations
-#if DEBUG
-            int numTables = ParentTable.DataSet.Tables.Count;
-#endif
-            DataTable dt = ParentTable;
 
             if (ChildTable == ParentTable)
             {

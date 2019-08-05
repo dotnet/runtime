@@ -336,8 +336,6 @@ namespace System.Net.WebSockets
                         NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, buffer.Count);
                     }
 
-                    int position = buffer.Offset;
-
                     EnsureSendOperation();
                     _sendOperation.BufferType = GetBufferType(messageType, endOfMessage);
                     await _sendOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
