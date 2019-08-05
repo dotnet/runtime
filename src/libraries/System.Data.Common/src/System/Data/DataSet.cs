@@ -859,7 +859,7 @@ namespace System.Data
                 {
                     if (!table.ShouldSerializeLocale())
                     {
-                        bool retchk = table.SetLocaleValue(value, false, false);
+                        table.SetLocaleValue(value, false, false);
                     }
                 }
 
@@ -2287,7 +2287,6 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.InferSchema|INFO> {0}, mode={1}", ObjectID, mode);
             try
             {
-                string ns = xdoc.DocumentElement.NamespaceURI;
                 if (null == excludedNamespaces)
                 {
                     excludedNamespaces = Array.Empty<string>();

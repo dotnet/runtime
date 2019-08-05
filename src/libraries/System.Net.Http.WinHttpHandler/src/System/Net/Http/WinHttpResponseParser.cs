@@ -24,8 +24,6 @@ namespace System.Net.Http
         {
             HttpRequestMessage request = state.RequestMessage;
             SafeWinHttpHandle requestHandle = state.RequestHandle;
-            CookieUsePolicy cookieUsePolicy = state.Handler.CookieUsePolicy;
-            CookieContainer cookieContainer = state.Handler.CookieContainer;
             var response = new HttpResponseMessage();
             bool stripEncodingHeaders = false;
 

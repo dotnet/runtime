@@ -197,7 +197,6 @@ namespace System.Runtime.Serialization.Json
 
             childElementIndex += memberCount;
 
-            Type classType = classContract.UnadaptedClassType;
             context.IncrementItemCount(classContract.Members.Count);
             for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
             {

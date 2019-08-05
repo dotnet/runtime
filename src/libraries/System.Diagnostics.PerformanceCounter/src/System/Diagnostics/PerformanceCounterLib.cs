@@ -718,7 +718,6 @@ namespace System.Diagnostics
                             object objectID = key.GetValue("First Counter");
                             if (objectID != null)
                             {
-                                int firstID = (int)objectID;
                                 lock (table)
                                 {
                                     table[category] = categoryType;

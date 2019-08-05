@@ -484,9 +484,7 @@ namespace System.Diagnostics
             /// </summary>
             public FilterAndTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource, FilterAndTransform next)
             {
-#if DEBUG
-                string spec = filterAndPayloadSpec.Substring(startIdx, endIdx - startIdx);
-#endif 
+                Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
                 Next = next;
                 _eventSource = eventSource;
 
@@ -711,7 +709,6 @@ namespace System.Diagnostics
                 TypeInfo curTypeInfo = type.GetTypeInfo();
                 foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
                 {
-                    Type propertyType = property.PropertyType;
                     newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
                 }
                 return Reverse(newSerializableArgs);
@@ -762,10 +759,7 @@ namespace System.Diagnostics
             /// </summary>
             public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec next = null)
             {
-                Debug.Assert(transformSpec != null && startIdx < endIdx);
-#if DEBUG
-                string spec = transformSpec.Substring(startIdx, endIdx - startIdx);
-#endif
+                Debug.Assert(transformSpec != null && startIdx >= 0 && startIdx < endIdx && endIdx <= transformSpec.Length);
                 Next = next;
 
                 // Pick off the Var=

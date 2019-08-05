@@ -256,7 +256,6 @@ namespace System.Data.SqlClient
         {
             get
             {
-                string result = _accessToken;
                 // When a connection is connecting or is ever opened, make AccessToken available only if "Persist Security Info" is set to true
                 // otherwise, return null
                 SqlConnectionString connectionOptions = (SqlConnectionString)UserConnectionOptions;
@@ -1110,7 +1109,6 @@ namespace System.Data.SqlClient
 
                         if (retryTask.IsFaulted)
                         {
-                            Exception e = retryTask.Exception.InnerException;
                             _parent.CloseInnerConnection();
                             _parent._currentCompletion = null;
                             _result.SetException(retryTask.Exception.InnerException);

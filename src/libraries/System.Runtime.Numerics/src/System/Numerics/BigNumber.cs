@@ -761,8 +761,8 @@ namespace System.Numerics
             if (value._sign < 0)
             {
                 string negativeSign = info.NegativeSign;
-                for (int i = info.NegativeSign.Length - 1; i > -1; i--)
-                    rgch[--ichDst] = info.NegativeSign[i];
+                for (int i = negativeSign.Length - 1; i > -1; i--)
+                    rgch[--ichDst] = negativeSign[i];
             }
 
             int resultLength = cchMax - ichDst;

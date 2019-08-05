@@ -573,7 +573,6 @@ namespace System.Data
 
         internal void Check()
         {
-            Function f = s_funcs[_info];
             if (_info < 0)
                 throw ExprException.UndefinedFunction(_name);
 

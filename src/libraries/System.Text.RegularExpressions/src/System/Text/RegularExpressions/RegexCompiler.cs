@@ -1013,7 +1013,6 @@ namespace System.Text.RegularExpressions
          */
         private void GenerateMiddleSection()
         {
-            Label l1 = DefineLabel();
             Label[] table;
             int i;
 
@@ -1227,7 +1226,6 @@ namespace System.Text.RegularExpressions
                 Label lAdvance = DefineLabel();
                 Label lFail = DefineLabel();
                 Label lStart = DefineLabel();
-                Label lOutOfRange = DefineLabel();
                 Label lPartialMatch = DefineLabel();
 
 
@@ -1398,7 +1396,6 @@ namespace System.Text.RegularExpressions
             else
             {
                 LocalBuilder cV = _temp2V;
-                LocalBuilder chV = _tempV;
                 Label l1 = DefineLabel();
                 Label l2 = DefineLabel();
                 Label l3 = DefineLabel();
@@ -2141,8 +2138,6 @@ namespace System.Text.RegularExpressions
                         LocalBuilder count = _tempV;
                         LocalBuilder mark = _temp2V;
                         Label l1 = DefineLabel();
-                        Label l2 = DefineLabel();
-                        Label l3 = _labels[NextCodepos()];
 
                         PopStack();
                         Stloc(count);                           // count -> temp

@@ -36,7 +36,6 @@ namespace System.Data
 
                             if (functionAddr == IntPtr.Zero)
                             {
-                                int hResult = Marshal.GetLastWin32Error();
                                 throw CreateLocalDBException(errorMessage: SR.LocalDB_MethodNotFound);
                             }
                             s_localDBFormatMessage = Marshal.GetDelegateForFunctionPointer<LocalDBFormatMessageDelegate>(functionAddr);

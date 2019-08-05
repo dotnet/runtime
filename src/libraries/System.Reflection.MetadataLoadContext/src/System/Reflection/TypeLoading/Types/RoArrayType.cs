@@ -154,7 +154,6 @@ namespace System.Reflection.TypeLoading
 
             int uniquifier = 0;
             RoType systemInt32 = Loader.GetCoreType(CoreType.Int32);
-            RoArrayType arrayType = this;
             RoType elementType = GetRoElementType();
             RoType systemVoid = Loader.GetCoreType(CoreType.Void);
 

@@ -577,7 +577,6 @@ namespace System.Xml
             DataTable table = row.Table;
             DataColumnCollection columns = table.Columns;
             int iColumn = (col != null) ? col.Ordinal - 1 : columns.Count - 1;
-            int cColumns = columns.Count;
             DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
 
             for (; iColumn >= 0; iColumn--)
@@ -1071,7 +1070,7 @@ namespace System.Xml
             XPathNodePointer xp2 = other.Clone((DataDocumentXPathNavigator)(other._owner.Target));
             while (xp1.MoveToNextNamespace(XPathNamespaceScope.All))
             {
-                if (xp1.IsSamePosition(other))
+                if (xp1.IsSamePosition(xp2))
                     return XmlNodeOrder.Before;
             }
             return XmlNodeOrder.After;
@@ -1409,7 +1408,6 @@ namespace System.Xml
                 attrName = "xmlns";
             RealFoliate();
             XmlNode node = _node;
-            XmlNodeType nt = node.NodeType;
             XmlAttribute attr = null;
             XmlBoundElement be = null;
             while (node != null)

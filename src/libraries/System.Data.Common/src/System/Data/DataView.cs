@@ -1600,8 +1600,6 @@ namespace System.Data
                         return;
                     }
 
-                    DataTable table = _index != null ? _index.Table : newIndex.Table;
-
                     if (_index != null)
                     {
                         _dvListener.UnregisterListChangedEvent();

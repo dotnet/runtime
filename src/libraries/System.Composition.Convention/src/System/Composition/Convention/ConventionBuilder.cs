@@ -126,7 +126,6 @@ namespace System.Composition.Convention
 
         private IEnumerable<Tuple<object, List<Attribute>>> EvaluateThisTypeInfoAgainstTheConvention(TypeInfo typeInfo)
         {
-            List<Tuple<object, List<Attribute>>> results = new List<Tuple<object, List<Attribute>>>();
             List<Attribute> attributes = new List<Attribute>();
             var configuredMembers = new List<Tuple<object, List<Attribute>>>();
             bool specifiedConstructor = false;

@@ -941,7 +941,6 @@ namespace System.Data
                         /* Check for binary constant */
                         if (ch == '0' && (text[_pos] == 'x' || text[_pos] == 'X'))
                         {
-                            ScanBinaryConstant();
                             _token = Tokens.BinaryConst;
                             goto end_loop;
                         }
@@ -1101,11 +1100,6 @@ namespace System.Data
                 _token = Tokens.Date;
             }
             _pos++;
-        }
-
-        private void ScanBinaryConstant()
-        {
-            char[] text = _text;
         }
 
         private void ScanReserved()

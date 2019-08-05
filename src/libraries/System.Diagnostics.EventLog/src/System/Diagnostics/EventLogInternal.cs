@@ -134,8 +134,6 @@ namespace System.Diagnostics
         {
             get
             {
-                string currentMachineName = this.machineName;
-
                 if (entriesCollection == null)
                     entriesCollection = new EventLogEntryCollection(this);
                 return entriesCollection;
@@ -335,7 +333,6 @@ namespace System.Diagnostics
         {
             get
             {
-                string currentMachineName = this.machineName;
                 return boolFlags[Flag_monitoring];
             }
             set
@@ -386,7 +383,6 @@ namespace System.Diagnostics
         {
             get
             {
-                string currentMachineName = this.machineName;
                 if (this.synchronizingObject == null && parent.ComponentDesignMode)
                 {
                     IDesignerHost host = (IDesignerHost)parent.ComponentGetService(typeof(IDesignerHost));
@@ -411,7 +407,6 @@ namespace System.Diagnostics
         {
             get
             {
-                string currentMachineName = this.machineName;
                 return sourceName;
             }
         }
@@ -449,12 +444,10 @@ namespace System.Diagnostics
         {
             add
             {
-                string currentMachineName = this.machineName;
                 onEntryWrittenHandler += value;
             }
             remove
             {
-                string currentMachineName = this.machineName;
                 onEntryWrittenHandler -= value;
             }
         }
