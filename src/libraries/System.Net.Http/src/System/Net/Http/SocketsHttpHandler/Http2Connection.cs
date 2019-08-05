@@ -1085,6 +1085,36 @@ namespace System.Net.Http
             }
         }
 
+        private HttpRequestException GetShutdownException()
+        {
+            Debug.Assert(Monitor.IsEntered(SyncObject));
+
+            // Throw a retryable exception that will allow this unprocessed request to be processed on a new connection.
+            // In rare cases, such as receiving GOAWAY immediately after connection establishment, we will not 
+            // actually retry the request, so we must give a useful exception here for these cases.
+
+            Exception innerException;
+            if (_abortException != null)
+            {
+                innerException = _abortException;
+            }
+            else if (_lastStreamId != -1)
+            {
+                // We must have received a GOAWAY.
+                innerException = new IOException(SR.net_http_server_shutdown);
+            }
+            else
+            {
+                // We must either be disposed or out of stream IDs.
+                // Note that in this case, the exception should never be visible to the user (it should be retried).
+                Debug.Assert(_disposed || _nextStream == MaxStreamId);
+
+                innerException = new ObjectDisposedException(nameof(Http2Connection));
+            }
+
+            return new HttpRequestException(SR.net_http_client_execution_error, innerException, allowRetry: true);
+        }
+
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
         {
             // We serialize usage of the header encoder and the header buffer.
@@ -1113,14 +1143,13 @@ namespace System.Net.Http
                     // Throw a retryable request exception if this is not result of some other error.
                     // This will cause retry logic to kick in and perform another connection attempt.
                     // The user should never see this exception.  See also below.
-                    if (_abortException != null)
-                    {
-                        throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
-                    }
-
                     Debug.Assert(_disposed || _lastStreamId != -1);
                     Debug.Assert(_httpStreams.Count == 0);
-                    throw CreateRetryException();
+
+                    lock (SyncObject)
+                    {
+                        throw GetShutdownException();
+                    }
                 }
 
                 try
@@ -1135,7 +1164,7 @@ namespace System.Net.Http
                             // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
                             // Throw a retryable request exception. This will cause retry logic to kick in
                             // and perform another connection attempt. The user should never see this exception.
-                            throw CreateRetryException();
+                            throw GetShutdownException();
                         }
 
                         streamId = _nextStream;
@@ -1706,7 +1735,7 @@ namespace System.Net.Http
                     // The connection is shutting down.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw CreateRetryException();
+                    throw GetShutdownException();
                 }
 
                 Http2Stream http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
