@@ -9,38 +9,39 @@ Requirements
 
 You need a Debian based host, and the following packages need to be installed:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
+    $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
 
 In addition, to cross compile CoreFX, the binutils for the target are required. So for arm you need:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-arm-linux-gnueabihf
+    $ sudo apt-get install binutils-arm-linux-gnueabihf
 
 for armel:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-arm-linux-gnueabi
+    $ sudo apt-get install binutils-arm-linux-gnueabi
 
 and for arm64 you need:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-aarch64-linux-gnu
+    $ sudo apt-get install binutils-aarch64-linux-gnu
 
 
 Generating the rootfs
 ---------------------
-The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an Ubuntu 14.04 rootfs as this is what CoreFX targets.
+The `eng/common/cross/build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an Ubuntu 16.04 rootfs as this is what CoreFX targets.
 
-    Usage: ./cross/build-rootfs.sh [BuildArch] [UbuntuCodeName]
+    Usage: ./eng/common/cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount] --rootfsdir <directory>]
     BuildArch can be: arm, armel, arm64, x86
-    UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, jessie(default) or tizen.
+    LinuxCodeName - optional, Code name for Linux, can be: trusty, xenial(default), zesty, bionic, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen.
+    lldbx.y - optional, LLDB version, can be: lldb3.9(default), lldb4.0, lldb5.0, lldb6.0 no-lldb. Ignored for alpine
 
-The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. It will, by default, generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
+The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. It will, by default, generate the rootfs in `cross/rootfs/<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable or by using --rootfsdir.
 
 For example, to generate an arm rootfs:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo ./cross/build-rootfs.sh arm
+    $ sudo ./eng/common/cross/build-rootfs.sh arm
 
 and if you wanted to generate the rootfs elsewhere:
 
-    lgs@ubuntu ~/git/corefx/ $ sudo ROOTFS_DIR=/home/lgs/corefx-cross/arm ./build-rootfs.sh arm
+    $ sudo ./build-rootfs.sh arm --rootfsdir  /mnt/corefx-cross/arm
 
 
 Cross compiling for native CoreFX
@@ -49,15 +50,15 @@ Once the rootfs has been generated, it will be possible to cross compile CoreFX.
 
 So, without `ROOTFS_DIR`:
 
-    lgs@ubuntu ~/git/corefx/ $ ./src/Native/build-native.sh debug arm verbose cross
+    $ ./src/Native/build-native.sh debug arm verbose cross
 
 And with:
 
-    lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./src/Native/build-native.sh debug arm verbose cross
+    $ ROOTFS_DIR=/mnt/corefx-cross/arm ./src/Native/build-native.sh debug arm verbose cross
 
-As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildType/native` as following:
+As usual the generated binaries will be found in `artifacts/bin/BuildOS.BuildArch.BuildType/native` as following:
 
-    lgs@ubuntu ~/git/corefx/ ls -al ./artifacts/bin/Linux.arm.Debug/native
+    $ ls -al ./artifacts/bin/Linux.arm.Debug/native
     total 988
     drwxrwxr-x 2 lgs lgs   4096  3  6 18:33 .
     drwxrwxr-x 3 lgs lgs   4096  3  6 18:33 ..
@@ -66,7 +67,7 @@ As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildTyp
     -rw-r--r-- 1 lgs lgs 228279  3  6 18:33 System.Native.so
     -rw-r--r-- 1 lgs lgs  53089  3  6 18:33 System.Net.Http.Native.so
     -rw-r--r-- 1 lgs lgs 266720  3  6 18:33 System.Security.Cryptography.Native.so
-    lgs@ubuntu ~/git/corefx/ file ./bin/Linux.arm.Debug/native/System.Native.so
+    $ file ./artifacts/bin/Linux.arm.Debug/native/System.Native.so
     ./bin/Linux.arm.Debug/native/System.Native.so:
     ELF 32-bit LSB  shared object, ARM, EABI5 version 1 (SYSV),
     dynamically linked, BuildID[sha1]=fac50f1bd657c1759f0ad6cf5951511ddf252e67, not stripped
@@ -78,9 +79,13 @@ The managed components of CoreFX are architecture-independent and thus do not re
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
-    lgs@ubuntu ~/git/corefx/ $ ./build.sh /p:BuildNative=false
+    $ ROOTFS_DIR=/mnt/corefx-cross/arm ./build.sh --arch arm
 
-The output is at `bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
+You can also build just managed code with:
+
+    $ ./build.sh --arch arm /p:BuildNative=false
+
+The output is at `artifacts/bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
 
 Building corefx for Linux ARM Emulator
 =======================================
