@@ -869,7 +869,7 @@ namespace System.Resources
                     // Skip over the array of nameHashes.
                     _ums.Seek(seekPos, SeekOrigin.Current);
                     // get the position pointer once more to check that the whole table is within the stream
-                    byte* junk = _ums.PositionPointer;
+                    _ = _ums.PositionPointer;
                 }
             }
 
@@ -901,7 +901,7 @@ namespace System.Resources
                     // Skip over the array of namePositions.
                     _ums.Seek(seekPos, SeekOrigin.Current);
                     // get the position pointer once more to check that the whole table is within the stream
-                    byte* junk = _ums.PositionPointer;
+                    _ = _ums.PositionPointer;
                 }
             }
 
