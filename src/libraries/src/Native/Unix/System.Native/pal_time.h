@@ -38,10 +38,6 @@ DLLEXPORT uint64_t SystemNative_GetTimestampResolution(void);
  */
 DLLEXPORT uint64_t SystemNative_GetTimestamp(void);
 
-DLLEXPORT int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp);
-
-DLLEXPORT int32_t SystemNative_GetTimebaseInfo(uint32_t* numer, uint32_t* denom);
-
 /**
  * The main purpose of this function is to compute the overall CPU utilization
  * for the CLR thread pool to regulate the number of worker threads.
