@@ -32,6 +32,7 @@ namespace System.Text.Encodings.Web
         public virtual void Encode(System.IO.TextWriter output, char[] value, int startIndex, int characterCount) { }
         public void Encode(System.IO.TextWriter output, string value) { }
         public virtual void Encode(System.IO.TextWriter output, string value, int startIndex, int characterCount) { }
+        public virtual System.Buffers.OperationStatus Encode(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsConsumed, out int charsWritten, bool isFinalBlock = true) { throw null; }
         public virtual string Encode(string value) { throw null; }
         public virtual System.Buffers.OperationStatus EncodeUtf8(System.ReadOnlySpan<byte> utf8Source, System.Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
         [System.CLSCompliantAttribute(false)]

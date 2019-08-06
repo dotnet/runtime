@@ -119,6 +119,7 @@ namespace System.Text.Encodings.Web
             {
                 throw new ArgumentNullException(nameof(text));
             }
+
             return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
@@ -160,7 +161,7 @@ namespace System.Text.Encodings.Web
 
             if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
 
-            char[] toCopy = null;
+            char[] toCopy;
             switch (unicodeScalar)
             {
                 case '\b': toCopy = s_b; break;
