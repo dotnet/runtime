@@ -1404,6 +1404,12 @@ mono_crash_reporting_register_native_library (const char *module_path, const cha
 	return;
 }
 
+static void
+mono_crash_reporting_allow_all_native_libraries ()
+{
+	return;
+}
+
 
 #else
 
