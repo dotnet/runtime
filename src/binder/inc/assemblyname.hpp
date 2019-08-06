@@ -82,10 +82,6 @@ namespace BINDER_SPACE
         BOOL Equals(/* in */ AssemblyName *pAssemblyName,
                     /* in */ DWORD         dwIncludeFlags);
 
-        // Compare assembly ref with assembly def ignoring assembly version
-        BOOL RefEqualsDef(/* in */ AssemblyName *pAssemblyNameDef,
-                          /* in */ BOOL          fInspectionOnly);
-
         HRESULT Clone(/* out */ AssemblyName **ppAssemblyName);
 
         void GetDisplayName(/* out */ PathString &displayName,
