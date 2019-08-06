@@ -9,6 +9,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+#if !BUILDING_INBOX_LIBRARY
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
@@ -23,6 +24,7 @@ namespace System.Text.Json
 
             return IsInRangeInclusive(value ^ 0xD800U, 0x800U, 0x10FFFFU);
         }
+#endif
 
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is between
@@ -31,14 +33,6 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInRangeInclusive(uint value, uint lowerBound, uint upperBound)
             => (value - lowerBound) <= (upperBound - lowerBound);
-
-        /// <summary>
-        /// Returns <see langword="true"/> if <paramref name="value"/> is between
-        /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInRangeInclusive(byte value, byte lowerBound, byte upperBound)
-            => ((byte)(value - lowerBound) <= (byte)(upperBound - lowerBound));
 
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is between

@@ -48,71 +48,6 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// A copy of the logic in Rune.DecodeFromUtf16.
-        /// </summary>
-        public static OperationStatus DecodeScalarValueFromUtf16(ReadOnlySpan<char> source, out uint result, out int charsConsumed)
-        {
-            const char ReplacementChar = '\uFFFD';
-
-            if (!source.IsEmpty)
-            {
-                // First, check for the common case of a BMP scalar value.
-                // If this is correct, return immediately.
-
-                uint firstChar = source[0];
-                if (!UnicodeUtility.IsSurrogateCodePoint(firstChar))
-                {
-                    result = firstChar;
-                    charsConsumed = 1;
-                    return OperationStatus.Done;
-                }
-
-                // First thing we saw was a UTF-16 surrogate code point.
-                // Let's optimistically assume for now it's a high surrogate and hope
-                // that combining it with the next char yields useful results.
-
-                if (1 < (uint)source.Length)
-                {
-                    uint secondChar = source[1];
-                    if (UnicodeUtility.IsHighSurrogateCodePoint(firstChar) && UnicodeUtility.IsLowSurrogateCodePoint(secondChar))
-                    {
-                        // Success! Formed a supplementary scalar value.
-                        result = UnicodeUtility.GetScalarFromUtf16SurrogatePair(firstChar, secondChar);
-                        charsConsumed = 2;
-                        return OperationStatus.Done;
-                    }
-                    else
-                    {
-                        // Either the first character was a low surrogate, or the second
-                        // character was not a low surrogate. This is an error.
-                        goto InvalidData;
-                    }
-                }
-                else if (!UnicodeUtility.IsHighSurrogateCodePoint(firstChar))
-                {
-                    // Quick check to make sure we're not going to report NeedMoreData for
-                    // a single-element buffer where the data is a standalone low surrogate
-                    // character. Since no additional data will ever make this valid, we'll
-                    // report an error immediately.
-                    goto InvalidData;
-                }
-            }
-
-            // If we got to this point, the input buffer was empty, or the buffer
-            // was a single element in length and that element was a high surrogate char.
-
-            charsConsumed = source.Length;
-            result = ReplacementChar;
-            return OperationStatus.NeedMoreData;
-
-        InvalidData:
-
-            charsConsumed = 1; // maximal invalid subsequence for UTF-16 is always a single code unit in length
-            result = ReplacementChar;
-            return OperationStatus.InvalidData;
-        }
-
-        /// <summary>
         /// A copy of the logic in Rune.DecodeFromUtf8.
         /// </summary>
         public static OperationStatus DecodeScalarValueFromUtf8(ReadOnlySpan<byte> source, out uint result, out int bytesConsumed)
@@ -309,23 +244,26 @@ namespace System.Text.Unicode
         /// Set 'endOfString' to true if 'pChar' points to the last character in the stream.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int GetScalarValueFromUtf16(char first, char? second, out bool wasSurrogatePair)
+        internal static int GetScalarValueFromUtf16(char first, char? second, out bool wasSurrogatePair, out bool needsMoreData)
         {
             if (!char.IsSurrogate(first))
             {
                 wasSurrogatePair = false;
+                needsMoreData = false;
                 return first;
             }
-            return GetScalarValueFromUtf16Slow(first, second, out wasSurrogatePair);
+
+            return GetScalarValueFromUtf16Slow(first, second, out wasSurrogatePair, out needsMoreData);
         }
 
-        private static int GetScalarValueFromUtf16Slow(char first, char? second, out bool wasSurrogatePair)
+        private static int GetScalarValueFromUtf16Slow(char first, char? second, out bool wasSurrogatePair, out bool needMoreData)
         {
 #if DEBUG
             if (!char.IsSurrogate(first))
             {
                 Debug.Assert(false, "This case should've been handled by the fast path.");
                 wasSurrogatePair = false;
+                needMoreData = false;
                 return first;
             }
 #endif
@@ -337,12 +275,14 @@ namespace System.Text.Unicode
                     {
                         // valid surrogate pair - extract codepoint
                         wasSurrogatePair = true;
+                        needMoreData = false;
                         return GetScalarValueFromUtf16SurrogatePair(first, second.Value);
                     }
                     else
                     {
                         // unmatched surrogate - substitute
                         wasSurrogatePair = false;
+                        needMoreData = false;
                         return UNICODE_REPLACEMENT_CHAR;
                     }
                 }
@@ -350,6 +290,7 @@ namespace System.Text.Unicode
                 {
                     // unmatched surrogate - substitute
                     wasSurrogatePair = false;
+                    needMoreData = true; // Last character was high surrogate; we need more data.
                     return UNICODE_REPLACEMENT_CHAR;
                 }
             }
@@ -358,6 +299,7 @@ namespace System.Text.Unicode
                 // unmatched surrogate - substitute
                 Debug.Assert(char.IsLowSurrogate(first));
                 wasSurrogatePair = false;
+                needMoreData = false;
                 return UNICODE_REPLACEMENT_CHAR;
             }
         }
