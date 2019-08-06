@@ -1431,11 +1431,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		t = mini_get_underlying_type (sig->params [i]);
 		switch (t->type) {
 		case MONO_TYPE_I1:
+			cinfo->args [n].is_signed = 1;
 		case MONO_TYPE_U1:
 			cinfo->args [n].size = 1;
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			break;
 		case MONO_TYPE_I2:
+			cinfo->args [n].is_signed = 1;
 		case MONO_TYPE_U2:
 			cinfo->args [n].size = 2;
 			add_general (&gr, &stack_size, ainfo, TRUE);

@@ -1000,16 +1000,19 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		ptype = mini_get_underlying_type (sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_I1:
+			ainfo->is_signed = 1;
 		case MONO_TYPE_U1:
 			add_general (&gr, &stack_size, ainfo);
 			ainfo->byte_arg_size = 1;
 			break;
 		case MONO_TYPE_I2:
+			ainfo->is_signed = 1;
 		case MONO_TYPE_U2:
 			add_general (&gr, &stack_size, ainfo);
 			ainfo->byte_arg_size = 2;
 			break;
 		case MONO_TYPE_I4:
+			ainfo->is_signed = 1;
 		case MONO_TYPE_U4:
 			add_general (&gr, &stack_size, ainfo);
 			ainfo->byte_arg_size = 4;

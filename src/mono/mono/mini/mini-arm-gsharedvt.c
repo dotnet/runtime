@@ -221,13 +221,12 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 			if (ainfo2->storage == RegTypeGeneral && ainfo2->size != 0 && ainfo2->size != sizeof (target_mgreg_t)) {
 				/* Have to load less than 4 bytes */
-				// FIXME: Signed types
 				switch (ainfo2->size) {
 				case 1:
-					arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL_U1;
+					arg_marshal = ainfo2->is_signed ? GSHAREDVT_ARG_BYREF_TO_BYVAL_I1 : GSHAREDVT_ARG_BYREF_TO_BYVAL_U1;
 					break;
 				case 2:
-					arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL_U2;
+					arg_marshal = ainfo2->is_signed ? GSHAREDVT_ARG_BYREF_TO_BYVAL_I2 : GSHAREDVT_ARG_BYREF_TO_BYVAL_U2;
 					break;
 				default:
 					g_assert_not_reached ();

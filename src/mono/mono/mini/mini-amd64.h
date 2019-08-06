@@ -323,6 +323,7 @@ typedef struct {
 	// Size in bytes for small arguments
 	int byte_arg_size;
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
+	guint8 is_signed : 1;
 } ArgInfo;
 
 struct CallInfo {

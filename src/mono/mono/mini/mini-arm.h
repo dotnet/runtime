@@ -211,6 +211,7 @@ typedef struct {
 	/* RegTypeStructByVal */
 	gint32  struct_size, align;
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
+	guint8  is_signed : 1;
 } ArgInfo;
 
 struct CallInfo {

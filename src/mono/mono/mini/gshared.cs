@@ -1893,6 +1893,84 @@ public class Tests
 		return obj.foo<IFaceTest, int> (ref t);
 	}
 
+
+	class MyBaseTest<TOutput> {
+		public void Verify<TInput> (Func<TInput, TOutput> convert, TInput[] testValues, TOutput[] expectedValues) {
+			MyAssert.Equal (expectedValues.Length, testValues.Length);
+
+			for (int i = 0; i < testValues.Length; i++) {
+				TOutput result = convert (testValues[i]);
+				MyAssert.Equal (expectedValues[i], result);
+			}
+		}
+	}
+
+	class MyAssert {
+		public static void Equal<T>(T expected, T actual) {
+			if (!GetEqualityComparer<T> ().Equals (expected, actual))
+				throw new MyEqualException (expected, actual);
+		}
+
+		static IEqualityComparer<T> GetEqualityComparer<T>() {
+			return new AssertEqualityComparer<T>();
+		}
+	}
+
+	class AssertEqualityComparer<T> : IEqualityComparer<T> {
+		public AssertEqualityComparer() { }
+
+		public bool Equals(T x, T y) {
+			var equatable = x as IEquatable<T>;
+			if (equatable != null)
+				return equatable.Equals (y);
+			throw new NotImplementedException( );
+		}
+
+		public int GetHashCode(T obj) {
+			throw new NotImplementedException();
+		}
+	}
+
+	class MyEqualException : Exception {
+		public MyEqualException (object expected, object actual) {
+			Console.WriteLine ("MyEqualException: expected = " + expected + " vs. actual = " + actual);
+		}
+	}
+
+	class SByteTestClass : MyBaseTest<sbyte> {
+		public static int execute () {
+			Int32[] testValues = { 100, -100, 0 };
+			SByte[] expectedValues = { 100, -100, 0 };
+			try {
+				new SByteTestClass ().Verify (Convert.ToSByte, testValues, expectedValues);
+				return 0;
+			} catch (MyEqualException) {
+				return 1;
+			}
+			return 2;
+		}
+	}
+	static int test_0_out_sbyte () {
+		return SByteTestClass.execute ();
+	}
+
+	class Int16TestClass : MyBaseTest<Int16> {
+		public static int execute () {
+			Int32[] testValues = { 100, -100, 0 };
+			Int16[] expectedValues = { 100, -100, 0 };
+			try {
+				new Int16TestClass ().Verify (Convert.ToInt16, testValues, expectedValues);
+				return 0;
+			} catch (MyEqualException) {
+				return 1;
+			}
+			return 2;
+		}
+	}
+	static int test_0_out_int16 () {
+		return Int16TestClass.execute ();
+	}
+
 	// Sign extension tests
 	// 0x55   == 85    == 01010101
 	// 0xAA   == 170   == 10101010

@@ -379,16 +379,15 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 		if (arg_marshal == GSHAREDVT_ARG_BYREF_TO_BYVAL && dst_info->byte_arg_size) {
 			/* Have to load less than 4 bytes */
-			// FIXME: Signed types
 			switch (dst_info->byte_arg_size) {
 			case 1:
-				arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL_U1;
+				arg_marshal = dst_info->is_signed ? GSHAREDVT_ARG_BYREF_TO_BYVAL_I1 : GSHAREDVT_ARG_BYREF_TO_BYVAL_U1;
 				break;
 			case 2:
-				arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL_U2;
+				arg_marshal = dst_info->is_signed ? GSHAREDVT_ARG_BYREF_TO_BYVAL_I2 : GSHAREDVT_ARG_BYREF_TO_BYVAL_U2;
 				break;
 			default:
-				arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL_U4;
+				arg_marshal = dst_info->is_signed ? GSHAREDVT_ARG_BYREF_TO_BYVAL_I4 : GSHAREDVT_ARG_BYREF_TO_BYVAL_U4;
 				break;
 			}
 		}
