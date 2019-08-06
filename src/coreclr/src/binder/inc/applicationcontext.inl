@@ -45,11 +45,6 @@ ExecutionContext *ApplicationContext::GetExecutionContext()
     return m_pExecutionContext;
 }
 
-InspectionContext *ApplicationContext::GetInspectionContext()
-{
-    return m_pInspectionContext;
-}
-
 FailureCache *ApplicationContext::GetFailureCache()
 {
     _ASSERTE(m_pFailureCache != NULL);

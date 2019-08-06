@@ -443,7 +443,6 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
 
             // A GetAssembly overload perhaps, or just another parameter to the existing method
             hr = BINDER_SPACE::AssemblyBinder::GetAssembly(fileName,
-                                FALSE, /* fInspectionOnly */
                                 TRUE, /* fIsInGAC */
                                 TRUE /* fExplicitBindToNativeImage */,
                                 &pAssembly,
@@ -476,7 +475,6 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
         fileName.Append(W(".ni.DLL"));
         
         hr = BINDER_SPACE::AssemblyBinder::GetAssembly(fileName,
-                        FALSE, /* fInspectionOnly */
                         FALSE, /* fIsInGAC */
                         TRUE /* fExplicitBindToNativeImage */,
                         &pAssembly);
@@ -496,7 +494,6 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
     
     // We did not find a native image for this WinMD; open the WinMD file itself as the assembly to return.
     hr = BINDER_SPACE::AssemblyBinder::GetAssembly(sWinmdFilename,
-                            FALSE, /* fInspectionOnly */
                             FALSE, /* fIsInGAC */
                             FALSE /* fExplicitBindToNativeImage */,
                             ppAssembly);

@@ -32,7 +32,6 @@
 #include "../dlls/mscorrc/fusres.h"
 #endif // FEATURE_VERSIONING_LOG
 
-#define APP_DOMAIN_LOCKED_INSPECTION_ONLY 0x01
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
 
@@ -230,38 +229,6 @@ namespace BINDER_SPACE
             return hr;
         }
 
-        inline UINT GetLockedContextEntry(BOOL fInspectionOnly)
-        {
-            if (fInspectionOnly)
-                return ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_INS_CONTEXT;
-            else
-                return ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_EXE_CONTEXT;
-        }
-
-        inline UINT GetLockedEntry(BOOL fInspectionOnly)
-        {
-            if (fInspectionOnly)
-                return ID_FUSLOG_BINDING_LOCKED_MT_INS_LOCKED_ENTRY;
-            else
-                return ID_FUSLOG_BINDING_LOCKED_MT_EXE_LOCKED_ENTRY;
-        }
-
-        inline UINT GetLocalizedEntry(BOOL fInspectionOnly)
-        {
-            if (fInspectionOnly)
-                return ID_FUSLOG_BINDING_LOCKED_MT_INS_LOCALI_ENTRY;
-            else
-                return ID_FUSLOG_BINDING_LOCKED_MT_EXE_LOCALI_ENTRY;
-        }
-
-        inline UINT GetCBaseEntry(BOOL fInspectionOnly)
-        {
-            if (fInspectionOnly)
-                return ID_FUSLOG_BINDING_LOCKED_MT_INS_CBASE_ENTRY;
-            else
-                return ID_FUSLOG_BINDING_LOCKED_MT_EXE_CBASE_ENTRY;
-        }
-
         HRESULT LogAppDomainLocked(ApplicationContext *pApplicationContext,
                                    DWORD               dwLockedReason,
                                    AssemblyName       *pAssemblyName = NULL)
@@ -273,13 +240,6 @@ namespace BINDER_SPACE
             {
                 PathString info;
                 PathString format;
-                BOOL fInspectionOnly = FALSE;
-
-                if ((dwLockedReason & APP_DOMAIN_LOCKED_INSPECTION_ONLY) != 0)
-                {
-                    dwLockedReason &= ~APP_DOMAIN_LOCKED_INSPECTION_ONLY;
-                    fInspectionOnly = TRUE;
-                }
 
                 switch (dwLockedReason)
                 {
@@ -298,7 +258,7 @@ namespace BINDER_SPACE
 
                     IF_FAIL_GO(format.
                                LoadResourceAndReturnHR(CCompRC::Debugging,
-                                                       GetLockedContextEntry(fInspectionOnly)));
+                                                       ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_EXE_CONTEXT));
 
                     pAssemblyName->GetDisplayName(displayName,
                                                   AssemblyName::INCLUDE_VERSION |
@@ -438,7 +398,6 @@ namespace BINDER_SPACE
                                     PEKIND                   PeKind,
                                     PEImage                 *pPEImage,
                                     PEImage                 *pNativePEImage,
-                                    BOOL                     fInspectionOnly,
                                     BindResult              *pBindResult)
         {
             HRESULT hr = S_OK;
@@ -451,7 +410,6 @@ namespace BINDER_SPACE
                                        pPEImage,
                                        pNativePEImage,
                                        asesmblyPath,
-                                       fInspectionOnly,
                                        FALSE /* fIsInGAC */));
             
             pBindResult->SetResult(pAssembly);
@@ -678,7 +636,7 @@ namespace BINDER_SPACE
     /* static */
     HRESULT AssemblyBinder::BindToSystem(SString   &systemDirectory,
                                          Assembly **ppSystemAssembly,
-                                         bool fBindToNativeImage)
+                                         bool       fBindToNativeImage)
     {
         _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
 
@@ -707,7 +665,6 @@ namespace BINDER_SPACE
         fExplicitBindToNativeImage = FALSE;
 #endif // FEATURE_NI_BIND_FALLBACK
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
-                                               FALSE /* fInspectionOnly */,
                                                TRUE /* fIsInGAC */,
                                                fExplicitBindToNativeImage,
                                                &pSystemAssembly));
@@ -749,7 +706,6 @@ namespace BINDER_SPACE
         sMscorlibSatellite.Append(W(".dll"));
 
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
-                                               FALSE /* fInspectionOnly */,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly));
@@ -794,7 +750,6 @@ namespace BINDER_SPACE
                                    pPEImage,
                                    pNativePEImage,
                                    g_BinderVariables->emptyString,
-                                   FALSE /* fInspectionOnly */,
                                    FALSE /* fIsInGAC */));
 
         // TODO: Is this correct?
@@ -911,7 +866,6 @@ namespace BINDER_SPACE
         // Design decision. For now, keep the V2 model of Fusion being oblivious of the strong name.
         // Security team did not see any security concern with interpreting the version information.
         IF_FAIL_GO(GetAssembly(assemblyPath,
-                               FALSE /* fInspectionOnly */,
                                FALSE /* fIsInGAC */,
                                
                                // Pass through caller's intent of whether to bind to the
@@ -1001,7 +955,6 @@ namespace BINDER_SPACE
         {
             IF_FAIL_GO(BindByTpaList(pApplicationContext,
                                      pAssemblyName,
-                                     FALSE /*fInspectionOnly*/,
                                      excludeAppPaths,
                                      pBindResult));
             if (pBindResult->HaveResult())
@@ -1096,7 +1049,6 @@ namespace BINDER_SPACE
     HRESULT BindSatelliteResourceByResourceRoots(ApplicationContext  *pApplicationContext,
                                           StringArrayList     *pResourceRoots,
                                           AssemblyName        *pRequestedAssemblyName,
-                                          BOOL                 fInspectionOnly,
                                           BindResult          *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1117,7 +1069,6 @@ namespace BINDER_SPACE
             fileName.Append(W(".dll"));
 
             hr = AssemblyBinder::GetAssembly(fileName,
-                                             fInspectionOnly,
                                              FALSE /* fIsInGAC */,
                                              FALSE /* fExplicitBindToNativeImage */,
                                              &pAssembly);
@@ -1170,7 +1121,6 @@ namespace BINDER_SPACE
     /* static */
     HRESULT AssemblyBinder::BindByTpaList(ApplicationContext  *pApplicationContext,
                                           AssemblyName        *pRequestedAssemblyName,
-                                          BOOL                 fInspectionOnly,
                                           bool                 excludeAppPaths,
                                           BindResult          *pBindResult)
     {
@@ -1190,7 +1140,6 @@ namespace BINDER_SPACE
             hr = BindSatelliteResourceByResourceRoots(pApplicationContext, 
                                                       pApplicationContext->GetPlatformResourceRoots(), 
                                                       pRequestedAssemblyName, 
-                                                      fInspectionOnly, 
                                                       pBindResult);
             
             // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
@@ -1206,7 +1155,6 @@ namespace BINDER_SPACE
                 IF_FAIL_GO(BindSatelliteResourceByResourceRoots(pApplicationContext, 
                                                                 pApplicationContext->GetAppPaths(), 
                                                                 pRequestedAssemblyName, 
-                                                                fInspectionOnly, 
                                                                 pBindResult));
             }
         }
@@ -1224,7 +1172,6 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszNIFileName);
 
                     hr = GetAssembly(fileName,
-                                     fInspectionOnly,
                                      TRUE,  // fIsInGAC
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
@@ -1235,7 +1182,6 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszILFileName);
                     
                     hr = GetAssembly(fileName,
-                                     fInspectionOnly,
                                      TRUE,  // fIsInGAC
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
@@ -1290,7 +1236,6 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".ni.dll"));
                                 hr = GetAssembly(fileName,
-                                                 fInspectionOnly,
                                                  FALSE, // fIsInGAC
                                                  TRUE,  // fExplicitBindToNativeImage
                                                  &pAssembly);
@@ -1299,7 +1244,6 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".dll"));
                                 hr = GetAssembly(fileName,
-                                                 fInspectionOnly,
                                                  FALSE, // fIsInGAC
                                                  FALSE, // fExplicitBindToNativeImage
                                                  &pAssembly);
@@ -1315,7 +1259,6 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".ni.exe"));
                                 hr = GetAssembly(fileName,
-                                                 fInspectionOnly,
                                                  FALSE, // fIsInGAC
                                                  TRUE,  // fExplicitBindToNativeImage
                                                  &pAssembly);
@@ -1324,7 +1267,6 @@ namespace BINDER_SPACE
                             {
                                 fileName.Append(W(".exe"));
                                 hr = GetAssembly(fileName,
-                                                 fInspectionOnly,
                                                  FALSE, // fIsInGAC
                                                  FALSE, // fExplicitBindToNativeImage
                                                  &pAssembly);
@@ -1409,7 +1351,6 @@ namespace BINDER_SPACE
     
     /* static */
     HRESULT AssemblyBinder::GetAssembly(SString     &assemblyPath,
-                                        BOOL         fInspectionOnly,
                                         BOOL         fIsInGAC,
                                         
                                         // When binding to the native image, should we
@@ -1513,7 +1454,6 @@ namespace BINDER_SPACE
                                    pPEImage,
                                    pNativePEImage,
                                    assemblyPath,
-                                   fInspectionOnly,
                                    fIsInGAC));
 
         // We're done
@@ -1539,7 +1479,6 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinder::Register(ApplicationContext *pApplicationContext,
-                                     BOOL                fInspectionOnly,
                                      BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1549,34 +1488,26 @@ namespace BINDER_SPACE
         {
             pApplicationContext->IncrementVersion();
 
-            if (fInspectionOnly)
+            // Register the bindResult in the ExecutionContext only if we dont have it already.
+            // This method is invoked under a lock (by its caller), so we are thread safe.
+            ContextEntry *pContextEntry = NULL;
+            hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
+            if (hr == S_OK)
             {
-                InspectionContext *pInspectionContext = pApplicationContext->GetInspectionContext();
-                IF_FAIL_GO(pInspectionContext->Register(pBindResult));
-            }
-            else
-            {
-                // Register the bindResult in the ExecutionContext only if we dont have it already.
-                // This method is invoked under a lock (by its caller), so we are thread safe.
-                ContextEntry *pContextEntry = NULL;
-                hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
-                if (hr == S_OK)
+                if (pContextEntry == NULL)
                 {
-                    if (pContextEntry == NULL)
-                    {
-                        ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
-                        IF_FAIL_GO(pExecutionContext->Register(pBindResult));
-                    }
-                    else
-                    {
-                        // The dynamic binds are compiled in CoreCLR, but they are not supported. They are only reachable by internal API Assembly.Load(byte[]) that nobody should be calling.
-                        // This code path does not handle dynamic binds correctly (and is not expected to). We do not expect to come here for dynamic binds.
+                    ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
+                    IF_FAIL_GO(pExecutionContext->Register(pBindResult));
+                }
+                else
+                {
+                    // The dynamic binds are compiled in CoreCLR, but they are not supported. They are only reachable by internal API Assembly.Load(byte[]) that nobody should be calling.
+                    // This code path does not handle dynamic binds correctly (and is not expected to). We do not expect to come here for dynamic binds.
 
-                        _ASSERTE(!pContextEntry->GetIsDynamicBind());
+                    _ASSERTE(!pContextEntry->GetIsDynamicBind());
                         
-                        // Update the BindResult with the contents of the ContextEntry we found
-                        pBindResult->SetResult(pContextEntry);
-                    }
+                    // Update the BindResult with the contents of the ContextEntry we found
+                    pBindResult->SetResult(pContextEntry);
                 }
             }
         }
@@ -1622,7 +1553,6 @@ namespace BINDER_SPACE
 
                 // No bind interfered, we can now register
                 IF_FAIL_GO(Register(pApplicationContext,
-                                    FALSE /* fInspectionOnly */,
                                     pHostBindResult));
             }
         }
@@ -1739,7 +1669,6 @@ Retry:
                                            peKind,
                                            pPEImage,
                                            NULL,
-                                           FALSE,
                                            &bindResult));
 
         }

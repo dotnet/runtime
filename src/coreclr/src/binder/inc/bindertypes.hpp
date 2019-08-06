@@ -41,7 +41,6 @@ namespace BINDER_SPACE
 
     class ContextEntry;
     class ExecutionContext;
-    class InspectionContext;
 
     class PropertyMap;
     class ApplicationContext;

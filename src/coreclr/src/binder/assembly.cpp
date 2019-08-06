@@ -148,13 +148,11 @@ Exit:
         SAFE_DELETE_ARRAY(m_pAssemblyRefTokens);
     }
 
-    HRESULT Assembly::Init(
-                           IMDInternalImport       *pIMetaDataAssemblyImport,
+    HRESULT Assembly::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
                            PEKIND                   PeKind,
                            PEImage                 *pPEImage,
                            PEImage                 *pNativePEImage,
                            SString                 &assemblyPath,
-                           BOOL                     fInspectionOnly,
                            BOOL                     fIsInGAC)
     {
         HRESULT hr = S_OK;
@@ -178,7 +176,6 @@ Exit:
         // Safe architecture for validation
         PEKIND kAssemblyArchitecture;
         kAssemblyArchitecture = pAssemblyName->GetArchitecture();
-        SetInspectionOnly(fInspectionOnly);
         SetIsInGAC(fIsInGAC);
         SetPEImage(pPEImage);
         SetNativePEImage(pNativePEImage);
@@ -188,7 +185,7 @@ Exit:
         SetAssemblyName(pAssemblyName.Extract(), FALSE /* fAddRef */);
 
         // Finally validate architecture
-        if (!fInspectionOnly && !IsValidArchitecture(kAssemblyArchitecture))
+        if (!IsValidArchitecture(kAssemblyArchitecture))
         {
             // Assembly image can't be executed on this platform
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
