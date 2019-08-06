@@ -3580,7 +3580,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public void EscapeSurrogatePairs(bool formatted, bool skipValidation)
+        public void HighSurrogateMissingGetsReplaced(bool formatted, bool skipValidation)
         {
             var propertyArray = new char[10] { 'a', (char)0xD800, (char)0xDC00, (char)0xD803, (char)0xDE6D, (char)0xD834, (char)0xDD1E, (char)0xDBFF, (char)0xDFFF, 'a' };
 
@@ -3630,118 +3630,179 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public void EscapeSurrogatePairsThrowsHighSurrogateMissing()
+        public void EscapeSurrogatePairs()
         {
             string propertyName = "a \uD800\uDC00\uDE6D a";
             string value = propertyName;
             var output = new ArrayBufferWriter<byte>(12);
-            using var jsonUtf8 = new Utf8JsonWriter(output);
-
-            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(propertyName, value));
-        }
-
-        private const string InvalidUtf8 = "\"\\uFFFD(\"";
-        private const string ValidUtf8 = "\"\\u00F1\"";
-
-        // todo: verify that we should be using replacement char and not throwing here if skipValidation=true
-        [Theory]
-        [InlineData(true,
-            "{" + InvalidUtf8 + ":" + InvalidUtf8 + "}",
-            "{" + InvalidUtf8 + ":" + ValidUtf8 + "}",
-            "{" + ValidUtf8 + ":" + InvalidUtf8 + "}",
-            "{" + ValidUtf8 + ":" + ValidUtf8 + "}")]
-        [InlineData(false,
-            "{" + InvalidUtf8 + ":" + InvalidUtf8 + "}",
-            "{" + InvalidUtf8 + ":" + ValidUtf8 + "}",
-            "{" + ValidUtf8 + ":" + InvalidUtf8 + "}",
-            "{" + ValidUtf8 + ":" + ValidUtf8 + "}")]
-        public void UTF8ReplacementCharacters(bool skipValidation, string expected0, string expected1, string expected2, string expected3)
-        {
-            var options = new JsonWriterOptions { SkipValidation = skipValidation };
-
-            var validUtf8 = new byte[2] { 0xc3, 0xb1 }; // 0xF1
-            var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
-
-            string WriteProperty(byte[] propertyName, byte[] value)
+            using (var jsonUtf8 = new Utf8JsonWriter(output))
             {
-                var output = new ArrayBufferWriter<byte>(1024);
-                using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteString(propertyName, value);
                 jsonUtf8.WriteEndObject();
-                jsonUtf8.Flush();
-                string result = Encoding.UTF8.GetString(
-                        output.WrittenSpan
-#if netfx
-                        .ToArray()
-#endif
-                    );
-                output.Clear();
-                return result;
             }
 
-            string result;
-            result = WriteProperty(invalidUtf8, invalidUtf8);
-            Assert.Equal(expected0, result);
+            JsonTestHelper.AssertContents("{\"a \\uD800\\uDC00\\uFFFD a\":\"a \\uD800\\uDC00\\uFFFD a\"}", output);
+        }
 
-            result = WriteProperty(invalidUtf8, validUtf8);
-            Assert.Equal(expected1, result);
+        private static readonly byte[] s_InvalidUtf8Input = new byte[2] { 0xc3, 0x28 };
+        private const string InvalidUtf8Expected = "\"\\uFFFD(\"";
 
-            result = WriteProperty(validUtf8, invalidUtf8);
-            Assert.Equal(expected2, result);
+        private static readonly byte[] s_ValidUtf8Input = new byte[2] { 0xc3, 0xb1 }; // 0xF1
+        private const string ValidUtf8Expected = "\"\\u00F1\"";
 
-            result = WriteProperty(validUtf8, validUtf8);
-            Assert.Equal(expected3, result);
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf8SurrogatePairReplacement_InvalidPropertyName_InvalidValue(bool skipValidation)
+        {
+            // SkipValidation does not affect whether we write the replacement character or not (we always do, unless we add a new option to control).
+            // Comment also applies to other Utf8SurrogatePairReplacement* tests below.
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_InvalidUtf8Input, s_InvalidUtf8Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + InvalidUtf8Expected + ":" + InvalidUtf8Expected + "}", output);
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void InvalidUTF16(bool formatted, bool skipValidation)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf8SurrogatePairReplacement_InvalidPropertyName_ValidValue(bool skipValidation)
         {
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
 
             var output = new ArrayBufferWriter<byte>(1024);
-            using var jsonUtf8 = new Utf8JsonWriter(output, options);
-
-            var validUtf16 = new char[2] { (char)0xD801, (char)0xDC37 }; // 0x10437
-            var invalidUtf16 = new char[2] { (char)0xD801, 'a' };
-
-            jsonUtf8.WriteStartObject();
-            for (int i = 0; i < 7; i++)
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
-                switch (i)
-                {
-                    case 0:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(invalidUtf16, invalidUtf16));
-                        break;
-                    case 1:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(invalidUtf16, validUtf16));
-                        break;
-                    case 2:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(validUtf16, invalidUtf16));
-                        break;
-                    case 3:
-                        jsonUtf8.WriteString(validUtf16, validUtf16);
-                        break;
-                    case 4:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(invalidUtf16));
-                        break;
-                    case 5:
-                        jsonUtf8.WritePropertyName(validUtf16);
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(invalidUtf16));
-                        jsonUtf8.WriteStringValue(validUtf16);
-                        break;
-                    case 6:
-                        jsonUtf8.WritePropertyName(validUtf16);
-                        jsonUtf8.WriteStringValue(validUtf16);
-                        break;
-                }
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_InvalidUtf8Input, s_ValidUtf8Input);
+                jsonUtf8.WriteEndObject();
             }
-            jsonUtf8.WriteEndObject();
-            jsonUtf8.Flush();
+
+            JsonTestHelper.AssertContents("{" + InvalidUtf8Expected + ":" + ValidUtf8Expected + "}", output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf8SurrogatePairReplacement_ValidPropertyName_InvalidValue(bool skipValidation)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_ValidUtf8Input, s_InvalidUtf8Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + ValidUtf8Expected + ":" + InvalidUtf8Expected + "}", output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf8SurrogatePairReplacement_ValidPropertyName_ValidValue(bool skipValidation)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_ValidUtf8Input, s_ValidUtf8Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + ValidUtf8Expected + ":" + ValidUtf8Expected + "}", output);
+        }
+
+        private static readonly string s_InvalidUtf16Input = new string (new char[2] { (char)0xD801, 'a' });
+        private const string InvalidUtf16Expected = "\"\\uFFFDa\"";
+
+        private static readonly string s_ValidUtf16Input = new string(new char[2] { (char)0xD801, (char)0xDC37 }); // 0x10437
+        private const string ValidUtf16Expected = "\"\\uD801\\uDC37\"";
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf16SurrogatePairReplacement_InvalidPropertyName_InvalidValue(bool skipValidation)
+        {
+            // SkipValidation does not affect whether we write the replacement character or not (we always do, unless we add a new option to control).
+            // Comment also applies to other Utf16SurrogatePairReplacement* tests below.
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_InvalidUtf16Input, s_InvalidUtf16Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + InvalidUtf16Expected + ":" + InvalidUtf16Expected + "}", output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf16SurrogatePairReplacement_InvalidPropertyName_ValidValue(bool skipValidation)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_InvalidUtf16Input, s_ValidUtf16Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + InvalidUtf16Expected + ":" + ValidUtf16Expected + "}", output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf16SurrogatePairReplacement_ValidPropertyName_InvalidValue(bool skipValidation)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_ValidUtf16Input, s_InvalidUtf16Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + ValidUtf16Expected + ":" + InvalidUtf16Expected + "}", output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Utf16SurrogatePairReplacement_ValidPropertyName_ValidValue(bool skipValidation)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
+
+            var output = new ArrayBufferWriter<byte>(1024);
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(s_ValidUtf16Input, s_ValidUtf16Input);
+                jsonUtf8.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents("{" + ValidUtf16Expected + ":" + ValidUtf16Expected + "}", output);
         }
 
         public static IEnumerable<object[]> JsonEncodedTextStringsCustomAll

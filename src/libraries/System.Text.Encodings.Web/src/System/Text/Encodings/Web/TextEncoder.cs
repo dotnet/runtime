@@ -22,11 +22,12 @@ namespace System.Text.Encodings.Web
     public abstract class TextEncoder
     {
         // Fast cache for Ascii
-#pragma warning disable CA1825 // should not be Array.Empty<byte> as this is used as a singleton for comparisons
-        private static readonly byte[] s_noEscape = new byte[] { };
-#pragma warning restore CA1825
         private byte[][] _asciiEscape = new byte[0x80][];
-        
+
+        // Keep a reference to Array.Empty<byte> as this is used as a singleton for comparisons
+        // and there is no guarantee that Array.Empty<byte>() will always be the same instance.
+        private static readonly byte[] s_noEscape = Array.Empty<byte>();
+
         // The following pragma disables a warning complaining about non-CLS compliant members being abstract, 
         // and wants me to mark the type as non-CLS compliant. 
         // It is true that this type cannot be extended by all CLS compliant languages. 
@@ -111,7 +112,12 @@ namespace System.Text.Encodings.Web
                     if (bufferSize < 1024)
                     {
                         char* wholebuffer = stackalloc char[bufferSize];
-                        int totalWritten = EncodeIntoBuffer(wholebuffer, bufferSize, valuePointer, value.Length, firstCharacterToEncode);
+                        OperationStatus status = EncodeIntoBuffer(wholebuffer, bufferSize, valuePointer, value.Length, out int _, out int totalWritten, firstCharacterToEncode);
+                        if (status != OperationStatus.Done)
+                        {
+                            ThrowArgumentException_MaxOutputCharsPerInputChar();
+                        }
+
                         result = new string(wholebuffer, 0, totalWritten);
                     }
                     else
@@ -119,7 +125,12 @@ namespace System.Text.Encodings.Web
                         char[] wholebuffer = new char[bufferSize];
                         fixed (char* buffer = &wholebuffer[0])
                         {
-                            int totalWritten = EncodeIntoBuffer(buffer, bufferSize, valuePointer, value.Length, firstCharacterToEncode);
+                            OperationStatus status = EncodeIntoBuffer(buffer, bufferSize, valuePointer, value.Length, out int _, out int totalWritten, firstCharacterToEncode);
+                            if (status != OperationStatus.Done)
+                            {
+                                ThrowArgumentException_MaxOutputCharsPerInputChar();
+                            }
+
                             result = new string(wholebuffer, 0, totalWritten);
                         }
                     }
@@ -129,12 +140,21 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        // NOTE: The order of the parameters to this method is a work around for https://github.com/dotnet/corefx/issues/4455
-        // and the underlying Mono bug: https://bugzilla.xamarin.com/show_bug.cgi?id=36052.
-        // If changing the signature of this method, ensure this issue isn't regressing on Mono.
-        private unsafe int EncodeIntoBuffer(char* buffer, int bufferLength, char* value, int valueLength, int firstCharacterToEncode)
+        private unsafe OperationStatus EncodeIntoBuffer(
+            char* buffer,
+            int bufferLength,
+            char* value,
+            int valueLength,
+            out int charsConsumed,
+            out int charsWritten,
+            int firstCharacterToEncode,
+            bool isFinalBlock = true)
         {
-            int totalWritten = 0;
+            Debug.Assert(value != null);
+            Debug.Assert(firstCharacterToEncode >= 0);
+
+            char* originalBuffer = buffer;
+            charsWritten = 0;
 
             if (firstCharacterToEncode > 0)
             {
@@ -144,7 +164,7 @@ namespace System.Text.Encodings.Web
                     destinationSizeInBytes: sizeof(char) * bufferLength,
                     sourceBytesToCopy: sizeof(char) * firstCharacterToEncode);
 
-                totalWritten += firstCharacterToEncode;
+                charsWritten += firstCharacterToEncode;
                 bufferLength -= firstCharacterToEncode;
                 buffer += firstCharacterToEncode;
             }
@@ -154,7 +174,6 @@ namespace System.Text.Encodings.Web
             char firstChar = value[valueIndex];
             char secondChar = firstChar;
             bool wasSurrogatePair = false;
-            int charsWritten;
 
             // this loop processes character pairs (in case they are surrogates).
             // there is an if block below to process single last character.
@@ -169,6 +188,7 @@ namespace System.Text.Encodings.Web
                 {
                     firstChar = value[secondCharIndex - 1];
                 }
+
                 secondChar = value[secondCharIndex];
 
                 if (!WillEncode(firstChar))
@@ -177,41 +197,52 @@ namespace System.Text.Encodings.Web
                     *buffer = firstChar;
                     buffer++;
                     bufferLength--;
-                    totalWritten++;
+                    charsWritten++;
                 }
                 else
                 {
-                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair);
-                    if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
+                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair, out bool _);
+                    if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out int charsWrittenThisTime))
                     {
-                        throw new ArgumentException("Argument encoder does not implement MaxOutputCharsPerInputChar correctly.");
+                        charsConsumed = (int)(originalBuffer - buffer);
+                        return OperationStatus.DestinationTooSmall;
                     }
 
-                    buffer += charsWritten;
-                    bufferLength -= charsWritten;
-                    totalWritten += charsWritten;
                     if (wasSurrogatePair)
                     {
                         secondCharIndex++;
                     }
+
+                    buffer += charsWrittenThisTime;
+                    bufferLength -= charsWrittenThisTime;
+                    charsWritten += charsWrittenThisTime;
                 }
             }
 
             if (secondCharIndex == valueLength)
             {
                 firstChar = value[valueLength - 1];
-                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair);
-                if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
+                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair, out bool needMoreData);
+                if (!isFinalBlock && needMoreData)
                 {
-                    throw new ArgumentException("Argument encoder does not implement MaxOutputCharsPerInputChar correctly.");
+                    Debug.Assert(wasSurrogatePair == false);
+                    charsConsumed = (int)(buffer - originalBuffer);
+                    return OperationStatus.NeedMoreData;
                 }
 
-                buffer += charsWritten;
-                bufferLength -= charsWritten;
-                totalWritten += charsWritten;
+                if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out int charsWrittenThisTime))
+                {
+                    charsConsumed = (int)(buffer - originalBuffer);
+                    return OperationStatus.DestinationTooSmall;
+                }
+
+                buffer += charsWrittenThisTime;
+                bufferLength -= charsWrittenThisTime;
+                charsWritten += charsWrittenThisTime;
             }
 
-            return totalWritten;
+            charsConsumed = valueLength;
+            return OperationStatus.Done;
         }
 
         /// <summary>
@@ -250,7 +281,7 @@ namespace System.Text.Encodings.Web
                     char* substring = valuePointer + startIndex;
                     int firstIndexToEncode = FindFirstCharacterToEncode(substring, characterCount);
 
-                    if (firstIndexToEncode == -1) // nothing to encode; 
+                    if (firstIndexToEncode == -1) // nothing to encode;
                     {
                         if (startIndex == 0 && characterCount == value.Length) // write whole string
                         {
@@ -303,7 +334,7 @@ namespace System.Text.Encodings.Web
                     char* substring = valuePointer + startIndex;
                     int firstIndexToEncode = FindFirstCharacterToEncode(substring, characterCount);
 
-                    if (firstIndexToEncode == -1) // nothing to encode; 
+                    if (firstIndexToEncode == -1) // nothing to encode;
                     {
                         if (startIndex == 0 && characterCount == value.Length) // write whole string
                         {
@@ -342,7 +373,12 @@ namespace System.Text.Encodings.Web
         /// <see langword="false"/> if there is no further source data that needs to be encoded.</param>
         /// <returns>An <see cref="OperationStatus"/> describing the result of the encoding operation.</returns>
         /// <remarks>The buffers <paramref name="utf8Source"/> and <paramref name="utf8Destination"/> must not overlap.</remarks>
-        public unsafe virtual OperationStatus EncodeUtf8(ReadOnlySpan<byte> utf8Source, Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        public unsafe virtual OperationStatus EncodeUtf8(
+            ReadOnlySpan<byte> utf8Source,
+            Span<byte> utf8Destination,
+            out int bytesConsumed,
+            out int bytesWritten,
+            bool isFinalBlock = true)
         {
             int originalUtf8SourceLength = utf8Source.Length;
             int originalUtf8DestinationLength = utf8Destination.Length;
@@ -464,6 +500,7 @@ namespace System.Text.Encodings.Web
                             bytesWritten = originalUtf8DestinationLength - utf8Destination.Length;
                             return OperationStatus.NeedMoreData;
                         }
+                        // else treat this as a normal invalid subsequence.
                     }
                     else if (opStatus == OperationStatus.DestinationTooSmall)
                     {
@@ -524,6 +561,59 @@ namespace System.Text.Encodings.Web
             return encoder.EncodeUtf8(utf8Source, utf8Destination, out bytesConsumed, out bytesWritten, isFinalBlock);
         }
 
+        /// <summary>
+        /// Encodes the supplied characters.
+        /// </summary>
+        /// <param name="source">A source buffer containing the characters to encode.</param>
+        /// <param name="destination">The destination buffer to which the encoded form of <paramref name="source"/>
+        /// will be written.</param>
+        /// <param name="charsConsumed">The number of characters consumed from the <paramref name="source"/> buffer.</param>
+        /// <param name="charsWritten">The number of characters written to the <paramref name="destination"/> buffer.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> if there is further source data that needs to be encoded;
+        /// <see langword="false"/> if there is no further source data that needs to be encoded.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the encoding operation.</returns>
+        /// <remarks>The buffers <paramref name="source"/> and <paramref name="destination"/> must not overlap.</remarks>
+        public virtual OperationStatus Encode(
+            ReadOnlySpan<char> source,
+            Span<char> destination,
+            out int charsConsumed,
+            out int charsWritten,
+            bool isFinalBlock = true)
+        {
+            unsafe
+            {
+                fixed (char* sourcePtr = source)
+                {
+                    int firstCharacterToEncode;
+                    if (source.IsEmpty || (firstCharacterToEncode = FindFirstCharacterToEncode(sourcePtr, source.Length)) == -1)
+                    {
+                        if (source.TryCopyTo(destination))
+                        {
+                            charsConsumed = source.Length;
+                            charsWritten = source.Length;
+                            return OperationStatus.Done;
+                        }
+
+                        charsConsumed = 0;
+                        charsWritten = 0;
+                        return OperationStatus.DestinationTooSmall;
+                    }
+                    else if (destination.IsEmpty)
+                    {
+                        // Guards against passing a null destinationPtr to EncodeIntoBuffer (pinning an empty Span will return a null pointer).
+                        charsConsumed = 0;
+                        charsWritten = 0;
+                        return OperationStatus.DestinationTooSmall;
+                    }
+
+                    fixed (char* destinationPtr = destination)
+                    {
+                        return EncodeIntoBuffer(destinationPtr, destination.Length, sourcePtr, source.Length, out charsConsumed, out charsWritten, firstCharacterToEncode, isFinalBlock);
+                    }
+                }
+            }
+        }
+
         private unsafe void EncodeCore(TextWriter output, char* value, int valueLength)
         {
             Debug.Assert(value != null & output != null);
@@ -559,10 +649,10 @@ namespace System.Text.Encodings.Web
                 }
                 else
                 {
-                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair);
+                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair, out bool _);
                     if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
                     {
-                        throw new ArgumentException("Argument encoder does not implement MaxOutputCharsPerInputChar correctly.");
+                        ThrowArgumentException_MaxOutputCharsPerInputChar();
                     }
                     Write(output, buffer, charsWritten);
 
@@ -576,10 +666,10 @@ namespace System.Text.Encodings.Web
             if (!wasSurrogatePair || (secondCharIndex == valueLength))
             {
                 firstChar = value[valueLength - 1];
-                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair);
+                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair, out bool _);
                 if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
                 {
-                    throw new ArgumentException("Argument encoder does not implement MaxOutputCharsPerInputChar correctly.");
+                    ThrowArgumentException_MaxOutputCharsPerInputChar();
                 }
                 Write(output, buffer, charsWritten);
             }
@@ -719,12 +809,17 @@ namespace System.Text.Encodings.Web
             {
                 if (!WillEncode(value))
                 {
-                    _asciiEscape[value] = s_noEscape;
-                    return s_noEscape;
+                    encoding = s_noEscape;
+                    _asciiEscape[value] = encoding;
                 }
             }
 
             return encoding;
+        }
+
+        private static void ThrowArgumentException_MaxOutputCharsPerInputChar()
+        {
+            throw new ArgumentException("Argument encoder does not implement MaxOutputCharsPerInputChar correctly.");
         }
     }
 }
