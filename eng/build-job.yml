@@ -115,7 +115,7 @@ jobs:
           inputs:
             command: restore
             feedsToUse: config
-            projects: 'src/.nuget/optdata/ibcmerge.csproj'
+            projects: '$(Build.SourcesDirectory)/eng/common/internal/Tools.csproj'
             nugetConfigPath: 'eng/internal/NuGet.config'
             restoreDirectory: '$(Build.SourcesDirectory)\.packages'
             verbosityRestore: 'normal'
