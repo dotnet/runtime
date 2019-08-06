@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using Xunit;
 
@@ -12,10 +13,10 @@ namespace System.Drawing.Printing.Tests
         [Fact]
         public void Ctor_Default()
         {
-            PrinterResolution pr = new PrinterResolution();
-            Assert.Equal(PrinterResolutionKind.Custom, pr.Kind);
-            Assert.Equal(0, pr.X);
-            Assert.Equal(0, pr.Y);
+            var resolution = new PrinterResolution();
+            Assert.Equal(PrinterResolutionKind.Custom, resolution.Kind);
+            Assert.Equal(0, resolution.X);
+            Assert.Equal(0, resolution.Y);
         }
 
         [Theory]
@@ -26,9 +27,15 @@ namespace System.Drawing.Printing.Tests
         [InlineData(int.MinValue)]
         public void X_Value_ReturnsExpected(int value)
         {
-            PrinterResolution pr = new PrinterResolution();
-            pr.X = value;
-            Assert.Equal(value, pr.X);
+            var resolution = new PrinterResolution
+            {
+                X = value
+            };
+            Assert.Equal(value, resolution.X);
+
+            // Set same.
+            resolution.X = value;
+            Assert.Equal(value, resolution.X);
         }
 
         [Theory]
@@ -39,9 +46,15 @@ namespace System.Drawing.Printing.Tests
         [InlineData(int.MinValue)]
         public void Y_Value_ReturnsExpected(int value)
         {
-            PrinterResolution pr = new PrinterResolution();
-            pr.Y = value;
-            Assert.Equal(value, pr.Y);
+            var resolution = new PrinterResolution
+            {
+                Y = value
+            };
+            Assert.Equal(value, resolution.Y);
+
+            // Set same.
+            resolution.Y = value;
+            Assert.Equal(value, resolution.Y);
         }
 
         [Theory]
@@ -50,21 +63,41 @@ namespace System.Drawing.Printing.Tests
         [InlineData(PrinterResolutionKind.High)]
         [InlineData(PrinterResolutionKind.Low)]
         [InlineData(PrinterResolutionKind.Medium)]
-        public void Kind_ReturnsExpected(PrinterResolutionKind kind)
+        public void Kind_Set_GetReturnsExpected(PrinterResolutionKind value)
         {
-            PrinterResolution pr = new PrinterResolution();
-            pr.Kind = kind;
-            Assert.Equal(kind, pr.Kind);
+            var resolution = new PrinterResolution
+            {
+                Kind = value
+            };
+            Assert.Equal(value, resolution.Kind);
+
+            // Set same.
+            resolution.Kind = value;
+            Assert.Equal(value, resolution.Kind);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(PrinterResolutionKind.Custom + 1)]
         [InlineData(PrinterResolutionKind.High - 1)]
-        public void Kind_InvalidEnum_ThrowsInvalidEnumArgumentException(PrinterResolutionKind overflowKind)
+        public void Kind_SetInvalid_ThrowsInvalidEnumArgumentException(PrinterResolutionKind value)
         {
-            PrinterResolution pr = new PrinterResolution();
-            Assert.ThrowsAny<ArgumentException>(() => pr.Kind = overflowKind);
+            var resolution = new PrinterResolution();
+            Assert.Throws<InvalidEnumArgumentException>("value", () => resolution.Kind = value);
+        }
+
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            yield return new object[] { new PrinterResolution(), "[PrinterResolution X=0 Y=0]" };
+            yield return new object[] { new PrinterResolution { X = -1, Y = -2}, "[PrinterResolution X=-1 Y=-2]" };
+            yield return new object[] { new PrinterResolution { Kind = PrinterResolutionKind.High }, "[PrinterResolution High]" };
+            yield return new object[] { new PrinterResolution { X = 1, Y = 2, Kind = PrinterResolutionKind.High }, "[PrinterResolution High]" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public void ToString_Invoke_ReturnsExpected(PrinterResolution resolution, string expected)
+        {
+            Assert.Equal(expected, resolution.ToString());
         }
     }
 }

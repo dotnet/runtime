@@ -53,15 +53,14 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Height
         {
-            get
-            {
-                return _height;
-            }
-
+            get => _height;
             set
             {
                 if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
-                    throw new ArgumentException(SR.PSizeNotCustom);
+                {
+                    throw new ArgumentException(SR.PSizeNotCustom, nameof(value));
+                }
+
                 _height = value;
             }
         }
@@ -75,9 +74,11 @@ namespace System.Drawing.Printing
             {
                 if (_kind <= (PaperKind)SafeNativeMethods.DMPAPER_LAST &&
                     !(_kind == (PaperKind)SafeNativeMethods.DMPAPER_RESERVED_48 || _kind == (PaperKind)SafeNativeMethods.DMPAPER_RESERVED_49))
+                {
                     return _kind;
-                else
-                    return PaperKind.Custom;
+                }
+
+                return PaperKind.Custom;
             }
         }
 
@@ -86,12 +87,14 @@ namespace System.Drawing.Printing
         /// </summary>
         public string PaperName
         {
-            get { return _name; }
-
+            get => _name;
             set
             {
                 if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
-                    throw new ArgumentException(SR.PSizeNotCustom);
+                {
+                    throw new ArgumentException(SR.PSizeNotCustom, nameof(value));
+                }
+
                 _name = value;
             }
         }
@@ -101,8 +104,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public int RawKind
         {
-            get { return unchecked((int)_kind); }
-            set { _kind = unchecked((PaperKind)value); }
+            get => unchecked((int)_kind);
+            set => _kind = unchecked((PaperKind)value);
         }
 
         /// <summary>
@@ -110,15 +113,14 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Width
         {
-            get
-            {
-                return _width;
-            }
-
+            get => _width;
             set
             {
                 if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
-                    throw new ArgumentException(SR.PSizeNotCustom);
+                {
+                    throw new ArgumentException(SR.PSizeNotCustom, nameof(value));
+                }
+
                 _width = value;
             }
         }
@@ -129,11 +131,10 @@ namespace System.Drawing.Printing
         public override string ToString()
         {
             return "[PaperSize " + PaperName
-            + " Kind=" + Kind.ToString()
-            + " Height=" + Height.ToString(CultureInfo.InvariantCulture)
-            + " Width=" + Width.ToString(CultureInfo.InvariantCulture)
-            + "]";
+                + " Kind=" + Kind.ToString()
+                + " Height=" + Height.ToString(CultureInfo.InvariantCulture)
+                + " Width=" + Width.ToString(CultureInfo.InvariantCulture)
+                + "]";
         }
     }
 }
-

@@ -35,97 +35,216 @@ namespace System.Drawing.Printing.Tests
         [Fact]
         public void Ctor_Default()
         {
-            Margins m = new Margins();
-            Assert.Equal(100, m.Left);
-            Assert.Equal(100, m.Top);
-            Assert.Equal(100, m.Right);
-            Assert.Equal(100, m.Bottom);
+            var margins = new Margins();
+            Assert.Equal(100, margins.Left);
+            Assert.Equal(100, margins.Top);
+            Assert.Equal(100, margins.Right);
+            Assert.Equal(100, margins.Bottom);
         }
 
         [Theory]
         [InlineData(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
         [InlineData(0, 1, 2, 3)]
+        [InlineData(0, 0, 0, 0)]
         public void Ctor_Bounds(int left, int right, int top, int bottom)
         {
-            Margins m = new Margins(left, right, top, bottom);
-            Assert.Equal(left, m.Left);
-            Assert.Equal(right, m.Right);
-            Assert.Equal(top, m.Top);
-            Assert.Equal(bottom, m.Bottom);
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [Theory]
-        [InlineData(-1, 0, 0, 0)]
-        [InlineData(0, -1, 0, 0)]
-        [InlineData(0, 0, -1, 0)]
-        [InlineData(0, 0, 0, -1)]
-        public void Ctor_BoundsBadValues_ThrowsArgumentException(int left, int right, int top, int bottom)
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => new Margins(left, right, top, bottom));
-        }
-
-        public static IEnumerable<object[]> Equals_TestData()
-        {
-            yield return new object[] { new Margins(), null, false };
-            yield return new object[] { new Margins(1, 2, 3, 4), new Margins(1, 2, 3, 4), true };
-            yield return new object[] { new Margins(int.MaxValue, 2, 3, 4), new Margins(1, 2, 3, 4), false };
-            yield return new object[] { new Margins(1, int.MaxValue, 3, 4), new Margins(1, 2, 3, 4), false };
-            yield return new object[] { new Margins(1, 2, int.MaxValue, 4), new Margins(1, 2, 3, 4), false };
-            yield return new object[] { new Margins(1, 2, 3, int.MaxValue), new Margins(1, 2, 3, 4), false };
-        }
-
-        [Theory]
-        [MemberData(nameof(Equals_TestData))]
-        public void Equals_Margin_Success(Margins margin1, Margins margin2, bool expectedResult)
-        {
-            Assert.Equal(expectedResult, margin1.Equals(margin2));
-            Assert.Equal(expectedResult, margin1 == margin2);
-            Assert.NotEqual(expectedResult, margin1 != margin2);
+            var margins = new Margins(left, right, top, bottom);
+            Assert.Equal(left, margins.Left);
+            Assert.Equal(right, margins.Right);
+            Assert.Equal(top, margins.Top);
+            Assert.Equal(bottom, margins.Bottom);
         }
 
         [Fact]
-        public void ToString_Success()
+        public void Ctor_NegativeLeft_ThrowsArgumentOutOfRangeException()
         {
-            Margins m = new Margins();
-            Assert.Equal("[Margins Left=100 Right=100 Top=100 Bottom=100]", m.ToString());
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("left", null, () => new Margins(-1, 2, 3, 4));
         }
 
         [Fact]
-        public void Clone_Margin_Success()
+        public void Ctor_NegativeRight_ThrowsArgumentOutOfRangeException()
         {
-            Margins m = new Margins(1, 2, 3, 4);
-            Margins clone = (Margins)m.Clone();
-            Assert.Equal(m, clone);
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("right", null, () => new Margins(1, -1, 3, 4));
+        }
+
+        [Fact]
+        public void Ctor_NegativeTop_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("top", null, () => new Margins(1, 2, -1, 4));
+        }
+
+        [Fact]
+        public void Ctor_NegativeBottom_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("bottom", null, () => new Margins(1, 2, 3, -1));
+        }
+
+        public static IEnumerable<object[]> Equals_Object_TestData()
+        {
+            var margins = new Margins(1, 2, 3, 4);
+            yield return new object[] { margins, margins, true };
+            yield return new object[] { margins, new Margins(1, 2, 3, 4), true };
+            yield return new object[] { margins, new Margins(2, 2, 3, 4), false };
+            yield return new object[] { margins, new Margins(1, 3, 3, 4), false };
+            yield return new object[] { margins, new Margins(1, 2, 4, 4), false };
+            yield return new object[] { margins, new Margins(1, 2, 3, 5), false };
+
+            yield return new object[] { margins, new object(), false };
+            yield return new object[] { margins, null, false };
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(10)]
-        [InlineData(int.MaxValue)]
-        public void Bounds_Values_ReturnsExpected(int boundValue)
+        [MemberData(nameof(Equals_Object_TestData))]
+        public void Equals_InvokeObject_ReturnsExpected(Margins margins, object obj, bool expected)
         {
-            Margins m = new Margins();
-            m.Bottom = boundValue;
-            m.Left = boundValue;
-            m.Right = boundValue;
-            m.Top = boundValue;
-
-            Assert.Equal(boundValue, m.Bottom);
-            Assert.Equal(boundValue, m.Left);
-            Assert.Equal(boundValue, m.Right);
-            Assert.Equal(boundValue, m.Top);
+            Assert.Equal(expected, margins.Equals(obj));
+            if (obj is Margins)
+            {
+                Assert.Equal(expected, margins.GetHashCode().Equals(obj.GetHashCode()));
+            }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [Fact]
-        public void Bounds_BadValues_ThrowsArgumentException()
+        public static IEnumerable<object[]> Equals_Margin_TestData()
         {
-            Margins m = new Margins();
-            AssertExtensions.Throws<ArgumentException>(null, () => m.Bottom = -1);
-            AssertExtensions.Throws<ArgumentException>(null, () => m.Left = -1);
-            AssertExtensions.Throws<ArgumentException>(null, () => m.Right = -1);
-            AssertExtensions.Throws<ArgumentException>(null, () => m.Top = -1);
+            var margins = new Margins(1, 2, 3, 4);
+            yield return new object[] { margins, margins, true };
+            yield return new object[] { margins, new Margins(1, 2, 3, 4), true };
+            yield return new object[] { margins, new Margins(2, 2, 3, 4), false };
+            yield return new object[] { margins, new Margins(1, 3, 3, 4), false };
+            yield return new object[] { margins, new Margins(1, 2, 4, 4), false };
+            yield return new object[] { margins, new Margins(1, 2, 3, 5), false };
+
+            yield return new object[] { null, null, true };
+            yield return new object[] { null, new Margins(1, 2, 3, 4), false };
+            yield return new object[] { new Margins(1, 2, 3, 4), null, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_Margin_TestData))]
+        public void Equals_InvokeMargin_ReturnsExpected(Margins margins1, Margins margins2, bool expected)
+        {
+            Assert.Equal(expected, margins1 == margins2);
+            Assert.Equal(!expected, margins1 != margins2);
+        }
+
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            yield return new object[] { new Margins(), "[Margins Left=100 Right=100 Top=100 Bottom=100]" };
+            yield return new object[] { new Margins(1, 2, 3, 4), "[Margins Left=1 Right=2 Top=3 Bottom=4]" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public void ToString_Invoke_ReturnsExpected(Margins margins, string expected)
+        {
+            Assert.Equal(expected, margins.ToString());
+        }
+
+        [Fact]
+        public void Clone_Invoke_ReturnsExpected()
+        {
+            var margins = new Margins(1, 2, 3, 4);
+            Margins clonedMargins = Assert.IsType<Margins>(margins.Clone());
+            Assert.NotSame(margins, clonedMargins);
+            Assert.Equal(1, clonedMargins.Left);
+            Assert.Equal(2, clonedMargins.Right);
+            Assert.Equal(3, clonedMargins.Top);
+            Assert.Equal(4, clonedMargins.Bottom);
+        }
+
+        public static IEnumerable<object[]> Bounds_Set_TestData()
+        {
+            yield return new object[] { 0 };
+            yield return new object[] { 10 };
+            yield return new object[] { int.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(Bounds_Set_TestData))]
+        public void Left_Set_GetReturnsExpected(int value)
+        {
+            var margins = new Margins
+            {
+                Left = value
+            };
+            Assert.Equal(value, margins.Left);
+
+            // Set same.
+            margins.Left = value;
+            Assert.Equal(value, margins.Left);
+        }
+
+        [Fact]
+        public void Left_SetNegative_ThrowsArgumentOutOfRangeException()
+        {
+            var margins = new Margins();
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () => margins.Left = -1);
+        }
+
+        [Theory]
+        [MemberData(nameof(Bounds_Set_TestData))]
+        public void Right_Set_GetReturnsExpected(int value)
+        {
+            var margins = new Margins
+            {
+                Right = value
+            };
+            Assert.Equal(value, margins.Right);
+
+            // Set same.
+            margins.Right = value;
+            Assert.Equal(value, margins.Right);
+        }
+
+        [Fact]
+        public void Right_SetNegative_ThrowsArgumentOutOfRangeException()
+        {
+            var margins = new Margins();
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () => margins.Right = -1);
+        }
+
+        [Theory]
+        [MemberData(nameof(Bounds_Set_TestData))]
+        public void Top_Set_GetReturnsExpected(int value)
+        {
+            var margins = new Margins
+            {
+                Top = value
+            };
+            Assert.Equal(value, margins.Top);
+
+            // Set same.
+            margins.Top = value;
+            Assert.Equal(value, margins.Top);
+        }
+
+        [Fact]
+        public void Top_SetNegative_ThrowsArgumentOutOfRangeException()
+        {
+            var margins = new Margins();
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () => margins.Top = -1);
+        }
+
+        [Theory]
+        [MemberData(nameof(Bounds_Set_TestData))]
+        public void Bottom_Set_GetReturnsExpected(int value)
+        {
+            var margins = new Margins
+            {
+                Bottom = value
+            };
+            Assert.Equal(value, margins.Bottom);
+
+            // Set same.
+            margins.Bottom = value;
+            Assert.Equal(value, margins.Bottom);
+        }
+
+        [Fact]
+        public void Bottom_SetNegative_ThrowsArgumentOutOfRangeException()
+        {
+            var margins = new Margins();
+            AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () => margins.Bottom = -1);
         }
     }
 }

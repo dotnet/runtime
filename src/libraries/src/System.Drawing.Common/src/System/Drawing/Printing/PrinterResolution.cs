@@ -36,7 +36,7 @@ namespace System.Drawing.Printing
         /// </summary>
         public PrinterResolutionKind Kind
         {
-            get { return _kind; }
+            get => _kind;
             set
             {
                 if (value < PrinterResolutionKind.High || value > PrinterResolutionKind.Custom)
@@ -53,14 +53,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public int X
         {
-            get
-            {
-                return _x;
-            }
-            set
-            {
-                _x = value;
-            }
+            get => _x;
+            set => _x = value;
         }
 
         /// <summary>
@@ -68,14 +62,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Y
         {
-            get
-            {
-                return _y;
-            }
-            set
-            {
-                _y = value;
-            }
+            get => _y;
+            set => _y = value;
         }
 
         /// <summary>
@@ -84,13 +72,12 @@ namespace System.Drawing.Printing
         public override string ToString()
         {
             if (_kind != PrinterResolutionKind.Custom)
-                return "[PrinterResolution " + Kind.ToString()
-                + "]";
-            else
-                return "[PrinterResolution"
-                + " X=" + X.ToString(CultureInfo.InvariantCulture)
-                + " Y=" + Y.ToString(CultureInfo.InvariantCulture)
-                + "]";
+            {
+                return $"[PrinterResolution {Kind}]";
+            }
+
+
+            return FormattableString.Invariant($"[PrinterResolution X={X} Y={Y}]");
         }
     }
 }
