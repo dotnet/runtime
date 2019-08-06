@@ -63,7 +63,7 @@ namespace System.Drawing
 
         public static Region FromHrgn(IntPtr hrgn)
         {
-            Gdip.CheckStatus(Gdip.GdipCreateRegionHrgn(new HandleRef(null, hrgn), out IntPtr region));
+            Gdip.CheckStatus(Gdip.GdipCreateRegionHrgn(hrgn, out IntPtr region));
             return new Region(region);
         }
 

@@ -117,9 +117,6 @@ namespace System.Drawing
             internal static extern int GdipGetBrushType(IntPtr brush, out BrushType type);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHDC(IntPtr hDC, out IntPtr graphics);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteGraphics(HandleRef graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
@@ -310,12 +307,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipLoadImageFromFileICM(string filename, out IntPtr image);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDisposeImage(HandleRef image);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageType(IntPtr image, out ImageType type);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImagePaletteSize(IntPtr image, out int size);
@@ -583,9 +574,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromDC(IntPtr hdc, out IntPtr font);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateFontFromLogfont(IntPtr hdc, ref LOGFONT lf, out IntPtr ptr);
