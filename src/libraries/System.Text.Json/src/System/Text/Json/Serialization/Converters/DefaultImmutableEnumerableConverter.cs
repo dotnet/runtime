@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -108,8 +109,7 @@ namespace System.Text.Json.Serialization.Converters
 
             string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out _, out _);
 
-            JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
-            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
             return propertyInfo.CreateImmutableCollectionInstance(immutableCollectionType, delegateKey, sourceList, state.JsonPath, options);
         }
     }

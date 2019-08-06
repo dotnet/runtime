@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
         public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
         {
             JsonPropertyInfo collectionPropertyInfo = state.Current.JsonPropertyInfo;
-            JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(collectionPropertyInfo.ElementClassInfo, options);
+            JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(collectionPropertyInfo.ElementType, options);
             return elementPropertyInfo.CreateDerivedEnumerableInstance(collectionPropertyInfo, sourceList, state.JsonPath, options);
         }
     }

@@ -11,8 +11,8 @@ namespace System.Text.Json.Serialization.Converters
         public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
         {
             Type enumerableType = state.Current.JsonPropertyInfo.RuntimePropertyType;
-            JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
-            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+            Type elementType = state.Current.JsonPropertyInfo.ElementType;
+            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
             return propertyInfo.CreateIEnumerableInstance(enumerableType, sourceList, state.JsonPath, options);
         }
     }
