@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
         public override object CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options)
         {
             JsonPropertyInfo collectionPropertyInfo = state.Current.JsonPropertyInfo;
-            JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(collectionPropertyInfo.ElementClassInfo, options);
+            JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(collectionPropertyInfo.ElementType, options);
             return elementPropertyInfo.CreateDerivedDictionaryInstance(collectionPropertyInfo, sourceDictionary, state.JsonPath, options);
         }
     }

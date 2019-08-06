@@ -43,8 +43,7 @@ namespace System.Text.Json
             // Convert non-immutable dictionary interfaces to concrete types.
             if (IsNativelySupportedCollection(propertyType) && implementedType.IsInterface && jsonInfo.ClassType == ClassType.Dictionary)
             {
-                JsonClassInfo elementClassInfo = jsonInfo.ElementClassInfo;
-                JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+                JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(jsonInfo.ElementType, options);
 
                 Type newPropertyType = elementPropertyInfo.GetDictionaryConcreteType();
                 if (implementedType != newPropertyType)
@@ -60,8 +59,7 @@ namespace System.Text.Json
                 !implementedType.IsArray &&
                 ((IsDeserializedByAssigningFromList(implementedType) && IsNativelySupportedCollection(propertyType)) || IsSetInterface(implementedType)))
             {
-                JsonClassInfo elementClassInfo = jsonInfo.ElementClassInfo;
-                JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+                JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(jsonInfo.ElementType, options);
 
                 // Get a runtime type for the implemented property. e.g. ISet<T> -> HashSet<T>, ICollection -> List<object>
                 // We use the element's JsonPropertyInfo so we can utilize the generic support.

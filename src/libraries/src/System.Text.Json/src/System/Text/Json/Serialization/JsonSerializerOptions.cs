@@ -351,10 +351,8 @@ namespace System.Text.Json
             };
         }
 
-        internal JsonPropertyInfo GetJsonPropertyInfoFromClassInfo(JsonClassInfo classInfo, JsonSerializerOptions options)
+        internal JsonPropertyInfo GetJsonPropertyInfoFromClassInfo(Type objectType, JsonSerializerOptions options)
         {
-            Type objectType = classInfo.Type;
-
             if (!_objectJsonProperties.TryGetValue(objectType, out JsonPropertyInfo propertyInfo))
             {
                 propertyInfo = JsonClassInfo.CreateProperty(objectType, objectType, objectType, null, typeof(object), options);

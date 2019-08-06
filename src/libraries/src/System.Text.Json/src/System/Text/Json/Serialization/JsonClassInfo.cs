@@ -28,22 +28,48 @@ namespace System.Text.Json
         // Cache of properties by first JSON ordering. Use an array for highest performance.
         private volatile PropertyRef[] _propertyRefsSorted = null;
 
-        internal delegate object ConstructorDelegate();
-        internal ConstructorDelegate CreateObject { get; private set; }
-        internal ConstructorDelegate CreateConcreteDictionary { get; private set; }
+        public delegate object ConstructorDelegate();
+        public ConstructorDelegate CreateObject { get; private set; }
+        public ConstructorDelegate CreateConcreteDictionary { get; private set; }
 
-        internal ClassType ClassType { get; private set; }
+        public ClassType ClassType { get; private set; }
 
         public JsonPropertyInfo DataExtensionProperty { get; private set; }
 
         // If enumerable, the JsonClassInfo for the element type.
-        internal JsonClassInfo ElementClassInfo { get; private set; }
+        private JsonClassInfo _elementClassInfo;
+
+        /// <summary>
+        /// Return the JsonClassInfo for the element type, or null if the type is not an enumerable or dictionary.
+        /// </summary>
+        /// <remarks>
+        /// This should not be called during warm-up (initial creation of JsonClassInfos) to avoid recursive behavior
+        /// which could result in a StackOverflowException.
+        /// </remarks>
+        public JsonClassInfo ElementClassInfo
+        {
+            get
+            {
+                if (_elementClassInfo == null && ElementType != null)
+                {
+                    Debug.Assert(ClassType == ClassType.Enumerable ||
+                        ClassType == ClassType.Dictionary ||
+                        ClassType == ClassType.IDictionaryConstructible);
+
+                    _elementClassInfo = Options.GetOrAddClass(ElementType);
+                }
+
+                return _elementClassInfo;
+            }
+        }
+
+        public Type ElementType { get; set; }
 
         public JsonSerializerOptions Options { get; private set; }
 
         public Type Type { get; private set; }
 
-        internal void UpdateSortedPropertyCache(ref ReadStackFrame frame)
+        public void UpdateSortedPropertyCache(ref ReadStackFrame frame)
         {
             // Check if we are trying to build the sorted cache.
             if (frame.PropertyRefCache == null)
@@ -66,7 +92,7 @@ namespace System.Text.Json
             frame.PropertyRefCache = null;
         }
 
-        internal JsonClassInfo(Type type, JsonSerializerOptions options)
+        public JsonClassInfo(Type type, JsonSerializerOptions options)
         {
             Type = type;
             Options = options;
@@ -147,9 +173,7 @@ namespace System.Text.Json
 
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(objectType);
 
-                        // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
-                        Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
-                        ElementClassInfo = options.GetOrAddClass(elementType);
+                        ElementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
                     }
                     break;
                 case ClassType.IDictionaryConstructible:
@@ -157,15 +181,12 @@ namespace System.Text.Json
                         // Add a single property that maps to the class type so we can have policies applied.
                         AddPolicyProperty(type, options);
 
-                        Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
+                        ElementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
 
-                       CreateConcreteDictionary = options.MemberAccessorStrategy.CreateConstructor(
-                           typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType));
+                        CreateConcreteDictionary = options.MemberAccessorStrategy.CreateConstructor(
+                           typeof(Dictionary<,>).MakeGenericType(typeof(string), ElementType));
 
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(PolicyProperty.DeclaredPropertyType);
-
-                        // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
-                        ElementClassInfo = options.GetOrAddClass(elementType);
                     }
                     break;
                 case ClassType.Value:
@@ -223,7 +244,7 @@ namespace System.Text.Json
             return property;
         }
 
-        internal JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
+        public JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
         {
             JsonPropertyInfo info = null;
 
