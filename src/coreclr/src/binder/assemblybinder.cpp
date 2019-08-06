@@ -577,7 +577,7 @@ namespace BINDER_SPACE
 
 #ifndef CROSSGEN_COMPILE
     Retry:
-       {
+        {
             // Lock the binding application context
             CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 #endif
@@ -690,7 +690,7 @@ namespace BINDER_SPACE
         StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        if(!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+        if (!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
         {
             sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
@@ -806,107 +806,6 @@ namespace BINDER_SPACE
         BINDER_LOG_LEAVE_HR(W("AssemblyBinder::GetAssemblyFromImage"), hr);
         return hr;
     }
-
-#ifndef CROSSGEN_COMPILE
-    /* static */
-    HRESULT AssemblyBinder::PreBindByteArray(ApplicationContext *pApplicationContext,
-                                             PEImage            *pPEImage,
-                                             BOOL                fInspectionOnly)
-    {
-        _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
-
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::PreBindByteArray"));
-
-        ReleaseHolder<AssemblyName> pAssemblyName;
-        BOOL fNeedHostRegister = FALSE;
-        LONG kContextVersion = 0;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-        DWORD dwPAFlags[2];
-        PEKIND PeKind = peNone;
-        BindResult bindResult;
-
-        // Prepare binding data
-        SAFE_NEW(pAssemblyName, AssemblyName);
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE));
-        IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-        IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
-        pAssemblyName->SetIsDefinition(TRUE);
-
-        // Validate architecture
-        if (!fInspectionOnly && !Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
-        {
-            IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
-        }
-
-        // Attempt the actual bind (eventually more than once)
-    Retry:
-        {
-            // Lock the application context
-            CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
-
-            // Attempt uncached bind and register stream if possible
-            if (!fInspectionOnly &&
-                 ((hr = BindByName(pApplicationContext,
-                                   pAssemblyName,
-                                   BIND_CACHE_FAILURES | BIND_CACHE_RERUN_BIND,
-                                   false, // excludeAppPaths
-                                   &bindResult)) == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                )
-            {
-                if ((fInspectionOnly && !bindResult.HaveResult()) ||
-                    (bindResult.GetRetargetedAssemblyName() == NULL))
-                {
-                    IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
-                                                   PeKind,
-                                                   pPEImage,
-                                                   NULL,
-                                                   fInspectionOnly,
-                                                   &bindResult));
-                    if (fInspectionOnly)
-                    {
-                        // For inspection-only, we do not share the map.
-                        IF_FAIL_GO(Register(pApplicationContext, fInspectionOnly, &bindResult));
-                    }
-                    else
-                    {
-                        // Remember the post-bind version of the context
-                        kContextVersion = pApplicationContext->GetVersion();
-                        fNeedHostRegister = TRUE;
-                    }
-                }
-            }
-        } // lock(pApplicationContext)
-
-        if (fNeedHostRegister)
-        {
-            BindResult hostBindResult;
-
-            // This has to happen outside the binder lock as it can cause new binds
-            IF_FAIL_GO(RegisterAndGetHostChosen(pApplicationContext,
-                                                kContextVersion,
-                                                &bindResult,
-                                                &hostBindResult));
-
-            if (hr == S_FALSE)
-            {
-                // Another bind interfered. We need to retry entire bind.
-                // This by design loops as long as needed because by construction we eventually
-                // will succeed or fail the bind.
-                bindResult.Reset();
-                goto Retry;
-            }
-        }
-    
-        // Ignore bind errors here because we need to attempt by-name load to get log entry.
-        GO_WITH_HRESULT(S_OK);
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::PreBindByteArray"), hr);
-        return hr;
-    }
-
-#endif //CROSSGEN_COMPILE
 
     /* static */
     HRESULT AssemblyBinder::BindByName(ApplicationContext *pApplicationContext,
@@ -1030,10 +929,11 @@ namespace BINDER_SPACE
 
         if (!fNgenExplicitBind)
         {
-            IF_FAIL_GO(BindLockedOrService(pApplicationContext,
-                                           pAssemblyName,
-                                           excludeAppPaths,
-                                           &lockedBindResult));
+            IF_FAIL_GO(BindLocked(pApplicationContext,
+                                  pAssemblyName,
+                                  0 /*  Do not IgnoreDynamicBinds */,
+                                  excludeAppPaths,
+                                  &lockedBindResult));
             if (lockedBindResult.HaveResult())
             {
                 pBindResult->SetResult(&lockedBindResult);
@@ -1118,38 +1018,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    /* static */
-    HRESULT AssemblyBinder::BindLockedOrService(ApplicationContext *pApplicationContext,
-                                                AssemblyName       *pAssemblyName,
-                                                bool                excludeAppPaths,
-                                                BindResult         *pBindResult)
-    {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindLockedOrService"));
-
-        BindResult lockedBindResult;
-
-        IF_FAIL_GO(BindLocked(pApplicationContext,
-                              pAssemblyName,
-                              0 /*  Do not IgnoreDynamicBinds */,
-                              excludeAppPaths,
-                              &lockedBindResult));
-
-        if (lockedBindResult.HaveResult())
-        {
-            // Locked Bind succeeded
-            pBindResult->SetResult(&lockedBindResult);
-        }
-        else
-        {
-            pBindResult->SetNoResult();
-        }
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindLockedOrService"), hr);
-        return hr;
-    }
-
 #ifndef CROSSGEN_COMPILE
     /* static */
     HRESULT AssemblyBinder::FindInExecutionContext(ApplicationContext  *pApplicationContext,
@@ -1200,8 +1068,7 @@ namespace BINDER_SPACE
     // This does not do a version check.  The binder applies version policy
     // further up the stack once it gets a successful bind.
     //
-    BOOL TestCandidateRefMatchesDef(ApplicationContext *pApplicationContext,
-                                    AssemblyName *pRequestedAssemblyName,
+    BOOL TestCandidateRefMatchesDef(AssemblyName *pRequestedAssemblyName,
                                     AssemblyName *pBoundAssemblyName,
                                     BOOL tpaListAssembly)
     {
@@ -1264,7 +1131,7 @@ namespace BINDER_SPACE
             IF_FAIL_GO(hr);
 
             AssemblyName *pBoundAssemblyName = pAssembly->GetAssemblyName();
-            if (TestCandidateRefMatchesDef(pApplicationContext, pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
+            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
             {
                 pBindResult->SetResult(pAssembly);
                 GO_WITH_HRESULT(S_OK);
@@ -1380,7 +1247,7 @@ namespace BINDER_SPACE
                     // Any other error is fatal
                     IF_FAIL_GO(hr);
                     
-                    if (TestCandidateRefMatchesDef(pApplicationContext, pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                    if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
                         pBindResult->SetResult(pTPAAssembly);
@@ -1478,7 +1345,7 @@ namespace BINDER_SPACE
                         // we fail the bind.
 
                         // Compare requested AssemblyName with that from the candidate assembly 
-                        if (TestCandidateRefMatchesDef(pApplicationContext, pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
+                        if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                         {
                             // At this point, we have found an assembly with the expected name in the App paths. If this was also found on TPA,
                             // make sure that the app assembly has the same fullname (excluding version) as the TPA version. If it does, then
@@ -1486,7 +1353,7 @@ namespace BINDER_SPACE
                             // TPA assembly.
                             if (fPartialMatchOnTpa)
                             {
-                                if (TestCandidateRefMatchesDef(pApplicationContext, pAssembly->GetAssemblyName(), pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                                if (TestCandidateRefMatchesDef(pAssembly->GetAssemblyName(), pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                                 {
                                     // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
                                     pBindResult->SetResult(pTPAAssembly);

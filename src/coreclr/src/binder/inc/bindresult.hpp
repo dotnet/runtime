@@ -29,9 +29,6 @@ namespace BINDER_SPACE
         inline IUnknown *GetAssembly(BOOL fAddRef = FALSE);
         inline Assembly *GetAsAssembly(BOOL fAddRef = FALSE);
 
-        inline AssemblyName *GetRetargetedAssemblyName();
-        inline void SetRetargetedAssemblyName(AssemblyName *pRetargetedAssemblyName);
-
         inline BOOL GetIsDynamicBind();
         inline void SetIsDynamicBind(BOOL fIsDynamicBind);
         inline BOOL GetIsInGAC();
@@ -56,7 +53,6 @@ namespace BINDER_SPACE
     protected:
         DWORD m_dwResultFlags;
         AssemblyName *m_pAssemblyName;
-        AssemblyName *m_pRetargetedAssemblyName;
         ReleaseHolder<IUnknown> m_pIUnknownAssembly;
     };
 };

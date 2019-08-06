@@ -24,14 +24,12 @@ BindResult::BindResult()
 {
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
     m_pAssemblyName = NULL;
-    m_pRetargetedAssemblyName = NULL;
     m_pIUnknownAssembly = NULL;
 }
 
 BindResult::~BindResult()
 {
     SAFE_RELEASE(m_pAssemblyName);
-    SAFE_RELEASE(m_pRetargetedAssemblyName);
 }
 
 AssemblyName *BindResult::GetAssemblyName(BOOL fAddRef /* = FALSE */)
@@ -44,23 +42,6 @@ AssemblyName *BindResult::GetAssemblyName(BOOL fAddRef /* = FALSE */)
     }
 
     return pAssemblyName;
-}
-
-AssemblyName *BindResult::GetRetargetedAssemblyName()
-{
-    return m_pRetargetedAssemblyName;
-}
-
-void BindResult::SetRetargetedAssemblyName(AssemblyName *pRetargetedAssemblyName)
-{
-    SAFE_RELEASE(m_pRetargetedAssemblyName);
-
-    if (pRetargetedAssemblyName)
-    {
-        pRetargetedAssemblyName->AddRef();
-    }
-
-    m_pRetargetedAssemblyName = pRetargetedAssemblyName;
 }
 
 IUnknown *BindResult::GetAssembly(BOOL fAddRef /* = FALSE */)
@@ -219,7 +200,6 @@ IUnknown *BindResult::ExtractAssembly()
 void BindResult::Reset()
 {
     SAFE_RELEASE(m_pAssemblyName);
-    SAFE_RELEASE(m_pRetargetedAssemblyName);
     m_pIUnknownAssembly = NULL;
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
 }
