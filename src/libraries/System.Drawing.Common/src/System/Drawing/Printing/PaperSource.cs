@@ -35,9 +35,11 @@ namespace System.Drawing.Printing
             get
             {
                 if ((unchecked((int)_kind)) >= SafeNativeMethods.DMBIN_USER)
+                {
                     return PaperSourceKind.Custom;
-                else
-                    return _kind;
+                }
+
+                return _kind;
             }
         }
 
@@ -46,8 +48,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public int RawKind
         {
-            get { return unchecked((int)_kind); }
-            set { _kind = unchecked((PaperSourceKind)value); }
+            get => unchecked((int)_kind);
+            set => _kind = unchecked((PaperSourceKind)value);
         }
 
         /// <summary>
@@ -55,8 +57,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public string SourceName
         {
-            get { return _name; }
-            set { _name = value; }
+            get => _name;
+            set => _name = value;
         }
 
         /// <summary>
@@ -65,8 +67,8 @@ namespace System.Drawing.Printing
         public override string ToString()
         {
             return "[PaperSource " + SourceName
-            + " Kind=" + Kind.ToString()
-            + "]";
+                + " Kind=" + Kind.ToString()
+                + "]";
         }
     }
 }

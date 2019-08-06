@@ -32,14 +32,13 @@ namespace System.Drawing.Printing.Tests
 {
     public class PaperSourceTests
     {
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_Default()
         {
-            PaperSource ps = new PaperSource();
-            Assert.Equal(PaperSourceKind.Custom, ps.Kind);
-            Assert.Equal((int)PaperSourceKind.Custom, ps.RawKind);
-            Assert.Equal(string.Empty, ps.SourceName);
+            var source = new PaperSource();
+            Assert.Equal(PaperSourceKind.Custom, source.Kind);
+            Assert.Equal((int)PaperSourceKind.Custom, source.RawKind);
+            Assert.Empty(source.SourceName);
         }
 
         [Theory]
@@ -61,20 +60,36 @@ namespace System.Drawing.Printing.Tests
         [InlineData(int.MinValue, (PaperSourceKind)int.MinValue)]
         [InlineData(0, (PaperSourceKind)0)]
         [InlineData(256, PaperSourceKind.Custom)]
-        public void RawKind_ReturnsExpected(int rawKind, PaperSourceKind expectedKind)
+        public void RawKind_Set_GetReturnsExpected(int value, PaperSourceKind expectedKind)
         {
-            PaperSource ps = new PaperSource();
-            ps.RawKind = rawKind;
-            Assert.Equal(expectedKind, ps.Kind);
-            Assert.Equal(rawKind, ps.RawKind);
+            var source = new PaperSource
+            {
+                RawKind = value
+            };
+            Assert.Equal(value, source.RawKind);
+            Assert.Equal(expectedKind, source.Kind);
+
+            // Set same.
+            source.RawKind = value;
+            Assert.Equal(value, source.RawKind);
+            Assert.Equal(expectedKind, source.Kind);
         }
 
-        [Fact]
-        public void SourceName_Success()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("sourceName")]
+        public void SourceName_Set_GetReturnsExpected(string value)
         {
-            PaperSource ps = new PaperSource();
-            ps.SourceName = "NewName";
-            Assert.Equal("NewName", ps.SourceName);
+            var source = new PaperSource
+            {
+                SourceName = value
+            };
+            Assert.Equal(value, source.SourceName);
+
+            // Set same.
+            source.SourceName = value;
+            Assert.Equal(value, source.SourceName);
         }
     }
 }
