@@ -2530,11 +2530,7 @@ private:
     BOOL          m_MaybeInterior;
 
     // Keep as last entry in class
-    DEFINE_VTABLE_GETTER(GCFrame)
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    ~GCFrame();
-#endif
+    DEFINE_VTABLE_GETTER_AND_DTOR(GCFrame)
 };
 
 #ifdef FEATURE_INTERPRETER
@@ -3264,16 +3260,11 @@ public:
             *m_pShadowSP |= ICodeManager::SHADOW_SP_FILTER_DONE;
         }
     }
-
-#ifndef CROSSGEN_COMPILE
-    ~ExceptionFilterFrame();
-#endif
-
 #endif
 
 private:
     // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR(ExceptionFilterFrame)
+    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(ExceptionFilterFrame)
 };
 
 #ifdef _DEBUG
@@ -3591,7 +3582,7 @@ public:
 
 #define GCPROTECT_END()                                                 \
                 DEBUG_ASSURE_NO_RETURN_END(GCPROTECT) }                 \
-                } while(0)
+                __gcframe.Pop(); } while(0)
 
 
 #else // #ifndef DACCESS_COMPILE
