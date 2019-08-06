@@ -444,11 +444,6 @@ check_symbol_exists(
     mach/mach_time.h
     HAVE_MACH_ABSOLUTE_TIME)
 
-check_symbol_exists(
-    mach_timebase_info
-    mach/mach_time.h
-    HAVE_MACH_TIMEBASE_INFO)
-
 check_function_exists(
     futimes
     HAVE_FUTIMES)

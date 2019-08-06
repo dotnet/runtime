@@ -836,7 +836,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]
         [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void ProcessStartTime_Deterministic_Across_Instances()
         {
