@@ -118,6 +118,10 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 {
 	MonoAssembly *result = NULL;
 	char* aname_str = NULL;
+
+	if (mono_runtime_get_no_exec ())
+		return NULL;
+
 	HANDLE_FUNCTION_ENTER ();
 
 	aname_str = mono_stringify_assembly_name (aname);
