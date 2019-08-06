@@ -143,22 +143,16 @@ namespace System.Drawing
 
         internal static Image CreateImageObject(IntPtr nativeImage)
         {
-            Image image;
-            Gdip.CheckStatus(Gdip.GdipGetImageType(new HandleRef(null, nativeImage), out int type));
-
+            Gdip.CheckStatus(Gdip.GdipGetImageType(nativeImage, out int type));
             switch ((ImageType)type)
             {
                 case ImageType.Bitmap:
-                    image = new Bitmap(nativeImage);
-                    break;
+                    return new Bitmap(nativeImage);
                 case ImageType.Metafile:
-                    image = Metafile.FromGDIplus(nativeImage);
-                    break;
+                    return Metafile.FromGDIplus(nativeImage);
                 default:
                     throw new ArgumentException(SR.InvalidImage);
             }
-
-            return image;
         }
 
         /// <summary>
@@ -587,11 +581,11 @@ namespace System.Drawing
         {
             try
             {
-                Gdip.CheckStatus(Gdip.GdipImageForceValidation(new HandleRef(null, image)));
+                Gdip.CheckStatus(Gdip.GdipImageForceValidation(image));
             }
             catch
             {
-                Gdip.GdipDisposeImage(new HandleRef(null, image));
+                Gdip.GdipDisposeImage(image);
                 throw;
             }
         }

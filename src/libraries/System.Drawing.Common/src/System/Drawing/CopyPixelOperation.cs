@@ -12,25 +12,25 @@ namespace System.Drawing
         /// <summary>
         /// Fills the Destination Rectangle using the color associated with the index 0 in the physical palette.
         /// </summary>
-        Blackness = SafeNativeMethods.BLACKNESS,
+        Blackness = Interop.Gdi32.RasterOp.BLACKNESS,
         /// <summary>
         /// Includes any windows that are Layered on Top.
         /// </summary>
-        CaptureBlt = SafeNativeMethods.CAPTUREBLT,
-        DestinationInvert = SafeNativeMethods.DSTINVERT,
-        MergeCopy = SafeNativeMethods.MERGECOPY,
-        MergePaint = SafeNativeMethods.MERGEPAINT,
-        NoMirrorBitmap = SafeNativeMethods.NOMIRRORBITMAP,
-        NotSourceCopy = SafeNativeMethods.NOTSRCCOPY,
-        NotSourceErase = SafeNativeMethods.NOTSRCERASE,
-        PatCopy = SafeNativeMethods.PATCOPY,
-        PatInvert = SafeNativeMethods.PATINVERT,
-        PatPaint = SafeNativeMethods.PATPAINT,
-        SourceAnd = SafeNativeMethods.SRCAND,
-        SourceCopy = SafeNativeMethods.SRCCOPY,
-        SourceErase = SafeNativeMethods.SRCERASE,
-        SourceInvert = SafeNativeMethods.SRCINVERT,
-        SourcePaint = SafeNativeMethods.SRCPAINT,
-        Whiteness = SafeNativeMethods.WHITENESS,
+        CaptureBlt = Interop.Gdi32.RasterOp.CAPTUREBLT,
+        DestinationInvert = Interop.Gdi32.RasterOp.DSTINVERT,
+        MergeCopy = Interop.Gdi32.RasterOp.MERGECOPY,
+        MergePaint = Interop.Gdi32.RasterOp.MERGEPAINT,
+        NoMirrorBitmap = Interop.Gdi32.RasterOp.NOMIRRORBITMAP,
+        NotSourceCopy = Interop.Gdi32.RasterOp.NOTSRCCOPY,
+        NotSourceErase = Interop.Gdi32.RasterOp.NOTSRCERASE,
+        PatCopy = Interop.Gdi32.RasterOp.PATCOPY,
+        PatInvert = Interop.Gdi32.RasterOp.PATINVERT,
+        PatPaint = Interop.Gdi32.RasterOp.PATPAINT,
+        SourceAnd = Interop.Gdi32.RasterOp.SRCAND,
+        SourceCopy = Interop.Gdi32.RasterOp.SRCCOPY,
+        SourceErase = Interop.Gdi32.RasterOp.SRCERASE,
+        SourceInvert = Interop.Gdi32.RasterOp.SRCINVERT,
+        SourcePaint = Interop.Gdi32.RasterOp.SRCPAINT,
+        Whiteness = Interop.Gdi32.RasterOp.WHITENESS,
     }
 }

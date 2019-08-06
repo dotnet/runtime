@@ -94,8 +94,7 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddMemoryFont(IntPtr memory, int length)
         {
-            int status = Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), new HandleRef(null, memory), length);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), memory, length));
         }
     }
 }

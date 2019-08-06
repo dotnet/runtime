@@ -93,9 +93,8 @@ namespace System.Drawing
 
         internal static Image CreateFromHandle(IntPtr handle)
         {
-            ImageType type;
-            Gdip.CheckStatus(Gdip.GdipGetImageType(handle, out type));
-            switch (type)
+            Gdip.CheckStatus(Gdip.GdipGetImageType(handle, out int type));
+            switch ((ImageType)type)
             {
                 case ImageType.Bitmap:
                     return new Bitmap(handle);

@@ -227,9 +227,6 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDisposeImage(HandleRef image);
-
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSaveImageToFile(HandleRef image, string filename, ref Guid classId, HandleRef encoderParams);
 
@@ -247,9 +244,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageBounds(HandleRef image, out RectangleF gprectf, out GraphicsUnit unit);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageType(HandleRef image, out int type);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort callback, IntPtr callbackdata);
@@ -291,22 +285,19 @@ namespace System.Drawing
             internal static extern int GdipSetPropertyItem(HandleRef image, PropertyItemInternal propitem);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipImageForceValidation(HandleRef image);
+            internal static extern int GdipImageForceValidation(IntPtr image);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHDC(HandleRef hdc, out IntPtr graphics);
+            internal static extern int GdipCreateFromHDC2(IntPtr hdc, IntPtr hdevice, out IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHDC2(HandleRef hdc, HandleRef hdevice, out IntPtr graphics);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHWND(HandleRef hwnd, out IntPtr graphics);
+            internal static extern int GdipCreateFromHWND(IntPtr hwnd, out IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteGraphics(HandleRef graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipReleaseDC(HandleRef graphics, HandleRef hdc);
+            internal static extern int GdipReleaseDC(HandleRef graphics, IntPtr hdc);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipTransformPoints(HandleRef graphics, int destSpace, int srcSpace, PointF* points, int count);
@@ -483,52 +474,52 @@ namespace System.Drawing
             internal static extern int GdipDrawImagePointRectI(HandleRef graphics, HandleRef image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, int srcunit);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDrawImageRectRect(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            internal static extern int GdipDrawImageRectRect(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDrawImageRectRectI(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            internal static extern int GdipDrawImageRectRectI(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDrawImagePointsRect(HandleRef graphics, HandleRef image, PointF* points, int count, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            internal static extern int GdipDrawImagePointsRect(HandleRef graphics, HandleRef image, PointF* points, int count, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDrawImagePointsRectI(HandleRef graphics, HandleRef image, Point* points, int count, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            internal static extern int GdipDrawImagePointsRectI(HandleRef graphics, HandleRef image, Point* points, int count, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipEnumerateMetafileSrcRectDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            internal static extern int GdipEnumerateMetafileSrcRectDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSaveGraphics(HandleRef graphics, out int state);
@@ -569,11 +560,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipComment(HandleRef graphics, int sizeData, byte[] data);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromDC(HandleRef hdc, ref IntPtr font);
-
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateFontFromLogfontW(HandleRef hdc, ref LOGFONT lf, out IntPtr font);
+            internal static extern int GdipCreateFontFromLogfontW(IntPtr hdc, ref LOGFONT lf, out IntPtr font);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, HandleRef brush);

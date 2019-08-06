@@ -51,7 +51,7 @@ namespace System.Drawing.Text
                 for (int f = 0; f < numFound; f++)
                 {
                     IntPtr native;
-                    Gdip.GdipCloneFontFamily(new HandleRef(null, gpfamilies[f]), out native);
+                    Gdip.GdipCloneFontFamily(gpfamilies[f], out native);
                     families[f] = new FontFamily(native);
                 }
 

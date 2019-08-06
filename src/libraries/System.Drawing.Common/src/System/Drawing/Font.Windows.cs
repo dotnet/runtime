@@ -258,7 +258,7 @@ namespace System.Drawing
 
         internal static Font FromLogFontInternal(ref SafeNativeMethods.LOGFONT logFont, IntPtr hdc)
         {
-            int status = Gdip.GdipCreateFontFromLogfontW(new HandleRef(null, hdc), ref logFont, out IntPtr font);
+            int status = Gdip.GdipCreateFontFromLogfontW(hdc, ref logFont, out IntPtr font);
 
             // Special case this incredibly common error message to give more information
             if (status == Gdip.NotTrueTypeFont)
@@ -333,7 +333,7 @@ namespace System.Drawing
         public static Font FromHdc(IntPtr hdc)
         {
             IntPtr font = IntPtr.Zero;
-            int status = Gdip.GdipCreateFontFromDC(new HandleRef(null, hdc), ref font);
+            int status = Gdip.GdipCreateFontFromDC(hdc, ref font);
 
             // Special case this incredibly common error message to give more information
             if (status == Gdip.NotTrueTypeFont)
