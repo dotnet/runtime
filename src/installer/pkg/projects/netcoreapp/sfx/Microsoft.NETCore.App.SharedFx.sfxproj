@@ -15,6 +15,9 @@
     <!-- These components are installed by the root shared framework, but not others. -->
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
+
+    <!-- The zip/tarball is built by legacy infrastructure. -->
+    <GenerateCompressedArchive>false</GenerateCompressedArchive>
   </PropertyGroup>
 
   <ItemGroup>
