@@ -369,10 +369,6 @@
 # https://github.com/mono/mono/issues/15037
 -nomethod System.Reflection.Tests.ParameterInfoTests.RawDefaultValueFromAttribute
 
-# Need to set ProcessorArchitecture in AssemblyName
-# https://github.com/mono/mono/issues/15068
--nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_ValidArchitectureName_Succeeds
-
 # SKIPPED
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
 

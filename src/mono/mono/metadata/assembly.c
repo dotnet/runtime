@@ -3528,6 +3528,10 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 				goto cleanup_and_fail;
 			}
 
+#ifdef ENABLE_NETCORE
+			flags |= arch << 4;
+#endif
+
 			g_free (procarch_uq);
 			tmp++;
 			continue;
