@@ -6,6 +6,7 @@
 #define _MONO_METADATA_LOADER_INTERNALS_H_
 
 #include <glib.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-forward.h>
@@ -48,12 +49,6 @@ mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
 void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc);
 
-static inline MonoDomain *
-mono_alc_domain (MonoAssemblyLoadContext *alc)
-{
-	return alc->domain;
-}
-
 gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc);
 
@@ -67,6 +62,16 @@ MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 #endif /* ENABLE_NETCORE */
+
+static inline MonoDomain *
+mono_alc_domain (MonoAssemblyLoadContext *alc)
+{
+#ifdef ENABLE_NETCORE
+	return alc->domain;
+#else
+	return mono_domain_get ();
+#endif
+}
 
 MonoLoadedImages *
 mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);

@@ -2054,7 +2054,7 @@ init_amodule_got (MonoAotModule *amodule)
 }
 
 static void
-load_aot_module (MonoAssembly *assembly, gpointer user_data)
+load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
 	char *aot_name, *found_aot_name;
 	MonoAotModule *amodule;
@@ -2100,7 +2100,7 @@ if (container_assm_name && !container_amodule) {
 		assm = mono_assembly_request_open (exe, &req, &status);
 	}
 	g_assert (assm);
-	load_aot_module (assm, NULL);
+	load_aot_module (alc, assm, NULL, error);
 	container_amodule = assm->image->aot_module;
 }
 
@@ -2516,7 +2516,7 @@ mono_aot_init (void)
 	mono_os_mutex_init_recursive (&aot_page_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
 
-	mono_install_assembly_load_hook (load_aot_module, NULL);
+	mono_install_assembly_load_hook_v2 (load_aot_module, NULL);
 	mono_counters_register ("Async JIT info size", MONO_COUNTER_INT|MONO_COUNTER_JIT, &async_jit_info_size);
 
 	char *lastaot = g_getenv ("MONO_LASTAOT");
@@ -4689,7 +4689,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		/* This cannot be AOTed during startup, so do it now */
 		if (!mscorlib_aot_loaded) {
 			mscorlib_aot_loaded = TRUE;
-			load_aot_module (m_class_get_image (klass)->assembly, NULL);
+			load_aot_module (mono_domain_default_alc (domain), m_class_get_image (klass)->assembly, NULL, error);
 			amodule = m_class_get_image (klass)->aot_module;
 		}
 	}

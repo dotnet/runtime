@@ -1835,11 +1835,32 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 typedef struct AssemblyLoadHook AssemblyLoadHook;
 struct AssemblyLoadHook {
 	AssemblyLoadHook *next;
-	MonoAssemblyLoadFunc func;
+	union {
+		MonoAssemblyLoadFunc v1;
+		MonoAssemblyLoadFuncV2 v2;
+	} func;
+	int version;
 	gpointer user_data;
 };
 
 static AssemblyLoadHook *assembly_load_hook = NULL;
+
+void
+mono_assembly_invoke_load_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
+{
+	AssemblyLoadHook *hook;
+
+	for (hook = assembly_load_hook; hook; hook = hook->next) {
+		if (hook->version == 1) {
+			hook->func.v1 (ass, hook->user_data);
+		} else {
+			ERROR_DECL (hook_error);
+			g_assert (hook->version == 2);
+			hook->func.v2 (alc, ass, hook->user_data, hook_error);
+			mono_error_assert_ok (hook_error); /* FIXME: proper error handling */
+		}
+	}
+}
 
 /**
  * mono_assembly_invoke_load_hook:
@@ -1847,11 +1868,35 @@ static AssemblyLoadHook *assembly_load_hook = NULL;
 void
 mono_assembly_invoke_load_hook (MonoAssembly *ass)
 {
-	AssemblyLoadHook *hook;
+	mono_assembly_invoke_load_hook_internal (mono_domain_default_alc (mono_domain_get ()), ass);
+}
 
-	for (hook = assembly_load_hook; hook; hook = hook->next) {
-		hook->func (ass, hook->user_data);
-	}
+static void
+mono_install_assembly_load_hook_v1 (MonoAssemblyLoadFunc func, gpointer user_data)
+{
+	AssemblyLoadHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyLoadHook, 1);
+	hook->version = 1;
+	hook->func.v1 = func;
+	hook->user_data = user_data;
+	hook->next = assembly_load_hook;
+	assembly_load_hook = hook;
+}
+
+void
+mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data)
+{
+	g_return_if_fail (func != NULL);
+
+	AssemblyLoadHook *hook = g_new0 (AssemblyLoadHook, 1);
+	hook->version = 2;
+	hook->func.v2 = func;
+	hook->user_data = user_data;
+	hook->next = assembly_load_hook;
+	assembly_load_hook = hook;
 }
 
 /**
@@ -1860,15 +1905,7 @@ mono_assembly_invoke_load_hook (MonoAssembly *ass)
 void
 mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 {
-	AssemblyLoadHook *hook;
-	
-	g_return_if_fail (func != NULL);
-
-	hook = g_new0 (AssemblyLoadHook, 1);
-	hook->func = func;
-	hook->user_data = user_data;
-	hook->next = assembly_load_hook;
-	assembly_load_hook = hook;
+	mono_install_assembly_load_hook_v1 (func, user_data);
 }
 
 static void
@@ -1948,7 +1985,7 @@ mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpoi
 }
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, void *user_data, gboolean refonly, gboolean postload)
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload)
 {
 	if (func == NULL)
 		return;
@@ -2509,7 +2546,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 			return NULL;
 		} else {
 			/* Already loaded by another appdomain */
-			mono_assembly_invoke_load_hook (image->assembly);
+			mono_assembly_invoke_load_hook_internal (load_req.alc, image->assembly);
 			mono_image_close (image);
 			g_free (fname);
 			return image->assembly;
@@ -3050,7 +3087,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		mono_image_fixup_vtable (image);
 #endif
 
-	mono_assembly_invoke_load_hook (ass);
+	mono_assembly_invoke_load_hook_internal (req->alc, ass);
 
 	MONO_PROFILER_RAISE (assembly_loaded, (ass));
 	
@@ -4708,9 +4745,9 @@ MonoAssembly *
 mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly)
 {
 	MonoAssembly *res;
-	MonoAssemblyName maped_aname;
+	MonoAssemblyName mapped_aname;
 
-	aname = mono_assembly_remap_version (aname, &maped_aname);
+	aname = mono_assembly_remap_version (aname, &mapped_aname);
 
 	res = mono_assembly_invoke_search_hook_internal (alc, NULL, aname, refonly, FALSE);
 

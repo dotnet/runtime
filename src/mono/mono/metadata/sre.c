@@ -17,6 +17,7 @@
 #include <config.h>
 #include <glib.h>
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/dynamic-image-internals.h"
@@ -1386,7 +1387,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	
 	MONO_PROFILER_RAISE (assembly_loaded, (&assembly->assembly));
 	
-	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
+	mono_assembly_invoke_load_hook_internal (alc, (MonoAssembly*)assembly);
 }
 
 #endif /* !DISABLE_REFLECTION_EMIT */

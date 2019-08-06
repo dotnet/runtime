@@ -66,7 +66,7 @@ static gboolean is_attached = FALSE;
 static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image, const guint8 *raw_contents, int size);
 
 static MonoDebugHandle     *mono_debug_get_image      (MonoImage *image);
-static void                 add_assembly    (MonoAssembly *assembly, gpointer user_data);
+static void                 add_assembly    (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error);
 
 static MonoDebugHandle     *open_symfile_from_bundle   (MonoImage *image);
 
@@ -114,7 +114,7 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_handles = g_hash_table_new_full
 		(NULL, NULL, NULL, (GDestroyNotify) free_debug_handle);
 
-	mono_install_assembly_load_hook (add_assembly, NULL);
+	mono_install_assembly_load_hook_v2 (add_assembly, NULL);
 
 	mono_debugger_unlock ();
 }
@@ -245,7 +245,7 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 }
 
 static void
-add_assembly (MonoAssembly *assembly, gpointer user_data)
+add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
 	MonoDebugHandle *handle;
 	MonoImage *image;

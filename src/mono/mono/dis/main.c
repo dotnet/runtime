@@ -1936,7 +1936,7 @@ monodis_preload (MonoAssemblyName *aname,
 static GList *loaded_assemblies = NULL;
 
 static void
-monodis_assembly_load_hook (MonoAssembly *assembly, gpointer user_data)
+monodis_assembly_load_hook (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
 	loaded_assemblies = g_list_prepend (loaded_assemblies, assembly);
 }
@@ -2046,7 +2046,7 @@ main (int argc, char *argv [])
 #endif
 	mono_thread_info_runtime_init (&ticallbacks);
 
-	mono_install_assembly_load_hook (monodis_assembly_load_hook, NULL);
+	mono_install_assembly_load_hook_v2 (monodis_assembly_load_hook, NULL);
 	mono_install_assembly_search_hook_v2 (monodis_assembly_search_hook, NULL, FALSE, FALSE);
 
 	/*

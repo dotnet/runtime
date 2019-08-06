@@ -63,7 +63,8 @@ MONO_API char*         mono_stringify_assembly_name (MonoAssemblyName *aname);
 
 /* Installs a function which is called each time a new assembly is loaded. */
 typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, void* user_data);
-MONO_API void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, void* user_data);
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, void* user_data);
 
 /* 
  * Installs a new function which is used to search the list of loaded 
@@ -103,7 +104,8 @@ MONO_API void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFu
 MONO_API void          mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func,
 						  void* user_data);
 
-MONO_API void          mono_assembly_invoke_load_hook (MonoAssembly *ass);
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_assembly_invoke_load_hook (MonoAssembly *ass);
 
 MONO_API MonoAssemblyName* mono_assembly_name_new             (const char *name);
 MONO_API const char*       mono_assembly_name_get_name        (MonoAssemblyName *aname);
