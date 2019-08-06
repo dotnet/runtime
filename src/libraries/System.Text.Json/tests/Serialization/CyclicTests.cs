@@ -115,5 +115,54 @@ namespace System.Text.Json.Serialization.Tests
         {
             public TestClassWithArrayOfElementsOfTheSameClass[] Array { get; set; }
         }
+
+        public class CycleRoot
+        {
+            public Child1 Child1 { get; set; }
+        }
+
+        public class Child1
+        {
+            public IList<Child2> Child2IList { get; set; } = new List<Child2>();
+            public List<Child2> Child2List { get; set; } = new List<Child2>();
+            public Dictionary<string, Child2> Child2Dictionary { get; set; } = new Dictionary<string, Child2>();
+            public Child2 Child2 { get; set; }
+        }
+
+        public class Child2
+        {
+            // Add properties that cause a cycle (Root->Child1->Child2->Child1)
+            public Child1 Child1 { get; set; } 
+            public IList<Child1> Child1IList { get; set; }
+            public IList<Child1> Child1List { get; set; }
+            public Dictionary<string, Child1> Child1Dictionary { get; set; }
+        }
+
+        [Fact]
+        public static void MultiClassCycle()
+        {
+            CycleRoot root = new CycleRoot();
+            root.Child1 = new Child1();
+            root.Child1.Child2IList.Add(new Child2());
+            root.Child1.Child2List.Add(new Child2());
+            root.Child1.Child2Dictionary.Add("0", new Child2());
+            root.Child1.Child2 = new Child2();
+            root.Child1.Child2.Child1 = new Child1();
+
+            // A cycle in just Types (not data) is allowed.
+            string json = JsonSerializer.Serialize(root);
+
+            root = JsonSerializer.Deserialize<CycleRoot>(json);
+            Assert.NotNull(root.Child1);
+            Assert.NotNull(root.Child1.Child2IList[0]);
+            Assert.NotNull(root.Child1.Child2List[0]);
+            Assert.NotNull(root.Child1.Child2Dictionary["0"]);
+            Assert.NotNull(root.Child1.Child2);
+            Assert.NotNull(root.Child1.Child2.Child1);
+
+            // Round-trip
+            string jsonRoundTrip = JsonSerializer.Serialize(root);
+            Assert.Equal(json, jsonRoundTrip);
+        }
     }
 }

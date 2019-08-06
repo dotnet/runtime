@@ -101,7 +101,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex;
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new InvalidTypeConverterClass()));
-            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues' is not compatible with the type 'System.Collections.Generic.ICollection`1[System.Text.Json.Serialization.Tests.ExceptionTests+InvalidTypeConverterEnum]'."
+            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues' is not compatible with the type 'System.Collections.Generic.ICollection`1[System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnum]'."
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues'", ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<InvalidTypeConverterClass>("{}"));
