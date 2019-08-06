@@ -12,7 +12,7 @@ namespace System.Net.Sockets.Tests
 {
     public partial class DisposedSocket
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)

@@ -43,7 +43,7 @@ public static partial class OverlappedTests
         Assert.Equal(0, obj.OffsetLow);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
     public static void PropertyTest2()
     {
         IAsyncResult asyncResult = new Task(() => Console.WriteLine("this is a dummy task"));
