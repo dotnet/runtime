@@ -21,9 +21,6 @@
 //  This is not called SetThreadName to avoid breaking compilation of C (but not C++)
 //  copied from http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx.
 //
-// UWP: Also SetThreadDescription, but running prior to 1607 (or Creators Update per above).
-//   would require LoadLibrary / GetProcAddress, but LoadLibrary is not allowed.
-//
 // Author:
 //  Jay Krell (jaykrell@microsoft.com)
 //
@@ -34,6 +31,10 @@
 #include "mono-threads.h"
 
 #if HOST_WIN32
+
+// For UWP, LoadLibrary requires a newer SDK. Or copy the header content.
+WINBASEAPI HMODULE WINAPI LoadLibraryExW (PCWSTR, HANDLE, DWORD);
+#define LOAD_LIBRARY_SEARCH_SYSTEM32        0x00000800
 
 #include "mono/metadata/w32subset.h"
 
@@ -90,7 +91,7 @@ mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
 	SetThreadDescription (thread_handle, thread_name);
 }
 
-#elif HAVE_LOADLIBRARY
+#else // LoadLibrary / GetProcAddress
 
 typedef
 HRESULT
@@ -135,13 +136,6 @@ void
 mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
 {
 	(void)set_thread_description (thread_handle, thread_name);
-}
-
-#else // nothing
-
-void
-mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
-{
 }
 
 #endif
