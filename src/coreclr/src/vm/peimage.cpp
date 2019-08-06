@@ -15,7 +15,6 @@
 #include "apithreadstress.h"
 #include <objbase.h>
 
-#include "sha1.h"
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
@@ -598,17 +597,6 @@ void PEImage::GetMVID(GUID *pMvid)
 #endif // _DEBUG
 }
 
-void PEImage::GetHashedStrongNameSignature(SBuffer &result)
-{
-    COUNT_T size;
-    const void *sig = GetStrongNameSignature(&size);
-
-    SHA1Hash hasher;
-    hasher.AddData((BYTE *) sig, size);
-    result.Set(hasher.GetHash(), SHA1_HASH_SIZE);
-}
-
-
 void PEImage::VerifyIsAssembly()
 {
     CONTRACTL
@@ -933,7 +921,6 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 PEImage::PEImage():
     m_refCount(1),
     m_bIsTrustedNativeImage(FALSE),
-    m_bPassiveDomainOnly(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
@@ -942,9 +929,6 @@ PEImage::PEImage():
     m_pNativeMDImport(NULL),
     m_hFile(INVALID_HANDLE_VALUE),
     m_bOwnHandle(true),
-    m_bSignatureInfoCached(FALSE),
-    m_hrSignatureInfoStatus(E_UNEXPECTED),
-    m_dwSignatureInfo(0),
     m_dwPEKind(0),
     m_dwMachine(0),
     m_fCachedKindAndMachine(FALSE)

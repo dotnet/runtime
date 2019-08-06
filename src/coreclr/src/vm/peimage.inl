@@ -209,18 +209,6 @@ inline BOOL PEImage::HasReadyToRunHeader()
     }
 }
 
-inline void PEImage::SetPassiveDomainOnly()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_bPassiveDomainOnly=TRUE;
-}
-
-inline BOOL PEImage::PassiveDomainOnly()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_bPassiveDomainOnly;
-}
-
 inline BOOL PEImage::HasDirectoryEntry(int entry)
 {
     WRAPPER_NO_CONTRACT;
@@ -355,24 +343,7 @@ inline BOOL PEImage::IsDll()
     }
 }
 
-inline BOOL PEImage::HasStrongNameSignature()
-{
-    WRAPPER_NO_CONTRACT;
-    if (HasLoadedLayout())
-        return GetLoadedLayout()->HasStrongNameSignature();
-    else
-    {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-        return pLayout->HasStrongNameSignature();
-    }
-}
-
-#ifndef DACCESS_COMPILE
-
-
-#endif // !DACCESS_COMPILE
-
-inline BOOL PEImage::IsIbcOptimized()   
+inline BOOL PEImage::IsIbcOptimized()
 {
 #ifdef FEATURE_PREJIT 
     WRAPPER_NO_CONTRACT;
@@ -448,17 +419,6 @@ inline CHECK PEImage::CheckFormat()
         CHECK(pLayout->CheckFormat());
     }
     CHECK_OK;
-}
-inline PTR_CVOID PEImage::GetStrongNameSignature(COUNT_T *pSize) 
-{
-    WRAPPER_NO_CONTRACT;
-    if (HasLoadedLayout())
-        return GetLoadedLayout()->GetStrongNameSignature(pSize);
-    else
-    {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-        return pLayout->GetStrongNameSignature(pSize);
-    }
 }
 
 inline void  PEImage::Init(LPCWSTR pPath)

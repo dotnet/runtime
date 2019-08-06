@@ -32,7 +32,6 @@
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "typestring.h"
-#include "sha1.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
