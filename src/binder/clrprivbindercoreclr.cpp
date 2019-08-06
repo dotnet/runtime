@@ -256,19 +256,3 @@ HRESULT CLRPrivBinderCoreCLR::GetLoaderAllocator(LPVOID* pLoaderAllocator)
     // Not supported by this binder
     return E_FAIL;
 }
-
-#ifndef CROSSGEN_COMPILE
-HRESULT CLRPrivBinderCoreCLR::PreBindByteArray(PEImage  *pPEImage, BOOL fInspectionOnly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pPEImage != NULL);
-
-    EX_TRY
-    {
-        hr = AssemblyBinder::PreBindByteArray(&m_appContext, pPEImage, fInspectionOnly);
-    }
-    EX_CATCH_HRESULT(hr);
-    
-    return hr;
-}
-#endif // CROSSGEN_COMPILE

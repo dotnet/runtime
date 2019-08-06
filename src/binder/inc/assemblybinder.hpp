@@ -62,11 +62,6 @@ namespace BINDER_SPACE
                                             /* in */ PEImage    *pNativePEImage,
                                             /* out */ Assembly **ppAssembly);
 
-        // Special assembly binder entry point for byte arrays
-        static HRESULT PreBindByteArray(/* in */  ApplicationContext *pApplicationContext,
-                                        /* in */  PEImage            *pPEImage,
-                                        /* in */  BOOL                fInspectionOnly);
-
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fInspectionOnly,
                                    /* in */  BOOL         fIsInGAC,
@@ -147,10 +142,6 @@ namespace BINDER_SPACE
                                   /* in */  DWORD               dwBindFlags,
                                   /* in */  bool                excludeAppPaths,
                                   /* out */ BindResult         *pBindResult);
-        static HRESULT BindLockedOrService(/* in */  ApplicationContext *pApplicationContext,
-                                           /* in */  AssemblyName       *pAssemblyName,
-                                           /* in */  bool                excludeAppPaths,
-                                           /* out */ BindResult         *pBindResult);
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,

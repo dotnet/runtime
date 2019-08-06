@@ -50,10 +50,6 @@ public:
                  BOOL         fExplicitBindToNativeImage,
                  ICLRPrivAssembly **ppAssembly);
 
-#ifndef CROSSGEN_COMPILE
-    HRESULT PreBindByteArray(PEImage  *pPEImage, BOOL fInspectionOnly);
-#endif // CROSSGEN_COMPILE
-
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
                               /* in */ BOOL fIsNativeImage, 
