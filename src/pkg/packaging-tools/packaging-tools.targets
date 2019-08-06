@@ -83,9 +83,15 @@
       <CompressedArchiveFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(CompressedFileExtension)</CompressedArchiveFile>
     </PropertyGroup>
 
-    <!-- By default, a shared framework only has files in shared/, so archive that. -->
+    <!--
+      Set the directory containing contents to include in the archive (zip/tarball). This default
+      means the "shared" dir is inside the archive and it can be extracted directly into the dotnet
+      home dir. This allows the .NET Core Runtime archive to include files outside the "shared" dir,
+      such as the host, resolver, and license files, without special handling vs. WindowsDesktop and
+      ASP.NET Core sharedfx.
+    -->
     <PropertyGroup>
-      <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)shared/</SharedFrameworkArchiveSourceDir>
+      <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)</SharedFrameworkArchiveSourceDir>
     </PropertyGroup>
   </Target>
 
