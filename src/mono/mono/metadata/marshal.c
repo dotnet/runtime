@@ -145,16 +145,16 @@ mono_marshal_init_tls (void)
 	mono_native_tls_alloc (&load_type_info_tls_id, NULL);
 }
 
-MonoObject*
-mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
+MonoObjectHandle
+mono_object_isinst_icall_impl (MonoObjectHandle obj, MonoClass* klass, MonoError *error)
 {
 	if (!klass)
-		return NULL;
+		return NULL_HANDLE;
 
 	/* This is called from stelemref so it is expected to succeed */
 	/* Fastpath */
 	if (mono_class_is_interface (klass)) {
-		MonoVTable *vt = obj->vtable;
+		MonoVTable *vt = mono_handle_vtable (obj);
 
 		if (!m_class_is_inited (klass))
 			mono_class_init_internal (klass);
@@ -163,10 +163,7 @@ mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 			return obj;
 	}
 
-	ERROR_DECL (error);
-	MonoObject *result = mono_object_isinst_checked (obj, klass, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	return mono_object_handle_isinst (obj, klass, error);
 }
 
 MonoStringHandle

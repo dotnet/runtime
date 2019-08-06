@@ -550,7 +550,7 @@ mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintp
 
 #define mono_handle_class(o) MONO_HANDLE_SUPPRESS (mono_object_class (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (o))))
 
-#define mono_handle_vtable(o) MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (o))->vtable)
+#define mono_handle_vtable(o) MONO_HANDLE_GETVAL (o, vtable)
 
 /* Local handles to global GC handles and back */
 
