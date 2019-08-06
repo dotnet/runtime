@@ -71,7 +71,7 @@ namespace System.Drawing
         public Bitmap(int width, int height, int stride, PixelFormat format, IntPtr scan0)
         {
             IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromScan0(width, height, stride, unchecked((int)format), new HandleRef(null, scan0), out bitmap);
+            int status = Gdip.GdipCreateBitmapFromScan0(width, height, stride, unchecked((int)format), scan0, out bitmap);
             Gdip.CheckStatus(status);
 
             SetNativeImage(bitmap);
@@ -80,7 +80,7 @@ namespace System.Drawing
         public Bitmap(int width, int height, PixelFormat format)
         {
             IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromScan0(width, height, 0, unchecked((int)format), NativeMethods.NullHandleRef, out bitmap);
+            int status = Gdip.GdipCreateBitmapFromScan0(width, height, 0, unchecked((int)format), IntPtr.Zero, out bitmap);
             Gdip.CheckStatus(status);
 
             SetNativeImage(bitmap);
@@ -109,30 +109,22 @@ namespace System.Drawing
 
         public static Bitmap FromHicon(IntPtr hicon)
         {
-            IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromHICON(new HandleRef(null, hicon), out bitmap);
-            Gdip.CheckStatus(status);
-
+            Gdip.CheckStatus(Gdip.GdipCreateBitmapFromHICON(hicon, out IntPtr bitmap));
             return new Bitmap(bitmap);
         }
 
         public static Bitmap FromResource(IntPtr hinstance, string bitmapName)
         {
-            IntPtr bitmap;
             IntPtr name = Marshal.StringToHGlobalUni(bitmapName);
             try
             {
-                int status = Gdip.GdipCreateBitmapFromResource(new HandleRef(null, hinstance),
-                                                                  new HandleRef(null, name),
-                                                                  out bitmap);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromResource(hinstance, name, out IntPtr bitmap));
+                return new Bitmap(bitmap);
             }
             finally
             {
                 Marshal.FreeHGlobal(name);
             }
-
-            return new Bitmap(bitmap);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]

@@ -113,7 +113,7 @@ namespace System.Drawing
                     //
                     Debug.WriteLineIf(GdiPlusInitialization.TraceVerbose, "Instruct GDI+ to shutdown");
 
-                    GdiplusShutdown(new HandleRef(null, initToken));
+                    GdiplusShutdown(ref initToken);
                     initToken = IntPtr.Zero;
 #endif
 
@@ -274,7 +274,6 @@ namespace System.Drawing
         IDI_WARNING = 32515,
         IDI_ERROR = 32513,
         IDI_INFORMATION = 32516,
-        SRCCOPY = 0x00CC0020,
         PLANES = 14,
         BITSPIXEL = 12,
         LOGPIXELSX = 88,
@@ -450,33 +449,12 @@ namespace System.Drawing
         DMCOLLATE_TRUE = 1,
         PRINTER_ENUM_LOCAL = 0x00000002,
         PRINTER_ENUM_CONNECTIONS = 0x00000004,
-        SRCPAINT = 0x00EE0086, /* dest = source OR dest           */
-        SRCAND = 0x008800C6, /* dest = source AND dest          */
-        SRCINVERT = 0x00660046, /* dest = source XOR dest          */
-        SRCERASE = 0x00440328, /* dest = source AND (NOT dest )   */
-        NOTSRCCOPY = 0x00330008, /* dest = (NOT source)             */
-        NOTSRCERASE = 0x001100A6, /* dest = (NOT src) AND (NOT dest) */
-        MERGECOPY = 0x00C000CA, /* dest = (source AND pattern)     */
-        MERGEPAINT = 0x00BB0226, /* dest = (NOT source) OR dest     */
-        PATCOPY = 0x00F00021, /* dest = pattern                  */
-        PATPAINT = 0x00FB0A09, /* dest = DPSnoo                   */
-        PATINVERT = 0x005A0049, /* dest = pattern XOR dest         */
-        DSTINVERT = 0x00550009, /* dest = (NOT dest)               */
-        BLACKNESS = 0x00000042, /* dest = BLACK                    */
-        WHITENESS = 0x00FF0062, /* dest = WHITE                    */
-        CAPTUREBLT = 0x40000000, /* Include layered windows */
         SM_CXICON = 11,
         SM_CYICON = 12,
         DEFAULT_CHARSET = 1;
 
-        public const int NOMIRRORBITMAP = unchecked((int)0x80000000); /* Do not Mirror the bitmap in this call */
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true)]
         public static extern IntPtr CreateCompatibleBitmap(HandleRef hDC, int width, int height);
-
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern int BitBlt(HandleRef hDC, int x, int y, int nWidth, int nHeight,
-                                         HandleRef hSrcDC, int xSrc, int ySrc, int dwRop);
 
         [DllImport(ExternDll.Gdi32)]
         public static extern int GetDIBits(HandleRef hdc, HandleRef hbm, int arg1, int arg2, IntPtr arg3, ref NativeMethods.BITMAPINFO_FLAT bmi, int arg5);

@@ -218,7 +218,7 @@ namespace System.Drawing.Drawing2D
 
                     // Set blend factors
 
-                    Gdip.CheckStatus(Gdip.GdipSetPathGradientBlend(new HandleRef(this, NativeBrush), new HandleRef(null, factors), new HandleRef(null, positions), count));
+                    Gdip.CheckStatus(Gdip.GdipSetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count));
                 }
                 finally
                 {

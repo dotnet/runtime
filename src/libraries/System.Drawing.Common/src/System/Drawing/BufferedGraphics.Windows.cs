@@ -12,7 +12,6 @@ namespace System.Drawing
         private BufferedGraphicsContext _context;
         private readonly Point _targetLoc;
         private readonly Size _virtualSize;
-        private const int RasterOp = 0xcc0020; // RasterOp.SOURCE.GetRop();
 
         /// <summary>
         /// Internal constructor, this class is created by BufferedGraphicsContext.
@@ -82,8 +81,16 @@ namespace System.Drawing
 
             try
             {
-                SafeNativeMethods.BitBlt(refTargetDC, _targetLoc.X, _targetLoc.Y, _virtualSize.Width, _virtualSize.Height,
-                                         new HandleRef(Graphics, sourceDC), 0, 0, RasterOp);
+                Interop.Gdi32.BitBlt(
+                    refTargetDC,
+                    _targetLoc.X,
+                    _targetLoc.Y,
+                    _virtualSize.Width,
+                    _virtualSize.Height,
+                    new HandleRef(Graphics, sourceDC),
+                    0,
+                    0,
+                    Interop.Gdi32.RasterOp.SRCCOPY);
             }
             finally
             {

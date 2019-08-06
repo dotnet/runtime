@@ -11,11 +11,10 @@ namespace System.Drawing.Drawing2D
     {
         internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)
         {
-            int status = Gdip.GdipGetCustomLineCapType(new HandleRef(null, cap), out CustomLineCapType capType);
-
+            int status = Gdip.GdipGetCustomLineCapType(cap, out CustomLineCapType capType);
             if (status != Gdip.Ok)
             {
-                Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
+                Gdip.GdipDeleteCustomLineCap(cap);
                 throw Gdip.StatusException(status);
             }
 
@@ -28,7 +27,7 @@ namespace System.Drawing.Drawing2D
                     return new AdjustableArrowCap(cap);
             }
 
-            Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
+            Gdip.GdipDeleteCustomLineCap(cap);
             throw Gdip.StatusException(Gdip.NotImplemented);
         }
     }

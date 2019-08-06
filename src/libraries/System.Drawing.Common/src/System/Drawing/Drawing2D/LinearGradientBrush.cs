@@ -261,8 +261,8 @@ namespace System.Drawing.Drawing2D
                     // Set blend factors.
                     Gdip.CheckStatus(Gdip.GdipSetLineBlend(
                         new HandleRef(this, NativeBrush),
-                        new HandleRef(null, factors),
-                        new HandleRef(null, positions),
+                        factors,
+                        positions,
                         count));
                 }
                 finally
@@ -421,7 +421,7 @@ namespace System.Drawing.Drawing2D
                     Marshal.Copy(value.Positions, 0, positions, count);
 
                     // Set blend factors.
-                    Gdip.CheckStatus(Gdip.GdipSetLinePresetBlend(new HandleRef(this, NativeBrush), new HandleRef(null, colors), new HandleRef(null, positions), count));
+                    Gdip.CheckStatus(Gdip.GdipSetLinePresetBlend(new HandleRef(this, NativeBrush), colors, positions, count));
                 }
                 finally
                 {
