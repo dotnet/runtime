@@ -150,7 +150,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void Dispose_CallsVirtualDispose_TrueArg()
         {
             bool disposeInvoked = false;
