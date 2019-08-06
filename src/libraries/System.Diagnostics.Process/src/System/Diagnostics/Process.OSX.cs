@@ -10,6 +10,8 @@ namespace System.Diagnostics
     public partial class Process
     {
         private const int NanosecondsTo100NanosecondsFactor = 100;
+        
+        private const int MicrosecondsToSecondsFactor = 1_000_000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
@@ -27,37 +29,16 @@ namespace System.Diagnostics
         {
             get
             {
-                // Get the RUsage data and convert the process start time.
-                // To calculcate the process start time in OSX we call proc_pid_rusage() and use ri_proc_start_abstime.
-                //
-                // ri_proc_start_abstime is absolute time which is the time since some reference point. The reference point
-                // usually is the system boot time but this is not necessary true in all versions of OSX. For example in Sierra 
-                // Mac OS 10.12 the reference point is not really the boot time. To be always accurate in our calculations
-                // we don’t assume the reference point to be the boot time and instead we calculate it by calling GetTimebaseInfo
-                // which is a wrapper for native mach_absolute_time(). That method returns the current time referenced to the needed start point
-                // Then we can subtract the returned time from DateTime.UtcNow and we’ll get the exact reference point.
-                //
-                // The absolute time is measured by the bus cycle of the processor which is measured in nanoseconds multiplied 
-                // by some factor “numer / denom”. In most cases the factor is (1 / 1) but we have to get the factor and use it just 
-                // in case we run on a machine has different factor. To get the factor we call GetTimebaseInfo the wrapper for the 
-                // mach_timebase_info() which give us the factor. Then we multiply the factor by the absolute time and the divide
-                // the result by 10^9 to convert it from nanoseconds to seconds.
-
                 EnsureState(State.HaveNonExitedId);
+                Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
 
-                uint numer, denom;
-                Interop.Sys.GetTimebaseInfo(out numer, out denom);
-                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                ulong absoluteTime;
+                if (info == null)
+                    throw new Win32Exception(SR.ProcessInformationUnavailable);
 
-                if (!Interop.Sys.GetAbsoluteTime(out absoluteTime))
-                {
-                    throw new Win32Exception(SR.RUsageFailure);
-                }
+                DateTime startTime = DateTime.UnixEpoch + TimeSpan.FromSeconds(info.Value.pbsd.pbi_start_tvsec + info.Value.pbsd.pbi_start_tvusec / (double)MicrosecondsToSecondsFactor);
 
-                // usually seconds will be negative
-                double seconds = (((long)info.ri_proc_start_abstime - (long)absoluteTime) * (double)numer / denom) / NanoSecondToSecondFactor;
-                return DateTime.UtcNow.AddSeconds(seconds).ToLocalTime();
+                // The return value is expected to be in the local time zone.
+                return startTime.ToLocalTime();
             }
         }
 

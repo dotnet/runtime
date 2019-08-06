@@ -93,41 +93,6 @@ uint64_t SystemNative_GetTimestamp()
 #endif
 }
 
-int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp)
-{
-    assert(timestamp);
-
-#if  HAVE_MACH_ABSOLUTE_TIME
-    *timestamp = mach_absolute_time();
-    return 1;
-
-#else
-    *timestamp = 0;
-    return 0;
-#endif
-}
-
-int32_t SystemNative_GetTimebaseInfo(uint32_t* numer, uint32_t* denom)
-{
-#if  HAVE_MACH_TIMEBASE_INFO
-    mach_timebase_info_data_t timebase;
-    kern_return_t ret = mach_timebase_info(&timebase);
-    assert(ret == KERN_SUCCESS);
-
-    if (ret == KERN_SUCCESS)
-    {
-        *numer = timebase.numer;
-        *denom = timebase.denom;
-    }
-    else
-#endif
-    {
-        *numer = 1;
-        *denom = 1;
-    }
-    return 1;
-}
-
 #if defined(_ARM_) || defined(_ARM64_)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
