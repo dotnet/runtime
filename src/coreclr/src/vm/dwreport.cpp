@@ -19,7 +19,6 @@
 #include <msodwwrap.h>
 #include <shlobj.h>
 #include "dbginterface.h"
-#include <sha1.h>
 #include <winver.h>
 #include "dlwrap.h"
 #include "eemessagebox.h"

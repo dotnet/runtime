@@ -7,7 +7,6 @@
 #include "eventpipeconfiguration.h"
 #include "eventpipeevent.h"
 #include "eventpipeprovider.h"
-#include "sha1.h"
 
 #ifdef FEATURE_PERFTRACING
 
