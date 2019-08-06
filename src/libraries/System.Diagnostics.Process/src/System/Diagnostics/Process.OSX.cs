@@ -106,10 +106,6 @@ namespace System.Diagnostics
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
 
-        // The ri_proc_start_abstime needs to be converted to seconds to determine
-        // the actual start time of the process.
-        private const int NanoSecondToSecondFactor = 1000000000;
-
         private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
             return Interop.libproc.proc_pid_rusage(Interop.Sys.GetPid());
