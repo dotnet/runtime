@@ -15,6 +15,11 @@ __BUILD_TOOLS_PATH="$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_P
 __INIT_TOOLS_RESTORE_PROJECT="$__scriptpath/init-tools.msbuild"
 __BUILD_TOOLS_SEMAPHORE="$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/init-tools.complete"
 
+# Set variables used when running in an Azure DevOps task
+if [[ ! -z $TF_BUILD ]]; then
+  __ErrMsgPrefix="##vso[task.logissue type=error]"
+fi
+
 if [ -e "$__BUILD_TOOLS_SEMAPHORE" ]; then
     echo "Tools are already initialized"
     return #return instead of exit because this script is inlined in other scripts which we don't want to exit
@@ -27,7 +32,7 @@ if [ -d "${DotNetBuildToolsDir:-}" ]; then
     ln -s "$DotNetBuildToolsDir" "$__TOOLRUNTIME_DIR"
 
     if [ ! -e "$__DOTNET_CMD" ]; then
-        echo "ERROR: Ensure that $DotNetBuildToolsDir contains the .NET Core SDK at $__DOTNET_PATH"
+        echo "${__ErrMsgPrefix}ERROR: Ensure that $DotNetBuildToolsDir contains the .NET Core SDK at $__DOTNET_PATH"
         exit 1
     fi
 
@@ -90,7 +95,7 @@ case $OSName in
         # Format x.y.z as single integer with three digits for each part
         VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
         if [ "$VERSION" -lt 010012000 ]; then
-            echo error: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
+            echo ${__ErrMsgPrefix}ERROR: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
             exit 1
         fi
         ;;
@@ -133,7 +138,7 @@ __PKG_RID=$__PKG_RID-$__PKG_ARCH
 if [ ! -e "$__DOTNET_CMD" ]; then
     source $__scriptpath/init-dotnet.sh
     if [ ! -e "$__DOTNET_CMD" ]; then
-        echo "ERROR: Ensure arcade dotnet install did not install dotnet at $__DOTNET_CMD"
+        echo "${__ErrMsgPrefix}ERROR: Could not install dotnet cli correctly. Expected to be installed at $__DOTNET_CMD"
         exit 1
     fi
 fi
@@ -143,7 +148,7 @@ if [ ! -e "$__BUILD_TOOLS_PATH" ]; then
     echo "Running: $__DOTNET_CMD restore \"$__INIT_TOOLS_RESTORE_PROJECT\" --no-cache --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE /p:BuildToolsPackageVersion=$__BUILD_TOOLS_PACKAGE_VERSION /p:ToolsDir=$__TOOLRUNTIME_DIR" >> "$__init_tools_log"
     "$__DOTNET_CMD" restore "$__INIT_TOOLS_RESTORE_PROJECT" --no-cache --packages "$__PACKAGES_DIR" --source "$__BUILDTOOLS_SOURCE" /p:BuildToolsPackageVersion=$__BUILD_TOOLS_PACKAGE_VERSION /p:ToolsDir="$__TOOLRUNTIME_DIR" >> "$__init_tools_log"
     if [ ! -e "$__BUILD_TOOLS_PATH/init-tools.sh" ]; then
-        echo "ERROR: Could not restore build tools correctly." 1>&2
+        echo "${__ErrMsgPrefix}ERROR: Could not restore build tools correctly." 1>&2
         display_error_message
     fi
 fi
@@ -173,7 +178,7 @@ else
     chmod +x "$__BUILD_TOOLS_PATH/init-tools.sh"
     "$__BUILD_TOOLS_PATH/init-tools.sh" "$__scriptpath" "$__DOTNET_CMD" "$__TOOLRUNTIME_DIR" "$__PACKAGES_DIR" >> "$__init_tools_log"
     if [ "$?" != "0" ]; then
-        echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
+        echo "${__ErrMsgPrefix}ERROR: An error occurred when trying to initialize the tools." 1>&2
         display_error_message
         exit 1
     fi
