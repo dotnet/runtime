@@ -148,6 +148,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Flaky - ArgumentException")]
         public void Bitmap16Features_Palette_Entries_Windows()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
