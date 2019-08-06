@@ -83,23 +83,6 @@ void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
     }
 }
 
-BOOL Assembly::GetInspectionOnly()
-{
-    return ((m_dwAssemblyFlags & FLAG_INSPECTION_ONLY) != 0);
-}
-
-void Assembly::SetInspectionOnly(BOOL fInspectionOnly)
-{
-    if (fInspectionOnly)
-    {
-        m_dwAssemblyFlags |= FLAG_INSPECTION_ONLY;
-    }
-    else
-    {
-        m_dwAssemblyFlags &= ~FLAG_INSPECTION_ONLY;
-    }
-}
-
 BOOL Assembly::GetIsInGAC()
 {
     return ((m_dwAssemblyFlags & FLAG_IS_IN_GAC) != 0);

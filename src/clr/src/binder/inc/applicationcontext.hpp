@@ -131,7 +131,6 @@ namespace BINDER_SPACE
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
-        inline InspectionContext *GetInspectionContext();
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
                                          HRESULT  hrBindResult);
@@ -158,7 +157,6 @@ namespace BINDER_SPACE
         SString            m_applicationName;
         DWORD              m_dwAppDomainId;
         ExecutionContext  *m_pExecutionContext;
-        InspectionContext *m_pInspectionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
 #ifdef FEATURE_VERSIONING_LOG

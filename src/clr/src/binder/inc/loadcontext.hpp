@@ -41,8 +41,6 @@ namespace BINDER_SPACE
     
 #include "loadcontext.inl"
 
-    class InspectionContext :
-        public LoadContext<AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_ARCHITECTURE> {};
     class ExecutionContext : public LoadContext<AssemblyName::INCLUDE_DEFAULT> {};
 };
 

@@ -170,15 +170,12 @@ HRESULT CCoreCLRBinderHelper::GetAssemblyFromImage(PEImage           *pPEImage,
 //=============================================================================
 /* static */
 HRESULT CCoreCLRBinderHelper::GetAssembly(/* in */  SString     &assemblyPath,
-                                   /* in */  BOOL         fInspectionOnly,
-                                   /* in */  BOOL         fIsInGAC,
-                                   /* in */  BOOL         fExplicitBindToNativeImage,
-                                   /* out */ BINDER_SPACE::Assembly   **ppAssembly)
+                                          /* in */  BOOL         fIsInGAC,
+                                          /* in */  BOOL         fExplicitBindToNativeImage,
+                                          /* out */ BINDER_SPACE::Assembly   **ppAssembly)
 {
     return AssemblyBinder::GetAssembly(assemblyPath,
-                                         fInspectionOnly,
-                                         fIsInGAC,
-                                         fExplicitBindToNativeImage,
-                                         ppAssembly
-                                         );
+                                       fIsInGAC,
+                                       fExplicitBindToNativeImage,
+                                       ppAssembly);
 }
