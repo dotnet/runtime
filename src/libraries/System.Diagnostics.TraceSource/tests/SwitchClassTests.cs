@@ -43,7 +43,7 @@ namespace System.Diagnostics.TraceSourceTests
             return new WeakReference(new TestSwitch());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void PruneTest()
         {
             var strongSwitch = new TestSwitch();
