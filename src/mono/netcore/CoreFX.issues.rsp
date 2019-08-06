@@ -380,10 +380,6 @@
 # https://github.com/mono/mono/issues/15076
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
 
-# Assertion expects false, but we return true
-# https://github.com/mono/mono/issues/15080
--nomethod System.Reflection.Tests.TypeInfoTests.IsAssignableFrom
-
 ####################################################################
 ##  System.Resources.ResourceManager.Tests
 ####################################################################
