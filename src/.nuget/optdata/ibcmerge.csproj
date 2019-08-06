@@ -5,10 +5,6 @@
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="microsoft.dotnet.ibcmerge" Version="[$(IbcMergePackageVersion)]" Condition="'$(IbcMergePackageVersion)'!=''" />
-  </ItemGroup>
-
   <!--                                                                       -->
   <!-- Task: DumpIbcMergePackageVersion                                       -->
   <!--                                                                       -->
@@ -16,7 +12,7 @@
   <!--                                                                       -->
   <!-- DumpIbcMergePackageVersion is used by build.sh and build.cmd to pass  -->
   <!-- the version information to cmake. The task will write a file to be    -->
-  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- read back by build.cmd/sh. The path for the file is:                  -->
   <!-- $(IbcMergePackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcMergePackageVersion">
@@ -25,14 +21,8 @@
 
     <!-- Cleanup old version file -->
     <Delete Files="$(IbcMergePackageVersionOutputFile)" Condition="Exists('$(IbcMergePackageVersionOutputFile)')" />
-    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(IbcMergePackageVersion)" Overwrite="true"/>
-    <Message Text="IbcMergePackageVersion: $(IbcMergePackageVersion) written to: $(IbcMergePackageVersionOutputFile)" Importance="High" />
+    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(MicrosoftDotNetIBCMergeVersion)" Overwrite="true"/>
+    <Message Text="MicrosoftDotNetIBCMergeVersion: $(MicrosoftDotNetIBCMergeVersion) written to: $(IbcMergePackageVersionOutputFile)" Importance="High" />
   </Target>
 
-  <PropertyGroup>
-    <RestoreSources>
-      $(RestoreSources);
-      https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json;
-    </RestoreSources>
-  </PropertyGroup>
 </Project>
