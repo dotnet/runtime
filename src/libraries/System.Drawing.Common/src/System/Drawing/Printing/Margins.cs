@@ -23,10 +23,13 @@ namespace System.Drawing.Printing
 
         [OptionalField]
         private double _doubleLeft;
+
         [OptionalField]
         private double _doubleRight;
+
         [OptionalField]
         private double _doubleTop;
+
         [OptionalField]
         private double _doubleBottom;
 
@@ -63,10 +66,10 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Left
         {
-            get { return _left; }
+            get => _left;
             set
             {
-                CheckMargin(value, "Left");
+                CheckMargin(value, nameof(value));
                 _left = value;
                 _doubleLeft = (double)value;
             }
@@ -77,10 +80,10 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Right
         {
-            get { return _right; }
+            get => _right;
             set
             {
-                CheckMargin(value, "Right");
+                CheckMargin(value, nameof(value));
                 _right = value;
                 _doubleRight = (double)value;
             }
@@ -91,10 +94,10 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Top
         {
-            get { return _top; }
+            get => _top;
             set
             {
-                CheckMargin(value, "Top");
+                CheckMargin(value, nameof(value));
                 _top = value;
                 _doubleTop = (double)value;
             }
@@ -105,10 +108,10 @@ namespace System.Drawing.Printing
         /// </summary>
         public int Bottom
         {
-            get { return _bottom; }
+            get => _bottom;
             set
             {
-                CheckMargin(value, "Bottom");
+                CheckMargin(value, nameof(value));
                 _bottom = value;
                 _doubleBottom = (double)value;
             }
@@ -121,7 +124,7 @@ namespace System.Drawing.Printing
         /// </summary>
         internal double DoubleLeft
         {
-            get { return _doubleLeft; }
+            get => _doubleLeft;
             set
             {
                 Left = (int)Math.Round(value);
@@ -136,7 +139,7 @@ namespace System.Drawing.Printing
         /// </summary>
         internal double DoubleRight
         {
-            get { return _doubleRight; }
+            get => _doubleRight;
             set
             {
                 Right = (int)Math.Round(value);
@@ -151,7 +154,7 @@ namespace System.Drawing.Printing
         /// </summary>
         internal double DoubleTop
         {
-            get { return _doubleTop; }
+            get => _doubleTop;
             set
             {
                 Top = (int)Math.Round(value);
@@ -166,7 +169,7 @@ namespace System.Drawing.Printing
         /// </summary>
         internal double DoubleBottom
         {
-            get { return _doubleBottom; }
+            get => _doubleBottom;
             set
             {
                 Bottom = (int)Math.Round(value);
@@ -177,16 +180,15 @@ namespace System.Drawing.Printing
         private void CheckMargin(int margin, string name)
         {
             if (margin < 0)
-                throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx, name, margin, "0"));
+            {
+                throw new ArgumentOutOfRangeException(name, margin, SR.Format(SR.InvalidLowBoundArgumentEx, name, margin, 0));
+            }
         }
 
         /// <summary>
         /// Retrieves a duplicate of this object, member by member.
         /// </summary>
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
         /// <summary>
         /// Compares this <see cref='Margins'/> to a specified <see cref='Margins'/> to see whether they
@@ -194,60 +196,43 @@ namespace System.Drawing.Printing
         /// </summary>
         public override bool Equals(object obj)
         {
-            Margins margins = obj as Margins;
-            if (margins == this)
-                return true;
-            if (margins == null)
+            if (!(obj is Margins margins))
+            {
                 return false;
+            }
 
             return margins.Left == Left
-            && margins.Right == Right
-            && margins.Top == Top
-            && margins.Bottom == Bottom;
+                && margins.Right == Right
+                && margins.Top == Top
+                && margins.Bottom == Bottom;
         }
 
         /// <summary>
         /// Calculates and retrieves a hash code based on the left, right, top, and bottom margins.
         /// </summary>
-        public override int GetHashCode()
-        {
-            // return HashCodes.Combine(left, right, top, bottom);
-            uint left = (uint)Left;
-            uint right = (uint)Right;
-            uint top = (uint)Top;
-            uint bottom = (uint)Bottom;
-
-            uint result = left ^
-                           ((right << 13) | (right >> 19)) ^
-                           ((top << 26) | (top >> 6)) ^
-                           ((bottom << 7) | (bottom >> 25));
-
-            return unchecked((int)result);
-        }
+        public override int GetHashCode() => HashCode.Combine(Left, Right, Top, Bottom);
 
         /// <summary>
         /// Tests whether two <see cref='Margins'/> objects are identical.
         /// </summary>
         public static bool operator ==(Margins m1, Margins m2)
         {
-            if (object.ReferenceEquals(m1, null) != object.ReferenceEquals(m2, null))
+            if (m1 is null)
+            {
+                return m2 is null;
+            }
+            if (m2 is null)
             {
                 return false;
             }
-            if (!object.ReferenceEquals(m1, null))
-            {
-                return m1.Left == m2.Left && m1.Top == m2.Top && m1.Right == m2.Right && m1.Bottom == m2.Bottom;
-            }
-            return true;
+
+            return m1.Equals(m2);
         }
 
         /// <summary>
         /// Tests whether two <see cref='Margins'/> objects are different.
         /// </summary>
-        public static bool operator !=(Margins m1, Margins m2)
-        {
-            return !(m1 == m2);
-        }
+        public static bool operator !=(Margins m1, Margins m2) => !(m1 == m2);
 
         /// <summary>
         /// Provides some interesting information for the Margins in String form.
@@ -255,11 +240,11 @@ namespace System.Drawing.Printing
         public override string ToString()
         {
             return "[Margins"
-            + " Left=" + Left.ToString(CultureInfo.InvariantCulture)
-            + " Right=" + Right.ToString(CultureInfo.InvariantCulture)
-            + " Top=" + Top.ToString(CultureInfo.InvariantCulture)
-            + " Bottom=" + Bottom.ToString(CultureInfo.InvariantCulture)
-            + "]";
+                + " Left=" + Left.ToString(CultureInfo.InvariantCulture)
+                + " Right=" + Right.ToString(CultureInfo.InvariantCulture)
+                + " Top=" + Top.ToString(CultureInfo.InvariantCulture)
+                + " Bottom=" + Bottom.ToString(CultureInfo.InvariantCulture)
+                + "]";
         }
     }
 }
