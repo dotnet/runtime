@@ -36,7 +36,7 @@ In order to group pinned objects together we have a couple of options –
 
 2) We allow migrating non pinned objects to the pinned heap at the time they need to be pinned.
 
-1) is a much cleaner solution. Of course it also imposes a limitation which is the user needs to have control over the objects they want to pin and is ok with pinning it at allocation time. This is not always the case. However, we believe that this feature is the most important for framework components which often take care of the underlying pinning and they are in general ok with this limitation so we will go with option 1). If we ever decide that it’s important to do 2) we can add it in the future.
+Option 1) is a much cleaner solution. Of course it also imposes a limitation which is the user needs to have control over the objects they want to pin and is ok with pinning it at allocation time. This is not always the case. However, we believe that this feature is the most important for framework components which often take care of the underlying pinning and they are in general ok with this limitation so we will go with option 1). If we ever decide that it’s important to do 2) we can add it in the future.
 
 An object allocated on the pinned heap can be referenced by other objects normally. It’s pinned by the virtue of being on the pinned heap so we do not distinguish between a pinned reference (like a pinned GC handle) and a non pinned reference. This means as long as the object is still referenced, it will stay on the pinned heap and will not be moved.
 
