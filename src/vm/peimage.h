@@ -141,9 +141,6 @@ public:
     
     BOOL   HasID();
     ULONG GetIDHash();
-    
-    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL);
-    
 
     // Refcount above images.
     ULONG AddRef();
@@ -180,7 +177,6 @@ public:
     static CHECK CheckCanonicalFullPath(const SString &path);
     static CHECK CheckStartup();
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
-    void GetHashedStrongNameSignature(SBuffer &result);
 
 #ifndef FEATURE_PAL
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
@@ -198,8 +194,6 @@ public:
     BOOL HasNTHeaders();
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
-    void SetPassiveDomainOnly();
-    BOOL PassiveDomainOnly();
     BOOL IsReferenceAssembly();
 #ifdef FEATURE_PREJIT
     BOOL IsNativeILILOnly();
@@ -214,7 +208,6 @@ public:
     BOOL IsDll();
     WORD GetSubsystem();
     BOOL  IsFileLocked();
-    BOOL HasStrongNameSignature();
 
     BOOL IsIbcOptimized();
     BOOL Has32BitNTHeaders();
@@ -290,7 +283,6 @@ private:
     SString     m_sModuleFileNameHintUsedByDac; // This is only used by DAC
 private:
     BOOL        m_bIsTrustedNativeImage;
-    BOOL        m_bPassiveDomainOnly;
 #ifdef FEATURE_LAZY_COW_PAGES
     BOOL        m_bAllocatedLazyCOWPages;
 #endif // FEATURE_LAZY_COW_PAGES
@@ -334,10 +326,6 @@ private:
 
     HANDLE m_hFile;
     bool   m_bOwnHandle;
-
-    BOOL        m_bSignatureInfoCached;
-    HRESULT   m_hrSignatureInfoStatus;
-    DWORD        m_dwSignatureInfo;    
 
     //@TODO:workaround: Remove this when we have one PEImage per mapped image,
     //@TODO:workaround: and move the lock there

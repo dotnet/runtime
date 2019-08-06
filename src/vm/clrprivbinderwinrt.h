@@ -141,9 +141,8 @@ public:
         CLRPrivTypeCacheWinRT * pWinRtTypeCache,
         LPCWSTR *               rgwzAltPath, 
         UINT                    cAltPaths, 
-        NamespaceResolutionKind fNamespaceResolutionKind,
-        BOOL                    fCanUseNativeImages);
-    
+        NamespaceResolutionKind fNamespaceResolutionKind);
+
     static 
     CLRPrivBinderWinRT * GetOrCreateBinder(
         CLRPrivTypeCacheWinRT * pWinRtTypeCache, 

@@ -131,14 +131,7 @@ public:
 
 
 private:
-    void CheckForDisallowedInProcSxSLoadWorker();
-    void ValidateImagePlatformNeutrality();
-
     // For use inside LoadLibrary callback
-    friend HRESULT ExecuteDLLForAttach(HINSTANCE hInst,
-                                       DWORD dwReason,
-                                       LPVOID lpReserved,
-                                       BOOL fFromThunk);
     void SetLoadedHMODULE(HMODULE hMod);
 
     // DO NOT USE !!! this is to be removed when we move to new fusion binding API
@@ -327,10 +320,7 @@ public:
     // Does the loader support using a native image for this file?
     // Some implementation restrictions prevent native images from being used
     // in some cases.
-#ifdef FEATURE_PREJIT 
-    BOOL CanUseNativeImage() { LIMITED_METHOD_CONTRACT; return m_fCanUseNativeImage; }
-    void SetCannotUseNativeImage() { LIMITED_METHOD_CONTRACT; m_fCanUseNativeImage = FALSE; }
-
+#ifdef FEATURE_PREJIT
     BOOL IsNativeLoaded();
     PEImage *GetNativeImageWithRef();
     PEImage *GetPersistentNativeImage();
@@ -344,7 +334,6 @@ public:
     IStream * GetPdbStream();       
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
-    BOOL PassiveDomainOnly();
     BOOL IsPtrInILImage(PTR_CVOID data);
 
 #ifdef DACCESS_COMPILE    
@@ -429,7 +418,7 @@ protected:
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    PEFile(PEImage *image, BOOL fCheckAuthenticodeSignature = TRUE);
+    PEFile(PEImage *image);
     virtual ~PEFile();
 
     virtual void ReleaseIL();
@@ -441,9 +430,7 @@ protected:
     void RestoreMDImport(IMDInternalImport* pImport);
     void OpenMDImport_Unsafe();
     void OpenImporter();
-    void OpenAssemblyImporter();
     void OpenEmitter();
-    void OpenAssemblyEmitter();
 
     void ConvertMDInternalToReadWrite();
     void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
@@ -480,8 +467,6 @@ protected:
 #ifdef FEATURE_PREJIT
     // Native image
     PTR_PEImage              m_nativeImage;
-
-    BOOL                     m_fCanUseNativeImage;
 #endif
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for 
@@ -667,12 +652,6 @@ class PEAssembly : public PEFile
 #ifndef  DACCESS_COMPILE
     virtual void ReleaseIL();
 #endif
-
-    // ------------------------------------------------------------
-    // Hash support
-    // ------------------------------------------------------------
-
-    BOOL HasStrongNameSignature();
 
     // ------------------------------------------------------------
     // Descriptive strings

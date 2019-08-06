@@ -48,7 +48,6 @@ enum FileLoadLevel
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
     FILE_LOADED,                    // Loaded by not yet active
-    FILE_LOAD_VERIFY_EXECUTION,
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
 
@@ -314,7 +313,6 @@ class DomainFile
     virtual void DeliverSyncEvents() = 0;
     virtual void DeliverAsyncEvents() = 0;    
     void FinishLoad();
-    void VerifyExecution();
     void Activate();
 #endif
 

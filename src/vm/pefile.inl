@@ -179,12 +179,6 @@ inline void PEFile::GetMVID(GUID *pMvid)
     IfFailThrow(GetPersistentMDImport()->GetScopeProps(NULL, pMvid));
 }
 
-inline BOOL PEFile::PassiveDomainOnly()
-{
-    WRAPPER_NO_CONTRACT;
-    return HasOpenedILimage() && GetOpenedILimage()->PassiveDomainOnly();
-}
-
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
@@ -1547,31 +1541,6 @@ inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
         return E_FAIL;
 
     return GetPersistentMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, pdwFlags);
-}
-
-
-// ------------------------------------------------------------
-// Hash support
-// ------------------------------------------------------------
-
-inline BOOL PEAssembly::HasStrongNameSignature()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsDynamic())
-        return FALSE;
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        // The NGen images do not have strong name signature
-        return FALSE;
-    }
-#endif // FEATURE_PREJIT
-
-    return GetILimage()->HasStrongNameSignature();
 }
 
 // ------------------------------------------------------------

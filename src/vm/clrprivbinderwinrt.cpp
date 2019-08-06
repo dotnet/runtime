@@ -119,8 +119,7 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     CLRPrivTypeCacheWinRT * pWinRtTypeCache, 
     LPCWSTR *               rgwzAltPath, 
     UINT                    cAltPaths, 
-    NamespaceResolutionKind fNamespaceResolutionKind,
-    BOOL                    fCanUseNativeImages)
+    NamespaceResolutionKind fNamespaceResolutionKind)
     : m_pTypeCache(clr::SafeAddRef(pWinRtTypeCache))
     , m_pParentBinder(pParentBinder)                        // Do not addref, lifetime directly tied to parent.
     , m_fNamespaceResolutionKind(fNamespaceResolutionKind)
@@ -187,8 +186,7 @@ CLRPrivBinderWinRT::GetOrCreateBinder(
             pWinRtTypeCache, 
             nullptr,    // rgwzAltPath
             0,          // cAltPaths
-            fNamespaceResolutionKind,
-            TRUE // fCanUseNativeImages
+            fNamespaceResolutionKind
             ));
         
         if (InterlockedCompareExchangeT<decltype(s_pSingleton)>(&s_pSingleton, pBinder, nullptr) == nullptr)

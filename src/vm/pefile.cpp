@@ -49,7 +49,7 @@ SVAL_IMPL_INIT(DWORD, PEFile, s_NGENDebugFlags, 0);
 // <TODO>@todo: rename TargetFile</TODO>
 // ================================================================================
 
-PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
+PEFile::PEFile(PEImage *identity) :
 #if _DEBUG
     m_pDebugName(NULL),
 #endif
@@ -57,7 +57,6 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     m_openedILimage(NULL),
 #ifdef FEATURE_PREJIT    
     m_nativeImage(NULL),
-    m_fCanUseNativeImage(TRUE),
 #endif
     m_MDImportIsRW_Debugger_Use_Only(FALSE),
     m_bHasPersistentMDImport(FALSE),
@@ -168,7 +167,7 @@ PEFile *PEFile::Open(PEImage *image)
     }
     CONTRACT_END;
 
-    PEFile *pFile = new PEFile(image, FALSE);
+    PEFile *pFile = new PEFile(image);
 
     if (image->HasNTHeaders() && image->HasCorHeader())
         pFile->OpenMDImport_Unsafe(); //no one else can see the object yet
@@ -181,24 +180,6 @@ PEFile *PEFile::Open(PEImage *image)
 
     RETURN pFile;
 }
-
-// ------------------------------------------------------------
-// Loader support routines
-// ------------------------------------------------------------
-
-template<class T> void CoTaskFree(T *p)
-{
-    if (p != NULL)
-    {
-        p->T::~T();
-
-        CoTaskMemFree(p);
-    }
-}
-
-
-NEW_WRAPPER_TEMPLATE1(CoTaskNewHolder, CoTaskFree<_TYPE>);
-
 
 //-----------------------------------------------------------------------------------------------------
 // Catch attempts to load x64 assemblies on x86, etc.
@@ -1885,7 +1866,7 @@ PEAssembly::PEAssembly(
 
   : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() : 
                                                               (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
-                              ): pPEImageIL? pPEImageIL:(pPEImageNI? pPEImageNI:NULL), FALSE),
+                              ): pPEImageIL? pPEImageIL:(pPEImageNI? pPEImageNI:NULL)),
     m_creator(clr::SafeAddRef(creator))
 {
     CONTRACTL
