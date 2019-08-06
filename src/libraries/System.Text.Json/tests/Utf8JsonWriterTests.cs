@@ -55,6 +55,204 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => new Utf8JsonWriter(stream, options));
         }
 
+        [Fact]
+        public void WriteJsonWritesToIBWOnDemand_Dispose()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            var writer = new Utf8JsonWriter(output);
+            WriteLargeArrayOfStrings(writer, 1_000);
+            Assert.Equal(17347, writer.BytesCommitted);
+            Assert.Equal(5544, writer.BytesPending);
+            Assert.Equal(0, writer.CurrentDepth);
+            Assert.Equal(17347, output.WrittenCount);
+
+            writer.Dispose();
+
+            Assert.Equal(0, writer.BytesPending);
+            Assert.Equal(22891, output.WrittenCount);
+            JsonTestHelper.AssertContents(GetExpectedLargeArrayOfStrings(1_000), output);
+        }
+
+        [Fact]
+        public void WriteJsonOnlyWritesToStreamOnDemand_Dispose()
+        {
+            string expectedString = GetExpectedLargeArrayOfStrings(1_000);
+            Assert.Equal(22891, expectedString.Length);
+            using (var stream = new MemoryStream())
+            {
+                var writer = new Utf8JsonWriter(stream);
+                WriteLargeArrayOfStrings(writer, 1_000);
+                Assert.Equal(0, writer.BytesCommitted);
+                Assert.Equal(expectedString.Length, writer.BytesPending);
+                Assert.Equal(0, writer.CurrentDepth);
+                // Unless user disposes the writer or calls flush/flushasync explicitly, nothing gets written to the stream
+                Assert.Equal(0, stream.Position);
+
+                writer.Dispose();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+                JsonTestHelper.AssertContents(expectedString, stream);
+            }
+        }
+
+        [Fact]
+        public async Task WriteJsonOnlyWritesToStreamOnDemand_DisposeAsync()
+        {
+            string expectedString = GetExpectedLargeArrayOfStrings(1_000);
+            Assert.Equal(22891, expectedString.Length);
+            using (var stream = new MemoryStream())
+            {
+                var writer = new Utf8JsonWriter(stream);
+                WriteLargeArrayOfStrings(writer, 1_000);
+                Assert.Equal(0, writer.BytesCommitted);
+                Assert.Equal(expectedString.Length, writer.BytesPending);
+                Assert.Equal(0, writer.CurrentDepth);
+                // Unless user disposes the writer or calls flush/flushasync explicitly, nothing gets written to the stream
+                Assert.Equal(0, stream.Position);
+
+                await writer.DisposeAsync();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+                JsonTestHelper.AssertContents(expectedString, stream);
+            }
+        }
+
+        [Fact]
+        public void WriteJsonOnlyWritesToStreamOnDemand_Flush()
+        {
+            string expectedString = GetExpectedLargeArrayOfStrings(1_000);
+            Assert.Equal(22891, expectedString.Length);
+            using (var stream = new MemoryStream())
+            {
+                var writer = new Utf8JsonWriter(stream);
+                WriteLargeArrayOfStrings(writer, 1_000);
+                Assert.Equal(0, writer.BytesCommitted);
+                Assert.Equal(expectedString.Length, writer.BytesPending);
+                Assert.Equal(0, writer.CurrentDepth);
+                // Unless user disposes the writer or calls flush/flushasync explicitly, nothing gets written to the stream
+                Assert.Equal(0, stream.Position);
+
+                writer.Flush();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+
+                writer.Dispose();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+                JsonTestHelper.AssertContents(expectedString, stream);
+            }
+        }
+
+        [Fact]
+        public async Task WriteJsonOnlyWritesToStreamOnDemand_FlushAsync()
+        {
+            string expectedString = GetExpectedLargeArrayOfStrings(1_000);
+            Assert.Equal(22891, expectedString.Length);
+            using (var stream = new MemoryStream())
+            {
+                var writer = new Utf8JsonWriter(stream);
+                WriteLargeArrayOfStrings(writer, 1_000);
+                Assert.Equal(0, writer.BytesCommitted);
+                Assert.Equal(expectedString.Length, writer.BytesPending);
+                Assert.Equal(0, writer.CurrentDepth);
+                // Unless user disposes the writer or calls flush/flushasync explicitly, nothing gets written to the stream
+                Assert.Equal(0, stream.Position);
+
+                await writer.FlushAsync();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+
+                await writer.DisposeAsync();
+
+                Assert.Equal(0, writer.BytesPending);
+                Assert.Equal(expectedString.Length, stream.Position);
+                JsonTestHelper.AssertContents(expectedString, stream);
+            }
+        }
+
+        private static void WriteLargeArrayOfStrings(Utf8JsonWriter writer, int length)
+        {
+            writer.WriteStartArray();
+            for (int i = 0; i < length; i++)
+            {
+                writer.WriteStringValue($"some array value {i}");
+            }
+            writer.WriteEndArray();
+        }
+
+        private static string GetExpectedLargeArrayOfStrings(int length)
+        {
+            var stringBuilder = new StringBuilder();
+            using (TextWriter stringWriter = new StringWriter(stringBuilder))
+            using (var json = new JsonTextWriter(stringWriter))
+            {
+                json.Formatting = Formatting.None;
+                json.WriteStartArray();
+                for (int i = 0; i < length; i++)
+                {
+                    json.WriteValue($"some array value {i}");
+                }
+                json.WriteEnd();
+            }
+            return stringBuilder.ToString();
+        }
+
+        // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
+        public void WriteLargeJsonToStreamWithoutFlushing()
+        {
+            var largeArray = new char[150_000_000];
+            largeArray.AsSpan().Fill('a');
+
+            // Text size chosen so that after several doublings of the underlying buffer we reach ~2 GB (but don't go over)
+            JsonEncodedText text1 = JsonEncodedText.Encode(largeArray.AsSpan(0, 7_500));
+            JsonEncodedText text2 = JsonEncodedText.Encode(largeArray.AsSpan(0, 5_000));
+            JsonEncodedText text3 = JsonEncodedText.Encode(largeArray.AsSpan(0, 150_000_000));
+
+            using (var output = new MemoryStream())
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartArray();
+                writer.WriteStringValue(text1);
+                Assert.Equal(7_503, writer.BytesPending);
+
+                for (int i = 0; i < 30_000; i++)
+                {
+                    writer.WriteStringValue(text2);
+                }
+                Assert.Equal(150_097_503, writer.BytesPending);
+
+                for (int i = 0; i < 6; i++)
+                {
+                    writer.WriteStringValue(text3);
+                }
+                Assert.Equal(1_050_097_521, writer.BytesPending);
+
+                // Next write forces a grow beyond 2 GB
+                Assert.Throws<OverflowException>(() => writer.WriteStringValue(text3));
+
+                Assert.Equal(1_050_097_521, writer.BytesPending);
+
+                var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
+                for (int i = 0; i < 10_000_000; i++)
+                {
+                    writer.WriteStringValue(text4);
+                }
+
+                Assert.Equal(1_050_097_521 + (4 * 10_000_000), writer.BytesPending);
+            }
+        }
+
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]

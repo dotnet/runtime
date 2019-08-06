@@ -687,6 +687,14 @@ namespace System.Text.Json
             Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 
+        public static void AssertContents(string expectedValue, MemoryStream stream)
+        {
+            string value = Encoding.UTF8.GetString(stream.ToArray());
+
+            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+        }
+
         public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer)
         {
             string value = Encoding.UTF8.GetString(

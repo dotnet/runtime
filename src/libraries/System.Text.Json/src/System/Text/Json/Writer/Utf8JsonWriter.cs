@@ -1036,29 +1036,11 @@ namespace System.Text.Json
 
             Debug.Assert(BytesPending != 0);
 
-            _memory = default;
-
             if (_stream != null)
             {
                 Debug.Assert(_arrayBufferWriter != null);
 
-                _arrayBufferWriter.Advance(BytesPending);
-                BytesPending = 0;
-
-#if BUILDING_INBOX_LIBRARY
-                _stream.Write(_arrayBufferWriter.WrittenSpan);
-#else
-                Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
-                bool result = MemoryMarshal.TryGetArray(_arrayBufferWriter.WrittenMemory, out ArraySegment<byte> underlyingBuffer);
-                Debug.Assert(result);
-                Debug.Assert(underlyingBuffer.Offset == 0);
-                Debug.Assert(_arrayBufferWriter.WrittenCount == underlyingBuffer.Count);
-                _stream.Write(underlyingBuffer.Array, underlyingBuffer.Offset, underlyingBuffer.Count);
-#endif
-                BytesCommitted += _arrayBufferWriter.WrittenCount;
-                _arrayBufferWriter.Clear();
-
-                _memory = _arrayBufferWriter.GetMemory(sizeHint);
+                _memory = _arrayBufferWriter.GetMemory(checked(BytesPending + sizeHint));
 
                 Debug.Assert(_memory.Length >= sizeHint);
             }
