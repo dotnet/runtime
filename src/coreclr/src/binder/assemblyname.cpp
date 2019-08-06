@@ -601,41 +601,6 @@ Exit:
         return fEquals;
     }
 
-    BOOL AssemblyName::RefEqualsDef(AssemblyName *pAssemblyNameDef,
-                                    BOOL          fInspectionOnly)
-    {
-        BOOL fEquals = FALSE;
-        
-        if (GetContentType() == AssemblyContentType_WindowsRuntime)
-        {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
-            return (GetContentType() == pAssemblyNameDef->GetContentType());
-        }
-        
-        if (EqualsCaseInsensitive(GetSimpleName(), pAssemblyNameDef->GetSimpleName()) &&
-            EqualsCaseInsensitive(GetNormalizedCulture(),
-                                  pAssemblyNameDef->GetNormalizedCulture()) &&
-            GetPublicKeyTokenBLOB().Equals(pAssemblyNameDef->GetPublicKeyTokenBLOB()) && 
-            (GetContentType() == pAssemblyNameDef->GetContentType()))
-        {
-            PEKIND kRefArchitecture = GetArchitecture();
-            PEKIND kDefArchitecture = pAssemblyNameDef->GetArchitecture();
-
-            if (kRefArchitecture == peNone)
-            {
-                fEquals = (fInspectionOnly || 
-                           (kDefArchitecture == peNone) ||
-                           (kDefArchitecture == peMSIL) ||
-                           (kDefArchitecture == Assembly::GetSystemArchitecture()));
-            }
-            else
-            {
-                fEquals = (kRefArchitecture == kDefArchitecture);
-            }
-        }
-
-        return fEquals;
-    }
-
     HRESULT AssemblyName::Clone(AssemblyName **ppAssemblyName)
     {
         HRESULT hr = S_OK;

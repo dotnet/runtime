@@ -63,7 +63,6 @@ namespace BINDER_SPACE
                                             /* out */ Assembly **ppAssembly);
 
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
-                                   /* in */  BOOL         fInspectionOnly,
                                    /* in */  BOOL         fIsInGAC,
                                    /* in */  BOOL         fExplicitBindToNativeImage,
                                    /* out */ Assembly   **ppAssembly,
@@ -149,12 +148,10 @@ namespace BINDER_SPACE
 
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,
-                                     /* in */  BOOL                 fInspectionOnly,
                                      /* in */  bool                 excludeAppPaths,
                                      /* out */ BindResult          *pBindResult);
         
         static HRESULT Register(/* in */  ApplicationContext *pApplicationContext,
-                                /* in */  BOOL                fInspectionOnly,
                                 /* in */  BindResult         *pBindResult);
         static HRESULT RegisterAndGetHostChosen(/* in */  ApplicationContext *pApplicationContext,
                                                 /* in */  LONG                kContextVersion,

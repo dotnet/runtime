@@ -81,7 +81,6 @@ namespace BINDER_SPACE
         m_cRef = 1;
         m_dwAppDomainId = 0;
         m_pExecutionContext = NULL;
-        m_pInspectionContext = NULL;
         m_pFailureCache = NULL;
         m_contextCS = NULL;
         m_pTrustedPlatformAssemblyMap = nullptr;
@@ -91,7 +90,6 @@ namespace BINDER_SPACE
     ApplicationContext::~ApplicationContext()
     {
         SAFE_RELEASE(m_pExecutionContext);
-        SAFE_RELEASE(m_pInspectionContext);
         SAFE_DELETE(m_pFailureCache);
 
         if (m_contextCS != NULL)
@@ -117,14 +115,12 @@ namespace BINDER_SPACE
         BINDER_LOG_POINTER(W("this"), this);
 
         ReleaseHolder<ExecutionContext> pExecutionContext;
-        ReleaseHolder<InspectionContext> pInspectionContext;
 
         PropertyMap *pPropertyMap = NULL;
         FailureCache *pFailureCache = NULL;
 
         // Allocate context objects
         SAFE_NEW(pExecutionContext, ExecutionContext);
-        SAFE_NEW(pInspectionContext, InspectionContext);
 
         SAFE_NEW(pFailureCache, FailureCache);
 
@@ -140,7 +136,6 @@ namespace BINDER_SPACE
         else
         {
             m_pExecutionContext = pExecutionContext.Extract();
-            m_pInspectionContext = pInspectionContext.Extract();
 
             m_pFailureCache = pFailureCache;
         }
