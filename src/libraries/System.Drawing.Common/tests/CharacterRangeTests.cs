@@ -20,27 +20,48 @@ namespace System.Drawing.Tests
         }
 
         [Theory]
-        [InlineData(-1, -1)]
-        [InlineData(1, 1)]
-        public void Ctor_First_Length(int first, int length)
+        [InlineData(-1, -2)]
+        [InlineData(0, 0)]
+        [InlineData(1, 2)]
+        public void Ctor_Int_Int(int First, int Length)
         {
-            var range = new CharacterRange(first, length);
-            Assert.Equal(first, range.First);
-            Assert.Equal(length, range.Length);
+            var range = new CharacterRange(First, Length);
+            Assert.Equal(First, range.First);
+            Assert.Equal(Length, range.Length);
         }
 
-        [Fact]
-        public void First_Set_GetReturnsExpected()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void First_Set_GetReturnsExpected(int value)
         {
-            var range = new CharacterRange { First = 10 };
-            Assert.Equal(10, range.First);
+            var range = new CharacterRange
+            {
+                First = value
+            };
+            Assert.Equal(value, range.First);
+
+            // Set same.
+            range.First = value;
+            Assert.Equal(value, range.First);
         }
 
-        [Fact]
-        public void Length_Set_GetReturnsExpected()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Length_Set_GetReturnsExpected(int value)
         {
-            var range = new CharacterRange { Length = 10 };
-            Assert.Equal(10, range.Length);
+            var range = new CharacterRange
+            {
+                Length = value
+            };
+            Assert.Equal(value, range.Length);
+
+            // Set same.
+            range.Length = value;
+            Assert.Equal(value, range.Length);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -49,27 +70,25 @@ namespace System.Drawing.Tests
             yield return new object[] { new CharacterRange(1, 2), new CharacterRange(2, 2), false };
             yield return new object[] { new CharacterRange(1, 2), new CharacterRange(1, 1), false };
             yield return new object[] { new CharacterRange(1, 2), new object(), false };
+
+            // .NET Framework throws NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new CharacterRange(1, 2), null, false };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals_Valid_ReturnsExpected(CharacterRange range, object other, bool expected)
+        public void Equals_Invoke_ReturnsExpected(CharacterRange range, object obj, bool expected)
         {
-            Assert.Equal(expected, range.Equals(other));
-            if (other is CharacterRange otherRange)
+            Assert.Equal(expected, range.Equals(obj));
+            if (obj is CharacterRange otherRange)
             {
                 Assert.Equal(expected, range == otherRange);
                 Assert.Equal(!expected, range != otherRange);
                 Assert.Equal(expected, range.GetHashCode().Equals(otherRange.GetHashCode()));
             }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [Fact]
-        public void Equals_NullOther_ThrowsNullReferenceException()
-        {
-            var range = new CharacterRange();
-            Assert.Throws<NullReferenceException>(() => range.Equals(null));
         }
     }
 }
