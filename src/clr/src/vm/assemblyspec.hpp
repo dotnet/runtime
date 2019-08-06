@@ -198,15 +198,6 @@ class AssemblySpec  : public BaseAssemblySpec
                       BOOL fUsePublicKeyToken = TRUE,
                       BOOL fMustBeBindable = FALSE /*(used only by FusionBind's implementation)*/);
 
-    // Make sure this matches in the managed Assembly.DemandPermission()
-    enum FilePermFlag {
-        FILE_PATHDISCOVERY   = 0x0,
-        FILE_READ            = 0x1,
-        FILE_READANDPATHDISC = 0x2,
-        FILE_WEBPERM         = 0x3
-    };
-
-
 
     VOID Bind(
         AppDomain* pAppDomain, 

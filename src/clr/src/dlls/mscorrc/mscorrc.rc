@@ -924,7 +924,6 @@ BEGIN
     IDS_CLASSLOAD_BAD_VARIANCE_SIG          "Type contains improperly formed type variance signature."
     IDS_CLASSLOAD_VARIANCE_IN_DELEGATE      "Could not load type '%1' from assembly '%2' because it declares a field in a covariant type."
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
-    IDS_EE_CODEEXECUTION_ASSEMBLY_FOR_PASSIVE_DOMAIN_ONLY "File '%1' was loaded in a passive domain in a manner that makes it unable to run."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
     IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
