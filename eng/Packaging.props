@@ -31,6 +31,19 @@
     <SkipGenerationCheck>true</SkipGenerationCheck>
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <!-- Don't build referenced projects -->
+    <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
+    <!-- Omit any files that were not built -->
+    <AllowPartialPackages>true</AllowPartialPackages>
+    <!-- Don't permit harvesting since this requires pre-builts -->
+    <HarvestStablePackage>false</HarvestStablePackage>
+    <!-- Validation will fail in case we were relying on harvested assets or assets not built to satisfy stated support -->
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <!-- Include All BuildConfigurations in package, so that whatever we're building for source build is included -->
+    <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
+  </PropertyGroup>
 
   <Import Condition="Exists('../pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="../pkg/baseline/baseline.props" />
 
