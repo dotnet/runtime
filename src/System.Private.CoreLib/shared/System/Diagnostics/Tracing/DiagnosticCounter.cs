@@ -83,7 +83,7 @@ namespace System.Diagnostics.Tracing
             set
             {
                 if (value == null)
-                    throw new ArgumentException("Cannot set null as DisplayName");
+                    throw new ArgumentNullException(nameof(DisplayName));
                 _displayName = value;
             }
         }
@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
             set
             {
                 if (value == null)
-                    throw new ArgumentException("Cannot set null as DisplayUnits");
+                    throw new ArgumentNullException(nameof(DisplayUnits));
                 _displayUnits = value;
             }
         }
