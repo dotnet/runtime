@@ -5497,11 +5497,15 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Don't support fast tail calling JIT helpers
         assert(callType != CT_HELPER);
 
-        // Fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
-        assert(target != nullptr);
+        // If this is indirect then we go through RAX with epilog sequence
+        // generating "jmp rax". Otherwise epilog will try to generate a
+        // rip-relative jump.
+        if (target != nullptr)
+        {
+            genConsumeReg(target);
+            genCopyRegIfNeeded(target, REG_RAX);
+        }
 
-        genConsumeReg(target);
-        genCopyRegIfNeeded(target, REG_RAX);
         return;
     }
 

@@ -2410,15 +2410,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Don't support fast tail calling JIT helpers
         assert(callType != CT_HELPER);
 
-        // Fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
-        assert(target != nullptr);
-
-        genConsumeReg(target);
-
-        // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
-        if (target->gtRegNum != REG_FASTTAILCALL_TARGET)
+        if (target != nullptr)
         {
-            inst_RV_RV(INS_mov, REG_FASTTAILCALL_TARGET, target->gtRegNum);
+            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
+            genConsumeReg(target);
+
+            // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
+            if (target->gtRegNum != REG_FASTTAILCALL_TARGET)
+            {
+                inst_RV_RV(INS_mov, REG_FASTTAILCALL_TARGET, target->gtRegNum);
+            }
         }
 
         return;
