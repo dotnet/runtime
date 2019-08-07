@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Text;
+using System.Collections;
+using System.Globalization;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Text;
-    using System.Collections;
-    using System.Globalization;
-
-    internal abstract class SequentialOutput : RecordOutput
+    internal abstract class SequentialOutput : IRecordOutput
     {
         private const char s_Colon = ':';
         private const char s_GreaterThan = '>';

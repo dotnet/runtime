@@ -166,7 +166,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ProcessingChildren:
-                    RecordOutput recOutput = processor.PopOutput();
+                    IRecordOutput recOutput = processor.PopOutput();
                     Debug.Assert(recOutput is NavigatorOutput);
                     value = ((NavigatorOutput)recOutput).Navigator;
                     goto case ValueCalculated;

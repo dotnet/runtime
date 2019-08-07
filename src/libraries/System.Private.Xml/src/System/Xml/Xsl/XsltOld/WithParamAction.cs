@@ -58,7 +58,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     break;
                 case ProcessingChildren:
-                    RecordOutput recOutput = processor.PopOutput();
+                    IRecordOutput recOutput = processor.PopOutput();
                     Debug.Assert(recOutput is NavigatorOutput);
                     processor.SetParameter(this.name, ((NavigatorOutput)recOutput).Navigator);
                     frame.Finished();

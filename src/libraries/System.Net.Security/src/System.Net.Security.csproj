@@ -247,8 +247,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIAuthType.cs">
       <Link>Common\Interop\Windows\SspiCli\SSPIAuthType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIInterface.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIInterface.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\ISSPIInterface.cs">
+      <Link>Common\Interop\Windows\SspiCli\ISSPIInterface.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPISecureChannelType.cs">
       <Link>Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs</Link>

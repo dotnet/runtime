@@ -2,21 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Text;
+using System.Xml.XPath;
+using System.Collections;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Collections;
-
     internal sealed class RecordBuilder
     {
         private int _outputState;
         private RecordBuilder _next;
 
-        private RecordOutput _output;
+        private IRecordOutput _output;
 
         // Atomization:
         private XmlNameTable _nameTable;
@@ -53,7 +51,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private const string PrefixFormat = "xp_{0}";
 
-        internal RecordBuilder(RecordOutput output, XmlNameTable nameTable)
+        internal RecordBuilder(IRecordOutput output, XmlNameTable nameTable)
         {
             Debug.Assert(output != null);
             _output = output;
@@ -78,7 +76,7 @@ namespace System.Xml.Xsl.XsltOld
             set { _next = value; }
         }
 
-        internal RecordOutput Output
+        internal IRecordOutput Output
         {
             get { return _output; }
         }

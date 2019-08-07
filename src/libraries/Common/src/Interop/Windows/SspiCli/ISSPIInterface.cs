@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Net
 {
     // SspiCli SSPI interface.
-    internal interface SSPIInterface
+    internal interface ISSPIInterface
     {
         SecurityPackageInfoClass[] SecurityPackages { get; set; }
         int EnumerateSecurityPackages(out int pkgnum, out SafeFreeContextBuffer pkgArray);
