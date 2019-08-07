@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Net
 {
     // Authentication SSPI (Kerberos, NTLM, Negotiate and WDigest):
-    internal class SSPIAuthType : SSPIInterface
+    internal sealed class SSPIAuthType : ISSPIInterface
     {
         private static volatile SecurityPackageInfoClass[] s_securityPackages;
 

@@ -137,7 +137,6 @@
     <Rule Id="SA1214" Action="None" /> <!-- Readonly fields should appear before non-readonly fields -->
     <Rule Id="SA1216" Action="None" /> <!-- Using static directives should be placed at the correct location -->
     <Rule Id="SA1300" Action="None" /> <!-- Element should begin with an uppercase letter -->
-    <Rule Id="SA1302" Action="None" /> <!-- Interface names should begin with I -->
     <Rule Id="SA1303" Action="None" /> <!-- Const field names should begin with upper-case letter -->
     <Rule Id="SA1304" Action="None" /> <!-- Non-private readonly fields should begin with upper-case letter -->
     <Rule Id="SA1306" Action="None" /> <!-- Field should begin with lower-case letter -->

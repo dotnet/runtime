@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Net
 {
     // Schannel SSPI interface.
-    internal class SSPISecureChannelType : SSPIInterface
+    internal sealed class SSPISecureChannelType : ISSPIInterface
     {
         private static volatile SecurityPackageInfoClass[] s_securityPackages;
 

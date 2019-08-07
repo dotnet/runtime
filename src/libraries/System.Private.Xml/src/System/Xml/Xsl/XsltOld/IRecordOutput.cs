@@ -4,7 +4,7 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal interface RecordOutput
+    internal interface IRecordOutput
     {
         Processor.OutputResult RecordDone(RecordBuilder record);
         void TheEnd();

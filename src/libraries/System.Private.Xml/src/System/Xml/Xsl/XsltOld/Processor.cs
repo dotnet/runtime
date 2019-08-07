@@ -395,7 +395,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void Execute(Stream stream)
         {
-            RecordOutput recOutput = null;
+            IRecordOutput recOutput = null;
 
             switch (_output.Method)
             {
@@ -415,7 +415,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void Execute(TextWriter writer)
         {
-            RecordOutput recOutput = null;
+            IRecordOutput recOutput = null;
 
             switch (_output.Method)
             {
@@ -983,7 +983,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         // Builder stack
         //
-        internal void PushOutput(RecordOutput output)
+        internal void PushOutput(IRecordOutput output)
         {
             Debug.Assert(output != null);
             _builder.OutputState = _xsm.State;
@@ -994,7 +994,7 @@ namespace System.Xml.Xsl.XsltOld
             _xsm.Reset();
         }
 
-        internal RecordOutput PopOutput()
+        internal IRecordOutput PopOutput()
         {
             Debug.Assert(_builder != null);
 
