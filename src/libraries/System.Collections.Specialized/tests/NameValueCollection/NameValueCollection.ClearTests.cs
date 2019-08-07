@@ -10,10 +10,10 @@ namespace System.Collections.Specialized.Tests
     {
         [Theory]
         [InlineData(0)]
-        [InlineData(5)]
+        [InlineData(10)]
         public void Clear(int count)
         {
-            NameValueCollection nameValueCollection = Helpers.CreateNameValueCollection(10);
+            NameValueCollection nameValueCollection = Helpers.CreateNameValueCollection(count);
             nameValueCollection.Clear();
             Assert.Equal(0, nameValueCollection.Count);
             Assert.Equal(0, nameValueCollection.AllKeys.Length);

@@ -210,6 +210,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
+
             AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToDictionary((Func<int, int>)(x => { throw new DeliberateTestException(); })));
             AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToDictionary((Func<int, int>)(x => { throw new DeliberateTestException(); }), y => y));
             AssertThrows.Wrapped<DeliberateTestException>(() => labeled.Item.ToDictionary(x => x, (Func<int, int>)(y => { throw new DeliberateTestException(); })));

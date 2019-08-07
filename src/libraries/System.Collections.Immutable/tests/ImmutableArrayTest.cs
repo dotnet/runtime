@@ -1670,6 +1670,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(IsDefaultOrEmptyData))]
         public void IsDefault(IEnumerable<int> source, bool isDefault, bool isEmpty)
         {
+            _ = isEmpty;
             var array = source.ToImmutableArray();
 
             Assert.Equal(isDefault, array.IsDefault);
@@ -2192,11 +2193,10 @@ namespace System.Collections.Immutable.Tests
             yield return new object[] { new[] { 1, 2, 3, 4 }, 4 };
         }
 
-        [Theory]
-        [MemberData(nameof(BinarySearchData))]
-        public void BinarySearchDefaultInvalid(IEnumerable<int> source, int value)
+        [Fact]
+        public void BinarySearchDefaultInvalid()
         {
-            AssertExtensions.Throws<ArgumentNullException>("array", () => ImmutableArray.BinarySearch(s_emptyDefault, value));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => ImmutableArray.BinarySearch(s_emptyDefault, 42));
         }
 
         [Fact]

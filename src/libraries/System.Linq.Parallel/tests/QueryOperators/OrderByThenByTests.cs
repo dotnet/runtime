@@ -412,6 +412,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void OrderBy_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.OrderBy(x => new NotComparable(x));
             AssertThrows.Wrapped<ArgumentException>(() => { foreach (int i in query) ; });
             AssertThrows.Wrapped<ArgumentException>(() => query.ToList());
@@ -449,6 +450,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.OrderByDescending(x => new NotComparable(x));
             AssertThrows.Wrapped<ArgumentException>(() => { foreach (int i in query) ; });
             AssertThrows.Wrapped<ArgumentException>(() => query.ToList());
@@ -506,6 +508,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(OrderByThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
         public static void OrderBy_ThreadedDeadlock(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.WithDegreeOfParallelism(degree).OrderBy<int, int>(x => { throw new DeliberateTestException(); });
 
             AggregateException ae = Assert.Throws<AggregateException>(() => { foreach (int i in query) { } });
@@ -1115,6 +1118,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void ThenBy_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.OrderBy(x => 0).ThenBy(x => new NotComparable(x));
             AssertThrows.Wrapped<ArgumentException>(() => { foreach (int i in query) ; });
             AssertThrows.Wrapped<ArgumentException>(() => query.ToList());
@@ -1152,6 +1156,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void ThenByDescending_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.OrderBy(x => 0).ThenByDescending(x => new NotComparable(x));
             AssertThrows.Wrapped<ArgumentException>(() => { foreach (int i in query) ; });
             AssertThrows.Wrapped<ArgumentException>(() => query.ToList());

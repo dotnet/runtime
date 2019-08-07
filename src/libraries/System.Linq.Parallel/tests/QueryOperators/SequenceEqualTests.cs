@@ -54,6 +54,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SequenceEqualData), new[] { 0, 1, 2, 16 })]
         public static void SequenceEqual(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
             Assert.True(leftQuery.SequenceEqual(rightQuery));
@@ -98,6 +99,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SequenceEqualUnequalSizeData), new[] { 0, 4, 16 })]
         public static void SequenceEqual_UnequalSize(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
             Assert.False(leftQuery.SequenceEqual(rightQuery));
@@ -118,6 +121,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SequenceEqualUnequalData), new[] { 1, 2, 16 })]
         public static void SequenceEqual_Unequal(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item.Select(x => x == item ? -1 : x);
 
@@ -173,6 +177,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SequenceEqualData), new[] { 4 })]
         public static void SequenceEqual_AggregateException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
+            _ = count;
             AssertThrows.Wrapped<DeliberateTestException>(() => left.Item.SequenceEqual(right.Item, new FailingEqualityComparer<int>()));
         }
 
@@ -200,6 +205,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SequenceEqualData), new[] { 0, 1, 2, 16 })]
         public static void SequenceEqual_DisposeException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
 

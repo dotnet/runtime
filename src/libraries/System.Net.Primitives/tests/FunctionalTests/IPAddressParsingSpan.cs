@@ -38,6 +38,7 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv6Addresses))]
         public void TryFormat_ProvidedBufferTooSmall_Failure(string addressString, string expected)
         {
+            _ = expected;
             IPAddress address = IPAddress.Parse(addressString);
             var result = new char[address.ToString().Length - 1];
             Assert.False(address.TryFormat(new Span<char>(result), out int charsWritten));

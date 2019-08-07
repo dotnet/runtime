@@ -418,16 +418,10 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(1f, 1f)]
-        [InlineData(0f, 1f)]
-        [InlineData(0.5f, 1f)]
-        [InlineData(1f, 0f)]
-        [InlineData(0f, 0f)]
-        [InlineData(0.5f, 0f)]
-        [InlineData(1f, 0.5f)]
-        [InlineData(0f, 0.5f)]
-        [InlineData(0.5f, 0.5f)]
-        public void SetSigmaBellShape_FocusScale_Success(float focus, float scale)
+        [InlineData(1f)]
+        [InlineData(0f)]
+        [InlineData(0.5f)]
+        public void SetSigmaBellShape_FocusScale_Success(float focus)
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
@@ -529,16 +523,10 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(1f, 1f)]
-        [InlineData(0f, 1f)]
-        [InlineData(0.5f, 1f)]
-        [InlineData(1f, 0f)]
-        [InlineData(0f, 0f)]
-        [InlineData(0.5f, 0f)]
-        [InlineData(1f, 0.5f)]
-        [InlineData(0f, 0.5f)]
-        [InlineData(0.5f, 0.5f)]
-        public void SetBlendTriangularShape_FocusScale_Success(float focus, float scale)
+        [InlineData(1f)]
+        [InlineData(0f)]
+        [InlineData(0.5f)]
+        public void SetBlendTriangularShape_FocusScale_Success(float focus)
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {

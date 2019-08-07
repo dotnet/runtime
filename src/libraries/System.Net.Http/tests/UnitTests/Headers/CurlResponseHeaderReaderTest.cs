@@ -23,7 +23,7 @@ namespace System.Net.Http.Tests
         private const string invalidChars = "()<>@,;\\\"/[]?={} \t";
 
         public static readonly IEnumerable<object[]> ValidStatusCodeLines = GetStatusCodeLines(StatusCodeTemplate);
-        public static readonly IEnumerable<object[]> InvalidStatusCodeLines = GetStatusCodeLines(MissingSpaceFormat);
+        public static IEnumerable<object[]> InvalidStatusCodeLines => GetStatusCodeLines(MissingSpaceFormat).Select(o => new object[] { o[0] });
         public static readonly IEnumerable<object[]> StatusCodeVersionLines = GetStatusCodeLinesForMajorVersions(1, 10).Concat(GetStatusCodeLinesForMajorMinorVersions(1, 10));
         public static readonly IEnumerable<object[]> InvalidHeaderLines = GetInvalidHeaderLines();
 
@@ -82,7 +82,7 @@ namespace System.Net.Http.Tests
         }
 
         [Theory, MemberData(nameof(InvalidStatusCodeLines))]
-        public unsafe void ReadStatusLine_InvalidStatusCode_ThrowsHttpRequestException(string statusLine, HttpStatusCode expectedCode, string phrase)
+        public unsafe void ReadStatusLine_InvalidStatusCode_ThrowsHttpRequestException(string statusLine)
         {
             byte[] buffer = statusLine.Select(c => checked((byte)c)).ToArray();
 

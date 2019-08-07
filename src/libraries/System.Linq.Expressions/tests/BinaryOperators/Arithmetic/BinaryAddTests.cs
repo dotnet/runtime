@@ -159,8 +159,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
-        public static void CheckCharAddTest(bool useInterpreter)
+        [Fact]
+        public static void CheckCharAddTest()
         {
             char[] array = new char[] { '\0', '\b', 'A', '\uffff' };
             for (int i = 0; i < array.Length; i++)

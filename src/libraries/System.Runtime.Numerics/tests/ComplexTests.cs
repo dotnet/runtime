@@ -392,7 +392,8 @@ namespace System.Numerics.Tests
         public static void AddDouble(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
-            var right = realRight;
+            _ = imaginaryRight; // not used when testing operations with doubles
+            double right = realRight;
 
             // Calculate the expected results
             Complex expected = left + new Complex(right, 0.0);
@@ -734,7 +735,8 @@ namespace System.Numerics.Tests
         public static void DivideByDouble(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var dividend = new Complex(realLeft, imaginaryLeft);
-            var divisor = realRight;
+            _ = imaginaryRight; // not used when testing operations with doubles
+            double divisor = realRight;
 
             Complex expected = dividend / new Complex(realRight, 0.0);
             double expectedReal = expected.Real;
@@ -755,7 +757,8 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Invalid_4_TestData))]
         public static void DivideByComplex(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
-            var dividend = realLeft;
+            _ = imaginaryLeft; // not used when testing operations with doubles
+            double dividend = realLeft;
             var divisor = new Complex(realRight, imaginaryRight);
 
             Complex expected = new Complex(realLeft, 0.0) / divisor;
@@ -1182,7 +1185,8 @@ namespace System.Numerics.Tests
         public static void MultiplyDouble(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
-            var right = realRight;
+            _ = imaginaryRight; // not used when testing operations with doubles
+            double right = realRight;
 
             Complex expected = left * new Complex(right, 0.0);
             double expectedReal = expected.Real;
@@ -1499,7 +1503,8 @@ namespace System.Numerics.Tests
         public static void SubtractDouble(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
-            var right = realRight;
+            _ = imaginaryRight; // not used when testing operations with doubles
+            double right = realRight;
 
             // calculate the expected results
             Complex expected = left - new Complex(right, 0.0);

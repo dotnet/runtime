@@ -63,9 +63,8 @@ namespace System.Collections.Tests
             Assert.Equal(source, copied);
         }
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException(int count)
+        [Fact]
+        public void SortedList_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new SortedList<TKey, TValue>((IDictionary<TKey, TValue>)null));
         }
@@ -98,9 +97,8 @@ namespace System.Collections.Tests
             Assert.Equal(count, dictionary.Capacity);
         }
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException(int count)
+        [Fact]
+        public void SortedList_Generic_Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new SortedList<TKey, TValue>(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SortedList<TKey, TValue>(int.MinValue));

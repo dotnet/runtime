@@ -66,11 +66,8 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task FlushAfterReading(bool? flushToDisk)
+        [Fact]
+        public async Task FlushAfterReading()
         {
             string fileName = GetTestFilePath();
             File.WriteAllBytes(fileName, TestBuffer);

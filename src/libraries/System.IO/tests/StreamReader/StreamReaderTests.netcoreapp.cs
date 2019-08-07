@@ -47,7 +47,8 @@ namespace System.IO.Tests
             {
                 while (dst.Length > 0)
                 {
-                    int read = sr.Read(dst);
+                    int toRead = Math.Min(readLength, dst.Length);
+                    int read = sr.Read(dst.Slice(0, toRead));
                     Assert.InRange(read, 1, dst.Length);
                     dst = dst.Slice(read);
                 }
@@ -77,7 +78,8 @@ namespace System.IO.Tests
             {
                 while (dst.Length > 0)
                 {
-                    int read = sr.ReadBlock(dst);
+                    int toRead = Math.Min(readLength, dst.Length);
+                    int read = sr.ReadBlock(dst.Slice(0, toRead));
                     Assert.InRange(read, 1, dst.Length);
                     dst = dst.Slice(read);
                 }
@@ -107,7 +109,8 @@ namespace System.IO.Tests
             {
                 while (dst.Length > 0)
                 {
-                    int read = await sr.ReadAsync(dst);
+                    int toRead = Math.Min(readLength, dst.Length);
+                    int read = await sr.ReadAsync(dst.Slice(0, toRead));
                     Assert.InRange(read, 1, dst.Length);
                     dst = dst.Slice(read);
                 }
@@ -137,7 +140,8 @@ namespace System.IO.Tests
             {
                 while (dst.Length > 0)
                 {
-                    int read = await sr.ReadBlockAsync(dst);
+                    int toRead = Math.Min(readLength, dst.Length);
+                    int read = await sr.ReadBlockAsync(dst.Slice(0, toRead));
                     Assert.InRange(read, 1, dst.Length);
                     dst = dst.Slice(read);
                 }

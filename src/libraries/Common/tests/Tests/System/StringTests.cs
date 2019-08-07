@@ -82,6 +82,7 @@ namespace System.Tests
         [InlineData(new char[] { 'a', 'b', 'c' }, 1, 0, "")]
         public static unsafe void Ctor_CharPtr_Int_Int(char[] valueArray, int startIndex, int length, string expected)
         {
+            _ = valueArray; // xunit analyzer bug: https://github.com/xunit/xunit/issues/1969
             fixed (char* value = valueArray)
             {
                 Assert.Equal(expected, new string(value, startIndex, length));
@@ -288,31 +289,31 @@ namespace System.Tests
         [MemberData(nameof(Concat_Strings_LessThan2_GreaterThan4_TestData))]
         public static void Concat_String(string[] values, string expected)
         {
-            Action<string> validate = result =>
+            void Validate(string result)
             {
                 Assert.Equal(expected, result);
                 if (result.Length == 0)
                 {
                     Assert.Same(string.Empty, result);
                 }
-            };
+            }
 
             if (values.Length == 2)
             {
-                validate(string.Concat(values[0], values[1]));
+                Validate(string.Concat(values[0], values[1]));
             }
             else if (values.Length == 3)
             {
-                validate(string.Concat(values[0], values[1], values[2]));
+                Validate(string.Concat(values[0], values[1], values[2]));
             }
             else if (values.Length == 4)
             {
-                validate(string.Concat(values[0], values[1], values[2], values[3]));
+                Validate(string.Concat(values[0], values[1], values[2], values[3]));
             }
 
-            validate(string.Concat(values));
-            validate(string.Concat((IEnumerable<string>)values));
-            validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
+            Validate(string.Concat(values));
+            Validate(string.Concat((IEnumerable<string>)values));
+            Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
 
         [Fact]

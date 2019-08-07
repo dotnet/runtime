@@ -1928,7 +1928,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void Params()
         {
-            Func<string, int, CodeStatement> createStatement = (objName, iNum) =>
+            static CodeStatement CreateStatement(string objName, int iNum)
             {
                 CodeAssignStatement statement = new CodeAssignStatement(new CodeVariableReferenceExpression("str"),
                                     new CodeMethodInvokeExpression(
@@ -1940,7 +1940,7 @@ namespace System.CodeDom.Compiler.Tests
                                             new CodeArrayIndexerExpression(new CodeVariableReferenceExpression("array"), new CodePrimitiveExpression(iNum)),
                                             "ToString")}));
                 return statement;
-            };
+            }
 
             CodeNamespace ns = new CodeNamespace("Namespace1");
             ns.Imports.Add(new CodeNamespaceImport("System"));
@@ -1969,9 +1969,9 @@ namespace System.CodeDom.Compiler.Tests
 
             fooMethod1.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), "str"));
 
-            fooMethod1.Statements.Add(createStatement("format", 0));
-            fooMethod1.Statements.Add(createStatement("str", 1));
-            fooMethod1.Statements.Add(createStatement("str", 2));
+            fooMethod1.Statements.Add(CreateStatement("format", 0));
+            fooMethod1.Statements.Add(CreateStatement("str", 1));
+            fooMethod1.Statements.Add(CreateStatement("str", 2));
 
             fooMethod1.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("str")));
 

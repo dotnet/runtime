@@ -444,10 +444,8 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await write);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void ManyWriteAsync_ThenManyTryRead_Success(int readMode)
+        [Fact]
+        public void ManyWriteAsync_ThenManyTryRead_Success()
         {
             if (RequiresSingleReader || RequiresSingleWriter)
             {

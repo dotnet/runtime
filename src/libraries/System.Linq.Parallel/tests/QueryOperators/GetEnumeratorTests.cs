@@ -100,6 +100,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 128 }, MemberType = typeof(Sources))]
         public static void GetEnumerator_OperationCanceledException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             CancellationTokenSource source = new CancellationTokenSource();
             int countdown = 4;
             Action cancel = () => { if (Interlocked.Decrement(ref countdown) == 0) source.Cancel(); };
@@ -113,6 +114,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 1 }, MemberType = typeof(Sources))]
         public static void GetEnumerator_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             Assert.Throws<OperationCanceledException>(() => { foreach (var i in labeled.Item.WithCancellation(new CancellationToken(canceled: true))) { throw new ShouldNotBeInvokedException(); }; });
         }
 
@@ -120,6 +122,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
         public static void GetEnumerator_MoveNextAfterQueryOpeningFailsIsIllegal(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item.Select<int, int>(x => { throw new DeliberateTestException(); }).OrderBy(x => x);
 
             IEnumerator<int> enumerator = query.GetEnumerator();
@@ -178,6 +181,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2 }, MemberType = typeof(UnorderedSources))]
         public static void GetEnumerator_DisposeBeforeFirstMoveNext(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             IEnumerator<int> e = labeled.Item.Select(i => i).GetEnumerator();
             e.Dispose();
             Assert.Throws<ObjectDisposedException>(() => e.MoveNext());
@@ -187,6 +191,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 1, 2 }, MemberType = typeof(UnorderedSources))]
         public static void GetEnumerator_DisposeAfterMoveNext(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             IEnumerator<int> e = labeled.Item.Select(i => i).GetEnumerator();
             e.MoveNext();
             e.Dispose();

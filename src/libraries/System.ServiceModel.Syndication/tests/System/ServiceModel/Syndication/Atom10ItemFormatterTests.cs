@@ -1017,11 +1017,11 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom""></entry>", true, true)]
-        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom""></entry>", false, false)]
-        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom"" />", true, true)]
-        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom"" />", false, false)]
-        public void Read_EmptyItem_ReturnsExpected(string xmlString, bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom""></entry>", true)]
+        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom""></entry>", false)]
+        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom"" />", true)]
+        [InlineData(@"<entry xmlns=""http://www.w3.org/2005/Atom"" />", false)]
+        public void Read_EmptyItem_ReturnsExpected(string xmlString, bool preserveElementExtensions)
         {
             VerifyRead(xmlString, preserveElementExtensions, preserveElementExtensions, item =>
             {

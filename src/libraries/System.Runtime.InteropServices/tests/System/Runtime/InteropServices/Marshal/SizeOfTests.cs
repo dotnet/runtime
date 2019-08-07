@@ -60,8 +60,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericClass<string>), "t" };
             yield return new object[] { typeof(GenericStruct<>), "t" };
             yield return new object[] { typeof(GenericStruct<string>), "t" };
-            yield return new object[] { typeof(GenericInterface<>), "t" };
-            yield return new object[] { typeof(GenericInterface<string>), "t" };
+            yield return new object[] { typeof(IGenericInterface<>), "t" };
+            yield return new object[] { typeof(IGenericInterface<string>), "t" };
 
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0], null };
 

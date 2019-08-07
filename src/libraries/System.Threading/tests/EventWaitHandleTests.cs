@@ -58,10 +58,10 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             bool createdNew;
-            using (var ewh = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew))
+            using (var ewh = new EventWaitHandle(initialState, mode, name, out createdNew))
             {
                 Assert.True(createdNew);
-                using (new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew))
+                using (new EventWaitHandle(initialState, mode, name, out createdNew))
                 {
                     Assert.False(createdNew);
                 }

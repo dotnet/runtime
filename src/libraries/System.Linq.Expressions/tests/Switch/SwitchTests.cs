@@ -626,8 +626,8 @@ namespace System.Linq.Expressions.Tests
             public static bool WithinTwo(int x, int y) => Math.Abs(x - y) < 2;
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
-        public void OpenGenericMethodDeclarer(bool useInterpreter)
+        [Fact]
+        public void OpenGenericMethodDeclarer()
         {
             Expression switchVal = Expression.Constant(30);
             Expression defaultExp = Expression.Constant(0);

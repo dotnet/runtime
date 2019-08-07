@@ -53,8 +53,9 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(CodeEventReferenceExpression_CodeExpression_TestData))]
-        public void Event_Set_Get_ReturnsExpected(CodeEventReferenceExpression value, CodeExpression _)
+        public void Event_Set_Get_ReturnsExpected(CodeEventReferenceExpression value, CodeExpression listener)
         {
+            _ = listener;
             var attachEvent = new CodeAttachEventStatement();
             attachEvent.Event = value;
             Assert.Equal((value ?? new CodeEventReferenceExpression()).TargetObject, attachEvent.Event.TargetObject);

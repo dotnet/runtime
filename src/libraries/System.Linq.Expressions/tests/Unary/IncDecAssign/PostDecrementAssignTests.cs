@@ -28,8 +28,9 @@ namespace System.Linq.Expressions.Tests
         [PerCompilationType(nameof(NullableSinglesAndDecrements))]
         [PerCompilationType(nameof(DoublesAndDecrements))]
         [PerCompilationType(nameof(NullableDoublesAndDecrements))]
-        public void ReturnsCorrectValues(Type type, object value, object _, bool useInterpreter)
+        public void ReturnsCorrectValues(Type type, object value, object ignored, bool useInterpreter)
         {
+            _ = ignored;
             ParameterExpression variable = Expression.Variable(type);
             BlockExpression block = Expression.Block(
                 new[] { variable },

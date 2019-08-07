@@ -293,10 +293,12 @@ namespace System.IO.MemoryMappedFiles.Tests
             new FileMode[] { FileMode.Open, FileMode.OpenOrCreate },
             new string[] { null, "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
-            new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite })]
+            new MemoryMappedFileAccess[] { MemoryMappedFileAccess.ReadWrite })]
         public void ValidArgumentCombinationsWithPath_ModesOpenOrCreate(
             FileMode mode, string mapName, long capacity, MemoryMappedFileAccess access)
         {
+            _ = access;
+
             // Test each of the four path-based CreateFromFile overloads
 
             using (TempFile file = new TempFile(GetTestFilePath(), capacity))

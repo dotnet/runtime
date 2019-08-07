@@ -49,18 +49,18 @@ namespace System.Globalization.Tests
             
             CultureInfo.CurrentCulture = newCurrentCulture;
             CultureInfo.CurrentUICulture = newCurrentUICulture;
-            
-            Func<Task> mainAsync = async delegate 
+
+            async Task MainAsync()
             {
                 await Task.Delay(1).ConfigureAwait(false);
-                
+
                 Assert.Equal(CultureInfo.CurrentCulture, newCurrentCulture);
                 Assert.Equal(CultureInfo.CurrentUICulture, newCurrentUICulture);
-            };
-            
+            }
+
             try 
             {
-                mainAsync().Wait();
+                MainAsync().Wait();
             }
             finally
             {

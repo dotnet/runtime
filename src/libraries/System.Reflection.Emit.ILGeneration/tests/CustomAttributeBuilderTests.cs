@@ -202,33 +202,33 @@ namespace System.Reflection.Emit.Tests
         {
             PropertyInfo[] namedProperties = Helpers.GetProperties(typeof(TestAttribute), propertyNames);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), fieldNames);
-            
-            Action<CustomAttributeBuilder> verify = attr =>
+
+            void Verify(CustomAttributeBuilder attr)
             {
                 VerifyCustomAttributeBuilder(attr, TestAttribute.AllProperties, expectedPropertyValues, TestAttribute.AllFields, expectedFieldValues);
-            };
-            
+            }
+
             if (namedProperties.Length == 0)
             {
                 if (namedFields.Length == 0)
                 {
                     // Use CustomAttributeBuilder(ConstructorInfo, object[])
                     CustomAttributeBuilder attribute1 = new CustomAttributeBuilder(con, constructorArgs);
-                    verify(attribute1);
+                    Verify(attribute1);
                 }
                 // Use CustomAttributeBuilder(ConstructorInfo, object[], FieldInfo[], object[])
                 CustomAttributeBuilder attribute2 = new CustomAttributeBuilder(con, constructorArgs, namedFields, fieldValues);
-                verify(attribute2);
+                Verify(attribute2);
             }
             if (namedFields.Length == 0)
             {
                 // Use CustomAttributeBuilder(ConstructorInfo, object[], PropertyInfo[], object[])
                 CustomAttributeBuilder attribute3 = new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues);
-                verify(attribute3);
+                Verify(attribute3);
             }
             // Use CustomAttributeBuilder(ConstructorInfo, object[], PropertyInfo[], object[], FieldInfo[], object[])
             CustomAttributeBuilder attribute4 = new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues);
-            verify(attribute4);
+            Verify(attribute4);
         }
         
         private static void VerifyCustomAttributeBuilder(CustomAttributeBuilder builder,
@@ -456,7 +456,7 @@ namespace System.Reflection.Emit.Tests
                                                   PropertyInfo[] namedProperties, object[] propertyValues,
                                                   FieldInfo[] namedFields, object[] fieldValues)
         {
-            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues, namedFields, fieldValues);
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues);
 
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             assembly.SetCustomAttribute(attribute);

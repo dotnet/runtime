@@ -17,6 +17,7 @@ namespace System.IO.Tests
         public static void GetPathRoot(string value, string expected)
         {
             // UNCs and device paths have no special meaning in Unix
+            _ = expected;
             Assert.Empty(Path.GetPathRoot(value));
         }
 

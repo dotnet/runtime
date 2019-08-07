@@ -492,11 +492,11 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(1)]
-        [XmlWriterInlineData(2)]
-        [XmlWriterInlineData(3)]
-        [XmlWriterInlineData(4)]
-        public void var_11(XmlWriterUtils utils, int param)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void var_11(int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -665,9 +665,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(1)]
-        [XmlWriterInlineData(2)]
-        public void var_14(XmlWriterUtils utils, int param)
+        [InlineData(1)]
+        [InlineData(2)]
+        public void var_14(int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try

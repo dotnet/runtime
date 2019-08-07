@@ -138,6 +138,8 @@ namespace System.Buffers.Text.Tests
         [MemberData(nameof(EqualityTestData))]
         public static void StandardFormatGetHashCodeIsContentBased(StandardFormat f1, StandardFormat f2, bool expectedToBeEqual)
         {
+            _ = f2;
+            _ = expectedToBeEqual;
             object boxedf1 = f1;
             object aDifferentBoxedF1 = f1;
             int h1 = boxedf1.GetHashCode();

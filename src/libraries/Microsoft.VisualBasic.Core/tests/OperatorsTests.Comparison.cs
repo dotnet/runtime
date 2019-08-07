@@ -1112,6 +1112,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
+            _ = greater;
+            _ = less;
              Assert.Equal(equal, Operators.CompareObjectEqual(left, right, true));
              Assert.Equal(equal, Operators.CompareObjectEqual(left, right, false));
         }
@@ -1174,7 +1176,9 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectGreater_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(greater, Operators.CompareObjectGreater(left, right, true));
+            _ = equal;
+            _ = less;
+            Assert.Equal(greater, Operators.CompareObjectGreater(left, right, true));
              Assert.Equal(greater, Operators.CompareObjectGreater(left, right, false));
         }
 
@@ -1236,7 +1240,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectGreaterEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(greater || equal, Operators.CompareObjectGreaterEqual(left, right, true));
+            _ = less;
+            Assert.Equal(greater || equal, Operators.CompareObjectGreaterEqual(left, right, true));
              Assert.Equal(greater || equal, Operators.CompareObjectGreaterEqual(left, right, false));
         }
 
@@ -1298,6 +1303,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectLess_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
+            _ = greater;
+            _ = equal;
              Assert.Equal(less, Operators.CompareObjectLess(left, right, true));
              Assert.Equal(less, Operators.CompareObjectLess(left, right, false));
         }
@@ -1360,7 +1367,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectLessEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(less || equal, Operators.CompareObjectLessEqual(left, right, true));
+            _ = greater;
+            Assert.Equal(less || equal, Operators.CompareObjectLessEqual(left, right, true));
              Assert.Equal(less || equal, Operators.CompareObjectLessEqual(left, right, false));
         }
 
@@ -1422,7 +1430,9 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectNotEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(!equal, Operators.CompareObjectNotEqual(left, right, true));
+            _ = greater;
+            _ = less;
+            Assert.Equal(!equal, Operators.CompareObjectNotEqual(left, right, true));
              Assert.Equal(!equal, Operators.CompareObjectNotEqual(left, right, false));
         }
 
@@ -1485,7 +1495,9 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(equal, Operators.ConditionalCompareObjectEqual(left, right, true));
+            _ = greater;
+            _ = less;
+            Assert.Equal(equal, Operators.ConditionalCompareObjectEqual(left, right, true));
              Assert.Equal(equal, Operators.ConditionalCompareObjectEqual(left, right, false));
         }
 
@@ -1547,7 +1559,9 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectGreater_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(greater, Operators.ConditionalCompareObjectGreater(left, right, true));
+            _ = equal;
+            _ = less;
+            Assert.Equal(greater, Operators.ConditionalCompareObjectGreater(left, right, true));
              Assert.Equal(greater, Operators.ConditionalCompareObjectGreater(left, right, false));
         }
 
@@ -1609,7 +1623,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectGreaterEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(greater || equal, Operators.ConditionalCompareObjectGreaterEqual(left, right, true));
+            _ = less;
+            Assert.Equal(greater || equal, Operators.ConditionalCompareObjectGreaterEqual(left, right, true));
              Assert.Equal(greater || equal, Operators.ConditionalCompareObjectGreaterEqual(left, right, false));
         }
 
@@ -1671,6 +1686,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectLess_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
+            _ = greater;
+            _ = equal;
              Assert.Equal(less, Operators.ConditionalCompareObjectLess(left, right, true));
              Assert.Equal(less, Operators.ConditionalCompareObjectLess(left, right, false));
         }
@@ -1733,7 +1750,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectLessEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
-             Assert.Equal(less || equal, Operators.ConditionalCompareObjectLessEqual(left, right, true));
+            _ = greater;
+            Assert.Equal(less || equal, Operators.ConditionalCompareObjectLessEqual(left, right, true));
              Assert.Equal(less || equal, Operators.ConditionalCompareObjectLessEqual(left, right, false));
         }
 
@@ -1795,6 +1813,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectNotEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
+            _ = greater;
+            _ = less;
              Assert.Equal(!equal, Operators.ConditionalCompareObjectNotEqual(left, right, true));
              Assert.Equal(!equal, Operators.ConditionalCompareObjectNotEqual(left, right, false));
         }

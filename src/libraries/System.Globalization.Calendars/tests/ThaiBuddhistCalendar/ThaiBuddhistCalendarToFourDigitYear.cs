@@ -9,17 +9,12 @@ namespace System.Globalization.Tests
 {
     public class ThaiBuddhistCalendarToFourDigitYear
     {
-        public static IEnumerable<object[]> ToFourDigitYear_TestData()
-        {
-            yield return new object[] { 2029, new Random(-55).Next(1, 99) };
-            yield return new object[] { 2029 + 543, new Random(-55).Next(544, 10542) };
-            yield return new object[] { 2029 + 543, 10542 };
-            yield return new object[] { 2029, 0 };
-        }
-
         [Theory]
-        [MemberData(nameof(ToFourDigitYear_TestData))]
-        public void ToFourDigitYear(int originalTwoYearMax, int year)
+        [InlineData(0)]
+        [InlineData(46)]
+        [InlineData(5139)]
+        [InlineData(10542)]
+        public void ToFourDigitYear(int year)
         {
             ThaiBuddhistCalendar calendar = new ThaiBuddhistCalendar();
             calendar.TwoDigitYearMax = 2029;

@@ -40,9 +40,8 @@ namespace System.Collections.Tests
 
         protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void Dictionary_Generic_ValueCollection_Constructor_NullDictionary(int count)
+        [Fact]
+        public void Dictionary_Generic_ValueCollection_Constructor_NullDictionary()
         {
             Assert.Throws<ArgumentNullException>(() => new Dictionary<string, string>.ValueCollection(null));
         }

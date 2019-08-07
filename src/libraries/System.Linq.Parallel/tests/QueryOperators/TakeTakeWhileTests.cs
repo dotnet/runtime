@@ -294,6 +294,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(TakeUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void TakeWhile_AllFalse(int count, int take)
         {
+            _ = take;
             Assert.Empty(UnorderedSources.Default(count).TakeWhile(x => false));
         }
 
@@ -309,6 +310,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(TakeData), new[] { 0, 1, 2, 16 })]
         public static void TakeWhile_AllTrue(Labeled<ParallelQuery<int>> labeled, int count, int take)
         {
+            _ = take;
             ParallelQuery<int> query = labeled.Item;
             int seen = 0;
             Assert.All(query.TakeWhile(x => true), x => Assert.Equal(seen++, x));
@@ -327,6 +329,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(TakeWhileData), new[] { 2, 16 })]
         public static void TakeWhile_SomeTrue(Labeled<ParallelQuery<int>> labeled, int count, int[] take)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             int seen = 0;
             Assert.All(query.TakeWhile(x => take.Contains(x)), x => Assert.Equal(seen++, x));
@@ -345,6 +348,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(TakeWhileData), new[] { 2, 16 })]
         public static void TakeWhile_SomeFalse(Labeled<ParallelQuery<int>> labeled, int count, int[] take)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             int seen = 0;
             Assert.All(query.TakeWhile(x => !take.Contains(x)), x => Assert.Equal(seen++, x));

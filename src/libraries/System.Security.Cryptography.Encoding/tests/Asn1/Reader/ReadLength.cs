@@ -109,6 +109,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules rules,
             string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)rules);
 

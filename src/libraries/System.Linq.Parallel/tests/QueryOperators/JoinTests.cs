@@ -279,9 +279,9 @@ namespace System.Linq.Parallel.Tests
             }
             else
             {
-                Func<int, int, int> cartesian = (key, other) => (other + (KeyFactor - 1) - key % KeyFactor) / KeyFactor;
-                Assert.All(seenOuter, kv => Assert.Equal(cartesian(kv.Key, rightCount), kv.Value));
-                Assert.All(seenInner, kv => Assert.Equal(cartesian(kv.Key, leftCount), kv.Value));
+                int Cartesian(int key, int other) => (other + (KeyFactor - 1) - key % KeyFactor) / KeyFactor;
+                Assert.All(seenOuter, kv => Assert.Equal(Cartesian(kv.Key, rightCount), kv.Value));
+                Assert.All(seenInner, kv => Assert.Equal(Cartesian(kv.Key, leftCount), kv.Value));
             }
         }
 

@@ -79,6 +79,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_NoDuplicates(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
+            _ = frontToBackOrder;
             List<T> list = GenericListFactory(count);
             List<T> expectedList = list.ToList();
             IndexOfDelegate IndexOf = IndexOfDelegateFromType(indexOfMethod);
@@ -93,6 +94,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_NonExistingValues(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
+            _ = frontToBackOrder;
             List<T> list = GenericListFactory(count);
             IEnumerable<T> nonexistentValues = CreateEnumerable(EnumerableType.List, list, count: count, numberOfMatchingElements: 0, numberOfDuplicateElements: 0);
             IndexOfDelegate IndexOf = IndexOfDelegateFromType(indexOfMethod);
@@ -107,7 +109,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_DefaultValue(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
-            T defaultValue = default(T);
+            _ = frontToBackOrder;
+            T defaultValue = default;
             List<T> list = GenericListFactory(count);
             IndexOfDelegate IndexOf = IndexOfDelegateFromType(indexOfMethod);
             while (list.Remove(defaultValue))

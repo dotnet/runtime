@@ -64,6 +64,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
+            _ = description;
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
                 if (nonOidValue == null)
@@ -87,6 +88,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
+            _ = description;
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
                 Assert.Throws<CryptographicException>(
@@ -101,6 +103,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
+            _ = description;
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
                 Oid nonOidObj = new Oid(nonOidValue, "FriendlyName does not matter");

@@ -1604,8 +1604,9 @@ namespace System.Tests
         [MemberData(nameof(Copy_SZArray_PrimitiveWidening_TestData))]
         [MemberData(nameof(Copy_SZArray_UnreliableConversion_CanPerform_TestData))]
         [MemberData(nameof(Copy_Array_UnreliableConversion_CanPerform_TestData))]
-        public static void ConstrainedCopy_UnreliableConversion_ThrowsArrayTypeMismatchException(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array _)
+        public static void ConstrainedCopy_UnreliableConversion_ThrowsArrayTypeMismatchException(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, Array ignored)
         {
+            _ = ignored;
             Assert.Throws<ArrayTypeMismatchException>(() => Array.ConstrainedCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length));
         }
 

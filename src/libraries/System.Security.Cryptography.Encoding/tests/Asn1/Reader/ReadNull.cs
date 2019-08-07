@@ -43,6 +43,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData("Incomplete length", PublicEncodingRules.BER, "0581")]
         public static void ReadNull_Throws(string description, PublicEncodingRules ruleSet, string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 

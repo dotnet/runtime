@@ -99,22 +99,25 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public void EncodingName(UnicodeEncoding encoding, string _)
+        public void EncodingName(UnicodeEncoding encoding, string description)
         {
+            _ = description;
             Assert.NotEmpty(encoding.EncodingName); // Unicode (UTF-16) in en-US
         }
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public void IsSingleByte(UnicodeEncoding encoding, string _)
+        public void IsSingleByte(UnicodeEncoding encoding, string description)
         {
+            _ = description;
             Assert.False(encoding.IsSingleByte);
         }
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
-        public void Clone(UnicodeEncoding encoding, string _)
+        public void Clone(UnicodeEncoding encoding, string description)
         {
+            _ = description;
             UnicodeEncoding clone = (UnicodeEncoding)encoding.Clone();
             Assert.NotSame(encoding, clone);
             Assert.Equal(encoding, clone);
