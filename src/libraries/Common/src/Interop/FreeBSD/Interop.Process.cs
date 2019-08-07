@@ -367,7 +367,7 @@ internal static partial class Interop
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;
-                info.SessionId = kinfo ->ki_sid;
+                info.SessionId = kinfo->ki_sid;
 
                 for(int i = 0; i < process.Length; i++)
                 {
