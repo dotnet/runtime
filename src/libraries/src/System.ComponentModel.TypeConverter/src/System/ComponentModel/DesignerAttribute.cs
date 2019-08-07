@@ -134,6 +134,6 @@ namespace System.ComponentModel
                 && other.DesignerTypeName == DesignerTypeName;
         }
 
-        public override int GetHashCode() => DesignerTypeName.GetHashCode() ^ DesignerBaseTypeName.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(DesignerBaseTypeName, DesignerTypeName);
     }
 }

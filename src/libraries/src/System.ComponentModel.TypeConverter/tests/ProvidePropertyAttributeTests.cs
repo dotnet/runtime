@@ -41,7 +41,6 @@ namespace System.ComponentModel
         public static IEnumerable<object[]> Equals_TestData()
         {
             var attribute = new ProvidePropertyAttribute("propertyName", "receiverTypeName");
-
             yield return new object[] { attribute, attribute, true };
             yield return new object[] { attribute, new ProvidePropertyAttribute("propertyName", "receiverTypeName"), true };
             yield return new object[] { attribute, new ProvidePropertyAttribute("propertyname", "receiverTypeName"), false };
@@ -62,41 +61,9 @@ namespace System.ComponentModel
         public void Equals_Other_ReturnsExpected(ProvidePropertyAttribute attribute, object other, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(other));
-        }
-
-        [Fact]
-        public void GetHashCode_InvokeMultipleTimes_ReturnsEqual()
-        {
-            var attribute = new ProvidePropertyAttribute("propertyName", "receiverTypeName");
-            Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());
-        }
-
-        [Fact]
-        public void GetHashCode_NullPropertyName_ReturnsEqual()
-        {
-            var attribute = new ProvidePropertyAttribute(null, "receiverTypeName");
-            if (!PlatformDetection.IsFullFramework)
+            if (other is DesignerAttribute)
             {
-                Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
-            }
-        }
-
-        [Fact]
-        public void GetHashCode_NullReceiverTypeName_ReturnsEqual()
-        {
-            var attribute = new ProvidePropertyAttribute("propertyName", (string)null);
-
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
             }
         }
     }

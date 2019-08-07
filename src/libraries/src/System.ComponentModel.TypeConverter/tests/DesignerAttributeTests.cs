@@ -87,34 +87,26 @@ namespace System.ComponentModel.Tests
             AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("designerBaseType", () => new DesignerAttribute(typeof(int), null));
         }
 
+        public static IEnumerable<object[]> TypeId_TestData()
+        {
+            yield return new object[] { "BaseDesignerTypeName", "System.ComponentModel.DesignerAttributeBaseDesignerTypeName" };
+            yield return new object[] { "BaseDesignerTypeName,Other", "System.ComponentModel.DesignerAttributeBaseDesignerTypeName" };
+            yield return new object[] { string.Empty, "System.ComponentModel.DesignerAttribute" };
+            yield return new object[] { null, "System.ComponentModel.DesignerAttribute" };
+        }
+
         [Theory]
-        [InlineData("BaseDesignerTypeName", "System.ComponentModel.DesignerAttributeBaseDesignerTypeName")]
-        [InlineData("BaseDesignerTypeName,Other", "System.ComponentModel.DesignerAttributeBaseDesignerTypeName")]
-        public void TypeId_ValidDesignerBaseTypeName_ReturnsExcepted(string designerBaseTypeName, object expected)
+        [MemberData(nameof(TypeId_TestData))]
+        public void TypeId_Get_ReturnsExcepted(string designerBaseTypeName, object expected)
         {
             var attribute = new DesignerAttribute("SerializerType", designerBaseTypeName);
             Assert.Equal(expected, attribute.TypeId);
             Assert.Same(attribute.TypeId, attribute.TypeId);
         }
 
-        [Fact]
-        public void TypeId_NullDesignerDesignerTypeName_ThrowsNullReferenceException()
-        {
-            var attribute = new DesignerAttribute("DesignerType", (string)null);
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal("System.ComponentModel.DesignerAttribute", attribute.TypeId);
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
-            }
-        }
-
         public static IEnumerable<object[]> Equals_TestData()
         {
             var attribute = new DesignerAttribute("designerTypeName", "designerBaseTypeName");
-
             yield return new object[] { attribute, attribute, true };
             yield return new object[] { attribute, new DesignerAttribute("designerTypeName", "designerBaseTypeName"), true };
             yield return new object[] { attribute, new DesignerAttribute("designertypename", "designerBaseTypeName"), false };
@@ -134,17 +126,10 @@ namespace System.ComponentModel.Tests
         public void Equals_Object_ReturnsExpected(DesignerAttribute attribute, object other, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(other));
-            if (other is DesignerAttribute otherAttribute && attribute.DesignerBaseTypeName != null && otherAttribute.DesignerBaseTypeName != null)
+            if (other is DesignerAttribute)
             {
                 Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
             }
-        }
-
-        [Fact]
-        public void GetHashCode_NullBaseDesignerTypeName_ThrowsNullReferenceExeption()
-        {
-            var attribute = new DesignerAttribute("designerTypeName", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
         }
     }
 }

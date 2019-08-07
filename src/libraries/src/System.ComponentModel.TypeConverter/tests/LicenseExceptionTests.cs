@@ -11,18 +11,9 @@ namespace System.ComponentModel.Tests
 {
     public class LicenseExceptionTests
     {
-        public static IEnumerable<object[]> Ctor_Type_TestData()
-        {
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { null };
-            }
-
-            yield return new object[] { typeof(int) };
-        }
-
         [Theory]
-        [MemberData(nameof(Ctor_Type_TestData))]
+        [InlineData(null)]
+        [InlineData(typeof(int))]
         public void Ctor_Type(Type type)
         {
             var exception = new LicenseException(type);
@@ -34,12 +25,8 @@ namespace System.ComponentModel.Tests
 
         public static IEnumerable<object[]> Ctor_Type_Object_TestData()
         {
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { null, null };
-            }
-
-            yield return new object[] { typeof(int), "instance" };
+            yield return new object[] { null, null };
+            yield return new object[] { typeof(int), new object() };
         }
 
         [Theory]
@@ -70,11 +57,16 @@ namespace System.ComponentModel.Tests
             Assert.Equal(message, exception.Message);
         }
 
-        [Theory]
-        [MemberData(nameof(Ctor_Type_Object_String_TestData))]
-        public void Ctor_Type_Object_String_Exception(Type type, object instance, string message)
+        public static IEnumerable<object[]> Ctor_Type_Object_String_Exception_TestData()
         {
-            var innerException = new DivideByZeroException();
+            yield return new object[] { null, null, "message", null };
+            yield return new object[] { typeof(LicenseException), new object(), "message", new DivideByZeroException() };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Type_Object_String_Exception_TestData))]
+        public void Ctor_Type_Object_String_Exception(Type type, object instance, string message, Exception innerException)
+        {
             var exception = new LicenseException(type, instance, message, innerException);
             Assert.Same(innerException, exception.InnerException);
             Assert.Equal(-2146232063, exception.HResult);

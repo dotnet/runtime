@@ -15,16 +15,8 @@ namespace System.ComponentModel.Tests
         public void Ctor_Default()
         {
             var subAttributeCollection = new SubAttributeCollection();
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal(0, subAttributeCollection.Count);
-                Assert.Empty(subAttributeCollection);
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => subAttributeCollection.Count);
-                Assert.Throws<NullReferenceException>(() => subAttributeCollection.GetEnumerator());
-            }
+            Assert.Equal(0, subAttributeCollection.Count);
+            Assert.Empty(subAttributeCollection);
         }
 
         public static IEnumerable<object[]> Ctor_Attributes_TestData()
@@ -83,14 +75,7 @@ namespace System.ComponentModel.Tests
         {
             var attributeCollection = new SubAttributeCollection();
             var array = new object[] { 1, 2, 3 };
-            if (!PlatformDetection.IsFullFramework)
-            {
-                attributeCollection.CopyTo(array, 1);
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attributeCollection.CopyTo(array, 1));
-            }
+            attributeCollection.CopyTo(array, 1);
             Assert.Equal(new object[] { 1, 2, 3}, array);
         }
 
@@ -126,16 +111,8 @@ namespace System.ComponentModel.Tests
         public void Contains_Default_ReturnsFalse()
         {
             var attributeCollection = new SubAttributeCollection();
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.False(attributeCollection.Contains(new ReadOnlyAttribute(true)));
-                Assert.False(attributeCollection.Contains(new Attribute[] { new ReadOnlyAttribute(true) }));
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attributeCollection.Contains(new ReadOnlyAttribute(true)));
-                Assert.Throws<NullReferenceException>(() => attributeCollection.Contains(new Attribute[] { new ReadOnlyAttribute(true) }));
-            }
+            Assert.False(attributeCollection.Contains(new ReadOnlyAttribute(true)));
+            Assert.False(attributeCollection.Contains(new Attribute[] { new ReadOnlyAttribute(true) }));
         }
 
         [Theory]
@@ -341,16 +318,8 @@ namespace System.ComponentModel.Tests
         public void Matches_Default_ReturnsFalse()
         {
             var attributeCollection = new SubAttributeCollection();
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.False(attributeCollection.Matches(new ReadOnlyAttribute(true)));
-                Assert.False(attributeCollection.Matches(new Attribute[] { new ReadOnlyAttribute(true) }));
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attributeCollection.Matches(new ReadOnlyAttribute(true)));
-                Assert.Throws<NullReferenceException>(() => attributeCollection.Matches(new Attribute[] { new ReadOnlyAttribute(true) }));
-            }
+            Assert.False(attributeCollection.Matches(new ReadOnlyAttribute(true)));
+            Assert.False(attributeCollection.Matches(new Attribute[] { new ReadOnlyAttribute(true) }));
         }
 
         private static IEnumerable<Attribute> GetAttributes()

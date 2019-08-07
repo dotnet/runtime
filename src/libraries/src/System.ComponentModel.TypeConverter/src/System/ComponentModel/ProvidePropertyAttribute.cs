@@ -55,10 +55,7 @@ namespace System.ComponentModel
                 && other.ReceiverTypeName == ReceiverTypeName;
         }
 
-        public override int GetHashCode()
-        {
-            return (PropertyName?.GetHashCode() ?? 0) ^ (ReceiverTypeName?.GetHashCode() ?? 0);
-        }
+        public override int GetHashCode() => HashCode.Combine(PropertyName, ReceiverTypeName);
 
         public override object TypeId => GetType().FullName + PropertyName;
     }
