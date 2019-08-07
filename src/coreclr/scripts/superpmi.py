@@ -88,6 +88,9 @@ collect_parser.add_argument("-test_env", dest="test_env", default=None, help="Te
 collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to bin/mch/$(buildType).$(arch).$(config)/$(buildType).$(arch).$(config).mch")
 
 collect_parser.add_argument("--pmi", dest="pmi", default=False, action="store_true", help="Use pmi on a set of directories or assemblies")
+collect_parser.add_argument("-mch_files", dest="mch_files", nargs='+', default=None, help="Pass a sequence of mch files which will be merged.")
+collect_parser.add_argument("--merge_mch_files", dest="merge_mch_files", default=False, action="store_true", help="Merge multiple mch files. Please use the mch_files flag to pass a list of mch files to merge.")
+
 collect_parser.add_argument("--use_zapdisable", dest="use_zapdisable", default=False, action="store_true", help="Allow redundant calls to the systems libraries for more coverage.")
 
 collect_parser.add_argument("--assume_unclean_mch", dest="assume_unclean_mch", default=False, action="store_true", help="Force clean the mch file. This is useful if the dataset is large and there are expected dups.")
@@ -407,7 +410,10 @@ class SuperPMICollect:
                     self.__collect_mc_files__()
                 
                 if not self.coreclr_args.has_merged_mch:
-                    self.__merge_mc_files__()
+                    if not self.coreclr_args.merge_mch_files:
+                        self.__merge_mc_files__()
+                    else:
+                        self.__merge_mch_files__()
 
                 if not self.coreclr_args.has_verified_clean_mch:
                     self.__create_clean_mch_file__()
@@ -554,6 +560,26 @@ class SuperPMICollect:
         if not self.coreclr_args.skip_cleanup:
             for item in mc_contents:
                 os.remove(item)
+
+    def __merge_mch_files__(self):
+        """ Merge the mch files that were passed
+
+        Notes:
+            mcs -concat <s_baseMchFile> [self.coreclr_args.mch_files]
+
+        """
+
+        mch_files = self.coreclr_args.mch_files
+
+        for item in mch_files:
+            command = [self.mcs_path, "-concat", self.base_mch_file, item]
+            print("Invoking: " + " ".join(command))
+            proc = subprocess.Popen(command)
+
+            proc.communicate()
+
+        if not os.path.isfile(self.mcs_path):
+            raise RuntimeError("mch file failed to be generated at: %s" % self.mcs_path)
     
     def __create_clean_mch_file__(self):
         """ Create a clean mch file based on the original
@@ -592,12 +618,6 @@ class SuperPMICollect:
             if os.path.isfile(self.base_fail_mcl_file):
                 os.remove(self.base_fail_mcl_file)
                 self.base_fail_mcl_file = None
-
-            # The base file is no longer used (unless there was no cleaning done, in which case
-            # self.base_mch_file has been set to None and clean_mch_File is the base file).
-            if os.path.isfile(self.base_mch_file):
-                os.remove(self.base_mch_file)
-                self.base_mch_file = None
 
     def __create_thin_unique_mch__(self):
         """  Create a thin unique MCH
@@ -1602,6 +1622,16 @@ def setup_args(args):
                             "Unable to set log_file.")
 
         coreclr_args.verify(args,
+                            "merge_mch_files",
+                            lambda unused: True,
+                            "Unable to set merge_mch_files.")
+
+        coreclr_args.verify(args,
+                            "mch_files",
+                            lambda items: items is None or len(items) > 0,
+                            "Unable to set mch_files.")
+
+        coreclr_args.verify(args,
                             "skip_collect_mc_files",
                             lambda unused: True,
                             "Unable to set skip_collect_mc_files")
@@ -1649,11 +1679,15 @@ def setup_args(args):
         jit_location = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         assert(os.path.isfile(jit_location))
 
-        if args.collection_command is None:
+        if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
 
             assert args.pmi is True
             assert len(args.pmi_assemblies) > 0
+
+        if coreclr_args.merge_mch_files:
+            assert len(coreclr_args.mch_files) > 0
+            coreclr_args.has_run_collection_command = True
     
     elif coreclr_args.mode == "replay":
         coreclr_args.verify(args,
