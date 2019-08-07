@@ -33,7 +33,17 @@ extern GCStats mono_gc_stats;
 #ifdef TARGET_OSX
 #include <mach/mach.h>
 #include <mach/task_info.h>
+#endif
 
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef TARGET_OSX
 // OSX 10.9 does not have MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS)
   #define NO_MAP_ANONYMOUS
@@ -43,15 +53,6 @@ extern GCStats mono_gc_stats;
     #define MAP_ANONYMOUS 0
   #endif
 #endif
-
-#endif
-
-#ifdef HAVE_SYS_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
-
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
 #endif
 
 #ifdef HAVE_EXECINFO_H
