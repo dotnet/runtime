@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>JSON configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp3.0</TargetFrameworks>
     <PackageTags>$(PackageTags);json</PackageTags>
     <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
@@ -18,8 +19,11 @@
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Configuration" />
     <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
-    <Reference Include="System.Text.Json" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
-    <Reference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Text.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
 </Project>

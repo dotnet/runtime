@@ -7,7 +7,8 @@ Commonly used types:
 Microsoft.Extensions.FileProviders.IDirectoryContents
 Microsoft.Extensions.FileProviders.IFileInfo
 Microsoft.Extensions.FileProviders.IFileProvider</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp3.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
   </PropertyGroup>
