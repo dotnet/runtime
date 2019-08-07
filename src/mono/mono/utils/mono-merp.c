@@ -49,7 +49,9 @@ os_version_string (void)
 	static const char *version_string;
 
 	if (!version_string) {
-		memset (&name, 0, sizeof (name)); // WSL does not always nul terminate.
+		// WSL does not always nul terminate. WSL was fixed February 2018.
+		// Restore memset if variable made non-static.
+		//memset (&name, 0, sizeof (name));
 
 		if (uname (&name) >= 0)
 			version_string = name.release;
