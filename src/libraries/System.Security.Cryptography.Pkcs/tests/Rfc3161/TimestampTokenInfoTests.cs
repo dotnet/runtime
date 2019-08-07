@@ -374,6 +374,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             bool shouldParse,
             long? expectedTotalMicroseconds)
         {
+            _ = description;
             string inputHex =
                 "305A0201010601003031300D0609608648016503040201050004200000000000" +
                 "0000000000000000000000000000000000000000000000000000000201081817" +

@@ -479,6 +479,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("Zero Tag", "0000")]
         public static void InvalidPublicKeyEncoding(string caseName, string parametersHex)
         {
+            _ = caseName;
+
             var generator = new InvalidSignatureGenerator(
                 Array.Empty<byte>(),
                 parametersHex.HexToByteArray(),
@@ -509,6 +511,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("Dangling LengthLength", "300206035102013081")]
         public static void InvalidSignatureAlgorithmEncoding(string caseName, string sigAlgHex)
         {
+            _ = caseName;
+
             var generator = new InvalidSignatureGenerator(
                 Array.Empty<byte>(),
                 new byte[] { 0x05, 0x00 },

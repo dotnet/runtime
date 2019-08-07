@@ -79,7 +79,7 @@ namespace System.Security.AccessControl.Tests
         [MemberData(nameof(DiscretionaryACL_RemoveAccess))]
         public static void RemoveAccess(bool isContainer, bool isDS, int accessControlType, string sid, int accessMask, int inheritanceFlags, int propagationFlags, string initialRawAclStr, string verifierRawAclStr, bool removePossible)
         {
-            RawAcl rawAcl = Utils.CreateRawAclFromString(verifierRawAclStr);
+            RawAcl rawAcl = Utils.CreateRawAclFromString(initialRawAclStr);
             DiscretionaryAcl discretionaryAcl = new DiscretionaryAcl(isContainer, isDS, rawAcl);
             rawAcl = Utils.CreateRawAclFromString(verifierRawAclStr);
 

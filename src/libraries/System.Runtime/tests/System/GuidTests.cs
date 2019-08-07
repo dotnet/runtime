@@ -51,8 +51,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GuidStrings_Valid_TestData))]
-        public static void Ctor_String(string input, string _, Guid expected)
+        public static void Ctor_String(string input, string format, Guid expected)
         {
+            _ = format;
             Assert.Equal(expected, new Guid(input));
         }
 

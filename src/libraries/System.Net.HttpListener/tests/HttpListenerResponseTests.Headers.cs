@@ -64,13 +64,18 @@ namespace System.Net.Tests
             Assert.Equal("value1,value2", response.Headers["name"]);
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public async Task AppendHeader_NullOrEmptyName_ThrowsArgumentNullException(string name)
+        [Fact]
+        public async Task AppendHeader_NullName_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
             AssertExtensions.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
+        }
+
+        [Fact]
+        public async Task AppendHeader_EmptyName_ThrowsArgumentException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            AssertExtensions.Throws<ArgumentException>("name", () => response.AppendHeader("", ""));
         }
 
         [Fact]

@@ -107,28 +107,56 @@ namespace Microsoft.Win32.RegistryTests
             const string sysRootVar = "%Systemroot%";
             const string pathVar = "%path%";
             const string tmpVar = "%tmp%";
+
             s_testExpandableStrings = new[]
             {
                 new object[]
                 {
                     sysRootVar + @"\mydrive\mydirectory\myfile.xxx",
-                    Environment.ExpandEnvironmentVariables(sysRootVar) + @"\mydrive\mydirectory\myfile.xxx"
+                    Environment.ExpandEnvironmentVariables(sysRootVar) + @"\mydrive\mydirectory\myfile.xxx",
+                    RegistryValueOptions.None,
+                },
+                new object[]
+                {
+                    sysRootVar + @"\mydrive\mydirectory\myfile.xxx",
+                    sysRootVar + @"\mydrive\mydirectory\myfile.xxx",
+                    RegistryValueOptions.DoNotExpandEnvironmentNames,
                 },
                 new object[]
                 {
                     tmpVar + @"\gfdhghdfgk\fsdfds\dsd.yyy",
-                    Environment.ExpandEnvironmentVariables(tmpVar) + @"\gfdhghdfgk\fsdfds\dsd.yyy"
+                    Environment.ExpandEnvironmentVariables(tmpVar) + @"\gfdhghdfgk\fsdfds\dsd.yyy",
+                    RegistryValueOptions.None,
+                },
+                new object[]
+                {
+                    tmpVar + @"\gfdhghdfgk\fsdfds\dsd.yyy",
+                    tmpVar + @"\gfdhghdfgk\fsdfds\dsd.yyy",
+                    RegistryValueOptions.DoNotExpandEnvironmentNames,
                 },
                 new object[]
                 {
                     pathVar + @"\rwerew.zzz",
-                    Environment.ExpandEnvironmentVariables(pathVar) + @"\rwerew.zzz"
+                    Environment.ExpandEnvironmentVariables(pathVar) + @"\rwerew.zzz",
+                    RegistryValueOptions.None,
+                },
+                new object[]
+                {
+                    pathVar + @"\rwerew.zzz",
+                    pathVar + @"\rwerew.zzz",
+                    RegistryValueOptions.DoNotExpandEnvironmentNames,
                 },
                 new object[]
                 {
                     sysRootVar + @"\mydrive\" + pathVar + @"\myfile.xxx",
-                    Environment.ExpandEnvironmentVariables(sysRootVar) + @"\mydrive\" +
-                    Environment.ExpandEnvironmentVariables(pathVar) + @"\myfile.xxx"
+                    Environment.ExpandEnvironmentVariables(sysRootVar) + @"\mydrive\" + Environment.ExpandEnvironmentVariables(pathVar) + @"\myfile.xxx",
+                    RegistryValueOptions.None,
+                },
+                new object[]
+                {
+                    sysRootVar + @"\mydrive\" + pathVar + @"\myfile.xxx",
+                    sysRootVar + @"\mydrive\" + pathVar + @"\myfile.xxx",
+                    RegistryValueOptions.DoNotExpandEnvironmentNames,
                 }
             };
 

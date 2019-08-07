@@ -100,6 +100,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0 }, MemberType = typeof(Sources))]
         public static void Cast_Empty(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> empty = labeled.Item;
 
             Assert.IsAssignableFrom<ParallelQuery<int>>(empty.Cast<string>().Cast<int>());
@@ -121,6 +122,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void Cast_InvalidCastException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             AssertThrows.Wrapped<InvalidCastException>(() => labeled.Item.Cast<double>().ForAll(x => {; }));
             AssertThrows.Wrapped<InvalidCastException>(() => labeled.Item.Cast<double>().ToList());
         }
@@ -139,6 +141,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void Cast_Assignable_InvalidCastException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             AssertThrows.Wrapped<InvalidCastException>(() => labeled.Item.Select(x => (Int32)x).Cast<Castable>().ForAll(x => {; }));
             AssertThrows.Wrapped<InvalidCastException>(() => labeled.Item.Select(x => (Int32)x).Cast<Castable>().ToList());
         }

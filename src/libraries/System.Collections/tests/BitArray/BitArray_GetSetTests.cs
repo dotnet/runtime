@@ -396,6 +396,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(CopyTo_Hidden_Data))]
         public static void CopyTo_Int_Hidden(string label, BitArray bits)
         {
+            _ = label;
+
             int allBitsSet = unchecked((int)0xffffffff); // 32 bits set to 1 = -1
             int fullInts = bits.Length / BitsPerInt32;
             int remainder = bits.Length % BitsPerInt32;
@@ -416,6 +418,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(CopyTo_Hidden_Data))]
         public static void CopyTo_Byte_Hidden(string label, BitArray bits)
         {
+            _ = label;
+
             byte allBitsSet = (1 << BitsPerByte) - 1; // 8 bits set to 1 = 255
 
             int fullBytes = bits.Length / BitsPerByte;

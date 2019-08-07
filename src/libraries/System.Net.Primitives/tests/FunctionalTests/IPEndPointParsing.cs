@@ -110,14 +110,16 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(IPAddressParsing.ValidIpv4Addresses), MemberType = typeof(IPAddressParsing))]
         public void Parse_InvalidPort_IPv4_Throws(string address, string expectedAddress)
         {
-            Parse_InvalidPort_Throws(address, true);
+            _ = expectedAddress;
+            Parse_InvalidPort_Throws(address, isIPv4: true);
         }
 
         [Theory]
         [MemberData(nameof(IPAddressParsing.ValidIpv6Addresses), MemberType = typeof(IPAddressParsing))]
         public void Parse_InvalidPort_IPv6_Throws(string address, string expectedAddress)
         {
-            Parse_InvalidPort_Throws(address, false);
+            _ = expectedAddress;
+            Parse_InvalidPort_Throws(address, isIPv4: false);
         }
 
         private void Parse_InvalidPort_Throws(string address, bool isIPv4)

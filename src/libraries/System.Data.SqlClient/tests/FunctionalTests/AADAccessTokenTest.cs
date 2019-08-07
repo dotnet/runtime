@@ -17,6 +17,7 @@ namespace System.Data.SqlClient.Tests
         [InlineData("Test combination of Access Token and Credentials", new object[] { "sampleUserId" })]
         public void InvalidCombinationOfAccessToken(string description, object[] Params)
         {
+            _ = description;
             _builder = new SqlConnectionStringBuilder
             {
                 ["Data Source"] = "sample.database.windows.net"

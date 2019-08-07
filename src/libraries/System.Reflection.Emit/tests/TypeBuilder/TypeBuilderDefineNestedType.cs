@@ -64,12 +64,12 @@ namespace System.Reflection.Emit.Tests
             bool isDefaultParent = parent == null;
             bool isDefaultAttributes = attributes == TypeAttributes.NestedPrivate;
 
-            Action<TypeBuilder, TypeBuilder> verify = (type, declaringType) =>
+            void Verify(TypeBuilder type, TypeBuilder declaringType)
             {
                 bool allowsNullParent = attributes.HasFlag(TypeAttributes.Abstract) && attributes.HasFlag(TypeAttributes.ClassSemanticsMask);
                 Type baseType = allowsNullParent ? parent : (parent ?? typeof(object));
                 Helpers.VerifyType(type, declaringType.Module, declaringType, name, attributes, baseType, typesize, packingSize, implementedInterfaces);
-            };
+            }
 
             if (isDefaultImplementedInterfaces)
             {
@@ -81,38 +81,38 @@ namespace System.Reflection.Emit.Tests
                         {
                             // Use DefineNestedType(string)
                             TypeBuilder type1 = Helpers.DynamicType(TypeAttributes.Public);
-                            verify(type1.DefineNestedType(name), type1);
+                            Verify(type1.DefineNestedType(name), type1);
                         }
                         // Use DefineNestedType(string, TypeAttributes)
                         TypeBuilder type2 = Helpers.DynamicType(TypeAttributes.Public);
-                        verify(type2.DefineNestedType(name, attributes), type2);
+                        Verify(type2.DefineNestedType(name, attributes), type2);
                     }
                     // Use DefineNestedType(string, TypeAttributes, Type)
                     TypeBuilder type3 = Helpers.DynamicType(TypeAttributes.Public);
-                    verify(type3.DefineNestedType(name, attributes, parent), type3);
+                    Verify(type3.DefineNestedType(name, attributes, parent), type3);
                 }
                 else if (isDefaultSize)
                 {
                     // Use DefineNestedType(string, TypeAttributes, Type, PackingSize)
                     TypeBuilder type4 = Helpers.DynamicType(TypeAttributes.Public);
-                    verify(type4.DefineNestedType(name, attributes, parent, packingSize), type4);
+                    Verify(type4.DefineNestedType(name, attributes, parent, packingSize), type4);
                 }
                 else if (isDefaultPackingSize)
                 {
                     // Use DefineNestedType(string, TypeAttributes, Type, int)
                     TypeBuilder type5 = Helpers.DynamicType(TypeAttributes.Public);
-                    verify(type5.DefineNestedType(name, attributes, parent, typesize), type5);
+                    Verify(type5.DefineNestedType(name, attributes, parent, typesize), type5);
                 }
                 // Use DefineNestedType(string, TypeAttributes, Type, PackingSize, int);
                 TypeBuilder type6 = Helpers.DynamicType(TypeAttributes.Public);
-                verify(type6.DefineNestedType(name, attributes, parent, packingSize, typesize), type6);
+                Verify(type6.DefineNestedType(name, attributes, parent, packingSize, typesize), type6);
             }
             else
             {
                 // Use DefineNestedType(string, TypeAttributes, Type, Type[])
                 Assert.True(isDefaultSize && isDefaultPackingSize); // Sanity check
                 TypeBuilder type7 = Helpers.DynamicType(TypeAttributes.Public);
-                verify(type7.DefineNestedType(name, attributes, parent, implementedInterfaces), type7);
+                Verify(type7.DefineNestedType(name, attributes, parent, implementedInterfaces), type7);
             }
         }
 

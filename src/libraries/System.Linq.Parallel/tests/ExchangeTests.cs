@@ -92,6 +92,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
+            _ = count;
             int seen = 0;
             foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Select(i => i))
             {
@@ -130,6 +131,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MergeData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Merge_Ordered(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
         {
+            _ = count;
             int seen = 0;
             foreach (int i in labeled.Item.WithMergeOptions(options).Select(i => i))
             {
@@ -172,6 +174,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void Merge_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
 
             AssertExtensions.Throws<ArgumentException>(null, () => query.WithMergeOptions((ParallelMergeOptions)4));
@@ -196,9 +199,12 @@ namespace System.Linq.Parallel.Tests
         // This test verifies any such ODEs are not reflected in the output exception.
         [Theory]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
-        public static void PlinqChunkPartitioner_DontEnumerateAfterException(Labeled<ParallelQuery<int>> left, int leftCount,
+        public static void PlinqChunkPartitioner_DontEnumerateAfterException(
+            Labeled<ParallelQuery<int>> left, int leftCount,
             Labeled<ParallelQuery<int>> right, int rightCount)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> query =
                 left.Item.WithExecutionMode(ParallelExecutionMode.ForceParallelism)
                     .Select(x => { if (x == 4) throw new DeliberateTestException(); return x; })
@@ -220,6 +226,8 @@ namespace System.Linq.Parallel.Tests
             Labeled<ParallelQuery<int>> left, int leftCount,
             Labeled<ParallelQuery<int>> right, int rightCount)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> query =
                 Partitioner.Create(left.Item.WithExecutionMode(ParallelExecutionMode.ForceParallelism)
                     .Select(x => { if (x == 4) throw new DeliberateTestException(); return x; })

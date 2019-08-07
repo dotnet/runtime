@@ -293,6 +293,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SkipData), new[] { 0, 1, 2, 16 })]
         public static void SkipWhile_AllFalse(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
+            _ = skip;
             ParallelQuery<int> query = labeled.Item;
             int seen = 0;
             Assert.All(query.SkipWhile(x => false), x => Assert.Equal(seen++, x));
@@ -311,6 +312,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(SkipData), new[] { 0, 1, 2, 16 })]
         public static void SkipWhile_AllTrue(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
+            _ = skip;
             ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.Empty(query.SkipWhile(x => seen.Add(x)));

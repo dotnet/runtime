@@ -86,6 +86,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 })]
         public static void Intersect(Labeled<ParallelQuery<int>> left, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> leftQuery = left.Item;
             int seen = 0;
             foreach (int i in leftQuery.Intersect(rightQuery))
@@ -126,6 +128,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> leftQuery = left.Item;
             int seen = 0;
             Assert.All(leftQuery.Intersect(rightQuery).ToList(), x => Assert.Equal(seen++, x));
@@ -144,6 +148,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_Unordered_Distinct(int leftCount, int rightStart, int rightCount, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
             ParallelQuery<int> rightQuery = UnorderedSources.Default(rightStart, rightCount);
             leftCount = Math.Min(DuplicateFactor * 2, leftCount);
@@ -168,6 +173,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_Distinct(Labeled<ParallelQuery<int>> left, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = left.Item;
             leftCount = Math.Min(DuplicateFactor * 2, leftCount);
             rightCount = Math.Min(DuplicateFactor, (rightCount + 1) / 2);
@@ -191,6 +197,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_Unordered_Distinct_NotPipelined(int leftCount, int rightStart, int rightCount, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
             ParallelQuery<int> rightQuery = UnorderedSources.Default(rightStart, rightCount);
             leftCount = Math.Min(DuplicateFactor * 2, leftCount);
@@ -212,6 +219,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_Distinct_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
+            _ = count;
             ParallelQuery<int> leftQuery = left.Item;
             leftCount = Math.Min(DuplicateFactor * 2, leftCount);
             rightCount = Math.Min(DuplicateFactor, (rightCount + 1) / 2);
@@ -236,6 +244,8 @@ namespace System.Linq.Parallel.Tests
             // get non-unique results from ParallelEnumerable.Range()...
             // Those tests either need modification of source (via .Select(x => x /DuplicateFactor) or similar,
             // or via a comparator that considers some elements equal.
+            _ = leftCount;
+            _ = rightCount;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.All(leftQuery.AsUnordered().Intersect(rightQuery), x => seen.Add(x));
             seen.AssertComplete();
@@ -253,6 +263,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(IntersectSourceMultipleData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_SourceMultiple(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
+            _ = leftCount;
+            _ = rightCount;
             int seen = 0;
             Assert.All(leftQuery.Intersect(rightQuery), x => Assert.Equal(seen++, x));
             Assert.Equal(count, seen);

@@ -1590,8 +1590,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, func());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
-        public static void ArrayExplicitlyTypeArrayNotAllowed(bool useInterpreter)
+        [Fact]
+        public static void ArrayExplicitlyTypeArrayNotAllowed()
         {
             Array arr = new[] { 1, 2, 3 };
             Expression arrayExpression = Expression.Constant(arr, typeof(Array));

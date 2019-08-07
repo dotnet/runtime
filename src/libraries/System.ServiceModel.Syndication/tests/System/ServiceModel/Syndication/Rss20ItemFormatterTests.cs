@@ -1411,9 +1411,9 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void ReadFrom_EmptySource_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReadFrom_EmptySource_ReturnsExpected(bool preserveElementExtensions)
         {
             VerifyRead(@"<item><source></source></item>", preserveElementExtensions, preserveElementExtensions, item =>
             {
@@ -1435,9 +1435,9 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void ReadFrom_EmptyItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReadFrom_EmptyItem_ReturnsExpected(bool preserveElementExtensions)
         {
             VerifyRead(@"<item></item>", preserveElementExtensions, preserveElementExtensions, item =>
             {

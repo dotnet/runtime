@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices.Tests
             var structWithInterface = new StructWithInterface();
             yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, null } };
             yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
-            yield return new object[] { new NonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
+            yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
 
             // Enums.
             yield return new object[] { SByteEnum.Value2, VarEnum.VT_I1, (IntPtr)1, (sbyte)1 };
@@ -431,8 +431,8 @@ namespace System.Runtime.InteropServices.Tests
             public int Value;
         }
 
-        public class ClassWithInterface : NonGenericInterface { }
-        public struct StructWithInterface : NonGenericInterface { }
+        public class ClassWithInterface : INonGenericInterface { }
+        public struct StructWithInterface : INonGenericInterface { }
 
         public enum SByteEnum : sbyte { Value1, Value2 }
         public enum Int16Enum : short { Value1, Value2 }

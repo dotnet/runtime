@@ -93,6 +93,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void OfType_NoneValid(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Empty(query.OfType<long>());
         }
@@ -111,6 +112,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void OfType_NoneValid_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Empty(query.OfType<long>().ToList());
         }

@@ -296,10 +296,8 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList.ToArray());
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public static void TestConcurrentBlockage(bool useReader)
+        [Fact]
+        public static void TestConcurrentBlockage()
         {
             ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair();
             TaskFactory readers = new TaskFactory(schedPair.ConcurrentScheduler);

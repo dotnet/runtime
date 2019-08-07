@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -538,6 +539,8 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CultureInfo_TestData))]
         public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
+            _ = alternativeCultureName;
+
             CultureInfo ci = new CultureInfo(lcid);
             Assert.Equal(cultureName, ci.Name);
             Assert.Equal(lcid, ci.LCID);
@@ -604,6 +607,12 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CultureInfo_TestData))]
         public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
+            _ = lcid;
+            _ = specificCultureName;
+            _ = threeLetterISOLanguageName;
+            _ = threeLetterWindowsLanguageName;
+            _ = consoleUICultureName;
+
             bool found = false;
             Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), 
                        c => Assert.True( (c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.NeutralCultures) != 0)) || c.Equals(CultureInfo.InvariantCulture)));

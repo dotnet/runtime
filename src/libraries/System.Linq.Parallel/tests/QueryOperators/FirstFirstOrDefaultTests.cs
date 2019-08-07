@@ -37,6 +37,7 @@ namespace System.Linq.Parallel.Tests
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be split, and possibly mentioned in release notes.
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.First());
             Assert.Equal(position, query.First(x => x >= position));
@@ -58,6 +59,7 @@ namespace System.Linq.Parallel.Tests
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be split, and possibly mentioned in release notes.
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.FirstOrDefault());
             Assert.Equal(position, query.FirstOrDefault(x => x >= position));
@@ -77,6 +79,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(FirstData), new[] { 0 })]
         public static void First_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             Assert.Throws<InvalidOperationException>(() => query.First());
         }
@@ -86,6 +90,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(FirstData), new[] { 0 })]
         public static void FirstOrDefault_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(default(int), query.FirstOrDefault());
         }
@@ -95,6 +101,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(FirstData), new[] { 0, 1, 2, 16 })]
         public static void First_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.Throws<InvalidOperationException>(() => query.First(x => !seen.Add(x)));
@@ -115,6 +122,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(FirstData), new[] { 0, 1, 2, 16 })]
         public static void FirstOrDefault_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.Equal(default(int), query.FirstOrDefault(x => !seen.Add(x)));

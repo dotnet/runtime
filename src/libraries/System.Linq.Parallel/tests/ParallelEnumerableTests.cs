@@ -248,20 +248,14 @@ namespace System.Linq.Parallel.Tests
         //
         // Empty
         //
-        public static IEnumerable<object[]> EmptyData()
-        {
-            yield return new object[] { default(int) };
-            yield return new object[] { default(long) };
-            yield return new object[] { default(double) };
-            // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-            //yield return new object[] { default(decimal) };
-            yield return new object[] { default(string) };
-            yield return new object[] { default(object) };
-        }
 
-        [Theory]
-        [MemberData(nameof(EmptyData))]
-        public static void Empty<T>(T def)
+        [Fact]
+        public static void EmptyStruct() => Empty<int>();
+
+        [Fact]
+        public static void EmptyClass() => Empty<string>();
+
+        private static void Empty<T>()
         {
             Assert.Empty(ParallelEnumerable.Empty<T>());
             Assert.False(ParallelEnumerable.Empty<T>().Any(x => true));

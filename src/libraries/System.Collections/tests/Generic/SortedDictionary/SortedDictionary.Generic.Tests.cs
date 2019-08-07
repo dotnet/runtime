@@ -46,9 +46,8 @@ namespace System.Collections.Tests
             Assert.Equal(source, copied);
         }
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedDictionary_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException(int count)
+        [Fact]
+        public void SortedDictionary_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new SortedDictionary<TKey, TValue>((IDictionary<TKey, TValue>)null));
         }

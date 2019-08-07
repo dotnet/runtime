@@ -791,8 +791,8 @@ namespace System.Linq.Expressions.Tests
         }
 
 #if FEATURE_COMPILE
-        [Theory, ClassData(typeof(CompilationTypes))]
-        public void AboveByteMaxArityArgIL(bool useInterpreter)
+        [Fact]
+        public void AboveByteMaxArityArgIL()
         {
             ParameterExpression[] pars = Enumerable.Range(0, 300)
                 .Select(_ => Expression.Parameter(typeof(int)))

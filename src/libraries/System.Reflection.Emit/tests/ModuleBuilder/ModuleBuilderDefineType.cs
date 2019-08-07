@@ -42,11 +42,11 @@ namespace System.Reflection.Emit.Tests
             bool isDefaultParent = parent == null;
             bool isDefaultAttributes = attributes == TypeAttributes.NotPublic;
 
-            Action<TypeBuilder, Module> verify = (type, module) =>
+            void Verify(TypeBuilder type, Module module)
             {
                 Type baseType = attributes.HasFlag(TypeAttributes.Abstract) && parent == null ? null : (parent ?? typeof(object));
                 Helpers.VerifyType(type, module, null, name, attributes, baseType, typesize, packingSize, implementedInterfaces);
-            };
+            }
 
             if (isDefaultImplementedInterfaces)
             {
@@ -58,38 +58,38 @@ namespace System.Reflection.Emit.Tests
                         {
                             // Use DefineType(string)
                             ModuleBuilder module1 = Helpers.DynamicModule();
-                            verify(module1.DefineType(name), module1);
+                            Verify(module1.DefineType(name), module1);
                         }
                         // Use DefineType(string, TypeAttributes)
                         ModuleBuilder module2 = Helpers.DynamicModule();
-                        verify(module2.DefineType(name, attributes), module2);
+                        Verify(module2.DefineType(name, attributes), module2);
                     }
                     // Use DefineType(string, TypeAttributes, Type)
                     ModuleBuilder module3 = Helpers.DynamicModule();
-                    verify(module3.DefineType(name, attributes, parent), module3);
+                    Verify(module3.DefineType(name, attributes, parent), module3);
                 }
                 else if (isDefaultSize)
                 {
                     // Use DefineType(string, TypeAttributes, Type, PackingSize)
                     ModuleBuilder module4 = Helpers.DynamicModule();
-                    verify(module4.DefineType(name, attributes, parent, packingSize), module4);
+                    Verify(module4.DefineType(name, attributes, parent, packingSize), module4);
                 }
                 else if (isDefaultPackingSize)
                 {
                     // Use DefineType(string, TypeAttributes, Type, int)
                     ModuleBuilder module5 = Helpers.DynamicModule();
-                    verify(module5.DefineType(name, attributes, parent, typesize), module5);
+                    Verify(module5.DefineType(name, attributes, parent, typesize), module5);
                 }
                 // Use DefineType(string, TypeAttributes, Type, PackingSize, int)
                 ModuleBuilder module6 = Helpers.DynamicModule();
-                verify(module6.DefineType(name, attributes, parent, packingSize, typesize), module6);
+                Verify(module6.DefineType(name, attributes, parent, packingSize, typesize), module6);
             }
             else
             {
                 // Use DefineType(string, TypeAttributes, Type, Type[])
                 Assert.True(isDefaultSize && isDefaultPackingSize); // Sanity check
                 ModuleBuilder module7 = Helpers.DynamicModule();
-                verify(module7.DefineType(name, attributes, parent, implementedInterfaces), module7);
+                Verify(module7.DefineType(name, attributes, parent, implementedInterfaces), module7);
             }
         }
 

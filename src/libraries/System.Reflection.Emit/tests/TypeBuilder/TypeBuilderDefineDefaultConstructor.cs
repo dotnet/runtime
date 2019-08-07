@@ -10,22 +10,22 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineDefaultConstructor
     {
         [Theory]
-        [InlineData(MethodAttributes.Public, MethodAttributes.Public)]
-        [InlineData(MethodAttributes.Static, MethodAttributes.Static)]
-        [InlineData(MethodAttributes.Family, MethodAttributes.Family)]
-        [InlineData(MethodAttributes.Assembly, MethodAttributes.Assembly)]
-        [InlineData(MethodAttributes.Private, MethodAttributes.Private)]
-        [InlineData(MethodAttributes.PrivateScope, MethodAttributes.PrivateScope)]
-        [InlineData(MethodAttributes.FamORAssem, MethodAttributes.FamORAssem)]
-        [InlineData(MethodAttributes.FamANDAssem, MethodAttributes.FamANDAssem)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Public, MethodAttributes.Final | MethodAttributes.Public)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Family, MethodAttributes.Final | MethodAttributes.Family)]
-        [InlineData(MethodAttributes.SpecialName | MethodAttributes.Family, MethodAttributes.SpecialName | MethodAttributes.Family)]
-        [InlineData(MethodAttributes.UnmanagedExport | MethodAttributes.Family, MethodAttributes.UnmanagedExport | MethodAttributes.Family)]
-        [InlineData(MethodAttributes.RTSpecialName | MethodAttributes.Family, MethodAttributes.RTSpecialName | MethodAttributes.Family)]
-        [InlineData(MethodAttributes.HideBySig | MethodAttributes.Family, MethodAttributes.HideBySig | MethodAttributes.Family)]
-        [InlineData((MethodAttributes)0x8000, MethodAttributes.PrivateScope | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)]
-        public void DefineDefaultConstructor(MethodAttributes attributes, MethodAttributes expectedAttributes)
+        [InlineData(MethodAttributes.Public)]
+        [InlineData(MethodAttributes.Static)]
+        [InlineData(MethodAttributes.Family)]
+        [InlineData(MethodAttributes.Assembly)]
+        [InlineData(MethodAttributes.Private)]
+        [InlineData(MethodAttributes.PrivateScope)]
+        [InlineData(MethodAttributes.FamORAssem)]
+        [InlineData(MethodAttributes.FamANDAssem)]
+        [InlineData(MethodAttributes.Final | MethodAttributes.Public)]
+        [InlineData(MethodAttributes.Final | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.SpecialName | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.UnmanagedExport | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.RTSpecialName | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.HideBySig | MethodAttributes.Family)]
+        [InlineData((MethodAttributes)0x8000)]
+        public void DefineDefaultConstructor(MethodAttributes attributes)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineDefaultConstructor(attributes);

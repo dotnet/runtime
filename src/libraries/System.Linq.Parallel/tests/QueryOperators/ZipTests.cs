@@ -160,6 +160,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(ZipThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
         public static void Zip_AsOrdered_ThreadedDeadlock(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int degree)
         {
+            _ = leftCount;
+            _ = rightCount;
             ParallelQuery<int> query = left.Item.WithDegreeOfParallelism(degree).Zip<int, int, int>(right.Item, (a, b) => { throw new DeliberateTestException(); });
 
             AssertThrows.Wrapped<DeliberateTestException>(() => query.ToArray());

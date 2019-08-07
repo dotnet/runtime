@@ -442,6 +442,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData("yyyyMMddHHmmss.secondFrac-HH:mm", "181932303136313130363031323334352E393939392D30313A3138")]
         public static void GetGeneralizedTime_Throws(string description, string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
 

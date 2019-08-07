@@ -109,21 +109,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(InternallyQuotedRDNs))]
-        public static void QuotedWithQuotes(string quoted, string notQuoted, string hexEncoded)
+        public static void QuotedWithQuotesAsAppropriate(string quoted, string notQuoted, string hexEncoded)
         {
             byte[] encoded = hexEncoded.HexToByteArray();
             X500DistinguishedName dn = new X500DistinguishedName(encoded);
 
             Assert.Equal(quoted, dn.Decode(X500DistinguishedNameFlags.None));
-        }
-
-        [Theory]
-        [MemberData(nameof(InternallyQuotedRDNs))]
-        public static void NotQuotedWithQuotes(string quoted, string notQuoted, string hexEncoded)
-        {
-            byte[] encoded = hexEncoded.HexToByteArray();
-            X500DistinguishedName dn = new X500DistinguishedName(encoded);
-
             Assert.Equal(notQuoted, dn.Decode(X500DistinguishedNameFlags.DoNotUseQuotes));
         }
         

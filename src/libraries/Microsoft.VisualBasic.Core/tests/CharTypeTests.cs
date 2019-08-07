@@ -19,14 +19,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, CharType.FromObject(value));
         }
 
-        // The following conversions are not supported.
-        [Theory]
-        [MemberData(nameof(FromObject_NotSupported_TestData))]
-        public void FromObject_NotSupported(object value, char expected)
-        {
-            Assert.Throws<InvalidCastException>(() => CharType.FromObject(value));
-        }
-
         [Theory]
         [MemberData(nameof(FromObject_Invalid_TestData))]
         public void FromObject_ThrowsInvalidCastException(object value)
@@ -46,14 +38,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         public void FromString(string value, char expected)
         {
             Assert.Equal(expected, CharType.FromString(value));
-        }
-
-        // The following conversions are not supported.
-        [Theory]
-        [MemberData(nameof(FromString_NotSupported_TestData))]
-        public void FromString_NotSupported(string value, char expected)
-        {
-            Assert.Throws<InvalidCastException>(() => CharType.FromString(value));
         }
 
         [Theory]
@@ -79,11 +63,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
             // null.
             yield return new object[] { null, char.MinValue };
-        }
-
-        public static IEnumerable<object[]> FromObject_NotSupported_TestData()
-        {
-            yield break;
         }
 
         public static IEnumerable<object[]> FromObject_Invalid_TestData()
@@ -207,11 +186,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "invalid", 'i' };
             yield return new object[] { "18446744073709551616", '1' };
             yield return new object[] { "1844674407370955161618446744073709551616", '1' };
-        }
-
-        public static IEnumerable<object[]> FromString_NotSupported_TestData()
-        {
-            yield break;
         }
 
         public static IEnumerable<object[]> FromString_Invalid_TestData()

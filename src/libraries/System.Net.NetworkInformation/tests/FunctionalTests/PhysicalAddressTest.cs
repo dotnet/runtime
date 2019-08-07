@@ -155,8 +155,9 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [MemberData(nameof(RoundtripParseToString_String_Bytes))]
-        public void ToStringParseGetAddressBytes_Roundtrips(string _, byte[] inputBytes)
+        public void ToStringParseGetAddressBytes_Roundtrips(string expectedAddress, byte[] inputBytes)
         {
+            _ = expectedAddress;
             Assert.Equal(inputBytes, PhysicalAddress.Parse(new PhysicalAddress(inputBytes).ToString()).GetAddressBytes());
         }
     }

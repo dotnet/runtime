@@ -64,7 +64,7 @@ namespace System.Globalization.Tests
         public void CurrencyNegativePattern_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
         {
             var format = new NumberFormatInfo();
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "CurrencyNegativePattern", () => format.CurrencyNegativePattern = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "CurrencyNegativePattern", () => format.CurrencyNegativePattern = value);
         }
 
         [Fact]

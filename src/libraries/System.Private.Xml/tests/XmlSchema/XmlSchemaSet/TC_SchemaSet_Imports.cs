@@ -596,9 +596,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v102.2 - Import: Add B(no ns) with ns-b , then A(ns-a) which imports B (no ns)", Priority = 1, Params = new object[] { "import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null })]
-        [InlineData("import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null)]
+        [InlineData("import_v5_a.xsd", "import_v4_b.xsd", "ns-b")]
         [Theory]
-        public void v102a(object param0, object param1, object param2, object param3, object param4)
+        public void v102a(object param0, object param1, object param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -1292,9 +1292,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v202.2 - Import: Add B(no ns) with ns-b , then A(ns-a) which imports B (no ns)", Priority = 1, Params = new object[] { "import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null })]
-        [InlineData("import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null)]
+        [InlineData("import_v5_a.xsd", "import_v4_b.xsd", "ns-b")]
         [Theory]
-        public void v202a(object param0, object param1, object param2, object param3, object param4)
+        public void v202a(object param0, object param1, object param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();

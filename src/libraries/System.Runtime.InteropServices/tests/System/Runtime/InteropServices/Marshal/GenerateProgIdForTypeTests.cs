@@ -55,8 +55,8 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { typeof(GenericClass<string>) };
             yield return new object[] { typeof(GenericStruct<string>) };
-            yield return new object[] { typeof(NonGenericInterface) };
-            yield return new object[] { typeof(GenericInterface<string>) };
+            yield return new object[] { typeof(INonGenericInterface) };
+            yield return new object[] { typeof(IGenericInterface<string>) };
 
             yield return new object[] { typeof(GenericClass<>) };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };

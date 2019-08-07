@@ -767,13 +767,13 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(TextRenderingHint.SystemDefault, 0)]
-        [InlineData(TextRenderingHint.AntiAlias, 3)]
-        [InlineData(TextRenderingHint.AntiAliasGridFit, 3)]
-        [InlineData(TextRenderingHint.SingleBitPerPixel, 3)]
-        [InlineData(TextRenderingHint.SingleBitPerPixelGridFit, 3)]
-        [InlineData(TextRenderingHint.ClearTypeGridFit, 5)]
-        public void ToLogFont_InvokeGraphics_ReturnsExpected(TextRenderingHint textRenderingHint, int expectedQuality)
+        [InlineData(TextRenderingHint.SystemDefault)]
+        [InlineData(TextRenderingHint.AntiAlias)]
+        [InlineData(TextRenderingHint.AntiAliasGridFit)]
+        [InlineData(TextRenderingHint.SingleBitPerPixel)]
+        [InlineData(TextRenderingHint.SingleBitPerPixelGridFit)]
+        [InlineData(TextRenderingHint.ClearTypeGridFit)]
+        public void ToLogFont_InvokeGraphics_ReturnsExpected(TextRenderingHint textRenderingHint)
         {
             using (FontFamily family = FontFamily.GenericMonospace)
             using (var font = new Font(family, 10))

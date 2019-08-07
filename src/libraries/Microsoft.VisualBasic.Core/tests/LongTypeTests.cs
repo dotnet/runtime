@@ -22,7 +22,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         // The following conversions are not supported.
         [Theory]
         [MemberData(nameof(FromObject_NotSupported_TestData))]
-        public void FromObject_NotSupported(object value, long expected)
+        public void FromObject_NotSupported(object value)
         {
             Assert.Throws<InvalidCastException>(() => LongType.FromObject(value));
         }
@@ -46,14 +46,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         public void FromString(string value, long expected)
         {
             Assert.Equal(expected, LongType.FromString(value));
-        }
-
-        // The following conversions are not supported.
-        [Theory]
-        [MemberData(nameof(FromString_NotSupported_TestData))]
-        public void FromString_NotSupported(string value, long expected)
-        {
-            Assert.Throws<InvalidCastException>(() => LongType.FromString(value));
         }
 
         [Theory]
@@ -142,38 +134,38 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         public static IEnumerable<object[]> FromObject_NotSupported_TestData()
         {
             // sbyte.
-            yield return new object[] { sbyte.MinValue, (long)(-128) };
-            yield return new object[] { (sbyte)(-1), (long)(-1) };
-            yield return new object[] { (sbyte)0, (long)0 };
-            yield return new object[] { (sbyte)1, (long)1 };
-            yield return new object[] { sbyte.MaxValue, (long)127 };
-            yield return new object[] { (SByteEnum)sbyte.MinValue, (long)(-128) };
-            yield return new object[] { (SByteEnum)(-1), (long)(-1) };
-            yield return new object[] { (SByteEnum)0, (long)0 };
-            yield return new object[] { (SByteEnum)1, (long)1 };
-            yield return new object[] { (SByteEnum)sbyte.MaxValue, (long)127 };
+            yield return new object[] { sbyte.MinValue };
+            yield return new object[] { (sbyte)(-1) };
+            yield return new object[] { (sbyte)0 };
+            yield return new object[] { (sbyte)1 };
+            yield return new object[] { sbyte.MaxValue };
+            yield return new object[] { (SByteEnum)sbyte.MinValue };
+            yield return new object[] { (SByteEnum)(-1) };
+            yield return new object[] { (SByteEnum)0 };
+            yield return new object[] { (SByteEnum)1 };
+            yield return new object[] { (SByteEnum)sbyte.MaxValue };
 
             // ushort.
-            yield return new object[] { ushort.MinValue, (long)0 };
-            yield return new object[] { (ushort)1, (long)1 };
-            yield return new object[] { ushort.MaxValue, (long)65535 };
-            yield return new object[] { (UShortEnum)ushort.MinValue, (long)0 };
-            yield return new object[] { (UShortEnum)1, (long)1 };
-            yield return new object[] { (UShortEnum)ushort.MaxValue, (long)65535 };
+            yield return new object[] { ushort.MinValue };
+            yield return new object[] { (ushort)1 };
+            yield return new object[] { ushort.MaxValue };
+            yield return new object[] { (UShortEnum)ushort.MinValue };
+            yield return new object[] { (UShortEnum)1 };
+            yield return new object[] { (UShortEnum)ushort.MaxValue };
 
             // uint.
-            yield return new object[] { uint.MinValue, (long)0 };
-            yield return new object[] { (uint)1, (long)1 };
-            yield return new object[] { uint.MaxValue, (long)4294967295 };
-            yield return new object[] { (UIntEnum)uint.MinValue, (long)0 };
-            yield return new object[] { (UIntEnum)1, (long)1 };
-            yield return new object[] { (UIntEnum)uint.MaxValue, (long)4294967295 };
+            yield return new object[] { uint.MinValue };
+            yield return new object[] { (uint)1 };
+            yield return new object[] { uint.MaxValue };
+            yield return new object[] { (UIntEnum)uint.MinValue };
+            yield return new object[] { (UIntEnum)1 };
+            yield return new object[] { (UIntEnum)uint.MaxValue };
 
             // ulong.
-            yield return new object[] { ulong.MinValue, (long)0 };
-            yield return new object[] { (ulong)1, (long)1 };
-            yield return new object[] { (ULongEnum)ulong.MinValue, (long)0 };
-            yield return new object[] { (ULongEnum)1, (long)1 };
+            yield return new object[] { ulong.MinValue };
+            yield return new object[] { (ulong)1 };
+            yield return new object[] { (ULongEnum)ulong.MinValue };
+            yield return new object[] { (ULongEnum)1 };
         }
 
         public static IEnumerable<object[]> FromObject_Invalid_TestData()
@@ -222,11 +214,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { " &o5", (long)5 };
             yield return new object[] { "&o0", (long)0 };
             yield return new object[] { 1.1.ToString(), (long)1 };
-        }
-
-        public static IEnumerable<object[]> FromString_NotSupported_TestData()
-        {
-            yield break;
         }
 
         public static IEnumerable<object[]> FromString_Invalid_TestData()

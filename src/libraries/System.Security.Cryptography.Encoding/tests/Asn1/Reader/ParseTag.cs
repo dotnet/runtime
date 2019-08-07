@@ -88,6 +88,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData("MultiByte-ValueSubtlyTooBig", "DFC1C0808000")]
         public static void ParseCorruptTag(string description, string inputHex)
         {
+            _ = description;
             byte[] inputBytes = inputHex.HexToByteArray();
 
             Assert.False(Asn1Tag.TryDecode(inputBytes, out Asn1Tag tag, out var bytesRead));

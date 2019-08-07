@@ -77,6 +77,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(LastData), new[] { 0 })]
         public static void Last_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             Assert.Throws<InvalidOperationException>(() => query.Last());
         }
@@ -86,6 +88,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(LastData), new[] { 0 })]
         public static void LastOrDefault_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(default(int), query.LastOrDefault());
         }
@@ -95,6 +99,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void Last_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.Throws<InvalidOperationException>(() => query.Last(x => !seen.Add(x)));
@@ -115,6 +120,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void LastOrDefault_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = position;
             ParallelQuery<int> query = labeled.Item;
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             Assert.Equal(default(int), query.LastOrDefault(x => !seen.Add(x)));

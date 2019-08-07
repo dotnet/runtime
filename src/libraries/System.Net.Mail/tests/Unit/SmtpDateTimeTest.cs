@@ -76,9 +76,9 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
-        [InlineData(ValidCompleteDateString, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
+        [InlineData(ValidCompleteDateString, 2009, 5, 17, 15, 34, 7, "+0000", DateTimeKind.Unspecified)]
         [InlineData(ValidDateStringWithKnownShortHandTimeZone, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
-        [InlineData(ValidDateStringWithNoDayOfWeek, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
+        [InlineData(ValidDateStringWithNoDayOfWeek, 2009, 5, 17, 15, 34, 7, "+0000", DateTimeKind.Unspecified)]
         [InlineData(ValidDateStringWithOnlyTabsAsWhitespace, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
         [InlineData(ValidDateStringWithTrailingWhitespaceAndCommentAfterTimeZone, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
         [InlineData(ValidDateStringWithMixedTabsAndSpacesAsWhitespace, 2009, 5, 17, 15, 34, 7, "GMT", DateTimeKind.Unspecified)]
@@ -86,12 +86,12 @@ namespace System.Net.Mime.Tests
             string input,
             int expectedYear, int expectedMonth, int expectedDay,
             int expectedHour, int expectedMinut, int expectedSecond,
-            string expectedTimeZoneOffset, DateTimeKind expectedKind)
+            string expectedTimeZoneOffset,
+            DateTimeKind expectedKind)
         {
             var smtpDt = new SmtpDateTime(DateTime.Now);
 
-            string timeZoneOffset;
-            DateTime result = smtpDt.ParseValue(ValidDateStringWithKnownShortHandTimeZone, out timeZoneOffset);
+            DateTime result = smtpDt.ParseValue(input, out string timeZoneOffset);
 
             Assert.Equal(expectedYear, result.Year);
             Assert.Equal(expectedMonth, result.Month);
@@ -99,6 +99,7 @@ namespace System.Net.Mime.Tests
             Assert.Equal(expectedHour, result.Hour);
             Assert.Equal(expectedMinut, result.Minute);
             Assert.Equal(expectedSecond, result.Second);
+            Assert.Equal(expectedKind, result.Kind);
             Assert.Equal(expectedTimeZoneOffset, timeZoneOffset);
         }
 

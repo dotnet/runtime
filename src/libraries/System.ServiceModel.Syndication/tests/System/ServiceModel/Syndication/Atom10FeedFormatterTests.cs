@@ -1754,9 +1754,9 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void Read_EmptyItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Read_EmptyItem_ReturnsExpected(bool preserveElementExtensions)
         {
             VerifyRead(@"<feed xmlns=""http://www.w3.org/2005/Atom""></feed>", preserveElementExtensions, preserveElementExtensions, feed =>
             {

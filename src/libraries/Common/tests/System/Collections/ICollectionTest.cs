@@ -263,7 +263,7 @@ namespace Tests.Collections
             if (arrayLowerBound != 0 && !PlatformDetection.IsNonZeroLowerBoundArraySupported)
                 return;
 
-            object[] items = GenerateItems(16);
+            object[] items = GenerateItems(size);
             ICollection collection = GetCollection(items);
             Array itemArray = Array.CreateInstance(
                 typeof (object),

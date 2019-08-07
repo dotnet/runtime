@@ -206,7 +206,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public void Ctor_Exception_LargeSkipFrames_FNeedFileInfo(bool fNeedFileInfo)
         {
-            var stackTrace = new StackTrace(InvokeException(), int.MaxValue);
+            var stackTrace = new StackTrace(InvokeException(), int.MaxValue, fNeedFileInfo);
             Assert.Equal(0, stackTrace.FrameCount);
             Assert.Empty(stackTrace.GetFrames());
         }

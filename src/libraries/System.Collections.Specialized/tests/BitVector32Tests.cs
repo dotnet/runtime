@@ -299,6 +299,8 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(Mask_SetUnset_Multiple_Data))]
         public static void Set_Mask_MultipleTest(int expected, int start, int[] maskPositions)
         {
+            _ = expected;
+            _ = start;
             int mask = maskPositions.Sum(x => 1 << (x - 1));
 
             BitVector32 blank = new BitVector32();
@@ -321,6 +323,8 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(Mask_SetUnset_Multiple_Data))]
         public static void Set_Mask_Multiple_UnsetTest(int start, int expected, int[] maskPositions)
         {
+            _ = start;
+            _ = expected;
             int mask = maskPositions.Sum(x => 1 << (x - 1));
 
             BitVector32 set = new BitVector32();

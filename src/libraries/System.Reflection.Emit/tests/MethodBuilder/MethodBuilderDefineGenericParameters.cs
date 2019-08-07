@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.Public, MethodAttributes.Public | MethodAttributes.Static)]
         public void DefineGenericParameters_NullNames_ThrowsArgumentNullException(TypeAttributes typeAttributes, MethodAttributes methodAttributes)
         {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
             MethodBuilder method = type.DefineMethod("TestMethod", methodAttributes);
             AssertExtensions.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(null));
         }
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.Public, MethodAttributes.Public | MethodAttributes.Static)]
         public void DefineGenericParameters_NamesContainsNull_ThrowsArgumentNullException(TypeAttributes typeAttributes, MethodAttributes methodAttributes)
         {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
             MethodBuilder method = type.DefineMethod("Test", methodAttributes);
             string[] typeParamNames = new string[] { "T", null, "U" };
             AssertExtensions.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(typeParamNames));
@@ -120,7 +120,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.Public, MethodAttributes.Public | MethodAttributes.Static)]
         public void DefineGenericParameters_EmptyNames_ThrowsArgumentException(TypeAttributes typeAttributes, MethodAttributes methodAttributes)
         {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
             MethodBuilder builder = type.DefineMethod("TestMethod", methodAttributes);
             AssertExtensions.Throws<ArgumentException>("names", () => builder.DefineGenericParameters());
         }

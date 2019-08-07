@@ -31,25 +31,20 @@ namespace System.Linq.Tests
         {
             int[] emptySourceArray = Array.Empty<int>();
 
-            // .NET Core returns the instance as an optimization.
-            // see https://github.com/dotnet/corefx/pull/2401.
-            Action<object, object> assertSame = (objA, objB) => Assert.True(ReferenceEquals(objA, objB));
+            Assert.Same(emptySourceArray.ToArray(), emptySourceArray.ToArray());
 
+            Assert.Same(emptySourceArray.Select(i => i).ToArray(), emptySourceArray.Select(i => i).ToArray());
+            Assert.Same(emptySourceArray.ToList().Select(i => i).ToArray(), emptySourceArray.ToList().Select(i => i).ToArray());
+            Assert.Same(new Collection<int>(emptySourceArray).Select(i => i).ToArray(), new Collection<int>(emptySourceArray).Select(i => i).ToArray());
+            Assert.Same(emptySourceArray.OrderBy(i => i).ToArray(), emptySourceArray.OrderBy(i => i).ToArray());
 
-            assertSame(emptySourceArray.ToArray(), emptySourceArray.ToArray());
+            Assert.Same(Enumerable.Range(5, 0).ToArray(), Enumerable.Range(3, 0).ToArray());
+            Assert.Same(Enumerable.Range(5, 3).Take(0).ToArray(), Enumerable.Range(3, 0).ToArray());
+            Assert.Same(Enumerable.Range(5, 3).Skip(3).ToArray(), Enumerable.Range(3, 0).ToArray());
 
-            assertSame(emptySourceArray.Select(i => i).ToArray(), emptySourceArray.Select(i => i).ToArray());
-            assertSame(emptySourceArray.ToList().Select(i => i).ToArray(), emptySourceArray.ToList().Select(i => i).ToArray());
-            assertSame(new Collection<int>(emptySourceArray).Select(i => i).ToArray(), new Collection<int>(emptySourceArray).Select(i => i).ToArray());
-            assertSame(emptySourceArray.OrderBy(i => i).ToArray(), emptySourceArray.OrderBy(i => i).ToArray());
-
-            assertSame(Enumerable.Range(5, 0).ToArray(), Enumerable.Range(3, 0).ToArray());
-            assertSame(Enumerable.Range(5, 3).Take(0).ToArray(), Enumerable.Range(3, 0).ToArray());
-            assertSame(Enumerable.Range(5, 3).Skip(3).ToArray(), Enumerable.Range(3, 0).ToArray());
-
-            assertSame(Enumerable.Repeat(42, 0).ToArray(), Enumerable.Range(84, 0).ToArray());
-            assertSame(Enumerable.Repeat(42, 3).Take(0).ToArray(), Enumerable.Range(84, 3).Take(0).ToArray());
-            assertSame(Enumerable.Repeat(42, 3).Skip(3).ToArray(), Enumerable.Range(84, 3).Skip(3).ToArray());
+            Assert.Same(Enumerable.Repeat(42, 0).ToArray(), Enumerable.Range(84, 0).ToArray());
+            Assert.Same(Enumerable.Repeat(42, 3).Take(0).ToArray(), Enumerable.Range(84, 3).Take(0).ToArray());
+            Assert.Same(Enumerable.Repeat(42, 3).Skip(3).ToArray(), Enumerable.Range(84, 3).Skip(3).ToArray());
         }
 
 

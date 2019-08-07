@@ -312,6 +312,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory, MemberData(nameof(BrainpoolCurves))]
         public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
         {
+            _ = notUsed;
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
 
             try
