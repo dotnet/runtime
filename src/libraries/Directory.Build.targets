@@ -117,7 +117,7 @@
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
-  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets"  />
+  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
