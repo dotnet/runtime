@@ -19,7 +19,7 @@
 
   <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
     <ItemGroup>
-      <_RestoreProjects Include="external\dir.proj" Build="true" />
+      <_RestoreProjects Include="$(RepositoryEngineeringDir)restore\dirs.proj" Build="true" />
     </ItemGroup>
     
     <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
