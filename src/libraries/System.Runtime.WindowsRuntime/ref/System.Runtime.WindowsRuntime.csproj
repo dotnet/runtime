@@ -18,7 +18,7 @@
     <Compile Include="System.Runtime.WindowsRuntime.Manual.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
-    <ProjectReference Include="..\..\..\external\winrt\winrt.depproj" />
+    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
@@ -26,7 +26,7 @@
     <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <ProjectReference Include="..\..\..\external\winrt\winrt.depproj" />
+    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>
