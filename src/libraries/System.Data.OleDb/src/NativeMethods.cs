@@ -25,8 +25,7 @@ namespace System.Data.Common
         {
             [Obsolete("not used", true)]
             [PreserveSig]
-            int GetOptionsObject(
-                /*deleted parameter signature*/);
+            int GetOptionsObject(IntPtr ppOptions);
 
             void JoinTransaction(
                 [In, MarshalAs(UnmanagedType.Interface)] object punkTransactionCoord,
