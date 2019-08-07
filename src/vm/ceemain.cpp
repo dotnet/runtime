@@ -596,6 +596,31 @@ do { \
 #define IfFailGoLog(EXPR) IfFailGotoLog(EXPR, ErrExit)
 #endif
 
+
+#ifndef CROSSGEN_COMPILE
+#ifdef FEATURE_PAL
+void EESocketCleanupHelper()
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    // Close the debugger transport socket first
+    if (g_pDebugInterface != NULL)
+    {
+        g_pDebugInterface->CleanupTransportSocket();
+    }
+
+    // Close the diagnostic server socket.
+#ifdef FEATURE_PERFTRACING
+    DiagnosticServer::Shutdown();
+#endif // FEATURE_PERFTRACING
+}
+#endif // FEATURE_PAL
+#endif // CROSSGEN_COMPILE
+
 void EEStartupHelper(COINITIEE fFlags)
 {
     CONTRACTL
@@ -653,7 +678,12 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipe::Initialize();
+
 #endif // FEATURE_PERFTRACING
+
+#ifdef FEATURE_PAL
+        PAL_SetShutdownCallback(EESocketCleanupHelper);
+#endif // FEATURE_PAL
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit

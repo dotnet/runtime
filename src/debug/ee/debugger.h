@@ -1852,6 +1852,8 @@ public:
 
     HRESULT StartupPhase2(Thread * pThread);
 
+    void CleanupTransportSocket();
+
     void InitializeLazyDataIfNecessary();
 
     void LazyInit(); // will throw
