@@ -219,7 +219,7 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 #define MINT_IN_CASE(x) LAB_ ## x:
 #define MINT_IN_DISPATCH(op) goto *in_labels[op];
 #if DEBUG_INTERP
-#define MINT_IN_BREAK if (tracing > 1) MINT_IN_DISPATCH(*ip); else { COUNT_OP(*ip); goto *in_labels[*ip]; }
+#define MINT_IN_BREAK if (tracing > 1) { MINT_IN_DISPATCH(*ip); } else { COUNT_OP(*ip); goto *in_labels[*ip]; }
 #else
 #define MINT_IN_BREAK { COUNT_OP(*ip); goto *in_labels[*ip]; }
 #endif
