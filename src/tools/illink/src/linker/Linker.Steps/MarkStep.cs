@@ -2265,7 +2265,7 @@ namespace Mono.Linker.Steps {
 
 				var methodCalledType = methodCalled.DeclaringType;
 
-				int first_arg_instr;
+				int first_arg_instr, second_arg_instr;
 				Instruction first_arg;
 				string name = default;
 
@@ -2295,11 +2295,10 @@ namespace Mono.Linker.Steps {
 					// GetMethod (String, BindingFlags, Binder, CallingConventions, Type [], ParameterModifier [])
 					//
 					// TODO: .NET Core extensions
-					// GetMethod (String name, int genericParameterCount, Type[] types)
-					// GetMethod (String name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers)
-					// GetMethod (String name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers)
-					// GetMethod (String name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
-					//
+					// GetMethod (String, int, Type[])
+					// GetMethod (String, int, Type[], ParameterModifier[]?)
+					// GetMethod (String, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+					// GetMethod (String, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 					//
 					// GetField (String)
 					// GetField (String, BindingFlags)
@@ -2332,7 +2331,7 @@ namespace Mono.Linker.Steps {
 						if (methodCalledDefinition.IsStatic)
 							continue;
 
-						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, methodCalledDefinition.Parameters.Count);
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
 						if (first_arg_instr < 0) {
 							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' couldn't be decomposed");
 							continue;
@@ -2361,17 +2360,11 @@ namespace Mono.Linker.Steps {
 							}
 						}
 
-						// All methods use instance calls but for now we support only typeof (Foo).GetXXX pattern
-						if (first_arg_instr < 2 ||
-							instructions [first_arg_instr - 1].OpCode != OpCodes.Call ||
-							instructions [first_arg_instr - 2].OpCode != OpCodes.Ldtoken) {
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' does not have known lookup type");
+						var declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr - 1);
+						if (declaringType == null) {
+							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' does not use detectable instance type extraction");
 							continue;
 						}
-
-						var declaringType = (instructions [first_arg_instr - 2].Operand as TypeReference).Resolve ();
-						if (declaringType == null)
-							continue;
 
 						switch (memberTypes) {
 						case System.Reflection.MemberTypes.Constructor:
@@ -2405,7 +2398,7 @@ namespace Mono.Linker.Steps {
 						if (!methodCalledDefinition.IsStatic)
 							continue;
 
-						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, methodCalledDefinition.Parameters.Count);
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
 						if (first_arg_instr < 0) {
 							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' couldn't be decomposed");
 							continue;
@@ -2467,26 +2460,26 @@ namespace Mono.Linker.Steps {
 					// Call (Type, String, Type[], Expression[])
 					//
 					case "Call":
-						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 4);
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 4);
 						if (first_arg_instr < 0) {
 							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
 							continue;
 						}
 
 						first_arg = instructions [first_arg_instr];
+						if (first_arg.OpCode == OpCodes.Ldtoken)
+							first_arg_instr++;
 
-						if (first_arg.OpCode != OpCodes.Ldtoken) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 1st argument which cannot be analyzed");
+						declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr);
+						if (declaringType == null) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 1st argument which cannot be analyzed");
 							continue;
 						}
 
-						declaringType = (instructions [first_arg_instr].Operand as TypeReference).Resolve ();
-						if (declaringType == null)
-							continue;
-
-						second_argument = instructions [first_arg_instr + 2];
+						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 3);
+						second_argument = instructions [second_arg_instr];
 						if (second_argument.OpCode != OpCodes.Ldstr) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 2nd argument which cannot be analyzed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2503,24 +2496,24 @@ namespace Mono.Linker.Steps {
 					case "Property":
 					case "Field":
 
-						var second_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 2);
+						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 2);
 						if (second_arg_instr < 0) {
 							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
 							continue;
 						}
 
 						var second_arg = instructions [second_arg_instr];
+						if (second_arg.OpCode == OpCodes.Ldtoken)
+							second_arg_instr++;
 
-						if (second_arg.OpCode != OpCodes.Ldtoken) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 2nd argument which cannot be analyzed");
+						declaringType = FindReflectionTypeForLookup (instructions, second_arg_instr);
+						if (declaringType == null) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
-						declaringType = (instructions [second_arg_instr].Operand as TypeReference).Resolve ();
-						if (declaringType == null)
-							continue;
-
-						var third_argument = instructions [second_arg_instr + 2];
+						var third_arg_inst = GetInstructionAtStackDepth (instructions, i - 1, 1);
+						var third_argument = instructions [third_arg_inst];
 						if (third_argument.OpCode != OpCodes.Ldstr) {
 							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 3rd argument which cannot be analyzed");
 							continue;
@@ -2532,7 +2525,7 @@ namespace Mono.Linker.Steps {
 						// The first argument can be any expression but we are looking only for simple null
 						// which we can convert to static only field lookup
 						//
-						first_arg_instr = GetFirstArgumentInstruction (instructions, i - 1, 3);
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 3);
 						bool staticOnly = false;
 
 						if (first_arg_instr >= 0) {
@@ -2561,7 +2554,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static int GetFirstArgumentInstruction (Collection<Instruction> instructions, int startIndex, int stackSizeToBacktrace)
+		static int GetInstructionAtStackDepth (Collection<Instruction> instructions, int startIndex, int stackSizeToBacktrace)
 		{
 			for (int i = startIndex; i >= 0; --i) {
 				var instruction = instructions [i];
@@ -2649,6 +2642,85 @@ namespace Mono.Linker.Steps {
 			}
 
 			return -2;
+		}
+
+		static TypeDefinition FindReflectionTypeForLookup (Collection<Instruction> instructions, int startIndex)
+		{
+			while (startIndex >= 1) {
+				int storeIndex = -1;
+				var instruction = instructions [startIndex];
+				switch (instruction.OpCode.Code) {
+				//
+				// Pattern #1
+				//
+				// typeof (Foo).ReflectionCall ()
+				//
+				case Code.Call:
+					var mr = instruction.Operand as MethodReference;
+					if (mr == null || mr.Name != "GetTypeFromHandle")
+						return null;
+
+					var ldtoken = instructions [startIndex - 1];
+
+					if (ldtoken.OpCode != OpCodes.Ldtoken)
+						return null;
+
+					return (ldtoken.Operand as TypeReference).Resolve ();
+
+				//
+				// Patern #2
+				//
+				// var temp = typeof (Foo);
+				// temp.ReflectionCall ()
+				//
+				case Code.Ldloc_0:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_0, startIndex - 1);
+					startIndex = storeIndex - 1;
+					break;
+				case Code.Ldloc_1:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_1, startIndex - 1);
+					startIndex = storeIndex - 1;
+					break;
+				case Code.Ldloc_2:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_2, startIndex - 1);
+					startIndex = storeIndex - 1;
+					break;
+				case Code.Ldloc_3:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_3, startIndex - 1);
+					startIndex = storeIndex - 1;
+					break;
+				case Code.Ldloc_S:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_S, startIndex - 1, l => (VariableReference)l.Operand == (VariableReference)instruction.Operand);
+					startIndex = storeIndex - 1;
+					break;
+				case Code.Ldloc:
+					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc, startIndex - 1, l => (VariableReference)l.Operand == (VariableReference)instruction.Operand);
+					startIndex = storeIndex - 1;
+					break;
+
+				case Code.Nop:
+					startIndex--;
+					break;
+
+				default:
+					return null;
+				}
+			}
+
+			return null;
+		}
+
+		static int GetIndexOfInstruction (Collection<Instruction> instructions, OpCode opcode, int startIndex, Predicate<Instruction> comparer = null)
+		{
+			while (startIndex >= 0) {
+				var instr = instructions [startIndex];
+				if (instr.OpCode == opcode && (comparer == null || comparer (instr)))
+					return startIndex;
+
+				startIndex--;
+			}
+
+			return -1;
 		}
 
 		//
