@@ -1476,12 +1476,12 @@ mono_w32socket_convert_error (gint error)
 #ifdef EISCONN
 	case EISCONN: return WSAEISCONN;
 #endif
-	/* FIXME: case ELOOP: return WSA????; */
+	case ELOOP: return WSAELOOP;
 	case EMFILE: return WSAEMFILE;
 #ifdef EMSGSIZE
 	case EMSGSIZE: return WSAEMSGSIZE;
 #endif
-	/* FIXME: case ENAMETOOLONG: return WSAEACCES; */
+	case ENAMETOOLONG: return WSAENAMETOOLONG;
 #ifdef ENETUNREACH
 	case ENETUNREACH: return WSAENETUNREACH;
 #endif

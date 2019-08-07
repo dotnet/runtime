@@ -74,6 +74,8 @@
 #define WSAESHUTDOWN               10058
 #define WSAETIMEDOUT               10060
 #define WSAECONNREFUSED            10061
+#define WSAELOOP                   10062
+#define WSAENAMETOOLONG            10063
 #define WSAEHOSTDOWN               10064
 #define WSAEHOSTUNREACH            10065
 #define WSASYSCALLFAILURE          10107
