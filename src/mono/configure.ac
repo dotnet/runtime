@@ -6643,10 +6643,10 @@ fi
 #
 AC_MSG_CHECKING([for large file support])
 AC_COMPILE_IFELSE(
-	[
+	[AC_LANG_SOURCE([
 		#include <sys/types.h>
 		off64_t dummy = 0;
-	], [
+	])], [
 		AC_MSG_RESULT(yes)
 		# FIXME The ramifications of _LARGEFILE64_SOURCE are not understood.
 		# ZLIB_CFLAGS="$ZLIB_CFLAGS -D_LARGEFILE64_SOURCE=1"
