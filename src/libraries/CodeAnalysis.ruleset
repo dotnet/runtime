@@ -178,7 +178,6 @@
     <Rule Id="SA1514" Action="None" /> <!-- Element documentation header should be preceded by blank line -->
     <Rule Id="SA1515" Action="None" /> <!-- Single-line comment should be preceded by blank line -->
     <Rule Id="SA1516" Action="None" /> <!-- Elements should be separated by blank line -->
-    <Rule Id="SA1517" Action="None" /> <!-- Code should not contain blank lines at start of file -->
     <Rule Id="SA1518" Action="None" /> <!-- Code should not contain blank lines at the end of the file -->
     <Rule Id="SA1519" Action="None" /> <!-- Braces should not be omitted from multi-line child statement -->
     <Rule Id="SA1520" Action="None" /> <!-- Use braces consistently -->
