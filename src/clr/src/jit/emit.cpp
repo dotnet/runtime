@@ -101,150 +101,6 @@ const char* emitter::emitIfName(unsigned f)
 
 #endif
 
-#ifdef TRANSLATE_PDB
-
-/* these are protected */
-
-AddrMap*  emitter::emitPDBOffsetTable = 0;
-LocalMap* emitter::emitPDBLocalTable  = 0;
-bool      emitter::emitIsPDBEnabled   = true;
-BYTE*     emitter::emitILBaseOfCode   = 0;
-BYTE*     emitter::emitILMethodBase   = 0;
-BYTE*     emitter::emitILMethodStart  = 0;
-BYTE*     emitter::emitImgBaseOfCode  = 0;
-
-void emitter::MapCode(int ilOffset, BYTE* imgDest)
-{
-    if (emitIsPDBEnabled)
-    {
-        emitPDBOffsetTable->MapSrcToDest(ilOffset, (int)(imgDest - emitImgBaseOfCode));
-    }
-}
-
-void emitter::MapFunc(int                imgOff,
-                      int                procLen,
-                      int                dbgStart,
-                      int                dbgEnd,
-                      short              frameReg,
-                      int                stkAdjust,
-                      int                lvaCount,
-                      OptJit::LclVarDsc* lvaTable,
-                      bool               framePtr)
-{
-    if (emitIsPDBEnabled)
-    {
-        // this code stores information about local symbols for the PDB translation
-
-        assert(lvaCount >= 0); // don't allow a negative count
-
-        LvaDesc* rgLvaDesc = 0;
-
-        if (lvaCount > 0)
-        {
-            rgLvaDesc = new LvaDesc[lvaCount];
-
-            if (!rgLvaDesc)
-            {
-                NOMEM();
-            }
-
-            LvaDesc*           pDst = rgLvaDesc;
-            OptJit::LclVarDsc* pSrc = lvaTable;
-            for (int i = 0; i < lvaCount; ++i, ++pDst, ++pSrc)
-            {
-                pDst->slotNum = pSrc->lvSlotNum;
-                pDst->isReg   = pSrc->lvRegister;
-                pDst->reg     = (pSrc->lvRegister ? pSrc->lvRegNum : frameReg);
-                pDst->off     = pSrc->lvStkOffs + stkAdjust;
-            }
-        }
-
-        emitPDBLocalTable->AddFunc((int)(emitILMethodBase - emitILBaseOfCode), imgOff - (int)emitImgBaseOfCode, procLen,
-                                   dbgStart - imgOff, dbgEnd - imgOff, lvaCount, rgLvaDesc, framePtr);
-        // do not delete rgLvaDesc here -- responsibility is now on emitPDBLocalTable destructor
-    }
-}
-
-/* these are public */
-
-void emitter::SetILBaseOfCode(BYTE* pTextBase)
-{
-    emitILBaseOfCode = pTextBase;
-}
-
-void emitter::SetILMethodBase(BYTE* pMethodEntry)
-{
-    emitILMethodBase = pMethodEntry;
-}
-
-void emitter::SetILMethodStart(BYTE* pMethodCode)
-{
-    emitILMethodStart = pMethodCode;
-}
-
-void emitter::SetImgBaseOfCode(BYTE* pTextBase)
-{
-    emitImgBaseOfCode = pTextBase;
-}
-
-void emitter::SetIDBaseToProlog()
-{
-    emitInstrDescILBase = (int)(emitILMethodBase - emitILBaseOfCode);
-}
-
-void emitter::SetIDBaseToOffset(int methodOffset)
-{
-    emitInstrDescILBase = methodOffset + (int)(emitILMethodStart - emitILBaseOfCode);
-}
-
-void emitter::DisablePDBTranslation()
-{
-    // this function should disable PDB translation code
-    emitIsPDBEnabled = false;
-}
-
-bool emitter::IsPDBEnabled()
-{
-    return emitIsPDBEnabled;
-}
-
-void emitter::InitTranslationMaps(int ilCodeSize)
-{
-    if (emitIsPDBEnabled)
-    {
-        emitPDBOffsetTable = AddrMap::Create(ilCodeSize);
-        emitPDBLocalTable  = LocalMap::Create();
-    }
-}
-
-void emitter::DeleteTranslationMaps()
-{
-    if (emitPDBOffsetTable)
-    {
-        delete emitPDBOffsetTable;
-        emitPDBOffsetTable = 0;
-    }
-    if (emitPDBLocalTable)
-    {
-        delete emitPDBLocalTable;
-        emitPDBLocalTable = 0;
-    }
-}
-
-void emitter::InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADER** rgpHeader, int numSections)
-{
-    if (emitIsPDBEnabled)
-    {
-        pPDB->InitMaps(rgSecMap,           // new PE section header order
-                       rgpHeader,          // array of section headers
-                       numSections,        // number of sections
-                       emitPDBOffsetTable, // code offset translation table
-                       emitPDBLocalTable); // slot variable translation table
-    }
-}
-
-#endif // TRANSLATE_PDB
-
 /*****************************************************************************/
 
 #if EMITTER_STATS
@@ -1401,13 +1257,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
 
-    info->idNum        = emitInsCount;
-    info->idSize       = sz;
-    info->idVarRefOffs = 0;
-    info->idMemCookie  = 0;
-#ifdef TRANSLATE_PDB
-    info->idilStart = emitInstrDescILBase;
-#endif
+    info->idNum         = emitInsCount;
+    info->idSize        = sz;
+    info->idVarRefOffs  = 0;
+    info->idMemCookie   = 0;
     info->idFinallyCall = false;
     info->idCatchRet    = false;
     info->idCallSig     = nullptr;
