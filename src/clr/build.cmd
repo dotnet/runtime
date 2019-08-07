@@ -649,7 +649,7 @@ if %__BuildCoreLib% EQU 1 (
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj -warnAsError:0^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:ArcadeBuild=true^
-            '!__Logging!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
+            '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
             echo     !__BuildLog!
