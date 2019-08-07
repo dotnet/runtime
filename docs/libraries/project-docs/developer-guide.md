@@ -446,7 +446,7 @@ The CoreFX build and test suite is a work in progress, as are the [building and 
 
 ## Testing with private CoreCLR bits
 
-Generally the CoreFx build system gets the CoreCLR from a NuGet package which gets pulled down and correctly copied to the various output directories by building '\external\runtime\runtime.depproj' which gets built as part of `build.cmd/sh`. For folks that want to do builds and test runs in corefx with a local private build of coreclr you can follow these steps:
+Generally the CoreFx build system gets the CoreCLR from a NuGet package which gets pulled down and correctly copied to the various output directories by building '\eng\restore\runtime\runtime.depproj' which gets built as part of `build.cmd/sh`. For folks that want to do builds and test runs in corefx with a local private build of coreclr you can follow these steps:
 
 
 1. Build CoreCLR and note your output directory. Ex: `\coreclr\bin\Product\Windows_NT.x64.Release\` Note this will vary based on your OS/Architecture/Flavor and it is generally a good idea to use Release builds for CoreCLR when running CoreFx tests and the OS and Architecture should match what you are building in CoreFx.

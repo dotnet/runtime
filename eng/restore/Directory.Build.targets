@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="..\Directory.Build.targets" />
+  <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>

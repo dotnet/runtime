@@ -105,7 +105,7 @@
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Resources.ResourceManager" />
-    <ProjectReference Include="..\..\..\external\winrt\winrt.depproj" />
+    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>
