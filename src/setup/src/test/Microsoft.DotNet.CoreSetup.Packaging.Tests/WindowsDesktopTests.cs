@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 var files = fxList.Element("FileList").Elements("File").ToArray();
 
                 // Sanity check: did any elements we expect make it into the final file?
-                foreach (var attributeName in new[] { "Profile", "ReferencedByDefault" })
+                foreach (var attributeName in new[] { "Profile" })
                 {
                     Assert.True(
                         files.Any(x => !string.IsNullOrEmpty(x.Attribute(attributeName)?.Value)),

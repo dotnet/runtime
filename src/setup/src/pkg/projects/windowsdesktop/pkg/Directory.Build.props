@@ -23,13 +23,13 @@
     <FrameworkListFileClass Include="Microsoft.Win32.Registry.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileClass Include="Microsoft.Win32.SystemEvents.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileClass Include="PresentationCore.dll" Profile="WPF" />
-    <FrameworkListFileClass Include="PresentationFramework.Aero.dll" Profile="WPF" ReferencedByDefault="false" />
-    <FrameworkListFileClass Include="PresentationFramework.Aero2.dll" Profile="WPF" ReferencedByDefault="false" />
-    <FrameworkListFileClass Include="PresentationFramework.AeroLite.dll" Profile="WPF" ReferencedByDefault="false" />
-    <FrameworkListFileClass Include="PresentationFramework.Classic.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.Aero.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.Aero2.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.AeroLite.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.Classic.dll" Profile="WPF" />
     <FrameworkListFileClass Include="PresentationFramework.dll" Profile="WPF" />
-    <FrameworkListFileClass Include="PresentationFramework.Luna.dll" Profile="WPF" ReferencedByDefault="false" />
-    <FrameworkListFileClass Include="PresentationFramework.Royale.dll" Profile="WPF" ReferencedByDefault="false" />
+    <FrameworkListFileClass Include="PresentationFramework.Luna.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationFramework.Royale.dll" Profile="WPF" />
     <FrameworkListFileClass Include="ReachFramework.dll" Profile="WPF" />
     <FrameworkListFileClass Include="System.CodeDom.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileClass Include="System.Configuration.ConfigurationManager.dll" Profile="WindowsForms;WPF" />
