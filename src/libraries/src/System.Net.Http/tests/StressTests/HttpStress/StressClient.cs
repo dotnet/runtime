@@ -230,7 +230,7 @@ namespace HttpStress
 
                         while (exn != null)
                         {
-                            acc.Add((exn.GetType(), exn.Message, new StackTrace(exn, true).GetFrame(0).ToString()));
+                            acc.Add((exn.GetType(), exn.Message ?? "", new StackTrace(exn, true).GetFrame(0)?.ToString() ?? ""));
                             exn = exn.InnerException;
                         }
 
