@@ -10,7 +10,6 @@
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="Microsoft.Extensions.Primitives.netcoreapp3.0.cs" />
-    <Reference Include="System.Memory"  />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe"  />
+    
   </ItemGroup>
 </Project>
