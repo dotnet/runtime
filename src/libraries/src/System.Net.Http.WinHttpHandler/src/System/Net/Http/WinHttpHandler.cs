@@ -1393,10 +1393,10 @@ namespace System.Net.Http
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
                 await state.RequestMessage.Content.CopyToAsync(
-                    requestStream,
-                    state.TransportContext
 #if HTTP_DLL
-                    , state.CancellationToken
+                    requestStream, state.TransportContext, state.CancellationToken
+#else
+                    requestStream, state.TransportContext
 #endif
                     ).ConfigureAwait(false);
                 await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);

@@ -266,22 +266,29 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetPutPostDeleteAsync_Success()
         {
-            Action<HttpResponseMessage> verify = message => { using (message) Assert.Equal(HttpStatusCode.OK, message.StatusCode); };
+            static void Verify(HttpResponseMessage message)
+            {
+                using (message)
+                {
+                    Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+                }
+            }
+
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
-                verify(await client.GetAsync(CreateFakeUri()));
-                verify(await client.GetAsync(CreateFakeUri(), CancellationToken.None));
-                verify(await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseContentRead));
-                verify(await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseContentRead, CancellationToken.None));
+                Verify(await client.GetAsync(CreateFakeUri()));
+                Verify(await client.GetAsync(CreateFakeUri(), CancellationToken.None));
+                Verify(await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseContentRead));
+                Verify(await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseContentRead, CancellationToken.None));
 
-                verify(await client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
-                verify(await client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
+                Verify(await client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
+                Verify(await client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
 
-                verify(await client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
-                verify(await client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
+                Verify(await client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
+                Verify(await client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
 
-                verify(await client.DeleteAsync(CreateFakeUri()));
-                verify(await client.DeleteAsync(CreateFakeUri(), CancellationToken.None));
+                Verify(await client.DeleteAsync(CreateFakeUri()));
+                Verify(await client.DeleteAsync(CreateFakeUri(), CancellationToken.None));
             }
         }
 
