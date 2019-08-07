@@ -455,9 +455,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (!sig)
 		sig = mono_method_signature_internal (method);
 
-	if (cfg->llvm_only && mono_class_is_interface (method->klass))
-		g_assert_not_reached ();
-
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
