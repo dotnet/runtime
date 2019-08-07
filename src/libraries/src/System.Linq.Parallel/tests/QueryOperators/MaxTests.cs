@@ -14,10 +14,11 @@ namespace System.Linq.Parallel.Tests
         {
             counts = counts.DefaultIfEmpty(Sources.OuterLoopCount).ToArray();
 
-            Func<int, int> max = x => x - 1;
+            static int Max(int x) => x - 1;
+
             foreach (int count in counts)
             {
-                yield return new object[] { Labeled.Label("Default", UnorderedSources.Default(0, count)), count, max(count) };
+                yield return new object[] { Labeled.Label("Default", UnorderedSources.Default(0, count)), count, Max(count) };
             }
 
             // A source with data explicitly created out of order
@@ -30,7 +31,7 @@ namespace System.Linq.Parallel.Tests
                     data[i] = data[count - i - 1];
                     data[count - i - 1] = tmp;
                 }
-                yield return new object[] { Labeled.Label("Out-of-order input", data.AsParallel()), count, max(count) };
+                yield return new object[] { Labeled.Label("Out-of-order input", data.AsParallel()), count, Max(count) };
             }
         }
 
@@ -42,6 +43,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Int(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(max, query.Max());
             Assert.Equal(max, query.Select(x => (int?)x).Max());
@@ -70,6 +72,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Int_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (int?)null).Max());
             Assert.Null(query.Max(x => (int?)null));
@@ -79,6 +83,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Long(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(max, query.Select(x => (long)x).Max());
             Assert.Equal(max, query.Select(x => (long?)x).Max());
@@ -107,6 +112,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Long_AllNull(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (long?)null).Max());
             Assert.Null(query.Max(x => (long?)null));
@@ -146,6 +153,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (float?)null).Max());
             Assert.Null(query.Max(x => (float?)null));
@@ -185,6 +194,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Double_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (double?)null).Max());
             Assert.Null(query.Max(x => (double?)null));
@@ -194,6 +205,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Decimal(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(max, query.Select(x => (decimal)x).Max());
             Assert.Equal(max, query.Select(x => (decimal?)x).Max());
@@ -222,6 +234,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Decimal_AllNull(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (decimal?)null).Max());
             Assert.Null(query.Max(x => (decimal?)null));
@@ -231,6 +245,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Other(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(max, query.Select(x => DelgatedComparable.Delegate(x, Comparer<int>.Default)).Max().Value);
             Assert.Equal(0, query.Select(x => DelgatedComparable.Delegate(x, ReverseComparer.Instance)).Max().Value);
@@ -248,6 +263,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1 })]
         public static void Max_NotComparable(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
+            _ = count;
+            _ = max;
             NotComparable a = new NotComparable(0);
             Assert.Equal(a, labeled.Item.Max(x => a));
         }
@@ -265,6 +282,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Other_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
+            _ = count;
+            _ = max;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (string)null).Max());
             Assert.Null(query.Max(x => (string)null));

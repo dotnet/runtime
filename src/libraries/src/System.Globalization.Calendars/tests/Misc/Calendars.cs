@@ -90,28 +90,35 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Calendars_TestData))]
         public static void CloningTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
+            _ = yearHasLeapMonth;
+            _ = algorithmType;
             Calendar cloned = (Calendar) calendar.Clone();
             Assert.Equal(calendar.GetType(), cloned.GetType());
         }
-        
+
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void GetLeapMonthTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
+            _ = algorithmType;
             if (yearHasLeapMonth > 0)
             {
-                Assert.NotEqual(0,  calendar.GetLeapMonth(yearHasLeapMonth));
+                Assert.NotEqual(0, calendar.GetLeapMonth(yearHasLeapMonth));
                 Assert.Equal(0, calendar.GetLeapMonth(yearHasLeapMonth - 1));
             }
             else
-                Assert.True(calendar.GetLeapMonth(calendar.GetYear(DateTime.Today)) == 0, 
+            {
+                Assert.True(calendar.GetLeapMonth(calendar.GetYear(DateTime.Today)) == 0,
                             "calendar.GetLeapMonth returned wrong value");
+            }
         }
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void ReadOnlyTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
+            _ = yearHasLeapMonth;
+            _ = algorithmType;
             Assert.False(calendar.IsReadOnly);
             var readOnlyCal = Calendar.ReadOnly(calendar);
             Assert.True(readOnlyCal.IsReadOnly, "expect readOnlyCal.IsReadOnly returns true");
@@ -123,6 +130,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Calendars_TestData))]
         public static void AlgorithmTypeTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
+            _ = yearHasLeapMonth;
             Assert.Equal(calendar.AlgorithmType, algorithmType);
         }
 

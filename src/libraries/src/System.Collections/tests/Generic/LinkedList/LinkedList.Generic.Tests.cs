@@ -492,6 +492,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(EnumerableTestData))]
         public void LinkedList_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
+            _ = setLength;
+            _ = numberOfMatchingElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
             LinkedList<T> queue = new LinkedList<T>(enumerable);
             Assert.Equal(enumerable, queue);

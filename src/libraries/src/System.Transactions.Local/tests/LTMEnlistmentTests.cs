@@ -80,10 +80,10 @@ namespace System.Transactions.Tests
         // TODO: Issue #10353 - This test needs to change once we have promotion support.
         // Right now any attempt to create a two phase durable enlistment will attempt to promote and will fail because promotion is not supported. This results in the transaction being
         // aborted.
-        [InlineData(0, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
-        [InlineData(1, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
-        [InlineData(2, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
-        public void TwoPhaseDurable(int volatileCount, EnlistmentOptions volatileEnlistmentOption, EnlistmentOptions durableEnlistmentOption, Phase1Vote volatilePhase1Vote, Phase1Vote durablePhase1Vote, bool commit, EnlistmentOutcome expectedVolatileOutcome, EnlistmentOutcome expectedDurableOutcome, TransactionStatus expectedTxStatus)
+        [InlineData(0, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
+        [InlineData(1, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
+        [InlineData(2, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
+        public void TwoPhaseDurable(int volatileCount, EnlistmentOptions volatileEnlistmentOption, EnlistmentOptions durableEnlistmentOption, Phase1Vote volatilePhase1Vote, bool commit, EnlistmentOutcome expectedVolatileOutcome, EnlistmentOutcome expectedDurableOutcome, TransactionStatus expectedTxStatus)
         {
             Transaction tx = null;
             try
@@ -130,9 +130,9 @@ namespace System.Transactions.Tests
         }
 
         [Theory]
-        [InlineData(EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.None, Phase1Vote.Prepared, true, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
-        [InlineData(EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, false, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
-        public void EnlistDuringPhase0(EnlistmentOptions enlistmentOption, EnlistmentOptions phase0EnlistmentOption, Phase1Vote phase1Vote, bool expectPhase0EnlistSuccess, bool commit, EnlistmentOutcome expectedOutcome, TransactionStatus expectedTxStatus)
+        [InlineData(EnlistmentOptions.EnlistDuringPrepareRequired, Phase1Vote.Prepared, true, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
+        [InlineData(EnlistmentOptions.None, Phase1Vote.Prepared, false, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
+        public void EnlistDuringPhase0(EnlistmentOptions enlistmentOption, Phase1Vote phase1Vote, bool expectPhase0EnlistSuccess, bool commit, EnlistmentOutcome expectedOutcome, TransactionStatus expectedTxStatus)
         {
             Transaction tx = null;
             AutoResetEvent outcomeEvent = null;

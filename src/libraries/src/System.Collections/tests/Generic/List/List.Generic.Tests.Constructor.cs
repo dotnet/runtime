@@ -49,6 +49,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(EnumerableTestData))]
         public void Constructor_IEnumerable(EnumerableType enumerableType, int listLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
+            _ = listLength;
+            _ = numberOfMatchingElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
             List<T> list = new List<T>(enumerable);
             List<T> expected = enumerable.ToList();

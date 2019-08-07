@@ -31,12 +31,8 @@ namespace System.Net.WebSockets.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => CreateFromStream(new MemoryStream(), true, "subProtocol", TimeSpan.FromSeconds(-2)));
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(14)]
-        [InlineData(4096)]
-        public void CreateFromStream_ValidBufferSizes_CreatesWebSocket(int bufferSize)
+        [Fact]
+        public void CreateFromStream_ValidBufferSizes_CreatesWebSocket()
         {
             Assert.NotNull(CreateFromStream(new MemoryStream(), false, null, Timeout.InfiniteTimeSpan));
             Assert.NotNull(CreateFromStream(new MemoryStream(), true, null, Timeout.InfiniteTimeSpan));

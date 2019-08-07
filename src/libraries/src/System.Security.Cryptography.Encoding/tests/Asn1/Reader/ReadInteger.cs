@@ -32,6 +32,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string inputHex)
         {
+            _ = description;
             byte[] data = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(data, (AsnEncodingRules)ruleSet);
 

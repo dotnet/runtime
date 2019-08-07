@@ -52,6 +52,7 @@ namespace System.Linq.Parallel.Tests
         public static void WithCancellation_DisposedEnumerator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             // Disposing an enumerator should throw ODE and not OCE.
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             DisposedEnumerator(query);
             DisposedEnumerator(query.WithMergeOptions(ParallelMergeOptions.Default));
@@ -87,8 +88,9 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(ProducerBlocked_Data))]
         public static void WithCancellation_DisposedEnumerator_ChannelCancellation_ProducerBlocked(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            ParallelQuery<int> query = labeled.Item;
             // Larger size, delay may cause enumerator.Dispose() to hang
+            _ = count;
+            ParallelQuery<int> query = labeled.Item;
             DisposedEnumerator(query, true);
             DisposedEnumerator(query.WithMergeOptions(ParallelMergeOptions.Default), true);
             DisposedEnumerator(query.WithMergeOptions(ParallelMergeOptions.AutoBuffered), true);
@@ -104,6 +106,7 @@ namespace System.Linq.Parallel.Tests
         public static void WithCancellation_ODEIssue(Labeled<ParallelQuery<int>> labeled, int count)
         {
             //the failure was an ODE coming out due to an ephemeral disposed merged cancellation token source.
+            _ = count;
             ParallelQuery<int> left = labeled.Item.AsUnordered().WithExecutionMode(ParallelExecutionMode.ForceParallelism);
             ParallelQuery<int> right = Enumerable.Range(0, 1024).Select(x => x).AsParallel().AsUnordered();
             AssertThrows.Wrapped<OperationCanceledException>(() => left.GroupJoin(right, x => { throw new OperationCanceledException(); }, y => y, (x, e) => x).ForAll(x => { }));
@@ -117,6 +120,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void WithCancellation_CancelThenDispose(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             CancellationTokenSource cancel = new CancellationTokenSource();
             IEnumerator<int> enumerator = labeled.Item.WithCancellation(cancel.Token).GetEnumerator();
             enumerator.MoveNext();

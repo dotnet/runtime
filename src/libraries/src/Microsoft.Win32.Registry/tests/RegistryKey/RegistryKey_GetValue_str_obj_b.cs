@@ -59,12 +59,11 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestExpandableStrings))]
-        public void GetExpandableStringValueWithNoneOption(string testValue, string expectedValue)
+        public void GetExpandableStringValue(string testValue, string expectedValue, RegistryValueOptions getOptions)
         {
-            // [] Make sure NoExpand = false works with some valid values.
             const string valueName = "MyTestKey";
             TestRegistryKey.SetValue(valueName, testValue, RegistryValueKind.ExpandString);
-            Assert.Equal(expectedValue, TestRegistryKey.GetValue(valueName, null, RegistryValueOptions.None).ToString());
+            Assert.Equal(expectedValue, TestRegistryKey.GetValue(valueName, null, getOptions).ToString());
             TestRegistryKey.DeleteValue(valueName);
         }
 
@@ -95,22 +94,13 @@ namespace Microsoft.Win32.RegistryTests
             TestRegistryKey.DeleteValue(valueName);
         }
 
-        [Theory]
-        [MemberData(nameof(TestExpandableStrings))]
-        public void GetExpandableStringValueWithDoNotExpandOption(string testValue, string expectedValue)
-        {
-            const string valueName = "MyTestKey";
-            TestRegistryKey.SetValue(valueName, testValue, RegistryValueKind.ExpandString);
-            Assert.Equal(testValue, TestRegistryKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames).ToString());
-            TestRegistryKey.DeleteValue(valueName);
-        }
-
         public static IEnumerable<object[]> TestEnvironment { get { return TestData.TestEnvironment; } }
 
         [Theory]
         [MemberData(nameof(TestEnvironment))]
         public void GetValueWithEnvironmentVariable(string valueName, string envVariableName, string expectedVariableValue)
         {
+            _ = envVariableName;
             TestRegistryKey.SetValue(valueName, expectedVariableValue, RegistryValueKind.ExpandString);
             Assert.Equal(expectedVariableValue, TestRegistryKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames).ToString());
             TestRegistryKey.DeleteValue(valueName);

@@ -54,20 +54,20 @@ namespace System.Xml.Linq.Tests
         }
 
         // Get valid(Fifth Edition) surrogate characters but since surrogates are not supported in Fourth Edition Xml we still expect an exception.
-        [InlineData("InValid", "NameSurrogateLowChar", "XName")] // XName with Valid Name Surrogate Low Characters
-        [InlineData("InValid", "NameSurrogateLowChar", "XAttribute")] // XAttribute with Valid Name Surrogate Low Characters
-        [InlineData("InValid", "NameSurrogateLowChar", "XElement")] // XElement with Valid Name Surrogate Low Characters
-        [InlineData("InValid", "NameSurrogateHighChar", "XName")] // XName with Valid Name Surrogate High Characters
-        [InlineData("InValid", "NameSurrogateHighChar", "XAttribute")] // XAttribute with Valid Name Surrogate High Characters
-        [InlineData("InValid", "NameSurrogateHighChar", "XElement")] // XElement with Valid Name Surrogate High Characters
-        [InlineData("InValid", "NameStartSurrogateLowChar", "XName")] // XName with Valid NameStart Surrogate Low Characters
-        [InlineData("InValid", "NameStartSurrogateLowChar", "XAttribute")] // XAttribute with Valid NameStart Surrogate Low Characters
-        [InlineData("InValid", "NameStartSurrogateLowChar", "XElement")] // XElement with Valid NameStart Surrogate Low Characters
-        [InlineData("InValid", "NameStartSurrogateHighChar", "XName")] // XName with Valid NameStart Surrogate High Characters
-        [InlineData("InValid", "NameStartSurrogateHighChar", "XAttribute")] // XAttribute with Valid NameStart Surrogate High Characters
-        [InlineData("InValid", "NameStartSurrogateHighChar", "XElement")] // XElement with Valid NameStart Surrogate High Characters
+        [InlineData("NameSurrogateLowChar", "XName")] // XName with Valid Name Surrogate Low Characters
+        [InlineData("NameSurrogateLowChar", "XAttribute")] // XAttribute with Valid Name Surrogate Low Characters
+        [InlineData("NameSurrogateLowChar", "XElement")] // XElement with Valid Name Surrogate Low Characters
+        [InlineData("NameSurrogateHighChar", "XName")] // XName with Valid Name Surrogate High Characters
+        [InlineData("NameSurrogateHighChar", "XAttribute")] // XAttribute with Valid Name Surrogate High Characters
+        [InlineData("NameSurrogateHighChar", "XElement")] // XElement with Valid Name Surrogate High Characters
+        [InlineData("NameStartSurrogateLowChar", "XName")] // XName with Valid NameStart Surrogate Low Characters
+        [InlineData("NameStartSurrogateLowChar", "XAttribute")] // XAttribute with Valid NameStart Surrogate Low Characters
+        [InlineData("NameStartSurrogateLowChar", "XElement")] // XElement with Valid NameStart Surrogate Low Characters
+        [InlineData("NameStartSurrogateHighChar", "XName")] // XName with Valid NameStart Surrogate High Characters
+        [InlineData("NameStartSurrogateHighChar", "XAttribute")] // XAttribute with Valid NameStart Surrogate High Characters
+        [InlineData("NameStartSurrogateHighChar", "XElement")] // XElement with Valid NameStart Surrogate High Characters
         [Theory]
-        public void varation2(string testType, string charType, string nodeType)
+        public void varation2(string charType, string nodeType)
         {
             int iterations = 0;
             foreach (char c in GetRandomCharacters("Valid", charType))

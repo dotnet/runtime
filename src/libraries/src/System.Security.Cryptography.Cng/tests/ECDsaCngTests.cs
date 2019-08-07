@@ -194,8 +194,8 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [Theory, MemberData(nameof(TestInvalidCurves))]
-        public static void TestCreateKeyFromCngAlgorithmNegative(CurveDef curveDef)
+        [Fact]
+        public static void TestCreateKeyFromCngAlgorithmNegative()
         {
             CngAlgorithm alg = CngAlgorithm.ECDsa;
             Assert.ThrowsAny<Exception>(() => CngKey.Create(alg));

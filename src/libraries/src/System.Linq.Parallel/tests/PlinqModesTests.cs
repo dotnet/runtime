@@ -153,6 +153,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void WithExecutionMode_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             AssertExtensions.Throws<ArgumentException>(null, () => query.WithExecutionMode((ParallelExecutionMode)2));
         }

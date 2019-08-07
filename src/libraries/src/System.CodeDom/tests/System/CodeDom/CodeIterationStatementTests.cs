@@ -38,18 +38,14 @@ namespace System.CodeDom.Tests
             Assert.Equal(statements, iteration.Statements.Cast<CodeStatement>());
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void Ctor_NullStatements_ThrowsArgumentNullException(string value)
+        [Fact]
+        public void Ctor_NullStatements_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, null));
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void Ctor_NullObjectInStatements_ThrowsArgumentNullException(string value)
+        [Fact]
+        public void Ctor_NullObjectInStatements_ThrowsArgumentNullException()
         {
             CodeStatement[] statements = new CodeStatement[] { null };
             AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, statements));

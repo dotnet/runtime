@@ -573,6 +573,7 @@ namespace System.Text.Tests
         [MemberData(nameof(CodePageInfo))]
         public static void TestEncoderNLSAndDecoderNLSValidateDataRoundTrips(int codePage, string webName, string queryString)
         {
+            _ = webName;
             Encoding encoding;
 
             if (codePage != 20932 && codePage != 50222)
@@ -622,6 +623,8 @@ namespace System.Text.Tests
         [MemberData(nameof(CodePageInfo))]
         public static void TestEncodingDisplayNames(int codePage, string webName, string queryString)
         {
+            _ = webName;
+            _ = queryString;
             var encoding = CodePagesEncodingProvider.Instance.GetEncoding(codePage);
 
             string name = encoding.EncodingName;

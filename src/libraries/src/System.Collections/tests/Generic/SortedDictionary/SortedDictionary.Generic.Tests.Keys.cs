@@ -37,9 +37,8 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes);
         }
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedDictionary_Generic_KeyCollection_Constructor_NullDictionary(int count)
+        [Fact]
+        public void SortedDictionary_Generic_KeyCollection_Constructor_NullDictionary()
         {
             Assert.Throws<ArgumentNullException>(() => new SortedDictionary<string, string>.KeyCollection(null));
         }

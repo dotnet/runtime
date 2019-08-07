@@ -126,6 +126,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(RightShift_Hidden_Data))]
         public static void RightShift_Hidden(string label, BitArray bits)
         {
+            _ = label;
+
             Assert.All(bits.Cast<bool>(), bit => Assert.False(bit));
             bits.RightShift(1);
             Assert.All(bits.Cast<bool>(), bit => Assert.False(bit));

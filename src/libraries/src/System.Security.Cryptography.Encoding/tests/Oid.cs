@@ -184,6 +184,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         public static void LookupOidByValue_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
+            _ = friendlyName;
             Assert.Throws<CryptographicException>(() => Oid.FromOidValue(oidValue, OidGroup.EncryptionAlgorithm));
         }
 
@@ -240,6 +241,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         public static void LookupOidByFriendlyName_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
+            _ = oidValue;
             Assert.Throws<CryptographicException>(() => Oid.FromFriendlyName(friendlyName, OidGroup.EncryptionAlgorithm));
         }
 

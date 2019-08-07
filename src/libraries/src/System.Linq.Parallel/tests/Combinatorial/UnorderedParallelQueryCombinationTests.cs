@@ -38,7 +38,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> concat = (left, right) =>
+            static void Concat(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 foreach (int i in left(DefaultStart, DefaultSize / 2, DefaultSource)
@@ -47,9 +47,9 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(i);
                 }
                 seen.AssertComplete();
-            };
-            concat(operation.Item, DefaultSource);
-            concat(DefaultSource, operation.Item);
+            }
+            Concat(operation.Item, DefaultSource);
+            Concat(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -57,7 +57,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> concat = (left, right) =>
+            static void Concat(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 Assert.All(
@@ -65,9 +65,9 @@ namespace System.Linq.Parallel.Tests
                         .Concat(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource)).ToList(),
                     x => seen.Add(x));
                 seen.AssertComplete();
-            };
-            concat(operation.Item, DefaultSource);
-            concat(DefaultSource, operation.Item);
+            }
+            Concat(operation.Item, DefaultSource);
+            Concat(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -123,7 +123,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> except = (left, right) =>
+            static void Except(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
@@ -133,9 +133,9 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(i);
                 }
                 seen.AssertComplete();
-            };
-            except(operation.Item, DefaultSource);
-            except(DefaultSource, operation.Item);
+            }
+            Except(operation.Item, DefaultSource);
+            Except(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -143,16 +143,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> except = (left, right) =>
+            static void Except(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource)
                     .Except(right(DefaultStart + DefaultSize, DefaultSize, DefaultSource));
                 Assert.All(query.ToList(), x => seen.Add((int)x));
                 seen.AssertComplete();
-            };
-            except(operation.Item, DefaultSource);
-            except(DefaultSource, operation.Item);
+            }
+            Except(operation.Item, DefaultSource);
+            Except(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -242,7 +242,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> groupJoin = (left, right) =>
+            static void GroupJoin(Operation left, Operation right)
             {
                 IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
                 foreach (KeyValuePair<int, IEnumerable<int>> group in left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
@@ -254,9 +254,9 @@ namespace System.Linq.Parallel.Tests
                     seenElement.AssertComplete();
                 }
                 seenKey.AssertComplete();
-            };
-            groupJoin(operation.Item, DefaultSource);
-            groupJoin(DefaultSource, operation.Item);
+            }
+            GroupJoin(operation.Item, DefaultSource);
+            GroupJoin(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -264,7 +264,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> groupJoin = (left, right) =>
+            static void GroupJoin(Operation left, Operation right)
             {
                 IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
                 foreach (KeyValuePair<int, IEnumerable<int>> group in left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
@@ -276,9 +276,9 @@ namespace System.Linq.Parallel.Tests
                     seenElement.AssertComplete();
                 }
                 seenKey.AssertComplete();
-            };
-            groupJoin(operation.Item, DefaultSource);
-            groupJoin(DefaultSource, operation.Item);
+            }
+            GroupJoin(operation.Item, DefaultSource);
+            GroupJoin(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -286,7 +286,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> intersect = (left, right) =>
+            static void Intersect(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
@@ -296,9 +296,9 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(i);
                 }
                 seen.AssertComplete();
-            };
-            intersect(operation.Item, DefaultSource);
-            intersect(DefaultSource, operation.Item);
+            }
+            Intersect(operation.Item, DefaultSource);
+            Intersect(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -306,16 +306,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> intersect = (left, right) =>
+            static void Intersect(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart - DefaultSize / 2, DefaultSize + DefaultSize / 2, DefaultSource)
                     .Intersect(right(DefaultStart, DefaultSize + DefaultSize / 2, DefaultSource));
                 Assert.All(query.ToList(), x => seen.Add(x));
                 seen.AssertComplete();
-            };
-            intersect(operation.Item, DefaultSource);
-            intersect(DefaultSource, operation.Item);
+            }
+            Intersect(operation.Item, DefaultSource);
+            Intersect(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -323,7 +323,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Join_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> join = (left, right) =>
+            static void Join(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<KeyValuePair<int, int>> query = left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
@@ -334,17 +334,17 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(p.Value);
                 }
                 seen.AssertComplete();
-            };
-            join(operation.Item, DefaultSource);
-            join(DefaultSource, operation.Item);
+            }
+            Join(operation.Item, DefaultSource);
+            Join(DefaultSource, operation.Item);
         }
 
         [Theory]
-        [MemberData(nameof(UnaryUnorderedOperators))]
-        [MemberData(nameof(BinaryUnorderedOperators))]
-        public static void Join_Unordered_NotPipelined(Labeled<Operation> source, Labeled<Operation> operation)
+        [MemberData(nameof(UnaryOperations))]
+        [MemberData(nameof(BinaryOperations))]
+        public static void Join_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> join = (left, right) =>
+            static void Join(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<KeyValuePair<int, int>> query = left(DefaultStart / GroupFactor, DefaultSize / GroupFactor, DefaultSource)
@@ -355,9 +355,9 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(p.Value);
                 }
                 seen.AssertComplete();
-            };
-            join(operation.Item, DefaultSource);
-            join(DefaultSource, operation.Item);
+            }
+            Join(operation.Item, DefaultSource);
+            Join(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -600,7 +600,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Union_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> union = (left, right) =>
+            static void Union(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart, DefaultSize * 3 / 4, DefaultSource)
@@ -610,9 +610,9 @@ namespace System.Linq.Parallel.Tests
                     seen.Add(i);
                 }
                 seen.AssertComplete();
-            };
-            union(operation.Item, DefaultSource);
-            union(DefaultSource, operation.Item);
+            }
+            Union(operation.Item, DefaultSource);
+            Union(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -620,16 +620,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Union_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> union = (left, right) =>
+            static void Union(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart, DefaultSize * 3 / 4, DefaultSource)
                     .Union(right(DefaultStart + DefaultSize / 2, DefaultSize / 2, DefaultSource));
                 Assert.All(query.ToList(), x => seen.Add(x));
                 seen.AssertComplete();
-            };
-            union(operation.Item, DefaultSource);
-            union(DefaultSource, operation.Item);
+            }
+            Union(operation.Item, DefaultSource);
+            Union(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -683,19 +683,19 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> zip = (left, right) =>
-             {
-                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
-                 ParallelQuery<int> query = left(DefaultStart, DefaultSize, DefaultSource)
-                     .Zip(right(0, DefaultSize, DefaultSource), (x, y) => x);
-                 foreach (int i in query)
-                 {
-                     seen.Add(i);
-                 }
-                 seen.AssertComplete();
-             };
-            zip(operation.Item, DefaultSource);
-            zip(DefaultSource, operation.Item);
+            static void Zip(Operation left, Operation right)
+            {
+                IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+                ParallelQuery<int> query = left(DefaultStart, DefaultSize, DefaultSource)
+                    .Zip(right(0, DefaultSize, DefaultSource), (x, y) => x);
+                foreach (int i in query)
+                {
+                    seen.Add(i);
+                }
+                seen.AssertComplete();
+            }
+            Zip(operation.Item, DefaultSource);
+            Zip(DefaultSource, operation.Item);
         }
 
         [Theory]
@@ -703,16 +703,16 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered_NotPipelined(Labeled<Operation> operation)
         {
-            Action<Operation, Operation> zip = (left, right) =>
+            static void Zip(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
                 ParallelQuery<int> query = left(DefaultStart, DefaultSize, DefaultSource)
                     .Zip(right(0, DefaultSize, DefaultSource), (x, y) => x);
                 Assert.All(query.ToList(), x => seen.Add(x));
                 seen.AssertComplete();
-            };
-            zip(operation.Item, DefaultSource);
-            zip(DefaultSource, operation.Item);
+            }
+            Zip(operation.Item, DefaultSource);
+            Zip(DefaultSource, operation.Item);
         }
     }
 }

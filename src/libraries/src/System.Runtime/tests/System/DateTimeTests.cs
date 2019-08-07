@@ -319,8 +319,7 @@ namespace System.Tests
         [InlineData(10000)]
         public void IsLeapYear_InvalidYear_ThrowsArgumentOutOfRangeException(int year)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(10000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(year));
         }
 
         public static IEnumerable<object[]> IsDaylightSavingTime_TestData()

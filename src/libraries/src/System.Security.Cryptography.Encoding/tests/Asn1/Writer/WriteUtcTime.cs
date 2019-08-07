@@ -156,6 +156,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 writer.Reset();
 
+                _ = expectedHexPayload;
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
                     "value",
                     () => writer.WriteUtcTime(input, input.Year + 100));

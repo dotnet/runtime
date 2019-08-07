@@ -69,6 +69,8 @@ namespace System.Collections.Tests
         [MemberData(nameof(EnumerableTestData))]
         public void HashSet_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
+            _ = setLength;
+            _ = numberOfMatchingElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
             HashSet<T> set = new HashSet<T>(enumerable);
             Assert.True(set.SetEquals(enumerable));
@@ -109,6 +111,9 @@ namespace System.Collections.Tests
         [MemberData(nameof(EnumerableTestData))]
         public void HashSet_Generic_Constructor_IEnumerable_IEqualityComparer(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
+            _ = setLength;
+            _ = numberOfMatchingElements;
+            _ = numberOfDuplicateElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
             HashSet<T> set = new HashSet<T>(enumerable, GetIEqualityComparer());
             Assert.True(set.SetEquals(enumerable));
@@ -137,9 +142,8 @@ namespace System.Collections.Tests
             Assert.Equal(setLength, set.Count);
         }
 
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void HashSet_Generic_RemoveWhere_NewObject(int setLength) // Regression Dev10_624201
+        [Fact]
+        public void HashSet_Generic_RemoveWhere_NewObject() // Regression Dev10_624201
         {
             object[] array = new object[2];
             object obj = new object();

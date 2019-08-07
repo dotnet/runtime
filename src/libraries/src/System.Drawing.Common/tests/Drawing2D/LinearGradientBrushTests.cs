@@ -420,13 +420,8 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.GammaCorrection = true);
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(float.PositiveInfinity)]
-        [InlineData(1)]
-        [InlineData(0.5f)]
-        [InlineData(-1)]
-        [InlineData(float.NegativeInfinity)]
-        public void InterpolationColors_SetValid_GetReturnsExpected(float value)
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void InterpolationColors_SetValid_GetReturnsExpected()
         {
             using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
             {

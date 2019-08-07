@@ -57,7 +57,8 @@ namespace Tests.System.Net.Http
         [InlineData(",Sun, 06 Nov 1994 08:49:37 GMT")]
         public static void TryStringToDate_UseInvalidDateTimeString(string invalid)
         {
-            Assert.False(HttpDateParser.TryStringToDate(",Sun, 06 Nov 1994 08:49:37 GMT", out var result));
+            Assert.False(HttpDateParser.TryStringToDate(invalid, out var result));
+            Assert.Equal(default, result);
         }
 
         [Fact]

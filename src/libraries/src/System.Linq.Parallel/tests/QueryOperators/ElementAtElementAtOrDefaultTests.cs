@@ -39,6 +39,7 @@ namespace System.Linq.Parallel.Tests
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be split, and possibly mentioned in release notes.
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(position, query.ElementAt(position));
         }
@@ -56,6 +57,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(ElementAtOutOfRangeData), new[] { 0, 1, 2, 16 })]
         public static void ElementAt_OutOfRange(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Throws<ArgumentOutOfRangeException>(() => query.ElementAt(position));
         }
@@ -75,6 +77,7 @@ namespace System.Linq.Parallel.Tests
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
             // If this test starts failing it should be split, and possibly mentioned in release notes.
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(position, query.ElementAtOrDefault(position));
         }
@@ -92,8 +95,9 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(ElementAtOutOfRangeData), new[] { 0, 1, 2, 16 })]
         public static void ElementAtOrDefault_OutOfRange(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(default(int), query.ElementAtOrDefault(position));
+            Assert.Equal(default, query.ElementAtOrDefault(position));
         }
 
         [Theory]

@@ -14,10 +14,11 @@ namespace System.Linq.Parallel.Tests
         {
             counts = counts.DefaultIfEmpty(Sources.OuterLoopCount).ToArray();
 
-            Func<int, int> min = x => 1 - x;
+            static int Min(int x) => 1 - x;
+
             foreach (int count in counts)
             {
-                yield return new object[] { Labeled.Label("Default", UnorderedSources.Default(count)), count, min(count) };
+                yield return new object[] { Labeled.Label("Default", UnorderedSources.Default(count)), count, Min(count) };
             }
 
             // A source with data explicitly created out of order
@@ -30,7 +31,7 @@ namespace System.Linq.Parallel.Tests
                     data[i] = data[count - i - 1];
                     data[count - i - 1] = tmp;
                 }
-                yield return new object[] { Labeled.Label("Out-of-order input", data.AsParallel()), count, min(count) };
+                yield return new object[] { Labeled.Label("Out-of-order input", data.AsParallel()), count, Min(count) };
             }
         }
 
@@ -41,6 +42,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Int(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.Min());
             Assert.Equal(0, query.Select(x => (int?)x).Min());
@@ -69,6 +71,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Int_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (int?)null).Min());
             Assert.Null(query.Min(x => (int?)null));
@@ -78,6 +82,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Long(Labeled<ParallelQuery<int>> labeled, int count, long min)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.Select(x => (long)x).Min());
             Assert.Equal(0, query.Select(x => (long?)x).Min());
@@ -106,6 +111,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Long_AllNull(Labeled<ParallelQuery<int>> labeled, int count, long min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (long?)null).Min());
             Assert.Null(query.Min(x => (long?)null));
@@ -147,6 +154,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 3 })]
         public static void Min_Float_Special(Labeled<ParallelQuery<int>> labeled, int count, float min)
         {
+            _ = min;
+
             // Null is defined as 'least' when ordered, but is not the minimum.
             Func<int, float?> translate = x =>
                 x % 3 == 0 ? (float?)null :
@@ -162,6 +171,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (float?)null).Min());
             Assert.Null(query.Min(x => (float?)null));
@@ -194,6 +205,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 3 })]
         public static void Min_Double_Special(Labeled<ParallelQuery<int>> labeled, int count, double min)
         {
+            _ = min;
+
             // Null is defined as 'least' when ordered, but is not the minimum.
             Func<int, double?> translate = x =>
                 x % 3 == 0 ? (double?)null :
@@ -218,6 +231,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Double_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (double?)null).Min());
             Assert.Null(query.Min(x => (double?)null));
@@ -227,6 +242,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Decimal(Labeled<ParallelQuery<int>> labeled, int count, decimal min)
         {
+            _ = count;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.Select(x => (decimal)x).Min());
             Assert.Equal(0, query.Select(x => (decimal?)x).Min());
@@ -255,6 +271,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Decimal_AllNull(Labeled<ParallelQuery<int>> labeled, int count, decimal min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (decimal?)null).Min());
             Assert.Null(query.Min(x => (decimal?)null));
@@ -264,6 +282,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Other(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(0, query.Select(x => DelgatedComparable.Delegate(x, Comparer<int>.Default)).Min().Value);
             Assert.Equal(count - 1, query.Select(x => DelgatedComparable.Delegate(x, ReverseComparer.Instance)).Min().Value);
@@ -281,6 +300,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1 })]
         public static void Min_NotComparable(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = count;
+            _ = min;
             NotComparable a = new NotComparable(0);
             Assert.Equal(a, labeled.Item.Min(x => a));
         }
@@ -289,6 +310,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Other_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Equal(count / 2, query.Min(x => x >= count / 2 ? DelgatedComparable.Delegate(x, Comparer<int>.Default) : null).Value);
             Assert.Equal(count - 1, query.Min(x => x >= count / 2 ? DelgatedComparable.Delegate(x, ReverseComparer.Instance) : null).Value);
@@ -298,6 +320,8 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(MinData), new[] { 1, 2, 16 })]
         public static void Min_Other_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
+            _ = count;
+            _ = min;
             ParallelQuery<int> query = labeled.Item;
             Assert.Null(query.Select(x => (string)null).Min());
             Assert.Null(query.Min(x => (string)null));

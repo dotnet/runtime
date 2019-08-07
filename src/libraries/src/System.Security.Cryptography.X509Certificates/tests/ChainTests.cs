@@ -265,9 +265,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 DateTime local = utcTime.ToLocalTime();
                 DateTime unspecified = new DateTime(local.Ticks);
 
-                testCases.Add(new object[] { utcTime, true, utcTime.Kind });
-                testCases.Add(new object[] { local, true, local.Kind });
-                testCases.Add(new object[] { unspecified, true, unspecified.Kind });
+                testCases.Add(new object[] { utcTime, true });
+                testCases.Add(new object[] { local, true });
+                testCases.Add(new object[] { unspecified, true });
             }
 
             foreach (DateTime utcTime in invalidTimes)
@@ -275,9 +275,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 DateTime local = utcTime.ToLocalTime();
                 DateTime unspecified = new DateTime(local.Ticks);
 
-                testCases.Add(new object[] { utcTime, false, utcTime.Kind });
-                testCases.Add(new object[] { local, false, local.Kind });
-                testCases.Add(new object[] { unspecified, false, unspecified.Kind });
+                testCases.Add(new object[] { utcTime, false });
+                testCases.Add(new object[] { local, false });
+                testCases.Add(new object[] { unspecified, false });
             }
 
             return testCases;
@@ -285,7 +285,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(VerifyExpressionData))]
-        public static void VerifyExpiration_LocalTime(DateTime verificationTime, bool shouldBeValid, DateTimeKind kind)
+        public static void VerifyExpiration_LocalTime(DateTime verificationTime, bool shouldBeValid)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))

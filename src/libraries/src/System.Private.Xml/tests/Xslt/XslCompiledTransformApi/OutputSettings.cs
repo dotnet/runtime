@@ -119,13 +119,13 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "Verify OmitXmlDeclaration when omit-xml-declared is omitted in XSLT, expected false", Pri = 0, Params = new object[] { "books.xml", "OmitXmlDecl_Default.xsl", false, "Default value for OmitXmlDeclaration is 'no'" })]
-        [InlineData("books.xml", "OmitXmlDecl_Default.xsl", false, "Default value for OmitXmlDeclaration is 'no'")]
+        [InlineData("books.xml", "OmitXmlDecl_Default.xsl", false)]
         //[Variation(id = 11, Desc = "Verify OmitXmlDeclaration when omit-xml-declared is yes in XSLT, expected true", Pri = 0, Params = new object[] { "books.xml", "OmitXmlDecl_Yes.xsl", true, "OmitXmlDeclaration must be 'yes'" })]
-        [InlineData("books.xml", "OmitXmlDecl_Yes.xsl", true, "OmitXmlDeclaration must be 'yes'")]
+        [InlineData("books.xml", "OmitXmlDecl_Yes.xsl", true)]
         //[Variation(id = 12, Desc = "Verify OmitXmlDeclaration when omit-xml-declared is no in XSLT, expected false", Pri = 1, Params = new object[] { "books.xml", "OmitXmlDecl_No.xsl", false, "OmitXmlDeclaration must be 'no'" })]
-        [InlineData("books.xml", "OmitXmlDecl_No.xsl", false, "OmitXmlDeclaration must be 'no'")]
+        [InlineData("books.xml", "OmitXmlDecl_No.xsl", false)]
         [Theory]
-        public void OS3(object param0, object param1, object param2, object param3)
+        public void OS3(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
             _xsl.Load(_xslFile);
@@ -177,24 +177,24 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 18, Desc = "Verify Encoding set to windows-1252 explicitly, expected windows-1252", Pri = 1, Params = new object[] { "books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252" })]
-        [InlineData("books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252")]
+        [InlineData("books.xml", "Encoding4.xsl", "windows-1252")]
         [Theory]
-        public void OS6_Windows1252Encoding(object param0, object param1, object param2, object param3)
+        public void OS6_Windows1252Encoding(object param0, object param1, object param2)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            OS6(param0, param1, param2, param3);
+            OS6(param0, param1, param2);
         }
 
         //[Variation(id = 15, Desc = "Verify default Encoding, expected UTF-8", Pri = 1, Params = new object[] { "books.xml", "Encoding1.xsl", "utf-8", "Default Encoding must be utf-8" })]
-        [InlineData("books.xml", "Encoding1.xsl", "utf-8", "Default Encoding must be utf-8")]
+        [InlineData("books.xml", "Encoding1.xsl", "utf-8")]
         //[Variation(id = 16, Desc = "Verify Encoding set to UTF-8 explicitly, expected UTF-8", Pri = 1, Params = new object[] { "books.xml", "Encoding2.xsl", "utf-8", "Encoding must be utf-8" })]
-        [InlineData("books.xml", "Encoding2.xsl", "utf-8", "Encoding must be utf-8")]
+        [InlineData("books.xml", "Encoding2.xsl", "utf-8")]
         //[Variation(id = 17, Desc = "Verify Encoding set to UTF-16 explicitly, expected UTF-16", Pri = 1, Params = new object[] { "books.xml", "Encoding3.xsl", "utf-16", "Encoding must be utf-16" })]
-        [InlineData("books.xml", "Encoding3.xsl", "utf-16", "Encoding must be utf-16")]
+        [InlineData("books.xml", "Encoding3.xsl", "utf-16")]
         //[Variation(id = 19, Desc = "Verify Encoding when multiple xsl:output tags are present, expected the last set (iso-8859-1)", Pri = 1, Params = new object[] { "books.xml", "Encoding5.xsl", "iso-8859-1", "Encoding must be iso-8859-1" })]
-        [InlineData("books.xml", "Encoding5.xsl", "iso-8859-1", "Encoding must be iso-8859-1")]
+        [InlineData("books.xml", "Encoding5.xsl", "iso-8859-1")]
         [Theory]
-        public void OS6(object param0, object param1, object param2, object param3)
+        public void OS6(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
             _xsl.Load(_xslFile);
@@ -205,13 +205,13 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 20, Desc = "Verify Indent when indent is omitted in XSLT, expected false", Pri = 0, Params = new object[] { "books.xml", "Indent_Default.xsl", false, "Default value for Indent is 'no'" })]
-        [InlineData("books.xml", "Indent_Default.xsl", false, "Default value for Indent is 'no'")]
+        [InlineData("books.xml", "Indent_Default.xsl", false)]
         //[Variation(id = 21, Desc = "Verify Indent when indent is yes in XSLT, expected true", Pri = 0, Params = new object[] { "books.xml", "Indent_Yes.xsl", true, "Indent must be 'yes'" })]
-        [InlineData("books.xml", "Indent_Yes.xsl", true, "Indent must be 'yes'")]
+        [InlineData("books.xml", "Indent_Yes.xsl", true)]
         //[Variation(id = 22, Desc = "Verify Indent when indent is no in XSLT, expected false", Pri = 1, Params = new object[] { "books.xml", "Indent_No.xsl", false, "Indent must be 'no'" })]
-        [InlineData("books.xml", "Indent_No.xsl", false, "Indent must be 'no'")]
+        [InlineData("books.xml", "Indent_No.xsl", false)]
         [Theory]
-        public void OS7(object param0, object param1, object param2, object param3)
+        public void OS7(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
             _xsl.Load(_xslFile);

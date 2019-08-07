@@ -135,6 +135,7 @@ namespace System.Linq.Parallel.Tests
         [OuterLoop]
         public static void DegreeOfParallelism_OutOfRange(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
+            _ = count;
             Assert.Throws<ArgumentOutOfRangeException>(() => labeled.Item.WithDegreeOfParallelism(degree));
         }
 

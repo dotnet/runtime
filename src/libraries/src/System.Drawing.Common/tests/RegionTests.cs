@@ -586,22 +586,22 @@ namespace System.Drawing.Tests
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            Func<Region> empty = () =>
+            static Region Empty()
             {
                 var emptyRegion = new Region();
                 emptyRegion.MakeEmpty();
                 return emptyRegion;
-            };
+            }
 
             var createdRegion = new Region();
             yield return new object[] { createdRegion, createdRegion, true };
             yield return new object[] { new Region(), new Region(), true };
-            yield return new object[] { new Region(), empty(), false };
+            yield return new object[] { new Region(), Empty(), false };
             yield return new object[] { new Region(), new Region(new Rectangle(1, 2, 3, 4)), false };
 
-            yield return new object[] { empty(), empty(), true };
-            yield return new object[] { empty(), new Region(new Rectangle(0, 0, 0, 0)), true };
-            yield return new object[] { empty(), new Region(new Rectangle(1, 2, 3, 3)), false };
+            yield return new object[] { Empty(), Empty(), true };
+            yield return new object[] { Empty(), new Region(new Rectangle(0, 0, 0, 0)), true };
+            yield return new object[] { Empty(), new Region(new Rectangle(1, 2, 3, 3)), false };
 
             yield return new object[] { new Region(new Rectangle(1, 2, 3, 4)), new Region(new Rectangle(1, 2, 3, 4)), true };
             yield return new object[] { new Region(new Rectangle(1, 2, 3, 4)), new Region(new RectangleF(1, 2, 3, 4)), true };
@@ -2020,11 +2020,11 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(1, 2, 0, 0, 0)]
-        [InlineData(0, 0, 2, 2, 0)]
-        [InlineData(0, 0, 0.5, 0.5, 0)]
-        [InlineData(0, 0, 1, 1, 45)]
-        public void Transform_Infinity_Nop(int x, int y, float scaleX, float scaleY, int angle)
+        [InlineData(0, 0, 0)]
+        [InlineData(2, 2, 0)]
+        [InlineData(0.5, 0.5, 0)]
+        [InlineData(1, 1, 45)]
+        public void Transform_Infinity_Nop(float scaleX, float scaleY, int angle)
         {
             using (var region = new Region())
             using (var matrix = new Matrix())

@@ -28,6 +28,7 @@ namespace System.CodeDom.Tests
         [MemberData(nameof(Comment_TestData))]
         public void Ctor_String(string text, bool docComment)
         {
+            _ = docComment;
             CodeCommentStatement comment = new CodeCommentStatement(text);
             Assert.Equal(text ?? string.Empty, comment.Comment.Text);
             Assert.False(comment.Comment.DocComment);

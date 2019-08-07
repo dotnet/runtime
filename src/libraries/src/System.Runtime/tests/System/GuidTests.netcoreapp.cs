@@ -52,6 +52,7 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_LengthTooSmall_ReturnsFalse(Guid guid, string format, string expected)
         {
+            _ = expected;
             Assert.False(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out int charsWritten, format));
             Assert.Equal(0, charsWritten);
         }
@@ -60,6 +61,7 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_CharsWritten_EqualsZero_WhenSpanTooSmall(Guid guid, string format, string expected)
         {
+            _ = expected;
             Assert.False(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out int charsWritten, format));
             Assert.Equal(0, charsWritten);
         }

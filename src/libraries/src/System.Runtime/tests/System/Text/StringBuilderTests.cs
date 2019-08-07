@@ -571,6 +571,7 @@ namespace System.Text.Tests
         [InlineData("Hello", null, 0, "Hello")]
         public static unsafe void Append_CharPointer(string original, char[] charArray, int valueCount, string expected)
         {
+            _ = charArray; // https://github.com/xunit/xunit/issues/1969
             fixed (char* value = charArray)
             {
                 var builder = new StringBuilder(original);

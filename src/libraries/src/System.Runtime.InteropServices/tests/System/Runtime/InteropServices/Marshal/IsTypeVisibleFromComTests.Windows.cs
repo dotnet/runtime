@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ProtectedType), false };
             yield return new object[] { typeof(InternalType), false };
             yield return new object[] { typeof(InnerManagedInterface), false};
-            yield return new object[] { typeof(NonGenericInterface), true };
+            yield return new object[] { typeof(INonGenericInterface), true };
             yield return new object[] { typeof(NonGenericStruct), true };
             yield return new object[] { typeof(ManagedClassWithComVisibleFalse), false };
             yield return new object[] { typeof(ManagedClassWithComVisibleTrue), true };

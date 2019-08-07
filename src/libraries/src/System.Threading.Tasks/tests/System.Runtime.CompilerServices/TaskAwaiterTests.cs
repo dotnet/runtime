@@ -406,6 +406,7 @@ namespace System.Threading.Tasks.Tests
         [MemberData(nameof(CanceledTasksAndExpectedCancellationExceptions))]
         public static void OperationCanceledException_PropagatesThroughCanceledTask(int lineNumber, Task task, OperationCanceledException expected)
         {
+            _ = lineNumber;
             var caught = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
             Assert.Same(expected, caught);
         }

@@ -65,8 +65,8 @@ namespace System.Runtime.InteropServices.Tests
             var buffer = new SubBuffer(true);
             buffer.Initialize(4);
 
-            Assert.Throws<ArgumentException>(null, () => buffer.Read<int>(4));
-            Assert.Throws<ArgumentException>(null, () => buffer.Write<int>(4, 2));
+            Assert.Throws<ArgumentException>(null, () => buffer.Read<int>(byteOffset));
+            Assert.Throws<ArgumentException>(null, () => buffer.Write<int>(byteOffset, 2));
         }
 
         [Fact]

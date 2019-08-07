@@ -95,7 +95,7 @@ namespace System.Security.AccessControl.Tests
         [MemberData(nameof(DiscretionaryACL_Constructor3))]
         public static void Constructor3(bool isContainer, bool isDS, string initialRaqAclStr, string verifierRawAclStr, bool wasCanonicalInitially)
         {
-            RawAcl rawAcl = Utils.CreateRawAclFromString(verifierRawAclStr);
+            RawAcl rawAcl = Utils.CreateRawAclFromString(initialRaqAclStr);
             DiscretionaryAcl discretionaryAcl = new DiscretionaryAcl(isContainer, isDS, rawAcl);
             rawAcl = Utils.CreateRawAclFromString(verifierRawAclStr);
 

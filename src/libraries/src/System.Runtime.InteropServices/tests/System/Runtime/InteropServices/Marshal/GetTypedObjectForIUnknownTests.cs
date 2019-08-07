@@ -43,8 +43,8 @@ namespace System.Runtime.InteropServices.Tests
                 }
             }
 
-            yield return new object[] { new ClassWithInterface(), typeof(NonGenericInterface) };
-            yield return new object[] { new StructWithInterface(), typeof(NonGenericInterface) };
+            yield return new object[] { new ClassWithInterface(), typeof(INonGenericInterface) };
+            yield return new object[] { new StructWithInterface(), typeof(INonGenericInterface) };
 
             yield return new object[] { new GenericClass<string>(), typeof(object) };
             yield return new object[] { new Dictionary<string, int>(), typeof(object) };
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             yield return new object[] { typeof(GenericClass<string>) };
             yield return new object[] { typeof(GenericStruct<string>) };
-            yield return new object[] { typeof(GenericInterface<string>) };
+            yield return new object[] { typeof(IGenericInterface<string>) };
 
             yield return new object[] { typeof(GenericClass<>) };
 
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new object(), typeof(NonGenericClass) };
             yield return new object[] { new object(), typeof(NonGenericStruct) };
             yield return new object[] { new object(), typeof(NonGenericStruct) };
-            yield return new object[] { new object(), typeof(NonGenericInterface) };
+            yield return new object[] { new object(), typeof(INonGenericInterface) };
 
             yield return new object[] { new NonGenericClass(), typeof(IFormattable) };
             yield return new object[] { new ClassWithInterface(), typeof(IFormattable) };
@@ -198,8 +198,8 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        public class ClassWithInterface : NonGenericInterface { }
-        public struct StructWithInterface : NonGenericInterface { }
+        public class ClassWithInterface : INonGenericInterface { }
+        public struct StructWithInterface : INonGenericInterface { }
 
         private static void NonGenericMethod(int i) { }
         public delegate void NonGenericDelegate(int i);

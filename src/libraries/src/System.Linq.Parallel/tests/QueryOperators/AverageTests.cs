@@ -48,8 +48,10 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
-        public static void Average_Int_AllNull(int count, double average)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(16)]
+        public static void Average_Int_AllNull(int count)
         {
             Assert.Null(UnorderedSources.Default(count).Select(x => (int?)null).Average());
             Assert.Null(UnorderedSources.Default(count).Average(x => (int?)null));

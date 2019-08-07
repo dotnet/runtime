@@ -652,19 +652,19 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 1)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 2)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 3)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 4)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 5)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 6)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 7)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 8)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 9)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 10)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 11)]
-        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 12)]
-        public void EOF_Handling_20(XmlWriterUtils utils, int param)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        [InlineData(11)]
+        [InlineData(12)]
+        public void EOF_Handling_20(int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             switch (param)

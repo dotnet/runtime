@@ -149,6 +149,7 @@ namespace System.Security.Cryptography.Encoding.Tests
                 Assert.True(inputBytes.Length > 4);
 
                 // Test passing blocks > 4 characters to TransformFinalBlock (not supported)
+                _ = expected;
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("inputCount", () => transform.TransformFinalBlock(inputBytes, 0, inputBytes.Length));
             }
         }

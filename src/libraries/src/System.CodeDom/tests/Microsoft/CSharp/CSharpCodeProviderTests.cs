@@ -32,7 +32,7 @@ namespace System.CodeDom.Compiler.Tests
         [MemberData(nameof(Ctor_IDictionary_TestData))]
         public void Ctor_IDictionaryStringString(IDictionary<string, string> providerOptions)
         {
-            CSharpCodeProvider provider = new CSharpCodeProvider();
+            CSharpCodeProvider provider = new CSharpCodeProvider(providerOptions);
 #pragma warning disable 0618
             Assert.NotNull(provider.CreateGenerator());
             Assert.Same(provider.CreateGenerator(), provider.CreateCompiler());

@@ -206,7 +206,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(ManyConcatsData))]
-        public void ManyConcats(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
+        public void ManyConcats(IEnumerable<IEnumerable<int>> sources)
         {
             foreach (var transform in IdentityTransforms<int>())
             {
@@ -223,7 +223,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(ManyConcatsData))]
-        public void ManyConcatsRunOnce(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
+        public void ManyConcatsRunOnce(IEnumerable<IEnumerable<int>> sources)
         {
             foreach (var transform in IdentityTransforms<int>())
             {
@@ -239,10 +239,10 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> ManyConcatsData()
         {
-            yield return new object[] { Enumerable.Repeat(Enumerable.Empty<int>(), 256), Enumerable.Empty<int>() };
-            yield return new object[] { Enumerable.Repeat(Enumerable.Repeat(6, 1), 256), Enumerable.Repeat(6, 256) };
+            yield return new object[] { Enumerable.Repeat(Enumerable.Empty<int>(), 256) };
+            yield return new object[] { Enumerable.Repeat(Enumerable.Repeat(6, 1), 256) };
             // Make sure Concat doesn't accidentally swap around the sources, e.g. [3, 4], [1, 2] should not become [1..4]
-            yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse(), Enumerable.Range(0, 500).Reverse() };
+            yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse() };
         }
 
         [Fact]
@@ -251,25 +251,20 @@ namespace System.Linq.Tests
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };
             var tinyCollection = new DelegateBasedCollection<int> { CountWorker = () => 1 };
 
-            Action<Action> assertThrows = (testCode) =>
-            {
-                Assert.Throws<OverflowException>(testCode);
-            };
-
             // We need to use checked arithmetic summing up the collections' counts.
-            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).Count());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
+            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).Count());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
 
             // This applies to ToArray() and ToList() as well, which try to preallocate the exact size
             // needed if all inputs are ICollections.
-            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).ToArray());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
+            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).ToArray());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
 
-            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).ToList());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
-            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
+            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).ToList());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
+            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
         }
 
         [Fact]

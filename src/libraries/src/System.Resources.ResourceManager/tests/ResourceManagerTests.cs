@@ -223,18 +223,20 @@ namespace System.Resources.Tests
 
         public static IEnumerable<object[]> EnglishNonStringResourceData()
         {
-            yield return new object[] { "Int", 42 };
-            yield return new object[] { "Float", 3.14159 };
-            yield return new object[] { "Bytes", new byte[] { 41, 42, 43, 44, 192, 168, 1, 1 } };
-            yield return new object[] { "InvalidKeyName", null };
+            yield return new object[] { "Int", 42, false };
+            yield return new object[] { "Float", 3.14159, false };
+            yield return new object[] { "Bytes", new byte[] { 41, 42, 43, 44, 192, 168, 1, 1 }, false };
+            yield return new object[] { "InvalidKeyName", null, false };
+
             yield return new object[] { "Point", new Point(50, 60), true };
             yield return new object[] { "Size", new Size(20, 30), true };
         }
 
         [Theory]
         [MemberData(nameof(EnglishNonStringResourceData))]
-        public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter = false)
+        public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
+            _ = requiresBinaryFormatter;
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx.netstandard17", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
             Assert.Equal(expectedValue, manager.GetObject(key));
             Assert.Equal(expectedValue, manager.GetObject(key, new CultureInfo("en-US")));
@@ -303,8 +305,9 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishNonStringResourceData))]
-        public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter = false)
+        public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {
+            _ = requiresBinaryFormatter;
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx.netstandard17", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
             var culture = new CultureInfo("en-US");
             ResourceSet set = manager.GetResourceSet(culture, true, true);
@@ -324,7 +327,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishNonStringResourceData))]
-        public static void File_GetObject(string key, object expectedValue, bool requiresBinaryFormatter = false)
+        public static void File_GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             var manager = ResourceManager.CreateFileBasedResourceManager("TestResx.netstandard17", Directory.GetCurrentDirectory(), null);
             if (requiresBinaryFormatter)
@@ -341,7 +344,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishNonStringResourceData))]
-        public static void File_GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter = false)
+        public static void File_GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             var manager = ResourceManager.CreateFileBasedResourceManager("TestResx.netstandard17", Directory.GetCurrentDirectory(), null);
             var culture = new CultureInfo("en-US");

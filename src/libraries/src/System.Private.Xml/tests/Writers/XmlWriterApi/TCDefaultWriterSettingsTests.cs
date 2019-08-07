@@ -36,9 +36,8 @@ namespace System.Xml.Tests
             return;
         }
 
-        [Theory]
-        [XmlWriterInlineData(WriterType.AllButCustom)]
-        public void default_2(XmlWriterUtils utils)
+        [Fact]
+        public void default_2()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
@@ -118,9 +117,8 @@ namespace System.Xml.Tests
             return;
         }
 
-        [Theory]
-        [XmlWriterInlineData(WriterType.AllButCustom)]
-        public void default_8(XmlWriterUtils utils)
+        [Fact]
+        public void default_8()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.CloseOutput, false, "Incorrect default value of CloseOutput");

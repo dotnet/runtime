@@ -427,13 +427,19 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(WriteTo_TestData))]
-        public void Write_HasFeed_SerializesExpected(SyndicationFeed feed, bool serializeExtensionsAsAtom, string expected)
+        [Fact]
+        public void Write_HasFeed_SerializesExpected()
         {
+            const string Expected =
+@"    <channel>
+        <title />
+        <description />
+    </channel>";
+
+            var feed = new SyndicationFeed();
             var formatter = new Rss20FeedFormatter(feed);
-            string expectedFull = @"<rss xmlns:a10=""http://www.w3.org/2005/Atom"" version=""2.0"">" + Environment.NewLine + expected + Environment.NewLine + "</rss>";
-            string expectedSerializable = @"<feed xmlns:a10=""http://www.w3.org/2005/Atom"" version=""2.0"">" + Environment.NewLine + expected + Environment.NewLine + "</feed>";
+            string expectedFull = @"<rss xmlns:a10=""http://www.w3.org/2005/Atom"" version=""2.0"">" + Environment.NewLine + Expected + Environment.NewLine + "</rss>";
+            string expectedSerializable = @"<feed xmlns:a10=""http://www.w3.org/2005/Atom"" version=""2.0"">" + Environment.NewLine + Expected + Environment.NewLine + "</feed>";
 
             CompareHelper.AssertEqualWriteOutput(expectedFull, writer => formatter.WriteTo(writer));
             CompareHelper.AssertEqualWriteOutput(expectedFull, writer => feed.SaveAsRss20(writer));
@@ -1431,9 +1437,9 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void Read_EmptyItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Read_EmptyItem_ReturnsExpected(bool preserveElementExtensions)
         {
             VerifyRead(@"<rss version=""2.0""><channel></channel></rss>", preserveElementExtensions, preserveElementExtensions, feed =>
             {

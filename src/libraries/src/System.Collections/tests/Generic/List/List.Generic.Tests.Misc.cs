@@ -661,12 +661,8 @@ namespace System.Collections.Tests
 
             public void TrueForAll_VerifyExceptions(T[] items)
             {
-                List<T> list = new List<T>();
-                Predicate<T> predicate = delegate (T item) { return true; };
-                for (int i = 0; i < items.Length; ++i)
-                    list.Add(items[i]);
-
-                //[] Verify Null match
+                var list = new List<T>(items);
+                Assert.True(list.TrueForAll(item => true));
                 Assert.Throws<ArgumentNullException>(() => list.TrueForAll(null)); //"Err_858ahia Expected null match to throw ArgumentNullException"
             }
 

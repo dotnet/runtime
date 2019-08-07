@@ -259,6 +259,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
@@ -317,6 +318,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             byte[] outputData = new byte[inputData.Length + 1];
             outputData[0] = 252;
@@ -379,6 +381,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
@@ -441,6 +444,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string inputHex)
         {
+            _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             TryCopyBMPString_Throws(ruleSet, inputData);
         }
