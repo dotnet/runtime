@@ -1,11 +1,15 @@
 <Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
-  <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);package-$(ConfigurationGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" >
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
-    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true' AND '$(BuildAllConfigurations)' == 'true'">
+    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>
