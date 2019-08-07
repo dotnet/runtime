@@ -20,7 +20,11 @@
     </ItemGroup>    
   </Target>
 
-  <Target Name="ValidateExcludeCompileDesktop" AfterTargets="GetPackageDependencies" Inputs="%(Dependency.Identity);%(Dependency.TargetFramework)" Outputs="unused">
+  <Target Name="ValidateExcludeCompileDesktop"
+          AfterTargets="GetPackageDependencies"
+          Inputs="%(Dependency.Identity);%(Dependency.TargetFramework)" 
+          Outputs="unused"
+          Condition="'$(SkipValidatePackage)' != 'true'">
     <PropertyGroup>
       <_excludeCompile Condition="@(Dependency->WithMetadataValue('Exclude', 'Compile')->Count()) == @(Dependency->Count())">true</_excludeCompile>
     </PropertyGroup>
