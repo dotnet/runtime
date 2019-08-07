@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.Cache;
-
-    internal class NavigatorOutput : RecordOutput
+    internal sealed class NavigatorOutput : IRecordOutput
     {
         private XPathDocument _doc;
         private int _documentIndex;

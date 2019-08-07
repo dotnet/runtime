@@ -384,8 +384,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\GlobalSSPI.cs">
       <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIInterface.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIInterface.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\ISSPIInterface.cs">
+      <Link>Common\Interop\Windows\SspiCli\ISSPIInterface.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
       <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs</Link>

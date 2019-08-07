@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Collections;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Collections;
-
-    internal class ReaderOutput : XmlReader, RecordOutput
+    internal sealed class ReaderOutput : XmlReader, IRecordOutput
     {
         private Processor _processor;
         private XmlNameTable _nameTable;
