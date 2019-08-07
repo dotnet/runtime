@@ -179,7 +179,7 @@ public static class Program
     private static async Task AwaitCancelKeyPress()
     {
         var tcs = new TaskCompletionSource<bool>();
-        Console.CancelKeyPress += (sender,args) => { Console.Error.WriteLine("Keyboard interrupt"); tcs.TrySetResult(false); };
+        Console.CancelKeyPress += (sender,args) => { Console.Error.WriteLine("Keyboard interrupt"); args.Cancel = true; tcs.TrySetResult(false); };
         await tcs.Task;
     }
 
