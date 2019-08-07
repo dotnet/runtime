@@ -12,6 +12,7 @@ parameters:
   corefxTests: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  publishTestArtifacts: false
 
 ### Test job
 
@@ -323,6 +324,35 @@ jobs:
           - forcerelocs
           - gcstress15
 
+    # Zip tests
+    - ${{ if and(eq(parameters.publishTestArtifacts, true), ne(parameters.corefxTests, true)) }}:
+      - task: ArchiveFiles@2
+        displayName: Zip Tests
+        inputs:
+          rootFolderOrFile: $(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper)
+
+          ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+            archiveType: tar
+            tarCompression: gz
+            archiveFile: $(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper).tar.gz
+          ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+            archiveType: zip
+            archiveFile: $(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper).zip
+          includeRootFolder: true 
+
+    - ${{ if and(eq(parameters.publishTestArtifacts, true), ne(parameters.corefxTests, true)) }}:
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Test Build
+        inputs:
+          ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+            pathtoPublish: $(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper).tar.gz
+          ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+            pathtoPublish: $(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper).zip
+
+          ${{ if eq(parameters.readyToRun, true) }}:
+            artifactName: ${{ format('Tests_{0}_{1}_{2}_{3}_{4}', '_r2r',        parameters.osIdentifier, parameters.archType, parameters.buildConfig, parameters.testGroup) }}
+          ${{ if ne(parameters.readyToRun, true) }}:
+            artifactName: ${{ format('Tests_{0}_{1}_{2}_{3}_{4}', '',            parameters.osIdentifier, parameters.archType, parameters.buildConfig, parameters.testGroup) }}
 
     # Publish Logs
     - task: PublishBuildArtifacts@1
