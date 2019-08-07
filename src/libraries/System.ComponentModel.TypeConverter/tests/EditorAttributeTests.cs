@@ -71,28 +71,21 @@ namespace System.ComponentModel.Tests
             AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseType", () => new EditorAttribute(typeof(int), null));
         }
 
+        public static IEnumerable<object[]> TypeId_TestData()
+        {
+            yield return new object[] { "BaseTypeName", "System.ComponentModel.EditorAttributeBaseTypeName" };
+            yield return new object[] { "BaseTypeName,Other", "System.ComponentModel.EditorAttributeBaseTypeName" };
+            yield return new object[] { string.Empty, "System.ComponentModel.EditorAttribute" };
+            yield return new object[] { null, "System.ComponentModel.EditorAttribute" };
+        }
+
         [Theory]
-        [InlineData("BaseTypeName", "System.ComponentModel.EditorAttributeBaseTypeName")]
-        [InlineData("BaseTypeName,Other", "System.ComponentModel.EditorAttributeBaseTypeName")]
-        public void TypeId_ValidEditorBaseTypeName_ReturnsExcepted(string baseTypeName, object expected)
+        [MemberData(nameof(TypeId_TestData))]
+        public void TypeId_Get_ReturnsExcepted(string baseTypeName, object expected)
         {
             var attribute = new EditorAttribute("Type", baseTypeName);
             Assert.Equal(expected, attribute.TypeId);
             Assert.Same(attribute.TypeId, attribute.TypeId);
-        }
-
-        [Fact]
-        public void TypeId_NullBaseTypeName_ReturnsExpected()
-        {
-            var attribute = new EditorAttribute("Type", (string)null);
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal("System.ComponentModel.EditorAttribute", attribute.TypeId);
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
-            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()

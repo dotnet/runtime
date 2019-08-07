@@ -21,8 +21,8 @@ namespace System.ComponentModel.Tests
         public static IEnumerable<object[]> Equals_TestData()
         {
             var attribute = new ExtenderProvidedPropertyAttribute();
-
             yield return new object[] { attribute, attribute, true };
+            yield return new object[] { attribute, new ExtenderProvidedPropertyAttribute(), true };
 
             yield return new object[] { attribute, new object(), false };
             yield return new object[] { attribute, null, false };
@@ -36,20 +36,6 @@ namespace System.ComponentModel.Tests
             if (other is ExtenderProvidedPropertyAttribute)
             {
                 Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
-            }
-        }
-
-        [Fact]
-        public void Equals_NullProperties_ThrowsNullReferenceException()
-        {
-            var attribute = new ExtenderProvidedPropertyAttribute();
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.True(attribute.Equals(new ExtenderProvidedPropertyAttribute()));
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => attribute.Equals(new ExtenderProvidedPropertyAttribute()));
             }
         }
     }

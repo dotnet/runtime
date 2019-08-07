@@ -98,6 +98,8 @@ namespace System.ComponentModel.Design.Tests
                 },
                 "00000000-0000-0000-0000-000000000000 : 0 : Supported|Enabled|Visible|Checked"
             };
+
+            yield return new object[] { new MenuCommand(new EventHandler(EventHandler), null), " : Supported|Enabled|Visible" };
         }
 
         [Theory]
@@ -105,20 +107,6 @@ namespace System.ComponentModel.Design.Tests
         public void ToString_Invoke_ReturnsExpected(MenuCommand command, string expected)
         {
             Assert.Equal(expected, command.ToString());
-        }
-
-        [Fact]
-        public void ToString_NullCommandI_ReturnsExpected()
-        {
-            var command = new MenuCommand(new EventHandler(EventHandler), null);
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal(" : Supported|Enabled|Visible", command.ToString());
-            }
-            else
-            {
-                Assert.Throws<NullReferenceException>(() => command.ToString());
-            }
         }
 
         [Fact]
