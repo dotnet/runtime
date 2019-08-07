@@ -3,9 +3,9 @@
   <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
-    <BuildNative Condition="'$(BuildNative)' == ''">true</BuildNative>
+    <BuildNative Condition="'$(BuildNative)' == '' and '$(DirectoryToBuild)' == ''">true</BuildNative>
     <BuildManaged Condition="'$(BuildManaged)' == ''">true</BuildManaged>
-    <BuildPackages Condition="'$(BuildPackages)' == ''">true</BuildPackages>
+    <BuildPackages Condition="'$(BuildPackages)' == '' and '$(DirectoryToBuild)' == ''">true</BuildPackages>
 
     <BuildDependsOn Condition="'$(BuildNative)' == 'true'">$(BuildDependsOn);BuildNative</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
@@ -18,7 +18,7 @@
   <Import Project="Directory.Build.targets" />
 
   <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
-    <ItemGroup>
+    <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
       <_RestoreProjects Include="$(RepositoryEngineeringDir)restore\dirs.proj" Build="true" />
     </ItemGroup>
     
