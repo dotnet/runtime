@@ -1,7 +1,6 @@
 <Project>
   <ItemGroup>
-    <ProjectToBuild Condition="'$(DirectoryToBuild)' == ''" Include="$(RepoRoot)build.proj" />
-    <ProjectToBuild Condition="'$(DirectoryToBuild)' != ''" Include="$(RepoRoot)src\dirs.proj" />
+    <ProjectToBuild Include="$(RepoRoot)build.proj" />
   </ItemGroup>
   <ItemGroup>
     <SolutionBuildTargets Condition="'$(BuildTests)' == 'true'" Include="BuildTests" />
