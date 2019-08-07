@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator(null, null, null, SslPolicyErrors.None));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
         [InlineData(SslProtocols.Tls, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
@@ -38,16 +39,26 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.None, true)]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
+            // Overriding flag for the same reason we skip tests on Catalina
+            // On OSX 10.13-10.14 we can override this flag to enable the scenario
+            // Issue: #22089
+            requestOnlyThisProtocol |= PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls;
+
+            if (PlatformDetection.IsMacOsCatalinaOrHigher && acceptedProtocol == SslProtocols.Tls && IsCurlHandler)
+            {
+                // Issue: #39989
+                // When the server uses SslProtocols.Tls, on MacOS, SecureTransport ends up picking a cipher suite
+                // for TLS1.2, even though server said it was only using TLS1.0. LibreSsl throws error that
+                // wrong cipher is used for TLS1.0.
+                throw new SkipTestException("OSX may pick future cipher suites when asked for TLS1.0");
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-                // Refer issue: #22089
-                // When the server uses SslProtocols.Tls, on MacOS, SecureTransport ends up picking a cipher suite
-                // for TLS1.2, even though server said it was only using TLS1.0. LibreSsl throws error that
-                // wrong cipher is used for TLs1.0.
-                if (requestOnlyThisProtocol || (PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls))
+                if (requestOnlyThisProtocol)
                 {
                     handler.SslProtocols = acceptedProtocol;
                 }

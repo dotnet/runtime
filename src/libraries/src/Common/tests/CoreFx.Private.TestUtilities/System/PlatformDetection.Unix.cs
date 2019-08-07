@@ -46,7 +46,8 @@ namespace System
         public static bool IsMacOsHighSierraOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 13));
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
         public static bool IsMacOsMojaveOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 14));
-        
+        public static bool IsMacOsCatalinaOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 15));
+
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsNotRedHatFamily => !IsRedHatFamily;
