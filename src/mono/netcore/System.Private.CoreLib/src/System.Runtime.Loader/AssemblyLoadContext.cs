@@ -116,7 +116,7 @@ namespace System.Runtime.Loader
 		}
 
 		// Invoked by Mono to resolve using the load method.
-		private static Assembly? MonoResolveUsingLoad (IntPtr gchALC, string assemblyName)
+		static Assembly? MonoResolveUsingLoad (IntPtr gchALC, string assemblyName)
 		{
 			return Resolve (gchALC, new AssemblyName (assemblyName));
 		}
@@ -124,125 +124,15 @@ namespace System.Runtime.Loader
 		// Invoked by Mono to resolve using the Resolving event after
 		// trying the Load override and default load context without
 		// success.
-		private static Assembly? MonoResolveUsingResolvingEvent (IntPtr gchALC, string assemblyName)
+		static Assembly? MonoResolveUsingResolvingEvent (IntPtr gchALC, string assemblyName)
 		{
 			return ResolveUsingResolvingEvent (gchALC, new AssemblyName (assemblyName));
 		}
 
 		// Invoked by Mono to resolve requests to load satellite assemblies. 
-		private static Assembly? MonoResolveUsingResolveSatelliteAssembly (IntPtr gchALC, string assemblyName)
+		static Assembly? MonoResolveUsingResolveSatelliteAssembly (IntPtr gchALC, string assemblyName)
 		{
 			return ResolveSatelliteAssembly (gchALC, new AssemblyName (assemblyName));
 		}
-
-
-#region Copied from AssemblyLoadContext.CoreCLR.cs
-		// WISH: let's share this code
-
-		// This method is invoked by the VM when using the host-provided assembly load context
-		// implementation.
-		private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-		{
-			AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-			return context.ResolveUsingLoad(assemblyName);
-		}
-
-		// This method is invoked by the VM to resolve an assembly reference using the Resolving event
-		// after trying assembly resolution via Load override and TPA load context without success.
-		private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-		{
-			AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-			// Invoke the AssemblyResolve event callbacks if wired up
-			return context.ResolveUsingEvent(assemblyName);
-		}
-
-		// This method is invoked by the VM to resolve a satellite assembly reference
-		// after trying assembly resolution via Load override without success.
-		private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-		{
-			AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-			// Invoke the ResolveSatelliteAssembly method
-			return context.ResolveSatelliteAssembly(assemblyName);
-		}
-
-		private Assembly? GetFirstResolvedAssembly(AssemblyName assemblyName)
-		{
-			Assembly? resolvedAssembly = null;
-
-			Func<AssemblyLoadContext, AssemblyName, Assembly>? assemblyResolveHandler = _resolving;
-
-			if (assemblyResolveHandler != null)
-			{
-				// Loop through the event subscribers and return the first non-null Assembly instance
-				foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in assemblyResolveHandler.GetInvocationList())
-				{
-					resolvedAssembly = handler(this, assemblyName);
-					if (resolvedAssembly != null)
-					{
-						return resolvedAssembly;
-					}
-				}
-			}
-
-			return null;
-		}
-
-		private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
-		{
-			// Get the name of the loaded assembly
-			string? loadedSimpleName = null;
-
-			// Derived type's Load implementation is expected to use one of the LoadFrom* methods to get the assembly
-			// which is a RuntimeAssembly instance. However, since Assembly type can be used build any other artifact (e.g. AssemblyBuilder),
-			// we need to check for RuntimeAssembly.
-			RuntimeAssembly? rtLoadedAssembly = assembly as RuntimeAssembly;
-			if (rtLoadedAssembly != null)
-			{
-				loadedSimpleName = rtLoadedAssembly.GetSimpleName();
-			}
-
-			// The simple names should match at the very least
-			if (string.IsNullOrEmpty(requestedSimpleName))
-			{
-				throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
-			}
-			if (string.IsNullOrEmpty(loadedSimpleName) || !requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
-			{
-				throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
-			}
-
-			return assembly;
-		}
-
-		private Assembly? ResolveUsingLoad(AssemblyName assemblyName)
-		{
-			string? simpleName = assemblyName.Name;
-			Assembly? assembly = Load(assemblyName);
-
-			if (assembly != null)
-			{
-				assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
-			}
-
-			return assembly;
-		}
-
-		private Assembly? ResolveUsingEvent(AssemblyName assemblyName)
-		{
-			string? simpleName = assemblyName.Name;
-
-			// Invoke the AssemblyResolve event callbacks if wired up
-			Assembly? assembly = GetFirstResolvedAssembly(assemblyName);
-			if (assembly != null)
-			{
-				assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
-			}
-
-			return assembly;
-		}
-#endregion
 	}
 }
