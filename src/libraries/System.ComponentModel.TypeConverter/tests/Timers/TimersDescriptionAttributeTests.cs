@@ -15,15 +15,8 @@ namespace System.Timers.Tests
         public void Ctor_String(string description)
         {
             var attribute = new TimersDescriptionAttribute(description);
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.Null(attribute.Description);
-            }
-            else
-            {
-                Assert.Equal(description, attribute.Description);
-                Assert.Same(attribute.Description, attribute.Description);
-            }
+            Assert.Equal(description, attribute.Description);
+            Assert.Same(attribute.Description, attribute.Description);
         }
 
         [Fact]

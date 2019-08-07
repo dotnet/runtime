@@ -13,11 +13,7 @@ namespace System.ComponentModel.Design.Tests
     {
         public static IEnumerable<object[]> Ctor_TestData()
         {
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { null };
-            }
-
+            yield return new object[] { null };
             yield return new object[] { new IDesignerHost[] { new TestDesignerHost(), null, new TestDesignerHost() } };
         }
 

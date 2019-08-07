@@ -160,19 +160,12 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void CreateInstance_CaseSensitive()
         {
-            // NET Framework throws NullReferenceException but we want it to be friendly on Core so it 
-            // correctly throws an ArgumentException
-            Type expectedExceptionType =
-                PlatformDetection.IsFullFramework ? typeof(NullReferenceException) : typeof(ArgumentException);
-
-            Assert.Throws(expectedExceptionType, () =>
+            var propertyValues = new Dictionary<string, object>
             {
-                Converter.CreateInstance(null, new Dictionary<string, object>
-                {
-                    ["width"] = 1,
-                    ["Height"] = 1,
-                });
-            });
+                ["width"] = 1,
+                ["Height"] = 1,
+            };
+            Assert.Throws<ArgumentException>(() => Converter.CreateInstance(null, propertyValues));
         }
 
         [Fact]

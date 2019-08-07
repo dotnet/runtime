@@ -21,12 +21,8 @@ namespace System.ComponentModel.Tests
 
         public static IEnumerable<object[]> Ctor_Object_TestData()
         {
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { null, null };
-            }
-
-                yield return new object[] { "componentChanged", typeof(string) };
+            yield return new object[] { null, null };
+            yield return new object[] { "componentChanged", typeof(string) };
         }
 
         [Theory]
