@@ -56,11 +56,18 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PatchAsync_Success()
         {
-            Action<HttpResponseMessage> verify = message => { using (message) Assert.Equal(HttpStatusCode.OK, message.StatusCode); };
+            static void Verify(HttpResponseMessage message)
+            {
+                using (message)
+                {
+                    Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+                }
+            }
+
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
-                verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
-                verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
+                Verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
+                Verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
             }
         }
 

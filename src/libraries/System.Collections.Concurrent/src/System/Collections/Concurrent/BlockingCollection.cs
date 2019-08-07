@@ -797,8 +797,8 @@ nameof(boundedCapacity), boundedCapacity,
 #endif
                 TryAddToAny(collections, item, Timeout.Infinite, CancellationToken.None);
 #if DEBUG
-            Debug.Assert((tryAddAnyReturnValue >= 0 && tryAddAnyReturnValue < collections.Length)
-                                , "TryAddToAny() was expected to return an index within the bounds of the collections array.");
+            Debug.Assert(tryAddAnyReturnValue >= 0 && tryAddAnyReturnValue < collections.Length,
+                         "TryAddToAny() was expected to return an index within the bounds of the collections array.");
             return tryAddAnyReturnValue;
 #endif
         }
@@ -839,8 +839,8 @@ nameof(boundedCapacity), boundedCapacity,
 #endif
                 TryAddToAny(collections, item, Timeout.Infinite, cancellationToken);
 #if DEBUG
-            Debug.Assert((tryAddAnyReturnValue >= 0 && tryAddAnyReturnValue < collections.Length)
-                                , "TryAddToAny() was expected to return an index within the bounds of the collections array.");
+            Debug.Assert(tryAddAnyReturnValue >= 0 && tryAddAnyReturnValue < collections.Length,
+                         "TryAddToAny() was expected to return an index within the bounds of the collections array.");
             return tryAddAnyReturnValue;
 #endif
         }
@@ -1199,8 +1199,8 @@ nameof(boundedCapacity), boundedCapacity,
         public static int TakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item, CancellationToken cancellationToken)
         {
             int returnValue = TryTakeFromAnyCore(collections, out item, Timeout.Infinite, true, cancellationToken);
-            Debug.Assert((returnValue >= 0 && returnValue < collections.Length)
-                                          , "TryTakeFromAny() was expected to return an index within the bounds of the collections array.");
+            Debug.Assert(returnValue >= 0 && returnValue < collections.Length,
+                         "TryTakeFromAny() was expected to return an index within the bounds of the collections array.");
             return returnValue;
         }
 

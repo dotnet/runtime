@@ -101,7 +101,6 @@
     <Rule Id="SA1108" Action="None" /> <!-- Block statements should not contain embedded comments -->
     <Rule Id="SA1110" Action="None" /> <!-- Opening parenthesis or bracket should be on declaration line -->
     <Rule Id="SA1111" Action="None" /> <!-- Closing parenthesis should be on line of last parameter -->
-    <Rule Id="SA1113" Action="None" /> <!-- Comma should be on the same line as previous parameter -->
     <Rule Id="SA1114" Action="None" /> <!-- Parameter list should follow declaration -->
     <Rule Id="SA1116" Action="None" /> <!-- Split parameters should start on line after declaration -->
     <Rule Id="SA1117" Action="None" /> <!-- Parameters should be on same line or separate lines -->
