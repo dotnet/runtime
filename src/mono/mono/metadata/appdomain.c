@@ -3104,10 +3104,10 @@ unload_thread_main (void *arg)
 
 	/* Clear references to our vtables in class->runtime_info.
 	 * We also hold the loader lock because we're going to change
-	 * class->runtime_info.
+ 	 * class->runtime_info.
 	 */
 
-	mono_loader_lock (); //FIXME why do we need the loader lock here?
+	mono_loader_lock ();
 	mono_domain_lock (domain);
 	/*
 	 * We need to make sure that we don't have any remsets

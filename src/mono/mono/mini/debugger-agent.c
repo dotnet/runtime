@@ -2232,22 +2232,34 @@ static AgentDomainInfo*
 get_agent_domain_info (MonoDomain *domain)
 {
 	AgentDomainInfo *info = NULL;
+	MonoJitDomainInfo *jit_info = domain_jit_info (domain);
 
-	mono_domain_lock (domain);
+	info = (AgentDomainInfo *)jit_info->agent_info;
 
-	info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
-	if (!info) {
-		info = g_new0 (AgentDomainInfo, 1);
-		domain_jit_info (domain)->agent_info = info;
-		info->loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		info->source_files = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		info->source_file_to_class = g_hash_table_new (g_str_hash, g_str_equal);
-		info->source_file_to_class_ignorecase = g_hash_table_new (g_str_hash, g_str_equal);
+	if (info) {
+		mono_memory_read_barrier ();
+		return info;
 	}
 
-	mono_domain_unlock (domain);
+	info = g_new0 (AgentDomainInfo, 1);
+	info->loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->source_files = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->source_file_to_class = g_hash_table_new (g_str_hash, g_str_equal);
+	info->source_file_to_class_ignorecase = g_hash_table_new (g_str_hash, g_str_equal);
 
-	return info;
+	mono_memory_write_barrier ();
+
+	gpointer other_info = mono_atomic_cas_ptr (&jit_info->agent_info, info, NULL);
+
+	if (other_info != NULL) {
+		g_hash_table_destroy (info->loaded_classes);
+		g_hash_table_destroy (info->source_files);
+		g_hash_table_destroy (info->source_file_to_class);
+		g_hash_table_destroy (info->source_file_to_class_ignorecase);
+		g_free (info);
+	}
+
+	return (AgentDomainInfo *)jit_info->agent_info;
 }
 
 static int
@@ -7378,7 +7390,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		domain = decode_domainid (p, &p, end, NULL, &err);
 		if (err != ERR_NONE)
 			return err;
-		mono_loader_lock (); // FIXME: should be the domain assemblies lock?
+		mono_domain_assemblies_lock (domain);
 		count = 0;
 		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 			count ++;
@@ -7388,7 +7400,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			ass = (MonoAssembly *)tmp->data;
 			buffer_add_assemblyid (buf, domain, ass);
 		}
-		mono_loader_unlock ();
+		mono_domain_assemblies_unlock (domain);
 		break;
 	}
 	case CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY: {
