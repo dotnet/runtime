@@ -13636,14 +13636,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 #endif
 
-#ifdef TRANSLATE_PDB
-    if (*dp != dst)
-    {
-        // only map instruction groups to instruction groups
-        MapCode(id->idDebugOnlyInfo()->idilStart, *dp);
-    }
-#endif
-
     *dp = dst;
 
 #ifdef DEBUG
