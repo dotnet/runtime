@@ -124,7 +124,7 @@ namespace System.Net.Http
                         }
                         if  (idx < proxyHelper.ProxyBypass.Length && proxyHelper.ProxyBypass[idx] == ';')
                         {
-                            idx ++;
+                            idx++;
                         }
                         if (tmp == null)
                         {

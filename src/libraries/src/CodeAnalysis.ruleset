@@ -88,7 +88,6 @@
     <Rule Id="SA1012" Action="None" /> <!-- Opening brace should be followed by a space -->
     <Rule Id="SA1013" Action="None" /> <!-- Closing brace should be preceded by a space -->
     <Rule Id="SA1015" Action="None" /> <!-- Closing generic bracket should not be followed by a space -->
-    <Rule Id="SA1020" Action="None" /> <!-- Increment symbol '++' should not be preceded by a space -->
     <Rule Id="SA1021" Action="None" /> <!-- Negative sign should be preceded by a space -->
     <Rule Id="SA1023" Action="None" /> <!-- Dereference symbol '*' should not be preceded by a space." -->
     <Rule Id="SA1024" Action="None" /> <!-- Colon should be followed by a space -->
