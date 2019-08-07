@@ -75,12 +75,15 @@ namespace System.Net.Http.HPack
             {
                 var newBuffer = new HeaderField[maxSize / HeaderField.RfcOverhead];
 
-                for (var i = 0; i < Count; i++)
-                {
-                    newBuffer[i] = _buffer[i];
-                }
+                int headCount = Math.Min(_buffer.Length - _removeIndex, _count);
+                int tailCount = _count - headCount;
+
+                Array.Copy(_buffer, _removeIndex, newBuffer, 0, headCount);
+                Array.Copy(_buffer, 0, newBuffer, headCount, tailCount);
 
                 _buffer = newBuffer;
+                _removeIndex = 0;
+                _insertIndex = _count;
                 _maxSize = maxSize;
             }
             else
@@ -94,7 +97,10 @@ namespace System.Net.Http.HPack
         {
             while (_count > 0 && _maxSize - _size < available)
             {
-                _size -= _buffer[_removeIndex].Length;
+                ref HeaderField field = ref _buffer[_removeIndex];
+                _size -= field.Length;
+                field = default;
+
                 _count--;
                 _removeIndex = (_removeIndex + 1) % _buffer.Length;
             }
