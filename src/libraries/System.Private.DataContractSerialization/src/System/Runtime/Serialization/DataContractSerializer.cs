@@ -348,9 +348,7 @@ namespace System.Runtime.Serialization
                 {
                     if (contract.CanContainReferences)
                     {
-                        XmlObjectSerializerWriteContext context = XmlObjectSerializerWriteContext.CreateContext(this, contract
-                                                                                                                              , dataContractResolver
-                                                                                                                                                    );
+                        XmlObjectSerializerWriteContext context = XmlObjectSerializerWriteContext.CreateContext(this, contract, dataContractResolver);
                         context.HandleGraphAtTopLevel(writer, graph, contract);
                         context.SerializeWithoutXsiType(contract, writer, graph, declaredType.TypeHandle);
                     }
@@ -366,9 +364,7 @@ namespace System.Runtime.Serialization
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IsAnyCannotBeSerializedAsDerivedType, graphType, contract.UnderlyingType)));
 
                     contract = GetDataContract(contract, declaredType, graphType);
-                    context = XmlObjectSerializerWriteContext.CreateContext(this, RootContract
-                                                                                              , dataContractResolver
-                                                                                                                    );
+                    context = XmlObjectSerializerWriteContext.CreateContext(this, RootContract, dataContractResolver);
                     if (contract.CanContainReferences)
                     {
                         context.HandleGraphAtTopLevel(writer, graph, contract);

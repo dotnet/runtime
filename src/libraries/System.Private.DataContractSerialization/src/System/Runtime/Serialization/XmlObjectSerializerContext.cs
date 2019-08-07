@@ -47,9 +47,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-        internal XmlObjectSerializerContext(DataContractSerializer serializer, DataContract rootTypeDataContract
-                                                                                                                , DataContractResolver dataContractResolver
-                                                                                                                                                           )
+        internal XmlObjectSerializerContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver dataContractResolver)
             : this(serializer,
             serializer.MaxItemsInObjectGraph,
             new StreamingContext(),
