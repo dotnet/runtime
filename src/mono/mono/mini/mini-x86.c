@@ -1009,14 +1009,12 @@ void
 mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
-	MonoMethodHeader *header;
 	MonoInst *inst;
 	guint32 locals_stack_size, locals_stack_align;
 	int i, offset;
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	header = cfg->header;
 	sig = mono_method_signature_internal (cfg->method);
 
 	if (!cfg->arch.cinfo)

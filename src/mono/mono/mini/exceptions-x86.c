@@ -57,7 +57,7 @@ extern int (*gUnhandledExceptionHandler)(EXCEPTION_POINTERS*);
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler(er->ExceptionCode, &info, ctx)
 
-LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
+static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
 #ifndef MONO_CROSS_COMPILE
 	if (mono_old_win_toplevel_exception_filter) {
@@ -137,8 +137,6 @@ mono_win32_get_handle_stackoverflow (void)
 static void 
 win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 {
-	SYSTEM_INFO si;
-	DWORD page_size;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo rji;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
@@ -149,10 +147,6 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 	StackFrameInfo frame;
 
 	mono_sigctx_to_monoctx (sctx, &ctx);
-	
-	/* get our os page size */
-	GetSystemInfo(&si);
-	page_size = si.dwPageSize;
 
 	/* Let's walk the stack to recover
 	 * the needed stack space (if possible)
@@ -192,7 +186,7 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
  * Unhandled Exception Filter
  * Top-level per-process exception handler.
  */
-LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
+static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 {
 	EXCEPTION_RECORD* er;
 	CONTEXT* ctx;
@@ -1054,6 +1048,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 #endif
 }
 
+#if defined (MONO_ARCH_USE_SIGACTION) && !defined (MONO_CROSS_COMPILE)
 static MonoObject*
 restore_soft_guard_pages (void)
 {
@@ -1088,7 +1083,6 @@ prepare_for_guard_pages (MonoContext *mctx)
 	mctx->esp = (unsigned long)sp;
 }
 
-
 static void
 altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 {
@@ -1104,6 +1098,7 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 	}
 	mono_restore_context (&mctx);
 }
+#endif
 
 void
 mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)

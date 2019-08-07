@@ -3882,16 +3882,6 @@ collect_thread (gpointer key, gpointer value, gpointer user)
 		ud->threads [ud->nthreads ++] = mono_gchandle_new_internal (&thread->obj, TRUE);
 }
 
-static void
-collect_thread_id (gpointer key, gpointer value, gpointer user)
-{
-	CollectThreadIdsUserData *ud = (CollectThreadIdsUserData *)user;
-	MonoInternalThread *thread = (MonoInternalThread *)value;
-
-	if (ud->nthreads < ud->max_threads)
-		ud->threads [ud->nthreads ++] = thread_get_tid (thread);
-}
-
 /*
  * Collect running threads into the THREADS array.
  * THREADS should be an array allocated on the stack.
@@ -3912,27 +3902,6 @@ collect_threads (guint32 *thread_handles, int max_threads)
 
 	mono_threads_lock ();
 	mono_g_hash_table_foreach (threads, collect_thread, &ud);
-	mono_threads_unlock ();
-
-	return ud.nthreads;
-}
-
-static int
-collect_thread_ids (MonoNativeThreadId *thread_ids, int max_threads)
-{
-	CollectThreadIdsUserData ud;
-
-	mono_memory_barrier ();
-	if (!threads)
-		return 0;
-
-	memset (&ud, 0, sizeof (ud));
-	/* This array contains refs, but its on the stack, so its ok */
-	ud.threads = thread_ids;
-	ud.max_threads = max_threads;
-
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, collect_thread_id, &ud);
 	mono_threads_unlock ();
 
 	return ud.nthreads;
@@ -6272,6 +6241,37 @@ summarizer_supervisor_end (SummarizerSupervisorState *state)
 #endif
 }
 #endif
+
+static void
+collect_thread_id (gpointer key, gpointer value, gpointer user)
+{
+	CollectThreadIdsUserData *ud = (CollectThreadIdsUserData *)user;
+	MonoInternalThread *thread = (MonoInternalThread *)value;
+
+	if (ud->nthreads < ud->max_threads)
+		ud->threads [ud->nthreads ++] = thread_get_tid (thread);
+}
+
+static int
+collect_thread_ids (MonoNativeThreadId *thread_ids, int max_threads)
+{
+	CollectThreadIdsUserData ud;
+
+	mono_memory_barrier ();
+	if (!threads)
+		return 0;
+
+	memset (&ud, 0, sizeof (ud));
+	/* This array contains refs, but its on the stack, so its ok */
+	ud.threads = thread_ids;
+	ud.max_threads = max_threads;
+
+	mono_threads_lock ();
+	mono_g_hash_table_foreach (threads, collect_thread_id, &ud);
+	mono_threads_unlock ();
+
+	return ud.nthreads;
+}
 
 static gboolean
 summarizer_state_init (SummarizerGlobalState *state, MonoNativeThreadId current, int *my_index)
