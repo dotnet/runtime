@@ -890,15 +890,6 @@ ShutdownTransport()
         g_pDbgTransport = NULL;
     }
 }
-
-void
-AbortTransport()
-{
-    if (g_pDbgTransport != NULL)
-    {
-        g_pDbgTransport->AbortConnection();
-    }
-}
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
 
@@ -1895,6 +1886,16 @@ void NotifyDebuggerOfStartup()
 
 #endif // !FEATURE_PAL
 
+void Debugger::CleanupTransportSocket(void)
+{
+#if defined(FEATURE_PAL) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    if (g_pDbgTransport != NULL)
+    {
+        g_pDbgTransport->AbortConnection();
+    }
+#endif // FEATURE_PAL && FEATURE_DBGIPC_TRANSPORT_VM
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Initialize Left-Side debugger object
@@ -2047,9 +2048,6 @@ HRESULT Debugger::Startup(void)
             ShutdownTransport();
             ThrowHR(hr);
         }
-    #ifdef FEATURE_PAL
-        PAL_SetShutdownCallback(AbortTransport);
-    #endif // FEATURE_PAL
     #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
         RaiseStartupNotification();
