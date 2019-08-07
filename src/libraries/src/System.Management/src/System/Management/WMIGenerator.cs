@@ -1204,7 +1204,7 @@ namespace System.Management
                 // or array of ManagementBaseObject. If so then the property
                 // is of type embedded object
                 if((cmp.Type.ArrayRank == 0 && cmp.Type.BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType) ||
-                    cmp.Type.ArrayRank > 0 && cmp.Type.ArrayElementType .BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType)
+                    cmp.Type.ArrayRank > 0 && cmp.Type.ArrayElementType.BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType)
                 {
                     bHasEmbeddedProperties = true;
                 }
