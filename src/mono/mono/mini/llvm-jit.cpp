@@ -176,7 +176,11 @@ struct MonoLLVMJIT {
 		auto resolver = createLegacyLookupResolver (execution_session,
 			lookup_name, on_error);
 		resolvers[k] = std::move (resolver);
-		compile_layer.addModule (k, std::move(m));
+		auto err = compile_layer.addModule (k, std::move(m));
+		if (err) {
+			outs () << "addModule error: " << err << "\n";
+			assert (0);
+		}
 		return k;
 	}
 
