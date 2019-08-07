@@ -347,19 +347,11 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
+    if [[ ("$__HostOS" == "Linux") && ("$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "arm64") ]]; then
+         __isMSBuildOnNETCoreSupported=1
+    fi
     if [ "$__HostArch" == "x64" ]; then
-        if [ "$__HostOS" == "Linux" ]; then
-            __isMSBuildOnNETCoreSupported=1
-            # note: the RIDs below can use globbing patterns
-            UNSUPPORTED_RIDS=("ubuntu.17.04-x64")
-            for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
-            do
-                if [[ ${__DistroRid} == $UNSUPPORTED_RID ]]; then
-                    __isMSBuildOnNETCoreSupported=0
-                    break
-                fi
-            done
-        elif [ "$__HostOS" == "OSX" ]; then
+        if [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         elif [ "$__HostOS" == "FreeBSD" ]; then
             __isMSBuildOnNETCoreSupported=1
