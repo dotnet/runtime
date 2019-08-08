@@ -11,7 +11,6 @@ namespace System
         //
         private const int MBIG = int.MaxValue;
         private const int MSEED = 161803398;
-        private const int MZ = 0;
 
         //
         // Member Variables

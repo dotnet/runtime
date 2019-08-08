@@ -136,8 +136,7 @@ namespace System
         private const int base64LineBreakPosition = 76;
 
 #if DEBUG
-        private static bool TriggerAsserts = DoAsserts();
-        private static bool DoAsserts()
+        static Convert()
         {
             Debug.Assert(ConvertTypes != null, "[Convert.cctor]ConvertTypes!=null");
             Debug.Assert(ConvertTypes.Length == ((int)TypeCode.String + 1), "[Convert.cctor]ConvertTypes.Length == ((int)TypeCode.String + 1)");
@@ -147,7 +146,6 @@ namespace System
                             "[Convert.cctor]ConvertTypes[(int)TypeCode.String]==typeof(System.String)");
             Debug.Assert(ConvertTypes[(int)TypeCode.Int32] == typeof(int),
                             "[Convert.cctor]ConvertTypes[(int)TypeCode.Int32]==typeof(int)");
-            return true;
         }
 #endif
 

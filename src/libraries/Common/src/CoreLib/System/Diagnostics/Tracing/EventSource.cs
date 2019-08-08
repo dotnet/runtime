@@ -241,7 +241,9 @@ namespace System.Diagnostics.Tracing
     {
 
 #if FEATURE_EVENTSOURCE_XPLAT
+#pragma warning disable CA1823 // field is used to keep listener alive
         private static readonly EventListener? persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
+#pragma warning restore SA1617
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
         /// <summary>
