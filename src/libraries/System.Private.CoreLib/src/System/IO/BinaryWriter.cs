@@ -193,7 +193,7 @@ namespace System.IO
         // advanced by two.
         // Note this method cannot handle surrogates properly in UTF-8.
         //
-        public unsafe virtual void Write(char ch)
+        public virtual unsafe void Write(char ch)
         {
             if (char.IsSurrogate(ch))
                 throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
@@ -236,7 +236,7 @@ namespace System.IO
         // Writes a double to this stream. The current position of the stream is
         // advanced by eight.
         //
-        public unsafe virtual void Write(double value)
+        public virtual unsafe void Write(double value)
         {
             ulong TmpValue = *(ulong*)&value;
             _buffer[0] = (byte)TmpValue;
@@ -338,7 +338,7 @@ namespace System.IO
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
-        public unsafe virtual void Write(float value)
+        public virtual unsafe void Write(float value)
         {
             uint TmpValue = *(uint*)&value;
             _buffer[0] = (byte)TmpValue;
@@ -354,7 +354,7 @@ namespace System.IO
         // a four-byte unsigned integer, and then writes that many characters
         // to the stream.
         //
-        public unsafe virtual void Write(string value)
+        public virtual unsafe void Write(string value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));

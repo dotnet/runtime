@@ -248,7 +248,7 @@ namespace System.Reflection
             return GetManifestResourceStream(resourceName);
         }
 
-        public unsafe override Stream? GetManifestResourceStream(string name)
+        public override unsafe Stream? GetManifestResourceStream(string name)
         {
             uint length = 0;
             RuntimeAssembly runtimeAssembly = this;

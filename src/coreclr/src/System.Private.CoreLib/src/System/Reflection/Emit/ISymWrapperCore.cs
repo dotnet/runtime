@@ -513,7 +513,7 @@ namespace System.Reflection.Emit
         {
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             m_Release(handle);
             return true;

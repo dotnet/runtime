@@ -8,7 +8,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal unsafe sealed class RuntimeEventInfo : EventInfo
+    internal sealed unsafe class RuntimeEventInfo : EventInfo
     {
         #region Private Data Members
         private int m_token;

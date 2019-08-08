@@ -85,7 +85,7 @@ namespace System.Threading
 
     #region class OverlappedData
 
-    sealed internal unsafe class OverlappedData
+    internal sealed unsafe class OverlappedData
     {
         // ! If you make any change to the layout here, you need to make matching change
         // ! to OverlappedDataObject in vm\nativeoverlapped.h

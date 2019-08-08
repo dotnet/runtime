@@ -91,7 +91,7 @@ namespace Internal.Runtime.InteropServices
         public string TypeName;
 
         [CLSCompliant(false)]
-        public unsafe static ComActivationContext Create(ref ComActivationContextInternal cxtInt)
+        public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
             return new ComActivationContext()
             {
@@ -223,7 +223,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public unsafe static int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
+        public static unsafe int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
         {
             if (IsLoggingEnabled())
             {
@@ -257,7 +257,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// </summary>
         /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public unsafe static int RegisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        public static unsafe int RegisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
         {
             if (IsLoggingEnabled())
             {
@@ -294,7 +294,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
         [CLSCompliant(false)]
-        public unsafe static int UnregisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        public static unsafe int UnregisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
         {
             if (IsLoggingEnabled())
             {

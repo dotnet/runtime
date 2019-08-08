@@ -1266,7 +1266,7 @@ namespace System.Text
                 return _encoding.GetByteCount(chars, index, count);
             }
 
-            public unsafe override int GetByteCount(char* chars, int count, bool flush)
+            public override unsafe int GetByteCount(char* chars, int count, bool flush)
             {
                 return _encoding.GetByteCount(chars, count);
             }
@@ -1297,7 +1297,7 @@ namespace System.Text
                 return _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
             }
 
-            public unsafe override int GetBytes(char* chars, int charCount,
+            public override unsafe int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, bool flush)
             {
                 return _encoding.GetBytes(chars, charCount, bytes, byteCount);
@@ -1335,7 +1335,7 @@ namespace System.Text
                 return _encoding.GetCharCount(bytes, index, count);
             }
 
-            public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+            public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
             {
                 // By default just call the encoding version, no flush by default
                 return _encoding.GetCharCount(bytes, count);
@@ -1370,7 +1370,7 @@ namespace System.Text
                 return _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             }
 
-            public unsafe override int GetChars(byte* bytes, int byteCount,
+            public override unsafe int GetChars(byte* bytes, int byteCount,
                                                   char* chars, int charCount, bool flush)
             {
                 // By default just call the encoding's version

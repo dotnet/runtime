@@ -14,7 +14,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal SafeFindHandle() : base(true) { }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.FindClose(handle);
         }

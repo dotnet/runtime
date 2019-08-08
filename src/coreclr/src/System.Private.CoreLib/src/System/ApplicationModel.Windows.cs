@@ -11,7 +11,7 @@ namespace System
     {
 #if FEATURE_APPX
         // Cache the value in readonly static that can be optimized out by the JIT
-        internal readonly static bool IsUap = IsAppXProcess() != Interop.BOOL.FALSE;
+        internal static readonly bool IsUap = IsAppXProcess() != Interop.BOOL.FALSE;
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern Interop.BOOL IsAppXProcess();
