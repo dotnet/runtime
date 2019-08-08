@@ -217,9 +217,6 @@ namespace System
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-#if PROJECTN
-        [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
-#endif
         public unsafe void* ToPointer()
         {
             return _value;

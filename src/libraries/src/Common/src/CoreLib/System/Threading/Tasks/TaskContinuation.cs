@@ -253,9 +253,6 @@ namespace System.Threading.Tasks
         //
         // This helper routine is targeted by the debugger.
         //
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
         internal abstract Delegate[]? GetDelegateContinuationsForDebugger();
     }
 

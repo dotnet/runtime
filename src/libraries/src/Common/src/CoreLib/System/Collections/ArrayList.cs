@@ -28,9 +28,6 @@ namespace System.Collections
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     public class ArrayList : IList, ICloneable
     {
         private object?[] _items = null!; // Do not rename (binary serialization)
