@@ -700,9 +700,9 @@ GenTreeStmt* BasicBlock::lastStmt() const
         return nullptr;
     }
 
-    GenTree* result = bbTreeList->gtPrev;
-    assert(result && result->gtNext == nullptr);
-    return result->AsStmt();
+    GenTreeStmt* result = bbTreeList->AsStmt()->gtPrevStmt;
+    assert(result != nullptr && result->gtNext == nullptr);
+    return result;
 }
 
 //------------------------------------------------------------------------

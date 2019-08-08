@@ -1302,7 +1302,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
             do
             {
                 block = block->bbNext;
-                for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+                for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
                 {
                     if (stmt->gtStmtExpr == incr)
                     {
@@ -3476,8 +3476,8 @@ void Compiler::optUnrollLoops()
 
     bool change = false;
 
-    // Visit loops from highest to lowest number to vist them in innermost
-    // to outermost order
+    // Visit loops from highest to lowest number to visit them in innermost
+    // to outermost order.
     for (unsigned lnum = optLoopCount - 1; lnum != ~0U; --lnum)
     {
         // This is necessary due to an apparent analysis limitation since
@@ -3488,12 +3488,6 @@ void Compiler::optUnrollLoops()
         BasicBlock* block;
         BasicBlock* head;
         BasicBlock* bottom;
-
-        GenTree* loop;
-        GenTree* test;
-        GenTree* incr;
-        GenTree* phdr;
-        GenTree* init;
 
         bool       dupCond;
         int        lval;
@@ -3610,28 +3604,23 @@ void Compiler::optUnrollLoops()
             continue;
         }
 
-        /* Locate the pre-header and initialization and increment/test statements */
+        // Locate/initialize the increment/test statements.
+        GenTreeStmt* initStmt = head->lastStmt();
+        noway_assert((initStmt != nullptr) && (initStmt->gtNext == nullptr));
 
-        phdr = head->bbTreeList;
-        noway_assert(phdr);
-        loop = bottom->bbTreeList;
-        noway_assert(loop);
+        GenTreeStmt* testStmt = bottom->lastStmt();
+        noway_assert((testStmt != nullptr) && (testStmt->gtNext == nullptr));
+        GenTreeStmt* incrStmt = testStmt->gtPrevStmt;
+        noway_assert(incrStmt != nullptr);
 
-        init = head->lastStmt();
-        noway_assert(init && (init->gtNext == nullptr));
-        test = bottom->lastStmt();
-        noway_assert(test && (test->gtNext == nullptr));
-        incr = test->gtPrev;
-        noway_assert(incr);
-
-        if (init->gtFlags & GTF_STMT_CMPADD)
+        if ((initStmt->gtFlags & GTF_STMT_CMPADD) != 0)
         {
             /* Must be a duplicated loop condition */
-            noway_assert(init->gtStmt.gtStmtExpr->gtOper == GT_JTRUE);
+            noway_assert(initStmt->gtStmtExpr->gtOper == GT_JTRUE);
 
-            dupCond = true;
-            init    = init->gtPrev;
-            noway_assert(init);
+            dupCond  = true;
+            initStmt = initStmt->gtPrevStmt;
+            noway_assert(initStmt != nullptr);
         }
         else
         {
@@ -3652,12 +3641,7 @@ void Compiler::optUnrollLoops()
             continue;
         }
 
-        noway_assert(init->gtOper == GT_STMT);
-        init = init->gtStmt.gtStmtExpr;
-        noway_assert(test->gtOper == GT_STMT);
-        test = test->gtStmt.gtStmtExpr;
-        noway_assert(incr->gtOper == GT_STMT);
-        incr = incr->gtStmt.gtStmtExpr;
+        GenTree* incr = incrStmt->gtStmtExpr;
 
         // Don't unroll loops we don't understand.
         if (incr->gtOper != GT_ASG)
@@ -3665,6 +3649,9 @@ void Compiler::optUnrollLoops()
             continue;
         }
         incr = incr->gtOp.gtOp2;
+
+        GenTree* init = initStmt->gtStmtExpr;
+        GenTree* test = testStmt->gtStmtExpr;
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
@@ -3675,7 +3662,7 @@ void Compiler::optUnrollLoops()
             (incr->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) || (incr->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
             (incr->gtOp.gtOp2->gtIntCon.gtIconVal != iterInc) ||
 
-            (test->gtOper != GT_JTRUE))
+            (testStmt->gtStmtExpr->gtOper != GT_JTRUE))
         {
             noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
             continue;
@@ -3703,9 +3690,9 @@ void Compiler::optUnrollLoops()
                     ++loopRetCount;
                 }
 
-                /* Visit all the statements in the block */
+                // Visit all the statements in the block.
 
-                for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+                for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
                 {
                     /* Calculate gtCostSz */
                     gtSetStmtInfo(stmt);
@@ -3863,21 +3850,19 @@ void Compiler::optUnrollLoops()
 
             if (head->bbJumpKind == BBJ_COND)
             {
-                phdr = head->bbTreeList;
-                noway_assert(phdr);
-                test = phdr->gtPrev;
+                GenTreeStmt* preHeaderStmt = head->firstStmt();
+                noway_assert(preHeaderStmt != nullptr);
+                testStmt = preHeaderStmt->gtPrevStmt;
 
-                noway_assert(test && (test->gtNext == nullptr));
-                noway_assert(test->gtOper == GT_STMT);
-                noway_assert(test->gtStmt.gtStmtExpr->gtOper == GT_JTRUE);
+                noway_assert((testStmt != nullptr) && (testStmt->gtNext == nullptr));
+                noway_assert(testStmt->gtStmtExpr->gtOper == GT_JTRUE);
 
-                init = test->gtPrev;
-                noway_assert(init && (init->gtNext == test));
-                noway_assert(init->gtOper == GT_STMT);
+                initStmt = testStmt->gtPrevStmt;
+                noway_assert((initStmt != nullptr) && (initStmt->gtNext == testStmt));
 
-                init->gtNext     = nullptr;
-                phdr->gtPrev     = init;
-                head->bbJumpKind = BBJ_NONE;
+                initStmt->gtNext      = nullptr;
+                preHeaderStmt->gtPrev = initStmt;
+                head->bbJumpKind      = BBJ_NONE;
                 head->bbFlags &= ~BBF_NEEDS_GCPOLL;
             }
             else
@@ -3891,7 +3876,7 @@ void Compiler::optUnrollLoops()
             {
                 printf("Whole unrolled loop:\n");
 
-                gtDispTree(init);
+                gtDispTree(initStmt->gtStmtExpr);
                 printf("\n");
                 fgDumpTrees(head->bbNext, insertAfter);
             }
@@ -4024,7 +4009,7 @@ static GenTreeStmt* optFindLoopTermTest(BasicBlock* bottom)
 {
     GenTreeStmt* testStmt = bottom->firstStmt();
 
-    assert(testStmt);
+    assert(testStmt != nullptr);
 
     GenTreeStmt* result = testStmt->getPrevStmt();
 
@@ -6031,9 +6016,9 @@ bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip,
 
     for (;;)
     {
-        noway_assert(beg);
+        noway_assert(beg != nullptr);
 
-        for (GenTreeStmt* stmt = beg->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+        for (GenTreeStmt* stmt = beg->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
             if (fgWalkTreePre(&stmt->gtStmtExpr, optIsVarAssgCB, &desc))
             {
@@ -6235,18 +6220,18 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
 
     /* simply append the statement at the end of the preHead's list */
 
-    GenTree* treeList = preHead->bbTreeList;
+    GenTreeStmt* firstStmt = preHead->firstStmt();
 
-    if (treeList)
+    if (firstStmt != nullptr)
     {
         /* append after last statement */
 
-        GenTree* last = treeList->gtPrev;
-        assert(last->gtNext == nullptr);
+        GenTreeStmt* lastStmt = preHead->lastStmt();
+        assert(lastStmt->gtNext == nullptr);
 
-        last->gtNext      = hoistStmt;
-        hoistStmt->gtPrev = last;
-        treeList->gtPrev  = hoistStmt;
+        lastStmt->gtNext  = hoistStmt;
+        hoistStmt->gtPrev = lastStmt;
+        firstStmt->gtPrev = hoistStmt;
     }
     else
     {

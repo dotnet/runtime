@@ -2557,11 +2557,11 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET)) ==
         (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET))
     {
-        GenTree* tree = hndBlk->bbTreeList;
+        GenTreeStmt* stmt = hndBlk->firstStmt();
 
-        if (tree != nullptr && tree->gtOper == GT_STMT)
+        if (stmt != nullptr)
         {
-            tree = tree->gtStmt.gtStmtExpr;
+            GenTree* tree = stmt->gtStmtExpr;
             assert(tree != nullptr);
 
             if ((tree->gtOper == GT_ASG) && (tree->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
@@ -9211,10 +9211,10 @@ void Compiler::impImportLeave(BasicBlock* block)
     assert(block->bbJumpKind == BBJ_LEAVE);
     assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != NULL); // should be a BB boundary
 
-    BasicBlock* step         = DUMMY_INIT(NULL);
-    unsigned    encFinallies = 0; // Number of enclosing finallies.
-    GenTree*    endCatches   = NULL;
-    GenTree*    endLFin      = NULL; // The statement tree to indicate the end of locally-invoked finally.
+    BasicBlock*  step         = DUMMY_INIT(NULL);
+    unsigned     encFinallies = 0; // Number of enclosing finallies.
+    GenTree*     endCatches   = NULL;
+    GenTreeStmt* endLFinStmt  = NULL; // The statement tree to indicate the end of locally-invoked finally.
 
     unsigned  XTnum;
     EHblkDsc* HBtab;
@@ -9269,7 +9269,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             BasicBlock* callBlock;
 
-            assert(!encFinallies == !endLFin); // if we have finallies, we better have an endLFin tree, and vice-versa
+            assert(!encFinallies ==
+                   !endLFinStmt); // if we have finallies, we better have an endLFin tree, and vice-versa
 
             if (encFinallies == 0)
             {
@@ -9316,17 +9317,17 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (endCatches)
                 {
-                    lastStmt         = gtNewStmt(endCatches);
-                    endLFin->gtNext  = lastStmt;
-                    lastStmt->gtPrev = endLFin;
+                    lastStmt            = gtNewStmt(endCatches);
+                    endLFinStmt->gtNext = lastStmt;
+                    lastStmt->gtPrev    = endLFinStmt;
                 }
                 else
                 {
-                    lastStmt = endLFin->AsStmt();
+                    lastStmt = endLFinStmt;
                 }
 
                 // note that this sets BBF_IMPORTED on the block
-                impEndTreeList(callBlock, endLFin->AsStmt(), lastStmt);
+                impEndTreeList(callBlock, endLFinStmt, lastStmt);
             }
 
             step = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
@@ -9346,8 +9347,8 @@ void Compiler::impImportLeave(BasicBlock* block)
             assert(finallyNesting <= compHndBBtabCount);
 
             callBlock->bbJumpDest = HBtab->ebdHndBeg; // This callBlock will call the "finally" handler.
-            endLFin               = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
-            endLFin               = gtNewStmt(endLFin);
+            GenTree* endLFin      = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
+            endLFinStmt           = gtNewStmt(endLFin);
             endCatches            = NULL;
 
             encFinallies++;
@@ -9358,7 +9359,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
     /* Append any remaining endCatches, if any */
 
-    assert(!encFinallies == !endLFin);
+    assert(!encFinallies == !endLFinStmt);
 
     if (encFinallies == 0)
     {
@@ -9407,16 +9408,16 @@ void Compiler::impImportLeave(BasicBlock* block)
 
         if (endCatches)
         {
-            lastStmt         = gtNewStmt(endCatches);
-            endLFin->gtNext  = lastStmt;
-            lastStmt->gtPrev = endLFin;
+            lastStmt            = gtNewStmt(endCatches);
+            endLFinStmt->gtNext = lastStmt;
+            lastStmt->gtPrev    = endLFinStmt;
         }
         else
         {
-            lastStmt = endLFin->AsStmt();
+            lastStmt = endLFinStmt;
         }
 
-        impEndTreeList(finalStep, endLFin->AsStmt(), lastStmt);
+        impEndTreeList(finalStep, endLFinStmt, lastStmt);
 
         finalStep->bbJumpDest = leaveTarget; // this is the ultimate destination of the LEAVE
 
