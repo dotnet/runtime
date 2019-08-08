@@ -213,7 +213,7 @@ namespace System.Threading
         #endregion
 
         /// <summary>Creates and returns a string representation of this instance for the current thread.</summary>
-        /// <returns>The result of calling <see cref="System.Object.ToString"/> on the <see cref="Value"/>.</returns>
+        /// <returns>The result of calling <see cref="object.ToString"/> on the <see cref="Value"/>.</returns>
         /// <exception cref="System.NullReferenceException">
         /// The <see cref="Value"/> for the current thread is a null reference (Nothing in Visual Basic).
         /// </exception>
