@@ -28,7 +28,7 @@ namespace System
             HResult = HResults.COR_E_INSUFFICIENTEXECUTIONSTACK;
         }
 
-        internal InsufficientExecutionStackException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private InsufficientExecutionStackException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
