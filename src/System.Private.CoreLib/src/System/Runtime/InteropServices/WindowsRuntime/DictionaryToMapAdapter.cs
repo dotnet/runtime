@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not DictionaryToMapAdapter objects. Rather, they are of type
     // IDictionary<K, V>. No actual DictionaryToMapAdapter object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" to "IDictionary<K, V>". 
+    // see a lot of expressions that cast "this" to "IDictionary<K, V>".
     internal sealed class DictionaryToMapAdapter
     {
         private DictionaryToMapAdapter()

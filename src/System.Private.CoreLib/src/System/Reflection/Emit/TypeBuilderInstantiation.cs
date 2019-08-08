@@ -143,8 +143,8 @@ namespace System.Reflection.Emit
             // D<T,S> : B<S,List<T>,char>
 
             // D<string,int> : B<int,List<string>,char>
-            // D<S,T> : B<T,List<S>,char>        
-            // D<S,string> : B<string,List<S>,char>        
+            // D<S,T> : B<T,List<S>,char>
+            // D<S,string> : B<string,List<S>,char>
             get
             {
                 Type? typeBldrBase = m_type.BaseType;
@@ -233,38 +233,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

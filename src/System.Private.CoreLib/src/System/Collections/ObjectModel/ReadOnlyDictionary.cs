@@ -4,8 +4,8 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 ** Purpose: Read-only wrapper for another generic dictionary.
 **
@@ -694,7 +694,7 @@ namespace System.Collections.ObjectModel
                 }
 
                 //
-                // We can't cast array of value type to object[], so we don't support 
+                // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
                 //
                 object?[]? objects = array as object[];
@@ -720,4 +720,3 @@ namespace System.Collections.ObjectModel
         #endregion Helper method for our KeyCollection and ValueCollection
     }
 }
-

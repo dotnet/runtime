@@ -229,7 +229,7 @@ namespace System
             Debug.Assert(param != null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain that
-            // have this ParameterInfo defined. .We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes 
+            // have this ParameterInfo defined. .We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes
             // that are marked inherited from the remainder of the MethodInfo's in the inheritance chain.
             // For MethodInfo's on an interface we do not do an inheritance walk so the default ParameterInfo attributes are returned.
             // For MethodInfo's on a class we walk up the inheritance chain but do not look at the MethodInfo's on the interfaces that the
@@ -320,7 +320,7 @@ namespace System
             Debug.Assert(type != null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain.
-            // We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes 
+            // We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes
             // that are marked inherited from the remainder of the ParameterInfo's in the inheritance chain.
             // For MethodInfo's on an interface we do not do an inheritance walk. For ParameterInfo's on a
             // Class we walk up the inheritance chain but do not look at the MethodInfo's on the interfaces that the class inherits from.
@@ -404,7 +404,7 @@ namespace System
                 }
                 else if (usage.Inherited && usage.AllowMultiple)
                 {
-                    // we saw this type already add it only if it is inheritable and it does allow multiple 
+                    // we saw this type already add it only if it is inheritable and it does allow multiple
                     attributeList.Add(attributes[i]);
                 }
             }
@@ -608,7 +608,7 @@ namespace System
 
             switch (member.MemberType)
             {
-                case MemberTypes.Method: // We need to climb up the member hierarchy            
+                case MemberTypes.Method: // We need to climb up the member hierarchy
                     return InternalParamIsDefined(element, attributeType, inherit);
 
                 case MemberTypes.Constructor:

@@ -18,9 +18,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-    // this is a work around to get the concept of a calli. It's not as fast but it would be interesting to 
-    // see how it compares to the current implementation. 
-    // This delegate will disappear at some point in favor of calli 
+    // this is a work around to get the concept of a calli. It's not as fast but it would be interesting to
+    // see how it compares to the current implementation.
+    // This delegate will disappear at some point in favor of calli
 
     internal delegate void CtorDelegate(object instance);
 
@@ -376,7 +376,7 @@ namespace System
                         {
                             case MemberListType.CaseSensitive:
                                 {
-                                    // Ensure we always return a list that has 
+                                    // Ensure we always return a list that has
                                     // been merged with the global list.
                                     T[]? cachedList = m_csMemberInfos[name!];
                                     if (cachedList == null)
@@ -391,7 +391,7 @@ namespace System
 
                             case MemberListType.CaseInsensitive:
                                 {
-                                    // Ensure we always return a list that has 
+                                    // Ensure we always return a list that has
                                     // been merged with the global list.
                                     T[]? cachedList = m_cisMemberInfos[name!];
                                     if (cachedList == null)
@@ -570,7 +570,7 @@ namespace System
                             instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                             list.Add(runtimeMethodInfo);
-                            #endregion  
+                            #endregion
                         }
                         #endregion
                     }
@@ -1070,8 +1070,8 @@ namespace System
                         }
                         catch (System.TypeLoadException)
                         {
-                            // In a reflection emit scenario, we may have a token for a class which 
-                            // has not been baked and hence cannot be loaded. 
+                            // In a reflection emit scenario, we may have a token for a class which
+                            // has not been baked and hence cannot be loaded.
                             continue;
                         }
 
@@ -1112,7 +1112,7 @@ namespace System
                     }
                     else
                     {
-                        // Populate associates for this interface 
+                        // Populate associates for this interface
                         PopulateEvents(filter, declaringType, csEventInfos, ref list);
                     }
 
@@ -1212,7 +1212,7 @@ namespace System
                     }
                     else
                     {
-                        // Populate associates for this interface 
+                        // Populate associates for this interface
                         PopulateProperties(filter, declaringType, null, null, ref list);
                     }
 
@@ -1281,10 +1281,10 @@ namespace System
 
                             #region Duplicate check based on vtable slots
 
-                            // The inheritance of properties are defined by the inheritance of their 
+                            // The inheritance of properties are defined by the inheritance of their
                             // getters and setters.
                             // A property on a base type is "overriden" by a property on a sub type
-                            // if the getter/setter of the latter occupies the same vtable slot as 
+                            // if the getter/setter of the latter occupies the same vtable slot as
                             // the getter/setter of the former.
 
                             MethodInfo? associateMethod = propertyInfo.GetGetMethod();
@@ -1493,7 +1493,7 @@ namespace System
                         // We exclude the types that contain generic parameters because their names cannot be roundtripped.
                         // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be roundtriped.
                         // Theoretically generic types instantiated with generic type definitions can be roundtripped, e.g. List`1<Dictionary`2>.
-                        // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the 
+                        // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
                         // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
                         if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
                             return null;
@@ -1813,8 +1813,8 @@ namespace System
                     declaredType = baseType;
 
                     // if the original methodHandle was the definition then we don't need to rebind generic method arguments
-                    // because all RuntimeMethodHandles retrieved off of the canonical method table are definitions. That's 
-                    // why for everything else we need to rebind the generic method arguments. 
+                    // because all RuntimeMethodHandles retrieved off of the canonical method table are definitions. That's
+                    // why for everything else we need to rebind the generic method arguments.
                     if (!RuntimeMethodHandle.IsGenericMethodDefinition(methodHandle))
                     {
                         methodInstantiation = RuntimeMethodHandle.GetMethodInstantiationInternal(methodHandle);
@@ -2075,7 +2075,7 @@ namespace System
                 if (allowPrefixLookup && name.EndsWith("*", StringComparison.Ordinal))
                 {
                     // We set prefixLookup to true if name ends with a "*".
-                    // We will also set listType to All so that all members are included in 
+                    // We will also set listType to All so that all members are included in
                     // the candidates which are later filtered by FilterApplyPrefixLookup.
                     name = name.Substring(0, name.Length - 1);
                     prefixLookup = true;
@@ -2168,16 +2168,16 @@ namespace System
                     return false;
             }
 
-            // @Asymmetry - Internal, inherited, instance, non-protected, non-virtual, non-abstract members returned 
+            // @Asymmetry - Internal, inherited, instance, non-protected, non-virtual, non-abstract members returned
             //              iff BindingFlags !DeclaredOnly, Instance and Public are present except for fields
             if (((bindingFlags & BindingFlags.DeclaredOnly) == 0) &&        // DeclaredOnly not present
                  isInherited &&                                            // Is inherited Member
 
                 (isNonProtectedInternal) &&                                 // Is non-protected internal member
-                ((bindingFlags & BindingFlags.NonPublic) != 0) &&           // BindingFlag.NonPublic present 
+                ((bindingFlags & BindingFlags.NonPublic) != 0) &&           // BindingFlag.NonPublic present
 
                 (!isStatic) &&                                              // Is instance member
-                ((bindingFlags & BindingFlags.Instance) != 0))              // BindingFlag.Instance present 
+                ((bindingFlags & BindingFlags.Instance) != 0))              // BindingFlag.Instance present
             {
                 MethodInfo? methodInfo = memberInfo as MethodInfo;
 
@@ -2291,8 +2291,8 @@ namespace System
                         }
                         else
                         {
-                            // From our existing code, our policy here is that if a parameterInfo 
-                            // is optional then all subsequent parameterInfos shall be optional. 
+                            // From our existing code, our policy here is that if a parameterInfo
+                            // is optional then all subsequent parameterInfos shall be optional.
 
                             // Thus, iff the first parameterInfo is not optional then this MethodInfo is no longer a canidate.
                             if (!parameterInfos[argumentTypes.Length].IsOptional)
@@ -2306,7 +2306,7 @@ namespace System
                         if (parameterInfos.Length == 0)
                             return false;
 
-                        // The last argument of the signature could be a param array. 
+                        // The last argument of the signature could be a param array.
                         bool shortByMoreThanOneSuppliedArgument = argumentTypes.Length < parameterInfos.Length - 1;
 
                         if (shortByMoreThanOneSuppliedArgument)
@@ -2329,7 +2329,7 @@ namespace System
                         // Legacy behavior is to ignore ExactBinding when InvokeMember is specified.
                         // Why filter by InvokeMember? If the answer is we leave this to the binder then why not leave
                         // all the rest of this  to the binder too? Further, what other semanitc would the binder
-                        // use for BindingFlags.ExactBinding besides this one? Further, why not include CreateInstance 
+                        // use for BindingFlags.ExactBinding besides this one? Further, why not include CreateInstance
                         // in this if statement? That's just InvokeMethod with a constructor, right?
                         if ((bindingFlags & (BindingFlags.InvokeMethod)) == 0)
                         {
@@ -2718,12 +2718,12 @@ namespace System
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
-                // a class may not implement all the methods of an interface (abstract class) so null is a valid value 
+                // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
                 im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
             }
 
-            return im;           
+            return im;
         }
         #endregion
 
@@ -3143,7 +3143,7 @@ namespace System
             return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
         }
 #endif // FEATURE_TYPEEQUIVALENCE
-        
+
         #endregion
 
         #region Name
@@ -3507,7 +3507,7 @@ namespace System
                 // "Must specify binding flags describing the invoke operation required."
                 throw new ArgumentException(SR.Arg_NoAccessSpec, nameof(bindingFlags));
 
-            // Provide a default binding mask if none is provided 
+            // Provide a default binding mask if none is provided
             if ((bindingFlags & MemberBindingMask) == 0)
             {
                 bindingFlags |= BindingFlags.Instance | BindingFlags.Public;
@@ -3552,7 +3552,7 @@ namespace System
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
                     throw new ArgumentException(SR.Arg_COMPropSetPut, nameof(bindingFlags));
 
-                
+
                 if (name == null)
                     throw new ArgumentNullException(nameof(name));
 
@@ -4094,7 +4094,7 @@ namespace System
         [DebuggerHidden]
         internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
-            // Call the cached 
+            // Call the cached
             ActivatorCache? cacheEntry = GenericCache as ActivatorCache;
             if (cacheEntry != null)
             {
@@ -4149,12 +4149,12 @@ namespace System
             return _CreateEnum(enumType, value);
         }
 
-#if FEATURE_COMINTEROP       
+#if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object InvokeDispMethod(
             string name, BindingFlags invokeAttr, object target, object?[]? args,
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
-#endif // FEATURE_COMINTEROP        
+#endif // FEATURE_COMINTEROP
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -4170,7 +4170,7 @@ namespace System
 
         internal static Type GetTypeFromCLSIDImpl(Guid clsid, String? server, bool throwOnError)
         {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed"); 
+            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
         }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -4267,7 +4267,7 @@ namespace System
                         case DispatchWrapperType.Dispatch:
                             wrapperType = typeof(DispatchWrapper);
                             break;
-                        case DispatchWrapperType.Error:   
+                        case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
                         case DispatchWrapperType.Currency:
@@ -4297,7 +4297,7 @@ namespace System
                     {
                          wrapperCons = wrapperType.GetConstructor(new Type[] {typeof(object) })!;
                     }
-                
+
                     // Wrap each of the elements of the array.
                     for (int currElem = 0; currElem < numElems; currElem++)
                     {
@@ -4443,7 +4443,7 @@ namespace System.Reflection
     {
         private class Table
         {
-            // Note that m_keys and m_values arrays are immutable to allow lock-free reads. A new instance 
+            // Note that m_keys and m_values arrays are immutable to allow lock-free reads. A new instance
             // of CerHashtable has to be allocated to grow the size of the hashtable.
             internal K[] m_keys;
             internal V[] m_values;
@@ -4476,7 +4476,7 @@ namespace System.Reflection
 
                         // This volatile write has to be last. It is going to publish the result atomically.
                         //
-                        // Note that incrementing the count or setting the value does not do any harm without setting the key. The inconsistency will be ignored 
+                        // Note that incrementing the count or setting the value does not do any harm without setting the key. The inconsistency will be ignored
                         // and it will go away completely during next rehash.
                         Volatile.Write(ref keys[index], key);
 

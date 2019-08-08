@@ -13,7 +13,7 @@ namespace System
 {
     internal static partial class SR
     {
-        // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format. 
+        // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns false.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys()
@@ -54,24 +54,24 @@ namespace System
                 return key!;
             }
 
-            // We have a somewhat common potential for infinite 
+            // We have a somewhat common potential for infinite
             // loops with mscorlib's ResourceManager.  If "potentially dangerous"
             // code throws an exception, we will get into an infinite loop
             // inside the ResourceManager and this "potentially dangerous" code.
             // Potentially dangerous code includes the IO package, CultureInfo,
-            // parts of the loader, some parts of Reflection, Security (including 
+            // parts of the loader, some parts of Reflection, Security (including
             // custom user-written permissions that may parse an XML file at
             // class load time), assembly load event handlers, etc.  Essentially,
             // this is not a bounded set of code, and we need to fix the problem.
             // Fortunately, this is limited to mscorlib's error lookups and is NOT
             // a general problem for all user code using the ResourceManager.
 
-            // The solution is to make sure only one thread at a time can call 
-            // GetResourceString.  Also, since resource lookups can be 
+            // The solution is to make sure only one thread at a time can call
+            // GetResourceString.  Also, since resource lookups can be
             // reentrant, if the same thread comes into GetResourceString
-            // twice looking for the exact same resource name before 
-            // returning, we're going into an infinite loop and we should 
-            // return a bogus string.  
+            // twice looking for the exact same resource name before
+            // returning, we're going into an infinite loop and we should
+            // return a bogus string.
 
             bool lockTaken = false;
             try

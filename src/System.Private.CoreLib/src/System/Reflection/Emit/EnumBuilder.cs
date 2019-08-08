@@ -4,13 +4,13 @@
 
 /*============================================================
 **
-** 
-** 
 **
 **
-** EnumBuilder is a helper class to build Enum ( a special type ). 
 **
-** 
+**
+** EnumBuilder is a helper class to build Enum ( a special type ).
+**
+**
 ===========================================================*/
 
 using CultureInfo = System.Globalization.CultureInfo;
@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineLiteral(string literalName, object? literalValue)
         {
-            // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
+            // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
                 literalName,
                 this,
@@ -335,16 +335,16 @@ namespace System.Reflection.Emit
         }
 
 
-        // Returns true if one or more instance of attributeType is defined on this member. 
+        // Returns true if one or more instance of attributeType is defined on this member.
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
 
         /*****************************************************
-         * 
+         *
          * private/protected functions
-         * 
+         *
          */
 
         public override Type MakePointerType()
@@ -382,14 +382,14 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
             m_typeBuilder = new TypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
 
-            // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
+            // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             m_underlyingField = m_typeBuilder.DefineField("value__", underlyingType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
         }
 
         /*****************************************************
-         * 
+         *
          * private data members
-         * 
+         *
          */
         internal TypeBuilder m_typeBuilder;
         private FieldBuilder m_underlyingField;

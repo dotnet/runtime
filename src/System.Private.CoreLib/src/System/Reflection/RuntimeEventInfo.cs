@@ -200,6 +200,6 @@ namespace System.Reflection
                 return m_flags;
             }
         }
-        #endregion    
+        #endregion
     }
 }

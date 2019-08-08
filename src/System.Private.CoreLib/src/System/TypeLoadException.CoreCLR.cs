@@ -9,7 +9,7 @@ namespace System
 {
     public partial class TypeLoadException : SystemException
     {
-        // This is called from inside the EE. 
+        // This is called from inside the EE.
         private TypeLoadException(string? className,
             string? assemblyName,
             string? messageArg,
@@ -22,7 +22,7 @@ namespace System
             _messageArg = messageArg;
             _resourceId = resourceId;
 
-            // Set the _message field eagerly; debuggers look at this field to 
+            // Set the _message field eagerly; debuggers look at this field to
             // display error info. They don't call the Message property.
             SetMessageField();
         }

@@ -90,7 +90,7 @@ namespace System.Diagnostics.Tracing
     {
 
     }
-    
+
     internal sealed class EventPipeConfiguration
     {
         private string m_outputFile;

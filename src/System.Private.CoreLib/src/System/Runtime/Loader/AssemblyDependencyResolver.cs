@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -117,17 +117,17 @@ namespace System.Runtime.Loader
 
             // Determine if the assembly name is for a satellite assembly or not
             // This is the same logic as in AssemblyBinder::BindByTpaList in CoreCLR
-            // - If the culture name is non-empty and it's not 'neutral' 
-            // - The culture name is the value of the AssemblyName.Culture.Name 
+            // - If the culture name is non-empty and it's not 'neutral'
+            // - The culture name is the value of the AssemblyName.Culture.Name
             //     (CoreCLR gets this and stores it as the culture name in the internal assembly name)
             //     AssemblyName.CultureName is just a shortcut to AssemblyName.Culture.Name.
-            if (!string.IsNullOrEmpty(assemblyName.CultureName) && 
+            if (!string.IsNullOrEmpty(assemblyName.CultureName) &&
                 !string.Equals(assemblyName.CultureName, NeutralCultureName, StringComparison.OrdinalIgnoreCase))
             {
                 // Load satellite assembly
                 // Search resource search paths by appending the culture name and the expected assembly file name.
                 // Copies the logic in BindSatelliteResourceByResourceRoots in CoreCLR.
-                // Note that the runtime will also probe APP_PATHS the same way, but that feature is effectively 
+                // Note that the runtime will also probe APP_PATHS the same way, but that feature is effectively
                 // being deprecated, so we chose to not support the same behavior for components.
                 foreach (string searchPath in _resourceSearchPaths)
                 {

@@ -37,15 +37,15 @@ namespace System.Threading
         }
 
         /// <summary>
-        ///     Returns a <see cref="ThreadPoolBoundHandle"/> for the specific handle, 
+        ///     Returns a <see cref="ThreadPoolBoundHandle"/> for the specific handle,
         ///     which is bound to the system thread pool.
         /// </summary>
         /// <param name="handle">
-        ///     A <see cref="SafeHandle"/> object that holds the operating system handle. The 
+        ///     A <see cref="SafeHandle"/> object that holds the operating system handle. The
         ///     handle must have been opened for overlapped I/O on the unmanaged side.
         /// </param>
         /// <returns>
-        ///     <see cref="ThreadPoolBoundHandle"/> for <paramref name="handle"/>, which 
+        ///     <see cref="ThreadPoolBoundHandle"/> for <paramref name="handle"/>, which
         ///     is bound to the system thread pool.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -60,7 +60,7 @@ namespace System.Threading
         ///     <para>
         ///         -or-
         ///     </para>
-        ///     <paramref name="handle"/> refers to a handle that has not been opened 
+        ///     <paramref name="handle"/> refers to a handle that has not been opened
         ///     for overlapped I/O.
         ///     <para>
         ///         -or-
@@ -72,7 +72,7 @@ namespace System.Threading
         ///     <para>
         ///         -or-
         ///     </para>
-        ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>, 
+        ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>,
         ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
         /// </remarks>
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
@@ -87,20 +87,20 @@ namespace System.Threading
         }
 
         /// <summary>
-        ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying 
-        ///     a delegate that is invoked when the asynchronous I/O operation is complete, a user-provided 
+        ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
+        ///     a delegate that is invoked when the asynchronous I/O operation is complete, a user-provided
         ///     object providing context, and managed objects that serve as buffers.
         /// </summary>
         /// <param name="callback">
-        ///     An <see cref="IOCompletionCallback"/> delegate that represents the callback method 
+        ///     An <see cref="IOCompletionCallback"/> delegate that represents the callback method
         ///     invoked when the asynchronous I/O operation completes.
         /// </param>
         /// <param name="state">
-        ///     A user-provided object that distinguishes this <see cref="NativeOverlapped"/> from other 
+        ///     A user-provided object that distinguishes this <see cref="NativeOverlapped"/> from other
         ///     <see cref="NativeOverlapped"/> instances. Can be <see langword="null"/>.
         /// </param>
         /// <param name="pinData">
-        ///     An object or array of objects representing the input or output buffer for the operation. Each 
+        ///     An object or array of objects representing the input or output buffer for the operation. Each
         ///     object represents a buffer, for example an array of bytes.  Can be <see langword="null"/>.
         /// </param>
         /// <returns>
@@ -108,16 +108,16 @@ namespace System.Threading
         /// </returns>
         /// <remarks>
         ///     <para>
-        ///         The unmanaged pointer returned by this method can be passed to the operating system in 
-        ///         overlapped I/O operations. The <see cref="NativeOverlapped"/> structure is fixed in 
+        ///         The unmanaged pointer returned by this method can be passed to the operating system in
+        ///         overlapped I/O operations. The <see cref="NativeOverlapped"/> structure is fixed in
         ///         physical memory until <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> is called.
         ///     </para>
         ///     <para>
-        ///         The buffer or buffers specified in <paramref name="pinData"/> must be the same as those passed 
+        ///         The buffer or buffers specified in <paramref name="pinData"/> must be the same as those passed
         ///         to the unmanaged operating system function that performs the asynchronous I/O.
         ///     </para>
         ///     <note>
-        ///         The buffers specified in <paramref name="pinData"/> are pinned for the duration of 
+        ///         The buffers specified in <paramref name="pinData"/> are pinned for the duration of
         ///         the I/O operation.
         ///     </note>
         /// </remarks>
@@ -152,8 +152,8 @@ namespace System.Threading
         /// </returns>
         /// <remarks>
         ///     <para>
-        ///         The unmanaged pointer returned by this method can be passed to the operating system in 
-        ///         overlapped I/O operations. The <see cref="NativeOverlapped"/> structure is fixed in 
+        ///         The unmanaged pointer returned by this method can be passed to the operating system in
+        ///         overlapped I/O operations. The <see cref="NativeOverlapped"/> structure is fixed in
         ///         physical memory until <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> is called.
         ///     </para>
         /// </remarks>
@@ -161,10 +161,10 @@ namespace System.Threading
         ///     <paramref name="preAllocated"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///     <paramref name="preAllocated"/> is currently in use for another I/O operation.  
+        ///     <paramref name="preAllocated"/> is currently in use for another I/O operation.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
-        ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed, or 
+        ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed, or
         ///     this method was called after <paramref name="preAllocated"/> was disposed.
         /// </exception>
         /// <seealso cref="PreAllocatedOverlapped"/>
@@ -196,7 +196,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        ///     Frees the unmanaged memory associated with a <see cref="NativeOverlapped"/> structure 
+        ///     Frees the unmanaged memory associated with a <see cref="NativeOverlapped"/> structure
         ///     allocated by the <see cref="AllocateNativeOverlapped"/> method.
         /// </summary>
         /// <param name="overlapped">
@@ -204,11 +204,11 @@ namespace System.Threading
         /// </param>
         /// <remarks>
         ///     <note type="caution">
-        ///         You must call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method exactly once 
-        ///         on every <see cref="NativeOverlapped"/> unmanaged pointer allocated using the 
-        ///         <see cref="AllocateNativeOverlapped"/> method. 
-        ///         If you do not call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method, you will 
-        ///         leak memory. If you call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method more 
+        ///         You must call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method exactly once
+        ///         on every <see cref="NativeOverlapped"/> unmanaged pointer allocated using the
+        ///         <see cref="AllocateNativeOverlapped"/> method.
+        ///         If you do not call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method, you will
+        ///         leak memory. If you call the <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> method more
         ///         than once on the same <see cref="NativeOverlapped"/> unmanaged pointer, memory will be corrupted.
         ///     </note>
         /// </remarks>
@@ -242,12 +242,12 @@ namespace System.Threading
         ///     allocated using the <see cref="AllocateNativeOverlapped(IOCompletionCallback, object, object)"/>.
         /// </summary>
         /// <param name="overlapped">
-        ///     An unmanaged pointer to the <see cref="NativeOverlapped"/> structure from which to return the 
+        ///     An unmanaged pointer to the <see cref="NativeOverlapped"/> structure from which to return the
         ///     associated user-provided object.
         /// </param>
         /// <returns>
-        ///     A user-provided object that distinguishes this <see cref="NativeOverlapped"/> 
-        ///     from other <see cref="NativeOverlapped"/> instances, otherwise, <see langword="null"/> if one was 
+        ///     A user-provided object that distinguishes this <see cref="NativeOverlapped"/>
+        ///     from other <see cref="NativeOverlapped"/> instances, otherwise, <see langword="null"/> if one was
         ///     not specified when the instance was allocated using <see cref="AllocateNativeOverlapped"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -283,7 +283,7 @@ namespace System.Threading
         {
             // .NET Native's version of ThreadPoolBoundHandle that wraps the Win32 ThreadPool holds onto
             // native resources so it needs to be disposable. To match the contract, we are also disposable.
-            // We also implement a disposable state to mimic behavior between this implementation and 
+            // We also implement a disposable state to mimic behavior between this implementation and
             // .NET Native's version (code written against us, will also work against .NET Native's version).
             _isDisposed = true;
         }

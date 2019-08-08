@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return new EventRegistrationToken(tokenValue);
         }
 
-        // Remove the event handler from the table and 
+        // Remove the event handler from the table and
         // Get the delegate associated with an event registration token if it exists
         // If the event registration token is not registered, returns false
         public bool RemoveEventHandler(EventRegistrationToken token, [NotNullWhen(true)] out T? handler)

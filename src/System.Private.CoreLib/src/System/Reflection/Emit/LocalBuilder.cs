@@ -89,7 +89,7 @@ namespace System.Reflection.Emit
             // front of the signature, but InternalGetSignature returns
             // the callinging convention. So we strip it off. This is a
             // bit unfortunate, since it means that we need to allocate
-            // yet another array of bytes...  
+            // yet another array of bytes...
             mungedSig = new byte[sigLength - 1];
             Buffer.BlockCopy(signature, 1, mungedSig, 0, sigLength - 1);
 
@@ -117,4 +117,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-

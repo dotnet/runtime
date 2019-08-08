@@ -26,9 +26,9 @@ namespace System.Reflection.Emit
             // This is a kind of MethodInfo to represent methods for array type of unbaked type
 
             // Another way to look at this class is as a glorified MethodToken wrapper. At the time of this comment
-            // this class is only constructed inside ModuleBuilder.GetArrayMethod and the only interesting thing 
+            // this class is only constructed inside ModuleBuilder.GetArrayMethod and the only interesting thing
             // passed into it is this MethodToken. The MethodToken was forged using a TypeSpec for an Array type and
-            // the name of the method on Array. 
+            // the name of the method on Array.
             // As none of the methods on Array have CustomModifiers their is no need to pass those around in here.
             m_mdMethod = token;
 

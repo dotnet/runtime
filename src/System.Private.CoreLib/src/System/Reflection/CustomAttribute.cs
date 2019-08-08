@@ -258,7 +258,7 @@ namespace System.Reflection
 
             for (int i = 0; i < records.Length; i++)
             {
-                scope.GetCustomAttributeProps(tkCustomAttributeTokens[i], 
+                scope.GetCustomAttributeProps(tkCustomAttributeTokens[i],
                     out records[i].tkCtor.Value, out records[i].blob);
             }
 
@@ -986,7 +986,7 @@ namespace System.Reflection
             PseudoCustomAttribute.GetCustomAttributes(type, caType, out RuntimeType.ListBuilder<Attribute> pcas);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
-            // attribute usage for the specific attribute because a derived attribute may override the usage...           
+            // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
             {
@@ -1029,7 +1029,7 @@ namespace System.Reflection
             PseudoCustomAttribute.GetCustomAttributes(method, caType, out RuntimeType.ListBuilder<Attribute> pcas);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
-            // attribute usage for the specific attribute because a derived attribute may override the usage...           
+            // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
             {
@@ -1289,8 +1289,8 @@ namespace System.Reflection
                                 }
                             }
 
-                            PropertyInfo? property = type is null ? 
-                                attributeType.GetProperty(name) : 
+                            PropertyInfo? property = type is null ?
+                                attributeType.GetProperty(name) :
                                 attributeType.GetProperty(name, type, Type.EmptyTypes);
 
                             // Did we get a valid property reference?
@@ -1559,7 +1559,7 @@ namespace System.Reflection
     {
         #region Private Static Data Members
         // Here we can avoid the need to take a lock when using Dictionary by rearranging
-        // the only method that adds values to the Dictionary. For more details on 
+        // the only method that adds values to the Dictionary. For more details on
         // Dictionary versus Hashtable thread safety:
         // See code:Dictionary#DictionaryVersusHashtableThreadSafety
         private static readonly Dictionary<RuntimeType, RuntimeType> s_pca = CreatePseudoCustomAttributeDictionary();
@@ -1574,7 +1574,7 @@ namespace System.Reflection
                 typeof(FieldOffsetAttribute), // field
                 typeof(SerializableAttribute), // class, struct, enum, delegate
                 typeof(MarshalAsAttribute), // parameter, field, return-value
-                typeof(ComImportAttribute), // class, interface 
+                typeof(ComImportAttribute), // class, interface
                 typeof(NonSerializedAttribute), // field, inherited
                 typeof(InAttribute), // parameter
                 typeof(OutAttribute), // parameter
@@ -1596,7 +1596,7 @@ namespace System.Reflection
         [Conditional("DEBUG")]
         private static void VerifyPseudoCustomAttribute(RuntimeType pca)
         {
-            // If any of these are invariants are no longer true will have to 
+            // If any of these are invariants are no longer true will have to
             // re-architect the PCA product logic and test cases -- you've been warned!
             Debug.Assert(pca.BaseType == typeof(Attribute), "Pseudo CA Error");
             AttributeUsageAttribute usage = CustomAttribute.GetAttributeUsage(pca);
@@ -1936,7 +1936,7 @@ namespace System.Reflection
 
             // Metadata parameter checking should not have allowed 0 for packing size.
             // The runtime later converts a packing size of 0 to 8 so do the same here
-            // because it's more useful from a user perspective. 
+            // because it's more useful from a user perspective.
             if (pack == 0)
                 pack = 8; // DEFAULT_PACKING_SIZE
 

@@ -113,7 +113,7 @@ namespace System.Reflection.Emit
 
         public override object? GetValue(object? obj)
         {
-            // NOTE!!  If this is implemented, make sure that this throws 
+            // NOTE!!  If this is implemented, make sure that this throws
             // a NotSupportedException for Save-only dynamic assemblies.
             // Otherwise, it could cause the .cctor to be executed.
 
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
 
         public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            // NOTE!!  If this is implemented, make sure that this throws 
+            // NOTE!!  If this is implemented, make sure that this throws
             // a NotSupportedException for Save-only dynamic assemblies.
             // Otherwise, it could cause the .cctor to be executed.
 

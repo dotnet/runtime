@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not ListToVectorAdapter objects. Rather, they are of type
     // IList<T>. No actual ListToVectorAdapter object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" to "IList<T>". 
+    // see a lot of expressions that cast "this" to "IList<T>".
     internal sealed class ListToVectorAdapter
     {
         private ListToVectorAdapter()

@@ -4,13 +4,13 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 **
 ** CustomAttributeBuilder is a helper class to help building custom attribute.
 **
-** 
+**
 ===========================================================*/
 
 using System.Buffers.Binary;

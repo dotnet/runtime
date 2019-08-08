@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
-                                                 bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag, 
+                                                 bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
                                                  bool throwOnError);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

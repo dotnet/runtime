@@ -29,7 +29,7 @@ namespace System
         // Leaving it uninitialized would confuse debuggers.
         //
         // We need to call the String constructor so that the compiler doesn't mark this as a literal.
-        // Marking this as a literal would mean that it doesn't show up as a field which we can access 
+        // Marking this as a literal would mean that it doesn't show up as a field which we can access
         // from native.
 #pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
         [Intrinsic]
@@ -61,7 +61,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string FastAllocateString(int length);
 
-        // Is this a string that can be compared quickly (that is it has only characters > 0x80 
+        // Is this a string that can be compared quickly (that is it has only characters > 0x80
         // and not a - or '
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsFastSort();

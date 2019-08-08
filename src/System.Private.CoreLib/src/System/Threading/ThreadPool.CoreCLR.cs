@@ -111,7 +111,7 @@ namespace System.Threading
         {
             // if the app has already unregistered the wait, there is nothing to cleanup
             // we can detect this by checking the handle. Normally, there is no race condition here
-            // so no need to protect reading of handle. However, if this object gets 
+            // so no need to protect reading of handle. However, if this object gets
             // resurrected and then someone does an unregister, it would introduce a race condition
             //
             // PrepareConstrainedRegions call not needed since finalizer already in Cer
@@ -130,8 +130,8 @@ namespace System.Threading
             // This will result in a "leak" of sorts (since the handle will not be cleaned up)
             // but the process is exiting anyway.
             //
-            // During AD-unload, we don't finalize live objects until all threads have been 
-            // aborted out of the AD.  Since these locked regions are CERs, we won't abort them 
+            // During AD-unload, we don't finalize live objects until all threads have been
+            // aborted out of the AD.  Since these locked regions are CERs, we won't abort them
             // while the lock is held.  So there should be no leak on AD-unload.
             //
             if (Interlocked.CompareExchange(ref m_lock, 1, 0) == 0)
@@ -309,8 +309,8 @@ namespace System.Threading
 
         // The thread pool maintains a per-appdomain managed work queue.
         // New thread pool entries are added in the managed queue.
-        // The VM is responsible for the actual growing/shrinking of 
-        // threads. 
+        // The VM is responsible for the actual growing/shrinking of
+        // threads.
         private static void EnsureInitialized()
         {
             if (!ThreadPoolGlobals.threadPoolInitialized)
@@ -326,7 +326,7 @@ namespace System.Threading
             ThreadPoolGlobals.threadPoolInitialized = true;
         }
 
-        // Native methods: 
+        // Native methods:
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SetMinThreadsNative(int workerThreads, int completionPortThreads);
