@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         /// <summary>
         /// Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
-        /// small, the path will be truncated. No matter what, the buffer will not be null terminated. 
+        /// small, the path will be truncated. No matter what, the buffer will not be null terminated.
         /// </summary>
         /// <param name="path">The path to the symlink</param>
         /// <param name="buffer">The buffer to hold the output path</param>

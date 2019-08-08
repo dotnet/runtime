@@ -61,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
                     errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
             }
 
-            // Make sure it's not a directory; we do this after opening it once we have a file descriptor 
+            // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
             Interop.Sys.FileStatus status;
             if (Interop.Sys.FStat(handle, out status) != 0)
@@ -110,7 +110,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add 
+            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add
             // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
             // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
             // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively

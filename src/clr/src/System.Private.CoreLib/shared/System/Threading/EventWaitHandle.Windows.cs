@@ -81,7 +81,7 @@ namespace System.Threading
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return res;
         }
-        
+
         public bool Set()
         {
             bool res = Interop.Kernel32.SetEvent(SafeWaitHandle);

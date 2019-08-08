@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>
         /// Insure that eventIds strictly less than 'eventId' will not be
-        /// used by the SelfDescribing events.   
+        /// used by the SelfDescribing events.
         /// </summary>
         internal static void ReserveEventIDsBelow(int eventId)
         {
@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tracing
             {
                 int snapshot = lastIdentity;
                 int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;
-                newIdentity = Math.Max(newIdentity, snapshot);      // Should be redundant.  as we only create descriptors once.  
+                newIdentity = Math.Max(newIdentity, snapshot);      // Should be redundant.  as we only create descriptors once.
                 if (Interlocked.CompareExchange(ref lastIdentity, newIdentity, snapshot) == snapshot)
                     break;
             }

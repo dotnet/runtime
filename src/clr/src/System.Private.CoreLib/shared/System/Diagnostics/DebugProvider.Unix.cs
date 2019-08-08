@@ -14,7 +14,7 @@ namespace System.Diagnostics
         {
             if (s_FailCore != null)
             {
-                s_FailCore(stackTrace, message, detailMessage, errorSource); 
+                s_FailCore(stackTrace, message, detailMessage, errorSource);
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace System.Diagnostics
         {
             if (s_WriteCore != null)
             {
-                s_WriteCore(message); 
+                s_WriteCore(message);
                 return;
             }
 
@@ -65,7 +65,7 @@ namespace System.Diagnostics
             // We don't want to write UTF-16 to a file like standard error.  Ideally we would transcode this
             // to UTF8, but the downside of that is it pulls in a bunch of stuff into what is ideally
             // a path with minimal dependencies (as to prevent re-entrency), so we'll take the strategy
-            // of just throwing away any non ASCII characters from the message and writing the rest            
+            // of just throwing away any non ASCII characters from the message and writing the rest
 
             const int BufferLength = 256;
 

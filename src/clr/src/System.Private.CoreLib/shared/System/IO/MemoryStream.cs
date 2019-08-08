@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     // A MemoryStream represents a Stream in memory (ie, it has no backing store).
-    // This stream may reduce the need for temporary buffers and files in 
-    // an application.  
-    // 
+    // This stream may reduce the need for temporary buffers and files in
+    // an application.
+    //
     // There are two ways to create a MemoryStream.  You can initialize one
-    // from an unsigned byte array, or you can create an empty one.  Empty 
+    // from an unsigned byte array, or you can create an empty one.  Empty
     // memory streams are resizable, while ones created with a byte array provide
     // a stream "view" of the data.
     public class MemoryStream : Stream
@@ -234,7 +234,7 @@ namespace System.IO
 
             int origPos = _position;
             int newPos = origPos + count;
-            
+
             if ((uint)newPos > (uint)_length)
             {
                 _position = _length;
@@ -265,7 +265,7 @@ namespace System.IO
         // Gets & sets the capacity (number of bytes allocated) for this stream.
         // The capacity cannot be set to a value less than the current length
         // of the stream.
-        // 
+        //
         public virtual int Capacity
         {
             get
@@ -481,7 +481,7 @@ namespace System.IO
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overridden.  
+            // since it does not call through to Read() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(MemoryStream))
@@ -511,7 +511,7 @@ namespace System.IO
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to ReadAsync() which a subclass might have overridden.  
+            // since it does not call through to ReadAsync() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into ReadAsync) when we are not sure.
             if (GetType() != typeof(MemoryStream))
@@ -594,12 +594,12 @@ namespace System.IO
         // value must be nonnegative and less than the space remaining in
         // the array, int.MaxValue - origin
         // Origin is 0 in all cases other than a MemoryStream created on
-        // top of an existing array and a specific starting offset was passed 
-        // into the MemoryStream constructor.  The upper bounds prevents any 
-        // situations where a stream may be created on top of an array then 
-        // the stream is made longer than the maximum possible length of the 
+        // top of an existing array and a specific starting offset was passed
+        // into the MemoryStream constructor.  The upper bounds prevents any
+        // situations where a stream may be created on top of an array then
+        // the stream is made longer than the maximum possible length of the
         // array (int.MaxValue).
-        // 
+        //
         public override void SetLength(long value)
         {
             if (value < 0 || value > int.MaxValue)

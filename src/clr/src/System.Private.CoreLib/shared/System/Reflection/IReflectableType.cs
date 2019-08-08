@@ -9,4 +9,3 @@ namespace System.Reflection
         TypeInfo GetTypeInfo();
     }
 }
-

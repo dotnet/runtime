@@ -190,4 +190,3 @@ namespace System.Buffers.Binary
         }
     }
 }
-

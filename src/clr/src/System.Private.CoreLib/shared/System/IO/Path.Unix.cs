@@ -14,7 +14,7 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
-        // Expands the given path to a fully qualified path. 
+        // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
             if (path == null)
@@ -24,8 +24,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             if (path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path)); 
-            
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {

@@ -6,7 +6,7 @@
 **
 **
 **
-** Purpose: Exception thrown when a requested method or operation is not 
+** Purpose: Exception thrown when a requested method or operation is not
 **            implemented.
 **
 **

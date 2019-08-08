@@ -41,10 +41,10 @@ namespace System.Threading
         /// types, see other overloads of EnsureInitialized.
         /// </para>
         /// <para>
-        /// This method may be used concurrently by multiple threads to initialize <paramref name="target"/>.  
+        /// This method may be used concurrently by multiple threads to initialize <paramref name="target"/>.
         /// In the event that multiple threads access this method concurrently, multiple instances of <typeparamref name="T"/>
         /// may be created, but only one will be stored into <paramref name="target"/>. In such an occurrence, this method will not dispose of the
-        /// objects that were not stored.  If such objects must be disposed, it is up to the caller to determine 
+        /// objects that were not stored.  If such objects must be disposed, it is up to the caller to determine
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
@@ -93,10 +93,10 @@ namespace System.Threading
         /// to allow null reference types, see other overloads of EnsureInitialized.
         /// </para>
         /// <para>
-        /// This method may be used concurrently by multiple threads to initialize <paramref name="target"/>.  
+        /// This method may be used concurrently by multiple threads to initialize <paramref name="target"/>.
         /// In the event that multiple threads access this method concurrently, multiple instances of <typeparamref name="T"/>
         /// may be created, but only one will be stored into <paramref name="target"/>. In such an occurrence, this method will not dispose of the
-        /// objects that were not stored.  If such objects must be disposed, it is up to the caller to determine 
+        /// objects that were not stored.  If such objects must be disposed, it is up to the caller to determine
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
@@ -153,7 +153,7 @@ namespace System.Threading
         /// <typeparam name="T">The type of target.</typeparam>
         /// <param name="target">A reference to the target to be initialized.</param>
         /// <param name="initialized">A reference to a location tracking whether the target has been initialized.</param>
-        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null, 
+        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.
         /// </param>
         /// <returns>The initialized object.</returns>
@@ -212,7 +212,7 @@ namespace System.Threading
         /// <typeparam name="T">The type of target.</typeparam>
         /// <param name="target">A reference to the target to be initialized.</param>
         /// <param name="initialized">A reference to a location tracking whether the target has been initialized.</param>
-        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null, 
+        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.</param>
         /// <param name="valueFactory">
         /// The <see cref="T:System.Func{T}"/> to invoke in order to produce the lazily-initialized value.
@@ -251,7 +251,7 @@ namespace System.Threading
         /// </summary>
         /// <typeparam name="T">The type of target. Has to be reference type.</typeparam>
         /// <param name="target">A reference to the target to be initialized.</param>
-        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null, 
+        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.</param>
         /// <param name="valueFactory">
         /// The <see cref="T:System.Func{T}"/> to invoke in order to produce the lazily-initialized value.

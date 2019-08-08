@@ -23,7 +23,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
-        /// </summary>        
+        /// </summary>
         internal override void InnerInvoke()
         {
             // Get and null out the antecedent.  This is crucial to avoid a memory
@@ -69,7 +69,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
-        /// </summary>        
+        /// </summary>
         internal override void InnerInvoke()
         {
             // Get and null out the antecedent.  This is crucial to avoid a memory
@@ -241,7 +241,7 @@ namespace System.Threading.Tasks
             catch (Exception e)
             {
                 // Either TryRunInline() or QueueTask() threw an exception. Record the exception, marking the task as Faulted.
-                // However if it was a ThreadAbortException coming from TryRunInline we need to skip here, 
+                // However if it was a ThreadAbortException coming from TryRunInline we need to skip here,
                 // because it would already have been handled in Task.Execute()
                 TaskSchedulerException tse = new TaskSchedulerException(e);
                 task.AddException(tse);
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks
             Debug.Assert(completedTask != null);
             Debug.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
 
-            // Check if the completion status of the task works with the desired 
+            // Check if the completion status of the task works with the desired
             // activation criteria of the TaskContinuationOptions.
             TaskContinuationOptions options = m_options;
             bool isRightKind =
@@ -328,7 +328,7 @@ namespace System.Threading.Tasks
                     try { continuationTask.ScheduleAndStart(needsProtection: true); }
                     catch (TaskSchedulerException)
                     {
-                        // No further action is necessary -- ScheduleAndStart() already transitioned the 
+                        // No further action is necessary -- ScheduleAndStart() already transitioned the
                         // task to faulted.  But we want to make sure that no exception is thrown from here.
                     }
                 }
@@ -433,7 +433,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets a cached delegate for the PostAction method.</summary>
         /// <returns>
-        /// A delegate for PostAction, which expects a SynchronizationContextAwaitTaskContinuation 
+        /// A delegate for PostAction, which expects a SynchronizationContextAwaitTaskContinuation
         /// to be passed as state.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -475,7 +475,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                // We permit inlining if the caller allows us to, and 
+                // We permit inlining if the caller allows us to, and
                 // either we're on a thread pool thread (in which case we're fine running arbitrary code)
                 // or we're already on the target scheduler (in which case we'll just ask the scheduler
                 // whether it's ok to run here).  We include the IsThreadPoolThread check here, whereas
@@ -484,7 +484,7 @@ namespace System.Threading.Tasks
                 bool inlineIfPossible = canInlineContinuationTask &&
                     (TaskScheduler.InternalCurrent == m_scheduler || Thread.CurrentThread.IsThreadPoolThread);
 
-                // Create the continuation task task. If we're allowed to inline, try to do so.  
+                // Create the continuation task task. If we're allowed to inline, try to do so.
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
                 var task = CreateTask(state =>
                 {
@@ -559,7 +559,7 @@ namespace System.Threading.Tasks
         internal override void Run(Task task, bool canInlineContinuationTask)
         {
             // For the base AwaitTaskContinuation, we allow inlining if our caller allows it
-            // and if we're in a "valid location" for it.  See the comments on 
+            // and if we're in a "valid location" for it.  See the comments on
             // IsValidLocationForInlining for more about what's valid.  For performance
             // reasons we would like to always inline, but we don't in some cases to avoid
             // running arbitrary amounts of work in suspected "bad locations", like UI threads.
@@ -586,9 +586,9 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <remarks>
         /// Returns whether SynchronizationContext is null and we're in the default scheduler.
-        /// If the await had a SynchronizationContext/TaskScheduler where it began and the 
-        /// default/ConfigureAwait(true) was used, then we won't be on this path.  If, however, 
-        /// ConfigureAwait(false) was used, or the SynchronizationContext and TaskScheduler were 
+        /// If the await had a SynchronizationContext/TaskScheduler where it began and the
+        /// default/ConfigureAwait(true) was used, then we won't be on this path.  If, however,
+        /// ConfigureAwait(false) was used, or the SynchronizationContext and TaskScheduler were
         /// naturally null/Default, then we might end up here.  If we do, we need to make sure
         /// that we don't execute continuations in a place that isn't set up to handle them, e.g.
         /// running arbitrary amounts of code on the UI thread.  It would be "correct", but very
@@ -601,7 +601,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                // If there's a SynchronizationContext, we'll be conservative and say 
+                // If there's a SynchronizationContext, we'll be conservative and say
                 // this is a bad location to inline.
                 var ctx = SynchronizationContext.Current;
                 if (ctx != null && ctx.GetType() != typeof(SynchronizationContext)) return false;

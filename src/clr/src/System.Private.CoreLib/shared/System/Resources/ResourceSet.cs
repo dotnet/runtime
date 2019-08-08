@@ -5,12 +5,12 @@
 /*============================================================
 **
 **
-** 
+**
 **
 **
 ** Purpose: Culture-specific collection of resources.
 **
-** 
+**
 ===========================================================*/
 
 using System.Collections;
@@ -21,9 +21,9 @@ using System.Reflection;
 namespace System.Resources
 {
     // A ResourceSet stores all the resources defined in one particular CultureInfo.
-    // 
+    //
     // The method used to load resources is straightforward - this class
-    // enumerates over an IResourceReader, loading every name and value, and 
+    // enumerates over an IResourceReader, loading every name and value, and
     // stores them in a hash table.  Custom IResourceReaders can be used.
     //
     public class ResourceSet : IDisposable, IEnumerable
@@ -40,16 +40,16 @@ namespace System.Resources
             Table = new Hashtable();
         }
 
-        // For RuntimeResourceSet, ignore the Table parameter - it's a wasted 
+        // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
         // allocation.
         internal ResourceSet(bool junk)
         {
         }
 
         // Creates a ResourceSet using the system default ResourceReader
-        // implementation.  Use this constructor to open & read from a file 
+        // implementation.  Use this constructor to open & read from a file
         // on disk.
-        // 
+        //
         public ResourceSet(string fileName)
             : this()
         {
@@ -58,9 +58,9 @@ namespace System.Resources
         }
 
         // Creates a ResourceSet using the system default ResourceReader
-        // implementation.  Use this constructor to read from an open stream 
+        // implementation.  Use this constructor to read from an open stream
         // of data.
-        // 
+        //
         public ResourceSet(Stream stream)
             : this()
         {
@@ -78,8 +78,8 @@ namespace System.Resources
         }
 
         // Closes and releases any resources used by this ResourceSet, if any.
-        // All calls to methods on the ResourceSet after a call to close may 
-        // fail.  Close is guaranteed to be safely callable multiple times on a 
+        // All calls to methods on the ResourceSet after a call to close may
+        // fail.  Close is guaranteed to be safely callable multiple times on a
         // particular ResourceSet, and all subclasses must support these semantics.
         public virtual void Close()
         {
@@ -142,7 +142,7 @@ namespace System.Resources
         }
 
         // Look up a string value for a resource given its name.
-        // 
+        //
         public virtual string? GetString(string name)
         {
             object? obj = GetObjectInternal(name);
@@ -191,7 +191,7 @@ namespace System.Resources
         }
 
         // Look up an object value for a resource given its name.
-        // 
+        //
         public virtual object? GetObject(string name)
         {
             return GetObjectInternal(name);

@@ -16,7 +16,7 @@ namespace System
         private static readonly CultureAwareComparer s_invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.None);
         private static readonly CultureAwareComparer s_invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
         private static readonly OrdinalCaseSensitiveComparer s_ordinal = new OrdinalCaseSensitiveComparer();
-        private static readonly OrdinalIgnoreCaseComparer s_ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();        
+        private static readonly OrdinalIgnoreCaseComparer s_ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();
 
         public static StringComparer InvariantCulture
         {
@@ -94,7 +94,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(culture));
             }
-            
+
             return new CultureAwareComparer(culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
@@ -249,7 +249,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class OrdinalComparer : StringComparer 
+    public class OrdinalComparer : StringComparer
     {
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
 
@@ -308,7 +308,7 @@ namespace System
             return obj.GetHashCode();
         }
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj)
         {
             if (!(obj is OrdinalComparer comparer))

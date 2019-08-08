@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         public static AsyncIteratorMethodBuilder Create() =>
             // _methodBuilder should be initialized to AsyncTaskMethodBuilder.Create(), but on coreclr
             // that Create() is a nop, so we can just return the default here.
-            default; 
+            default;
 
         /// <summary>Invokes <see cref="IAsyncStateMachine.MoveNext"/> on the state machine while guarding the <see cref="ExecutionContext"/>.</summary>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>

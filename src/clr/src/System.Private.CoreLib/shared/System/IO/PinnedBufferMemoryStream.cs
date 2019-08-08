@@ -4,11 +4,11 @@
 
 /*============================================================
 **
-** 
-** 
 **
 **
-** Purpose: Pins a byte[], exposing it as an unmanaged memory 
+**
+**
+** Purpose: Pins a byte[], exposing it as an unmanaged memory
 **          stream.  Used in ResourceReader for corner cases.
 **
 **

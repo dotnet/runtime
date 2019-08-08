@@ -87,34 +87,34 @@ namespace System.Threading.Tasks
     {
         // Design:
         //
-        // SingleProducerSingleConsumerQueue (SPSCQueue) is a concurrent queue designed to be used 
-        // by one producer thread and one consumer thread. SPSCQueue does not work correctly when used by 
+        // SingleProducerSingleConsumerQueue (SPSCQueue) is a concurrent queue designed to be used
+        // by one producer thread and one consumer thread. SPSCQueue does not work correctly when used by
         // multiple producer threads concurrently or multiple consumer threads concurrently.
-        // 
-        // SPSCQueue is based on segments that behave like circular buffers. Each circular buffer is represented 
-        // as an array with two indexes: m_first and m_last. m_first is the index of the array slot for the consumer 
-        // to read next, and m_last is the slot for the producer to write next. The circular buffer is empty when 
+        //
+        // SPSCQueue is based on segments that behave like circular buffers. Each circular buffer is represented
+        // as an array with two indexes: m_first and m_last. m_first is the index of the array slot for the consumer
+        // to read next, and m_last is the slot for the producer to write next. The circular buffer is empty when
         // (m_first == m_last), and full when ((m_last+1) % m_array.Length == m_first).
         //
-        // Since m_first is only ever modified by the consumer thread and m_last by the producer, the two indices can 
-        // be updated without interlocked operations. As long as the queue size fits inside a single circular buffer, 
-        // enqueues and dequeues simply advance the corresponding indices around the circular buffer. If an enqueue finds 
-        // that there is no room in the existing buffer, however, a new circular buffer is allocated that is twice as big 
-        // as the old buffer. From then on, the producer will insert values into the new buffer. The consumer will first 
+        // Since m_first is only ever modified by the consumer thread and m_last by the producer, the two indices can
+        // be updated without interlocked operations. As long as the queue size fits inside a single circular buffer,
+        // enqueues and dequeues simply advance the corresponding indices around the circular buffer. If an enqueue finds
+        // that there is no room in the existing buffer, however, a new circular buffer is allocated that is twice as big
+        // as the old buffer. From then on, the producer will insert values into the new buffer. The consumer will first
         // empty out the old buffer and only then follow the producer into the new (larger) buffer.
         //
-        // As described above, the enqueue operation on the fast path only modifies the m_first field of the current segment. 
-        // However, it also needs to read m_last in order to verify that there is room in the current segment. Similarly, the 
-        // dequeue operation on the fast path only needs to modify m_last, but also needs to read m_first to verify that the 
+        // As described above, the enqueue operation on the fast path only modifies the m_first field of the current segment.
+        // However, it also needs to read m_last in order to verify that there is room in the current segment. Similarly, the
+        // dequeue operation on the fast path only needs to modify m_last, but also needs to read m_first to verify that the
         // queue is non-empty. This results in true cache line sharing between the producer and the consumer.
         //
-        // The cache line sharing issue can be mitigating by having a possibly stale copy of m_first that is owned by the producer, 
-        // and a possibly stale copy of m_last that is owned by the consumer. So, the consumer state is described using 
-        // (m_first, m_lastCopy) and the producer state using (m_firstCopy, m_last). The consumer state is separated from 
-        // the producer state by padding, which allows fast-path enqueues and dequeues from hitting shared cache lines. 
-        // m_lastCopy is the consumer's copy of m_last. Whenever the consumer can tell that there is room in the buffer 
-        // simply by observing m_lastCopy, the consumer thread does not need to read m_last and thus encounter a cache miss. Only 
-        // when the buffer appears to be empty will the consumer refresh m_lastCopy from m_last. m_firstCopy is used by the producer 
+        // The cache line sharing issue can be mitigating by having a possibly stale copy of m_first that is owned by the producer,
+        // and a possibly stale copy of m_last that is owned by the consumer. So, the consumer state is described using
+        // (m_first, m_lastCopy) and the producer state using (m_firstCopy, m_last). The consumer state is separated from
+        // the producer state by padding, which allows fast-path enqueues and dequeues from hitting shared cache lines.
+        // m_lastCopy is the consumer's copy of m_last. Whenever the consumer can tell that there is room in the buffer
+        // simply by observing m_lastCopy, the consumer thread does not need to read m_last and thus encounter a cache miss. Only
+        // when the buffer appears to be empty will the consumer refresh m_lastCopy from m_last. m_firstCopy is used by the producer
         // in the same way to avoid reading m_first on the hot path.
 
         /// <summary>The initial size to use for segments (in number of elements).</summary>
@@ -185,7 +185,7 @@ namespace System.Threading.Tasks
             try { }
             finally
             {
-                // Finally block to protect against corruption due to a thread abort 
+                // Finally block to protect against corruption due to a thread abort
                 // between setting m_next and setting m_tail.
                 Volatile.Write(ref m_tail.m_next, newSegment); // ensure segment not published until item is fully stored
                 m_tail = newSegment;

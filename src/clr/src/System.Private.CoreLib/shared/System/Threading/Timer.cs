@@ -62,7 +62,7 @@ namespace System.Threading
         {
             // The VM's timer implementation does not work well for very long-duration timers.
             // So we limit our native timer duration to a "small" value.
-            // This may cause us to attempt to fire timers early, but that's ok - 
+            // This may cause us to attempt to fire timers early, but that's ok -
             // we'll just see that none of our timers has actually reached its due time,
             // and schedule the native timer again.
             const uint maxPossibleDuration = 0x0fffffff;
@@ -428,7 +428,7 @@ namespace System.Threading
 
         // When Timer.Dispose(WaitHandle) is used, we need to signal the wait handle only
         // after all pending callbacks are complete.  We set _canceled to prevent any callbacks that
-        // are already queued from running.  We track the number of callbacks currently executing in 
+        // are already queued from running.  We track the number of callbacks currently executing in
         // _callbacksRunning.  We set _notifyWhenNoCallbacksRunning only when _callbacksRunning
         // reaches zero.  Same applies if Timer.DisposeAsync() is used, except with a Task<bool>
         // instead of with a provided WaitHandle.
@@ -656,7 +656,7 @@ namespace System.Threading
         };
     }
 
-    // TimerHolder serves as an intermediary between Timer and TimerQueueTimer, releasing the TimerQueueTimer 
+    // TimerHolder serves as an intermediary between Timer and TimerQueueTimer, releasing the TimerQueueTimer
     // if the Timer is collected.
     // This is necessary because Timer itself cannot use its finalizer for this purpose.  If it did,
     // then users could control timer lifetimes using GC.SuppressFinalize/ReRegisterForFinalize.
@@ -778,7 +778,7 @@ namespace System.Threading
             int dueTime = -1;   // We want timer to be registered, but not activated.  Requires caller to call
             int period = -1;    // Change after a timer instance is created.  This is to avoid the potential
                                 // for a timer to be fired before the returned value is assigned to the variable,
-                                // potentially causing the callback to reference a bogus value (if passing the timer to the callback). 
+                                // potentially causing the callback to reference a bogus value (if passing the timer to the callback).
 
             TimerSetup(callback, this, (uint)dueTime, (uint)period);
         }

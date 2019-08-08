@@ -20,4 +20,3 @@ namespace System.Reflection
         public virtual ResourceLocation ResourceLocation { get; }
     }
 }
-

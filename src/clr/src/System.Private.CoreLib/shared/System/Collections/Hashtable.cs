@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -21,7 +21,7 @@ namespace System.Collections
 {
     // The Hashtable class represents a dictionary of associated keys and values
     // with constant lookup time.
-    // 
+    //
     // Objects used as keys in a hashtable must implement the GetHashCode
     // and Equals methods (or they can rely on the default implementations
     // inherited from Object if key equality is simply reference
@@ -30,7 +30,7 @@ namespace System.Collections
     // entire time the key is present in the hashtable. In practical terms, this
     // means that key objects should be immutable, at least for the time they are
     // used as keys in a hashtable.
-    // 
+    //
     // When entries are added to a hashtable, they are placed into
     // buckets based on the hashcode of their keys. Subsequent lookups of
     // keys will use the hashcode of the keys to only search a particular bucket,
@@ -46,11 +46,11 @@ namespace System.Collections
     // automatically increased by approximately a factor of two (to be precise, the
     // number of hashtable buckets is increased to the smallest prime number that
     // is larger than twice the current number of hashtable buckets).
-    // 
+    //
     // Each object provides their own hash function, accessed by calling
-    // GetHashCode().  However, one can write their own object 
+    // GetHashCode().  However, one can write their own object
     // implementing IEqualityComparer and pass it to a constructor on
-    // the Hashtable.  That hash function (and the equals method on the 
+    // the Hashtable.  That hash function (and the equals method on the
     // IEqualityComparer) would be used for all objects in the table.
     //
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
@@ -60,44 +60,44 @@ namespace System.Collections
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
-          This Hashtable uses double hashing.  There are hashsize buckets in the 
+          This Hashtable uses double hashing.  There are hashsize buckets in the
           table, and each bucket can contain 0 or 1 element.  We use a bit to mark
           whether there's been a collision when we inserted multiple elements
-          (ie, an inserted item was hashed at least a second time and we probed 
+          (ie, an inserted item was hashed at least a second time and we probed
           this bucket, but it was already in use).  Using the collision bit, we
           can terminate lookups & removes for elements that aren't in the hash
           table more quickly.  We steal the most significant bit from the hash code
           to store the collision bit.
 
           Our hash function is of the following form:
-    
+
           h(key, n) = h1(key) + n*h2(key)
-    
+
           where n is the number of times we've hit a collided bucket and rehashed
           (on this particular lookup).  Here are our hash functions:
-    
+
           h1(key) = GetHash(key);  // default implementation calls key.GetHashCode();
           h2(key) = 1 + (((h1(key) >> 5) + 1) % (hashsize - 1));
-    
+
           The h1 can return any number.  h2 must return a number between 1 and
-          hashsize - 1 that is relatively prime to hashsize (not a problem if 
+          hashsize - 1 that is relatively prime to hashsize (not a problem if
           hashsize is prime).  (Knuth's Art of Computer Programming, Vol. 3, p. 528-9)
           If this is true, then we are guaranteed to visit every bucket in exactly
           hashsize probes, since the least common multiple of hashsize and h2(key)
           will be hashsize * h2(key).  (This is the first number where adding h2 to
           h1 mod hashsize will be 0 and we will search the same bucket twice).
-          
-          We previously used a different h2(key, n) that was not constant.  That is a 
+
+          We previously used a different h2(key, n) that was not constant.  That is a
           horrifically bad idea, unless you can prove that series will never produce
           any identical numbers that overlap when you mod them by hashsize, for all
           subranges from i to i+hashsize, for all i.  It's not worth investigating,
           since there was no clear benefit from using that hash function, and it was
           broken.
-    
-          For efficiency reasons, we've implemented this by storing h1 and h2 in a 
+
+          For efficiency reasons, we've implemented this by storing h1 and h2 in a
           temporary, and setting a variable called seed equal to h1.  We do a probe,
           and if we collided, we simply add h2 to seed each time through the loop.
-    
+
           A good test for h2() is to subclass Hashtable, provide your own implementation
           of GetHash() that returns a constant, then add many items to the hash table.
           Make sure Count equals the number of items you inserted.
@@ -107,7 +107,7 @@ namespace System.Collections
           we'd either wipe out the collision bit, or we'd still have an item in
           the hash table.
 
-           -- 
+           --
         */
 
         private const int InitialSize = 3;
@@ -250,7 +250,7 @@ namespace System.Collections
         // an approximation) is known, specifying it in the constructor can
         // eliminate a number of resizing operations that would otherwise be
         // performed when elements are added to the hashtable.
-        // 
+        //
         public Hashtable(int capacity) : this(capacity, 1.0f)
         {
         }
@@ -265,7 +265,7 @@ namespace System.Collections
         // Smaller load factors cause faster average lookup times at the cost of
         // increased memory consumption. A load factor of 1.0 generally provides
         // the best balance between speed and size.
-        // 
+        //
         public Hashtable(int capacity, float loadFactor)
         {
             if (capacity < 0)
@@ -273,7 +273,7 @@ namespace System.Collections
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
                 throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.Format(SR.ArgumentOutOfRange_HashtableLoadFactor, .1, 1.0));
 
-            // Based on perf work, .72 is the optimal load factor for this table.  
+            // Based on perf work, .72 is the optimal load factor for this table.
             _loadFactor = 0.72f * loadFactor;
 
             double rawsize = capacity / _loadFactor;
@@ -318,14 +318,14 @@ namespace System.Collections
 
         // Constructs a new hashtable containing a copy of the entries in the given
         // dictionary. The hashtable is created with a load factor of 1.0.
-        // 
+        //
         public Hashtable(IDictionary d) : this(d, 1.0f)
         {
         }
 
         // Constructs a new hashtable containing a copy of the entries in the given
         // dictionary. The hashtable is created with the given load factor.
-        // 
+        //
         public Hashtable(IDictionary d, float loadFactor)
             : this(d, loadFactor, (IEqualityComparer?)null)
         {
@@ -383,25 +383,25 @@ namespace System.Collections
             HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
-        // ?InitHash? is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)  
+        // ?InitHash? is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)
         //
-        // 1) The only ?correctness? requirement is that the ?increment? used to probe 
+        // 1) The only ?correctness? requirement is that the ?increment? used to probe
         //    a. Be non-zero
         //    b. Be relatively prime to the table size ?hashSize?. (This is needed to insure you probe all entries in the table before you ?wrap? and visit entries already probed)
         // 2) Because we choose table sizes to be primes, we just need to insure that the increment is 0 < incr < hashSize
         //
         // Thus this function would work: Incr = 1 + (seed % (hashSize-1))
-        // 
-        // While this works well for ?uniformly distributed? keys, in practice, non-uniformity is common. 
-        // In particular in practice we can see ?mostly sequential? where you get long clusters of keys that ?pack?. 
-        // To avoid bad behavior you want it to be the case that the increment is ?large? even for ?small? values (because small 
+        //
+        // While this works well for ?uniformly distributed? keys, in practice, non-uniformity is common.
+        // In particular in practice we can see ?mostly sequential? where you get long clusters of keys that ?pack?.
+        // To avoid bad behavior you want it to be the case that the increment is ?large? even for ?small? values (because small
         // values tend to happen more in practice). Thus we multiply ?seed? by a number that will make these small values
         // bigger (and not hurt large values). We picked HashPrime (101) because it was prime, and if ?hashSize-1? is not a multiple of HashPrime
         // (enforced in GetPrime), then incr has the potential of being every value from 1 to hashSize-1. The choice was largely arbitrary.
-        // 
+        //
         // Computes the hash function:  H(key, i) = h1(key) + i*h2(key, hashSize).
-        // The out parameter seed is h1(key), while the out parameter 
-        // incr is h2(key, hashSize).  Callers of this function should 
+        // The out parameter seed is h1(key), while the out parameter
+        // incr is h2(key, hashSize).  Callers of this function should
         // add incr each time through a loop.
         private uint InitHash(object key, int hashsize, out uint seed, out uint incr)
         {
@@ -421,7 +421,7 @@ namespace System.Collections
         // Adds an entry with the given key and value to this hashtable. An
         // ArgumentException is thrown if the key is null or if the key is already
         // present in the hashtable.
-        // 
+        //
         public virtual void Add(object key, object? value)
         {
             Insert(key, value, true);
@@ -482,7 +482,7 @@ namespace System.Collections
 
         // Checks if this hashtable contains an entry with the given key.  This is
         // an O(1) operation.
-        // 
+        //
         public virtual bool ContainsKey(object key)
         {
             if (key == null)
@@ -521,7 +521,7 @@ namespace System.Collections
         // using the Object.Equals method. This method performs a linear
         // search and is thus be substantially slower than the ContainsKey
         // method.
-        // 
+        //
         public virtual bool ContainsValue(object? value)
         {
             if (value == null)
@@ -642,7 +642,7 @@ namespace System.Collections
 
         // Returns the value associated with the given key. If an entry with the
         // given key is not found, the returned value is null.
-        // 
+        //
         public virtual object? this[object key]
         {
             get
@@ -672,17 +672,17 @@ namespace System.Collections
                     //        (2) compare the hashcode, if equal, go to step 3. Otherwise end.
                     //        (3) compare the key, if equal, go to step 4. Otherwise end.
                     //        (4) return the value contained in the bucket.
-                    //     After step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
+                    //     After step 3 and before step 4. A writer can kick in a remove the old item and add a new one
                     //     in the same bucket. So in the reader we need to check if the hash table is modified during above steps.
                     //
-                    // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying 
+                    // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying
                     // the hashtable and will ckear the flag when it is done.  When the flag is cleared, the 'version'
-                    // will be increased.  We will repeat the reading if a writer is in progress or done with the modification 
+                    // will be increased.  We will repeat the reading if a writer is in progress or done with the modification
                     // during the read.
                     //
-                    // Our memory model guarantee if we pick up the change in bucket from another processor, 
+                    // Our memory model guarantee if we pick up the change in bucket from another processor,
                     // we will see the 'isWriterProgress' flag to be true or 'version' is changed in the reader.
-                    //                    
+                    //
                     SpinWait spin = new SpinWait();
                     while (true)
                     {
@@ -735,8 +735,8 @@ namespace System.Collections
 
         private void UpdateVersion()
         {
-            // Version might become negative when version is int.MaxValue, but the oddity will be still be correct. 
-            // So we don't need to special case this. 
+            // Version might become negative when version is int.MaxValue, but the oddity will be still be correct.
+            // So we don't need to special case this.
             _version++;
         }
 
@@ -745,11 +745,11 @@ namespace System.Collections
             // reset occupancy
             _occupancy = 0;
 
-            // Don't replace any internal state until we've finished adding to the 
-            // new bucket[].  This serves two purposes: 
-            //   1) Allow concurrent readers to see valid hashtable contents 
+            // Don't replace any internal state until we've finished adding to the
+            // new bucket[].  This serves two purposes:
+            //   1) Allow concurrent readers to see valid hashtable contents
             //      at all times
-            //   2) Protect against an OutOfMemoryException while allocating this 
+            //   2) Protect against an OutOfMemoryException while allocating this
             //      new bucket[].
             bucket[] newBuckets = new bucket[newsize];
 
@@ -825,7 +825,7 @@ namespace System.Collections
         // Internal method to compare two keys.  If you have provided an IComparer
         // instance in the constructor, this method will call comparer.Compare(item, key).
         // Otherwise, it will call item.Equals(key).
-        // 
+        //
         protected virtual bool KeyEquals(object? item, object key)
         {
             Debug.Assert(key != null, "key can't be null here!");
@@ -846,11 +846,11 @@ namespace System.Collections
         // in which the returned collection represents the keys is unspecified, but
         // it is guaranteed to be          buckets = newBuckets; the same order in which a collection returned by
         // GetValues represents the values of the hashtable.
-        // 
+        //
         // The returned collection is live in the sense that any changes
         // to the hash table are reflected in this collection.  It is not
         // a static copy of all the keys in the hash table.
-        // 
+        //
         public virtual ICollection Keys
         {
             get
@@ -866,11 +866,11 @@ namespace System.Collections
         // unspecified, but it is guaranteed to be the same order in which a
         // collection returned by GetKeys represents the keys of the
         // hashtable.
-        // 
+        //
         // The returned collection is live in the sense that any changes
         // to the hash table are reflected in this collection.  It is not
         // a static copy of all the keys in the hash table.
-        // 
+        //
         public virtual ICollection Values
         {
             get
@@ -913,7 +913,7 @@ namespace System.Collections
             {
                 // Set emptySlot number to current bucket if it is the first available bucket that we have seen
                 // that once contained an entry and also has had a collision.
-                // We need to search this entire collision chain because we have to ensure that there are no 
+                // We need to search this entire collision chain because we have to ensure that there are no
                 // duplicate entries in the table.
                 if (emptySlotNumber == -1 && (_buckets[bucketNumber].key == _buckets) && (_buckets[bucketNumber].hash_coll < 0))//(((buckets[bucketNumber].hash_coll & unchecked(0x80000000))!=0)))
                     emptySlotNumber = bucketNumber;
@@ -1026,7 +1026,7 @@ namespace System.Collections
         // Removes an entry from this hashtable. If an entry with the specified
         // key exists in the hashtable, it is removed. An ArgumentException is
         // thrown if the key is null.
-        // 
+        //
         public virtual void Remove(object key)
         {
             if (key == null)
@@ -1075,7 +1075,7 @@ namespace System.Collections
         public virtual object SyncRoot => this;
 
         // Returns the number of associations in this hashtable.
-        // 
+        //
         public virtual int Count
         {
             get { return _count; }
@@ -1109,7 +1109,7 @@ namespace System.Collections
                 //
                 // We need to maintain serialization compatibility with Everett and RTM.
                 // If the comparer is null or a compatible comparer, serialize Hashtable
-                // in a format that can be deserialized on Everett and RTM.            
+                // in a format that can be deserialized on Everett and RTM.
                 //
                 // Also, if the Hashtable is using randomized hashing, serialize the old
                 // view of the _keycomparer so perevious frameworks don't see the new types
@@ -1141,7 +1141,7 @@ namespace System.Collections
                 info.AddValue(KeysName, serKeys, typeof(object[]));
                 info.AddValue(ValuesName, serValues, typeof(object[]));
 
-                // Explicitly check to see if anyone changed the Hashtable while we 
+                // Explicitly check to see if anyone changed the Hashtable while we
                 // were serializing it.  That's a race in their code.
                 if (_version != oldVersion)
                 {
@@ -1151,7 +1151,7 @@ namespace System.Collections
         }
 
         //
-        // DeserializationEvent Listener 
+        // DeserializationEvent Listener
         //
         public virtual void OnDeserialization(object? sender)
         {

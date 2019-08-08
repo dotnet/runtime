@@ -237,7 +237,7 @@ namespace System.ComponentModel
             {
                 return false;
             }
-            
+
             if (Value == null)
             {
                 return other.Value == null;

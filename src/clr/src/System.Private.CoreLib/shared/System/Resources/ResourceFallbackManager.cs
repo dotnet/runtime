@@ -4,14 +4,14 @@
 
 /*============================================================
 **
-** 
-** 
 **
 **
-** Purpose: Encapsulates CultureInfo fallback for resource 
+**
+**
+** Purpose: Encapsulates CultureInfo fallback for resource
 ** lookup
 **
-** 
+**
 ===========================================================*/
 
 using System;

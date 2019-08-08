@@ -17,7 +17,7 @@ namespace System.Globalization
         private readonly byte[] _keyData;
 
         /// <summary>
-        /// The following constructor is designed to be called from CompareInfo to get the 
+        /// The following constructor is designed to be called from CompareInfo to get the
         /// the sort key of specific string for synthetic culture
         /// </summary>
         internal SortKey(string localeName, string str, CompareOptions options, byte[] keyData)

@@ -806,7 +806,7 @@ namespace System
 
                 localTicks = localTicks < DateTime.MinTicks ? DateTime.MinTicks : DateTime.MaxTicks;
             }
-            
+
             return new DateTimeOffset(localTicks, offset);
         }
 

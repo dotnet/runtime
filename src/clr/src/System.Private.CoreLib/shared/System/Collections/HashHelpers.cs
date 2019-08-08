@@ -15,16 +15,16 @@ namespace System.Collections
 
         public const int HashPrime = 101;
 
-        // Table of prime numbers to use as hash table sizes. 
+        // Table of prime numbers to use as hash table sizes.
         // A typical resize algorithm would pick the smallest prime number in this array
-        // that is larger than twice the previous capacity. 
-        // Suppose our Hashtable currently has capacity x and enough elements are added 
-        // such that a resize needs to occur. Resizing first computes 2x then finds the 
-        // first prime in the table greater than 2x, i.e. if primes are ordered 
-        // p_1, p_2, ..., p_i, ..., it finds p_n such that p_n-1 < 2x < p_n. 
-        // Doubling is important for preserving the asymptotic complexity of the 
-        // hashtable operations such as add.  Having a prime guarantees that double 
-        // hashing does not lead to infinite loops.  IE, your hash function will be 
+        // that is larger than twice the previous capacity.
+        // Suppose our Hashtable currently has capacity x and enough elements are added
+        // such that a resize needs to occur. Resizing first computes 2x then finds the
+        // first prime in the table greater than 2x, i.e. if primes are ordered
+        // p_1, p_2, ..., p_i, ..., it finds p_n such that p_n-1 < 2x < p_n.
+        // Doubling is important for preserving the asymptotic complexity of the
+        // hashtable operations such as add.  Having a prime guarantees that double
+        // hashing does not lead to infinite loops.  IE, your hash function will be
         // h1(key) + i*h2(key), 0 <= i < size.  h2 and the size must be relatively prime.
         // We prefer the low computation costs of higher prime numbers over the increased
         // memory allocation of a fixed prime number i.e. when right sizing a HashSet.
@@ -62,8 +62,8 @@ namespace System.Collections
                     return prime;
             }
 
-            //outside of our predefined table. 
-            //compute the hard way. 
+            //outside of our predefined table.
+            //compute the hard way.
             for (int i = (min | 1); i < int.MaxValue; i += 2)
             {
                 if (IsPrime(i) && ((i - 1) % HashPrime != 0))

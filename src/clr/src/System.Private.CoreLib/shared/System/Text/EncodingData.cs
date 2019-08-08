@@ -17,7 +17,7 @@ namespace System.Text
         // Using indices from s_encodingNamesIndices, we binary search this string when mapping
         // an encoding name to a codepage. Note that these names are all lowercase and are
         // sorted alphabetically.
-        // 
+        //
         private const string s_encodingNames =
             "ansi_x3.4-1968" + // 20127
             "ansi_x3.4-1986" + // 20127
@@ -114,7 +114,7 @@ namespace System.Text
             429
         };
 
-        // 
+        //
         // s_codePagesByName contains the list of supported codepages which match the encoding
         // names listed in s_encodingNames. The way mapping works is we binary search
         // s_encodingNames using s_encodingNamesIndices until we find a match for a given name.
@@ -167,7 +167,7 @@ namespace System.Text
             65001 // x-unicode-2-0-utf-8
         };
 
-        // 
+        //
         // When retrieving the value for System.Text.Encoding.WebName or
         // System.Text.Encoding.EncodingName given System.Text.Encoding.CodePage,
         // we perform a linear search on s_mappedCodePages to find the index of the
@@ -189,7 +189,7 @@ namespace System.Text
             65001 // utf-8
         };
 
-        // 
+        //
         // s_uiFamilyCodePages is indexed by the corresponding index in s_mappedCodePages.
         //
         private static readonly int[] s_uiFamilyCodePages = new int[]
@@ -204,7 +204,7 @@ namespace System.Text
             1200
         };
 
-        // 
+        //
         // s_webNames is a concatenation of the default encoding names
         // for each code page. It is used in retrieving the value for
         // System.Text.Encoding.WebName given System.Text.Encoding.CodePage.
@@ -221,7 +221,7 @@ namespace System.Text
             "utf-7" + // 65000
             "utf-8"; // 65001
 
-        // 
+        //
         // s_webNameIndices contains the start index of each code page's default
         // web name in the string s_webNames. It is indexed by an index into
         // s_mappedCodePages.
@@ -239,13 +239,13 @@ namespace System.Text
             56
         };
 
-        // 
+        //
         // s_englishNames is the concatenation of the English names for each codepage.
         // It is used in retrieving the value for System.Text.Encoding.EncodingName
         // given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        // 
+        //
         private const string s_englishNames =
             "Unicode" + // 1200
             "Unicode (Big-Endian)" + // 1201
@@ -256,7 +256,7 @@ namespace System.Text
             "Unicode (UTF-7)" + // 65000
             "Unicode (UTF-8)"; // 65001
 
-        // 
+        //
         // s_englishNameIndices contains the start index of each code page's English
         // name in the string s_englishNames. It is indexed by an index into
         // s_mappedCodePages.
@@ -273,7 +273,7 @@ namespace System.Text
             115, // Unicode (UTF-8) (65001)
             130
         };
-        
+
         // redeclaring these constants here for readability below
         private const uint MIMECONTF_MAILNEWS = Encoding.MIMECONTF_MAILNEWS;
         private const uint MIMECONTF_BROWSER = Encoding.MIMECONTF_BROWSER;

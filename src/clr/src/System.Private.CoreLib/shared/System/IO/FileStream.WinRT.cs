@@ -57,7 +57,7 @@ namespace System.IO
 
             // If the handle is a pipe, ReadFile will block until there
             // has been a write on the other end.  We'll just have to deal with it,
-            // For the read end of a pipe, you can mess up and 
+            // For the read end of a pipe, you can mess up and
             // accidentally read synchronously from an async pipe.
             if ((access & FileAccess.Read) != 0)
             {
