@@ -137,7 +137,7 @@ namespace System
             throw GetArgumentOutOfRangeException(ExceptionArgument.year,
                                                     ExceptionResource.ArgumentOutOfRange_Year);
         }
-        
+
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
