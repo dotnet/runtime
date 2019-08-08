@@ -6,9 +6,6 @@ using System.ComponentModel;
 
 namespace System
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     public enum PlatformID
     {
         [EditorBrowsable(EditorBrowsableState.Never)] Win32S = 0,

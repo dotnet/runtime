@@ -6,9 +6,6 @@ namespace System
 {
     public static partial class Environment
     {
-#if PROJECTN
-        [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
         public enum SpecialFolder
         {
             ApplicationData = SpecialFolderValues.CSIDL_APPDATA,

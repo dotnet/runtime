@@ -6204,9 +6204,6 @@ namespace System.Threading.Tasks
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {
             //Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
@@ -6268,9 +6265,6 @@ namespace System.Threading.Tasks
             return null;
         }
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
         //Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
         private static Task? GetActiveTaskFromId(int taskId)
         {
