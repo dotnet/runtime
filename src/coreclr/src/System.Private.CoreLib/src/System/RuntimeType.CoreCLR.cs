@@ -4538,23 +4538,6 @@ namespace System.Reflection
 
         internal V this[K key]
         {
-            set
-            {
-                Table table = m_Table;
-
-                if (table != null)
-                {
-                    int requiredSize = 2 * (table.m_count + 1);
-                    if (requiredSize >= table.m_keys.Length)
-                        Rehash(requiredSize);
-                }
-                else
-                {
-                    Rehash(MinSize);
-                }
-
-                m_Table.Insert(key, value);
-            }
             get
             {
                 Table table = Volatile.Read(ref m_Table);
@@ -4587,6 +4570,23 @@ namespace System.Reflection
                         return default!;
                     }
                 }
+            }
+            set
+            {
+                Table table = m_Table;
+
+                if (table != null)
+                {
+                    int requiredSize = 2 * (table.m_count + 1);
+                    if (requiredSize >= table.m_keys.Length)
+                        Rehash(requiredSize);
+                }
+                else
+                {
+                    Rehash(MinSize);
+                }
+
+                m_Table.Insert(key, value);
             }
         }
     }
