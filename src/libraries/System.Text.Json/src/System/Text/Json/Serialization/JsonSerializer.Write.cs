@@ -60,7 +60,7 @@ namespace System.Text.Json
                     }
                     else if (writer.CurrentDepth >= options.EffectiveMaxDepth)
                     {
-                        ThrowHelper.ThrowJsonException_DepthTooLarge(writer.CurrentDepth, state, options);
+                        ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
                     }
 
                     // If serialization is not yet end and we surpass beyond flush threshold return false and flush stream.
