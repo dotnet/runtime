@@ -149,7 +149,7 @@ namespace System
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
-        public override bool Equals(Object? o)
+        public override bool Equals(object? o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }

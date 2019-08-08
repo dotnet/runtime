@@ -35,10 +35,10 @@ providerNameToClassNameMap = {
 
 manifestTypeToCSharpTypeMap = {
     "win:UInt8" : "byte",
-    "win:UInt16" : "UInt16",
-    "win:UInt32" : "UInt32",
-    "win:UInt64" : "UInt64",
-    "win:Int32" : "Int32",
+    "win:UInt16" : "ushort",
+    "win:UInt32" : "uint",
+    "win:UInt64" : "ulong",
+    "win:Int32" : "int",
     "win:Pointer" : "IntPtr",
     "win:UnicodeString" : "string",
     "win:Binary" : "byte[]",

@@ -216,7 +216,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="int.MaxValue"/>.</exception>
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
@@ -245,7 +245,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -550,7 +550,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents
-        /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
+        /// an infinite time-out -or- timeout is greater than <see cref="int.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
@@ -574,7 +574,7 @@ namespace System.Threading
         /// </returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents
-        /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
+        /// an infinite time-out -or- timeout is greater than <see cref="int.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {

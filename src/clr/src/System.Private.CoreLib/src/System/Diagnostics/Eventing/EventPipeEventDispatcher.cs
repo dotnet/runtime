@@ -27,10 +27,10 @@ namespace System.Diagnostics.Tracing
 
         private IntPtr m_RuntimeProviderID;
 
-        private UInt64 m_sessionID = 0;
+        private ulong m_sessionID = 0;
         private DateTime m_syncTimeUtc;
-        private Int64 m_syncTimeQPC;
-        private Int64 m_timeQPCFrequency;
+        private long m_syncTimeQPC;
+        private long m_timeQPCFrequency;
 
         private bool m_stopDispatchTask;
         private EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
@@ -181,7 +181,7 @@ namespace System.Diagnostics.Tracing
                     if (instanceData.ProviderID == m_RuntimeProviderID)
                     {
                         // Dispatch the event.
-                        ReadOnlySpan<Byte> payload = new ReadOnlySpan<byte>((void*)instanceData.Payload, (int)instanceData.PayloadLength);
+                        ReadOnlySpan<byte> payload = new ReadOnlySpan<byte>((void*)instanceData.Payload, (int)instanceData.PayloadLength);
                         DateTime dateTimeStamp = TimeStampToDateTime(instanceData.TimeStamp);
                         NativeRuntimeEventSource.Log.ProcessEvent(instanceData.EventID, instanceData.ThreadID, dateTimeStamp, instanceData.ActivityId, instanceData.ChildActivityId, payload);
                     }
@@ -205,15 +205,15 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Converts a QueryPerformanceCounter (QPC) timestamp to a UTC DateTime.
         /// </summary>
-        private DateTime TimeStampToDateTime(Int64 timeStamp)
+        private DateTime TimeStampToDateTime(long timeStamp)
         {
-            if (timeStamp == Int64.MaxValue)
+            if (timeStamp == long.MaxValue)
             {
                 return DateTime.MaxValue;
             }
 
             Debug.Assert((m_syncTimeUtc.Ticks != 0) && (m_syncTimeQPC != 0) && (m_timeQPCFrequency != 0));
-            Int64 inTicks = (Int64)((timeStamp - m_syncTimeQPC) * 10000000.0 / m_timeQPCFrequency) + m_syncTimeUtc.Ticks;
+            long inTicks = (long)((timeStamp - m_syncTimeQPC) * 10000000.0 / m_timeQPCFrequency) + m_syncTimeUtc.Ticks;
             if((inTicks < 0)|| (DateTime.MaxTicks < inTicks))
             {
                 inTicks = DateTime.MaxTicks;

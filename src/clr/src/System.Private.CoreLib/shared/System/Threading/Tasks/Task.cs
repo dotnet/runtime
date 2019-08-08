@@ -2676,7 +2676,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
         /// infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.
+        /// <see cref="int.MaxValue"/>.
         /// </exception>
         public bool Wait(TimeSpan timeout)
         {
@@ -4598,7 +4598,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
         /// infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.
+        /// <see cref="int.MaxValue"/>.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
@@ -4985,7 +4985,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
         /// infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.
+        /// <see cref="int.MaxValue"/>.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static int WaitAny(Task[] tasks, TimeSpan timeout)

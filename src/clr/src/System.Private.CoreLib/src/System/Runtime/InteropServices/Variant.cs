@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         // Decimal is the largest data type and it needs to use the space that is normally unused in TypeUnion._wReserved1, etc.
         // Hence, it is declared to completely overlap with TypeUnion. A Decimal does not use the first two bytes, and so
         // TypeUnion._vt can still be used to encode the type.
-        [FieldOffset(0)] private Decimal _decimal;
+        [FieldOffset(0)] private decimal _decimal;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion
@@ -175,11 +175,11 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_I8:
-                    *(Int64*)this._typeUnion._unionTypes._byref = (Int64)value;
+                    *(long*)this._typeUnion._unionTypes._byref = (long)value;
                     break;
 
                 case VarEnum.VT_UI8:
-                    *(UInt64*)this._typeUnion._unionTypes._byref = (UInt64)value;
+                    *(ulong*)this._typeUnion._unionTypes._byref = (ulong)value;
                     break;
 
                 case VarEnum.VT_R4:
@@ -571,7 +571,7 @@ namespace System.Runtime.InteropServices
 
         // VT_DECIMAL
 
-        public Decimal AsDecimal
+        public decimal AsDecimal
         {
             get
             {
@@ -593,18 +593,18 @@ namespace System.Runtime.InteropServices
 
         // VT_CY
 
-        public Decimal AsCy
+        public decimal AsCy
         {
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_CY);
-                return Decimal.FromOACurrency(_typeUnion._unionTypes._cy);
+                return decimal.FromOACurrency(_typeUnion._unionTypes._cy);
             }
             set
             {
                 Debug.Assert(IsEmpty);
                 VariantType = VarEnum.VT_CY;
-                _typeUnion._unionTypes._cy = Decimal.ToOACurrency(value);
+                _typeUnion._unionTypes._cy = decimal.ToOACurrency(value);
             }
         }
 
