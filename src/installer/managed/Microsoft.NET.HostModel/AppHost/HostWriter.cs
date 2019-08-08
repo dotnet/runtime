@@ -2,10 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -20,6 +20,32 @@ namespace Microsoft.NET.HostModel.AppHost
         /// </summary>
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
         private readonly static byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
+
+        /// <summary>
+        /// The HostModel implements several services for updating the AppHost DLL.
+        /// These updates involve multiple file open/close operations.
+        /// An Antivirus scanner may intercept in-between and lock the file, 
+        /// causing the operations to fail with IO-Error.
+        /// So, the operations are retried a few times on IOException.
+        /// </summary>
+        /// <param name="func">The action to retry on IO-Error</param>
+        private static void RetryOnIOError(Action func)
+        {
+            uint numberOfRetries = 256;
+
+            for (uint i = 1; i <= numberOfRetries; i++)
+            {
+                try
+                {
+                    func();
+                    break;
+                }
+                catch (IOException) when (i < numberOfRetries)
+                {
+                    Thread.Sleep(200);
+                }
+            }
+        }
 
         /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
@@ -44,7 +70,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
             BinaryUtils.CopyFile(appHostSourceFilePath, appHostDestinationFilePath);
 
-            try
+            void RewriteAppHost()
             {
                 // Re-write the destination apphost with the proper contents.
                 bool appHostIsPEImage = false;
@@ -82,9 +108,14 @@ namespace Microsoft.NET.HostModel.AppHost
                         throw new AppHostCustomizationUnsupportedOSException();
                     }
                 }
+            }
+
+            try
+            {
+                RetryOnIOError(RewriteAppHost);
 
                 // Memory-mapped write does not updating last write time
-                File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
+                RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow));
             }
             catch (Exception ex)
             {
@@ -123,13 +154,13 @@ namespace Microsoft.NET.HostModel.AppHost
             };
 
             // Re-write the destination apphost with the proper contents.
-            BinaryUtils.SearchAndReplace(appHostPath,
-                                         bundleHeaderPlaceholder,
-                                         BitConverter.GetBytes(bundleHeaderOffset), 
-                                         pad0s:false);
+            RetryOnIOError(() => BinaryUtils.SearchAndReplace(appHostPath,
+                                                              bundleHeaderPlaceholder,
+                                                              BitConverter.GetBytes(bundleHeaderOffset), 
+                                                              pad0s:false));
 
             // Memory-mapped write does not updating last write time
-            File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow);
+            RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
         }
 
         /// <summary>
@@ -148,21 +179,28 @@ namespace Microsoft.NET.HostModel.AppHost
                 0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
             };
 
-            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath))
+            long headerOffset = 0;
+            void FindBundleHeader()
             {
-                using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
+                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath))
                 {
-                    int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
-                    if(position == -1)
+                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
                     {
-                        throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
+                        int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
+                        if (position == -1)
+                        {
+                            throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
+                        }
+
+                        headerOffset = accessor.ReadInt64(position - sizeof(Int64));
                     }
-
-                    bundleHeaderOffset = accessor.ReadInt64(position - sizeof(Int64));
-
-                    return (bundleHeaderOffset != 0);
                 }
             }
+
+            RetryOnIOError(FindBundleHeader);
+            bundleHeaderOffset = headerOffset;
+
+            return headerOffset != 0;
         }
     }
 }
