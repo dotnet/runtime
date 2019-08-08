@@ -66,8 +66,6 @@ namespace System.Reflection
             }
         }
 
-        private const string s_localFilePrefix = "file:";
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetCodeBase(QCallAssembly assembly,
                                                bool copiedName,

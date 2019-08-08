@@ -42,11 +42,6 @@ namespace System
         public const long TicksPerDay = TicksPerHour * 24;          // 864,000,000,000
         private const double DaysPerTick = 1.0 / TicksPerDay; // 1.1574074074074074074e-12
 
-        private const int MillisPerSecond = 1000;
-        private const int MillisPerMinute = MillisPerSecond * 60; //     60,000
-        private const int MillisPerHour = MillisPerMinute * 60;   //  3,600,000
-        private const int MillisPerDay = MillisPerHour * 24;      // 86,400,000
-
         internal const long MaxSeconds = long.MaxValue / TicksPerSecond;
         internal const long MinSeconds = long.MinValue / TicksPerSecond;
 
