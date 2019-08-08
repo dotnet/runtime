@@ -4647,10 +4647,6 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Waits for all of the provided <see cref="Task"/> objects to complete execution.
         /// </summary>
-        /// <returns>
-        /// true if all of the <see cref="Task"/> instances completed execution within the allotted time;
-        /// otherwise, false.
-        /// </returns>
         /// <param name="tasks">
         /// An array of <see cref="Task"/> instances on which to wait.
         /// </param>
