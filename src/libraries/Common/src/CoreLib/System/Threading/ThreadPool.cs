@@ -50,7 +50,9 @@ namespace System.Threading
     {
         internal static class WorkStealingQueueList
         {
+#pragma warning disable CA1825 // avoid the extra generic instantation for Array.Empty<T>(); this is the only place we'll ever create this array
             private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
+#pragma warning restore CA1825
 
             public static WorkStealingQueue[] Queues => _queues;
 
