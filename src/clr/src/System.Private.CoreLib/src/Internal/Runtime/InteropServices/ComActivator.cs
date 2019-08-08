@@ -569,8 +569,8 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
     // license context and instantiate the object.
     internal sealed class LicenseInteropProxy
     {
-        private static readonly Type? s_licenseAttrType;
-        private static readonly Type? s_licenseExceptionType;
+        private static readonly Type? s_licenseAttrType = Type.GetType("System.ComponentModel.LicenseProviderAttribute, System.ComponentModel.TypeConverter", throwOnError: false);
+        private static readonly Type? s_licenseExceptionType = Type.GetType("System.ComponentModel.LicenseException, System.ComponentModel.TypeConverter", throwOnError: false);
 
         // LicenseManager
         private MethodInfo _createWithContext;
@@ -592,12 +592,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // RCW Activation
         private object? _licContext;
         private Type? _targetRcwType;
-
-        static LicenseInteropProxy()
-        {
-            s_licenseAttrType = Type.GetType("System.ComponentModel.LicenseProviderAttribute, System.ComponentModel.TypeConverter", throwOnError: false);
-            s_licenseExceptionType = Type.GetType("System.ComponentModel.LicenseException, System.ComponentModel.TypeConverter", throwOnError: false);
-        }
 
         public LicenseInteropProxy()
         {
