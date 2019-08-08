@@ -48,7 +48,9 @@ namespace System.Threading.Tasks
         private static Loggers f_LoggingOn; //assumes false by default
 
         // The precise static constructor will run first time somebody attempts to access this class
+#pragma warning disable CA1810
         static AsyncCausalityTracer()
+#pragma warning restore CA1810
         {
             if (!Environment.IsWinRTSupported) return;
 
