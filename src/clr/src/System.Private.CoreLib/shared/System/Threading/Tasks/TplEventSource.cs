@@ -11,9 +11,12 @@ namespace System.Threading.Tasks
     /// <summary>Provides an event source for tracing TPL information.</summary>
     [EventSource(
         Name = "System.Threading.Tasks.TplEventSource",
-        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
+        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5",
+        LocalizationResources =
 #if CORECLR
-        ,LocalizationResources = "System.Private.CoreLib.Resources.Strings"
+            "System.Private.CoreLib.Resources.Strings"
+#else
+            null
 #endif
         )]
     internal sealed class TplEventSource : EventSource
