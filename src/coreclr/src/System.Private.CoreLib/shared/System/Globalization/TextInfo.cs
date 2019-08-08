@@ -52,7 +52,7 @@ namespace System.Globalization
             get => s_invariant ?? (s_invariant = new TextInfo(CultureData.Invariant));
         }
 
-        private volatile static TextInfo? s_invariant;
+        private static volatile TextInfo? s_invariant;
 
         internal TextInfo(CultureData cultureData)
         {

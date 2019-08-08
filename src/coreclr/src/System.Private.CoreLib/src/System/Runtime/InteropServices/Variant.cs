@@ -115,7 +115,7 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        unsafe public void CopyFromIndirect(object value)
+        public unsafe void CopyFromIndirect(object value)
         {
             VarEnum vt = (VarEnum)(((int)this.VariantType) & ~((int)VarEnum.VT_BYREF));
 

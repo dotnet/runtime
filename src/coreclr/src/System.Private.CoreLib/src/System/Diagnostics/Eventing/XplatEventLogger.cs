@@ -157,7 +157,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal protected  override void OnEventSourceCreated(EventSource eventSource)
+        protected internal override void OnEventSourceCreated(EventSource eventSource)
         {
             // Don't enable forwarding of NativeRuntimeEventSource events.`
             if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
@@ -172,7 +172,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        protected internal override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             string? eventFilter = eventSourceEventFilter.Value;
             if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))

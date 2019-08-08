@@ -200,7 +200,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //     If the delegates aren't alive, it means either they have been unsubscribed, or the object itself is gone,
             //     and in either case, they've been already taken care of.
             //
-            internal volatile static
+            internal static volatile
                 ConditionalWeakTable<object, Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>> s_eventRegistrations =
                     new ConditionalWeakTable<object, Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>>();
 
@@ -513,11 +513,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //   b. The same delegate is subscribed then unsubscribed. We need to make sure give
             //   them the latest token in this case. This is guaranteed by always giving the last token and always use equality to
             //   add/remove event handlers
-            internal volatile static Dictionary<EventCacheKey, EventCacheEntry> s_eventRegistrations =
+            internal static volatile Dictionary<EventCacheKey, EventCacheEntry> s_eventRegistrations =
                 new Dictionary<EventCacheKey, EventCacheEntry>();
 
             // Prevent add/remove handler code to run at the same with with cache cleanup code
-            private volatile static MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
+            private static volatile MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
 
             // Get InstanceKey to use in the cache
             private static object GetInstanceKey(Action<EventRegistrationToken> removeMethod)
