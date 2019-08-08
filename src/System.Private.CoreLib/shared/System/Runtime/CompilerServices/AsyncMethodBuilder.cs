@@ -39,15 +39,10 @@ namespace System.Runtime.CompilerServices
         {
             SynchronizationContext? sc = SynchronizationContext.Current;
             sc?.OperationStarted();
-#if PROJECTN
-            // ProjectN's AsyncTaskMethodBuilder.Create() currently does additional debugger-related
-            // work, so we need to delegate to it.
-            return new AsyncVoidMethodBuilder() { _synchronizationContext = sc, _builder = AsyncTaskMethodBuilder.Create() };
-#else
+
             // _builder should be initialized to AsyncTaskMethodBuilder.Create(), but on coreclr
             // that Create() is a nop, so we can just return the default here.
             return new AsyncVoidMethodBuilder() { _synchronizationContext = sc };
-#endif
         }
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
@@ -192,11 +187,7 @@ namespace System.Runtime.CompilerServices
     public struct AsyncTaskMethodBuilder
     {
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
-#if PROJECTN
-        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
-#else
         private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
-#endif
 
         /// <summary>The generic builder object to which this non-generic instance delegates.</summary>
         private AsyncTaskMethodBuilder<VoidTaskResult> m_builder; // mutable struct: must not be readonly. Debugger depends on the exact name of this field.
@@ -204,15 +195,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initializes a new <see cref="AsyncTaskMethodBuilder"/>.</summary>
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
         public static AsyncTaskMethodBuilder Create() =>
-#if PROJECTN
-            // ProjectN's AsyncTaskMethodBuilder<VoidTaskResult>.Create() currently does additional debugger-related
-            // work, so we need to delegate to it.
-            new AsyncTaskMethodBuilder { m_builder = AsyncTaskMethodBuilder<VoidTaskResult>.Create() };
-#else
             // m_builder should be initialized to AsyncTaskMethodBuilder<VoidTaskResult>.Create(), but on coreclr
             // that Create() is a nop, so we can just return the default here.
             default;
-#endif
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
@@ -313,10 +298,8 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     public struct AsyncTaskMethodBuilder<TResult>
     {
-#if !PROJECTN
         /// <summary>A cached task for default(TResult).</summary>
         internal static readonly Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask<TResult>(default);
-#endif
 
         /// <summary>The lazily-initialized built task.</summary>
         private Task<TResult> m_task; // lazily-initialized: must not be readonly. Debugger depends on the exact name of this field.
@@ -325,20 +308,10 @@ namespace System.Runtime.CompilerServices
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
         public static AsyncTaskMethodBuilder<TResult> Create()
         {
-#if PROJECTN
-            var result = new AsyncTaskMethodBuilder<TResult>();
-            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-            {
-                // This allows the debugger to access m_task directly without evaluating ObjectIdForDebugger for ProjectN
-                result.InitializeTaskAsStateMachineBox();
-            }            
-            return result;
-#else
             // NOTE: If this method is ever updated to perform more initialization,
             //       other Create methods like AsyncTaskMethodBuilder.Create and
             //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
             return default;
-#endif
         }
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
@@ -843,12 +816,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         internal static Task<TResult> GetTaskForResult(TResult result)
         {
-#if PROJECTN
-            // Currently NUTC does not perform the optimization needed by this method.  The result is that
-            // every call to this method results in quite a lot of work, including many allocations, which 
-            // is the opposite of the intent.  For now, let's just return a new Task each time.
-            // Bug 719350 tracks re-optimizing this in ProjectN.
-#else
             // The goal of this function is to be give back a cached task if possible,
             // or to otherwise give back a new task.  To give back a cached task,
             // we need to be able to evaluate the incoming result value, and we need
@@ -921,7 +888,6 @@ namespace System.Runtime.CompilerServices
             {
                 return s_defaultResultTask;
             }
-#endif
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
@@ -931,7 +897,6 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides a cache of closed generic tasks for async methods.</summary>
     internal static class AsyncTaskCache
     {
-#if !PROJECTN
         // All static members are initialized inline to ensure type is beforefieldinit
 
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
@@ -956,7 +921,6 @@ namespace System.Runtime.CompilerServices
             }
             return tasks;
         }
-#endif
 
         /// <summary>Creates a non-disposable task.</summary>
         /// <typeparam name="TResult">Specifies the result type.</typeparam>
@@ -1086,9 +1050,6 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>This helper routine is targeted by the debugger. Its purpose is to remove any delegate wrappers introduced by
         /// the framework that the debugger doesn't want to see.</summary>
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
         internal static Action TryGetStateMachineForDebugger(Action action) // debugger depends on this exact name/signature
         {
             object? target = action.Target;

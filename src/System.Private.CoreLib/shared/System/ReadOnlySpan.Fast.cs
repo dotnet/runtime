@@ -30,9 +30,6 @@ namespace System
         /// <summary>A byref or a native ptr.</summary>
         internal readonly ByReference<T> _pointer;
         /// <summary>The number of elements this ReadOnlySpan contains.</summary>
-#if PROJECTN
-        [Bound]
-#endif
         private readonly int _length;
 
         /// <summary>
@@ -134,13 +131,6 @@ namespace System
         /// </exception>
         public ref readonly T this[int index]
         {
-#if PROJECTN
-            [BoundsChecking]
-            get
-            {
-                return ref Unsafe.Add(ref _pointer.Value, index);
-            }
-#else
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [NonVersionable]
@@ -150,7 +140,6 @@ namespace System
                     ThrowHelper.ThrowIndexOutOfRangeException();
                 return ref Unsafe.Add(ref _pointer.Value, index);
             }
-#endif
         }
 
         /// <summary>
