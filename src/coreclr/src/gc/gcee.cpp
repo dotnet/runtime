@@ -223,8 +223,11 @@ void GCHeap::UpdatePostGCCounters()
     }
 
     // Update percent time spent in GC
-    g_percentTimeInGCSinceLastGC = (int)(g_TotalTimeInGC * 100 / _timeInGCBase);
 
+    if (_timeInGCBase != 0)
+        g_percentTimeInGCSinceLastGC = (int)(g_TotalTimeInGC * 100 / _timeInGCBase);
+    else
+        g_percentTimeInGCSinceLastGC = 0;
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
 }
 
