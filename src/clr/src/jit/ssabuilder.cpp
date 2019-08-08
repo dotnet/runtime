@@ -99,8 +99,8 @@ void Compiler::fgResetForSsa()
         }
         if (blk->bbTreeList != nullptr)
         {
-            GenTree* last   = blk->bbTreeList->gtPrev;
-            blk->bbTreeList = blk->FirstNonPhiDef();
+            GenTreeStmt* last = blk->lastStmt();
+            blk->bbTreeList   = blk->FirstNonPhiDef();
             if (blk->bbTreeList != nullptr)
             {
                 blk->bbTreeList->gtPrev = last;

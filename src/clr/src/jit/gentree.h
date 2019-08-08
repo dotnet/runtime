@@ -4886,6 +4886,29 @@ struct GenTreeRetExpr : public GenTree
 
 class InlineContext;
 
+struct GenTreeILOffset : public GenTree
+{
+    IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
+#ifdef DEBUG
+    IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
+#endif
+
+    GenTreeILOffset(IL_OFFSETX offset)
+        : GenTree(GT_IL_OFFSET, TYP_VOID)
+        , gtStmtILoffsx(offset)
+#ifdef DEBUG
+        , gtStmtLastILoffs(BAD_IL_OFFSET)
+#endif
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeILOffset() : GenTree(GT_IL_OFFSET, TYP_VOID)
+    {
+    }
+#endif
+};
+
 struct GenTreeStmt : public GenTree
 {
     GenTree*       gtStmtExpr;      // root of the expression tree
