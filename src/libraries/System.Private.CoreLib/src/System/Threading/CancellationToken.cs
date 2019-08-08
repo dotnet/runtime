@@ -82,15 +82,15 @@ namespace System.Threading
         public bool CanBeCanceled => _source != null;
 
         /// <summary>
-        /// Gets a <see cref="T:System.Threading.WaitHandle"/> that is signaled when the token is canceled.</summary>
+        /// Gets a <see cref="System.Threading.WaitHandle"/> that is signaled when the token is canceled.</summary>
         /// <remarks>
-        /// Accessing this property causes a <see cref="T:System.Threading.WaitHandle">WaitHandle</see>
+        /// Accessing this property causes a <see cref="System.Threading.WaitHandle">WaitHandle</see>
         /// to be instantiated.  It is preferable to only use this property when necessary, and to then
         /// dispose the associated <see cref="CancellationTokenSource"/> instance at the earliest opportunity (disposing
         /// the source will dispose of this allocated handle).  The handle should not be closed or disposed directly.
         /// </remarks>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public WaitHandle WaitHandle => (_source ?? CancellationTokenSource.s_neverCanceledSource).WaitHandle;
 
         // public CancellationToken()
@@ -103,7 +103,7 @@ namespace System.Threading
         internal CancellationToken(CancellationTokenSource? source) => _source = source;
 
         /// <summary>
-        /// Initializes the <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// Initializes the <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
         /// <param name="canceled">
         /// The canceled state for the token.
@@ -120,7 +120,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Registers a delegate that will be called when this <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// Registers a delegate that will be called when this <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -133,10 +133,10 @@ namespace System.Threading
         /// along with the delegate and will be used when executing it.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action callback) =>
             Register(
                 s_actionToActionObjShunt,
@@ -146,7 +146,7 @@ namespace System.Threading
 
         /// <summary>
         /// Registers a delegate that will be called when this
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -159,13 +159,13 @@ namespace System.Threading
         /// along with the delegate and will be used when executing it.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="useSynchronizationContext">A Boolean value that indicates whether to capture
-        /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
+        /// the current <see cref="System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext) =>
             Register(
                 s_actionToActionObjShunt,
@@ -175,7 +175,7 @@ namespace System.Threading
 
         /// <summary>
         /// Registers a delegate that will be called when this
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -188,17 +188,17 @@ namespace System.Threading
         /// along with the delegate and will be used when executing it.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action<object?> callback, object? state) =>
             Register(callback, state, useSynchronizationContext: false, useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -211,22 +211,22 @@ namespace System.Threading
         /// will be captured along with the delegate and will be used when executing it.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
         /// <param name="useSynchronizationContext">A Boolean value that indicates whether to capture
-        /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
+        /// the current <see cref="System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ObjectDisposedException">The associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public CancellationTokenRegistration Register(Action<object?> callback, object? state, bool useSynchronizationContext) =>
             Register(callback, state, useSynchronizationContext, useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -238,17 +238,17 @@ namespace System.Threading
         /// to the callback's invocation.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration UnsafeRegister(Action<object?> callback, object? state) =>
             Register(callback, state, useSynchronizationContext: false, useExecutionContext: false);
 
         /// <summary>
         /// Registers a delegate that will be called when this
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -257,16 +257,16 @@ namespace System.Threading
         /// propagated out of this method call.
         /// </para>
         /// </remarks>
-        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="callback">The delegate to be executed when the <see cref="System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
         /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
         /// <param name="useSynchronizationContext">A Boolean value that indicates whether to capture
-        /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
+        /// the current <see cref="System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
         /// when invoking the <paramref name="callback"/>.</param>
-        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can
+        /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="System.ObjectDisposedException">The associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         private CancellationTokenRegistration Register(Action<object?> callback, object? state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
@@ -279,57 +279,57 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
+        /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
         /// specified token.
         /// </summary>
-        /// <param name="other">The other <see cref="T:System.Threading.CancellationToken">CancellationToken</see> to which to compare this
+        /// <param name="other">The other <see cref="System.Threading.CancellationToken">CancellationToken</see> to which to compare this
         /// instance.</param>
         /// <returns>True if the instances are equal; otherwise, false. Two tokens are equal if they are associated
-        /// with the same <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> or if they were both constructed
+        /// with the same <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> or if they were both constructed
         /// from public CancellationToken constructors and their <see cref="IsCancellationRequested"/> values are equal.</returns>
         public bool Equals(CancellationToken other) => _source == other._source;
 
         /// <summary>
-        /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
-        /// specified <see cref="T:System.Object"/>.
+        /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
+        /// specified <see cref="System.Object"/>.
         /// </summary>
         /// <param name="other">The other object to which to compare this instance.</param>
-        /// <returns>True if <paramref name="other"/> is a <see cref="T:System.Threading.CancellationToken">CancellationToken</see>
+        /// <returns>True if <paramref name="other"/> is a <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// and if the two instances are equal; otherwise, false. Two tokens are equal if they are associated
-        /// with the same <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> or if they were both constructed
+        /// with the same <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> or if they were both constructed
         /// from public CancellationToken constructors and their <see cref="IsCancellationRequested"/> values are equal.</returns>
-        /// <exception cref="T:System.ObjectDisposedException">An associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">An associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public override bool Equals(object? other) => other is CancellationToken && Equals((CancellationToken)other);
 
         /// <summary>
-        /// Serves as a hash function for a <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// Serves as a hash function for a <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
-        /// <returns>A hash code for the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance.</returns>
+        /// <returns>A hash code for the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance.</returns>
         public override int GetHashCode() => (_source ?? CancellationTokenSource.s_neverCanceledSource).GetHashCode();
 
         /// <summary>
-        /// Determines whether two <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instances are equal.
+        /// Determines whether two <see cref="System.Threading.CancellationToken">CancellationToken</see> instances are equal.
         /// </summary>
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True if the instances are equal; otherwise, false.</returns>
-        /// <exception cref="T:System.ObjectDisposedException">An associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">An associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public static bool operator ==(CancellationToken left, CancellationToken right) => left.Equals(right);
 
         /// <summary>
-        /// Determines whether two <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instances are not equal.
+        /// Determines whether two <see cref="System.Threading.CancellationToken">CancellationToken</see> instances are not equal.
         /// </summary>
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True if the instances are not equal; otherwise, false.</returns>
-        /// <exception cref="T:System.ObjectDisposedException">An associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">An associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public static bool operator !=(CancellationToken left, CancellationToken right) => !left.Equals(right);
 
         /// <summary>
-        /// Throws a <see cref="T:System.OperationCanceledException">OperationCanceledException</see> if
+        /// Throws a <see cref="System.OperationCanceledException">OperationCanceledException</see> if
         /// this token has had cancellation requested.
         /// </summary>
         /// <remarks>
@@ -340,8 +340,8 @@ namespace System.Threading
         /// </code>
         /// </remarks>
         /// <exception cref="System.OperationCanceledException">The token has had cancellation requested.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The associated <see
+        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public void ThrowIfCancellationRequested()
         {
             if (IsCancellationRequested)
