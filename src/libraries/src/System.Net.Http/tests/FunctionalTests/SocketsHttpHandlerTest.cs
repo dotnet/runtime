@@ -476,7 +476,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task DisposeTargetStream_ThrowsObjectDisposedException(bool knownLength)
         {
-            var tcs = new TaskCompletionSource<int>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 try
