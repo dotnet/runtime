@@ -153,7 +153,7 @@ namespace System.Text
         public static Rune ReplacementChar => UnsafeCreate(UnicodeUtility.ReplacementChar);
 
         /// <summary>
-        /// Returns the length in code units (<see cref="Char"/>) of the
+        /// Returns the length in code units (<see cref="char"/>) of the
         /// UTF-16 sequence required to represent this scalar value.
         /// </summary>
         /// <remarks>

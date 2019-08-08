@@ -423,7 +423,7 @@ namespace System.Reflection
                 byte sign = (byte)args[1].Value!;
                 byte scale = (byte)args[0].Value!;
 
-                return new System.Decimal(low, mid, hi, (sign != 0), scale);
+                return new decimal(low, mid, hi, (sign != 0), scale);
             }
             else
             {
@@ -434,7 +434,7 @@ namespace System.Reflection
                 byte sign = (byte)args[1].Value!;
                 byte scale = (byte)args[0].Value!;
 
-                return new System.Decimal(low, mid, hi, (sign != 0), scale);
+                return new decimal(low, mid, hi, (sign != 0), scale);
             }
         }
 

@@ -218,7 +218,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/> milliseconds.
+        /// than <see cref="int.MaxValue"/> milliseconds.
         /// </exception>
         public void TryEnter(TimeSpan timeout, ref bool lockTaken)
         {
