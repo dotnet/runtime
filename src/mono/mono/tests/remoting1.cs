@@ -170,8 +170,9 @@ class Test {
 
 		o.test_field = 2;
 		
-		Console.WriteLine ("test_field: " + o.test_field);
-		if (o.test_field != 2)
+		int i = o.test_field;  // copy to local variable necessary to avoid CS1690: "Accessing a member on 'member' may cause a runtime exception because it is a field of a marshal-by-reference class"
+		Console.WriteLine ("test_field: " + i);
+		if (i != 2)
 			return 9;
 
 		RemoteDelegate1 d1 = new RemoteDelegate1 (o.Add);
