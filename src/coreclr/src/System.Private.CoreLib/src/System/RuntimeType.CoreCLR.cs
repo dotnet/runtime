@@ -3308,7 +3308,7 @@ namespace System
             catch (TypeLoadException e)
             {
                 ValidateGenericArguments(this, instantiationRuntimeType, e);
-                throw e;
+                throw;
             }
 
             return ret;
