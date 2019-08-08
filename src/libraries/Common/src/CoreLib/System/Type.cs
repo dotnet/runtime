@@ -23,7 +23,7 @@ namespace System
         public abstract string? FullName { get; }
 
         public abstract Assembly Assembly { get; }
-        public abstract new Module Module { get; }
+        public new abstract Module Module { get; }
 
         public bool IsNested => DeclaringType != null;
         public override Type? DeclaringType => null;

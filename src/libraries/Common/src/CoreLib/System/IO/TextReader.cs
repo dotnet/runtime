@@ -214,7 +214,7 @@ namespace System.IO
             this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public async virtual Task<string> ReadToEndAsync()
+        public virtual async Task<string> ReadToEndAsync()
         {
             var sb = new StringBuilder(4096);
             char[] chars = ArrayPool<char>.Shared.Rent(4096);
