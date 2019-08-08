@@ -6,12 +6,6 @@
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <ProjectReference Include="..\Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
-      <AdditionalProperties>%(ProjectReference.AdditionalProperties);IsLineupPackage=false</AdditionalProperties>
-    </ProjectReference>
-  </ItemGroup>
-
   <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.targets))" />
