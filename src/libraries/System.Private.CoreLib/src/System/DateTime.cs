@@ -641,32 +641,38 @@ namespace System
 
         // Returns the tick count corresponding to the given year, month, and day.
         // Will check the if the parameters are valid.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long DateToTicks(int year, int month, int day)
         {
-            if (year >= 1 && year <= 9999 && month >= 1 && month <= 12)
+            if (year < 1 || year > 9999 || month < 1 || month > 12 || day < 1)
             {
-                int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
-                if (day >= 1 && day <= days[month] - days[month - 1])
-                {
-                    int y = year - 1;
-                    int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
-                    return n * TicksPerDay;
-                }
+                ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
-            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
+            
+            int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            if (day > days[month] - days[month - 1])
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
+            }
+
+            int y = year - 1;
+            int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
+            return n * TicksPerDay;
         }
 
         // Return the tick count corresponding to the given hour, minute, second.
         // Will check the if the parameters are valid.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long TimeToTicks(int hour, int minute, int second)
         {
             //TimeSpan.TimeToTicks is a family access function which does no error checking, so
             //we need to put some error checking out here.
-            if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60)
+            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60)
             {
-                return (TimeSpan.TimeToTicks(hour, minute, second));
+                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
             }
-            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            
+            return TimeSpan.TimeToTicks(hour, minute, second);
         }
 
         // Returns the number of days in the month given by the year and
@@ -1182,13 +1188,14 @@ namespace System
         // Checks whether a given year is a leap year. This method returns true if
         // year is a leap year, or false if not.
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLeapYear(int year)
         {
             if (year < 1 || year > 9999)
             {
-                throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
+                ThrowHelper.ThrowArgumentOutOfRange_Year();
             }
-            return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+            return (year & 3) == 0 && ((year & 15) == 0 || (year % 25) != 0);
         }
 
         // Constructs a DateTime from a string. The string must specify a
