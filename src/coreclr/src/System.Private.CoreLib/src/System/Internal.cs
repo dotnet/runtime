@@ -11,6 +11,8 @@
 **
 ===========================================================*/
 
+#pragma warning disable CA2007 // Code in this file isn't actually executed; ConfigureAwait doesn't matter (and impacts the types employed, which does matter)
+
 #nullable disable // Code in this file isn't actually executed
 using System;
 using System.Collections.Generic;
