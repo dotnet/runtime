@@ -266,14 +266,18 @@ namespace System.Collections.ObjectModel
             {
                 ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
+                T item = default(T)!;
+
                 try
                 {
-                    this[index] = (T)value!;
+                    item = (T)value!;
                 }
                 catch (InvalidCastException)
                 {
                     ThrowHelper.ThrowWrongValueTypeArgumentException(value, typeof(T));
                 }
+
+                this[index] = item;
             }
         }
 
@@ -309,14 +313,18 @@ namespace System.Collections.ObjectModel
             }
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
+            T item = default(T)!;
+
             try
             {
-                Add((T)value!);
+                item = (T)value!;
             }
             catch (InvalidCastException)
             {
                 ThrowHelper.ThrowWrongValueTypeArgumentException(value, typeof(T));
             }
+
+            Add(item);
 
             return this.Count - 1;
         }
@@ -347,14 +355,18 @@ namespace System.Collections.ObjectModel
             }
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
+            T item = default(T)!;
+
             try
             {
-                Insert(index, (T)value!);
+                item = (T)value!;
             }
             catch (InvalidCastException)
             {
                 ThrowHelper.ThrowWrongValueTypeArgumentException(value, typeof(T));
             }
+
+            Insert(index, item);
         }
 
         void IList.Remove(object? value)
