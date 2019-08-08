@@ -3061,15 +3061,6 @@ public static partial class DataContractJsonSerializerTests
 
     private static string GetAmString(DateTimeFormat dateTimeFormat)
     {
-        var dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = dateTimeFormat };
-        var dcjs = new DataContractJsonSerializer(typeof(DateTime), dcjsSettings);
-        using (var ms = new MemoryStream())
-        {
-            dcjs.WriteObject(ms, new DateTime());
-            ms.Position = 0;
-            string output = new StreamReader(ms).ReadToEnd();
-            string actualam = output.Contains("a.m.") ? "a.m." : "a. m.";
-            return actualam;
-        }
+        return ((CultureInfo)dateTimeFormat.FormatProvider).DateTimeFormat.AMDesignator;
     }
 }
