@@ -31,7 +31,7 @@ namespace System
             Create(target, trackResurrection);
         }
 
-        internal WeakReference(SerializationInfo info, StreamingContext context)
+        private WeakReference(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
