@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new MyBoolEnumConverter());
-            options.Converters.Add(new PersonConverter());
+            options.Converters.Add(new PersonConverterWithTypeDiscriminator());
 
             Customer customer = new Customer();
             customer.CreditLimit = 100;
