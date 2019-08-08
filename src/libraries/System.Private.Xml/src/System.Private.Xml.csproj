@@ -567,7 +567,6 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\src\System.Threading.Tasks.Extensions.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
