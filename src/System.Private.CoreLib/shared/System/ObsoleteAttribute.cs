@@ -20,8 +20,8 @@ namespace System
     //   method's implementation had changed).
     //
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum |
-        AttributeTargets.Interface | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate
-        , Inherited = false)]
+        AttributeTargets.Interface | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate,
+        Inherited = false)]
     public sealed class ObsoleteAttribute : Attribute
     {
         private string? _message;
