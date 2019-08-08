@@ -12,8 +12,8 @@ namespace System.ComponentModel.Design
     {
         // Note:
         //
-        // This class contains command ID's and GUIDS that correspond to the 
-        // Visual Studio Command Bar menu layout. The data in this file is 
+        // This class contains command ID's and GUIDS that correspond to the
+        // Visual Studio Command Bar menu layout. The data in this file is
         // DEPENDENT upon constants in the following files:
         //
         //     %VSROOT%\src\common\inc\stdidcmd.h  - for standard shell defined icmds
@@ -70,7 +70,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the AlignRight command. Read only.
         /// </summary>
         public static readonly CommandID AlignRight = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidAlignRight);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the AlignToGrid command. Read only.
         /// </summary>
@@ -85,7 +85,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the AlignVerticalCenters command. Read only.
         /// </summary>
         public static readonly CommandID AlignVerticalCenters = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidAlignVerticalCenters);
-      
+
         /// <summary>
         /// Gets the GUID/integer value pair for the ArrangeBottom command. Read only.
         /// </summary>
@@ -100,7 +100,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the BringForward command. Read only.
         /// </summary>
         public static readonly CommandID BringForward = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidBringForward);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the BringToFront command. Read only.
         /// </summary>
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the DocumentOutline command. Read only.
         /// </summary>
         public static readonly CommandID DocumentOutline = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidDocOutlineWindow);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the Copy command. Read only.
         /// </summary>
@@ -205,17 +205,17 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the SizeToControl command. Read only.
         /// </summary>
         public static readonly CommandID SizeToControl = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidSizeToControl);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the SizeToControlHeight command. Read only.
         /// </summary>
         public static readonly CommandID SizeToControlHeight = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidSizeToControlHeight);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the SizeToControlWidth command. Read only.
         /// </summary>
         public static readonly CommandID SizeToControlWidth = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidSizeToControlWidth);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the SizeToFit command. Read only.
         /// </summary>
@@ -275,7 +275,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the ShowGrid command. Read only.
         /// </summary>
         public static readonly CommandID ShowGrid = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidShowGrid);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the ViewGrid command. Read only.
         /// </summary>
@@ -285,12 +285,12 @@ namespace System.ComponentModel.Design
         /// Gets the GUID/integer value pair for the Replace command. Read only.
         /// </summary>
         public static readonly CommandID Replace = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidReplace);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the PropertiesWindow command. Read only.
         /// </summary>
         public static readonly CommandID PropertiesWindow = new CommandID(s_standardCommandSet, VSStandardCommands.cmdidPropertiesWindow);
-        
+
         /// <summary>
         /// Gets the GUID/integer value pair for the LockControls command. Read only.
         /// </summary>
@@ -1261,7 +1261,7 @@ namespace System.ComponentModel.Design
             // if you are adding shell commands.
             //
             // If you are not adding shell commands,
-            // you shouldn't be doing it in this file! 
+            // you shouldn't be doing it in this file!
             //
             ///////////////////////////////////////////
 

@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
         // (It is not called multiple time if repartitionings occur)
         internal static void LogicalQueryExecutionBegin(int queryID)
         {
-            //We call NOCTD to inform the debugger that multiple threads will most likely be required to 
+            //We call NOCTD to inform the debugger that multiple threads will most likely be required to
             //execute this query.  We do not attempt to run the query even if we think we could, for simplicity and consistency.
             PlinqEtwProvider.Log.ParallelQueryBegin(queryID);
         }

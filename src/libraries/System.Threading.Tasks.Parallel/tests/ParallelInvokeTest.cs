@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Tests
             _actions = new Action[_count];
             _results = new double[_count];
 
-            // initialize actions 
+            // initialize actions
             for (int i = 0; i < _count; i++)
             {
                 int iCopy = i;
@@ -63,7 +63,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Actual Test.
         /// Call Parallel.Invoke with actions using different workloads
-        /// 
+        ///
         /// Expected: Each action was invoked and returned the expected result
         /// </summary>
         /// <returns></returns>
@@ -73,7 +73,7 @@ namespace System.Threading.Tasks.Tests
             // verify result
 
             //Function point comparison cant be done by rounding off to nearest decimal points since
-            //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons, 
+            //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons,
             //a range has to be defined and check to ensure that the result obtained is within the specified range
             double minLimit = 1.63;
             double maxLimit = 1.65;
@@ -126,7 +126,7 @@ namespace System.Threading.Tasks.Tests
      #region Test Methods
     public static class TestMethods
     {
-   
+
         [Fact]
         public static void ParallelInvoke0()
         {

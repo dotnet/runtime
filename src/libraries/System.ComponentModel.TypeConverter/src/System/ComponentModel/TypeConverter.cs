@@ -215,11 +215,11 @@ namespace System.ComponentModel
         public bool GetCreateInstanceSupported() => GetCreateInstanceSupported(null);
 
         /// <summary>
-        /// 
+        ///
         /// Gets a value indicating whether changing a value on this object requires a call to
         /// <see cref='System.ComponentModel.TypeConverter.CreateInstance(IDictionary)'/> to create a new value,
         /// using the specified context.
-        /// 
+        ///
         /// </summary>
         public virtual bool GetCreateInstanceSupported(ITypeDescriptorContext context) => false;
 
@@ -229,10 +229,10 @@ namespace System.ComponentModel
         public PropertyDescriptorCollection GetProperties(object value) => GetProperties(null, value);
 
         /// <summary>
-        /// 
+        ///
         /// Gets a collection of properties for the type of array specified by the value parameter using
         /// the specified context.
-        /// 
+        ///
         /// </summary>
         public PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value)
         {
@@ -240,10 +240,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// 
+        ///
         /// Gets a collection of properties for the type of array specified by the value parameter using
         /// the specified context and attributes.
-        /// 
+        ///
         /// </summary>
         public virtual PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
@@ -278,7 +278,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive 
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive
         /// list of possible values, using the specified context.
         /// </summary>
         public virtual bool GetStandardValuesExclusive(ITypeDescriptorContext context) => false;
@@ -414,9 +414,9 @@ namespace System.ComponentModel
             private Array _valueArray;
 
             /// <summary>
-            /// 
+            ///
             /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverter.StandardValuesCollection'/> class.
-            /// 
+            ///
             /// </summary>
             public StandardValuesCollection(ICollection values)
             {
@@ -434,9 +434,9 @@ namespace System.ComponentModel
             }
 
             /// <summary>
-            /// 
+            ///
             /// Gets the number of objects in the collection.
-            /// 
+            ///
             /// </summary>
             public int Count
             {

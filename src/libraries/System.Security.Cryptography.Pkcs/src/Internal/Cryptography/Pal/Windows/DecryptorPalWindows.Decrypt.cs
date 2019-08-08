@@ -106,7 +106,7 @@ namespace Internal.Cryptography.Pal.Windows
                         break;
 
                     default:
-                        // Since only the framework can construct RecipientInfo's, we're at fault if we get here. So it's okay to assert and throw rather than 
+                        // Since only the framework can construct RecipientInfo's, we're at fault if we get here. So it's okay to assert and throw rather than
                         // returning to the caller.
                         Debug.Fail($"Unexpected RecipientInfoType: {type}");
                         throw new NotSupportedException();
@@ -215,7 +215,7 @@ namespace Internal.Cryptography.Pal.Windows
                                         decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
 
                                         // Do not factor this call out of the switch statement as leaving this "using" block will free up
-                                        // native memory that decryptPara points to. 
+                                        // native memory that decryptPara points to.
                                         return TryExecuteDecryptAgree(ref decryptPara);
                                     }
                                 }

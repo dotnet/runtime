@@ -15,7 +15,7 @@ using System.Xml;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 
-// This class is the process wide dependency dispatcher.  It contains all connection listeners for the entire process and 
+// This class is the process wide dependency dispatcher.  It contains all connection listeners for the entire process and
 // receives notifications on those connections to dispatch to the corresponding AppDomain dispatcher to notify the
 // appropriate dependencies.
 
@@ -44,7 +44,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
         private volatile bool _stop = false; // Can probably simplify this slightly - one bool instead of two.
         private volatile bool _stopped = false;
         private volatile bool _serviceQueueCreated = false;
-        private int _startCount = 0;     // Each container class is called once per Start() - we refCount 
+        private int _startCount = 0;     // Each container class is called once per Start() - we refCount
                                          // to track when we can dispose.
         private Timer _retryTimer = null;
         private Dictionary<string, int> _appDomainKeyHash = null;  // AppDomainKey->Open RefCount
@@ -59,7 +59,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                 _hashHelper = hashHelper;
                 string guid = null;
 
-                // If default, queue name is not present on hashHelper at this point - so we need to 
+                // If default, queue name is not present on hashHelper at this point - so we need to
                 // generate one and complete initialization.
                 if (useDefaults)
                 {
@@ -72,7 +72,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                     _queue = _hashHelper.Queue;
                 }
 
-                // Always use ConnectionStringBuilder since in default case it is different from the 
+                // Always use ConnectionStringBuilder since in default case it is different from the
                 // connection string used in the hashHelper.
                 _con = new SqlConnection(_hashHelper.ConnectionStringBuilder.ConnectionString); // Create connection and open.
                 _con.Open();
@@ -187,7 +187,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
 
         // Methods
 
-        // This function is called by a ThreadPool thread as a result of an AppDomain calling 
+        // This function is called by a ThreadPool thread as a result of an AppDomain calling
         // SqlDependencyProcessDispatcher.QueueAppDomainUnload on AppDomain.Unload.
         internal bool AppDomainUnload(string appDomainKey)
         {
@@ -501,7 +501,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
             finally
             {
                 // Since we do not want to make a separate round trip just for the end conversation call, we need to
-                // batch it with the next command.  
+                // batch it with the next command.
                 if (handle == Guid.Empty)
                 { // This should only happen if failure occurred, or if non-QN format received.
                     _com.CommandText = _beginConversationQuery ?? _receiveQuery; // If we're doing the initial query, we won't have a conversation Guid to begin yet.
@@ -749,10 +749,10 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                         // Likewise, if we have exceeded the maximum retry period (30 seconds) waiting for cleanup, force a tear down.
                         // In rare cases during app domain unload, the async cleanup performed by AsyncResultCallback
                         // may fail to execute TearDownAndDispose, leaving this method in an infinite loop.
-                        // To avoid the infinite loop, we force the cleanup here after 30 seconds.  Since we have reached 
-                        // refcount of 0, either this method call or the thread running AsyncResultCallback is responsible for calling 
-                        // TearDownAndDispose when transitioning to the _stopped state.  Failing to call TearDownAndDispose means we leak 
-                        // the service broker objects created by this SqlDependency instance, so we make a best effort here to call 
+                        // To avoid the infinite loop, we force the cleanup here after 30 seconds.  Since we have reached
+                        // refcount of 0, either this method call or the thread running AsyncResultCallback is responsible for calling
+                        // TearDownAndDispose when transitioning to the _stopped state.  Failing to call TearDownAndDispose means we leak
+                        // the service broker objects created by this SqlDependency instance, so we make a best effort here to call
                         // TearDownAndDispose in the maximum retry period case as well as in the _errorState case.
                         if (_errorState || retryStopwatch.Elapsed.Seconds >= 30)
                         {
@@ -802,7 +802,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                             // receive query and upon return we will clear the state.  However, unless
                             // a non notification query result is returned, we will not clear it.  That
                             // means a query is generally always executing with an "end conversation" on
-                            // the wire.  Rather than synchronize for success of the other "end conversation", 
+                            // the wire.  Rather than synchronize for success of the other "end conversation",
                             // simply re-execute.
                             try
                             {
@@ -1190,7 +1190,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
         out string user,
             string queue)
     {
-        // Force certain connection string properties to be used by SqlDependencyProcessDispatcher.  
+        // Force certain connection string properties to be used by SqlDependencyProcessDispatcher.
         // This logic is done here to enable us to have the complete connection string now to be used
         // for tracing as we flow through the logic.
         connectionStringBuilder = new SqlConnectionStringBuilder(connectionString)

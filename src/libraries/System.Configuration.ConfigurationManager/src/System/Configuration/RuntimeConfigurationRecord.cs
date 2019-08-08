@@ -31,7 +31,7 @@ namespace System.Configuration
             return configRecord;
         }
 
-        // Create the factory that will evaluate configuration 
+        // Create the factory that will evaluate configuration
         protected override object CreateSectionFactory(FactoryRecord factoryRecord)
         {
             return new RuntimeConfigurationFactory(this, factoryRecord);

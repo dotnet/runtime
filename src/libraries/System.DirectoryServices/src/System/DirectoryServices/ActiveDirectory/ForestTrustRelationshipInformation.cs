@@ -25,7 +25,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // security context
             this.context = context;
-            // source 
+            // source
             this.source = source;
             // target
             if (unmanagedTrust.DnsDomainName != (IntPtr)0)
@@ -255,7 +255,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                     }
 
-                    // finally construct the LSA_FOREST_TRUST_INFORMATION                
+                    // finally construct the LSA_FOREST_TRUST_INFORMATION
                     LSA_FOREST_TRUST_INFORMATION trustInformation = new LSA_FOREST_TRUST_INFORMATION();
                     trustInformation.RecordCount = count;
                     trustInformation.Entries = records;
@@ -268,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // do impersonation first
                     impersonated = Utils.Impersonate(context);
 
-                    // get the policy handle                
+                    // get the policy handle
                     handle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
 
                     // get the target name

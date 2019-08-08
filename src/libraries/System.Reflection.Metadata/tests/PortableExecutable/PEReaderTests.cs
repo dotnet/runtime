@@ -242,7 +242,7 @@ namespace System.Reflection.PortableExecutable.Tests
             var relocBlob1 = reader.GetSectionData(".reloc").GetContent();
             var relocBlob2 = reader.GetSectionData(0x6000).GetContent();
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0x00, 0x20, 0x00, 0x00,
                 0x0C, 0x00, 0x00, 0x00,
@@ -608,7 +608,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 {
                     Assert.Null(pathQueried);
                     pathQueried = p;
-                    
+
                     // Doesn't match the id
                     return new MemoryStream(PortablePdbs.DocumentsPdb);
                 };
@@ -712,7 +712,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 string pdbPath;
 
                 // reports the first error:
-                Assert.Throws<IOException>(() => 
+                Assert.Throws<IOException>(() =>
                     reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), _ => { throw new IOException(); }, out pdbProvider, out pdbPath));
 
                 // reports the first error:

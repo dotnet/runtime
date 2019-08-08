@@ -523,7 +523,7 @@ namespace System.IO.Tests
             Assert.Equal(currentDirRelative, watcher.Path);
 
             // FSW starts with String.Empty and will ignore setting this if it is already set,
-            // but if you set it after some other valid string has been set it will throw.            
+            // but if you set it after some other valid string has been set it will throw.
             Assert.Throws<ArgumentException>(() => watcher.Path = string.Empty);
             // Non-existent path
             Assert.Throws<ArgumentException>(() => watcher.Path = GetTestFilePath());
@@ -587,7 +587,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_StopCalledOnBackgroundThreadDoesNotDeadlock()
         {
-            // Check the case where Stop or Dispose (they do the same thing) is called from 
+            // Check the case where Stop or Dispose (they do the same thing) is called from
             // a FSW event callback and make sure we don't Thread.Join to deadlock
             using (var dir = new TempDirectory(GetTestFilePath()))
             {
@@ -735,7 +735,7 @@ namespace System.IO.Tests
             var watcher = new FileSystemWatcher();
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
-            
+
             watcher.Filters.RemoveAt(0);
             Assert.Equal(1, watcher.Filters.Count);
             Assert.Equal("*.dll", watcher.Filter);
@@ -797,7 +797,7 @@ namespace System.IO.Tests
             var watcher = new FileSystemWatcher();
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
-            
+
             Assert.True(watcher.Filters.Contains("*.pdb"));
         }
 
@@ -881,7 +881,7 @@ namespace System.IO.Tests
             var watcher = new FileSystemWatcher();
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
-            
+
             Assert.Equal(-1, watcher.Filters.IndexOf("foo"));
             Assert.Equal(0, watcher.Filters.IndexOf("*.pdb"));
         }
@@ -944,7 +944,7 @@ namespace System.IO.Tests
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => watcher.Filters.Insert(4, "*"));            
+            Assert.Throws<ArgumentOutOfRangeException>(() => watcher.Filters.Insert(4, "*"));
             watcher.Filters.Clear();
             Assert.Throws<ArgumentOutOfRangeException>(() => watcher.Filters[0]);
         }

@@ -32,7 +32,7 @@ namespace System.UnitTesting
         /// <summary>
         ///     Verifies that the specified action throws an ObjectDisposedException.
         /// </summary>
-        public static ObjectDisposedException ThrowsDisposed(object instance, Action action)            
+        public static ObjectDisposedException ThrowsDisposed(object instance, Action action)
         {
             var exception = Throws<ObjectDisposedException>(RetryMode.Retry, action, (actual, retryCount) =>
             {
@@ -43,7 +43,7 @@ namespace System.UnitTesting
         }
 
         /// <summary>
-        ///     Verifies that the specified action throws an exception of type <typeparam name="T"/>, 
+        ///     Verifies that the specified action throws an exception of type <typeparam name="T"/>,
         ///     indicating whether to retry and running the specified validator.
         /// </summary>
         public static T Throws<T>(RetryMode retry, Action action, Action<T, int> validator)
@@ -63,7 +63,7 @@ namespace System.UnitTesting
         }
 
         /// <summary>
-        ///     Verifies that the specified action throws an exception of type <typeparam name="T"/>, 
+        ///     Verifies that the specified action throws an exception of type <typeparam name="T"/>,
         ///     indicating whether to retry.
         /// </summary>
         public static T Throws<T>(RetryMode retry, Action action)
@@ -71,7 +71,7 @@ namespace System.UnitTesting
         {
             return Throws<T>(retry, action, (Action<T, int>)null);
         }
-        
+
         /// <summary>
         ///     Verifies that the specified action throws the specified exception,
         ///     indicating whether to retry.

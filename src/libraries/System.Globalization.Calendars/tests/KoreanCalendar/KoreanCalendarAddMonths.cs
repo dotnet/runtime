@@ -16,7 +16,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new DateTime(2003, 1, 29), 1 };
             yield return new object[] { new DateTime(2006, 7, 31), 2 };
         }
-        
+
         [Theory]
         [MemberData(nameof(AddMonths_TestData))]
         public void AddMonths(DateTime time, int months)

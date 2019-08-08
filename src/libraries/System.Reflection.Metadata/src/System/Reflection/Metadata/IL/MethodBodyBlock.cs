@@ -101,7 +101,7 @@ namespace System.Reflection.Metadata
             byte headByte = reader.ReadByte();
             if ((headByte & ILFormatMask) == ILTinyFormat)
             {
-                // tiny IL can't have locals so technically this shouldn't matter, 
+                // tiny IL can't have locals so technically this shouldn't matter,
                 // but false is consistent with other metadata readers and helps
                 // for use cases involving comparing our output with theirs.
                 const bool initLocalsForTinyIL = false;

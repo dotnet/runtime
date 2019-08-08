@@ -105,7 +105,7 @@ namespace System.Net
 
         internal HttpListenerContext HttpListenerContext => _httpContext;
 
-        // Note: RequestBuffer may get moved in memory. If you dereference a pointer from inside the RequestBuffer, 
+        // Note: RequestBuffer may get moved in memory. If you dereference a pointer from inside the RequestBuffer,
         // you must use 'OriginalBlobAddress' below to adjust the location of the pointer to match the location of
         // RequestBuffer.
         internal IntPtr RequestBuffer

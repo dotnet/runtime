@@ -16,7 +16,7 @@ namespace System.Drawing
         // When creating a texture brush from a metafile image, the dstRect
         // is used to specify the size that the metafile image should be
         // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
+        // It is NOT used to crop the metafile image, so only the width
         // and height values matter for metafiles.
 
         public TextureBrush(Image bitmap) : this(bitmap, WrapMode.Tile)
@@ -50,7 +50,7 @@ namespace System.Drawing
             {
                 throw new ArgumentNullException(nameof(image));
             }
-            
+
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
@@ -193,7 +193,7 @@ namespace System.Drawing
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
                 }
-    
+
                 int status = Gdip.GdipSetTextureWrapMode(new HandleRef(this, NativeBrush), unchecked((int)value));
                 Gdip.CheckStatus(status);
             }

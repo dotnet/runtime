@@ -11,7 +11,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// An immutable queue.
     /// </summary>
-    /// <typeparam name="T">The type of elements in the queue.</typeparam>    
+    /// <typeparam name="T">The type of elements in the queue.</typeparam>
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public interface IImmutableQueue<T> : IEnumerable<T>

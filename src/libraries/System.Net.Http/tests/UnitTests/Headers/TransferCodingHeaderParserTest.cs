@@ -53,7 +53,7 @@ namespace System.Net.Http.Tests
             // This test verifies that Parse() correctly calls TryParse().
             TransferCodingHeaderParser parser = TransferCodingHeaderParser.MultipleValueParser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue("custom;=value", null, ref index); });
         }
 
@@ -79,7 +79,7 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("custom , 会", 0, expected, 9);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a 
+            // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
             CheckValidParsedValue("\r\n custom ;  name =   value ", 0, expected, 28);

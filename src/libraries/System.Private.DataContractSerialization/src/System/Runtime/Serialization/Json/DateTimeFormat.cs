@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization
 {
     /// <summary>
     /// This class is used to customize the way DateTime is
-    /// serialized or deserialized by <see cref="Json.DataContractJsonSerializer"/> 
+    /// serialized or deserialized by <see cref="Json.DataContractJsonSerializer"/>
     /// </summary>
     public class DateTimeFormat
     {
@@ -73,8 +73,8 @@ namespace System.Runtime.Serialization
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="DateTimeStyles"/> on this instance.  
-        /// </summary>        
+        /// Gets or sets the <see cref="DateTimeStyles"/> on this instance.
+        /// </summary>
         public DateTimeStyles DateTimeStyles
         {
             get

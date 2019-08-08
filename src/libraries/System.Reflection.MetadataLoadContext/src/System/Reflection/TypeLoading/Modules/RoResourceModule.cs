@@ -27,7 +27,7 @@ namespace System.Reflection.TypeLoading
         }
 
         internal sealed override RoAssembly GetRoAssembly() => _assembly;
-        
+
         public sealed override int MDStreamVersion => throw new InvalidOperationException(SR.ResourceOnlyModule);
         public sealed override int MetadataToken => 0x00000000;
         public sealed override Guid ModuleVersionId => throw new InvalidOperationException(SR.ResourceOnlyModule);

@@ -31,7 +31,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             public static ulong Crc32(ulong crc, ulong data) { throw new PlatformNotSupportedException(); }
         }
-        
+
         /// <summary>
         /// __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b)
         ///   PCMPGTQ xmm, xmm/m128

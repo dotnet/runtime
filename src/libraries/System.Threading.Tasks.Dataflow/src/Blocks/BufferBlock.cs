@@ -65,7 +65,7 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -104,8 +104,8 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // We can directly accept the message if:
-                //      1) we are not bounding, OR 
-                //      2) we are bounding AND there is room available AND there are no postponed messages AND we are not currently processing. 
+                //      1) we are not bounding, OR
+                //      2) we are bounding AND there is room available AND there are no postponed messages AND we are not currently processing.
                 // (If there were any postponed messages, we would need to postpone so that ordering would be maintained.)
                 // (We should also postpone if we are currently processing, because there may be a race between consuming postponed messages and
                 // accepting new ones directly into the queue.)

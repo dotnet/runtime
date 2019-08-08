@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //     }
     //
     // The constructor takes an EXPR which can point to either an EXPRLIST
-    // or a non-list EXPR, or nothing. 
+    // or a non-list EXPR, or nothing.
     //
     // Upon construction, the iterator's current element is the first element
     // in the list, which is to say it's not necessary to call MoveNext

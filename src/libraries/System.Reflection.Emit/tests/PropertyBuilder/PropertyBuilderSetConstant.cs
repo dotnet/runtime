@@ -53,12 +53,12 @@ namespace System.Reflection.Emit.Tests
 
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, returnType, null);
             property.SetConstant(defaultValue);
-            
+
             MethodBuilder method = type.DefineMethod("TestMethod", getMethodAttributes, returnType, paramTypes);
             ILGenerator methodILGenerator = method.GetILGenerator();
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ret);
-            
+
             property.SetGetMethod(method);
 
             Type createdType = type.CreateTypeInfo().AsType();

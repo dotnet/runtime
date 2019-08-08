@@ -87,7 +87,7 @@ namespace System.Drawing
         public Image GetImage(Type type) => GetImage(type, false);
 
         public Image GetImage(Type type, bool large) => GetImage(type, null, large);
-        
+
         public Image GetImage(Type type, string imgName, bool large)
         {
             if ((large && _largeImage == null) || (!large && _smallImage == null))
@@ -122,8 +122,8 @@ namespace System.Drawing
                 {
                     img = s_defaultComponent.GetImage(type, large);
 
-                    // We don't want to hand out the static shared image 
-                    // because otherwise it might get disposed. 
+                    // We don't want to hand out the static shared image
+                    // because otherwise it might get disposed.
                     if (img != null)
                     {
                         img = (Image)img.Clone();
@@ -350,10 +350,10 @@ namespace System.Drawing
         {
             // When we call Gdip.DummyFunction, JIT will make sure Gdip..cctor will be called.
             Gdip.DummyFunction();
-            
+
             Stream stream = BitmapSelector.GetResourceStream(typeof(ToolboxBitmapAttribute), "DefaultComponent.bmp");
             Debug.Assert(stream != null, "DefaultComponent.bmp must be present as an embedded resource.");
-            
+
             var bitmap = new Bitmap(stream);
             MakeBackgroundAlphaZero(bitmap);
             s_defaultComponent = new ToolboxBitmapAttribute(bitmap, null);

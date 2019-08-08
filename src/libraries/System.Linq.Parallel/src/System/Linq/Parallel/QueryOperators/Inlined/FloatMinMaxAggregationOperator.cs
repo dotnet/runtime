@@ -18,7 +18,7 @@ namespace System.Linq.Parallel
     //     Note that normally float.NaN &lt; anything is false, as is anything &lt; NaN.  This would
     //     lead to some strangeness in Min and Max, e.g. Min({ NaN, 5.0 } == NaN, yet
     //     Min({ 5.0, NaN }) == 5.0!  We impose a total ordering so that NaN is smaller than
-    //     everything, including -infinity, which is consistent with Comparer<T>. 
+    //     everything, including -infinity, which is consistent with Comparer<T>.
     /// <summary>
     /// An inlined min/max aggregation and its enumerator, for floats.
     /// </summary>
@@ -46,7 +46,7 @@ namespace System.Linq.Parallel
 
         protected override float InternalAggregate(ref Exception singularExceptionToThrow)
         {
-            // Because the final reduction is typically much cheaper than the intermediate 
+            // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
             // will do a lot of work to produce a single output element, we prefer to turn off
             // pipelining, and process the final reductions serially.

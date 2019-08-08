@@ -253,40 +253,40 @@ namespace System.Data.OleDb
     /// <remarks>
     /// PROPVARIANT can represent many different things.  We are only interested in strings
     /// for this version but the full range of values is listed her for completeness.
-    /// 
+    ///
     /// typedef unsigned short VARTYPE;
     /// typedef unsigned short WORD;
-    /// typedef struct PROPVARIANT {  
-    /// VARTYPE vt;  WORD wReserved1;  WORD wReserved2;  WORD wReserved3;  
-    /// union {    
-    ///     CHAR cVal;    
-    ///     UCHAR bVal;    
-    ///     SHORT iVal;    
-    ///     USHORT uiVal;    
-    ///     LONG lVal;    
-    ///     INT intVal;    
-    ///     ULONG ulVal;    
-    ///     UINT uintVal;    
-    ///     LARGE_INTEGER hVal;    
-    ///     ULARGE_INTEGER uhVal;    
-    ///     FLOAT fltVal;    DOUBLE dblVal;    CY cyVal;    DATE date;    
-    ///     BSTR bstrVal;    VARIANT_BOOL boolVal;    SCODE scode;    
-    ///     FILETIME filetime;    LPSTR pszVal;    LPWSTR pwszVal;    
-    ///     CLSID* puuid;    CLIPDATA* pclipdata;    BLOB blob;    
-    ///     IStream* pStream;    IStorage* pStorage;    IUnknown* punkVal;    
-    ///     IDispatch* pdispVal;    LPSAFEARRAY parray;    CAC cac;    
-    ///     CAUB caub;    CAI cai;    CAUI caui;    CAL cal;    CAUL caul;    
-    ///     CAH cah;    CAUH cauh;    CAFLT caflt;    CADBL cadbl;    
-    ///     CACY cacy;    CADATE cadate;    CABSTR cabstr;    
-    ///     CABOOL cabool;    CASCODE cascode;    CALPSTR calpstr;    
-    ///     CALPWSTR calpwstr;    CAFILETIME cafiletime;    CACLSID cauuid;    
-    ///     CACLIPDATA caclipdata;    CAPROPVARIANT capropvar;    
-    ///     CHAR* pcVal;    UCHAR* pbVal;    SHORT* piVal;    USHORT* puiVal;    
-    ///     LONG* plVal;    ULONG* pulVal;    INT* pintVal;    UINT* puintVal;    
-    ///     FLOAT* pfltVal;    DOUBLE* pdblVal;    VARIANT_BOOL* pboolVal;    
-    ///     DECIMAL* pdecVal;    SCODE* pscode;    CY* pcyVal;    
-    ///     PROPVARIANT* pvarVal;  
-    /// }; 
+    /// typedef struct PROPVARIANT {
+    /// VARTYPE vt;  WORD wReserved1;  WORD wReserved2;  WORD wReserved3;
+    /// union {
+    ///     CHAR cVal;
+    ///     UCHAR bVal;
+    ///     SHORT iVal;
+    ///     USHORT uiVal;
+    ///     LONG lVal;
+    ///     INT intVal;
+    ///     ULONG ulVal;
+    ///     UINT uintVal;
+    ///     LARGE_INTEGER hVal;
+    ///     ULARGE_INTEGER uhVal;
+    ///     FLOAT fltVal;    DOUBLE dblVal;    CY cyVal;    DATE date;
+    ///     BSTR bstrVal;    VARIANT_BOOL boolVal;    SCODE scode;
+    ///     FILETIME filetime;    LPSTR pszVal;    LPWSTR pwszVal;
+    ///     CLSID* puuid;    CLIPDATA* pclipdata;    BLOB blob;
+    ///     IStream* pStream;    IStorage* pStorage;    IUnknown* punkVal;
+    ///     IDispatch* pdispVal;    LPSAFEARRAY parray;    CAC cac;
+    ///     CAUB caub;    CAI cai;    CAUI caui;    CAL cal;    CAUL caul;
+    ///     CAH cah;    CAUH cauh;    CAFLT caflt;    CADBL cadbl;
+    ///     CACY cacy;    CADATE cadate;    CABSTR cabstr;
+    ///     CABOOL cabool;    CASCODE cascode;    CALPSTR calpstr;
+    ///     CALPWSTR calpwstr;    CAFILETIME cafiletime;    CACLSID cauuid;
+    ///     CACLIPDATA caclipdata;    CAPROPVARIANT capropvar;
+    ///     CHAR* pcVal;    UCHAR* pbVal;    SHORT* piVal;    USHORT* puiVal;
+    ///     LONG* plVal;    ULONG* pulVal;    INT* pintVal;    UINT* puintVal;
+    ///     FLOAT* pfltVal;    DOUBLE* pdblVal;    VARIANT_BOOL* pboolVal;
+    ///     DECIMAL* pdecVal;    SCODE* pscode;    CY* pcyVal;
+    ///     PROPVARIANT* pvarVal;
+    /// };
     /// } PROPVARIANT;
     /// </remarks>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
@@ -344,19 +344,19 @@ namespace System.Data.OleDb
     /// Union portion of PROPVARIANT
     /// </summary>
     /// <remarks>
-    /// All fields (or their placeholders) are declared even if 
+    /// All fields (or their placeholders) are declared even if
     /// they are not used. This is to make sure that the size of
     /// the union matches the size of the union in
-    /// the actual unmanaged PROPVARIANT structure 
-    /// for all architectures (32-bit/64-bit). 
+    /// the actual unmanaged PROPVARIANT structure
+    /// for all architectures (32-bit/64-bit).
     /// Points to note:
     /// - All pointer type fields are declared as IntPtr.
     /// - CAxxx type fields (like CAC, CAUB, etc.) are all of same
-    ///     structural layout, hence not all declared individually 
-    ///     since they are not used. A placeholder CArray 
+    ///     structural layout, hence not all declared individually
+    ///     since they are not used. A placeholder CArray
     ///     is used to represent all of them to account for the
     ///     size of these types. CArray is defined later.
-    /// - Rest of the fields are declared with corresponding 
+    /// - Rest of the fields are declared with corresponding
     ///     managed equivalent types.
     /// </remarks>
     [StructLayout(LayoutKind.Explicit)]
@@ -465,13 +465,13 @@ namespace System.Data.OleDb
         internal System.Runtime.InteropServices.ComTypes.FILETIME filetime;
 
         /// <summary>
-        /// CLSID*   
+        /// CLSID*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr puuid;
 
         /// <summary>
-        /// CLIPDATA*    
+        /// CLIPDATA*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pclipdata;
@@ -483,7 +483,7 @@ namespace System.Data.OleDb
         internal IntPtr bstrVal;
 
         /// <summary>
-        /// BSTRBLOB   
+        /// BSTRBLOB
         /// </summary>
         [FieldOffset(0)]
         internal BSTRBLOB bstrblobVal;
@@ -537,7 +537,7 @@ namespace System.Data.OleDb
         internal IntPtr pVersionedStream;
 
         /// <summary>
-        /// LPSAFEARRAY 
+        /// LPSAFEARRAY
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr parray;
@@ -545,9 +545,9 @@ namespace System.Data.OleDb
         /// <summary>
         /// Placeholder for
         /// CAC, CAUB, CAI, CAUI, CAL, CAUL, CAH, CAUH; CAFLT,
-        /// CADBL, CABOOL, CASCODE, CACY, CADATE, CAFILETIME, 
-        /// CACLSID, CACLIPDATA, CABSTR, CABSTRBLOB, 
-        /// CALPSTR, CALPWSTR, CAPROPVARIANT 
+        /// CADBL, CABOOL, CASCODE, CACY, CADATE, CAFILETIME,
+        /// CACLSID, CACLIPDATA, CABSTR, CABSTRBLOB,
+        /// CALPSTR, CALPWSTR, CAPROPVARIANT
         /// </summary>
         [FieldOffset(0)]
         internal CArray cArray;
@@ -559,85 +559,85 @@ namespace System.Data.OleDb
         internal IntPtr pcVal;
 
         /// <summary>
-        /// UCHAR* 
+        /// UCHAR*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pbVal;
 
         /// <summary>
-        /// SHORT* 
+        /// SHORT*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr piVal;
 
         /// <summary>
-        /// USHORT* 
+        /// USHORT*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr puiVal;
 
         /// <summary>
-        /// LONG* 
+        /// LONG*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr plVal;
 
         /// <summary>
-        /// ULONG* 
+        /// ULONG*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pulVal;
 
         /// <summary>
-        /// INT* 
+        /// INT*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pintVal;
 
         /// <summary>
-        /// UINT* 
+        /// UINT*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr puintVal;
 
         /// <summary>
-        /// FLOAT* 
+        /// FLOAT*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pfltVal;
 
         /// <summary>
-        /// DOUBLE* 
+        /// DOUBLE*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pdblVal;
 
         /// <summary>
-        /// VARIANT_BOOL* 
+        /// VARIANT_BOOL*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pboolVal;
 
         /// <summary>
-        /// DECIMAL* 
+        /// DECIMAL*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pdecVal;
 
         /// <summary>
-        /// SCODE* 
+        /// SCODE*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pscode;
 
         /// <summary>
-        /// CY* 
+        /// CY*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pcyVal;
 
         /// <summary>
-        /// DATE* 
+        /// DATE*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pdate;
@@ -649,19 +649,19 @@ namespace System.Data.OleDb
         internal IntPtr pbstrVal;
 
         /// <summary>
-        /// IUnknown** 
+        /// IUnknown**
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr ppunkVal;
 
         /// <summary>
-        /// IDispatch** 
+        /// IDispatch**
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr ppdispVal;
 
         /// <summary>
-        /// LPSAFEARRAY* 
+        /// LPSAFEARRAY*
         /// </summary>
         [FieldOffset(0)]
         internal IntPtr pparray;
@@ -675,11 +675,11 @@ namespace System.Data.OleDb
 
     #region Structs used by PropVariantUnion
 
-    // 
-    // NOTE: Verifiability requires that the 
+    //
+    // NOTE: Verifiability requires that the
     // fields of these value-types need to be public
     // since PropVariantUnion has explicit layout,
-    // and has these value-types as its fields in a way that 
+    // and has these value-types as its fields in a way that
     // overlaps with other PropVariantUnion fields
     // (same FieldOffset for multiple fields).
     //
@@ -805,7 +805,7 @@ namespace System.Data.OleDb
                 ReadOnlySpan<byte> span1 = new ReadOnlySpan<byte>(buf1.ToPointer(), count);
                 ReadOnlySpan<byte> span2 = new ReadOnlySpan<byte>(buf2.ToPointer(), count);
                 return !MemoryExtensions.SequenceEqual(span1, span2);
-                //0​ if all count bytes of lhs and rhs are equal. 
+                //0​ if all count bytes of lhs and rhs are equal.
                 // TODO: confirm condition with tests
             }
         }

@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// could ever be assigned as a reordering ID.
         /// </summary>
         internal const long INVALID_REORDERING_ID = -1;
-        /// <summary>A well-known message ID for code that will send exactly one message or 
+        /// <summary>A well-known message ID for code that will send exactly one message or
         /// where the exact message ID is not important.</summary>
         internal const int SINGLE_MESSAGE_ID = 1;
         /// <summary>A perf optimization for caching a well-known message header instead of
@@ -80,8 +80,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 if (!Thread.Yield())
                 {
-                    // There was no other thread waiting. 
-                    // We may spend some more cycles to evaluate the predicate. 
+                    // There was no other thread waiting.
+                    // We may spend some more cycles to evaluate the predicate.
                     if (predicate(stateIn, out stateOut)) return true;
                 }
             }
@@ -164,12 +164,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // libraries only treat OCEs as such if they contain the same token that was provided by the user
             // and if that token has cancellation requested.  Such logic could be achieved here with:
             //   var oce = exception as OperationCanceledException;
-            //   return oce != null && 
-            //          oce.CancellationToken == dataflowBlockOptions.CancellationToken && 
+            //   return oce != null &&
+            //          oce.CancellationToken == dataflowBlockOptions.CancellationToken &&
             //          oce.CancellationToken.IsCancellationRequested;
             // However, that leads to a discrepancy with the async processing case of dataflow blocks,
-            // where tasks are returned to represent the message processing, potentially in the Canceled state, 
-            // and we simply ignore such tasks.  Further, for blocks like TransformBlock, it's useful to be able 
+            // where tasks are returned to represent the message processing, potentially in the Canceled state,
+            // and we simply ignore such tasks.  Further, for blocks like TransformBlock, it's useful to be able
             // to cancel an individual operation which must return a TOutput value, simply by throwing an OperationCanceledException.
             // In such cases, you wouldn't want cancellation tied to the token, because you would only be able to
             // cancel an individual message processing if the whole block was canceled.
@@ -284,7 +284,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
             catch
             {
-                // It's ok to eat all exceptions here.  This could throw if an Exception type 
+                // It's ok to eat all exceptions here.  This could throw if an Exception type
                 // has overridden Data to behave differently than we expect.
             }
         }
@@ -395,7 +395,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Creates an IDisposable that, when disposed, will acquire the outgoing lock while removing 
+        /// Creates an IDisposable that, when disposed, will acquire the outgoing lock while removing
         /// the target block from the target registry.
         /// </summary>
         /// <typeparam name="TOutput">Specifies the type of data in the block.</typeparam>
@@ -505,8 +505,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(target != null, "There must be a subject target.");
             Debug.Assert(postponedMessages != null, "The stacked map of postponed messages must exist.");
 
-            // Note that we don't synchronize on lockObject for postponedMessages here, 
-            // because no one should be adding to it at this time.  We do a bit of 
+            // Note that we don't synchronize on lockObject for postponedMessages here,
+            // because no one should be adding to it at this time.  We do a bit of
             // checking just for sanity's sake.
             int initialCount = postponedMessages.Count;
             int processedCount = 0;
@@ -618,7 +618,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal readonly int BoundedCapacity;
         /// <summary>The number of messages currently stored.</summary>
         /// <remarks>
-        /// This value may temporarily be higher than the actual number stored.  
+        /// This value may temporarily be higher than the actual number stored.
         /// That's ok, we just can't accept any new messages if CurrentCount >= BoundedCapacity.
         /// Worst case is that we may temporarily have fewer items in the block than our maximum allows,
         /// but we'll never have more.

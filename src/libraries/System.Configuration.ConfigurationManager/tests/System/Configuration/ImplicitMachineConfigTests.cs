@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -65,13 +65,13 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        public void EnsureInitWithDifferentOrderHostParams() 
+        public void EnsureInitWithDifferentOrderHostParams()
         {
             string assemblyName = PlatformDetection.IsFullFramework ? "System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" : "System.Configuration.ConfigurationManager";
 
             // InternalConfigFactory allows you to specify your own host / hostInitParams
-            // Ensure ImplictMachineConfigHost can init within this process and not throw an Invalid cast exception 
-            using (var temp = new TempConfig(TestData.EmptyConfig)) 
+            // Ensure ImplictMachineConfigHost can init within this process and not throw an Invalid cast exception
+            using (var temp = new TempConfig(TestData.EmptyConfig))
             {
                 string typeName = "System.Configuration.Internal.InternalConfigConfigurationFactory, " + assemblyName;
 

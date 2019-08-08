@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     //
-    // The common base class for the cross-platform CreateEncryptor()/CreateDecryptor() implementations. 
+    // The common base class for the cross-platform CreateEncryptor()/CreateDecryptor() implementations.
     //
     //  - Implements the various padding algorithms (as we support padding algorithms that the underlying native apis don't.)
     //
@@ -78,7 +78,7 @@ namespace Internal.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(outputOffset));
             if (inputCount > outputBuffer.Length - outputOffset)
                 throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Cryptography_TransformBeyondEndOfBuffer);
-            
+
             int numBytesWritten = UncheckedTransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
             Debug.Assert(numBytesWritten >= 0 && numBytesWritten <= inputCount);
             return numBytesWritten;
@@ -116,4 +116,3 @@ namespace Internal.Cryptography
         protected BasicSymmetricCipher BasicSymmetricCipher { get; private set; }
     }
 }
-

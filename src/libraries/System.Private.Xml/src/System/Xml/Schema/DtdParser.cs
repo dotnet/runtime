@@ -716,8 +716,8 @@ namespace System.Xml
                         if (_v1Compat)
                         {
                             // BUG BUG: For backward compatibility, we check the correct type and values of the
-                            // xml:space attribute only on the last attribute in the list, and mark it as reserved 
-                            // only its value is correct (=prevent XmlTextReader from fhrowing on invalid value). 
+                            // xml:space attribute only on the last attribute in the list, and mark it as reserved
+                            // only its value is correct (=prevent XmlTextReader from fhrowing on invalid value).
                             // See Webdata bugs #98168, #97457 and #93935.
                             string val = attrDef.DefaultValueExpanded.Trim();
                             if (val.Equals("preserve") || val.Equals("default"))
@@ -1051,15 +1051,15 @@ namespace System.Xml
 
                     // We could just do this:
                     // ParseElementOnlyContent( pcv, currentEntityId );
-                    // 
-                    // But that would be recursion - so we will simulate the call using our localFrames stack 
-                    //   instead. 
+                    //
+                    // But that would be recursion - so we will simulate the call using our localFrames stack
+                    //   instead.
                     currentFrame =
                         new ParseElementOnlyContent_LocalFrame(_currentEntityId);
                     localFrames.Push(currentFrame);
                     goto RecursiveCall;
-                // And we should return here when we return from recursion call 
-                //   but it's the same as returning after the switch statement 
+                // And we should return here when we return from recursion call
+                //   but it's the same as returning after the switch statement
 
                 case Token.GreaterThan:
                     Throw(_curPos, SR.Xml_InvalidContentModel);
@@ -2475,7 +2475,7 @@ namespace System.Xml
                                 }
                                 else
                                 {
-                                    _stringBuilder.Append(_readerAdapter.IsEntityEolNormalized ? "\u000D\u000A" : "\u000A"); // EOL normalization of 0xD 0xA                                    
+                                    _stringBuilder.Append(_readerAdapter.IsEntityEolNormalized ? "\u000D\u000A" : "\u000A"); // EOL normalization of 0xD 0xA
                                 }
                                 _tokenStartPos = _curPos + 2;
 
@@ -2825,7 +2825,7 @@ namespace System.Xml
                              _chars[_curPos + 3] != 'U' || _chars[_curPos + 4] != 'D' ||
                              _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6])
 #if XML10_FIFTH_EDITION
-                             || xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+6] ) 
+                             || xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+6] )
 #endif
                             )
                         {
@@ -2840,7 +2840,7 @@ namespace System.Xml
                              _chars[_curPos + 3] != 'R' || _chars[_curPos + 4] != 'E' ||
                              _xmlCharType.IsNameSingleChar(_chars[_curPos + 5])
 #if XML10_FIFTH_EDITION
-                            ||xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+5] ) 
+                            ||xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+5] )
 #endif
                             )
                         {
@@ -3078,7 +3078,7 @@ namespace System.Xml
                 // end of buffer
                 else if (_curPos == _charsUsed
 #if XML10_FIFTH_EDITION
-                    || ( curPos + 1 == charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) ) 
+                    || ( curPos + 1 == charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) )
 #endif
                     )
                 {
@@ -3135,7 +3135,7 @@ namespace System.Xml
 
                 if (_curPos < _charsUsed
 #if XML10_FIFTH_EDITION
-                    && ( !xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) || curPos + 1 < charsUsed ) 
+                    && ( !xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) || curPos + 1 < charsUsed )
 #endif
                     )
                 {
@@ -3568,7 +3568,7 @@ namespace System.Xml
         {
             if (_xmlCharType.IsNCNameSingleChar(_chars[startPos])
 #if XML10_FIFTH_EDITION
-                || xmlCharType.IsNCNameHighSurrogateChar( chars[startPos] ) 
+                || xmlCharType.IsNCNameHighSurrogateChar( chars[startPos] )
 #endif
                 )
             { // postpone the proper surrogate checking to the loop below
@@ -3673,4 +3673,3 @@ namespace System.Xml
         }
     }
 }
-

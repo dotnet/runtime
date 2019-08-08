@@ -185,7 +185,7 @@ namespace System.DirectoryServices.AccountManagement
                     context = new PrincipalContext(ContextType.Machine);
 #else
                     // This implementation doesn't support Reg-SAM/MSAM (machine principals)
-                    throw new NotSupportedException(SR.UserLocalNotSupportedOnPlatform);       
+                    throw new NotSupportedException(SR.UserLocalNotSupportedOnPlatform);
 #endif // PAPI_REGSAM
                 }
                 else
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.AccountManagement
                     context = new PrincipalContext(ContextType.Domain);
 #else
                     // This implementation doesn't support AD (domain principals)
-                    throw new NotSupportedException(SR.UserDomainNotSupportedOnPlatform);       
+                    throw new NotSupportedException(SR.UserDomainNotSupportedOnPlatform);
 #endif // PAPI_AD
                 }
 

@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information. 
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Tests
             var bindingList = new BindingList<string>();
             Assert.False(bindingList.AllowNew);
 
-            // Binding an AddingNew delegate allows new. 
+            // Binding an AddingNew delegate allows new.
             bindingList.AddingNew += (object sender, AddingNewEventArgs e) => { };
             Assert.True(bindingList.AllowNew);
         }
@@ -269,7 +269,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(ListChangedType.Reset, e.ListChangedType);
                 Assert.Equal(expectedAllowRemove, bindingList.AllowRemove);
             };
-            
+
             bindingList.AllowRemove = false;
             Assert.True(calledListChanged);
 

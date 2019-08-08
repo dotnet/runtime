@@ -2950,7 +2950,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         }
         };
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

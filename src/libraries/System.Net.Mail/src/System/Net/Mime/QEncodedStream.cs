@@ -164,7 +164,7 @@ namespace System.Net.Mime
                     else
                     {
                         // determine where we are relative to the end
-                        // of the data.  If we don't have enough data to 
+                        // of the data.  If we don't have enough data to
                         // decode the escape sequence, save off what we
                         // have and continue the decoding in the next
                         // read.  Otherwise, decode the data and copy

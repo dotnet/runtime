@@ -19,7 +19,7 @@ namespace System.Xml.Tests
         {
             _output = output;
         }
-        
+
         public bool bWarningCallback;
 
         public bool bErrorCallback;

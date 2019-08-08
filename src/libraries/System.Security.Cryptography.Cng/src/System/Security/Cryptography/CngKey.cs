@@ -44,4 +44,3 @@ namespace System.Security.Cryptography
         private readonly SafeNCryptProviderHandle _providerHandle;
     }
 }
-

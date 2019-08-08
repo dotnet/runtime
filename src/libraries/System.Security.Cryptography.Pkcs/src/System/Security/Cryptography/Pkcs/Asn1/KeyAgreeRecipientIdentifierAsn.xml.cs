@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(Asn1Tag.Sequence, "IssuerAndSerialNumber");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "RKeyId");
         }
@@ -36,13 +36,13 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (IssuerAndSerialNumber.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 IssuerAndSerialNumber.Value.Encode(writer);
                 wroteValue = true;
             }
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 RKeyId.Value.Encode(writer, new Asn1Tag(TagClass.ContextSpecific, 0));
                 wroteValue = true;
             }
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal static KeyAgreeRecipientIdentifierAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-            
+
             Decode(reader, out KeyAgreeRecipientIdentifierAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            
+
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn tmpIssuerAndSerialNumber;

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,7 +48,7 @@ namespace System.Security.AccessControl.Tests
             rAcl = new RawAcl(0, GenericAcl.MaxBinaryLength + 1);
             for (int i = 0; i < 1820; i++)
             {
-                //this ace binary length is 36, 1820 * 36 = 65520                        
+                //this ace binary length is 36, 1820 * 36 = 65520
                 gAce = new CommonAce(AceFlags.SuccessfulAccess, AceQualifier.SystemAudit, i + 1, new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BA")), false, null);
                 rAcl.InsertAce(0, gAce);
             }

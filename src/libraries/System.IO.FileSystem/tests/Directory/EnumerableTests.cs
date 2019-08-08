@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -65,7 +65,7 @@ namespace System.IO.Tests
                  }
 
                  Directory.CreateDirectory(dirPath);
-                 
+
                  // Directory.Exists should work with directories containing trailing dots and prefixed with \\?\
                  Assert.True(Directory.Exists(dirPath));
 
@@ -75,7 +75,7 @@ namespace System.IO.Tests
                  // File.Exists should work with directories containing trailing dots and prefixed with \\?\
                  Assert.True(File.Exists(filePath));
              }
-             
+
              try
              {
                  // Enumerate directories and their files using "C:\" paths

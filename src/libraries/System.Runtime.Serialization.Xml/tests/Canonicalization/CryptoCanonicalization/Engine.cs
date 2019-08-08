@@ -72,7 +72,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             dicWriter.WriteStartElement("Foo");
             if (_tokenizedInclusivePrefixes != null)
             {
-                // Populate the Canonicalizer with prefix that are already read in 
+                // Populate the Canonicalizer with prefix that are already read in
                 // by the reader.
                 foreach (string inclusivePrefix in _tokenizedInclusivePrefixes)
                 {
@@ -103,4 +103,3 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         }
     }
 }
-

@@ -18,7 +18,7 @@ namespace System.Diagnostics
     /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.6 and above where
     /// HttpClient doesn't have a DiagnosticListener built in. This class is not used for .NET Core
     /// because HttpClient in .NET Core already emits DiagnosticSource events. This class compensates for
-    /// that in .NET 4.6 and above. HttpHandlerDiagnosticListener has no public constructor. To use this, 
+    /// that in .NET 4.6 and above. HttpHandlerDiagnosticListener has no public constructor. To use this,
     /// the application just needs to call <see cref="DiagnosticListener.AllListeners" /> and
     /// <see cref="DiagnosticListener.AllListenerObservable.Subscribe(IObserver{DiagnosticListener})"/>,
     /// then in the <see cref="IObserver{DiagnosticListener}.OnNext(DiagnosticListener)"/> method,
@@ -28,7 +28,7 @@ namespace System.Diagnostics
     internal sealed class HttpHandlerDiagnosticListener : DiagnosticListener
     {
         /// <summary>
-        /// Overriding base class implementation just to give us a chance to initialize.  
+        /// Overriding base class implementation just to give us a chance to initialize.
         /// </summary>
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
@@ -38,7 +38,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Overriding base class implementation just to give us a chance to initialize.  
+        /// Overriding base class implementation just to give us a chance to initialize.
         /// </summary>
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
@@ -48,7 +48,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Overriding base class implementation just to give us a chance to initialize.  
+        /// Overriding base class implementation just to give us a chance to initialize.
         /// </summary>
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
         {
@@ -275,7 +275,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Helper class used to wrap the array list object. This class itself doesn't actually
-        /// have the array elements, but rather access another array list that's given at 
+        /// have the array elements, but rather access another array list that's given at
         /// construction time.
         /// </summary>
         private class ArrayListWrapper : ArrayList
@@ -541,11 +541,11 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // In case reponse content length is 0 and request is async, 
+                        // In case reponse content length is 0 and request is async,
                         // we won't have a HttpWebResponse set on request object when this method is called
                         // http://referencesource.microsoft.com/#System/net/System/Net/HttpWebResponse.cs,525
 
-                        // But we there will be CoreResponseData object that is either exception 
+                        // But we there will be CoreResponseData object that is either exception
                         // or the internal HTTP reponse representation having status, content and headers
 
                         var coreResponse = s_coreResponseAccessor(request);
@@ -554,11 +554,11 @@ namespace System.Diagnostics
                             HttpStatusCode status = s_coreStatusCodeAccessor(coreResponse);
                             WebHeaderCollection headers = s_coreHeadersAccessor(coreResponse);
 
-                            // Manual creation of HttpWebResponse here is not possible as this method is eventually called from the 
+                            // Manual creation of HttpWebResponse here is not possible as this method is eventually called from the
                             // HttpWebResponse ctor. So we will send Stop event with the Status and Headers payload
                             // to notify listeners about response;
                             // We use two different names for Stop events since one event with payload type that varies creates
-                            // complications for efficient payload parsing and is not supported by DiagnosicSource helper 
+                            // complications for efficient payload parsing and is not supported by DiagnosicSource helper
                             // libraries (e.g. Microsoft.Extensions.DiagnosticAdapter)
 
                             s_instance.RaiseResponseEvent(request, status, headers);
@@ -605,7 +605,7 @@ namespace System.Diagnostics
 
                 if (activity.IdFormat == ActivityIdFormat.W3C)
                 {
-                    // do not inject header if it was injected already 
+                    // do not inject header if it was injected already
                     // perhaps tracing systems wants to override it
                     if (request.Headers.Get(TraceParentHeaderName) == null)
                     {
@@ -620,7 +620,7 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    // do not inject header if it was injected already 
+                    // do not inject header if it was injected already
                     // perhaps tracing systems wants to override it
                     if (request.Headers.Get(RequestIdHeaderName) == null)
                     {

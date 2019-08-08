@@ -213,7 +213,7 @@ namespace System.Linq.Tests
 
             Assert.Throws<InvalidOperationException>(() => source.ToDictionary(keySelector, valueSelector));
         }
-        
+
         [Fact]
         public void ThrowsOnNullKey()
         {
@@ -301,7 +301,7 @@ namespace System.Linq.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("key", () => source.ToDictionary(e => e.Name, e => e, new AnagramEqualityComparer()));
         }
-        
+
         [Fact]
         public void ThrowsOnDuplicateKeys()
         {
@@ -314,7 +314,7 @@ namespace System.Linq.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => source.ToDictionary(e => e.Name, e => e, new AnagramEqualityComparer()));
         }
-        
+
         private static void AssertMatches<K, E>(IEnumerable<K> keys, IEnumerable<E> values, Dictionary<K, E> dict)
         {
             Assert.NotNull(dict);
@@ -324,7 +324,7 @@ namespace System.Linq.Tests
             {
                 foreach(var value in values)
                 {
-                    Assert.True(ke.MoveNext()); 
+                    Assert.True(ke.MoveNext());
                     var key = ke.Current;
                     E dictValue;
                     Assert.True(dict.TryGetValue(key, out dictValue));
@@ -345,7 +345,7 @@ namespace System.Linq.Tests
 
             AssertMatches(keys, elements, source.ToDictionary(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
-        
+
         [Fact]
         public void OneElementNullComparer()
         {
@@ -355,7 +355,7 @@ namespace System.Linq.Tests
 
             AssertMatches(keys, elements, source.ToDictionary(e => e.Name, e => e.Score, null));
         }
-        
+
         [Fact]
         public void SeveralElementsCustomComparerer()
         {
@@ -368,10 +368,10 @@ namespace System.Linq.Tests
                 new { Name = keys[3], Score = 90 },
                 new { Name = keys[4], Score = 45 }
             };
-            
+
             AssertMatches(keys, source, source.ToDictionary(e => e.Name, new AnagramEqualityComparer()));
         }
-        
+
         [Fact]
         public void NullCoalescedKeySelector()
         {

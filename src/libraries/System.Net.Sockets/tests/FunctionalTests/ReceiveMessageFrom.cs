@@ -202,7 +202,7 @@ namespace System.Net.Sockets.Tests
 
                 var mres = new ManualResetEventSlim();
                 saea.Completed += delegate { mres.Set(); };
-                
+
                 bool pending = receiver.ReceiveMessageFromAsync(saea);
                 for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {

@@ -117,12 +117,12 @@ namespace System.Xml.Schema
         private InferenceOption _occurrence = InferenceOption.Restricted;
         private InferenceOption _typeInference = InferenceOption.Restricted;
 
-        /*  internal struct ReplaceList 
+        /*  internal struct ReplaceList
           {
               internal XmlSchemaObjectCollection col;
               internal int position;
 
-              internal ReplaceList(XmlSchemaObjectCollection col, int position) 
+              internal ReplaceList(XmlSchemaObjectCollection col, int position)
               {
                   this.col = col;
                   this.position = position;
@@ -227,15 +227,15 @@ namespace System.Xml.Schema
                     InferElement(xse, false, _rootSchema);
                 }
 
-                /*  foreach (ReplaceList listItem in schemaList) 
+                /*  foreach (ReplaceList listItem in schemaList)
                   {
-                      if (listItem.position < listItem.col.Count) 
+                      if (listItem.position < listItem.col.Count)
                       {
                           XmlSchemaElement particle = listItem.col[listItem.position] as XmlSchemaElement;
-                          if (particle != null && (particle.RefName.Namespace == XmlSchema.Namespace)) 
+                          if (particle != null && (particle.RefName.Namespace == XmlSchema.Namespace))
                           {
                               XmlSchemaAny any = new XmlSchemaAny();
-                              if (particle.MaxOccurs != 1) 
+                              if (particle.MaxOccurs != 1)
                               {
                                   any.MaxOccurs = particle.MaxOccurs;
                               }
@@ -287,10 +287,10 @@ namespace System.Xml.Schema
             bool add = true;
 
             Debug.Assert(compiledAttributes != null); //AttributeUses is never null
-                                                      // First we need to look into the already compiled attributes 
+                                                      // First we need to look into the already compiled attributes
                                                       //   (they come from the schemaset which we got on input)
                                                       // If there are none or we don't find it there, then we must search the list of attributes
-                                                      //   where we are going to add a new one (if it doesn't exist). 
+                                                      //   where we are going to add a new one (if it doesn't exist).
                                                       //   This is necessary to avoid adding duplicate attribute declarations.
             ICollection searchCollectionPrimary, searchCollectionSecondary;
             if (compiledAttributes.Count > 0)
@@ -615,7 +615,7 @@ namespace System.Xml.Schema
                         addLocation.Insert(positionWithinCollection, elementReference);
                     }
                     returnedElement = elementReference;
-                    /* if (childURI == XmlSchema.Namespace) 
+                    /* if (childURI == XmlSchema.Namespace)
                      {
                          schemaList.Add(new ReplaceList(addLocation, positionWithinCollection));
                      }*/
@@ -908,7 +908,7 @@ namespace System.Xml.Schema
                     { //untill now the element was empty or SimpleType - it now becomes complex type
                         ct = new XmlSchemaComplexType();
                         xse.SchemaType = ct;
-                        if (!xse.SchemaTypeName.IsEmpty) //BUGBUG, This assumption is wrong 
+                        if (!xse.SchemaTypeName.IsEmpty) //BUGBUG, This assumption is wrong
                         {
                             ct.IsMixed = true;
                             xse.SchemaTypeName = XmlQualifiedName.Empty;
@@ -1772,7 +1772,7 @@ namespace System.Xml.Schema
                         return TF_float | TF_double | TF_string;
                     else
                         return TF_string;
-                //else 
+                //else
                 case 'I':       //try to match "INF"
                 INF:
                     if (s.Substring(i) == "INF")

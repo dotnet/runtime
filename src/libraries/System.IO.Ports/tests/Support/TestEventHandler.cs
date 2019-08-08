@@ -129,9 +129,9 @@ namespace Legacy.Support
             }
         }
 
-        // Since we can not guarantee the order or the exact time that the event handler is called 
-        // We will look for an event that was fired that matches the type and that bytesToRead 
-        // is greater then the parameter    
+        // Since we can not guarantee the order or the exact time that the event handler is called
+        // We will look for an event that was fired that matches the type and that bytesToRead
+        // is greater then the parameter
         public void Validate(T eventType, int bytesToRead)
         {
             lock (_lock)

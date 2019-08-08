@@ -18,7 +18,7 @@ namespace BasicEventSourceTests
             IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
 
         /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
+        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         /// Tests the ETW code path
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]

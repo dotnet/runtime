@@ -204,7 +204,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
         {
-            // On Linux (if no birth time), we synthesize CreationTime from the oldest of 
+            // On Linux (if no birth time), we synthesize CreationTime from the oldest of
             // status changed time (ctime) and write time (mtime)
             // Sanity check that it is in that range.
 

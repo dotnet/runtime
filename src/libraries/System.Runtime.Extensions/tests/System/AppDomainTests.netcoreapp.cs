@@ -37,8 +37,8 @@ namespace System.Tests
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
-        }    
- 
+        }
+
         [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)

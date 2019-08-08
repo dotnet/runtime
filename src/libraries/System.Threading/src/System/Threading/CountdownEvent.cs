@@ -108,7 +108,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Gets a <see cref="System.Threading.WaitHandle"/> that is used to wait for the event to be set. 
+        /// Gets a <see cref="System.Threading.WaitHandle"/> that is used to wait for the event to be set.
         /// </summary>
         /// <value>A <see cref="System.Threading.WaitHandle"/> that is used to wait for the event to be set.</value>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been disposed.</exception>
@@ -429,7 +429,7 @@ namespace System.Threading
         /// observe.</param>
         /// <remarks>
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
-        /// return immediately if the event is currently in a set state.  If the 
+        /// return immediately if the event is currently in a set state.  If the
         /// <see cref="System.Threading.CancellationToken">CancellationToken</see> being observed
         /// is canceled during the wait operation, an <see cref="System.OperationCanceledException"/>
         /// will be thrown.

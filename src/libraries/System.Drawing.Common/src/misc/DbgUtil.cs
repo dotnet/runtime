@@ -22,26 +22,26 @@ namespace System.Drawing.Internal
                 return;
             }
 
-            try 
+            try
             {
                 BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Static | BindingFlags.Instance;
                 FieldInfo allocSiteFld = obj.GetType().GetField("AllocationSite", bindingFlags);
                 string allocationSite = allocSiteFld != null ? allocSiteFld.GetValue( obj ).ToString() : "<Allocation site unavailable>";
-                
+
                 // ignore ojects created by WindowsGraphicsCacheManager.
                 if( allocationSite.Contains("WindowsGraphicsCacheManager") )
                 {
                     return;
                 }
-    
+
                 Debug.Fail("Object Disposed through finalization - it should be explicitly disposed.");
-                Debug.WriteLine("Allocation stack:\r\n" + allocationSite); 
-            } 
+                Debug.WriteLine("Allocation stack:\r\n" + allocationSite);
+            }
             catch(Exception ex)
             {
                 try
                 {
-                    Debug.WriteLine("Exception thrown while trying to get allocation stack: " + ex); 
+                    Debug.WriteLine("Exception thrown while trying to get allocation stack: " + ex);
                 }
                 catch
                 {

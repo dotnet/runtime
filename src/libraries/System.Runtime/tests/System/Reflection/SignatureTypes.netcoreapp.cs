@@ -369,7 +369,7 @@ namespace System.Reflection.Tests
             [Marker(0)] public static void Moo(int x, int[] y) { }
             [Marker(1)] public static void Moo<T>(T x, T[] y) { }
             [Marker(2)] public static void Moo<T>(int x, int[] y) { }
-            [Marker(3)] public static void Moo<T, U>(T x, U[] y) { } 
+            [Marker(3)] public static void Moo<T, U>(T x, U[] y) { }
             [Marker(4)] public static void Moo<T, U>(int x, int[] y) { }
         }
 
@@ -408,7 +408,7 @@ namespace System.Reflection.Tests
             Assert.Equal(MemberTypes.TypeInfo, type.MemberType);
             Assert.Same(type, type.UnderlyingSystemType);
 
-            // SignatureTypes don't override Equality/GetHashCode at this time, but they don't promise never to do so either. 
+            // SignatureTypes don't override Equality/GetHashCode at this time, but they don't promise never to do so either.
             // Thus, we'll only test the most basic behavior.
             Assert.True(type.Equals((object)type));
             Assert.True(type.Equals((Type)type));
@@ -518,7 +518,7 @@ namespace System.Reflection.Tests
 
                 if (type.IsGenericTypeParameter)
                 {
-                    throw new Exception("Unexpected: There is no mechanism at this time to create Signature Types of generic parameters on types.");    
+                    throw new Exception("Unexpected: There is no mechanism at this time to create Signature Types of generic parameters on types.");
                 }
                 else
                 {

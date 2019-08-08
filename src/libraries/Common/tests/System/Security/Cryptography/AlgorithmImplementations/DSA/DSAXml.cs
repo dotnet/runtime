@@ -436,7 +436,7 @@ S      9      R      /       j       6       9        C        v        C
                 using (DSA dsaPriv = DSAFactory.Create())
                 {
                     dsaPriv.FromXmlString(xmlPriv);
-                    
+
                     DSAImportExport.AssertKeyEquals(pubPriv, dsaPriv.ExportParameters(true));
                     DSAImportExport.AssertKeyEquals(pubOnly, dsaPriv.ExportParameters(false));
                 }

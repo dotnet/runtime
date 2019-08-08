@@ -104,7 +104,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var options = new[]
             {
-                // Actual values used here aren't important; just want to make sure the block works 
+                // Actual values used here aren't important; just want to make sure the block works
                 // with these properties set to non-default values
                 new ExecutionDataflowBlockOptions { },
                 new ExecutionDataflowBlockOptions { BoundedCapacity = 1 },
@@ -128,10 +128,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 foreach (var option in options)
                 {
                     string result = null;
-                    foreach (var target in new[] 
-                        { 
+                    foreach (var target in new[]
+                        {
                             new ActionBlock<char>(c => result += c, option), // sync
-                            new ActionBlock<char>(c => Task.Run(() => result += c), option) // async 
+                            new ActionBlock<char>(c => Task.Run(() => result += c), option) // async
                         })
                     {
                         result = "";
@@ -174,8 +174,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var scheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
 
                 var actionBlockSync = new ActionBlock<int>(_ => Assert.Equal(scheduler.Id, TaskScheduler.Current.Id),
-                    new ExecutionDataflowBlockOptions 
-                    { 
+                    new ExecutionDataflowBlockOptions
+                    {
                         TaskScheduler = scheduler,
                         SingleProducerConstrained = singleProducerConstrained
                     });
@@ -239,7 +239,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             {
                 var options = new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducerConstrained };
                 int prev = -1;
-                Action<int> body = i => 
+                Action<int> body = i =>
                 {
                     Assert.Equal(expected: prev + 1, actual: i);
                     prev = i;
@@ -477,7 +477,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             AggregateException e = ab1.Completion.Exception;
             Assert.Equal(expected: 1, actual: e.InnerExceptions.Count);
             Assert.Equal(expected: "42", actual: (string)e.InnerException.Data[DataKey]);
-        
+
             // Test case where message's ToString throws
             var ab2 = new ActionBlock<ObjectWithFaultyToString>((Action<ObjectWithFaultyToString>)(i => { throw new FormatException(); }));
             ab2.Post(new ObjectWithFaultyToString());

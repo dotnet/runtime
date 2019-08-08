@@ -22,7 +22,7 @@ namespace System.Threading.Tasks.Tests
             ParallelOptions options = new ParallelOptions();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = 0);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = -2);
-            
+
             // Parallel.Invoke tests
             Action[] smallActionArray = new Action[] { () => { } };
             Action[] largeActionArray = new Action[15];
@@ -37,11 +37,11 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             options.CancellationToken = cts.Token;
             cts.Cancel();
-            EnsureOperationCanceledExceptionThrown(() => Parallel.Invoke(options, smallActionArray), options.CancellationToken, 
+            EnsureOperationCanceledExceptionThrown(() => Parallel.Invoke(options, smallActionArray), options.CancellationToken,
                 "RunParallelExceptionTests:  FAILED.  Expected CT on Parallel.Invoke(optionsWithPreCanceledToken, smallArray)");
             EnsureOperationCanceledExceptionThrown(() => Parallel.Invoke(options, largeActionArray), options.CancellationToken,
                "RunParallelExceptionTests:  FAILED.  Expected CT on Parallel.Invoke(optionsWithPreCanceledToken, largeArray)");
-            
+
             //
             // Parallel.For(32) tests
             //
@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Tests
             AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, () => "", null, _ => { }));
             AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0, 10, options, () => "", (a, b, c) => "", null));
 
-            // 
+            //
             // Parallel.For(64) tests
             //
 
@@ -409,7 +409,7 @@ namespace System.Threading.Tasks.Tests
             {
                 seqForIndices.Add(i);
             }
-            
+
             Parallel.For(inclusiveFrom, exclusiveTo, i =>
             {
                 lock (parForIndices)
@@ -439,7 +439,7 @@ namespace System.Threading.Tasks.Tests
             {
                 seqForIndices.Add(i);
             }
-            
+
             Parallel.For(inclusiveFrom, exclusiveTo, i =>
             {
                 lock (parForIndices)
@@ -967,7 +967,7 @@ namespace System.Threading.Tasks.Tests
                         delegate { usedScheduler = TaskScheduler.Current; }
                     );
                     Assert.True(usedScheduler == myTaskScheduler, "TestParallelScheduler:    > FAILED.  PInvoke: Failed to run with TS.Current when null was specified.");
-                    
+
                     // Some tests for wonky behavior seen before fixes
                     TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
                     bool timeExpired = false;
@@ -1030,7 +1030,7 @@ namespace System.Threading.Tasks.Tests
             counter = 0;
             Action a2 = delegate
             {
-                // Return value isn't guaranteed to be locked... so store it off to prevent other thread 
+                // Return value isn't guaranteed to be locked... so store it off to prevent other thread
                 // from incrementing it while we check the value.  Otherwise it's entirely possible to skip this entirely
                 // since with 2 DOP it's entirely possible for the returned value to be 1 or 2.
                 // the expected value leaving should always be 2 with 2 DOP though.
@@ -1047,7 +1047,7 @@ namespace System.Threading.Tasks.Tests
             });
 
             Debug.WriteLine("Saw counter get incremented to " + counter + " with 2 degrees of parallelism");
-            
+
             Assert.False((counter == numActions) || (counter > 2),
                     string.Format("TestInvokeDOPAndCancel:    > FAILED!  Cancellation was not correctly effected.  Saw {0} calls to the Action delegate", counter));
 
@@ -1081,15 +1081,15 @@ namespace System.Threading.Tasks.Tests
                 if (newVal == 1) throw new Exception("a singleton exception");
             };
             for (int i = 0; i < numActions; i++) actions[i] = a4;
-            
+
             Assert.Throws<AggregateException>(()=>
             {
                 Parallel.Invoke(actions);
             });
-            
+
             Assert.True(counter == numActions,
                     string.Format("TestInvokeDOPAndCancel:    > FAILED!  exception prevented actions from executing ({0}/{1} executed).", counter, numActions));
-            
+
             // Test that simple example doesn't deadlock
             ManualResetEvent mres = new ManualResetEvent(false);
             Parallel.Invoke(
@@ -1209,7 +1209,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Test to ensure that the task ID can be accessed from inside the task 
+        /// Test to ensure that the task ID can be accessed from inside the task
         /// </summary>
         [Fact]
         public static void TaskIDFromExternalContextTest()

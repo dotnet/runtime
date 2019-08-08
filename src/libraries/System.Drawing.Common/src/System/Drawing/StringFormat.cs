@@ -88,7 +88,7 @@ namespace System.Drawing
                     Gdip.GdipDeleteStringFormat(new HandleRef(this, nativeFormat));
 #if DEBUG
                     Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -330,14 +330,14 @@ namespace System.Drawing
 
         /// <summary>
         /// Gets a generic default <see cref='StringFormat'/>.
-        /// Remarks from MSDN: A generic, default StringFormat object has the following characteristics: 
-        /// - No string format flags are set. 
-        /// - Character alignment and line alignment are set to StringAlignmentNear. 
-        /// - Language ID is set to neutral language, which means that the current language associated with the calling thread is used. 
-        /// - String digit substitution is set to StringDigitSubstituteUser. 
-        /// - Hot key prefix is set to HotkeyPrefixNone. 
-        /// - Number of tab stops is set to zero. 
-        /// - String trimming is set to StringTrimmingCharacter. 
+        /// Remarks from MSDN: A generic, default StringFormat object has the following characteristics:
+        /// - No string format flags are set.
+        /// - Character alignment and line alignment are set to StringAlignmentNear.
+        /// - Language ID is set to neutral language, which means that the current language associated with the calling thread is used.
+        /// - String digit substitution is set to StringDigitSubstituteUser.
+        /// - Hot key prefix is set to HotkeyPrefixNone.
+        /// - Number of tab stops is set to zero.
+        /// - String trimming is set to StringTrimmingCharacter.
         /// </summary>
         public static StringFormat GenericDefault
         {
@@ -355,14 +355,14 @@ namespace System.Drawing
 
         /// <summary>
         /// Gets a generic typographic <see cref='StringFormat'/>.
-        /// Remarks from MSDN: A generic, typographic StringFormat object has the following characteristics: 
-        /// - String format flags StringFormatFlagsLineLimit, StringFormatFlagsNoClip, and StringFormatFlagsNoFitBlackBox are set. 
-        /// - Character alignment and line alignment are set to StringAlignmentNear. 
+        /// Remarks from MSDN: A generic, typographic StringFormat object has the following characteristics:
+        /// - String format flags StringFormatFlagsLineLimit, StringFormatFlagsNoClip, and StringFormatFlagsNoFitBlackBox are set.
+        /// - Character alignment and line alignment are set to StringAlignmentNear.
         /// - Language ID is set to neutral language, which means that the current language associated with the calling thread is used.
-        /// - String digit substitution is set to StringDigitSubstituteUser. 
-        /// - Hot key prefix is set to HotkeyPrefixNone. 
-        /// - Number of tab stops is set to zero. 
-        /// - String trimming is set to StringTrimmingNone. 
+        /// - String digit substitution is set to StringDigitSubstituteUser.
+        /// - Hot key prefix is set to HotkeyPrefixNone.
+        /// - Number of tab stops is set to zero.
+        /// - String trimming is set to StringTrimmingNone.
         /// </summary>
         public static StringFormat GenericTypographic
         {
@@ -449,4 +449,3 @@ namespace System.Drawing
         }
     }
 }
-

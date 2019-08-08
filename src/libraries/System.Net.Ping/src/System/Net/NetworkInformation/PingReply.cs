@@ -13,10 +13,10 @@ namespace System.Net.NetworkInformation
         private readonly byte[] _buffer;
 
         internal PingReply(
-            IPAddress address, 
-            PingOptions options, 
-            IPStatus ipStatus, 
-            long rtt, 
+            IPAddress address,
+            PingOptions options,
+            IPStatus ipStatus,
+            long rtt,
             byte[] buffer)
         {
             _address = address;

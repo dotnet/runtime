@@ -7,10 +7,10 @@
 **
 **
 ** Provides a way for an app to not start an operation unless
-** there's a reasonable chance there's enough memory 
+** there's a reasonable chance there's enough memory
 ** available for the operation to succeed.
 **
-** 
+**
 ===========================================================*/
 
 using System.Threading;
@@ -18,52 +18,52 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 
-/* 
-   This class allows an application to fail before starting certain 
+/*
+   This class allows an application to fail before starting certain
    activities.  The idea is to fail early instead of failing in the middle
-   of some long-running operation to increase the survivability of the 
-   application and ensure you don't have to write tricky code to handle an 
+   of some long-running operation to increase the survivability of the
+   application and ensure you don't have to write tricky code to handle an
    OOM anywhere in your app's code (which implies state corruption, meaning you
    should unload the appdomain, if you have a transacted environment to ensure
    rollback of individual transactions).  This is an incomplete tool to attempt
-   hoisting all your OOM failures from anywhere in your worker methods to one 
+   hoisting all your OOM failures from anywhere in your worker methods to one
    particular point where it is easier to handle an OOM failure, and you can
-   optionally choose to not start a workitem if it will likely fail.  This does 
-   not help the performance of your code directly (other than helping to avoid 
-   AD unloads).  The point is to avoid starting work if it is likely to fail.  
-   The Enterprise Services team has used these memory gates effectively in the 
+   optionally choose to not start a workitem if it will likely fail.  This does
+   not help the performance of your code directly (other than helping to avoid
+   AD unloads).  The point is to avoid starting work if it is likely to fail.
+   The Enterprise Services team has used these memory gates effectively in the
    unmanaged world for a decade.
 
    In Whidbey, we will simply check to see if there is enough memory available
    in the OS's page file & attempt to ensure there might be enough space free
    within the process's address space (checking for address space fragmentation
    as well).  We will not commit or reserve any memory.  To avoid race conditions with
-   other threads using MemoryFailPoints, we'll also keep track of a 
-   process-wide amount of memory "reserved" via all currently-active 
+   other threads using MemoryFailPoints, we'll also keep track of a
+   process-wide amount of memory "reserved" via all currently-active
    MemoryFailPoints.  This has two problems:
-      1) This can account for memory twice.  If a thread creates a 
-         MemoryFailPoint for 100 MB then allocates 99 MB, we'll see 99 MB 
-         less free memory and 100 MB less reserved memory.  Yet, subtracting 
+      1) This can account for memory twice.  If a thread creates a
+         MemoryFailPoint for 100 MB then allocates 99 MB, we'll see 99 MB
+         less free memory and 100 MB less reserved memory.  Yet, subtracting
          off the 100 MB is necessary because the thread may not have started
-         allocating memory yet.  Disposing of this class immediately after 
+         allocating memory yet.  Disposing of this class immediately after
          front-loaded allocations have completed is a great idea.
-      2) This is still vulnerable to race conditions with other threads that don't use 
+      2) This is still vulnerable to race conditions with other threads that don't use
          MemoryFailPoints.
-   So this class is far from perfect.  But it may be good enough to 
+   So this class is far from perfect.  But it may be good enough to
    meaningfully reduce the frequency of OutOfMemoryExceptions in managed apps.
 
    In Orcas or later, we might allocate some memory from the OS and add it
    to a allocation context for this thread.  Obviously, at that point we need
-   some way of conveying when we release this block of memory.  So, we 
+   some way of conveying when we release this block of memory.  So, we
    implemented IDisposable on this type in Whidbey and expect all users to call
-   this from within a using block to provide lexical scope for their memory 
+   this from within a using block to provide lexical scope for their memory
    usage.  The call to Dispose (implicit with the using block) will give us an
-   opportunity to release this memory, perhaps.  We anticipate this will give 
+   opportunity to release this memory, perhaps.  We anticipate this will give
    us the possibility of a more effective design in a future version.
 
    In Orcas, we may also need to differentiate between allocations that would
-   go into the normal managed heap vs. the large object heap, or we should 
-   consider checking for enough free space in both locations (with any 
+   go into the normal managed heap vs. the large object heap, or we should
+   consider checking for enough free space in both locations (with any
    appropriate adjustments to ensure the memory is contiguous).
 */
 
@@ -80,8 +80,8 @@ namespace System.Runtime
         private static readonly ulong s_topOfMemory = GetTopOfMemory();
 
         // Walking the address space is somewhat expensive, taking around half
-        // a millisecond.  Doing that per transaction limits us to a max of 
-        // ~2000 transactions/second.  Instead, let's do this address space 
+        // a millisecond.  Doing that per transaction limits us to a max of
+        // ~2000 transactions/second.  Instead, let's do this address space
         // walk once every 10 seconds, or when we will likely fail.  This
         // amortization scheme can reduce the cost of a memory gate by about
         // a factor of 100.
@@ -123,7 +123,7 @@ namespace System.Runtime
         private const int MemoryCheckGranularity = 16;
 
         // Note: This may become dynamically tunable in the future.
-        // Also note that we can have different segment sizes for the normal vs. 
+        // Also note that we can have different segment sizes for the normal vs.
         // large object heap.  We currently use the max of the two.
         private static readonly ulong s_GCSegmentSize = GC.GetSegmentSize();
 
@@ -150,7 +150,7 @@ namespace System.Runtime
             _reservedMemory = size;
 
             // Check to see that we both have enough memory on the system
-            // and that we have enough room within the user section of the 
+            // and that we have enough room within the user section of the
             // process's address space.  Also, we need to use the GC segment
             // size, not the amount of memory the user wants to allocate.
             // Consider correcting this to reflect free memory within the GC
@@ -166,15 +166,15 @@ namespace System.Runtime
             ulong availPageFile = 0;  // available VM (physical + page file)
             ulong totalAddressSpaceFree = 0;  // non-contiguous free address space
 
-            // Check for available memory, with 2 attempts at getting more 
-            // memory.  
-            // Stage 0: If we don't have enough, trigger a GC.  
+            // Check for available memory, with 2 attempts at getting more
+            // memory.
+            // Stage 0: If we don't have enough, trigger a GC.
             // Stage 1: If we don't have enough, try growing the swap file.
             // Stage 2: Update memory state, then fail or leave loop.
             //
-            // (In the future, we could consider adding another stage after 
+            // (In the future, we could consider adding another stage after
             // Stage 0 to run finalizers.  However, before doing that make sure
-            // that we could abort this constructor when we call 
+            // that we could abort this constructor when we call
             // GC.WaitForPendingFinalizers, noting that this method uses a CER
             // so it can't be aborted, and we have a critical finalizer.  It
             // would probably work, but do some thinking first.)
@@ -226,8 +226,8 @@ namespace System.Runtime
                     case 0:
                         // The GC will release empty segments to the OS.  This will
                         // relieve us from having to guess whether there's
-                        // enough memory in either GC heap, and whether 
-                        // internal fragmentation will prevent those 
+                        // enough memory in either GC heap, and whether
+                        // internal fragmentation will prevent those
                         // allocations from succeeding.
                         GC.Collect();
                         continue;
@@ -247,7 +247,7 @@ namespace System.Runtime
                         continue;
 
                     case 2:
-                        // The call to CheckForAvailableMemory above updated our 
+                        // The call to CheckForAvailableMemory above updated our
                         // state.
                         if (needPageFile || needAddressSpace)
                         {
@@ -302,9 +302,9 @@ namespace System.Runtime
         // Applications must call Dispose, which conceptually "releases" the
         // memory that was "reserved" by the MemoryFailPoint.  This affects a
         // global count of reserved memory in this version (helping to throttle
-        // future MemoryFailPoints) in this version.  We may in the 
+        // future MemoryFailPoints) in this version.  We may in the
         // future create an allocation context and release it in the Dispose
-        // method.  While the finalizer will eventually free this block of 
+        // method.  While the finalizer will eventually free this block of
         // memory, apps will help their performance greatly by calling Dispose.
         public void Dispose()
         {
@@ -326,10 +326,10 @@ namespace System.Runtime
             }
 
             /*
-            // Prototype performance 
+            // Prototype performance
             // Let's pretend that we returned at least some free memory to
             // the GC heap.  We don't know this is true - the objects could
-            // have a longer lifetime, and the memory could be elsewhere in the 
+            // have a longer lifetime, and the memory could be elsewhere in the
             // GC heap.  Additionally, we subtracted off the segment size, not
             // this size.  That's ok - we don't mind if this slowly degrades
             // and requires us to refresh the value a little bit sooner.

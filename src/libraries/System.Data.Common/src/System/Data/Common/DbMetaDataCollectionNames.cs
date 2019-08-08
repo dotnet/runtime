@@ -13,4 +13,3 @@ namespace System.Data.Common
         public static readonly string ReservedWords = "ReservedWords";
     }
 }
-

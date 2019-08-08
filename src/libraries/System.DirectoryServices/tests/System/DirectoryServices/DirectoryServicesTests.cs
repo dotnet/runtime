@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,14 +13,14 @@ namespace System.DirectoryServices.Tests
     {
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
-        
+
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestOU() // adding and removing organization unit
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
                 string ouName = "NetCoreDevs";
-                
+
                 // ensure cleanup before doing the creation.
                 DeleteOU(de, ouName);
 
@@ -29,7 +29,7 @@ namespace System.DirectoryServices.Tests
                 {
                     SearchOUByName(de, ouName);
                 }
-                finally 
+                finally
                 {
                     // Clean up the added ou
                     DeleteOU(de, ouName);
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.Tests
         }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
-        public void TestPropertyCaching() 
+        public void TestPropertyCaching()
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
@@ -90,7 +90,7 @@ namespace System.DirectoryServices.Tests
                         using (DirectoryEntry userEntry = CreateOrganizationalRole(rootOU, "caching.user.1", "User 1 in caching OU", "1 111 111 1111"))
                         {
                             Assert.True(userEntry.UsePropertyCache);
-                            
+
                             SearchOrganizationalRole(rootOU, "caching.user.1");
                             string originalPhone = (string) userEntry.Properties["telephoneNumber"].Value;
                             string newPhone = "1 222 222 2222";
@@ -127,12 +127,12 @@ namespace System.DirectoryServices.Tests
         }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
-        public void TestMoveTo() 
+        public void TestMoveTo()
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "MoveingOU");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "MoveingOU", "Moving Root OU"))
@@ -173,7 +173,7 @@ namespace System.DirectoryServices.Tests
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "CopyingOU");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "CopyingOU", "Copying Root OU"))
@@ -198,12 +198,12 @@ namespace System.DirectoryServices.Tests
         }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
-        public void TestRename() 
+        public void TestRename()
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "RenamingOU");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "RenamingOU", "Renaming Root OU"))
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.Tests
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "GrandParent");
-                
+
                 try
                 {
                     using (DirectoryEntry grandOU = CreateOU(de, "GrandParent", "Grand Parent OU"))
@@ -257,14 +257,14 @@ namespace System.DirectoryServices.Tests
                 }
             }
         }
-        
+
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestDeleteTree()
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "RootToDelete");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "RootToDelete", "Root OU"))
@@ -346,8 +346,8 @@ namespace System.DirectoryServices.Tests
             }
 
             using (DirectoryEntry de = new DirectoryEntry(
-                                            LdapConfiguration.Configuration.LdapPath, 
-                                            LdapConfiguration.Configuration.UserName, 
+                                            LdapConfiguration.Configuration.LdapPath,
+                                            LdapConfiguration.Configuration.UserName,
                                             "wrongPassword"
                                             ))
             {
@@ -364,8 +364,8 @@ namespace System.DirectoryServices.Tests
         public void TestInvalidSearchFilter()
         {
             using (DirectoryEntry de = new DirectoryEntry(
-                                            LdapConfiguration.Configuration.LdapPath, 
-                                            LdapConfiguration.Configuration.UserName, 
+                                            LdapConfiguration.Configuration.LdapPath,
+                                            LdapConfiguration.Configuration.UserName,
                                             "wrongPassword"
                                             ))
             {
@@ -383,7 +383,7 @@ namespace System.DirectoryServices.Tests
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "NegativeRoot");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "NegativeRoot", "Negative Test Root OU"))
@@ -408,7 +408,7 @@ namespace System.DirectoryServices.Tests
             using (DirectoryEntry de = CreateRootEntry())
             {
                 DeleteOU(de, "SearchRoot");
-                
+
                 try
                 {
                     using (DirectoryEntry rootOU = CreateOU(de, "SearchRoot", "Root OU"))
@@ -440,10 +440,10 @@ namespace System.DirectoryServices.Tests
 
                             ds.Filter = "(ou=Search.Child1)";
                             Assert.Equal(1, ds.FindAll().Count);
-                            
+
                             ds.Filter = "(ou=Search.Child2)";
                             Assert.Equal(1, ds.FindAll().Count);
-                            
+
                             ds.Filter = "(ou=Search.GrandChild)";
                             Assert.Equal(1, ds.FindAll().Count);
 

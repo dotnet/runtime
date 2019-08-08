@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] valueHash,
                 byte[] signature,
-#endif                
+#endif
                 string digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] signature = dsa.CreateSignature(dataHash);
                 signatureValue = DsaIeeeToDer(new ReadOnlySpan<byte>(signature));
                 return true;
-#endif                
+#endif
             }
         }
     }

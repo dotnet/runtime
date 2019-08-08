@@ -49,4 +49,3 @@ namespace Microsoft.Win32
         }
     }
 }
-

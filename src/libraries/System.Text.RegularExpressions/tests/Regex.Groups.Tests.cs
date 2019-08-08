@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -480,13 +480,13 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?<cat>cat)\s+(?<dog>dog)\s+\123\s+\234", "asdfcat   dog     cat23    dog34eia", RegexOptions.ECMAScript, new string[] { "cat   dog     cat23    dog34", "cat", "dog" } };
 
             // Balanced Matching
-            yield return new object[] { @"<div> 
-            (?> 
-                <div>(?<DEPTH>) |   
-                </div> (?<-DEPTH>) |  
+            yield return new object[] { @"<div>
+            (?>
+                <div>(?<DEPTH>) |
+                </div> (?<-DEPTH>) |
                 .?
             )*?
-            (?(DEPTH)(?!)) 
+            (?(DEPTH)(?!))
             </div>", "<div>this is some <div>red</div> text</div></div></div>", RegexOptions.IgnorePatternWhitespace, new string[] { "<div>this is some <div>red</div> text</div>", "" } };
 
             yield return new object[] { @"(
@@ -643,7 +643,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 defaultCulture = new CultureInfo("en-US");
             }
-            
+
             return defaultCulture;
         }
 

@@ -107,11 +107,11 @@ namespace System.ComponentModel.Composition.Factories
                     //Assert.AreEqual("Error", identifier.Item1);
 
                     errors.Add(Create(identifier.Item1, innerException));
-                }                
+                }
             }
 
             if (errors.Count == 0)
-            {   
+            {
                 return exception;
             }
 
@@ -170,7 +170,7 @@ namespace System.ComponentModel.Composition.Factories
                         break;
                     }
                 }
-                
+
                 builder.Append(c);
             }
 

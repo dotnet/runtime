@@ -75,8 +75,8 @@ namespace System.Diagnostics
                 if (value.Length == 0)
                     throw new ArgumentException(SR.Format(SR.InvalidProperty, nameof(CategoryName), value), nameof(value));
 
-                // the lock prevents a race between setting CategoryName and MachineName, since this permission 
-                // checks depend on both pieces of info. 
+                // the lock prevents a race between setting CategoryName and MachineName, since this permission
+                // checks depend on both pieces of info.
                 lock (this)
                 {
                     _categoryName = value;
@@ -139,8 +139,8 @@ namespace System.Diagnostics
                 if (!SyntaxCheck.CheckMachineName(value))
                     throw new ArgumentException(SR.Format(SR.InvalidProperty, nameof(MachineName), value), nameof(value));
 
-                // the lock prevents a race between setting CategoryName and MachineName, since this permission 
-                // checks depend on both pieces of info. 
+                // the lock prevents a race between setting CategoryName and MachineName, since this permission
+                // checks depend on both pieces of info.
                 lock (this)
                 {
                     _machineName = value;
@@ -260,8 +260,8 @@ namespace System.Diagnostics
             if (!CheckValidId(categoryName, MaxCategoryNameLength))
                 throw new ArgumentException(SR.Format(SR.PerfInvalidCategoryName, 1, MaxCategoryNameLength));
 
-            // 1026 chars is the size of the buffer used in perfcounter.dll to get this name.  
-            // If the categoryname plus prefix is too long, we won't be able to read the category properly. 
+            // 1026 chars is the size of the buffer used in perfcounter.dll to get this name.
+            // If the categoryname plus prefix is too long, we won't be able to read the category properly.
             if (categoryName.Length > (1024 - SharedPerformanceCounter.DefaultFileMappingName.Length))
                 throw new ArgumentException(SR.CategoryNameTooLong);
         }

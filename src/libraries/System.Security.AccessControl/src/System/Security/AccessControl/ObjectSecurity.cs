@@ -41,18 +41,18 @@ namespace System.Security.AccessControl
         private bool _groupModified = false;
         private bool _saclModified = false;
         private bool _daclModified = false;
-        
+
         // only these SACL control flags will be automatically carry forward
         // when update with new security descriptor.
-        private const ControlFlags SACL_CONTROL_FLAGS = 
-            ControlFlags.SystemAclPresent | 
+        private const ControlFlags SACL_CONTROL_FLAGS =
+            ControlFlags.SystemAclPresent |
             ControlFlags.SystemAclAutoInherited |
             ControlFlags.SystemAclProtected;
 
         // only these DACL control flags will be automatically carry forward
         // when update with new security descriptor
-        private const ControlFlags DACL_CONTROL_FLAGS = 
-            ControlFlags.DiscretionaryAclPresent | 
+        private const ControlFlags DACL_CONTROL_FLAGS =
+            ControlFlags.DiscretionaryAclPresent |
             ControlFlags.DiscretionaryAclAutoInherited |
             ControlFlags.DiscretionaryAclProtected;
 
@@ -63,7 +63,7 @@ namespace System.Security.AccessControl
         protected ObjectSecurity()
         {
         }
-        
+
         protected ObjectSecurity( bool isContainer, bool isDS )
             : this()
         {
@@ -96,7 +96,7 @@ namespace System.Security.AccessControl
                 _ownerModified = true;
                 _securityDescriptor.Owner = newOne.Owner;
             }
- 
+
             if (( includeSections & AccessControlSections.Group ) != 0 )
             {
                 _groupModified = true;
@@ -133,8 +133,8 @@ namespace System.Security.AccessControl
                 // may contains DACL present flag. That needs to be carried forward! Therefore, we OR
                 // the current _securityDescriptor.s DACL present flag.
                 ControlFlags daclFlag = (_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclPresent);
-                
-                _securityDescriptor.UpdateControlFlags(DACL_CONTROL_FLAGS, 
+
+                _securityDescriptor.UpdateControlFlags(DACL_CONTROL_FLAGS,
                     (ControlFlags)((newOne.ControlFlags | daclFlag) & DACL_CONTROL_FLAGS));
             }
          }
@@ -567,7 +567,7 @@ namespace System.Security.AccessControl
         {
             return true; // SDDL to binary conversions are supported on Windows 2000 and higher
         }
-        
+
         public string GetSecurityDescriptorSddlForm( AccessControlSections includeSections )
         {
             ReadLock();
@@ -665,10 +665,10 @@ nameof(includeSections));
         public abstract Type AccessRightType { get; }
         public abstract Type AccessRuleType { get; }
         public abstract Type AuditRuleType { get; }
-        
+
         protected abstract bool ModifyAccess( AccessControlModification modification, AccessRule rule, out bool modified);
         protected abstract bool ModifyAudit( AccessControlModification modification, AuditRule rule, out bool modified );
-        
+
         public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule, out bool modified)
         {
             if ( rule == null )
@@ -679,7 +679,7 @@ nameof(includeSections));
             if ( !this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
             {
                 throw new ArgumentException(
-                    SR.AccessControl_InvalidAccessRuleType, 
+                    SR.AccessControl_InvalidAccessRuleType,
 nameof(rule));
             }
 
@@ -694,7 +694,7 @@ nameof(rule));
                 WriteUnlock();
             }
         }
-        
+
         public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule, out bool modified)
         {
             if ( rule == null )
@@ -705,7 +705,7 @@ nameof(rule));
             if ( !this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
             {
                 throw new ArgumentException(
-                    SR.AccessControl_InvalidAuditRuleType, 
+                    SR.AccessControl_InvalidAuditRuleType,
 nameof(rule));
             }
 
@@ -720,9 +720,9 @@ nameof(rule));
                 WriteUnlock();
             }
         }
-        
+
         public abstract AccessRule AccessRuleFactory( IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type );
-        
+
         public abstract AuditRule AuditRuleFactory( IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags );
         #endregion
     }

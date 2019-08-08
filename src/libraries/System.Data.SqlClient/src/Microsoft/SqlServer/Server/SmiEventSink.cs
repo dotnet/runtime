@@ -13,12 +13,12 @@ using System.Data;
 namespace Microsoft.SqlServer.Server
 {
     // SqlEventSink is implemented by calling code.  In all methods that accept
-    // a SqlEventSink directly the sink must be able to handle multiple callbacks 
+    // a SqlEventSink directly the sink must be able to handle multiple callbacks
     // without control returning from the original call.
 
     // Methods that do not accept SmiEventSync are (generally) ProcessEvent on
-    // the SmiEventStream methods returning a SmiEventStream and methods that 
-    // are certain to never call to the server (most will, for in-proc back end). 
+    // the SmiEventStream methods returning a SmiEventStream and methods that
+    // are certain to never call to the server (most will, for in-proc back end).
 
     // Methods are commented with their corresponding TDS token
 
@@ -30,4 +30,3 @@ namespace Microsoft.SqlServer.Server
     {
     }
 }
-

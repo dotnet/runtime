@@ -182,7 +182,7 @@ namespace System.Timers
 
         /// <summary>
         /// Sets the enable property in design mode to true by default.
-        /// </summary>                              
+        /// </summary>
         public override ISite Site
         {
             get => base.Site;

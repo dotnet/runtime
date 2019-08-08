@@ -108,7 +108,7 @@ namespace System.DirectoryServices.AccountManagement
             this.domainDnsName = userSuppliedServerName;
 
             //
-            // Find the partition in which the supplied ctxBase belongs by comparing it with the list of partitions hosted by this 
+            // Find the partition in which the supplied ctxBase belongs by comparing it with the list of partitions hosted by this
             // LDS (ADAM) instance.
             //
             using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.userSuppliedServerName + "/rootDse", "", "", AuthenticationTypes.Anonymous))
@@ -250,9 +250,9 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //------------------------------------------------------------------------------------
-        // Taking a server target and Auxillary class name return 
+        // Taking a server target and Auxillary class name return
         // a list of all possible objectClasses that include that auxClass.  A search for object that have a specific
-        // aux class cannot be done directly on the objects because static auxClasses to not appear in the 
+        // aux class cannot be done directly on the objects because static auxClasses to not appear in the
         // actual object.  This is done by
         // 1.  Searching the schema container for schema classes that include the aux class as a
         //      SystemAuxiliaryClass.  This covers StaticAuxClasses.
@@ -341,7 +341,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (principalType == typeof(Principal))
                     {
-                        // IF we are searching for a principal then we also have to add Group type into the filter...                    
+                        // IF we are searching for a principal then we also have to add Group type into the filter...
                         return _cachedBindableObjectFilter + "(objectClass=group))";
                     }
                     else
@@ -374,7 +374,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // This table maps properties where the non-presence of the property
         // indicates the state shown in the table.  When searching for these properties
-        // If the state desired matches that default state then we also must search for 
+        // If the state desired matches that default state then we also must search for
         // non-existence of the attribute.
         private static object[,] s_presenceStateTable =
         {
@@ -488,4 +488,3 @@ namespace System.DirectoryServices.AccountManagement
         };
     }
 }
-

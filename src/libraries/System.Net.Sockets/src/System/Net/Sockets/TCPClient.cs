@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on 
+        // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on
         // the specified host.
         public TcpClient(string hostname, int port)
         {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -41,7 +41,7 @@ namespace System.Reflection.Context
             // Mimic the behavior of GetCustomAttributes in runtime reflection.
             if (arrayType.HasElementType || arrayType.IsValueType || arrayType.ContainsGenericParameters)
                 return list.ToArray();
-            
+
             // Converts results to typed array.
             Array typedArray = Array.CreateInstance(arrayType, list.Count);
 

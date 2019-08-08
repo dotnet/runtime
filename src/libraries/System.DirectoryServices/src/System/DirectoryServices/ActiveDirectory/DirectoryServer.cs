@@ -49,13 +49,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             Dispose(true);
 
-            // Take yourself off of the Finalization queue 
+            // Take yourself off of the Finalization queue
             // to prevent finalization code for this object
             // from executing a second time.
             GC.SuppressFinalize(this);
         }
 
-        // private Dispose method        
+        // private Dispose method
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -93,14 +93,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
-            // the dc is really being moved to a different site 
+            // the dc is really being moved to a different site
             if (Utils.Compare(SiteName, siteName) != 0)
             {
                 DirectoryEntry newParentEntry = null;
                 try
                 {
                     // Bind to the target site's server container
-                    // Get the distinguished name for the site 
+                    // Get the distinguished name for the site
                     string parentDN = "CN=Servers,CN=" + siteName + "," + directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.SitesContainer);
                     newParentEntry = DirectoryEntryManager.GetDirectoryEntry(context, parentDN);
 
@@ -374,7 +374,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         catch (COMException e)
                         {
-                            if (e.ErrorCode == unchecked((int)0x80072020) |          // dir_error on server side                                            
+                            if (e.ErrorCode == unchecked((int)0x80072020) |          // dir_error on server side
                                    e.ErrorCode == unchecked((int)0x80072030))           // object not exists
                                 throw new ArgumentException(SR.DSNoObject, "objectPath");
                             else if (e.ErrorCode == unchecked((int)0x80005000) |          // bad path name
@@ -774,7 +774,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 _inbound = new ReplicationConnectionCollection();
                 DirectoryContext newContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
 
-                // this is the first time that user tries to retrieve this property, so get it from the directory   
+                // this is the first time that user tries to retrieve this property, so get it from the directory
                 string serverName = (this is DomainController) ? ((DomainController)this).ServerObjectName : ((AdamInstance)this).ServerObjectName;
                 string srchDN = "CN=NTDS Settings," + serverName;
                 DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context), srchDN);

@@ -117,7 +117,7 @@ namespace System.Net.Http.Tests
             CheckValidGetRangeItemLength(" 1-", 1, 2, 1, null);
             CheckValidGetRangeItemLength(" -2", 1, 2, null, 2);
 
-            // Note that the parser will only parse '1-' as a valid range and ignore '-2'. It is the callers 
+            // Note that the parser will only parse '1-' as a valid range and ignore '-2'. It is the callers
             // responsibility to determine if this is indeed a valid range
             CheckValidGetRangeItemLength(" 1--2", 1, 2, 1, null);
 

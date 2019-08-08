@@ -31,8 +31,8 @@ namespace System.Data
         [Browsable(false)]
         public bool IsSynchronized => false; // so the user will know that it has to lock this object
 
-        // Return value: 
-        // > 0 (1)  : CaseSensitve equal      
+        // Return value:
+        // > 0 (1)  : CaseSensitve equal
         // < 0 (-1) : Case-Insensitive Equal
         // = 0      : Not Equal
         internal int NamesEqual(string s1, string s2, bool fCaseSensitive, CultureInfo locale)

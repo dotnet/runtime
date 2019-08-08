@@ -22,7 +22,7 @@ namespace OLEDB.Test.ModuleCore
         {
         }
 
-        //Overloads - A subclass must minimally implement the Write(Char) method. 
+        //Overloads - A subclass must minimally implement the Write(Char) method.
         public override void Write(char ch)
         {
             CError.Write(ch.ToString());
@@ -37,7 +37,7 @@ namespace OLEDB.Test.ModuleCore
         //Overloads - We also implement "string" since its much more efficient and TextWriter will call this instead
         public override void Write(char[] ch)
         {
-            //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly 
+            //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly
             //writes 1 char at a time, which means \r\n is written separately and then gets fixed
             //up to be two carriage returns!
             if (ch != null)
@@ -52,8 +52,8 @@ namespace OLEDB.Test.ModuleCore
         }
 
         //Overloads
-        //Writes a line terminator to the text stream. 
-        //The default line terminator is a carriage return followed by a line feed ("\r\n"), 
+        //Writes a line terminator to the text stream.
+        //The default line terminator is a carriage return followed by a line feed ("\r\n"),
         //but this value can be changed using the NewLine property.
         public override void WriteLine()
         {

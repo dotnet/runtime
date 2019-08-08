@@ -13,8 +13,8 @@ namespace System.Net.Mime
     /// encoded streams.  Encoding requires copying into a separate
     /// buffer as the data being encoded will most likely grow.
     /// Encoding and decoding is done transparently to the caller.
-    /// 
-    /// This stream should only be used for the e-mail content.  
+    ///
+    /// This stream should only be used for the e-mail content.
     /// Use QEncodedStream for encoding headers.
     /// </summary>
     internal class QuotedPrintableStream : DelegatedStream, IEncodableStream
@@ -186,7 +186,7 @@ namespace System.Net.Mime
                     else
                     {
                         // determine where we are relative to the end
-                        // of the data.  If we don't have enough data to 
+                        // of the data.  If we don't have enough data to
                         // decode the escape sequence, save off what we
                         // have and continue the decoding in the next
                         // read.  Otherwise, decode the data and copy
@@ -227,7 +227,7 @@ namespace System.Net.Mime
             for (; cur < count + offset; cur++)
             {
                 //only fold if we're before a whitespace or if we're at the line limit
-                //add two to the encoded Byte Length to be conservative so that we guarantee that the line length is acceptable                
+                //add two to the encoded Byte Length to be conservative so that we guarantee that the line length is acceptable
                 if ((_lineLength != -1 && WriteState.CurrentLineLength + SizeOfEncodedChar + 2 >= _lineLength && (buffer[cur] == ' ' ||
                     buffer[cur] == '\t' || buffer[cur] == '\r' || buffer[cur] == '\n')) ||
                     _writeState.CurrentLineLength + SizeOfEncodedChar + 2 >= EncodedStreamFactory.DefaultMaxLineLength)

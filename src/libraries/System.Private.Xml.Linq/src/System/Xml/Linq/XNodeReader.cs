@@ -12,8 +12,8 @@ namespace System.Xml.Linq
 
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
-        // uses (instance, parent attribute). End element uses (instance, 
-        // instance). Common XObject uses (instance, null). 
+        // uses (instance, parent attribute). End element uses (instance,
+        // instance). Common XObject uses (instance, null).
         private object _source;
         private object _parent;
         private ReadState _state;

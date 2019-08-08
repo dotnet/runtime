@@ -9,7 +9,7 @@ using Microsoft.Internal;
 namespace System.ComponentModel.Composition.Hosting
 {
     // This is a lock class that needs to be held in order to perform any mutation of the parts/parts state in the composition
-    // Today's implementation relies on the AppDomain-wide re-entrant lock for changes on the composition, and a narrow lock for changes in 
+    // Today's implementation relies on the AppDomain-wide re-entrant lock for changes on the composition, and a narrow lock for changes in
     // the state of the specific ImportEngine
     // Today we make several assumptions to ensure thread-safety:
     // 1. Each composition doesn't change lock affinity
@@ -99,7 +99,7 @@ namespace System.ComponentModel.Composition.Hosting
             else
             {
                 return _EmptyLockHolder;
-            }            
+            }
         }
 
         public IDisposable LockStateForWrite()
@@ -111,7 +111,7 @@ namespace System.ComponentModel.Composition.Hosting
             else
             {
                 return _EmptyLockHolder;
-            }   
+            }
         }
 
         // NOTE : this should NOT be changed to a struct as ImportEngine relies on it

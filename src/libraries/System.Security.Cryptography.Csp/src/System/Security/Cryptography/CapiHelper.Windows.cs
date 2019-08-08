@@ -207,7 +207,7 @@ namespace Internal.NativeCrypto
             //look for provider type in the cspParameters
             int providerType = cspParameters.ProviderType;
 
-            //look for provider name in the cspParamters 
+            //look for provider name in the cspParamters
             //if CSP provider is not null then use the provider name from cspParameters
             if (null != cspParameters.ProviderName)
             {
@@ -227,7 +227,7 @@ namespace Internal.NativeCrypto
             // then ignore the key container name and hand back the default container
             if (!IsFlagBitSet((uint)cspProviderFlags, (uint)CspProviderFlags.UseDefaultKeyContainer))
             {
-                //look for key container name in the cspParameters 
+                //look for key container name in the cspParameters
                 if (null != cspParameters.KeyContainerName)
                 {
                     containerName = cspParameters.KeyContainerName;
@@ -263,7 +263,7 @@ namespace Internal.NativeCrypto
         }
 
         /// <summary>
-        /// This method acquires CSP and returns the handle of CSP 
+        /// This method acquires CSP and returns the handle of CSP
         /// </summary>
         /// <param name="parameters">Accepts the CSP Parameters</param>
         /// <param name="randomKeyContainer">Bool to indicate if key needs to be persisted</param>
@@ -273,7 +273,7 @@ namespace Internal.NativeCrypto
             SafeProvHandle safeProvHandle;
             uint flag = 0;
             uint hr = unchecked((uint)OpenCSP(parameters, flag, out safeProvHandle));
-            //Open container failed 
+            //Open container failed
             if (hr != S_OK)
             {
                 safeProvHandle.Dispose();
@@ -356,9 +356,9 @@ namespace Internal.NativeCrypto
         }
 
         /// <summary>
-        /// This method queries the key container and get some of it's properties. 
-        /// Those properties should never cause UI to display. 
-        /// </summary>                
+        /// This method queries the key container and get some of it's properties.
+        /// Those properties should never cause UI to display.
+        /// </summary>
         public static object GetProviderParameter(SafeProvHandle safeProvHandle, int keyNumber, int keyParam)
         {
             VerifyValidHandle(safeProvHandle);
@@ -451,7 +451,7 @@ namespace Internal.NativeCrypto
         }
 
         /// <summary>
-        /// Retrieves the handle for user public / private key pair. 
+        /// Retrieves the handle for user public / private key pair.
         /// </summary>
         internal static int GetUserKey(SafeProvHandle safeProvHandle, int keySpec, out SafeKeyHandle safeKeyHandle)
         {
@@ -469,7 +469,7 @@ namespace Internal.NativeCrypto
         }
 
         /// <summary>
-        /// Generates the key if provided CSP handle is valid 
+        /// Generates the key if provided CSP handle is valid
         /// </summary>
         internal static int GenerateKey(SafeProvHandle safeProvHandle, int algID, int flags, uint keySize, out SafeKeyHandle safeKeyHandle)
         {
@@ -649,7 +649,7 @@ namespace Internal.NativeCrypto
         }
 
         /// <summary>
-        /// Helper method to save the CSP parameters. 
+        /// Helper method to save the CSP parameters.
         /// </summary>
         /// <param name="keyType">CSP algorithm type</param>
         /// <param name="userParameters">CSP Parameters passed by user</param>
@@ -1527,7 +1527,7 @@ namespace Internal.NativeCrypto
     }//End of class CapiHelper : Wrappers
 
     /// <summary>
-    /// All the Crypto flags are capture in following 
+    /// All the Crypto flags are capture in following
     /// </summary>
     internal static partial class CapiHelper
     {

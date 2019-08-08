@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -78,7 +78,7 @@ namespace System.Collections.Tests
         /// Tests are included to cover two behavioral scenarios:
         ///   - Throwing an InvalidOperationException
         ///   - Returning an undefined value.
-        /// 
+        ///
         /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
         /// the same as Enumerator_Current_UndefinedOperation_Throws.
         /// </summary>

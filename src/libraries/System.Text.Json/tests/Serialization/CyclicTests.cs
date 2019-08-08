@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Tests
         public class Child2
         {
             // Add properties that cause a cycle (Root->Child1->Child2->Child1)
-            public Child1 Child1 { get; set; } 
+            public Child1 Child1 { get; set; }
             public IList<Child1> Child1IList { get; set; }
             public IList<Child1> Child1List { get; set; }
             public Dictionary<string, Child1> Child1Dictionary { get; set; }

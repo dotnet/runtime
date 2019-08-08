@@ -79,7 +79,7 @@ namespace Dynamic.Tests
 
             var x = Helpers.Cast<InterfaceWithGetterAndSetter>(d);
         }
-        
+
         [Fact]
         public void NonGenericInterface_WithEvent()
         {
@@ -135,13 +135,13 @@ namespace Dynamic.Tests
         public int Foo() => 2;
         public int Bar() => 1;
     }
-    
+
     public class TwoExplicitlyImplementedNonGenericInterface1 : NonGenericInterface1, NonGenericInterface2
     {
         int NonGenericInterface1.Foo() => 0;
         public int Bar() => 1;
     }
-    
+
     public class TwoExplicitlyImplementedNonGenericInterface2 : NonGenericInterface1, NonGenericInterface3
     {
         int NonGenericInterface1.Foo() => 0;

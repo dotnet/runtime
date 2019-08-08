@@ -27,9 +27,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
 
             blocks = new[] {
-                new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, 
+                new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable,
                     new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) }),
-                new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i)), 
+                new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i)),
                     new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) })
             };
             foreach (var block in blocks)
@@ -87,7 +87,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         public void TestPost()
         {
             foreach (bool bounded in DataflowTestHelpers.BooleanValues)
-                foreach (var tb in new[] { 
+                foreach (var tb in new[] {
                 new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 }),
                 new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i)), new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 })})
                 {
@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             const int Messages = 1;
             foreach (bool append in DataflowTestHelpers.BooleanValues)
             foreach (var tb in new[] {
-                new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable), 
+                new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable),
                 new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i))) })
             {
                 var values = new int[Messages];
@@ -139,7 +139,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             for (int test = 0; test < 2; test++)
             {
-                foreach (var tb in new[] { 
+                foreach (var tb in new[] {
                     new TransformManyBlock<int, int>(i => Enumerable.Repeat(i * 2, 1)),
                     new TransformManyBlock<int, int>(i => Task.Run(() => Enumerable.Repeat(i * 2, 1))) })
                 {
@@ -237,8 +237,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             foreach (int boundedCapacity in new[] { 1, 3 })
             {
                 var options = new ExecutionDataflowBlockOptions { BoundedCapacity = boundedCapacity };
-                foreach (var tb in new[] { 
-                    new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, options), 
+                foreach (var tb in new[] {
+                    new TransformManyBlock<int, int>(DataflowTestHelpers.ToEnumerable, options),
                     new TransformManyBlock<int, int>(i => Task.Run(() => DataflowTestHelpers.ToEnumerable(i)), options) })
                 {
                     var sendAsync = new Task<bool>[boundedCapacity + Excess];
@@ -542,7 +542,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     if ((i % 2) == 0) return null;
                     return Task.Run(() => (IEnumerable<int>)new[] { i });
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop });
- 
+
                 const int Iters = 100;
                 tb.PostRange(0, Iters);
                 tb.Complete();

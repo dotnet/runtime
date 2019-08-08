@@ -125,7 +125,7 @@ namespace Stress.Data
         {
             int elapsedMilliseconds = unchecked(endMilliseconds - startMilliseconds); // unchecked to handle overflow of Environment.TickCount
 
-            // Since InvalidOperationExceptions due to timeout can be caused by issues  
+            // Since InvalidOperationExceptions due to timeout can be caused by issues
             // (e.g. network hiccup, server unavailable, etc) we need a heuristic to guess whether or not this exception
             // should have happened or not.
             bool wasTimeoutFromPool = (e.GetType() == typeof(InvalidOperationException)) &&
@@ -143,14 +143,14 @@ namespace Stress.Data
         }
 
         /// <summary>
-        /// Gets spid value. 
+        /// Gets spid value.
         /// </summary>
         /// <remarks>
         /// If we want to kill the connection, we get its spid up front before the test case uses the connection. Otherwise if
         /// we try to get the spid when KillConnection is called, then the connection could be in a bad state (e.g. enlisted in
         /// aborted transaction, or has open datareader) and we will fail to get the spid. Also the randomization is put here
         /// instead of in KillConnection because otherwise this method would execute a command for every single connection which
-        /// most of the time will not be used later. 
+        /// most of the time will not be used later.
         /// </remarks>
         private void GetSpid()
         {

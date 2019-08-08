@@ -89,7 +89,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime 
+                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -185,7 +185,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime 
+                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -302,7 +302,7 @@ namespace System.Xml
                         goto case ValidatingReaderState.Read;
                     }
 
-                case ValidatingReaderState.ReadAhead: //Will enter here on calling Skip() 
+                case ValidatingReaderState.ReadAhead: //Will enter here on calling Skip()
                     ClearAttributesInfo();
                     Task task = ProcessReaderEventAsync();
                     return ReadAsync_ReadAhead(task);
@@ -753,7 +753,7 @@ namespace System.Xml
                     typedValue = _atomicValue;
                 }
                 originalString = _originalAtomicValueString;
-                xmlType = ElementXmlType; //Set this for default values 
+                xmlType = ElementXmlType; //Set this for default values
                 await this.ReadAsync().ConfigureAwait(false);
 
                 tuple = new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
@@ -864,4 +864,3 @@ namespace System.Xml
         }
     }
 }
-

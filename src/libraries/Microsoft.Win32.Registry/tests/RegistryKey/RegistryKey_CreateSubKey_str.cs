@@ -89,7 +89,7 @@ namespace Microsoft.Win32.RegistryTests
             // reduced further to allow for WoW64 changes to the string.
             for (int i = 0; i < 25 && subkeyName.Length < 230; i++)
                 subkeyName = subkeyName + i.ToString() + @"\";
-            
+
             TestRegistryKey.CreateSubKey(subkeyName);
             Assert.NotNull(TestRegistryKey.OpenSubKey(subkeyName));
 

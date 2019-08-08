@@ -21,7 +21,7 @@ namespace System.IO.Ports.Tests
         private const int largeNumRndBytesToRead = 2048;
 
         //When we test Read and do not care about actually reading anything we must still
-        //create an byte array to pass into the method the following is the size of the 
+        //create an byte array to pass into the method the following is the size of the
         //byte array used in this situation
         private const int defaultByteArraySize = 1;
         private const int defaultByteOffset = 0;
@@ -245,7 +245,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
 

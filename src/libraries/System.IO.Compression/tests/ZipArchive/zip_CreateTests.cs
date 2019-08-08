@@ -170,7 +170,7 @@ namespace System.IO.Compression.Tests
                 using Stream entryStream = entry.Open();
                 StreamReader reader = new StreamReader(entryStream);
                 string content = reader.ReadToEnd();
-                
+
                 // Append a string to this entry
                 entryStream.Seek(0, SeekOrigin.End);
                 StreamWriter writer = new StreamWriter(entryStream);
@@ -201,4 +201,3 @@ namespace System.IO.Compression.Tests
         }
     }
 }
-

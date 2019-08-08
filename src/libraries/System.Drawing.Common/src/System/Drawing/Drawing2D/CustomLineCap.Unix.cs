@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 
 namespace System.Drawing.Drawing2D
-{    
+{
     public partial class CustomLineCap
     {
         internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)

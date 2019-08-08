@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(value));
                 _core.SetKey(value);
 
-                // LegalKeySizes stores the values for either the current named curve or for the three 
+                // LegalKeySizes stores the values for either the current named curve or for the three
                 // curves that use size instead of name
                 ForceSetKeySize(value.KeySize);
             }

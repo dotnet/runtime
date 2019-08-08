@@ -108,11 +108,11 @@ namespace System.Data.Common
         {
             ADP.CheckArgumentLength(providerInvariantName, nameof(providerInvariantName));
             ADP.CheckArgumentLength(factoryTypeAssemblyQualifiedName, nameof(factoryTypeAssemblyQualifiedName));
-            
-            // this method performs a deferred registration: the type name specified is checked when the factory is requested for the first time. 
+
+            // this method performs a deferred registration: the type name specified is checked when the factory is requested for the first time.
             _registeredFactories[providerInvariantName] = new ProviderRegistration(factoryTypeAssemblyQualifiedName, null);
         }
-        
+
         public static void RegisterFactory(string providerInvariantName, Type providerFactoryClass)
         {
             RegisterFactory(providerInvariantName, GetFactoryInstance(providerFactoryClass));
@@ -125,12 +125,12 @@ namespace System.Data.Common
 
             _registeredFactories[providerInvariantName] = new ProviderRegistration(factory.GetType().AssemblyQualifiedName, factory);
         }
-        
+
         public static bool UnregisterFactory(string providerInvariantName)
         {
             return !string.IsNullOrWhiteSpace(providerInvariantName) && _registeredFactories.TryRemove(providerInvariantName, out _);
         }
-        
+
         private static DbProviderFactory GetFactory(string providerInvariantName, bool throwOnError)
         {
             if (throwOnError)
@@ -153,14 +153,14 @@ namespace System.Data.Common
             if (toReturn == null)
             {
                 // Deferred registration, do checks now on the type specified and register instance in storage.
-                // Even in the case of throwOnError being false, this will throw when an exception occurs checking the registered type as the user has to be notified the 
+                // Even in the case of throwOnError being false, this will throw when an exception occurs checking the registered type as the user has to be notified the
                 // registration is invalid, even though the registration is there.
                 toReturn = GetFactoryInstance(GetProviderTypeFromTypeName(registration.FactoryTypeAssemblyQualifiedName));
                 RegisterFactory(providerInvariantName, toReturn);
             }
             return toReturn;
         }
-       
+
         private static DbProviderFactory GetFactoryInstance(Type providerFactoryClass)
         {
             ADP.CheckArgumentNull(providerFactoryClass, nameof(providerFactoryClass));

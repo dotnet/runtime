@@ -91,9 +91,9 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    // if there are any managed or unmanaged 
+                    // if there are any managed or unmanaged
                     // resources to be freed, those should be done here
-                    // if disposing = true, only unmanaged resources should 
+                    // if disposing = true, only unmanaged resources should
                     // be freed, else both managed and unmanaged.
                     FreeADAMHandle();
                     _disposed = true;
@@ -245,7 +245,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(AdamRole));
             }
 
-            // set the appropriate attribute on the root dse 
+            // set the appropriate attribute on the root dse
             try
             {
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
@@ -618,7 +618,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         ntdsaEntry.RefreshCache();
                         if (ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value == null)
                         {
-                            // property has not been set 
+                            // property has not been set
                             _cachedDefaultPartition = null;
                         }
                         else
@@ -649,7 +649,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 else
                 {
                     //
-                    // should be in DN format 
+                    // should be in DN format
                     //
                     if (!Utils.IsValidDNFormat(value))
                     {

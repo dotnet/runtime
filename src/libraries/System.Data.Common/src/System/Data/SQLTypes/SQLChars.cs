@@ -23,7 +23,7 @@ namespace System.Data.SqlTypes
         // SqlChars has five possible states
         // 1) SqlChars is Null
         //        - m_stream must be null, m_lCuLen must be x_lNull
-        // 2) SqlChars contains a valid buffer, 
+        // 2) SqlChars contains a valid buffer,
         //        - m_rgchBuf must not be null, and m_stream must be null
         // 3) SqlChars contains a valid pointer
         //        - m_rgchBuf could be null or not,
@@ -380,7 +380,7 @@ namespace System.Data.SqlTypes
 
                 if (IsNull)
                 {
-                    // If NULL and there is buffer inside, we only allow writing from 
+                    // If NULL and there is buffer inside, we only allow writing from
                     // offset zero.
                     //
                     if (offset != 0)
@@ -560,7 +560,7 @@ namespace System.Data.SqlTypes
         //      Static fields, properties
         // --------------------------------------------------------------
 
-        // Get a Null instance. 
+        // Get a Null instance.
         // Since SqlChars is mutable, have to be property and create a new one each time.
         public static SqlChars Null
         {
@@ -573,14 +573,14 @@ namespace System.Data.SqlTypes
 
     // SqlStreamChars is a stream build on top of SqlChars, and
     // provides the Stream interface. The purpose is to help users
-    // to read/write SqlChars object. 
+    // to read/write SqlChars object.
     internal sealed class SqlStreamChars
     {
         // --------------------------------------------------------------
         //      Data members
         // --------------------------------------------------------------
 
-        private SqlChars _sqlchars;        // the SqlChars object 
+        private SqlChars _sqlchars;        // the SqlChars object
         private long _lPosition;
 
         // --------------------------------------------------------------

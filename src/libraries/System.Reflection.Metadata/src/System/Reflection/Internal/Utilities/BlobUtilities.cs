@@ -158,7 +158,7 @@ namespace System.Reflection
                     dst[6] = (byte)c;
                     dst[7] = (byte)(c >> 8);
                 }
-                
+
                 dst[8] = src[8];
                 dst[9] = src[9];
                 dst[10] = src[10];

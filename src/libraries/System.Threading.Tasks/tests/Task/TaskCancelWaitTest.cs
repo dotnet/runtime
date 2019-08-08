@@ -23,7 +23,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         #region Private Fields
 
         private API _api;                               // the API_CancelWait to be tested
-        private WaitBy _waitBy;                         // the format of Wait 
+        private WaitBy _waitBy;                         // the format of Wait
         private int _waitTimeout;                       // the timeout in ms to be waited
 
         private TaskInfo _taskTree;                     // the _taskTree to track child task cancellation option
@@ -32,7 +32,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
 
         private bool _taskCompleted;                    // result to record the Wait(timeout) return value
         private AggregateException _caughtException;    // exception thrown during wait
-        private CountdownEvent _countdownEvent;         // event to signal the main thread that the whole task tree has been created     
+        private CountdownEvent _countdownEvent;         // event to signal the main thread that the whole task tree has been created
 
         #endregion
 
@@ -59,7 +59,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskScheduler tm = TaskScheduler.Default;
 
             CreateTask(tm, _taskTree);
-            // wait the whole task tree to be created 
+            // wait the whole task tree to be created
             _countdownEvent.Wait();
 
             Stopwatch sw = Stopwatch.StartNew();
@@ -371,7 +371,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                 else if (ti.Task.IsCompleted)
                 {
                     //Function point comparison cant be done by rounding off to nearest decimal points since
-                    //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons, 
+                    //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons,
                     //a range has to be defined and check to ensure that the result obtained is within the specified range
                     double minLimit = 1.63;
                     double maxLimit = 1.65;
@@ -390,7 +390,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         }
 
         /// <summary>
-        /// Verify the _caughtException against a custom predicate 
+        /// Verify the _caughtException against a custom predicate
         /// </summary>
         private bool FindException(Predicate<Exception> exceptionPred)
         {
@@ -432,8 +432,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
 
     /// <summary>
     /// The Tree node Data type
-    /// 
-    /// While the tree is not restricted to this data type 
+    ///
+    /// While the tree is not restricted to this data type
     /// the implemented tests are using the TaskInfo_CancelWait data type for their scenarios
     /// </summary>
     public class TaskInfo
@@ -536,7 +536,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         public string Name { get; set; }
 
         /// <summary>
-        /// TaskCreation option of task associated with the current node 
+        /// TaskCreation option of task associated with the current node
         /// </summary>
         public TaskCreationOptions Option { get; private set; }
 
@@ -546,12 +546,12 @@ namespace System.Threading.Tasks.Tests.CancelWait
         public WorkloadType WorkType { get; private set; }
 
         /// <summary>
-        /// bool for indicating if the current tasks should initiate its children cancellation 
+        /// bool for indicating if the current tasks should initiate its children cancellation
         /// </summary>
         public bool CancelChildren { get; private set; }
 
         /// <summary>
-        /// While a tasks is correct execute a result is produced 
+        /// While a tasks is correct execute a result is produced
         /// this is the result
         /// </summary>
         public double Result { get; private set; }
@@ -578,7 +578,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         #region Helper Methods
 
         /// <summary>
-        /// Recursively traverse the tree and compare the current node using the predicate  
+        /// Recursively traverse the tree and compare the current node using the predicate
         /// </summary>
         /// <param name="predicate">the predicate</param>
         /// <param name="report"></param>
@@ -679,7 +679,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
     /// <summary>
     /// Every task has an workload associated
     /// These are the workload types used in the task tree
-    /// The workload is not common for the whole tree - Every node can have its own workload 
+    /// The workload is not common for the whole tree - Every node can have its own workload
     /// </summary>
     public enum WorkloadType
     {

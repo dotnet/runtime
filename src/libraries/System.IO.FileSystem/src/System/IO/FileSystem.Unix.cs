@@ -27,7 +27,7 @@ namespace System.IO
                 Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
         }
-        
+
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -208,7 +208,7 @@ namespace System.IO
                         if(directoryName.Length > 0 && !Directory.Exists(directoryName))
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, true);
-                        }                        
+                        }
                         return;
                     case Interop.Error.EROFS:
                         // EROFS means the file system is read-only
@@ -228,7 +228,7 @@ namespace System.IO
                     case Interop.Error.EISDIR:
                         errorInfo = Interop.Error.EACCES.Info();
                         goto default;
-                    default: 
+                    default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
                 }
             }
@@ -246,7 +246,7 @@ namespace System.IO
                 length--;
             }
 
-            // For paths that are only // or /// 
+            // For paths that are only // or ///
             if (length == 2 && PathInternal.IsDirectorySeparator(fullPath[1]))
             {
                 throw new IOException(SR.Format(SR.IO_CannotCreateDirectory, fullPath));

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -151,7 +151,7 @@ namespace System.Net.Tests
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("OK", response.StatusDescription);
         }
-        
+
         // The managed implementation should also dispose the OutputStream after calling Abort.
         [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19975, TestPlatforms.AnyUnix)]
         public async Task Abort_Invoke_ForciblyTerminatesConnection()
@@ -251,7 +251,7 @@ namespace System.Net.Tests
                 Assert.Equal(0, response.ContentLength64);
 
                 // Aborting the response should dispose the response.
-                // If willBlock === false then it's not guaranteed that the repsonse will be immediately disposed. 
+                // If willBlock === false then it's not guaranteed that the repsonse will be immediately disposed.
                 try
                 {
                     response.ContentType = null;
@@ -402,7 +402,7 @@ namespace System.Net.Tests
                 }
             }
         }
-        
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

@@ -381,7 +381,7 @@ namespace System.Net
 
         public Stream OpenWrite(Uri address, string method)
         {
-            ThrowIfNull(address, nameof(address));            
+            ThrowIfNull(address, nameof(address));
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -875,7 +875,7 @@ namespace System.Net
                     }
                     writeStream.SetLength(copyBuffer.Length);
                 }
-                
+
                 if (contentLength >= 0)
                 {
                     _progress.TotalBytesToReceive = contentLength;
@@ -1127,7 +1127,7 @@ namespace System.Net
                         }
                         catch (ArgumentException)
                         {
-                            // Eat ArgumentException here.    
+                            // Eat ArgumentException here.
                             // We'll assume that Content-Type encoding might have been garbled and wasn't present at all.
                             break;
                         }
@@ -1182,7 +1182,7 @@ namespace System.Net
                 "STOR" :
                 "POST";
         }
-        
+
         private static string UrlEncode(string str)
         {
             if (str == null)
@@ -1242,16 +1242,16 @@ namespace System.Net
 
             return expandedBytes;
         }
-        
+
         private static char IntToHex(int n)
         {
             Debug.Assert(n < 0x10);
-            
+
             if (n <= 9)
             {
                 return(char)(n + (int)'0');
             }
-            
+
             return(char)(n - 10 + (int)'a');
         }
 
@@ -1645,7 +1645,7 @@ namespace System.Net
 
         public Task<string> DownloadStringTaskAsync(string address) =>
             DownloadStringTaskAsync(GetUri(address));
-        
+
         public Task<string> DownloadStringTaskAsync(Uri address)
         {
             // Create the task to be returned
@@ -1669,7 +1669,7 @@ namespace System.Net
 
         public Task<Stream> OpenReadTaskAsync(string address) =>
             OpenReadTaskAsync(GetUri(address));
-        
+
         public Task<Stream> OpenReadTaskAsync(Uri address)
         {
             // Create the task to be returned
@@ -1691,16 +1691,16 @@ namespace System.Net
             // Return the task that represents the async operation
             return tcs.Task;
         }
-        
+
         public Task<Stream> OpenWriteTaskAsync(string address) =>
             OpenWriteTaskAsync(GetUri(address), null);
-        
+
         public Task<Stream> OpenWriteTaskAsync(Uri address) =>
             OpenWriteTaskAsync(address, null);
-        
+
         public Task<Stream> OpenWriteTaskAsync(string address, string method) =>
             OpenWriteTaskAsync(GetUri(address), method);
-        
+
         public Task<Stream> OpenWriteTaskAsync(Uri address, string method)
         {
             // Create the task to be returned
@@ -1725,13 +1725,13 @@ namespace System.Net
 
         public Task<string> UploadStringTaskAsync(string address, string data) =>
             UploadStringTaskAsync(address, null, data);
-        
+
         public Task<string> UploadStringTaskAsync(Uri address, string data) =>
             UploadStringTaskAsync(address, null, data);
-        
+
         public Task<string> UploadStringTaskAsync(string address, string method, string data) =>
             UploadStringTaskAsync(GetUri(address), method, data);
-        
+
         public Task<string> UploadStringTaskAsync(Uri address, string method, string data)
         {
             // Create the task to be returned
@@ -1753,10 +1753,10 @@ namespace System.Net
             // Return the task that represents the async operation
             return tcs.Task;
         }
-        
+
         public Task<byte[]> DownloadDataTaskAsync(string address) =>
             DownloadDataTaskAsync(GetUri(address));
-        
+
         public Task<byte[]> DownloadDataTaskAsync(Uri address)
         {
             // Create the task to be returned
@@ -1781,7 +1781,7 @@ namespace System.Net
 
         public Task DownloadFileTaskAsync(string address, string fileName) =>
             DownloadFileTaskAsync(GetUri(address), fileName);
-        
+
         public Task DownloadFileTaskAsync(Uri address, string fileName)
         {
             // Create the task to be returned
@@ -1806,13 +1806,13 @@ namespace System.Net
 
         public Task<byte[]> UploadDataTaskAsync(string address, byte[] data) =>
             UploadDataTaskAsync(GetUri(address), null, data);
-        
+
         public Task<byte[]> UploadDataTaskAsync(Uri address, byte[] data) =>
             UploadDataTaskAsync(address, null, data);
-        
+
         public Task<byte[]> UploadDataTaskAsync(string address, string method, byte[] data) =>
             UploadDataTaskAsync(GetUri(address), method, data);
-        
+
         public Task<byte[]> UploadDataTaskAsync(Uri address, string method, byte[] data)
         {
             // Create the task to be returned
@@ -1834,16 +1834,16 @@ namespace System.Net
             // Return the task that represents the async operation
             return tcs.Task;
         }
-        
+
         public Task<byte[]> UploadFileTaskAsync(string address, string fileName) =>
             UploadFileTaskAsync(GetUri(address), null, fileName);
-        
+
         public Task<byte[]> UploadFileTaskAsync(Uri address, string fileName) =>
             UploadFileTaskAsync(address, null, fileName);
-        
+
         public Task<byte[]> UploadFileTaskAsync(string address, string method, string fileName) =>
             UploadFileTaskAsync(GetUri(address), method, fileName);
-        
+
         public Task<byte[]> UploadFileTaskAsync(Uri address, string method, string fileName)
         {
             // Create the task to be returned
@@ -1865,16 +1865,16 @@ namespace System.Net
             // Return the task that represents the async operation
             return tcs.Task;
         }
-        
+
         public Task<byte[]> UploadValuesTaskAsync(string address, NameValueCollection data) =>
             UploadValuesTaskAsync(GetUri(address), null, data);
-        
+
         public Task<byte[]> UploadValuesTaskAsync(string address, string method, NameValueCollection data) =>
             UploadValuesTaskAsync(GetUri(address), method, data);
-        
+
         public Task<byte[]> UploadValuesTaskAsync(Uri address, NameValueCollection data) =>
             UploadValuesTaskAsync(address, null, data);
-        
+
         public Task<byte[]> UploadValuesTaskAsync(Uri address, string method, NameValueCollection data)
         {
             // Create the task to be returned

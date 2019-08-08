@@ -185,7 +185,7 @@ nameof(propagationFlags),
         private readonly ObjectAceFlags _objectFlags = ObjectAceFlags.None;
 
         #endregion
-        
+
         #region Constructors
 
         protected ObjectAccessRule( IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, Guid objectType, Guid inheritedObjectType, AccessControlType type )
@@ -298,7 +298,7 @@ nameof(auditFlags),
         protected ObjectAuditRule( IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, Guid objectType, Guid inheritedObjectType, AuditFlags auditFlags )
             : base( identity, accessMask, isInherited, inheritanceFlags, propagationFlags, auditFlags )
         {
-            
+
             if (( !objectType.Equals( Guid.Empty )) && (( accessMask & ObjectAce.AccessMaskWithObjectType ) != 0 ))
             {
                 _objectType = objectType;

@@ -15,7 +15,7 @@ namespace System.Net.Security
         private SafeGssNameHandle _targetName;
         private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
-        
+
         public SafeGssNameHandle TargetName
         {
             get { return _targetName; }

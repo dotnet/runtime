@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(99, new TaiwanCalendar().TwoDigitYearMax);
         }
-        
+
         [Fact]
         public void TwoDigitYearMax_Set()
         {

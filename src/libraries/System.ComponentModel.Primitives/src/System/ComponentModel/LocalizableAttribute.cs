@@ -25,13 +25,13 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Specifies that a property should be localized.
-        /// This <see langword='static'/> field is read-only. 
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly LocalizableAttribute Yes = new LocalizableAttribute(true);
 
         /// <summary>
         /// Specifies that a property should not be localized.
-        /// This <see langword='static'/> field is read-only. 
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly LocalizableAttribute No = new LocalizableAttribute(false);
 

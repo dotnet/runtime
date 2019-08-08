@@ -73,9 +73,9 @@ namespace System.Transactions
         }
     }
 
-    // Active state for a volatile enlistment indicates that the enlistment has been created 
+    // Active state for a volatile enlistment indicates that the enlistment has been created
     // but no one has begun committing or aborting the transaction.  From this state the enlistment
-    // can abort the transaction or call read only to indicate that it does not want to 
+    // can abort the transaction or call read only to indicate that it does not want to
     // participate further in the transaction.
     internal class VolatileEnlistmentActive : VolatileEnlistmentState
     {
@@ -185,7 +185,7 @@ namespace System.Transactions
         internal override void ChangeStatePreparing(InternalEnlistment enlistment)
         {
             // If the transaction promotes during phase 0 then the transition to
-            // the promoted phase 0 state for the transaction may cause this 
+            // the promoted phase 0 state for the transaction may cause this
             // notification to be delivered again.  So in this case it should be
             // ignored.
         }
@@ -225,7 +225,7 @@ namespace System.Transactions
                 if (!spcCommitted)
                 {
                     //If we have an exception thrown in SPC, we don't know the if the enlistment is committed or not
-                    //reply indoubt 
+                    //reply indoubt
                     enlistment.SinglePhaseEnlistment.InDoubt();
                 }
                 Monitor.Enter(enlistment.Transaction);

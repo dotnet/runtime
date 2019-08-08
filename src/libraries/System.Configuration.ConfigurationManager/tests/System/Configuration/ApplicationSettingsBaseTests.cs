@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -79,8 +79,8 @@ namespace System.ConfigurationTests
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void GetSetStringProperty_SimpleSettings_Ok(bool isSynchronized)
         {
-            SimpleSettings settings = isSynchronized 
-                ? (SimpleSettings)SettingsBase.Synchronized(new SimpleSettings()) 
+            SimpleSettings settings = isSynchronized
+                ? (SimpleSettings)SettingsBase.Synchronized(new SimpleSettings())
                 : new SimpleSettings();
 
             Assert.Equal(default, settings.StringProperty);

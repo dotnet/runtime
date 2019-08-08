@@ -29,7 +29,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return _userState; 
+                return _userState;
             }
         }
     }

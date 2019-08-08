@@ -131,7 +131,7 @@ namespace System.Net.Sockets.Tests
             if (Socket.OSSupportsIPv6 || !Socket.OSSupportsIPv4)
             {
                 // TBD we should figure out better way how to execute this in IPv4 only environment.
-                return; 
+                return;
             }
 
             // This should not throw e.g. default to IPv6.

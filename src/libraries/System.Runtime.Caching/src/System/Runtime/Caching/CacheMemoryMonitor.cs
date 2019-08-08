@@ -163,7 +163,7 @@ namespace System.Runtime.Caching
         {
             // Call GetUpdatedTotalCacheSize to update the total
             // cache size, if there has been a recent Gen 2 Collection.
-            // This update must happen, otherwise the CacheManager won't 
+            // This update must happen, otherwise the CacheManager won't
             // know the total cache size.
             int gen2Count = GC.CollectionCount(2);
             SRefMultiple sref = _sizedRefMultiple;

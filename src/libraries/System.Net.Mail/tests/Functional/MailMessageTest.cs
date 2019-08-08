@@ -40,7 +40,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal("r1@t1.com", emptyMessage.To[0].Address);
             Assert.Equal("r2@t1.com", emptyMessage.To[1].Address);
         }
-        
+
         [Fact]
         public void TestForNullException()
         {
@@ -49,7 +49,7 @@ namespace System.Net.Mail.Tests
             Assert.Throws<ArgumentNullException>(() => new MailMessage(new MailAddress("from@example.com"), null));
             Assert.Throws<ArgumentNullException>(() => new MailMessage(null, "to@example.com"));
         }
-        
+
         [Fact]
         public void AlternateViewTest()
         {
@@ -144,7 +144,7 @@ namespace System.Net.Mail.Tests
             msg.Subject = "test\u3067\u3059";
             Assert.Equal(Encoding.UTF8.CodePage, msg.SubjectEncoding.CodePage);
         }
-        
+
         [Fact]
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
@@ -152,7 +152,7 @@ namespace System.Net.Mail.Tests
             // This length will trigger WriteState.Padding = 2 & count = 1 (byte to write)
             // The smallest number to match the pattern is 34817.
             int specialLength = 34817;
-            
+
             string stringLength34817 = new string('A', specialLength - 1) + 'Z';
             byte[] toBytes = Encoding.ASCII.GetBytes(stringLength34817);
 
@@ -161,13 +161,13 @@ namespace System.Net.Mail.Tests
                 var message = new MailMessage("sender@test.com", "user1@pop.local", "testSubject", "testBody");
                 message.Attachments.Add(new Attachment(tempFile.Path));
                 string decodedAttachment = DecodeSentMailMessage(message);
-                
+
                 // Make sure last byte is not encoded twice.
                 Assert.Equal(specialLength, decodedAttachment.Length);
                 Assert.Equal("AAAAAAAAAAAAAAAAZ", decodedAttachment.Substring(34800));
             }
         }
-        
+
         private static string DecodeSentMailMessage(MailMessage mail)
         {
             // Create a MIME message that would be sent using System.Net.Mail.
@@ -180,7 +180,7 @@ namespace System.Net.Mail.Tests
                                 args: new object[] { stream },
                                 culture: null,
                                 activationAttributes: null);
-            
+
             // Send the message.
             mail.GetType().InvokeMember(
                                 name: "Send",

@@ -7,7 +7,7 @@ using OLEDB.Test.ModuleCore;
 namespace System.Xml.Tests
 {
     ////////////////////////////////////////////////////////////////
-    // TestCase: XmlConvert 
+    // TestCase: XmlConvert
     //
     ////////////////////////////////////////////////////////////////
     internal abstract class SqlXmlConvertTests : CTestCase

@@ -120,17 +120,17 @@ namespace System.Text.Tests
         public void Encode(string chars, int index, int count, byte[] expected)
         {
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false),
                 chars, index, count, expected);
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
                 chars, index, count, expected);
 
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
                 chars, index, count, expected);
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true),
                 chars, index, count, expected);
         }
 
@@ -162,13 +162,13 @@ namespace System.Text.Tests
             yield return new object[] { "Test\uDD75Test", 0, 9, new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 } };
             yield return new object[] { "TestTest\uDD75", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 } };
             yield return new object[] { "TestTest\uD803", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 } };
-            
+
             byte[] unicodeReplacementBytes2 = new byte[] { 239, 191, 189, 239, 191, 189 };
             yield return new object[] { "\uD800\uD800", 0, 2, unicodeReplacementBytes2 }; // High, high
             yield return new object[] { "\uDC00\uD800", 0, 2, unicodeReplacementBytes2 }; // Low, high
             yield return new object[] { "\uDC00\uDC00", 0, 2, unicodeReplacementBytes2 }; // Low, low
         }
-        
+
         [Fact]
         public static unsafe void GetBytes_ValidASCIIUnicode()
         {
@@ -207,8 +207,8 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 4, new byte[5], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 5, new byte[6], 0));
- 
-            char[] c = s.ToCharArray();           
+
+            char[] c = s.ToCharArray();
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 2, new byte[3], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 3, new byte[4], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 4, new byte[5], 0));
@@ -220,7 +220,7 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 4, b, 5));
             AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 5, b, 6));
         }
-        
+
         private static unsafe void FixedEncodingHelper(char[] c, int charCount, byte[] b, int byteCount)
         {
             Encoding encoding = Encoding.UTF8;
@@ -236,17 +236,17 @@ namespace System.Text.Tests
         public void Encode_InvalidChars(string chars, int index, int count, byte[] expected)
         {
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false),
                 chars, index, count, expected);
             EncodingHelpers.Encode(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
                 chars, index, count, expected);
 
             NegativeEncodingTests.Encode_Invalid(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
                 chars, index, count);
             NegativeEncodingTests.Encode_Invalid(
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true), 
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true),
                 chars, index, count);
         }
 

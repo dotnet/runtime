@@ -36,7 +36,7 @@ internal partial class Interop
             {
                 flags |= MOVEFILE_REPLACE_EXISTING;
             }
-            
+
             return MoveFileExPrivate(src, dst, flags);
         }
     }

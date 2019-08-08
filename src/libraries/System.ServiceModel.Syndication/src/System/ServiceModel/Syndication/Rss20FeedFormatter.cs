@@ -204,7 +204,7 @@ namespace System.ServiceModel.Syndication
                 WriteItem(writer, item, feedBaseUri);
             }
         }
-        
+
         private string AsString(DateTimeOffset dateTime)
         {
             if (dateTime.Offset == TimeSpan.Zero)
@@ -748,7 +748,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 feedItems.Add(item);
                             }
-                            
+
                             // if the derived class is reading the items lazily, then stop reading from the stream
                             if (!areAllItemsRead)
                             {
@@ -789,7 +789,7 @@ namespace System.ServiceModel.Syndication
                 }
                 if (areAllItemsRead)
                 {
-                    reader.ReadEndElement(); // channel   
+                    reader.ReadEndElement(); // channel
                     reader.ReadEndElement(); // rss
                 }
             }

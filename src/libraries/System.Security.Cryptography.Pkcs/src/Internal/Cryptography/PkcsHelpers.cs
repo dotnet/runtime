@@ -162,7 +162,7 @@ namespace Internal.Cryptography
                 ContentType = contentType,
                 Content = content,
             };
-            
+
             using (AsnWriter writer = new AsnWriter(ruleSet))
             {
                 contentInfo.Encode(writer);
@@ -287,7 +287,7 @@ namespace Internal.Cryptography
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.
-        /// 
+        ///
         /// Subject Key Identifier is string-ized as an upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
         internal static byte[] ToSkiBytes(this string skiString)
@@ -307,7 +307,7 @@ namespace Internal.Cryptography
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.
-        /// 
+        ///
         /// Serial number is string-ized as a reversed upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
         internal static byte[] ToSerialBytes(this string serialString)
@@ -389,7 +389,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc. 
+        /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc.
         /// </summary>
         public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, byte[] encodedAttribute)
         {

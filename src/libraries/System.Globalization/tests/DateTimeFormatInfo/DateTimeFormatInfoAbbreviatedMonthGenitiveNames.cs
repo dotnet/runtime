@@ -76,13 +76,13 @@ namespace System.Globalization.Tests
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthGenitiveNames = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "" });
         }
-        
+
         [Fact]
         public void AbbreviatedMonthGenitiveNames_Format_ReturnsExpected()
         {
             var format = new DateTimeFormatInfo();
             format.AbbreviatedMonthGenitiveNames = new string[] { "GenJan", "GenFeb", "GenMar", "GenApr", "GenMay", "GenJun", "GenJul", "GenAug", "GenSep", "GenOct", "GenNov", "GenDec", "Gen" };
-            
+
             var dateTime = new DateTime(1976, 6, 19);
             Assert.Equal("19 GenJun 76", dateTime.ToString("d MMM yy", format));
         }

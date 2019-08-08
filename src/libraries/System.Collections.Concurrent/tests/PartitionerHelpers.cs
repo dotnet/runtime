@@ -6,7 +6,7 @@
 //
 // PartitionerHelpers.cs
 //
-// Helper class containing extensions methods to unroll ranges into individual elements, 
+// Helper class containing extensions methods to unroll ranges into individual elements,
 // find the size of ranges for different returns value of Partitioners
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

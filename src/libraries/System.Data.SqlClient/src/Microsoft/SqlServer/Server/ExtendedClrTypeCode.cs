@@ -60,4 +60,3 @@ namespace Microsoft.SqlServer.Server
         First = Boolean,            // beginning-of-enum marker
     };
 }
-

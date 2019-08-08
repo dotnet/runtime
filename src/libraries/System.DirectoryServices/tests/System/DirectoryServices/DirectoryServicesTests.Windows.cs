@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,7 +13,7 @@ namespace System.DirectoryServices.Tests
     public partial class DirectoryServicesTests
     {
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
-        public void TestComInterfaces() 
+        public void TestComInterfaces()
         {
             using (DirectoryEntry de = CreateRootEntry())
             {
@@ -25,7 +25,7 @@ namespace System.DirectoryServices.Tests
                     {
                         long deTime = GetTimeValue((IADsLargeInteger) de.Properties["uSNCreated"].Value);
                         long rootOUTime = GetTimeValue((IADsLargeInteger) rootOU.Properties["uSNCreated"].Value);
-                        
+
                         // we are sure rootOU is created after de
                         Assert.True(rootOUTime > deTime);
 
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.Tests
                         Assert.True(LdapConfiguration.Configuration.Domain.IndexOf(iadsSD.Group.Split('\\')[0], StringComparison.OrdinalIgnoreCase) >= 0);
                     }
                 }
-                finally 
+                finally
                 {
                     DeleteOU(de, "dateRoot");
                 }

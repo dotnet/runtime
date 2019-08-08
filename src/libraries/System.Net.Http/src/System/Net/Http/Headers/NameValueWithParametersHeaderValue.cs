@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Net.Http.Headers
 {
-    // According to the RFC, in places where a "parameter" is required, the value is mandatory 
+    // According to the RFC, in places where a "parameter" is required, the value is mandatory
     // (e.g. Media-Type, Accept). However, we don't introduce a dedicated type for this.
     public class NameValueWithParametersHeaderValue : NameValueHeaderValue, ICloneable
     {

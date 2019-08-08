@@ -48,8 +48,8 @@ internal static partial class Interop
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
         [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
         private static extern SafeCreateHandle CFStringCreateWithCString(
-            IntPtr allocator, 
-            string str, 
+            IntPtr allocator,
+            string str,
             CFStringBuiltInEncodings encoding);
 
         /// <summary>
@@ -115,7 +115,7 @@ internal static partial class Interop
 
         /// <summary>
         /// You should retain a Core Foundation object when you receive it from elsewhere
-        /// (that is, you did not create or copy it) and you want it to persist. If you 
+        /// (that is, you did not create or copy it) and you want it to persist. If you
         /// retain a Core Foundation object you are responsible for releasing it
         /// </summary>
         /// <param name="ptr">The CFType object to retain. This value must not be NULL</param>

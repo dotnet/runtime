@@ -7,10 +7,10 @@ using System.Diagnostics;
 namespace System.Reflection.TypeLoading
 {
     /// <summary>
-    /// Enumerates all the system types that MetadataLoadContexts may need to fish out of the core assembly. 
-    /// Note that the enum values are often cast to "int" and used as indices into a table so the 
+    /// Enumerates all the system types that MetadataLoadContexts may need to fish out of the core assembly.
+    /// Note that the enum values are often cast to "int" and used as indices into a table so the
     /// enum values should be left contiguous.
-    /// 
+    ///
     /// If you add a member to this enum, you must also add a switch case for it in CoreTypeHelpers.GetFullName();
     /// </summary>
     internal enum CoreType

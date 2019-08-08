@@ -60,7 +60,7 @@ namespace System
                 {
                     object? fieldValue = fields[i].GetValue(this);
 
-                    // The hashcode of an array ignores the contents of the array, so it can produce 
+                    // The hashcode of an array ignores the contents of the array, so it can produce
                     // different hashcodes for arrays with the same contents.
                     // Since we do deep comparisons of arrays in Equals(), this means Equals and GetHashCode will
                     // be inconsistent for arrays. Therefore, we ignore hashes of arrays.
@@ -81,7 +81,7 @@ namespace System
         }
 #endif
 
-        // Compares values of custom-attribute fields.    
+        // Compares values of custom-attribute fields.
         private static bool AreFieldValuesEqual(object? thisValue, object? thatValue)
         {
             if (thisValue == null && thatValue == null)
@@ -106,7 +106,7 @@ namespace System
                     return false;
                 }
 
-                // Attributes can only contain single-dimension arrays, so we don't need to worry about 
+                // Attributes can only contain single-dimension arrays, so we don't need to worry about
                 // multidimensional arrays.
                 Debug.Assert(thisValueArray.Rank == 1 && thatValueArray.Rank == 1);
                 for (int j = 0; j < thisValueArray.Length; j++)
@@ -119,7 +119,7 @@ namespace System
             }
             else
             {
-                // An object of type Attribute will cause a stack overflow. 
+                // An object of type Attribute will cause a stack overflow.
                 // However, this should never happen because custom attributes cannot contain values other than
                 // constants, single-dimensional arrays and typeof expressions.
                 Debug.Assert(!(thisValue is Attribute));

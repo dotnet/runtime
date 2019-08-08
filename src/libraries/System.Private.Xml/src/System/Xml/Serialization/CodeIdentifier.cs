@@ -117,7 +117,7 @@ namespace System.Xml.Serialization
         {
             UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
             // each char must be Lu, Ll, Lt, Lm, Lo, Nd, Mn, Mc, Pc
-            // 
+            //
             switch (uc)
             {
                 case UnicodeCategory.UppercaseLetter:        // Lu

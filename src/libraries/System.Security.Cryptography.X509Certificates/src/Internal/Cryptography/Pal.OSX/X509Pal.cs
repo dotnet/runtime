@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
                             {
                                 // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
                                 return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
-                            } 
+                            }
                             return new DSAImplementation.DSASecurityTransforms(key);
                         case Oids.EcPublicKey:
                             // If X509GetPublicKey uses the new SecCertificateCopyKey API it can return an invalid
@@ -149,7 +149,7 @@ namespace Internal.Cryptography.Pal
                     // Throw to match Windows and Unix behavior.
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
                 }
-                
+
                 X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
 
                 if (contentType == X509ContentType.Unknown)

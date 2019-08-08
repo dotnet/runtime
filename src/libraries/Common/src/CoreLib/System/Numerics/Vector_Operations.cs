@@ -502,7 +502,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns an integral vector whose elements signal whether the elements in left were greater than or equal to 
+        /// Returns an integral vector whose elements signal whether the elements in left were greater than or equal to
         /// their corresponding elements in right.
         /// </summary>
         /// <param name="left">The first vector to compare.</param>
@@ -516,7 +516,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns a boolean indicating whether all of the elements in left are greater than or equal to 
+        /// Returns a boolean indicating whether all of the elements in left are greater than or equal to
         /// their corresponding elements in right.
         /// </summary>
         /// <param name="left">The first vector to compare.</param>
@@ -693,7 +693,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns a new vector whose values are the result of dividing the first vector's elements 
+        /// Returns a new vector whose values are the result of dividing the first vector's elements
         /// by the corresponding elements in the second vector.
         /// </summary>
         /// <param name="left">The first source vector.</param>

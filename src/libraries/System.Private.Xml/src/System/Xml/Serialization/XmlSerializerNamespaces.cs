@@ -130,4 +130,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-

@@ -45,6 +45,3 @@ namespace System.Xml
         }
     }
 }
-
-
-

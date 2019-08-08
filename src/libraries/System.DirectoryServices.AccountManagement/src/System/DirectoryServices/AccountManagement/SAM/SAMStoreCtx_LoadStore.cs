@@ -24,7 +24,7 @@ namespace System.DirectoryServices.AccountManagement
         // Native <--> Principal
         //
 
-        // For modified object, pushes any changes (including IdentityClaim changes) 
+        // For modified object, pushes any changes (including IdentityClaim changes)
         // into the underlying store-specific object (e.g., DirectoryEntry) and returns the underlying object.
         // For unpersisted object, creates a  underlying object if one doesn't already exist (in
         // Principal.UnderlyingObject), then pushes any changes into the underlying object.
@@ -178,7 +178,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Given a underlying store object (e.g., DirectoryEntry), further narrowed down a discriminant
-        // (if applicable for the StoreCtx type), returns a fresh instance of a Principal 
+        // (if applicable for the StoreCtx type), returns a fresh instance of a Principal
         // object based on it.  The WinFX Principal API follows ADSI-style semantics, where you get multiple
         // in-memory objects all referring to the same store pricipal, rather than WinFS semantics, where
         // multiple searches all return references to the same in-memory object.
@@ -191,8 +191,8 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
         // This method works for native objects from the store corresponding to _this_ StoreCtx.
-        // Each StoreCtx will also have its own internal algorithms used for dealing with cross-store objects, e.g., 
-        // for use when iterating over group membership.  These routines are exposed as 
+        // Each StoreCtx will also have its own internal algorithms used for dealing with cross-store objects, e.g.,
+        // for use when iterating over group membership.  These routines are exposed as
         // ResolveCrossStoreRefToPrincipal, and will be called by the StoreCtx's associated ResultSet
         // classes when iterating over a representation of a "foreign" principal.
         internal override Principal GetAsPrincipal(object storeObject, object discriminant)
@@ -270,7 +270,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // Loads the store values from p.UnderlyingObject into p, performing schema mapping as needed.        
+        // Loads the store values from p.UnderlyingObject into p, performing schema mapping as needed.
         internal override void Load(Principal p)
         {
             try
@@ -371,7 +371,7 @@ namespace System.DirectoryServices.AccountManagement
                         Marshal.FreeHGlobal(pSid);
                 }
 
-                // Not a fake group.  Search for the real group.            
+                // Not a fake group.  Search for the real group.
                 object o = FindNativeBySIDIdentRef(principalType, sid);
                 return (o != null) ? GetAsPrincipal(o, null) : null;
             }
@@ -409,7 +409,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Are they perhaps searching for a fake group?
                     // If they passed in a valid SID for a fake group, construct and return the fake
-                    // group.                
+                    // group.
                     if (principalType == typeof(Principal) || principalType == typeof(GroupPrincipal) || principalType.IsSubclassOf(typeof(GroupPrincipal)))
                     {
                         // They passed in a hex string, is it a valid SID, and if so, does it correspond to a fake
@@ -598,7 +598,7 @@ namespace System.DirectoryServices.AccountManagement
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
 
-            // Make sure it's of the correct type           
+            // Make sure it's of the correct type
             bool fMatch = false;
 
             if ((principalType == typeof(UserPrincipal)) && SAMUtils.IsOfObjectClass(de, "User"))
@@ -651,11 +651,11 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PrincipalSid,                        typeof(Principal), "objectSid",            new FromWinNTConverterDelegate(SidFromWinNTConverter), null },
             {PropertyNames.PrincipalDistinguishedName, typeof(UserPrincipal), null,          null,  new ToWinNTConverterDelegate(ExceptionToWinNTConverter)},
             {PropertyNames.PrincipalGuid,                      typeof(UserPrincipal), null,         null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)},
-            {PropertyNames.PrincipalUserPrincipalName,  typeof(UserPrincipal), null,         null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)},            
+            {PropertyNames.PrincipalUserPrincipalName,  typeof(UserPrincipal), null,         null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)},
             // Name and SamAccountNAme properties are currently routed to the same underlying Name property.
             {PropertyNames.PrincipalName,                  typeof(Principal), "Name",            new FromWinNTConverterDelegate(SamAccountNameFromWinNTConverter),  null},
-            
-            
+
+
 
             //
             {PropertyNames.AuthenticablePrincipalEnabled ,     typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),  new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},

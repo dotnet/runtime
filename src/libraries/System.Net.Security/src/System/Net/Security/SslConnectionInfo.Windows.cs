@@ -4,7 +4,7 @@
 
 namespace System.Net.Security
 {
-    internal partial class SslConnectionInfo 
+    internal partial class SslConnectionInfo
     {
         public SslConnectionInfo(SecPkgContext_ConnectionInfo interopConnectionInfo, TlsCipherSuite cipherSuite)
         {

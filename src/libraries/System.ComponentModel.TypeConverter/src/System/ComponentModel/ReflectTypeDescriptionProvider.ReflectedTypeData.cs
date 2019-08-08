@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -33,7 +33,7 @@ namespace System.ComponentModel
             }
 
             /// <summary>
-            /// This method returns true if the data cache in this reflection 
+            /// This method returns true if the data cache in this reflection
             /// type descriptor has data in it.
             /// </summary>
             internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
@@ -74,7 +74,7 @@ namespace System.ComponentModel
                     // We cannot be sure that there is no custom provider for
                     // interfaces that _type implements, however, because they are not derived
                     // from _type. So, for interfaces, we must go through TypeDescriptor
-                    // again to get the interfaces attributes. 
+                    // again to get the interfaces attributes.
 
                     // Get the type's attributes. This does not recurse up the base class chain.
                     // We append base class attributes to this array so when walking we will
@@ -352,7 +352,7 @@ namespace System.ComponentModel
                         editor = SearchIntrinsicTable(intrinsicEditors, _type);
                     }
 
-                    // As a quick sanity check, check to see that the editor we got back is of 
+                    // As a quick sanity check, check to see that the editor we got back is of
                     // the correct type.
                     if (editor != null && !editorBaseType.IsInstanceOfType(editor))
                     {
@@ -513,7 +513,7 @@ namespace System.ComponentModel
                     // so it could be looking in the previous version
                     // of the assembly and not finding the type. We work
                     // around this by looking for the non-assembly qualified
-                    // name, which causes the domain to raise a type 
+                    // name, which causes the domain to raise a type
                     // resolve event.
                     t = Type.GetType(typeName.Substring(0, commaIndex));
                 }

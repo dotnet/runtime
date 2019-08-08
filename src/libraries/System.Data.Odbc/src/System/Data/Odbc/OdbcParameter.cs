@@ -767,7 +767,7 @@ namespace System.Data.Odbc
                     }
                     break;
                 case ODBC32.SQL_TYPE.WVARCHAR:
-                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters. 
+                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters.
                     if (size > 4000)
                     {
                         _bindtype = TypeMap._NText; // will change to WLONGVARCHAR
@@ -997,7 +997,7 @@ namespace System.Data.Odbc
                             catch (Exception e)
                             {
                                 // Don't know which exception to expect from ChangeType so we filter out the serious ones
-                                // 
+                                //
                                 if (!ADP.IsCatchableExceptionType(e))
                                 {
                                     throw;

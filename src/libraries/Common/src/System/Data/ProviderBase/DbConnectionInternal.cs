@@ -28,7 +28,7 @@ namespace System.Data.ProviderBase
 
         private bool _connectionIsDoomed;       // true when the connection should no longer be used.
         private bool _cannotBePooled;           // true when the connection should no longer be pooled.
-        
+
         private DateTime _createTime;               // when the connection was created.
 
 #if DEBUG
@@ -380,10 +380,10 @@ namespace System.Data.ProviderBase
 
             Debug.Assert(!IsEmancipated, "pooled object not in pool");
 
-            // When another thread is clearing this pool, it 
-            // will doom all connections in this pool without prejudice which 
-            // causes the following assert to fire, which really mucks up stress 
-            // against checked bits.  The assert is benign, so we're commenting 
+            // When another thread is clearing this pool, it
+            // will doom all connections in this pool without prejudice which
+            // causes the following assert to fire, which really mucks up stress
+            // against checked bits.  The assert is benign, so we're commenting
             // it out.
             //Debug.Assert(CanBePooled,   "pooled object is not poolable");
 

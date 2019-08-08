@@ -114,7 +114,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            
+
             writer.WriteStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
             WriteItem(writer);
             writer.WriteEndElement();

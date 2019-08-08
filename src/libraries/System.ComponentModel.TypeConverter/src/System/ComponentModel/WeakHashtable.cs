@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// This is a hashtable that stores object keys as weak references. 
+    /// This is a hashtable that stores object keys as weak references.
     /// It monitors memory usage and will periodically scavenge the
     /// hash table to clean out dead references.
     /// </summary>

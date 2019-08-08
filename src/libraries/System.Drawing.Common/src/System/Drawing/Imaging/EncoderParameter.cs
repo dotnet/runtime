@@ -14,7 +14,7 @@ namespace System.Drawing.Imaging
         [MarshalAs(UnmanagedType.Struct)]
 #pragma warning restore CS0618
         private Guid _parameterGuid;                    // GUID of the parameter
-        private int _numberOfValues;                    // Number of the parameter values  
+        private int _numberOfValues;                    // Number of the parameter values
         private EncoderParameterValueType _parameterValueType;   // Value type, like ValueTypeLONG  etc.
         private IntPtr _parameterValue;                 // A pointer to the parameter values
 

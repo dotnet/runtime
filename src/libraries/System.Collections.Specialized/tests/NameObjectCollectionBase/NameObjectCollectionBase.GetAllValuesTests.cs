@@ -33,7 +33,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal(new Foo("Value_" + i), values.GetValue(i));
             }
         }
-        
+
         [Fact]
         public static void GetAllValues_Invalid()
         {

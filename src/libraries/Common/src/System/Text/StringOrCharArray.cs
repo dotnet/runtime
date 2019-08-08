@@ -139,7 +139,7 @@ namespace System.Text
 
         private static unsafe int GetHashCode(char* s, int count)
         {
-            // This hash code is a simplified version of some of the code in String, 
+            // This hash code is a simplified version of some of the code in String,
             // when not using randomized hash codes.  We don't use string's GetHashCode
             // because we need to be able to use the exact same algorithms on a char[].
             // As such, this should not be used anywhere there are concerns around

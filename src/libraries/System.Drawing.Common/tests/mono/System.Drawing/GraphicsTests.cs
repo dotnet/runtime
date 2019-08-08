@@ -1078,7 +1078,7 @@ namespace MonoTests.System.Drawing
                 GraphicsContainer gc = g.BeginContainer();
                 // things gets reseted after calling BeginContainer
                 CheckDefaultProperties("BeginContainer", g);
-                // but not everything 
+                // but not everything
                 Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
                 g.EndContainer(gc);
@@ -1113,7 +1113,7 @@ namespace MonoTests.System.Drawing
                 GraphicsContainer gc = g.BeginContainer(new Rectangle(10, 20, 30, 40), new Rectangle(10, 20, 300, 400), GraphicsUnit.Millimeter);
                 // things gets reseted after calling BeginContainer
                 CheckDefaultProperties("BeginContainer", g);
-                // but not everything 
+                // but not everything
                 Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
                 g.EndContainer(gc);
@@ -1149,7 +1149,7 @@ namespace MonoTests.System.Drawing
                 GraphicsContainer gc = g.BeginContainer(new RectangleF(40, 30, 20, 10), new RectangleF(10, 20, 30, 40), GraphicsUnit.Inch);
                 // things gets reseted after calling BeginContainer
                 CheckDefaultProperties("BeginContainer", g);
-                // but not everything 
+                // but not everything
                 Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
                 g.EndContainer(gc);
@@ -2489,7 +2489,7 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.DrawIcon(SystemIcons.Application, new Rectangle(0, 0, 40, 20));
-                // Rectangle is empty when X, Y, Width and Height == 0 
+                // Rectangle is empty when X, Y, Width and Height == 0
                 // (yep X and Y too, RectangleF only checks for Width and Height)
                 g.DrawIcon(SystemIcons.Asterisk, new Rectangle(0, 0, 0, 0));
                 // so this one is half-empty ;-)
@@ -2538,7 +2538,7 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.DrawIconUnstretched(SystemIcons.Information, new Rectangle(0, 0, 40, 20));
-                // Rectangle is empty when X, Y, Width and Height == 0 
+                // Rectangle is empty when X, Y, Width and Height == 0
                 // (yep X and Y too, RectangleF only checks for Width and Height)
                 g.DrawIconUnstretched(SystemIcons.Question, new Rectangle(0, 0, 0, 0));
                 // so this one is half-empty ;-)
@@ -2651,7 +2651,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                // Rectangle is empty when X, Y, Width and Height == 0 
+                // Rectangle is empty when X, Y, Width and Height == 0
                 // (yep X and Y too, RectangleF only checks for Width and Height)
                 g.DrawImage(bmp, new Rectangle(0, 0, 0, 0));
                 // so this one is half-empty ;-)
@@ -3097,7 +3097,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                // Rectangle is empty when X, Y, Width and Height == 0 
+                // Rectangle is empty when X, Y, Width and Height == 0
                 // (yep X and Y too, RectangleF only checks for Width and Height)
                 g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 0, 0));
                 // so this one is half-empty ;-)

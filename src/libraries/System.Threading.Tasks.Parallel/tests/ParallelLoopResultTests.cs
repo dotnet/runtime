@@ -332,7 +332,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
                 Parallel.ForEach(mp, body);
 
                 Assert.False(excExpected);
-                
+
                 Assert.Equal(shouldComplete, plr.IsCompleted);
                 Assert.Equal(shouldStop, plr.LowestBreakIteration == null);
                 Assert.Equal(shouldBreak, plr.LowestBreakIteration != null);
@@ -359,7 +359,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             try
             {
                 ParallelLoopResult plr = Parallel.ForEach(mop, body);
-                
+
                 Assert.False(excExpected);
 
                 Assert.Equal(shouldComplete, plr.IsCompleted);
@@ -510,7 +510,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
             //
             // Test "vanilla" Parallel.ForEach
-            // 
+            //
 
 
             ForEachPLRTest(delegate (KeyValuePair<int, string> kvp, ParallelLoopState ps)
@@ -642,7 +642,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
             //
             // Test Parallel.ForEach w/ Partitioner
-            // 
+            //
 
 
             PartitionerForEachPLRTest(delegate (int i, ParallelLoopState ps)
@@ -702,7 +702,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
             //
             // Test Parallel.ForEach w/ OrderablePartitioner
-            // 
+            //
 
 
             OrderablePartitionerForEachPLRTest(delegate (int i, ParallelLoopState ps, long index)

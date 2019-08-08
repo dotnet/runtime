@@ -52,7 +52,7 @@ namespace System.Net.Http
         {
             return System.Runtime.InteropServices.Marshal.UnsafeAddrOfPinnedArrayElement<T>(arr, index);
         }
-        
+
         public static T PtrToStructure<T>(IntPtr ptr)
         {
             return System.Runtime.InteropServices.Marshal.PtrToStructure<T>(ptr);
@@ -72,7 +72,7 @@ namespace System.Net.Http
         {
             System.Runtime.InteropServices.Marshal.StructureToPtr<T>(structure, ptr, fDeleteOld);
         }
-        
+
         public static int SizeOf<T>(T structure)
         {
             return System.Runtime.InteropServices.Marshal.SizeOf<T>(structure);

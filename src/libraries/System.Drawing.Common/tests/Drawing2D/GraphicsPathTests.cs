@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
@@ -389,7 +389,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gpf = new GraphicsPath())
             {
                 gpi.AddArc(1, 1, 2, 2, Pi4, Pi4);
-                // AssertArc() method expects added Arc with parameters 
+                // AssertArc() method expects added Arc with parameters
                 // x=1, y=1, width=2, height=2, startAngle=Pi4, seewpAngle=Pi4 here and below.
                 AssertArc(gpi);
 
@@ -1007,7 +1007,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gpi = new GraphicsPath())
             {
                 gpi.AddPie(new Rectangle(1, 1, 2, 2), Pi4, Pi4);
-                // AssertPie() method expects added Pie with parameters 
+                // AssertPie() method expects added Pie with parameters
                 // x=1, y=1, width=2, height=2, startAngle=Pi4, seewpAngle=Pi4 here and below.
                 AssertPie(gpi);
             }
@@ -2741,5 +2741,3 @@ namespace System.Drawing.Drawing2D.Tests
         }
     }
 }
-
-

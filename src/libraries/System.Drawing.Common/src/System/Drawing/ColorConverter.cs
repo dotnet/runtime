@@ -25,17 +25,17 @@ namespace System.Drawing {
         private static string ColorConstantsLock = "colorConstants";
         private static Hashtable colorConstants;
         private static string SystemColorConstantsLock = "systemColorConstants";
-        private static Hashtable systemColorConstants;        
+        private static Hashtable systemColorConstants;
         private static string ValuesLock = "values";
-        private static StandardValuesCollection values;        
+        private static StandardValuesCollection values;
 
         /// <include file='doc\ColorConverter.uex' path='docs/doc[@for="ColorConverter.ColorConverter"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public ColorConverter() {
-        }               
-               
+        }
+
         /// <include file='doc\ColorConverter.uex' path='docs/doc[@for="ColorConverter.Colors"]/*' />
         /// <devdoc>
         ///      Hashtable of color / value pairs (color name is key)
@@ -44,16 +44,16 @@ namespace System.Drawing {
         private static Hashtable Colors {
             get {
                 if (colorConstants == null) {
-                    lock(ColorConstantsLock) {                        
+                    lock(ColorConstantsLock) {
                         if (colorConstants == null) {
                             Hashtable tempHash = new Hashtable(StringComparer.OrdinalIgnoreCase);
                             FillConstants(tempHash, typeof(Color));
                             colorConstants = tempHash;
-                        }                            
+                        }
                     }
                 }
-                
-                return colorConstants;                
+
+                return colorConstants;
             }
         }
 
@@ -63,21 +63,21 @@ namespace System.Drawing {
         ///      for system colors.
         /// </devdoc>
         private static Hashtable SystemColors {
-            get {                
+            get {
                 if (systemColorConstants == null) {
                     lock (SystemColorConstantsLock) {
-                        if (systemColorConstants == null) {                                                            
+                        if (systemColorConstants == null) {
                             Hashtable tempHash = new Hashtable(StringComparer.OrdinalIgnoreCase);
                             FillConstants(tempHash, typeof(System.Drawing.SystemColors));
                             systemColorConstants = tempHash;
-                        }                                
-                    }                            
+                        }
+                    }
                 }
 
-                return systemColorConstants;                
+                return systemColorConstants;
             }
         }
-               
+
         /// <include file='doc\ColorConverter.uex' path='docs/doc[@for="ColorConverter.CanConvertFrom"]/*' />
         /// <devdoc>
         ///      Determines if this converter can convert an object in the given source
@@ -119,7 +119,7 @@ namespace System.Drawing {
         /// <include file='doc\ColorConverter.uex' path='docs/doc[@for="ColorConverter.ConvertFrom"]/*' />
         /// <devdoc>
         ///      Converts the given object to the converter's native type.
-        /// </devdoc>        
+        /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
             string strValue = value as string;
@@ -139,10 +139,10 @@ namespace System.Drawing {
                         if (culture == null) {
                             culture = CultureInfo.CurrentCulture;
                         }
-                                                
+
                         char sep = culture.TextInfo.ListSeparator[0];
                         bool tryMappingToKnownColor = true;
-                        
+
                         TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
 
                         // If the value is a 6 digit hex number only, then
@@ -275,7 +275,7 @@ namespace System.Drawing {
                             args[nArg++] = intConverter.ConvertToString(context, culture, (object)c.G);
                             args[nArg++] = intConverter.ConvertToString(context, culture, (object)c.B);
 
-                            // Now slam all of these together with the fantastic Join 
+                            // Now slam all of these together with the fantastic Join
                             // method.
                             //
                             return string.Join(sep, args);
@@ -285,7 +285,7 @@ namespace System.Drawing {
                 if (destinationType == typeof(InstanceDescriptor)) {
                     MemberInfo member = null;
                     object[] args = null;
-                    
+
                     Color c = (Color)value;
 
                     if (c.IsEmpty) {
@@ -309,7 +309,7 @@ namespace System.Drawing {
                         member = typeof(Color).GetMethod("FromArgb", new Type[] {typeof(int), typeof(int), typeof(int)});
                         args = new object[] {c.R, c.G, c.B};
                     }
-                    
+
                     Debug.Assert(member != null, "Could not convert color to member.  Did someone change method name / signature and not update Colorconverter?");
                     if (member != null) {
                         return new InstanceDescriptor(member, args);
@@ -341,7 +341,7 @@ namespace System.Drawing {
                         hash[prop.Name] = prop.GetValue(null, tempIndex);
                     }
                 }
-            }            
+            }
         }
 
         /// <include file='doc\ColorConverter.uex' path='docs/doc[@for="ColorConverter.GetStandardValues"]/*' />
@@ -352,16 +352,16 @@ namespace System.Drawing {
         ///      standard set of values.
         /// </devdoc>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context) {
-            if (values == null) {                            
+            if (values == null) {
                 lock (ValuesLock) {
                     if (values == null) {
-   
+
                        // We must take the value from each hashtable and combine them.
                        //
                        ArrayList arrayValues = new ArrayList();
                        arrayValues.AddRange(Colors.Values);
                        arrayValues.AddRange(SystemColors.Values);
-       
+
                        // Now, we have a couple of colors that have the same names but
                        // are identical values.  Look for these and remove them.  Too
                        // bad this is n^2.
@@ -378,12 +378,12 @@ namespace System.Drawing {
                                }
                            }
                        }
-       
+
                        // Sort the array.
                        //
                        arrayValues.Sort(0, arrayValues.Count, new ColorComparer());
                        values = new StandardValuesCollection(arrayValues.ToArray());
-                    }                       
+                    }
                 }
             }
 
@@ -414,6 +414,3 @@ namespace System.Drawing {
         }
     }
 }
-
-
-

@@ -59,7 +59,7 @@ namespace System.Data.Tests
                 ds.Relations.Add(new DataRelation("test", dtParent.Columns[2], dtChild.Columns[0], true));
             });
 
-            //Attempt to clear rows from parent table 
+            //Attempt to clear rows from parent table
             // InvalidConstraintException - RowsCollection.Clear
             Assert.Throws<InvalidConstraintException>(() =>
             {

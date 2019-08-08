@@ -234,5 +234,3 @@ namespace System.Security.Cryptography.Pkcs.Tests
         private static readonly CmsRecipient s_cr2 = new CmsRecipient(Certificates.RSAKeyTransfer3.GetCertificate());
     }
 }
-
-

@@ -6,7 +6,7 @@
 //
 // IntRangePartitionerTests.cs - Tests for range partitioner for integer range.
 //
-// PLEASE NOTE !! - For tests that need to iterate the elements inside the partitions more 
+// PLEASE NOTE !! - For tests that need to iterate the elements inside the partitions more
 // than once, we need to call GetPartitions for the second time. Iterating a second times
 // over the first enumerable<tuples> / IList<IEnumerator<tuples> will yield no elements
 //
@@ -194,7 +194,7 @@ namespace System.Collections.Concurrent.Tests
         /// We unroll the tuples and flatten them to a single sequence
         /// The single sequence is compared to the original range for verification
         /// This method tests the partitioner created with user provided desiredRangeSize
-        /// The range sizes for individual ranges are checked to see if they are equal to 
+        /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
@@ -237,7 +237,7 @@ namespace System.Collections.Concurrent.Tests
         /// We unroll the tuples and flatten them to a single sequence
         /// The single sequence is compared to the original range for verification
         /// This method tests the partitioner created with user provided desiredRangeSize
-        /// The range sizes for individual ranges are checked to see if they are equal to 
+        /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
@@ -281,7 +281,7 @@ namespace System.Collections.Concurrent.Tests
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// This method tests the partitioner created with user provided desiredRangeSize
-        /// The range sizes for individual ranges are checked to see if they are equal to 
+        /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
@@ -334,7 +334,7 @@ namespace System.Collections.Concurrent.Tests
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// This method tests the partitioner created with user provided desiredRangeSize
-        /// The range sizes for individual ranges are checked to see if they are equal to 
+        /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
@@ -379,7 +379,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>
-        /// Helper function to validate the range size of the partitioners match what the user specified 
+        /// Helper function to validate the range size of the partitioners match what the user specified
         /// (desiredRangeSize).
         /// </summary>
         /// <param name="desiredRangeSize"></param>
@@ -389,7 +389,7 @@ namespace System.Collections.Concurrent.Tests
             //var rangesWithDifferentRangeSize = rangeSizes.Take(rangeSizes.Length - 1).Where(r => r != desiredRangeSize).ToArray();
             IList<int> rangesWithDifferentRangeSize = new List<int>();
             // ensuring that every range, size from the last one is the same.
-            int numToTake = rangeSizes.Count - 1; 
+            int numToTake = rangeSizes.Count - 1;
             for (int i = 0; i < numToTake; i++)
             {
                 int range = rangeSizes[i];

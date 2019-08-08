@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,7 +23,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
 
         /// <summary>
         /// Singleton instance of an RPS class, which drives authentication at the RPS level.
-        /// </summary>        
+        /// </summary>
         private static RPS s_rps = null;
 
         /// <summary>
@@ -33,12 +33,12 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
 
         /// <summary>
         /// The RPS representation of the ticket
-        /// </summary>                
+        /// </summary>
         private object _rpsTicket = null;
 
         /// <summary>
         /// Constructor that takes the RPS representation of the ticket as an argument
-        /// </summary>                
+        /// </summary>
         private RpsTicket(object _ticket, byte[] _sessionKey)
         {
             _rpsTicket = _ticket;
@@ -109,7 +109,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
 
         /// <summary>
         /// Constructor that takes the RPS representation of the ticket as an argument
-        /// </summary>                
+        /// </summary>
         private JwtTicket(byte[] ticket)
         {
             _ticket = ticket;

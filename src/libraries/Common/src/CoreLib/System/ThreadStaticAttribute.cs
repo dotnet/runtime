@@ -6,9 +6,9 @@
 **
 **
 **
-** Purpose:     Custom attribute to indicate that the field should be treated 
+** Purpose:     Custom attribute to indicate that the field should be treated
 **              as a static relative to a thread.
-**          
+**
 **
 **
 ===========================================================*/

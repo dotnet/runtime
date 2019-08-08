@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = CreateJsonFormatWriterDelegate();
                             }
-                            else 
+                            else
                             {
                                 tempDelegate = new JsonFormatWriterGenerator().GenerateClassWriter(TraditionalClassDataContract);
                             }

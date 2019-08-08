@@ -21,4 +21,3 @@ namespace System.Drawing.Printing
         Collate,
     }
 }
-

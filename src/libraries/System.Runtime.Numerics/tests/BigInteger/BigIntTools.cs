@@ -17,9 +17,9 @@ namespace BigIntTools
 
             // Ensure that we have at least 1 digit
             int numDigits = random.Next() % maxdigits + 1;
-            
+
             StringBuilder randNum = new StringBuilder();
-            
+
             // We'll make some numbers negative
             while (randNum.Length < numDigits)
             {
@@ -73,4 +73,3 @@ namespace BigIntTools
         }
     }
 }
-

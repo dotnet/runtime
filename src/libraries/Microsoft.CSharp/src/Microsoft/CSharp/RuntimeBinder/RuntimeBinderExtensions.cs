@@ -295,7 +295,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // fallback to "IsEquivalentTo"
                 Func<MemberInfo, MemberInfo, bool> fallbackMemberEquivalence = (m1param, m2param) => m1param.IsEquivalentTo(m2param);
 
-                // fallback must work 
+                // fallback must work
                 s_MemberEquivalence = fallbackMemberEquivalence;
                 return fallbackMemberEquivalence(m1, m2);
             };

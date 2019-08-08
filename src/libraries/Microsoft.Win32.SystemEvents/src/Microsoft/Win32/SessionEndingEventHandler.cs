@@ -9,4 +9,3 @@ namespace Microsoft.Win32
     /// </devdoc>
     public delegate void SessionEndingEventHandler(object sender, SessionEndingEventArgs e);
 }
-

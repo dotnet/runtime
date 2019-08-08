@@ -256,7 +256,7 @@ namespace System.Data.SqlClient
         internal int IncrementNonTransactedOpenResultCount()
         {
             // IMPORTANT - this increments the connection wide open result count for all
-            // operations not under a transaction!  Do not call if you intend to modify the 
+            // operations not under a transaction!  Do not call if you intend to modify the
             // count for a transaction!
             Debug.Assert(_nonTransactedOpenResultCount >= 0, "Unexpected result count state");
             int result = Interlocked.Increment(ref _nonTransactedOpenResultCount);
@@ -266,7 +266,7 @@ namespace System.Data.SqlClient
         internal void DecrementNonTransactedOpenResultCount()
         {
             // IMPORTANT - this decrements the connection wide open result count for all
-            // operations not under a transaction!  Do not call if you intend to modify the 
+            // operations not under a transaction!  Do not call if you intend to modify the
             // count for a transaction!
             Interlocked.Decrement(ref _nonTransactedOpenResultCount);
             Debug.Assert(_nonTransactedOpenResultCount >= 0, "Unexpected result count state");
@@ -339,7 +339,7 @@ namespace System.Data.SqlClient
                 // If we are pooling, check to see if we were processing an
                 // alias which has changed, which means we need to clean out
                 // the pool. See Webdata 104293.
-                // This should not apply to routing, as it is not an alias change, routed connection 
+                // This should not apply to routing, as it is not an alias change, routed connection
                 // should still use VNN of AlwaysOn cluster as server for pooling purposes.
                 connHandler.PoolGroupProviderInfo.AliasCheck(serverInfo.PreRoutingServerName == null ?
                     serverInfo.ResolvedServerName : serverInfo.PreRoutingServerName);
@@ -688,7 +688,7 @@ namespace System.Data.SqlClient
             if (payload[0] == 0xaa)
             {
                 // If the first byte is 0xAA, we are connecting to a 6.5 or earlier server, which
-                // is not supported. 
+                // is not supported.
                 throw SQL.InvalidSQLServerVersionUnknown();
             }
 
@@ -781,9 +781,9 @@ namespace System.Data.SqlClient
 
                             if (encrypt && !integratedSecurity)
                             {
-                                // optimization: in case of SQL Authentication and encryption, set SNI_SSL_IGNORE_CHANNEL_BINDINGS to let SNI 
+                                // optimization: in case of SQL Authentication and encryption, set SNI_SSL_IGNORE_CHANNEL_BINDINGS to let SNI
                                 // know that it does not need to allocate/retrieve the Channel Bindings from the SSL context.
-                                // This applies to Native SNI 
+                                // This applies to Native SNI
                                 info |= TdsEnums.SNI_SSL_IGNORE_CHANNEL_BINDINGS;
                             }
 
@@ -1128,7 +1128,7 @@ namespace System.Data.SqlClient
                     }
                     try
                     {
-                        // the following handler will throw an exception or generate a warning event   
+                        // the following handler will throw an exception or generate a warning event
                         _connHandler.OnError(exception, breakConnection);
                     }
                     finally
@@ -1217,8 +1217,8 @@ namespace System.Data.SqlClient
                     len -= iColon;
                     /*
                         The error message should come back in the following format: "TCP Provider: MESSAGE TEXT"
-                        If the message is received on a Win9x OS, the error message will not contain MESSAGE TEXT 
-                        If we get an error message with no message text, just return the entire message otherwise 
+                        If the message is received on a Win9x OS, the error message will not contain MESSAGE TEXT
+                        If we get an error message with no message text, just return the entire message otherwise
                         return just the message text.
                     */
                     if (len > 0)
@@ -1598,7 +1598,7 @@ namespace System.Data.SqlClient
                         if (_connHandler != null)
                             connection = _connHandler.Connection; // SqlInternalConnection holds the user connection object as a weak ref
                         // We are omitting checks for error.Class in the code below (see processing of INFO) since we know (and assert) that error class
-                        // error.Class < TdsEnums.MIN_ERROR_CLASS for info message. 
+                        // error.Class < TdsEnums.MIN_ERROR_CLASS for info message.
                         // Also we know that TdsEnums.MIN_ERROR_CLASS<TdsEnums.MAX_USER_CORRECTABLE_ERROR_CLASS
                         if ((connection != null) && connection.FireInfoMessageEventOnUserErrors)
                         {
@@ -2164,7 +2164,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        // This is in its own method to avoid always allocating the lambda in TryRun 
+        // This is in its own method to avoid always allocating the lambda in TryRun
         private static void TryRunSetupSpinWaitContinuation(TdsParserStateObject stateObj) => SpinWait.SpinUntil(() => !stateObj._attentionSending);
 
         private bool TryProcessEnvChange(int tokenLength, TdsParserStateObject stateObj, out SqlEnvChange sqlEnvChange)
@@ -3388,9 +3388,9 @@ namespace System.Data.SqlClient
 
                 // If we failed, it is quite possible this is because certain culture id's
                 // were removed in Win2k and beyond, however Sql Server still supports them.
-                // In this case we will mask off the sort id (the leading 1). If that fails, 
-                // or we have a culture id other than the cases below, we throw an error and 
-                // throw away the rest of the results. 
+                // In this case we will mask off the sort id (the leading 1). If that fails,
+                // or we have a culture id other than the cases below, we throw an error and
+                // throw away the rest of the results.
 
                 //  Sometimes GetCultureInfo will return CodePage 0 instead of throwing.
                 //  This should be treated as an error and functionality switches into the following logic.
@@ -5056,10 +5056,10 @@ namespace System.Data.SqlClient
             // Special case data type correction for SqlMoney inside a SqlVariant.
             if ((TdsEnums.SQLNUMERICN == mt.TDSType) && (8 == length))
             {
-                // The caller will coerce all SqlTypes to native CLR types, which means SqlMoney will 
-                // coerce to decimal/SQLNUMERICN (via SqlMoney.Value call).  In the case where the original 
-                // value was SqlMoney the caller will also pass in the metadata length for the SqlMoney type 
-                // which is 8 bytes.  To honor the intent of the caller here we coerce this special case 
+                // The caller will coerce all SqlTypes to native CLR types, which means SqlMoney will
+                // coerce to decimal/SQLNUMERICN (via SqlMoney.Value call).  In the case where the original
+                // value was SqlMoney the caller will also pass in the metadata length for the SqlMoney type
+                // which is 8 bytes.  To honor the intent of the caller here we coerce this special case
                 // input back to SqlMoney from decimal/SQLNUMERICN.
                 mt = MetaType.GetMetaTypeFromValue(new SqlMoney((decimal)value));
             }
@@ -5955,7 +5955,7 @@ namespace System.Data.SqlClient
                         initialLength += 1 /* StateId*/ + StateValueLength(reconnectData._initialState[i].Length);
                     }
                 }
-                int currentLength = 0; // sizeof(DWORD) - length itself                
+                int currentLength = 0; // sizeof(DWORD) - length itself
                 currentLength += 1 + 2 * (reconnectData._initialDatabase == reconnectData._database ? 0 : TdsParserStaticMethods.NullAwareStringLength(reconnectData._database));
                 currentLength += 1 + 2 * (reconnectData._initialLanguage == reconnectData._language ? 0 : TdsParserStaticMethods.NullAwareStringLength(reconnectData._language));
                 currentLength += (reconnectData._collation != null && !SqlCollation.AreSame(reconnectData._collation, reconnectData._initialCollation)) ? 6 : 1;
@@ -6319,7 +6319,7 @@ namespace System.Data.SqlClient
                    25) fNoNBCAndSparse:1,           // set if client does not support NBC and Sparse column
                    26) fUserInstance:1,             // This connection wants to connect to a SQL "user instance"
                    27) fUnknownCollationHandling:1, // This connection can handle unknown collation correctly.
-                   28) fExtension:1                 // Extensions are used                 
+                   28) fExtension:1                 // Extensions are used
                    32 - total
                 */
 
@@ -6704,11 +6704,11 @@ namespace System.Data.SqlClient
 
             // Promote, Commit and Rollback requests for
             // delegated transactions often happen while there is an open result
-            // set, so we need to handle them by using a different MARS session, 
+            // set, so we need to handle them by using a different MARS session,
             // otherwise we'll write on the physical state objects while someone
-            // else is using it.  When we don't have MARS enabled, we need to 
+            // else is using it.  When we don't have MARS enabled, we need to
             // lock the physical state object to synchronize its use at least
-            // until we increment the open results count.  Once it's been 
+            // until we increment the open results count.  Once it's been
             // incremented the delegated transaction requests will fail, so they
             // won't stomp on anything.
 
@@ -6727,7 +6727,7 @@ namespace System.Data.SqlClient
                 // Temporarily disable async writes
                 _asyncWrite = false;
 
-                // This validation step MUST be done after locking the connection to guarantee we don't 
+                // This validation step MUST be done after locking the connection to guarantee we don't
                 //  accidentally execute after the transaction has completed on a different thread.
                 if (!isDelegateControlRequest)
                 {
@@ -6775,8 +6775,8 @@ namespace System.Data.SqlClient
 
                         // Only assign the passed in transaction if it is not equal to the current transaction.
                         // And, if it is not equal, the current actually should be null.  Anything else
-                        // is a unexpected state.  The concern here is mainly for the mixed use of 
-                        // T-SQL and API transactions. 
+                        // is a unexpected state.  The concern here is mainly for the mixed use of
+                        // T-SQL and API transactions.
 
                         // Expected states:
                         // 1) _pendingTransaction = null, _currentTransaction = null, non null transaction
@@ -6946,11 +6946,11 @@ namespace System.Data.SqlClient
 
             // Promote, Commit and Rollback requests for
             // delegated transactions often happen while there is an open result
-            // set, so we need to handle them by using a different MARS session, 
+            // set, so we need to handle them by using a different MARS session,
             // otherwise we'll write on the physical state objects while someone
-            // else is using it.  When we don't have MARS enabled, we need to 
-            // lock the physical state object to synchronize it's use at least 
-            // until we increment the open results count.  Once it's been 
+            // else is using it.  When we don't have MARS enabled, we need to
+            // lock the physical state object to synchronize it's use at least
+            // until we increment the open results count.  Once it's been
             // incremented the delegated transaction requests will fail, so they
             // won't stomp on anything.
 
@@ -6978,7 +6978,7 @@ namespace System.Data.SqlClient
                     throw ADP.ClosedConnectionError();
                 }
 
-                // This validation step MUST be done after locking the connection to guarantee we don't 
+                // This validation step MUST be done after locking the connection to guarantee we don't
                 //  accidentally execute after the transaction has completed on a different thread.
                 _connHandler.CheckEnlistedTransactionBinding();
 
@@ -7000,7 +7000,7 @@ namespace System.Data.SqlClient
                 {
                     Debug.Assert(!sync, "Should not have gotten a Task when writing in sync mode");
 
-                    // Need to wait for flush - continuation will unlock the connection                    
+                    // Need to wait for flush - continuation will unlock the connection
                     bool taskReleaseConnectionLock = releaseConnectionLock;
                     releaseConnectionLock = false;
                     return executeTask.ContinueWith(
@@ -7073,11 +7073,11 @@ namespace System.Data.SqlClient
 
                 // Promote, Commit and Rollback requests for
                 // delegated transactions often happen while there is an open result
-                // set, so we need to handle them by using a different MARS session, 
+                // set, so we need to handle them by using a different MARS session,
                 // otherwise we'll write on the physical state objects while someone
-                // else is using it.  When we don't have MARS enabled, we need to 
+                // else is using it.  When we don't have MARS enabled, we need to
                 // lock the physical state object to synchronize its use at least
-                // until we increment the open results count.  Once it's been 
+                // until we increment the open results count.  Once it's been
                 // incremented the delegated transaction requests will fail, so they
                 // won't stomp on anything.
 
@@ -7095,7 +7095,7 @@ namespace System.Data.SqlClient
                         throw ADP.ClosedConnectionError();
                     }
 
-                    // This validation step MUST be done after locking the connection to guarantee we don't 
+                    // This validation step MUST be done after locking the connection to guarantee we don't
                     //  accidentally execute after the transaction has completed on a different thread.
                     if (firstCall)
                     {
@@ -7697,7 +7697,7 @@ namespace System.Data.SqlClient
             );
         }
 
-        // This is in its own method to avoid always allocating the lambda in  TDSExecuteRPCParameter 
+        // This is in its own method to avoid always allocating the lambda in  TDSExecuteRPCParameter
         private void TDSExecuteRPCParameterSetupFlushCompletion(TdsParserStateObject stateObj, TaskCompletionSource<object> completion, Task execFlushTask, bool taskReleaseConnectionLock)
         {
             execFlushTask.ContinueWith(tsk => ExecuteFlushTaskCallback(tsk, stateObj, completion, taskReleaseConnectionLock), TaskScheduler.Default);
@@ -8790,7 +8790,7 @@ namespace System.Data.SqlClient
                         SqlGuid sqlGuid = (SqlGuid)value;
                         if (sqlGuid.IsNull)
                         {
-                            b.Clear(); // this is needed because initlocals may be supressed in framework assemblies meaning the memory is not automaticaly zeroed 
+                            b.Clear(); // this is needed because initlocals may be supressed in framework assemblies meaning the memory is not automaticaly zeroed
                         }
                         else
                         {
@@ -9207,7 +9207,7 @@ namespace System.Data.SqlClient
             }
             using (ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, preambleToSkip), encoding), size))
             using (XmlWriter ww = XmlWriter.Create(writer, writerSettings))
-            { 
+            {
                 if (feed._source.ReadState == ReadState.Initial)
                 {
                     feed._source.Read();
@@ -9421,7 +9421,7 @@ namespace System.Data.SqlClient
                         {
                             if (type.IsPlp)
                             {
-                                WriteInt(actualLength, stateObj);               // chunk length                        
+                                WriteInt(actualLength, stateObj);               // chunk length
                             }
                             return stateObj.WriteByteArray((byte[])value, actualLength, offset, canAccumulate: false);
                         }
@@ -9430,7 +9430,7 @@ namespace System.Data.SqlClient
                 case TdsEnums.SQLUNIQUEID:
                     {
                         Debug.Assert(actualLength == 16, "Invalid length for guid type in com+ object");
-                        Span<byte> b = stackalloc byte[16];                        
+                        Span<byte> b = stackalloc byte[16];
                         FillGuidBytes((System.Guid)value, b);
                         stateObj.WriteByteSpan(b);
 

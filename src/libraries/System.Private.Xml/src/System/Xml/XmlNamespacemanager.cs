@@ -213,7 +213,7 @@ namespace System.Xml
             return prefixes.Keys.GetEnumerator();
         }
 
-        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey. 
+        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
 #pragma warning disable 3002
         public virtual IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {

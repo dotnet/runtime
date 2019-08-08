@@ -135,7 +135,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 tasks[1].Start();
 
                 Task.WaitAll(tasks, 15 * 1000);
-                
+
                 CommandCancelTest.VerifyConnection(command);
             }
         }
@@ -224,7 +224,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     } while (r.NextResult());
                 }
             }, new string[] { errorMessage, errorMessageSevereFailure });
-            
+
         }
 
         private static void CancelSharedCommand(object state)

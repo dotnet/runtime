@@ -9,7 +9,7 @@
 ** Purpose: The boolean class serves as a wrapper for the primitive
 ** type boolean.
 **
-** 
+**
 ===========================================================*/
 
 using System.Runtime.CompilerServices;
@@ -40,11 +40,11 @@ namespace System
         //
 
         // The internal string representation of true.
-        // 
+        //
         internal const string TrueLiteral = "True";
 
         // The internal string representation of false.
-        // 
+        //
         internal const string FalseLiteral = "False";
 
 
@@ -53,11 +53,11 @@ namespace System
         //
 
         // The public string representation of true.
-        // 
+        //
         public static readonly string TrueString = TrueLiteral;
 
         // The public string representation of false.
-        // 
+        //
         public static readonly string FalseString = FalseLiteral;
 
         //
@@ -149,9 +149,9 @@ namespace System
         // indicates the relationship. For booleans, false sorts before true.
         // null is considered to be less than any instance.
         // If object is not of type boolean, this method throws an ArgumentException.
-        // 
+        //
         // Returns a value less than zero if this  object
-        // 
+        //
         public int CompareTo(object? obj)
         {
             if (obj == null)
@@ -189,10 +189,10 @@ namespace System
 
         //
         // Static Methods
-        // 
+        //
 
         // Custom string compares for early application use by config switches, etc
-        // 
+        //
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             return (value.Length == 4 &&
@@ -213,7 +213,7 @@ namespace System
         }
 
         // Determines whether a String represents true or false.
-        // 
+        //
         public static bool Parse(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -224,7 +224,7 @@ namespace System
             TryParse(value, out bool result) ? result : throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
 
         // Determines whether a String represents true or false.
-        // 
+        //
         public static bool TryParse(string? value, out bool result)
         {
             if (value == null)
@@ -298,7 +298,7 @@ namespace System
 
         //
         // IConvertible implementation
-        // 
+        //
 
         public TypeCode GetTypeCode()
         {

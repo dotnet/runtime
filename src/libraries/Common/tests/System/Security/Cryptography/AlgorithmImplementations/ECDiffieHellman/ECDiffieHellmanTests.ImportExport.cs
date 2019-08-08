@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,8 +11,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #if netcoreapp
     public partial class ECDiffieHellmanTests
     {
-        // On CentOS, secp224r1 (also called nistP224) appears to be disabled. To prevent test failures on that platform, 
-        // probe for this capability before depending on it. 
+        // On CentOS, secp224r1 (also called nistP224) appears to be disabled. To prevent test failures on that platform,
+        // probe for this capability before depending on it.
         internal static bool ECDsa224Available =>
             ECDiffieHellmanFactory.IsCurveValid(new Oid(ECDSA_P224_OID_VALUE));
 
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                     using (ECDiffieHellmanPublicKey ecdh2Pub = ecdh2.PublicKey)
                     {
                         HashAlgorithmName hash = HashAlgorithmName.SHA256;
-                        
+
                         byte[] ech1Named_ecdh1Named = ecdh1Named.DeriveKeyFromHash(ecdh1NamedPub, hash);
                         byte[] ech1Named_ecdh1Named2 = ecdh1Named.DeriveKeyFromHash(ecdh1NamedPub, hash);
                         byte[] ech1Named_ecdh1Explicit = ecdh1Named.DeriveKeyFromHash(ecdh1ExplicitPub, hash);
@@ -105,12 +105,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                         byte[] ecdh1Explicit_ecdh1Explicit = ecdh1Explicit.DeriveKeyFromHash(ecdh1ExplicitPub, hash);
                         byte[] ecdh1Explicit_ecdh1Explicit2 = ecdh1Explicit.DeriveKeyFromHash(ecdh1ExplicitPub, hash);
                         byte[] ecdh1Explicit_ecdh2Explicit = ecdh1Explicit.DeriveKeyFromHash(ecdh2Pub, hash);
-                        
+
                         byte[] ecdh2_ecdh1Named = ecdh2.DeriveKeyFromHash(ecdh1NamedPub, hash);
                         byte[] ecdh2_ecdh1Explicit = ecdh2.DeriveKeyFromHash(ecdh1ExplicitPub, hash);
                         byte[] ecdh2_ecdh2Explicit = ecdh2.DeriveKeyFromHash(ecdh2Pub, hash);
                         byte[] ecdh2_ecdh2Explicit2 = ecdh2.DeriveKeyFromHash(ecdh2Pub, hash);
-                        
+
                         Assert.Equal(ech1Named_ecdh1Named, ech1Named_ecdh1Named2);
                         Assert.Equal(ech1Named_ecdh1Explicit, ecdh1Explicit_ecdh1Named);
                         Assert.Equal(ech1Named_ecdh2Explicit, ecdh2_ecdh1Named);
@@ -351,7 +351,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 VerifyNamedCurve(parameters, ec, 224, true);
             }
         }
-        
+
         [Fact]
         public static void ExportIncludingPrivateOnPublicOnlyKey()
         {

@@ -30,4 +30,3 @@ namespace System.Security.Cryptography.X509Certificates
         public string Information { get; private set; }
     }
 }
-

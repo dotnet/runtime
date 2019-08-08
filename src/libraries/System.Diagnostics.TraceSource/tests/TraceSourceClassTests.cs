@@ -202,17 +202,17 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         public TraceSourceTestsBase()
-        {            
+        {
             Trace.AutoFlush = AutoFlush;
             Trace.UseGlobalLock = UseGlobalLock;
         }
-        
+
         // properties are overridden to define different "modes" of execution
         internal virtual bool UseGlobalLock
         {
             get
             {
-                // ThreadSafeListener is only meaningful when not using a global lock, 
+                // ThreadSafeListener is only meaningful when not using a global lock,
                 // so UseGlobalLock will be auto-disabled in that mode.
                 return true && !ThreadSafeListener;
             }

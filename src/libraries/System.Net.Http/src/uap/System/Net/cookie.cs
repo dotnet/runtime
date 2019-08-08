@@ -349,8 +349,8 @@ namespace System.Net
             clonedCookie.Secure = m_secure;
 
             //
-            // The variant is set when we set properties like port/version. So, 
-            // we should copy over the variant from the original cookie after 
+            // The variant is set when we set properties like port/version. So,
+            // we should copy over the variant from the original cookie after
             // we set all other properties
             clonedCookie.m_cookieVariant = m_cookieVariant;
 
@@ -955,7 +955,7 @@ namespace System.Net
         {
 #if !uap
             if (NetEventSource.IsEnabled)
-                NetEventSource.Info(this, 
+                NetEventSource.Info(this,
                               "Cookie: " + ToString() + "->\n"
                             + "\tComment    = " + Comment + "\n"
                             + "\tCommentUri = " + CommentUri + "\n"
@@ -1116,7 +1116,7 @@ namespace System.Net
         //
         //  Gets the full string of the cookie
         //
-        
+
         internal string GetCookieString()
         {
             return m_tokenStream.Substring(m_cookieStartIndex, m_cookieLength).Trim();
@@ -1273,7 +1273,7 @@ namespace System.Net
                     }
                     ++m_index;
                 }
-                
+
                 if (Eof)
                 {
                     m_cookieLength = m_index - m_cookieStartIndex;

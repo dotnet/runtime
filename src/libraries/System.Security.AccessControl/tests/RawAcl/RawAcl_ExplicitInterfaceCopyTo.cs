@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -106,7 +106,7 @@ namespace System.Security.AccessControl.Tests
                 myCollection = (ICollection)rAcl;
                 myCollection.CopyTo(gAces, 0);
             });
-            
+
             //Case 5, RawAcl with huge number of Aces
             rAcl = new RawAcl(0, GenericAcl.MaxBinaryLength);
             for (int i = 0; i < 1820; i++)

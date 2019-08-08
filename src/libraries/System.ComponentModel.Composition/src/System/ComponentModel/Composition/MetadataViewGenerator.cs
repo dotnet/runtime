@@ -22,11 +22,11 @@ namespace System.ComponentModel.Composition
     // // The class to be generated will look approximately like:
     // public class __Foo__MedataViewProxy : TMetadataView
     // {
-    //     public static object Create(IDictionary<string, object> metadata) 
+    //     public static object Create(IDictionary<string, object> metadata)
     //     {
     //        return new __Foo__MedataViewProxy(metadata);
     //     }
-    // 
+    //
     //     public __Foo__MedataViewProxy (IDictionary<string, object> metadata)
     //     {
     //         if(metadata == null)
@@ -196,7 +196,7 @@ namespace System.ComponentModel.Composition
             proxyTypeBuilder = proxyModuleBuilder.DefineType(
                 string.Format(CultureInfo.InvariantCulture, "_proxy_{0}_{1}", viewType.FullName, Guid.NewGuid()),
                 TypeAttributes.Public,
-                typeof(object), 
+                typeof(object),
                 interfaces);
             // Implement Constructor
             ConstructorBuilder proxyCtor = proxyTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, CtorArgumentTypes);
@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition
                 Type[] propertyTypeArguments = new Type[] { propertyInfo.PropertyType };
                 Type[] optionalModifiers = null;
                 Type[] requiredModifiers = null;
-                
+
                 // PropertyInfo does not support GetOptionalCustomModifiers and GetRequiredCustomModifiers on Silverlight
                 optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
                 requiredModifiers = propertyInfo.GetRequiredCustomModifiers();

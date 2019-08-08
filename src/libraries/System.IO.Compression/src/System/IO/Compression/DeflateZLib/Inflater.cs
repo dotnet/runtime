@@ -135,7 +135,7 @@ namespace System.IO.Compression
         /// <summary>
         /// If this stream has some input leftover that hasn't been processed then we should
         /// check if it is another GZip file concatenated with this one.
-        /// 
+        ///
         /// Returns false if the leftover input is another GZip data stream.
         /// </summary>
         private unsafe bool ResetStreamForLeftoverInput()

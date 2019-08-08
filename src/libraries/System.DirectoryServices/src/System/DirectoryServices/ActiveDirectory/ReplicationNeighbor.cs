@@ -34,7 +34,7 @@ namespace System.DirectoryServices.ActiveDirectory
             NoChangeNotifications = 0x20000000,
             PartialAttributeSet = 0x40000000
         }
-        
+
         private readonly string _sourceServerDN;
 
         private readonly DirectoryServer _server = null;

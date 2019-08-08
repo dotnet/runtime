@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo actualMethod = property.GetGetMethod(true);
             Assert.Equal(method.Name, actualMethod.Name);
         }
-        
+
         [Fact]
         public void SetGetMethod_NullMethodBuilder_ThrowsArgumentNullException()
         {

@@ -12,7 +12,7 @@ using Microsoft.Internal;
 namespace System.ComponentModel.Composition.Hosting
 {
     /// <summary>
-    ///     A mutable collection of <see cref="ComposablePartCatalog"/>s.  
+    ///     A mutable collection of <see cref="ComposablePartCatalog"/>s.
     /// </summary>
     /// <remarks>
     ///     This type is thread safe.
@@ -31,11 +31,11 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="AggregateCatalog"/> class 
+        ///     Initializes a new instance of the <see cref="AggregateCatalog"/> class
         ///     with the specified catalogs.
         /// </summary>
         /// <param name="catalogs">
-        ///     An <see cref="Array"/> of <see cref="ComposablePartCatalog"/> objects to add to the 
+        ///     An <see cref="Array"/> of <see cref="ComposablePartCatalog"/> objects to add to the
         ///     <see cref="AggregateCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="catalogs">
         ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartCatalog"/> objects to add
-        ///     to the <see cref="AggregateCatalog"/>; or <see langword="null"/> to 
+        ///     to the <see cref="AggregateCatalog"/>; or <see langword="null"/> to
         ///     create an <see cref="AggregateCatalog"/> that is empty.
         /// </param>
         /// <exception cref="ArgumentException">
@@ -102,13 +102,13 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Returns the export definitions that match the constraint defined by the specified definition.
         /// </summary>
         /// <param name="definition">
-        ///     The <see cref="ImportDefinition"/> that defines the conditions of the 
+        ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="ExportDefinition"/> objects to return.
         /// </param>
         /// <returns>
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the 
-        ///     <see cref="ExportDefinition"/> objects and their associated 
-        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the
+        ///     <see cref="ExportDefinition"/> objects and their associated
+        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined
         ///     by <paramref name="definition"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">

@@ -677,7 +677,7 @@ namespace System.Xml.Linq
             {
                 if (value.Length == 0)
                 {
-                    // The empty namespace name can only be declared by 
+                    // The empty namespace name can only be declared by
                     // the default namespace declaration
                     throw new ArgumentException(SR.Format(SR.Argument_NamespaceDeclarationPrefixed, name.LocalName));
                 }
@@ -698,13 +698,13 @@ namespace System.Xml.Linq
                     string localName = name.LocalName;
                     if (localName == "xml")
                     {
-                        // No other namespace name can be declared by the 'xml' 
-                        // prefix namespace declaration. 
+                        // No other namespace name can be declared by the 'xml'
+                        // prefix namespace declaration.
                         throw new ArgumentException(SR.Argument_NamespaceDeclarationXml);
                     }
                     else if (localName == "xmlns")
                     {
-                        // The 'xmlns' prefix must not be declared. 
+                        // The 'xmlns' prefix must not be declared.
                         throw new ArgumentException(SR.Argument_NamespaceDeclarationXmlns);
                     }
                 }

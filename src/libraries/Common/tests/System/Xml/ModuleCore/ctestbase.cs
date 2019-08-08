@@ -239,7 +239,7 @@ namespace OLEDB.Test.ModuleCore
 
         public virtual int Init(object o)
         {
-            //Note: This version is the only override-able Init, since the other one 
+            //Note: This version is the only override-able Init, since the other one
             //automatically handles the exception you might throw from this function
             //Note: If you override this function, (as with most overrides) make sure you call the base.
             return TEST_PASS;
@@ -264,7 +264,7 @@ namespace OLEDB.Test.ModuleCore
 
         public virtual int Terminate(object o)
         {
-            //Note: This version is the only override-able Terminate, since the other one 
+            //Note: This version is the only override-able Terminate, since the other one
             //automatically handles the exception you might throw from this function
             //Note: If you override this function, (as with most overrides) make sure you call the base.
             return TEST_PASS;
@@ -295,7 +295,7 @@ namespace OLEDB.Test.ModuleCore
                 {
                     //Note: We actually have to clear these "statics" since they are not cleaned up
                     //until the process exits.  Which means that if you run again, in an apartment model
-                    //thread it will try to release these when setting them which is not allowed to 
+                    //thread it will try to release these when setting them which is not allowed to
                     //call a method on an object created in another apartment
                     CModInfo.Dispose();
                 }
@@ -326,7 +326,7 @@ namespace OLEDB.Test.ModuleCore
 
         public static int HandleException(Exception e)
         {
-            //TargetInvocationException is almost always the outer 
+            //TargetInvocationException is almost always the outer
             //since we call the variation through late binding
             if (e.InnerException != null)
                 e = e.InnerException;
@@ -359,7 +359,7 @@ namespace OLEDB.Test.ModuleCore
 
             //Note: We don't use Exception.ToString as the details for the log since that also includes
             //the message text (again).  Normally this isn't a problem but if you throw a good message
-            //(multiple lines) it show up twice and is confusing.  So we will strictly use the 
+            //(multiple lines) it show up twice and is confusing.  So we will strictly use the
             //StackTrace as the details and roll our own message (which also include inner exception
             //messages).
             Exception inner = e.InnerException;

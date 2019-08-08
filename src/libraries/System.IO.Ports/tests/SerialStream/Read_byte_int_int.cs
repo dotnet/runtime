@@ -19,7 +19,7 @@ namespace System.IO.Ports.Tests
         private const int largeNumRndBytesToRead = 2048;
 
         // When we test Read and do not care about actually reading anything we must still
-        // create an byte array to pass into the method the following is the size of the 
+        // create an byte array to pass into the method the following is the size of the
         // byte array used in this situation
         private const int defaultByteArraySize = 1;
         private const int defaultByteOffset = 0;

@@ -13,7 +13,7 @@ namespace System.ComponentModel
         Unknown = 0,
 
         ////////// Success (positive values, excluded). /////////
-        /// WARNING: Do NOT modify the order of the success enum values, they are ordered the way TestString give precedence 
+        /// WARNING: Do NOT modify the order of the success enum values, they are ordered the way TestString give precedence
         /// to the result hint when multiple chars tested giving different success hints.
 
         // The operation Succeeded because a literal, prompt or space char was escaped.

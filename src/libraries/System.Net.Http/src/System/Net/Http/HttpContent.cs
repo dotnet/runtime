@@ -327,7 +327,7 @@ namespace System.Net.Http
         // previous design of content, and which means that with some servers, even outside of desired scenarios we could
         // end up unexpectedly having request content still sending even after the response completes, which could lead to
         // spurious failures in unsuspecting client code.  To mitigate that, we prohibit duplex on all known HttpContent
-        // types, waiting for the request content to complete before completing the SendAsync task. 
+        // types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
 
         public Task CopyToAsync(Stream stream, TransportContext context) =>

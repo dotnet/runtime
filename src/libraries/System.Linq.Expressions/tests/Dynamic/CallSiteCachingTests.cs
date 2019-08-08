@@ -122,7 +122,7 @@ namespace System.Runtime.CompilerServices.Tests
             public object obj;
             public object rule;
         }
-        
+
         private class TestClass01
         {
             public static void BindThings()

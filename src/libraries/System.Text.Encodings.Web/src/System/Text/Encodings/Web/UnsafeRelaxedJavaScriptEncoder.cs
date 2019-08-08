@@ -61,7 +61,7 @@ namespace System.Text.Encodings.Web
         // The worst case encoding is 6 output chars per input char: [input] U+FFFF -> [output] "\uFFFF"
         // We don't need to worry about astral code points since they're represented as encoded
         // surrogate pairs in the output.
-        public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form 
+        public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form
 
         private static readonly char[] s_b = new char[] { '\\', 'b' };
         private static readonly char[] s_t = new char[] { '\\', 't' };

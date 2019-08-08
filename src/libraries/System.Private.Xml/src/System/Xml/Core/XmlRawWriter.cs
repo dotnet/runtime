@@ -27,8 +27,8 @@ namespace System.Xml
     ///  5. The well-formed writer will always call WriteNamespaceDeclaration for namespace nodes,
     ///     rather than calling WriteStartAttribute(). If the writer is supporting namespace declarations in chunks
     ///     (SupportsNamespaceDeclarationInChunks is true), the XmlWellFormedWriter will call WriteStartNamespaceDeclaration,
-    ///      then any method that can be used to write out a value of an attribute (WriteString, WriteChars, WriteRaw, WriteCharEntity...) 
-    ///      and then WriteEndNamespaceDeclaration - instead of just a single WriteNamespaceDeclaration call. This feature will be 
+    ///      then any method that can be used to write out a value of an attribute (WriteString, WriteChars, WriteRaw, WriteCharEntity...)
+    ///      and then WriteEndNamespaceDeclaration - instead of just a single WriteNamespaceDeclaration call. This feature will be
     ///      supported by raw writers serializing to text that wish to preserve the attribute value escaping etc.
     ///  6. The well-formed writer guarantees a well-formed document, including correct call sequences,
     ///     correct namespaces, and correct document rule enforcement.
@@ -201,7 +201,7 @@ namespace System.Xml
 
         public override void WriteValue(DateTimeOffset value)
         {
-            // For compatibility with custom writers, XmlWriter writes DateTimeOffset as DateTime. 
+            // For compatibility with custom writers, XmlWriter writes DateTimeOffset as DateTime.
             // Our internal writers should use the DateTimeOffset-String conversion from XmlConvert.
             WriteString(XmlConvert.ToString(value));
         }
@@ -284,9 +284,9 @@ namespace System.Xml
 
         // When true, the XmlWellFormedWriter will call:
         //      1) WriteStartNamespaceDeclaration
-        //      2) any method that can be used to write out a value of an attribute: WriteString, WriteChars, WriteRaw, WriteCharEntity... 
+        //      2) any method that can be used to write out a value of an attribute: WriteString, WriteChars, WriteRaw, WriteCharEntity...
         //      3) WriteEndNamespaceDeclaration
-        // instead of just a single WriteNamespaceDeclaration call. 
+        // instead of just a single WriteNamespaceDeclaration call.
         //
         // This feature will be supported by raw writers serializing to text that wish to preserve the attribute value escaping and entities.
         internal virtual bool SupportsNamespaceDeclarationInChunks
@@ -320,4 +320,3 @@ namespace System.Xml
         }
     }
 }
-

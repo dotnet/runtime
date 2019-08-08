@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -92,7 +92,7 @@ namespace System.ComponentModel
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
-        
+
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {
             if (value is string version)
@@ -100,6 +100,6 @@ namespace System.ComponentModel
                 return Version.TryParse(version, out Version _);
             }
             return value is Version;
-        }        
+        }
     }
 }

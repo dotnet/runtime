@@ -99,12 +99,12 @@ namespace System.Reflection.Metadata
         private BlobHandle GetProjectedValue()
         {
             // The usual pattern for accessing custom attributes differs from pattern for accessing e.g. TypeDef row fields.
-            // The value blob is only accessed when the consumer is about to decode it (which is a nontrivial process), 
+            // The value blob is only accessed when the consumer is about to decode it (which is a nontrivial process),
             // while the Constructor and Parent fields are often accessed when searching for a particular attribute.
-            // 
+            //
             // The current WinMD projections only affect the blob and not the Constructor and Parent values.
             // It is thus more efficient to calculate the treatment here (and make GetValue more expensive) and
-            // avoid calculating the treatment when the CustomAttributeHandle is looked up and CustomAttribute struct 
+            // avoid calculating the treatment when the CustomAttributeHandle is looked up and CustomAttribute struct
             // is initialized.
 
             CustomAttributeValueTreatment treatment = _reader.CalculateCustomAttributeValueTreatment(Handle);

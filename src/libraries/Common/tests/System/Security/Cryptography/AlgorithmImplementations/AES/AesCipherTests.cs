@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
             TestAesDecrypt(CipherMode.CBC, s_aes256Key, s_aes256CbcIv, encryptedBytes, s_multiBlockBytes);
         }
-        
+
         [Fact]
         public static void DecryptKnownECB192()
         {
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
             TestAesDecrypt(CipherMode.ECB, s_aes192Key, null, encryptedBytes, s_multiBlockBytes);
         }
-        
+
         [Fact]
         public static void VerifyInPlaceEncryption()
         {

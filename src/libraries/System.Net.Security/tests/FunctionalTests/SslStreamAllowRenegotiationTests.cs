@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     public class SslStreamAllowRenegotiationTests
-    { 
+    {
         [Fact]
         [OuterLoop] // Test hits external azure server.
         public async Task SslStream_AllowRenegotiation_True_Succeeds()

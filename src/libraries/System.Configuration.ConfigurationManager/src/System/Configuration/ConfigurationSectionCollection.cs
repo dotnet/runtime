@@ -114,7 +114,7 @@ namespace System.Configuration
             return BaseGetKey(index);
         }
 
-        // Remove the declaration and definition of a section in this config file, including any 
+        // Remove the declaration and definition of a section in this config file, including any
         // location sections in the file.
         //
         // Note that if the section is declared in a parent, we still remove the declaration and

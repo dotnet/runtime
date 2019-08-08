@@ -19,7 +19,7 @@ namespace System.Buffers.Text.Tests
         // NOTE: TestParser2GiBOverflow test is constrained to run on Windows and MacOSX because it causes
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
-        //       time the memory is accessed which triggers the full memory allocation.        
+        //       time the memory is accessed which triggers the full memory allocation.
         //
         [Fact]
         [OuterLoop]
@@ -102,4 +102,3 @@ namespace System.Buffers.Text.Tests
         }
     }
 }
-

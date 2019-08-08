@@ -759,21 +759,21 @@ namespace System.Xml
 
                         // We might have gotten zero characters though if < 4 bytes were requested because
                         // codepoints from U+0000 - U+FFFF can be up to 3 bytes in UTF-8, and represented as ONE char
-                        // codepoints from U+10000 - U+10FFFF (last Unicode codepoint representable in UTF-8) are represented by up to 4 bytes in UTF-8 
+                        // codepoints from U+10000 - U+10FFFF (last Unicode codepoint representable in UTF-8) are represented by up to 4 bytes in UTF-8
                         //                                    and represented as TWO chars (high+low surrogate)
                         // (e.g. 1 char requested, 1 char in the buffer represented in 3 bytes)
                         while (actualCharCount == 0)
                         {
                             // Note the by the time we arrive here, if actualByteCount == 3, the next decoder.GetChars() call will read the 4th byte
-                            // if we don't bail out since the while loop will advance actualByteCount only after reading the byte. 
+                            // if we don't bail out since the while loop will advance actualByteCount only after reading the byte.
                             if (actualByteCount >= 3 && charCount < 2)
                             {
-                                // If we reach here, it means that we're: 
-                                // - trying to decode more than 3 bytes and, 
-                                // - there is only one char left of charCount where we're stuffing decoded characters. 
-                                // In this case, we need to back off since decoding > 3 bytes in UTF-8 means that we will get 2 16-bit chars 
-                                // (a high surrogate and a low surrogate) - the Decoder will attempt to provide both at once 
-                                // and an ArgumentException will be thrown complaining that there's not enough space in the output char array.  
+                                // If we reach here, it means that we're:
+                                // - trying to decode more than 3 bytes and,
+                                // - there is only one char left of charCount where we're stuffing decoded characters.
+                                // In this case, we need to back off since decoding > 3 bytes in UTF-8 means that we will get 2 16-bit chars
+                                // (a high surrogate and a low surrogate) - the Decoder will attempt to provide both at once
+                                // and an ArgumentException will be thrown complaining that there's not enough space in the output char array.
 
                                 // actualByteCount = 0 when the while loop is broken out of; decoder goes out of scope so its state no longer matters
 

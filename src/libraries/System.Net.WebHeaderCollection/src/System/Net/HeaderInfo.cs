@@ -16,7 +16,7 @@ namespace System.Net
         //
         internal readonly string HeaderName;
         internal readonly bool AllowMultiValues;
-    
+
         internal HeaderInfo(string name, bool requestRestricted, bool responseRestricted, bool multi, Func<string, string[]> parser)
         {
             HeaderName = name;

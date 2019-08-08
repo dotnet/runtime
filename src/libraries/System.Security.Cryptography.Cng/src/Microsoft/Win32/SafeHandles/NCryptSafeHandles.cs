@@ -16,11 +16,11 @@ namespace Microsoft.Win32.SafeHandles
     ///     external use (instead applications should consume the concrete subclasses of this class).
     /// </summary>
     /// <remarks>
-    ///     Since NCrypt handles do not have a native DuplicateHandle type call, we need to do manual 
+    ///     Since NCrypt handles do not have a native DuplicateHandle type call, we need to do manual
     ///     reference counting in managed code whenever we hand out an extra reference to one of these handles.
     ///     This class wraps up the logic to correctly duplicate and free these handles to simulate a native
     ///     duplication.
-    /// 
+    ///
     ///     Each open handle object can be thought of as being in one of three states:
     ///        1. Owner     - created via the marshaler, traditional style safe handle. Notably, only one owner
     ///                       handle exists for a given native handle.
@@ -187,19 +187,19 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <remarks>
         ///     #NCryptHandleDuplicationAlgorithm
-        /// 
+        ///
         ///     Duplicating a handle performs different operations depending upon the state of the handle:
-        /// 
+        ///
         ///     * Owner     - Allocate two new handles, a holder and a duplicate.
         ///                 - Suppress finalization on the holder
         ///                 - Transition into the duplicate state
         ///                 - Use the new holder as the holder for both this handle and the duplicate
         ///                 - Increment the reference count on the holder
-        /// 
+        ///
         ///     * Duplicate - Allocate a duplicate handle
         ///                 - Increment the reference count of our holder
         ///                 - Assign the duplicate's holder to be our holder
-        /// 
+        ///
         ///     * Holder    - Specifically disallowed. Holders should only ever be referenced by duplicates,
         ///                   so duplication will occur on the duplicate rather than the holder handle.
         /// </remarks>
@@ -224,7 +224,7 @@ namespace Microsoft.Win32.SafeHandles
 
         /// <summary>
         ///     Duplicate a safe handle which is already duplicated.
-        /// 
+        ///
         ///     See code:Microsoft.Win32.SafeHandles.SafeNCryptHandle#NCryptHandleDuplicationAlgorithm for
         ///     details about the algorithm.
         /// </summary>
@@ -248,7 +248,7 @@ namespace Microsoft.Win32.SafeHandles
 
         /// <summary>
         ///     Duplicate a safe handle which is currently the exclusive owner of a native handle
-        /// 
+        ///
         ///     See code:Microsoft.Win32.SafeHandles.SafeNCryptHandle#NCryptHandleDuplicationAlgorithm for
         ///     details about the algorithm.
         /// </summary>
@@ -296,10 +296,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <remarks>
         ///     Similar to duplication, releasing a handle performs different operations based upon the state
         ///     of the handle.
-        /// 
+        ///
         ///     An instance which was constructed with a parentHandle value will only call DangerousRelease on
         ///     the parentHandle object. Otherwise the behavior is dictated by the ownership state.
-        /// 
+        ///
         ///     * Owner     - Simply call the release P/Invoke method
         ///     * Duplicate - Decrement the reference count of the current holder
         ///     * Holder    - Call the release P/Invoke. Note that ReleaseHandle on a holder implies a reference
@@ -400,4 +400,4 @@ namespace Microsoft.Win32.SafeHandles
             return ReleaseNativeWithNCryptFreeObject();
         }
     }
-} 
+}

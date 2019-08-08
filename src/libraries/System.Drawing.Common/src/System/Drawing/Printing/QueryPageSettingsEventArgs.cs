@@ -14,8 +14,8 @@ namespace System.Drawing.Printing
         /// <summary>
         /// It's too expensive to compare 2 instances of PageSettings class, as the getters
         /// are accessing the printer spooler, thus we track any explicit invocations of the setters or getters on this class,
-        /// and this field tracks if PageSettings property was accessed. It will return a false 
-        /// positive when the user is reading property values, but we'll take a perf hit in this case assuming this event is not 
+        /// and this field tracks if PageSettings property was accessed. It will return a false
+        /// positive when the user is reading property values, but we'll take a perf hit in this case assuming this event is not
         /// used often.
         /// </summary>
         internal bool PageSettingsChanged;
@@ -50,4 +50,3 @@ namespace System.Drawing.Printing
         }
     }
 }
-

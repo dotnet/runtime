@@ -27,7 +27,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(xattrPD.SupportsChangeEvents);
             Assert.False(xattrPD.CanResetValue(xatt));
             Assert.False(xattrPD.ShouldSerializeValue(xatt));
-            
+
             Assert.Equal(xatt.Value, xattrPD.GetValue(xatt));
 
             bool valueChanged = false;
@@ -41,13 +41,13 @@ namespace System.Xml.Linq.Tests
             Assert.True(valueChanged);
             Assert.Equal(newValue, xatt.Value);
         }
-        
+
         [Fact]
         public void XElementAttributePropertyDescriptor()
         {
             var xel = new XElement("someElement");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelAttPD = props["Attribute"];
             Assert.NotNull(xelAttPD);
             Assert.True(xelAttPD.IsReadOnly);
@@ -56,7 +56,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(xelAttPD.SupportsChangeEvents);
             Assert.False(xelAttPD.CanResetValue(xel));
             Assert.False(xelAttPD.ShouldSerializeValue(xel));
-            
+
             bool valueChanged = false;
             xelAttPD.AddValueChanged(xel, (o, e) =>
             {
@@ -77,7 +77,7 @@ namespace System.Xml.Linq.Tests
             // not exposed, must use reflection to get at it?!
             var getItemMethod = value.GetType().GetMethod("get_Item", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             Func<string, XAttribute> getAttribute = (name) => (XAttribute)getItemMethod.Invoke(value, new string[] { name });
-            
+
             Assert.Equal(attr1, getAttribute(attr1.Name.ToString()));
 
             attr1.Remove();
@@ -117,13 +117,13 @@ namespace System.Xml.Linq.Tests
             attr2.Remove();
             Assert.True(valueChanged);
         }
-        
+
         [Fact]
         public void XElementDescendantsPropertyDescriptor()
         {
             var xel = new XElement("someElement");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelDesPD = props["Descendants"];
             Assert.NotNull(xelDesPD);
             Assert.True(xelDesPD.IsReadOnly);
@@ -150,13 +150,13 @@ namespace System.Xml.Linq.Tests
             xel.Element("c1").Remove();
             Assert.True(valueChanged);
         }
-        
+
         [Fact]
         public void XElementElementPropertyDescriptor()
         {
             var xel = new XElement("someElement");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelElPD = props["Element"];
             Assert.True(xelElPD.IsReadOnly);
             Assert.Equal(typeof(XElement), xelElPD.ComponentType);
@@ -225,13 +225,13 @@ namespace System.Xml.Linq.Tests
             el2.Remove();
             Assert.True(valueChanged);
         }
-        
+
         [Fact]
         public void XElementElementsPropertyDescriptor()
         {
             var xel = new XElement("someElement");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelElsPD = props["Elements"];
             Assert.NotNull(xelElsPD);
             Assert.True(xelElsPD.IsReadOnly);
@@ -264,7 +264,7 @@ namespace System.Xml.Linq.Tests
         {
             var xel = new XElement("someElement", "someValue");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelValPD = props["Value"];
             Assert.NotNull(xelValPD);
             Assert.False(xelValPD.IsReadOnly);
@@ -298,7 +298,7 @@ namespace System.Xml.Linq.Tests
         {
             var xel = new XElement("someElement");
             var props = TypeDescriptor.GetProperties(xel);
-            
+
             var xelXmlPD = props["Xml"];
             Assert.NotNull(xelXmlPD);
             Assert.True(xelXmlPD.IsReadOnly);

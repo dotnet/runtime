@@ -33,7 +33,7 @@ namespace System.Drawing
                 {
                     return null;
                 }
-                
+
                 // Parse 4 integer values.
                 if (culture == null)
                 {

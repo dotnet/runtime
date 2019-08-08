@@ -64,7 +64,7 @@ namespace System.Data
                     _baseSimpleType = new SimpleType(node.BaseXmlSchemaType as XmlSchemaSimpleType);
                 }
 
-                // do we need to put qualified name?                
+                // do we need to put qualified name?
                 // for user defined simpletype, always go with qname
                 if (content.BaseTypeName.Namespace == Keywords.XSDNS)
                     _baseType = content.BaseTypeName.Name;

@@ -16,14 +16,14 @@ namespace System.IO.Compression
         /// If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.
         /// If the specified source file has an invalid last modified time, the first datetime representable in the Zip timestamp format
         /// (midnight on January 1, 1980) will be used.</p>
-        /// 
+        ///
         /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        /// 
+        ///
         /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
         /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
         /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only whitespace, or contains one or more
         /// invalid characters as defined by InvalidPathChars. -or- entryName is a zero-length string.</exception>
         /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
@@ -36,7 +36,7 @@ namespace System.IO.Compression
         /// <exception cref="FileNotFoundException">The file specified in sourceFileName was not found. </exception>
         /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
-        /// 
+        ///
         /// <param name="sourceFileName">The path to the file on the file system to be copied from. The path is permitted to specify
         /// relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to be created.</param>
@@ -66,7 +66,7 @@ namespace System.IO.Compression
         /// <exception cref="FileNotFoundException">The file specified in sourceFileName was not found. </exception>
         /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
-        /// 
+        ///
         /// <param name="sourceFileName">The path to the file on the file system to be copied from. The path is permitted to specify relative
         /// or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to be created.</param>

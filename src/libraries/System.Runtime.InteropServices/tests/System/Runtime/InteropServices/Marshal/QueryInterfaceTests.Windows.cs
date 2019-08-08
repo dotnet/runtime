@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new IUnknownComObject(), IID_IUNKNOWN };
             yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
         }
-    
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(QueryInterface_ValidComObjectInterface_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]

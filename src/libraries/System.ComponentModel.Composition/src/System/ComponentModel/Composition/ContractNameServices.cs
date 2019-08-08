@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition
                 //
                 Queue<Type> genericTypeArguments = new Queue<Type>(type.GetGenericArguments());
                 WriteGenericType(typeName, type, type.IsGenericTypeDefinition, genericTypeArguments, formatGenericName);
-                if(genericTypeArguments.Count != 0) 
+                if(genericTypeArguments.Count != 0)
                 {
                     throw new Exception(SR.Expecting_Empty_Queue);
                 }
@@ -249,7 +249,7 @@ namespace System.ComponentModel.Composition
             //
             // Writes generic type name, e.g. generic name and generic arguments
             //
-            if(!type.IsGenericType) 
+            if(!type.IsGenericType)
             {
                 throw new Exception(SR.Expecting_Generic_Type);
             }
@@ -308,7 +308,7 @@ namespace System.ComponentModel.Composition
             typeName.Append(customKeyword);
             Queue<Type> typeArguments = new Queue<Type>(types);
             WriteTypeArgumentsString(typeName, types.Length, false, typeArguments, formatGenericName);
-            if(typeArguments.Count != 0) 
+            if(typeArguments.Count != 0)
             {
                 throw new Exception(SR.Expecting_Empty_Queue);
             }

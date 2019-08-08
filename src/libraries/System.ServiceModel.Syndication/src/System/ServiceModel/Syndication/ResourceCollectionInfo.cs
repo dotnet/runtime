@@ -36,7 +36,7 @@ namespace System.ServiceModel.Syndication
         {
             Title = title ?? throw new ArgumentNullException(nameof(title));
             Link = link ?? throw new ArgumentNullException(nameof(link));
-    
+
             if (categories != null)
             {
                 _categories = new NullNotAllowedCollection<CategoriesDocument>();

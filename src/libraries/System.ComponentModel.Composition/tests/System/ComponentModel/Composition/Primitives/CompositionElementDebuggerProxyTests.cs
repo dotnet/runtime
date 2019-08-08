@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var proxy = new CompositionElementDebuggerProxy(element);
 
                 Assert.Same(element.DisplayName, proxy.DisplayName);
-            }            
+            }
         }
 
         [Fact]

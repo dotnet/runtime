@@ -11,7 +11,7 @@ namespace System.Data.ProviderBase
 {
     internal abstract partial class DbConnectionInternal
     {
-        
+
         protected abstract void Activate();
 
         internal void ActivateConnection()

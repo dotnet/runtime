@@ -60,7 +60,7 @@ namespace XmlCoreTest.Common
     }
 
     // This class creates an XML tag which is exactly the length of the buffer
-    // boundary. 
+    // boundary.
     public class BufferBoundary
     {
         public static string START_TAG = "<?pi ";

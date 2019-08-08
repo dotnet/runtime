@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ldarg_1);
             methodILGenerator.Emit(OpCodes.Stfld, field);
             methodILGenerator.Emit(OpCodes.Ret);
-            
+
             property.SetSetMethod(method);
             Assert.True(property.CanWrite);
         }

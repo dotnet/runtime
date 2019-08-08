@@ -18,7 +18,7 @@ namespace Stress.Data
     }
 
     /// <summary>
-    /// base class for database source information (SQL Server, Oracle Server, Access Database file, etc...). 
+    /// base class for database source information (SQL Server, Oracle Server, Access Database file, etc...).
     /// Data sources are loaded from the app config file.
     /// </summary>
     public abstract class DataSource

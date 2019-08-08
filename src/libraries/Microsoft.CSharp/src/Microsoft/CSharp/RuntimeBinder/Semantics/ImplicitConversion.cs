@@ -57,9 +57,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public bool Bind()
             {
                 // 13.1 Implicit conversions
-                // 
+                //
                 // The following conversions are classified as implicit conversions:
-                // 
+                //
                 // *   Identity conversions
                 // *   Implicit numeric conversions
                 // *   Implicit enumeration conversions
@@ -73,7 +73,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // *   Conversions from the null type (11.2.7) to any nullable type
                 // *   Implicit nullable conversions
                 // *   Lifted user-defined implicit conversions
-                // 
+                //
                 // Implicit conversions can occur in a variety of situations, including function member invocations
                 // (14.4.3), cast expressions (14.6.6), and assignments (14.14).
 
@@ -110,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // 13.1.1 Identity conversion
                 //
-                // An identity conversion converts from any type to the same type. This conversion exists only 
+                // An identity conversion converts from any type to the same type. This conversion exists only
                 // such that an entity that already has a required type can be said to be convertible to that type.
 
                 if (_typeSrc == _typeDest &&
@@ -206,7 +206,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // 13.1.8 User-defined implicit conversions
                 //
-                // A user-defined implicit conversion consists of an optional standard implicit conversion, 
+                // A user-defined implicit conversion consists of an optional standard implicit conversion,
                 // followed by execution of a user-defined implicit conversion operator, followed by another
                 // optional standard implicit conversion. The exact rules for evaluating user-defined
                 // conversions are described in 13.4.3.
@@ -225,12 +225,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             /***************************************************************************************************
                 Called by BindImplicitConversion when the destination type is Nullable<T>. The following
                 conversions are handled by this method:
-             
+
                 * For S in { object, ValueType, interfaces implemented by underlying type} there is an explicit
                   unboxing conversion S => T?
                 * System.Enum => T? there is an unboxing conversion if T is an enum type
                 * null => T? implemented as default(T?)
-             
+
                 * Implicit T?* => T?+ implemented by either wrapping or calling GetValueOrDefault the
                   appropriate number of times.
                 * If imp/exp S => T then imp/exp S => T?+ implemented by converting to T then wrapping the
@@ -238,24 +238,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 * If imp/exp S => T then imp/exp S?+ => T?+ implemented by calling GetValueOrDefault (m-1) times
                   then calling HasValue, producing a null if it returns false, otherwise calling Value,
                   converting to T then wrapping the appropriate number of times.
-             
+
                 The 3 rules above can be summarized with the following recursive rules:
-             
+
                 * If imp/exp S => T? then imp/exp S? => T? implemented as
                   qs.HasValue ? (T?)(qs.Value) : default(T?)
                 * If imp/exp S => T then imp/exp S => T? implemented as new T?((T)s)
-             
+
                 This method also handles calling bindUserDefinedConverion. This method does NOT handle
                 the following conversions:
-             
+
                 * Implicit boxing conversion from S? to { object, ValueType, Enum, ifaces implemented by S }. (Handled by BindImplicitConversion.)
                 * If imp/exp S => T then explicit S?+ => T implemented by calling Value the appropriate number
                   of times. (Handled by BindExplicitConversion.)
-             
+
                 The recursive equivalent is:
-             
+
                 * If imp/exp S => T and T is not nullable then explicit S? => T implemented as qs.Value
-             
+
                 Some nullable conversion are NOT standard conversions. In particular, if S => T is implicit
                 then S? => T is not standard. Similarly if S => T is not implicit then S => T? is not standard.
             ***************************************************************************************************/
@@ -418,10 +418,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // We can convert T? using a boxing conversion, we can convert it to ValueType, and
                 // we can convert it to any interface implemented by T.
-                //    
+                //
                 // 13.1.5 Boxing Conversions
                 //
-                // A nullable-type has a boxing conversion to the same set of types to which the nullable-type's 
+                // A nullable-type has a boxing conversion to the same set of types to which the nullable-type's
                 // underlying type has boxing conversions. A boxing conversion applied to a value of a nullable-type
                 // proceeds as follows:
                 //
@@ -447,9 +447,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_BOX);
                         if (!_typeDest.IsPredefType(PredefinedType.PT_OBJECT))
                         {
-                            // The base type of a nullable is always a non-nullable value type, 
-                            // therefore so is typeDest unless typeDest is PT_OBJECT. In this case the conversion 
-                            // needs to be unboxed. We only need this if we actually will use the result. 
+                            // The base type of a nullable is always a non-nullable value type,
+                            // therefore so is typeDest unless typeDest is PT_OBJECT. In this case the conversion
+                            // needs to be unboxed. We only need this if we actually will use the result.
                             _binder.bindSimpleCast(_exprDest, _typeDest, out _exprDest, EXPRFLAG.EXF_FORCE_UNBOX);
                         }
                     }
@@ -460,16 +460,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private bool bindImplicitConversionFromArray()
             {
-                // 13.1.4 
-                // 
+                // 13.1.4
+                //
                 // The implicit reference conversions are:
-                // 
-                // *   From an array-type S with an element type SE to an array-type T with an element 
+                //
+                // *   From an array-type S with an element type SE to an array-type T with an element
                 //     type TE, provided all of the following are true:
                 //     *   S and T differ only in element type. In other words, S and T have the same number of dimensions.
                 //     *   An implicit reference conversion exists from SE to TE.
-                // *   From a one-dimensional array-type S[] to System.Collections.Generic.IList<S>, 
-                //     System.Collections.Generic.IReadOnlyList<S> and their base interfaces 
+                // *   From a one-dimensional array-type S[] to System.Collections.Generic.IList<S>,
+                //     System.Collections.Generic.IReadOnlyList<S> and their base interfaces
                 // *   From a one-dimensional array-type S[] to System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T>
                 //     and their base interfaces, provided there is an implicit reference conversion from S to T.
                 // *   From any array-type to System.Array.
@@ -545,7 +545,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return true;
                     }
-                    // Even though enum is sealed, a class can derive from enum in LAF scenarios -- 
+                    // Even though enum is sealed, a class can derive from enum in LAF scenarios --
                     // continue testing for derived to base conversions below.
                 }
                 else if (aggSrc.getThisType().IsSimpleType && _typeDest.IsSimpleType)
@@ -563,7 +563,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool bindImplicitConversionToBase(AggregateType pSource)
             {
                 // 13.1.4 Implicit reference conversions
-                // 
+                //
                 // *   From any reference-type to object.
                 // *   From any class-type S to any class-type T, provided S is derived from T.
                 // *   From any class-type S to any interface-type T, provided S implements T.
@@ -592,13 +592,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool bindImplicitConversionFromEnum(AggregateType aggTypeSrc)
             {
                 // 13.1.5 Boxing conversions
-                // 
+                //
                 // A boxing conversion permits any non-nullable-value-type to be implicitly converted to the type
                 // object or System.ValueType or to any interface-type implemented by the value-type, and any enum
-                // type to be implicitly converted to System.Enum as well. Boxing a value of a 
-                // non-nullable-value-type consists of allocating an object instance and copying the value-type 
+                // type to be implicitly converted to System.Enum as well. Boxing a value of a
+                // non-nullable-value-type consists of allocating an object instance and copying the value-type
                 // value into that instance. An enum can be boxed to the type System.Enum, since that is the direct
-                // base class for all enums (21.4). A struct or enum can be boxed to the type System.ValueType, 
+                // base class for all enums (21.4). A struct or enum can be boxed to the type System.ValueType,
                 // since that is the direct base class for all structs (18.3.2) and a base class for all enums.
 
                 if (_typeDest is AggregateType aggDest && SymbolLoader.HasBaseConversion(aggTypeSrc, aggDest))
@@ -669,10 +669,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert((int)ptSrc < NUM_SIMPLE_TYPES && (int)ptDest < NUM_SIMPLE_TYPES);
 
                 // 13.1.7 Implicit constant expression conversions
-                // 
+                //
                 // An implicit constant expression conversion permits the following conversions:
-                // *   A constant-expression (14.16) of type int can be converted to type sbyte,  byte,  short,  
-                //     ushort,  uint, or ulong, provided the value of the constant-expression is within the range 
+                // *   A constant-expression (14.16) of type int can be converted to type sbyte,  byte,  short,
+                //     ushort,  uint, or ulong, provided the value of the constant-expression is within the range
                 //     of the destination type.
                 // *   A constant-expression of type long can be converted to type ulong, provided the value of
                 //     the constant-expression is not negative.

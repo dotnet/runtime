@@ -7,8 +7,8 @@ using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // This enum tracks the load state of our principal side data cache.  
-    // NotSet = default value, 
+    // This enum tracks the load state of our principal side data cache.
+    // NotSet = default value,
     // Loaded = Value from store was set into cache date, Data in cache matches data in store.
     // Changed = User has modifed the cache value but is has not been pushed to the store yet
     internal enum LoadState

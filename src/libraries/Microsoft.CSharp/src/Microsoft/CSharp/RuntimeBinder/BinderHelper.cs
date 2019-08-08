@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     // We have an inc or a dec operation. Insert the temp local instead.
                     //
-                    // We need to do this because for value types, the object will come 
+                    // We need to do this because for value types, the object will come
                     // in boxed, and we'd need to unbox it to get the original type in order
                     // to increment. The only way to do that is to create a new temporary.
                     object value = o.Value;
@@ -101,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 if (tempForIncrement != null)
                 {
-                    // If we have a ++ or -- payload, we need to do some temp rewriting. 
+                    // If we have a ++ or -- payload, we need to do some temp rewriting.
                     // We rewrite to the following:
                     //
                     // temp = (type)o;
@@ -249,18 +249,18 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // Here we deduce what predicates the DLR can apply to future calls in order to
             // determine whether to use the previously-computed-and-cached delegate, or
-            // whether we need to bind the site again. Ideally we would like the 
+            // whether we need to bind the site again. Ideally we would like the
             // predicate to be as broad as is possible; if we can re-use analysis based
             // solely on the type of the argument, that is preferable to re-using analysis
             // based on object identity with a previously-analyzed argument.
 
-            // The times when we need to restrict re-use to a particular instance, rather 
+            // The times when we need to restrict re-use to a particular instance, rather
             // than its type, are:
-            // 
+            //
             // * if the argument is a null reference then we have no type information.
             //
             // * if we are making a static call then the first argument is
-            //   going to be a Type object. In this scenario we should always check 
+            //   going to be a Type object. In this scenario we should always check
             //   for a specific Type object rather than restricting to the Type type.
             //
             // * if the argument was dynamic at compile time and it is a dynamic proxy

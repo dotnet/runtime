@@ -122,7 +122,7 @@ namespace System.Reflection.Metadata
                 // CLI spec says:
                 // "Offset (a 4-byte constant)"
                 // "Offset shall be zero or more"
-                // 
+                //
                 // Peverify fails with "Type load failed" error if offset is greater than Int32.MaxValue.
                 return -1;
             }

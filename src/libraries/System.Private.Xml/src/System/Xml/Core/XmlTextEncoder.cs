@@ -25,7 +25,7 @@ namespace System.Xml
         // true when writing out the content of attribute value
         private bool _inAttribute;
 
-        // quote char of the attribute (when inAttribute) 
+        // quote char of the attribute (when inAttribute)
         private char _quoteChar;
 
         // caching of attribute value
@@ -518,9 +518,9 @@ namespace System.Xml
         //
         // Private implementation methods
         //
-        // This is a helper method to workaround the fact that TextWriter does not have a Write method 
-        // for fragment of a string such as Write( string, offset, count). 
-        // The string fragment will be written out by copying into a small helper buffer and then 
+        // This is a helper method to workaround the fact that TextWriter does not have a Write method
+        // for fragment of a string such as Write( string, offset, count).
+        // The string fragment will be written out by copying into a small helper buffer and then
         // calling textWriter to write out the buffer.
         private void WriteStringFragment(string str, int offset, int count, char[] helperBuffer)
         {

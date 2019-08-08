@@ -38,32 +38,32 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 DataflowMessageStatus.Accepted;
         }
 
-        public Task Completion 
+        public Task Completion
         {
-            get 
-            { 
-                return CompletionDelegate != null ? 
-                    CompletionDelegate() : 
-                    null; 
-            } 
+            get
+            {
+                return CompletionDelegate != null ?
+                    CompletionDelegate() :
+                    null;
+            }
         }
 
-        public void Complete() 
+        public void Complete()
         {
-            if (CompleteDelegate != null) 
-                CompleteDelegate(); 
+            if (CompleteDelegate != null)
+                CompleteDelegate();
         }
 
-        public void Fault(Exception exception) 
+        public void Fault(Exception exception)
         {
             if (FaultDelegate != null)
-                FaultDelegate(exception); 
+                FaultDelegate(exception);
         }
 
         public IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
         {
-            return LinkToDelegate != null ? 
-                LinkToDelegate(target, linkOptions) : 
+            return LinkToDelegate != null ?
+                LinkToDelegate(target, linkOptions) :
                 new DelegateDisposable();
         }
 
@@ -124,22 +124,22 @@ namespace System.Threading.Tasks.Dataflow.Tests
         public Action<Exception> OnErrorDelegate = null;
         public Action OnCompletedDelegate = null;
 
-        void IObserver<T>.OnNext(T value) 
-        { 
-            if (OnNextDelegate != null) 
-                OnNextDelegate(value); 
-        }
-        
-        void IObserver<T>.OnError(Exception error) 
+        void IObserver<T>.OnNext(T value)
         {
-            if (OnErrorDelegate != null)
-                OnErrorDelegate(error); 
+            if (OnNextDelegate != null)
+                OnNextDelegate(value);
         }
 
-        void IObserver<T>.OnCompleted() 
+        void IObserver<T>.OnError(Exception error)
         {
-            if (OnCompletedDelegate != null) 
-                OnCompletedDelegate(); 
+            if (OnErrorDelegate != null)
+                OnErrorDelegate(error);
+        }
+
+        void IObserver<T>.OnCompleted()
+        {
+            if (OnCompletedDelegate != null)
+                OnCompletedDelegate();
         }
     }
 
@@ -149,15 +149,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         IDisposable IObservable<T>.Subscribe(IObserver<T> observer)
         {
-            return SubscribeDelegate != null ? 
-                SubscribeDelegate(observer) : 
+            return SubscribeDelegate != null ?
+                SubscribeDelegate(observer) :
                 null;
         }
     }
 
     internal sealed class DelegateTaskScheduler : TaskScheduler
     {
-        public Action<Task> QueueTaskDelegate = null; 
+        public Action<Task> QueueTaskDelegate = null;
         public Func<Task, bool, bool> TryExecuteTaskInlineDelegate = null;
 
         protected override void QueueTask(Task task)

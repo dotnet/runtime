@@ -181,7 +181,7 @@ namespace System.Security.Cryptography
             Span<byte> ret)
         {
             // https://tools.ietf.org/html/rfc4346#section-5
-            // 
+            //
             // P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
             //                        HMAC_hash(secret, A(2) + seed) +
             //                        HMAC_hash(secret, A(3) + seed) + ...

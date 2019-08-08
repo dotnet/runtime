@@ -12,7 +12,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public abstract class SteTypeBoundaries : StePermutationGenerator
     {
-        // Use this marker for attribute value to indicate the attribute is not used 
+        // Use this marker for attribute value to indicate the attribute is not used
         // (ex. option where Decimal parameter's Scale property should not be set at all)
         public static object s_doNotUseMarker = new object();
     }
@@ -293,7 +293,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             byte[] result = new byte[size];
 
-            // 
+            //
             // Leave a marker of three 0s, followed by the cycle count
             int cycleCount = 0;
             byte cycleStep = 0;

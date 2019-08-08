@@ -245,7 +245,7 @@ namespace System.Xml.Tests
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<A xmlns:p='nsc'><p:C xmlns:a='a'><a:S /></p:C><B /></A>" })]
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<A xmlns='ns0'><![CDATA[tralala]]></A>" })]
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<A xmlns='ns0'><![CDATA[ja_a_hele]]><?PI?><X />text<Y /></A>" })]
-        //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<A attr='1' a2='a2' a3='a3' xmlns='def' xmlns:p='ns' p:a3='pa3' />" })]      
+        //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<A attr='1' a2='a2' a3='a3' xmlns='def' xmlns:p='ns' p:a3='pa3' />" })]
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<!DOCTYPE root[<!ENTITY x 'somevalue'><!ELEMENT root ANY>]><root>value&amp;x;</root>" })]
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<root>va&lt;/root&gt;lue</root>" })]
         //[Variation(Pri = 0, Desc = "MaxEnt = 1, MaxDoc = length", Params = new object[] { "<Root a='&amp;' b='&amp;#65;' c='&amp;#x43;' />" })]
@@ -368,7 +368,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<!DOCTYPE ROOT [<!ENTITY a '&a;'>]><ROOT att='&a;'/>", 10 })]
-        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&a;</a>'>]><test>&a;</test>", 25 })]     
+        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&a;</a>'>]><test>&a;</test>", 25 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&amp;</a>'>]><test>&a;<test>", 26 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<q = 'a'/>", 5 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { string.Format("<!-- http://www.w3.org is bound to n1 and n2 -->{0}<x xmlns:n1=\"http://www.w3.org\"{0}   xmlns:n2=\"http://www.w3.org\" >{0}   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", Environment.NewLine), 35 })]

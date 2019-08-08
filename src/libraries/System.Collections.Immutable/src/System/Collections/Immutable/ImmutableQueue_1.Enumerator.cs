@@ -82,7 +82,7 @@ namespace System.Collections.Immutable
                 if (_remainingForwardsStack == null)
                 {
                     // This is the initial step.
-                    // Empty queues have no forwards or backwards 
+                    // Empty queues have no forwards or backwards
                     _remainingForwardsStack = _originalQueue._forwards;
                     _remainingBackwardsStack = _originalQueue.BackwardsReversed;
                 }
@@ -182,7 +182,7 @@ namespace System.Collections.Immutable
                 if (_remainingForwardsStack == null)
                 {
                     // This is the initial step.
-                    // Empty queues have no forwards or backwards 
+                    // Empty queues have no forwards or backwards
                     _remainingForwardsStack = _originalQueue._forwards;
                     _remainingBackwardsStack = _originalQueue.BackwardsReversed;
                 }
@@ -217,7 +217,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an <see cref="ObjectDisposedException"/> if this 
+            /// Throws an <see cref="ObjectDisposedException"/> if this
             /// enumerator has already been disposed.
             /// </summary>
             private void ThrowIfDisposed()

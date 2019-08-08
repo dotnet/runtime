@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,7 +28,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 $"WAITFOR DELAY '0:0:3'; " +
                 $"select s.ShipperID, s.CompanyName, s.Phone " +
                 $"from #Shippers{suffix} s; ";
-            
+
             return commandText;
         }
 
@@ -73,7 +73,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Assert.True(reader.HasRows, $"FAILED: Reader has no rows");
                     Assert.Equal(state, asyncArgs.Item1);
                 }, stateAndCommand);
-                
+
                 System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
 
                 Assert.True(callbackExecutedFlag, $"FAILED: Callback did not executed");

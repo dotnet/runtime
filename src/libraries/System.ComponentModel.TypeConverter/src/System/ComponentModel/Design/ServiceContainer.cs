@@ -19,14 +19,14 @@ namespace System.ComponentModel.Design
         private static TraceSwitch s_traceSwitch = new TraceSwitch("TRACESERVICE", "ServiceProvider: Trace service provider requests.");
 
         /// <summary>
-        /// Creates a new service object container. 
+        /// Creates a new service object container.
         /// </summary>
         public ServiceContainer()
         {
         }
 
         /// <summary>
-        /// Creates a new service object container. 
+        /// Creates a new service object container.
         /// </summary>
         public ServiceContainer(IServiceProvider parentProvider)
         {
@@ -290,4 +290,3 @@ namespace System.ComponentModel.Design
         }
     }
 }
-

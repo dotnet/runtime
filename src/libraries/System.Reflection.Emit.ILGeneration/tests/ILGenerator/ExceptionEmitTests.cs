@@ -29,11 +29,11 @@ namespace System.Reflection.Emit.Tests
             // Throw the exception now on the stack.
             ilGenerator.ThrowException(overflow);
             ilGenerator.MarkLabel(dontThrow);
-            
-            // Start the catch block for OverflowException. 
+
+            // Start the catch block for OverflowException.
             ilGenerator.BeginCatchBlock(overflow);
 
-            // Since our function has to return an integer value, we'll load -1 onto 
+            // Since our function has to return an integer value, we'll load -1 onto
             // the stack to indicate an error, and store it in local variable tmp1.
             ilGenerator.Emit(OpCodes.Ldc_I4_M1);
             ilGenerator.Emit(OpCodes.Stloc_S, tmp1);
@@ -47,10 +47,9 @@ namespace System.Reflection.Emit.Tests
 
             Type createdType = type.CreateTypeInfo().AsType();
             MethodInfo createdMethod = createdType.GetMethod("DoThrow");
-            
+
             Assert.Equal(-1, createdMethod.Invoke(null, new object[] { true })); // Throws
             Assert.Equal(0, createdMethod.Invoke(null, new object[] { false })); // Doesn't throw
         }
     }
 }
-

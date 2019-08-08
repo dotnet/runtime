@@ -225,8 +225,8 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        /// <summary>Adds "numOfAdds" elements to the BlockingCollection and then Takes "numOfTakes" elements and 
-        /// checks that the count is as expected, the elements removed matched those added and verifies the return 
+        /// <summary>Adds "numOfAdds" elements to the BlockingCollection and then Takes "numOfTakes" elements and
+        /// checks that the count is as expected, the elements removed matched those added and verifies the return
         /// values of TryAdd() and TryTake().</summary>
         /// <param name="numOfAdds">The number of elements to add to the BlockingCollection.</param>
         /// <param name="numOfTakes">The number of elements to Take from the BlockingCollection.</param>
@@ -332,8 +332,8 @@ namespace System.Collections.Concurrent.Tests
                             removedElements.Add(blockingCollection.Take());
                         }
 
-                        //The elements are added later in this loop to removedElementsFromAllThreads List<int> and not in 
-                        //the loop above so that the synchronization mechanisms of removedElementsFromAllThreads do not 
+                        //The elements are added later in this loop to removedElementsFromAllThreads List<int> and not in
+                        //the loop above so that the synchronization mechanisms of removedElementsFromAllThreads do not
                         //interfere in coordinating the threads and only blockingCollection is coordinating the threads.
                         for (int j = 0; j < numOfElementsPerThread; ++j)
                         {
@@ -427,7 +427,7 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
-        /// <summary>Validates GetEnumerator and makes sure that BlockingCollection.GetEnumerator() produces the 
+        /// <summary>Validates GetEnumerator and makes sure that BlockingCollection.GetEnumerator() produces the
         /// same results as IConcurrentCollection.GetEnumerator().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
@@ -462,7 +462,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        /// <summary>Validates GetConsumingEnumerator and makes sure that BlockingCollection.GetConsumingEnumerator() 
+        /// <summary>Validates GetConsumingEnumerator and makes sure that BlockingCollection.GetConsumingEnumerator()
         /// produces the same results as if call Take in a loop.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
@@ -482,7 +482,7 @@ namespace System.Collections.Concurrent.Tests
 
             List<int> resultOfEnumOfBlockingCollection = new List<int>();
 
-            //CompleteAdding() is called so that the MoveNext() on the Enumerable resulting from 
+            //CompleteAdding() is called so that the MoveNext() on the Enumerable resulting from
             //GetConsumingEnumerable return false after the collection is empty.
             blockingCollection.CompleteAdding();
             foreach (int i in blockingCollection.GetConsumingEnumerable())
@@ -507,7 +507,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>Validates that after CompleteAdding() is called, future calls to Add will throw exceptions, calls
-        /// to Take will not block waiting for more input, and calls to MoveNext on the enumerator returned from GetEnumerator 
+        /// to Take will not block waiting for more input, and calls to MoveNext on the enumerator returned from GetEnumerator
         /// on the enumerable returned from GetConsumingEnumerable will return false when the collection’s count reaches 0.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
@@ -570,7 +570,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(count1, succeededAdd);
         }
 
-        /// <summary>Validates that BlockingCollection.ToArray() produces same results as 
+        /// <summary>Validates that BlockingCollection.ToArray() produces same results as
         /// IConcurrentCollection.ToArray().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
@@ -661,7 +661,7 @@ namespace System.Collections.Concurrent.Tests
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
-            Assert.False(blockingCollection.IsAddingCompleted, 
+            Assert.False(blockingCollection.IsAddingCompleted,
                 "Test12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - AddingIsCompleted should be false");
 
             Assert.False(blockingCollection.IsCompleted,
@@ -707,7 +707,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Initializes an array of blocking collections such that all are full except one in case of Adds and
         /// all are empty except one (the same blocking collection) in case of Takes.
         /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
-        /// that the count is as expected, the elements taken matched those added and verifies the return values of 
+        /// that the count is as expected, the elements taken matched those added and verifies the return values of
         /// TryAdd() and TryTake().</summary>
         /// <param name="numOfAdds">Number of elements to add.</param>
         /// <param name="numOfTakes">Number of elements to take.</param>
@@ -793,8 +793,8 @@ namespace System.Collections.Concurrent.Tests
                             removedElements.Add(item);
                         }
 
-                        //The elements are added later in this loop to removedElementsFromAllThreads List<int> and not in 
-                        //the loop above so that the synchronization mechanisms of removedElementsFromAllThreads do not 
+                        //The elements are added later in this loop to removedElementsFromAllThreads List<int> and not in
+                        //the loop above so that the synchronization mechanisms of removedElementsFromAllThreads do not
                         //interfere in coordinating the threads and only blockingCollection is coordinating the threads.
                         for (int j = 0; j < numOfElementsPerThread; ++j)
                         {
@@ -832,7 +832,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), 0); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), -1); });
 
-            AssertExtensions.Throws<ArgumentException>(null, () => 
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ConcurrentStackCollection<int> concurrentStack = new ConcurrentStackCollection<int>();
                 concurrentStack.TryAdd(1);
@@ -873,7 +873,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryTake(out item, new TimeSpan(0, 0, 0, 1, 2147483647)) );
             Assert.Throws<ArgumentOutOfRangeException>(() =>  blockingCollection.TryTake(out item, -2) );
 
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 {
                     blockingCollection.CompleteAdding();
                     blockingCollection.Take();
@@ -931,7 +931,7 @@ namespace System.Collections.Concurrent.Tests
             AssertExtensions.Throws<ArgumentException>("collections", () => BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[0], out item) );
             Assert.Throws<ArgumentNullException>(() => BlockingCollection<int>.TryTakeFromAny(null, out item) );
 
-            // new behavior for TakeFromAny after Dev10, to throw ArgumentException if all the collections are completed, 
+            // new behavior for TakeFromAny after Dev10, to throw ArgumentException if all the collections are completed,
             // however TryTakeFromAny will return false
             for (int i = 0; i < NUM_OF_COLLECTIONS; ++i)
             {
@@ -953,7 +953,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentNullException>(() => blockingCollection.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.CopyTo(arr, -1));
             AssertExtensions.Throws<ArgumentException>("index", () =>  blockingCollection.CopyTo(arr, 2));
-            AssertExtensions.Throws<ArgumentException>("array", () => 
+            AssertExtensions.Throws<ArgumentException>("array", () =>
                 {
                     int[,] twoDArray = new int[2, 2];
                     ((ICollection)blockingCollection).CopyTo(twoDArray, 0);
@@ -968,11 +968,11 @@ namespace System.Collections.Concurrent.Tests
 
         #region Helper Methods / Classes
 
-        /// <summary>Initializes an array of blocking collections (if its not null) such that all are full except one in case 
+        /// <summary>Initializes an array of blocking collections (if its not null) such that all are full except one in case
         /// of Adds and all are empty except one (the same blocking collection) in case of Takes.
         /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
-        /// that the count is as expected, the elements taken matched those added and verifies the return values of 
-        /// TryAdd() and TryTake().</summary>        
+        /// that the count is as expected, the elements taken matched those added and verifies the return values of
+        /// TryAdd() and TryTake().</summary>
         /// <param name="numOfAdds">Number of elements to Add.</param>
         /// <param name="numOfTakes">Number of elements to Take.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection under test.</param>

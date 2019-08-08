@@ -60,7 +60,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 etwLog.EnlistmentForceRollback(_internalEnlistment);
             }
- 
+
             lock (_internalEnlistment.SyncRoot)
             {
                 _internalEnlistment.State.ForceRollback(_internalEnlistment, e);

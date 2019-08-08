@@ -408,7 +408,7 @@ namespace System.Reflection.Tests
 
             TestUtils.AssertNewObjectReturnedEachTime(() => type.GetMember("*", MemberTypes.All, bf));
 
-            // Test some things that common to types that are not of a particular bucket. 
+            // Test some things that common to types that are not of a particular bucket.
             // (The Test*CommonInvariants() methods will cover the other half.)
             if (!type.IsTypeDefinition())
             {

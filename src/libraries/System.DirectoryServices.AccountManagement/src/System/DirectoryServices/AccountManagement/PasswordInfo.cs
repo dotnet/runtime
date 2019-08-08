@@ -84,7 +84,7 @@ namespace System.DirectoryServices.AccountManagement
         private bool _cannotChangePasswordRead = false;
 
         // For this property we are doing an on demand load.  The store will not load this property when load is called beacuse
-        // the loading of this property is perf intensive.  HandleGet still needs to be called to load the other object properties if 
+        // the loading of this property is perf intensive.  HandleGet still needs to be called to load the other object properties if
         // needed.  We read the status directly from the store and then cache it for use later.
         public bool UserCannotChangePassword
         {
@@ -171,7 +171,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void ExpirePasswordNow()
         {
-            // If we're not persisted, we just save up the change until we're Saved        
+            // If we're not persisted, we just save up the change until we're Saved
             if (_owningPrincipal.unpersisted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ExpirePasswordNow: saving until persisted");

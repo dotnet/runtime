@@ -96,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 throw new ArgumentException("Invalid seek origin.");
             }
-            
+
             return _position;
         }
 

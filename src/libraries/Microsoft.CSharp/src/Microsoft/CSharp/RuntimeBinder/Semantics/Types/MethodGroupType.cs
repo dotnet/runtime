@@ -5,7 +5,7 @@
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     // ----------------------------------------------------------------------------
-    // MethodGroupType - a placeholder typesym used only as the type of an method 
+    // MethodGroupType - a placeholder typesym used only as the type of an method
     // group expression.  There is exactly one of these.
     // ----------------------------------------------------------------------------
 

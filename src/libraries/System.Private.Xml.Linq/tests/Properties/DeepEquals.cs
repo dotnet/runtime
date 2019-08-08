@@ -32,10 +32,10 @@ namespace System.Xml.Linq.Tests
         //          - empty string vs. empty text node
         //      - Multiple text nodes but the same value
         //      - adjacent text & CData
-        //  
+        //
         //  - IsEmpty
         //  - Attribute order
-        //  - Namespace declarations 
+        //  - Namespace declarations
         //      - local vs. in-scope
         //      - default redef.
 

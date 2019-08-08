@@ -87,7 +87,7 @@ namespace System.Xml.Tests
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
             XmlAttribute attr = element.Attributes.Append(doc.CreateAttribute(attributeName));
-            // assert on implicitly set preconditions 
+            // assert on implicitly set preconditions
             Assert.Same(element, attr.OwnerElement);
             Assert.True(element.HasAttribute(attributeName));
 
@@ -272,7 +272,7 @@ namespace System.Xml.Tests
             Assert.Same(refAttr, target[0]);
             Assert.Same(newAttr, target[1]);
             Assert.Same(anotherAttr2, target[2]);
-            Assert.Same(anotherAttr3, target[3]);  
+            Assert.Same(anotherAttr3, target[3]);
         }
     }
 }

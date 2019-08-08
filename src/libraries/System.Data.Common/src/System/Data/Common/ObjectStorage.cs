@@ -605,7 +605,7 @@ namespace System.Data.Common
                                 TempAssemblyComparer.s_default);
                         }
 
-                        // attribute is modifiable - but usuage from XmlSaver & XmlDataLoader & XmlDiffLoader 
+                        // attribute is modifiable - but usuage from XmlSaver & XmlDataLoader & XmlDiffLoader
                         // the instances are not modified, but to be safe - copy the XmlRootAttribute before caching
                         key = new KeyValuePair<Type, XmlRootAttribute>(type, new XmlRootAttribute());
                         key.Value.ElementName = attribute.ElementName;
@@ -646,4 +646,3 @@ namespace System.Data.Common
         }
     }
 }
-

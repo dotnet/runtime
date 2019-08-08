@@ -44,7 +44,7 @@ namespace System.IO.Tests
                     expected |= WatcherChangeTypes.Changed;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & NotifyFilters.Security) > 0))
                     expected |= WatcherChangeTypes.Changed; // Attribute change on OSX is a ChangeOwner operation which passes the Security NotifyFilter.
-                
+
                 ExpectEvent(watcher, expected, action, cleanup, file.Path);
             }
         }
@@ -67,7 +67,7 @@ namespace System.IO.Tests
                     expected |= WatcherChangeTypes.Changed;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                
+
                 ExpectEvent(watcher, expected, action, expectedPath: file.Path);
             }
         }

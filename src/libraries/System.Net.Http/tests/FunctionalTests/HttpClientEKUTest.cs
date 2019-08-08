@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,7 +27,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
         private static bool CanTestCertificates =>
-            Capability.IsTrustedRootCertificateInstalled() && 
+            Capability.IsTrustedRootCertificateInstalled() &&
             (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
 
         private static bool CanTestClientCertificates =>
@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Server aborts the TCP channel.
                 await Assert.ThrowsAsync<HttpRequestException>(() => tasks[1]);
-                
+
                 await Assert.ThrowsAsync<AuthenticationException>(() => tasks[0]);
             }
         }

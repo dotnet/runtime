@@ -644,7 +644,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -757,7 +757,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -975,7 +975,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1117,7 +1117,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1234,7 +1234,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1341,7 +1341,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1975,7 +1975,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2128,7 +2128,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

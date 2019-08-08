@@ -64,7 +64,7 @@ namespace System.Media
         {
             throw new PlatformNotSupportedException();
         }
-        
+
         public int LoadTimeout
         {
             get => _loadTimeout;

@@ -12,7 +12,7 @@ using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 namespace Internal.Cryptography
 {
     //
-    // Provides hash services via the native provider (CNG). 
+    // Provides hash services via the native provider (CNG).
     //
     internal sealed class HashProviderCng : HashProvider
     {
@@ -39,7 +39,7 @@ namespace Internal.Cryptography
                 NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
                 if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
                 {
-                    // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a 
+                    // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a
                     // new HASH object each time.
                     ResetHashObject();
                 }
@@ -153,5 +153,3 @@ namespace Internal.Cryptography
         private readonly int _hashSize;
     }
 }
-
-

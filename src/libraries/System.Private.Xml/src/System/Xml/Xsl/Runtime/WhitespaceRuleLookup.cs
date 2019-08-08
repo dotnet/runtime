@@ -30,7 +30,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Create a new lookup internal class from the specified WhitespaceRules. 
+        /// Create a new lookup internal class from the specified WhitespaceRules.
         /// </summary>
         public WhitespaceRuleLookup(IList<WhitespaceRule> rules) : this()
         {
@@ -176,8 +176,8 @@ namespace System.Xml.Xsl.Runtime
                 Debug.Assert(LocalName != null && that.LocalName != null);
                 Debug.Assert(NamespaceName != null && that.NamespaceName != null);
 
-                // string == operator compares object references first and if they are not the same compares contents 
-                // of the compared strings. As a result we do not have to cast strings to objects to force reference 
+                // string == operator compares object references first and if they are not the same compares contents
+                // of the compared strings. As a result we do not have to cast strings to objects to force reference
                 // comparison for atomized LocalNames and NamespaceNames.
                 return LocalName == that.LocalName && NamespaceName == that.NamespaceName;
             }

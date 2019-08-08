@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace System.Xml.Schema
 {
-    // This is an atomic value converted for Silverlight XML core that knows only how to convert to and from string. 
+    // This is an atomic value converted for Silverlight XML core that knows only how to convert to and from string.
     // It does not recognize XmlAtomicValue or XPathItemType.
     internal class XmlUntypedStringConverter
     {
@@ -193,15 +193,15 @@ namespace System.Xml.Schema
                 // 643697: Deserialization of typed arrays by the XmlReader.ReadContentsAs method fails
                 //
                 // In Silverligt 2 the XmlConvert.SplitString was not using the StringSplitOptions, which is the same as using StringSplitOptions.None.
-                // What it meant is that whenever there is a double space between two values in the input string it turned into 
+                // What it meant is that whenever there is a double space between two values in the input string it turned into
                 // an string.Empty entry in the intermediate string array. In Dev10 empty entries were always removed (StringSplitOptions.RemoveEmptyEntries).
                 //
                 // Moving forward in coreclr we'll use Dev10 behavior which empty entries were always removed (StringSplitOptions.RemoveEmptyEntries).
                 // we didn't quirk the change because we discover not many apps using ReadContentAs with string array type parameter
                 //
-                // The types Object, Byte[], String and Uri can be successfully deserialized from string.Empty, so we need to preserve the 
+                // The types Object, Byte[], String and Uri can be successfully deserialized from string.Empty, so we need to preserve the
                 // Silverlight 2 behavior for back-compat (=use StringSplitOptions.None). All the other array types failed to deserialize
-                // from string.Empty in Silverlight 2 (threw an exception), so we can fix all of these as they are not breaking changes 
+                // from string.Empty in Silverlight 2 (threw an exception), so we can fix all of these as they are not breaking changes
                 // (=use StringSplitOptions.RemoveEmptyEntries).
 
                 if (itemTypeDst == s_objectType) return ToArray<object>(XmlConvert.SplitString(value, StringSplitOptions.RemoveEmptyEntries), nsResolver);

@@ -151,7 +151,7 @@ namespace System.Reflection.TypeLoading
                     }
                 }
 
-                // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 
+                // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if
                 // a thread died between the time between we allocated the entry and the time we link it into the bucket stack.
                 Debug.Assert(newNextFreeEntry <= _nextFreeEntry);
 
@@ -199,7 +199,7 @@ namespace System.Reflection.TypeLoading
                             Debug.Fail("Bucket " + bucket + " has a cycle in its linked list.");
                     }
                 }
-                // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 
+                // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if
                 // a thread died between the time between we allocated the entry and the time we link it into the bucket stack.
                 Debug.Assert(numEntriesEncountered <= _nextFreeEntry);
 #endif //DEBUG

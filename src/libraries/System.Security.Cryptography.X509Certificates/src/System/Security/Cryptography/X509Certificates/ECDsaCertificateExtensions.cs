@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
                 return false;
-            
+
             if (!aParameters.Q.X.ContentsEqual(bParameters.Q.X) ||
                 !aParameters.Q.Y.ContentsEqual(bParameters.Q.Y))
             {

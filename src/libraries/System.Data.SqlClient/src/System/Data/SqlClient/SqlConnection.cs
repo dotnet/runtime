@@ -51,7 +51,7 @@ namespace System.Data.SqlClient
 
         // Transient Fault handling flag. This is needed to convey to the downstream mechanism of connection establishment, if Transient Fault handling should be used or not
         // The downstream handling of Connection open is the same for idle connection resiliency. Currently we want to apply transient fault handling only to the connections opened
-        // using SqlConnection.Open() method. 
+        // using SqlConnection.Open() method.
         internal bool _applyTransientFaultHandling = false;
 
         public SqlConnection(string connectionString) : this()
@@ -102,7 +102,7 @@ namespace System.Data.SqlClient
             CacheConnectionStringProperties();
         }
 
-        // This method will be called once connection string is set or changed. 
+        // This method will be called once connection string is set or changed.
         private void CacheConnectionStringProperties()
         {
             SqlConnectionString connString = ConnectionOptions as SqlConnectionString;
@@ -553,7 +553,7 @@ namespace System.Data.SqlClient
         {
             DbTransaction transaction = BeginTransaction(isolationLevel);
 
-            //   InnerConnection doesn't maintain a ref on the outer connection (this) and 
+            //   InnerConnection doesn't maintain a ref on the outer connection (this) and
             //   subsequently leaves open the possibility that the outer connection could be GC'ed before the SqlTransaction
             //   is fully hooked up (leaving a DbTransaction with a null connection property). Ensure that this is reachable
             //   until the completion of BeginTransaction with KeepAlive
@@ -630,7 +630,7 @@ namespace System.Data.SqlClient
         {
             // CloseConnection() now handles the lock
 
-            // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and 
+            // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and
             // the command will no longer be cancelable.  It might be desirable to be able to cancel the close operation, but this is
             // outside of the scope of Whidbey RTM.  See (SqlCommand::Cancel) for other lock.
             InnerConnection.CloseConnection(this, ConnectionFactory);
@@ -642,15 +642,15 @@ namespace System.Data.SqlClient
             Guid operationId = default(Guid);
             Guid clientConnectionId = default(Guid);
 
-            // during the call to Dispose() there is a redundant call to 
-            // Close(). because of this, the second time Close() is invoked the 
-            // connection is already in a closed state. this doesn't seem to be a 
+            // during the call to Dispose() there is a redundant call to
+            // Close(). because of this, the second time Close() is invoked the
+            // connection is already in a closed state. this doesn't seem to be a
             // problem except for logging, as we'll get duplicate Before/After/Error
             // log entries
             if (previousState != ConnectionState.Closed)
-            { 
+            {
                 operationId = s_diagnosticListener.WriteConnectionCloseBefore(this);
-                // we want to cache the ClientConnectionId for After/Error logging, as when the connection 
+                // we want to cache the ClientConnectionId for After/Error logging, as when the connection
                 // is closed then we will lose this identifier
                 //
                 // note: caching this is only for diagnostics logging purposes
@@ -674,7 +674,7 @@ namespace System.Data.SqlClient
                     }
                     AsyncHelper.WaitForCompletion(reconnectTask, 0, null, rethrowExceptions: false); // we do not need to deal with possible exceptions in reconnection
                     if (State != ConnectionState.Open)
-                    {// if we cancelled before the connection was opened 
+                    {// if we cancelled before the connection was opened
                         OnStateChange(DbConnectionInternal.StateChangeClosed);
                     }
                 }
@@ -696,10 +696,10 @@ namespace System.Data.SqlClient
             {
                 SqlStatistics.StopTimer(statistics);
 
-                // we only want to log this if the previous state of the 
+                // we only want to log this if the previous state of the
                 // connection is open, as that's the valid use-case
                 if (previousState != ConnectionState.Closed)
-                { 
+                {
                     if (e != null)
                     {
                         s_diagnosticListener.WriteConnectionCloseError(operationId, clientConnectionId, this, e);
@@ -724,7 +724,7 @@ namespace System.Data.SqlClient
 
             if (!disposing)
             {
-                // For non-pooled connections we need to make sure that if the SqlConnection was not closed, 
+                // For non-pooled connections we need to make sure that if the SqlConnection was not closed,
                 // then we release the GCHandle on the stateObject to allow it to be GCed
                 // For pooled connections, we will rely on the pool reclaiming the connection
                 var innerConnection = (InnerConnection as SqlInternalConnectionTds);
@@ -772,7 +772,7 @@ namespace System.Data.SqlClient
                     s_diagnosticListener.WriteConnectionOpenError(operationId, this, e);
                 }
                 else
-                { 
+                {
                     s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
                 }
             }
@@ -786,7 +786,7 @@ namespace System.Data.SqlClient
             }
             Interlocked.CompareExchange(ref _asyncWaitingForReconnection, waitingTask, null);
             if (_asyncWaitingForReconnection != waitingTask)
-            { // somebody else managed to register 
+            { // somebody else managed to register
                 throw SQL.MARSUnspportedOnConnection();
             }
         }
@@ -875,7 +875,7 @@ namespace System.Data.SqlClient
                             {
                                 if (tdsConn.Parser._sessionPool.ActiveSessionsCount > 0)
                                 {
-                                    // >1 MARS session 
+                                    // >1 MARS session
                                     if (beforeDisconnect != null)
                                     {
                                         beforeDisconnect();
@@ -936,7 +936,7 @@ namespace System.Data.SqlClient
                                 OnError(SQL.CR_UnrecoverableServer(ClientConnectionId), true, null);
                             }
                         } // ValidateSNIConnection
-                    } // sessionRecoverySupported                  
+                    } // sessionRecoverySupported
                 } // connectRetryCount>0
             }
             else
@@ -991,7 +991,7 @@ namespace System.Data.SqlClient
             Guid operationId = s_diagnosticListener.WriteConnectionOpenBefore(this);
 
             PrepareStatisticsForNewConnection();
-            
+
             SqlStatistics statistics = null;
             try
             {
@@ -1003,7 +1003,7 @@ namespace System.Data.SqlClient
 
                 if (s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection) ||
                     s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlErrorOpenConnection))
-                { 
+                {
                     result.Task.ContinueWith((t) =>
                     {
                         if (t.Exception != null)
@@ -1011,7 +1011,7 @@ namespace System.Data.SqlClient
                             s_diagnosticListener.WriteConnectionOpenError(operationId, this, t.Exception);
                         }
                         else
-                        { 
+                        {
                             s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
                         }
                     }, TaskScheduler.Default);
@@ -1575,7 +1575,7 @@ namespace System.Data.SqlClient
             ADP.CheckArgumentNull(connection, nameof(connection));
             _userConnectionOptions = connection.UserConnectionOptions;
             _poolGroup = connection.PoolGroup;
-            
+
             if (DbConnectionClosedNeverOpened.SingletonInstance == connection._innerConnection)
             {
                 _innerConnection = DbConnectionClosedNeverOpened.SingletonInstance;
@@ -1706,5 +1706,3 @@ namespace System.Data.SqlClient
         }
     }
 }
-
-

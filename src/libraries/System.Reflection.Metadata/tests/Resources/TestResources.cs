@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] Signed = ResourceHelper.GetResource("Misc.Signed.exe");
         public static readonly byte[] Satellite = ResourceHelper.GetResource("Misc.SatelliteAssembly.resources.dll");
 
-        public static readonly byte[] KeyPair_PublicKey = new byte[] 
+        public static readonly byte[] KeyPair_PublicKey = new byte[]
         {
             0x00, 0x24, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00, 0x94, 0x00, 0x00, 0x00, 0x06, 0x02, 0x00, 0x00,
             0x00, 0x24, 0x00, 0x00, 0x52, 0x53, 0x41, 0x31, 0x00, 0x04, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,

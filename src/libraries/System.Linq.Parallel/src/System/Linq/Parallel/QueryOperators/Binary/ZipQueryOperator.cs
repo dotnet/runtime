@@ -20,7 +20,7 @@ namespace System.Linq.Parallel
     /// two vectors a = {0, 1, 2, 3} and b = {9, 8, 7, 6} is the vector of pairs,
     /// c = {(0,9), (1,8), (2,7), (3,6)}. Because the expectation is that each element
     /// is matched with the element in the other data source at the same ordinal
-    /// position, the zip operator requires order preservation. 
+    /// position, the zip operator requires order preservation.
     /// </summary>
     /// <typeparam name="TLeftInput"></typeparam>
     /// <typeparam name="TRightInput"></typeparam>

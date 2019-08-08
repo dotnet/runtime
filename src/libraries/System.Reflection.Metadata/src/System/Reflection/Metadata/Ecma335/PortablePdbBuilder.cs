@@ -40,13 +40,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <param name="idProvider">
         /// Function calculating id of content represented as a sequence of blobs.
-        /// If not specified a default function that ignores the content and returns current time-based content id is used 
+        /// If not specified a default function that ignores the content and returns current time-based content id is used
         /// (<see cref="BlobContentId.GetTimeBasedProvider()"/>).
         /// You must specify a deterministic function to produce a deterministic Portable PDB image.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="tablesAndHeaps"/> or <paramref name="typeSystemRowCounts"/> is null.</exception>
         public PortablePdbBuilder(
-            MetadataBuilder tablesAndHeaps, 
+            MetadataBuilder tablesAndHeaps,
             ImmutableArray<int> typeSystemRowCounts,
             MethodDefinitionHandle entryPoint,
             Func<IEnumerable<Blob>, BlobContentId> idProvider = null)
@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             ValidateTypeSystemRowCounts(typeSystemRowCounts);
-            
+
             _builder = tablesAndHeaps;
             _entryPoint = entryPoint;
 
@@ -107,7 +107,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             // the id will be filled in later
             _pdbIdBlob = builder.ReserveBytes(MetadataSizes.PdbIdSize);
-            
+
             builder.WriteInt32(_entryPoint.IsNil ? 0 : MetadataTokens.GetToken(_entryPoint));
 
             builder.WriteUInt64(_serializedMetadata.Sizes.ExternalTablesMask);

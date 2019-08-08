@@ -6,15 +6,15 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Primitives
 {
-    // Because the debugger displays only the members available on ICompositionElement 
-    // when viewing CompositionError.Element in the watch and data tips windows, we 
-    // need this proxy so that the underlying object wrapped by the CompositionElement 
+    // Because the debugger displays only the members available on ICompositionElement
+    // when viewing CompositionError.Element in the watch and data tips windows, we
+    // need this proxy so that the underlying object wrapped by the CompositionElement
     // placeholder is displayed by default.
     internal class CompositionElementDebuggerProxy
     {
         private readonly CompositionElement _element;
 
-        public CompositionElementDebuggerProxy(CompositionElement element) 
+        public CompositionElementDebuggerProxy(CompositionElement element)
         {
             Requires.NotNull(element, nameof(element));
 

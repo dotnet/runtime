@@ -21,9 +21,9 @@ namespace System
 {
     // Note: users should make sure they copy the fields out of an ArraySegment onto their stack
     // then validate that the fields describe valid bounds within the array.  This must be done
-    // because assignments to value types are not atomic, and also because one thread reading 
+    // because assignments to value types are not atomic, and also because one thread reading
     // three fields from an ArraySegment may not see the same ArraySegment from one call to another
-    // (ie, users could assign a new value to the old location).  
+    // (ie, users could assign a new value to the old location).
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
@@ -147,7 +147,7 @@ namespace System
         public ArraySegment<T> Slice(int index)
         {
             ThrowInvalidOperationIfDefault();
-            
+
             if ((uint)index > (uint)_count)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();

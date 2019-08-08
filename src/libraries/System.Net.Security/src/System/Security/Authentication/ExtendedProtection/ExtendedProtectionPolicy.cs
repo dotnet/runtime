@@ -10,7 +10,7 @@ using System.Text;
 namespace System.Security.Authentication.ExtendedProtection
 {
     /// <summary>
-    /// This class contains the necessary settings for specifying how Extended Protection 
+    /// This class contains the necessary settings for specifying how Extended Protection
     /// should behave. Use one of the Build* methods to create an instance of this type.
     /// </summary>
     public class ExtendedProtectionPolicy : ISerializable

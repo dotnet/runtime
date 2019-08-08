@@ -18,9 +18,9 @@ namespace System.Security.Cryptography.Cng.Tests
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
         // AES128-CBC-NoPadding at 2 blocks
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.CBC, PaddingMode.None)]
-        // AES256-CBC-Zeros at 1.5 blocks 
+        // AES256-CBC-Zeros at 1.5 blocks
         [InlineData(256, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.Zeros)]
-        // AES192-CBC-PKCS7 at 1.5 blocks 
+        // AES192-CBC-PKCS7 at 1.5 blocks
         [InlineData(192, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.PKCS7)]
         public static void VerifyPersistedKey(
             int keySize,
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 () => new AesCng(),
                 cipherMode,
                 paddingMode);
-            
+
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]

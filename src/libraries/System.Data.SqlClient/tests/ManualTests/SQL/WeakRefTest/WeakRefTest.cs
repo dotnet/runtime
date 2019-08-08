@@ -44,7 +44,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public static void TestReaderNonMars()
         {
             string connString =
-                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr)
                 {
                     MaxPoolSize = 1
                 }
@@ -73,7 +73,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public static void TestTransactionSingle()
         {
             string connString =
-                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr)
                 {
                     MaxPoolSize = 1
                 }).ConnectionString;

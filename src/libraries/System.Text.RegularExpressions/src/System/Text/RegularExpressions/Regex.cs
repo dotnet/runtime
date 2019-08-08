@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         protected internal Hashtable capnames;               // if named captures are used, this maps names->index
         protected internal string[] capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                      // the size of the capture array
-        
+
         internal ExclusiveReference _runnerref;              // cached runner
         internal WeakReference<RegexReplacement> _replref; // cached parsed replacement pattern
         internal RegexCode _code;                            // if interpreted, this is the code for RegexInterpreter
@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions
 
             ValidateMatchTimeout(matchTimeout);
 
-            // After parameter validation assign 
+            // After parameter validation assign
             this.pattern = pattern;
             roptions = options;
             internalMatchTimeout = matchTimeout;
@@ -203,7 +203,7 @@ namespace System.Text.RegularExpressions
 
 #if FEATURE_COMPILED
         /// <summary>
-        /// This method is here for perf reasons: if the call to RegexCompiler is NOT in the 
+        /// This method is here for perf reasons: if the call to RegexCompiler is NOT in the
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>

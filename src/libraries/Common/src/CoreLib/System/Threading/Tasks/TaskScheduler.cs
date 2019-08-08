@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,7 +6,7 @@
 //
 //
 //
-// This file contains the primary interface and management of tasks and queues.  
+// This file contains the primary interface and management of tasks and queues.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> acts as the extension point for all 
+    /// <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> acts as the extension point for all
     /// pluggable scheduling logic.  This includes mechanisms such as how to schedule a task for execution, and
     /// how scheduled tasks should be exposed to debuggers.
     /// </para>
@@ -44,14 +44,14 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <remarks>
         /// <para>
-        /// A class derived from <see cref="T:System.Threading.Tasks.TaskScheduler">TaskScheduler</see>  
+        /// A class derived from <see cref="T:System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
         /// implements this method to accept tasks being scheduled on the scheduler.
         /// A typical implementation would store the task in an internal data structure, which would
         /// be serviced by threads that would execute those tasks at some time in the future.
         /// </para>
         /// <para>
         /// This method is only meant to be called by the .NET Framework and
-        /// should not be called directly by the derived class. This is necessary 
+        /// should not be called directly by the derived class. This is necessary
         /// for maintaining the consistency of the system.
         /// </para>
         /// </remarks>
@@ -145,7 +145,7 @@ namespace System.Threading.Tasks
         protected abstract IEnumerable<Task>? GetScheduledTasks();
 
         /// <summary>
-        /// Indicates the maximum concurrency level this 
+        /// Indicates the maximum concurrency level this
         /// <see cref="TaskScheduler"/>  is able to support.
         /// </summary>
         public virtual int MaximumConcurrencyLevel
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks
                 return false;
             }
 
-            // Task class will still call into TaskScheduler.TryRunInline rather than TryExecuteTaskInline() so that 
+            // Task class will still call into TaskScheduler.TryRunInline rather than TryExecuteTaskInline() so that
             // 1) we can adjust the return code from TryExecuteTaskInline in case a buggy custom scheduler lies to us
             // 2) we maintain a mechanism for the TLS lookup optimization that we used to have for the ConcRT scheduler (will potentially introduce the same for TP)
             if (TplEventSource.Log.IsEnabled())
@@ -278,7 +278,7 @@ namespace System.Threading.Tasks
         protected TaskScheduler()
         {
 #if CORECLR // Debugger support
-            // Register the scheduler in the active scheduler list.  This is only relevant when debugging, 
+            // Register the scheduler in the active scheduler list.  This is only relevant when debugging,
             // so we only pay the cost if the debugger is attached when the scheduler is created.  This
             // means that the internal TaskScheduler.GetTaskSchedulersForDebugger() will only include
             // schedulers created while the debugger is attached.
@@ -350,13 +350,13 @@ namespace System.Threading.Tasks
         /// associated with the current <see cref="T:System.Threading.SynchronizationContext"/>.
         /// </summary>
         /// <remarks>
-        /// All <see cref="System.Threading.Tasks.Task">Task</see> instances queued to 
+        /// All <see cref="System.Threading.Tasks.Task">Task</see> instances queued to
         /// the returned scheduler will be executed through a call to the
         /// <see cref="System.Threading.SynchronizationContext.Post">Post</see> method
         /// on that context.
         /// </remarks>
         /// <returns>
-        /// A <see cref="TaskScheduler"/> associated with 
+        /// A <see cref="TaskScheduler"/> associated with
         /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see>, as
         /// determined by <see cref="System.Threading.SynchronizationContext.Current">SynchronizationContext.Current</see>.
         /// </returns>
@@ -441,7 +441,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <remarks>
         /// This AppDomain-wide event provides a mechanism to prevent exception
-        /// escalation policy (which, by default, terminates the process) from triggering. 
+        /// escalation policy (which, by default, terminates the process) from triggering.
         /// Each handler is passed a <see cref="T:System.Threading.Tasks.UnobservedTaskExceptionEventArgs"/>
         /// instance, which may be used to examine the exception and to mark it as observed.
         /// </remarks>
@@ -464,10 +464,10 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <remarks>
         /// The returned array is populated through a call to <see cref="GetScheduledTasks"/>.
-        /// Note that this function is only meant to be invoked by a debugger remotely. 
+        /// Note that this function is only meant to be invoked by a debugger remotely.
         /// It should not be called by any other codepaths.
         /// </remarks>
-        /// <returns>An array of <see cref="System.Threading.Tasks.Task">Task</see> instances.</returns> 
+        /// <returns>An array of <see cref="System.Threading.Tasks.Task">Task</see> instances.</returns>
         /// <exception cref="T:System.NotSupportedException">
         /// This scheduler is unable to generate a list of queued tasks at this time.
         /// </exception>
@@ -496,14 +496,14 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Provides an array of all active <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> 
+        /// Provides an array of all active <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
         /// instances for the debugger.
         /// </summary>
         /// <remarks>
-        /// This function is only meant to be invoked by a debugger remotely. 
+        /// This function is only meant to be invoked by a debugger remotely.
         /// It should not be called by any other codepaths.
         /// </remarks>
-        /// <returns>An array of <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instances.</returns> 
+        /// <returns>An array of <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instances.</returns>
         internal static TaskScheduler[] GetTaskSchedulersForDebugger()
         {
             if (s_activeTaskSchedulers == null)
@@ -563,16 +563,16 @@ namespace System.Threading.Tasks
 
 
     /// <summary>
-    /// A TaskScheduler implementation that executes all tasks queued to it through a call to 
-    /// <see cref="System.Threading.SynchronizationContext.Post"/> on the <see cref="T:System.Threading.SynchronizationContext"/> 
-    /// that its associated with. The default constructor for this class binds to the current <see cref="T:System.Threading.SynchronizationContext"/> 
+    /// A TaskScheduler implementation that executes all tasks queued to it through a call to
+    /// <see cref="System.Threading.SynchronizationContext.Post"/> on the <see cref="T:System.Threading.SynchronizationContext"/>
+    /// that its associated with. The default constructor for this class binds to the current <see cref="T:System.Threading.SynchronizationContext"/>
     /// </summary>
     internal sealed class SynchronizationContextTaskScheduler : TaskScheduler
     {
         private SynchronizationContext m_synchronizationContext;
 
         /// <summary>
-        /// Constructs a SynchronizationContextTaskScheduler associated with <see cref="T:System.Threading.SynchronizationContext.Current"/> 
+        /// Constructs a SynchronizationContextTaskScheduler associated with <see cref="T:System.Threading.SynchronizationContext.Current"/>
         /// </summary>
         /// <exception cref="T:System.InvalidOperationException">This constructor expects <see cref="T:System.Threading.SynchronizationContext.Current"/> to be set.</exception>
         internal SynchronizationContextTaskScheduler()
@@ -584,7 +584,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Implementation of <see cref="T:System.Threading.Tasks.TaskScheduler.QueueTask"/> for this scheduler class.
-        /// 
+        ///
         /// Simply posts the tasks to be executed on the associated <see cref="T:System.Threading.SynchronizationContext"/>.
         /// </summary>
         /// <param name="task"></param>
@@ -595,8 +595,8 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Implementation of <see cref="T:System.Threading.Tasks.TaskScheduler.TryExecuteTaskInline"/>  for this scheduler class.
-        /// 
-        /// The task will be executed inline only if the call happens within 
+        ///
+        /// The task will be executed inline only if the call happens within
         /// the associated <see cref="T:System.Threading.SynchronizationContext"/>.
         /// </summary>
         /// <param name="task"></param>
@@ -621,7 +621,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Implements the <see cref="T:System.Threading.Tasks.TaskScheduler.MaximumConcurrencyLevel"/> property for
         /// this scheduler class.
-        /// 
+        ///
         /// By default it returns 1, because a <see cref="T:System.Threading.SynchronizationContext"/> based
         /// scheduler only supports execution on a single thread.
         /// </summary>

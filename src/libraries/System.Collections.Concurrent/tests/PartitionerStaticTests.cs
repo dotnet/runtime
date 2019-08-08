@@ -57,7 +57,7 @@ namespace System.Collections.Concurrent.Tests
         #region Dispose tests. The dispose logic of PartitionerStatic
 
         // In the official dev unit test run, this test should be commented out
-        // - Each time we call GetDynamicPartitions method, we create an internal "reader enumerator" to read the 
+        // - Each time we call GetDynamicPartitions method, we create an internal "reader enumerator" to read the
         // source data, and we need to make sure that whenever the object returned by GetDynamicPartitions is disposed,
         // the "reader enumerator" is also disposed.
         [Fact]
@@ -92,7 +92,7 @@ namespace System.Collections.Concurrent.Tests
             }
 
             // should not throw
-            using (var e = d.GetEnumerator()) { }; 
+            using (var e = d.GetEnumerator()) { };
         }
 
         #endregion
@@ -267,7 +267,7 @@ namespace System.Collections.Concurrent.Tests
                         lastElement = key;
 
                         //Only check this with static partitioning
-                        //check keys are ordered across the partitions 
+                        //check keys are ordered across the partitions
                         if (staticPartitioning)
                         {
                             int originalPosition;
@@ -289,7 +289,7 @@ namespace System.Collections.Concurrent.Tests
                 Console.WriteLine("TestPartitioningCore:  Keys are not strictly ordered within each partition");
 
             // Only check this with static partitioning
-            //check keys are ordered across the partitions 
+            //check keys are ordered across the partitions
             Assert.False(staticPartitioning && !keysOrderedAcrossPartitions, "TestPartitioningCore:  Keys are not strictly ordered across partitions");
 
             //check data count
@@ -308,7 +308,7 @@ namespace System.Collections.Concurrent.Tests
         [Fact]
         public static void TestExtraMoveNext()
         {
-            Partitioner<int>[] partitioners = new[] 
+            Partitioner<int>[] partitioners = new[]
             {
                 Partitioner.Create(new int[] { 0 , 1, 2, 3, 4, 5}),
                 Partitioner.Create(new int[] { 0 , 1, 2, 3, 4, 5}, false),
@@ -367,7 +367,7 @@ namespace System.Collections.Concurrent.Tests
             {
                 for (int i = 0; i < s_enumerators.Count; i++)
                 {
-                    Assert.True(s_enumerators[i].IsDisposed(), 
+                    Assert.True(s_enumerators[i].IsDisposed(),
                         string.Format("AreEnumeratorsDisposed:  FAILED.  enumerator {0} was not disposed for SCENARIO: {1}.", i, scenario));
                 }
             }

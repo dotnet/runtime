@@ -423,13 +423,13 @@ namespace System.Net.Tests
                 using (Stream inputStream = request.InputStream)
                 {
                     Assert.False(inputStream.CanSeek);
-    
+
                     Assert.Throws<NotSupportedException>(() => inputStream.Length);
                     Assert.Throws<NotSupportedException>(() => inputStream.SetLength(1));
-    
+
                     Assert.Throws<NotSupportedException>(() => inputStream.Position);
                     Assert.Throws<NotSupportedException>(() => inputStream.Position = 1);
-    
+
                     Assert.Throws<NotSupportedException>(() => inputStream.Seek(0, SeekOrigin.Begin));
                 }
 
@@ -473,11 +473,11 @@ namespace System.Net.Tests
                 using (Stream inputStream = request.InputStream)
                 {
                     Assert.False(inputStream.CanWrite);
-    
+
                     Assert.Throws<InvalidOperationException>(() => inputStream.Write(new byte[0], 0, 0));
                     await Assert.ThrowsAsync<InvalidOperationException>(() => inputStream.WriteAsync(new byte[0], 0, 0));
                     Assert.Throws<InvalidOperationException>(() => inputStream.EndWrite(null));
-    
+
                     // Flushing the output stream is a no-op.
                     inputStream.Flush();
                     Assert.Equal(Task.CompletedTask, inputStream.FlushAsync(CancellationToken.None));
@@ -605,25 +605,25 @@ namespace System.Net.Tests
                 Task<HttpResponseMessage> clientTask1 = client.PostAsync(_factory.ListeningUrl, new StringContent("Hello"));
                 HttpListenerContext context1 = await contextTask1;
                 HttpListenerRequest request1 = context1.Request;
-                
+
                 Task<HttpListenerContext> contextTask2 = _listener.GetContextAsync();
                 client.DefaultRequestHeaders.TransferEncodingChunked = chunked;
                 Task<HttpResponseMessage> clientTask2 = client.PostAsync(_factory.ListeningUrl, new StringContent("Hello"));
                 HttpListenerContext context2 = await contextTask2;
                 HttpListenerRequest request2 = context2.Request;
-                
+
                 using (Stream inputStream1 = request1.InputStream)
                 using (Stream inputStream2 = request2.InputStream)
                 {
                     IAsyncResult beginReadResult = inputStream1.BeginRead(new byte[0], 0, 0, null, null);
-    
+
                     AssertExtensions.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(new CustomAsyncResult()));
                     AssertExtensions.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(beginReadResult));
                 }
-                
+
                 context1.Response.Close();
                 await clientTask1;
-                
+
                 context2.Response.Close();
                 await clientTask2;
             }
@@ -647,7 +647,7 @@ namespace System.Net.Tests
                 {
                     IAsyncResult beginReadResult = inputStream.BeginRead(new byte[0], 0, 0, null, null);
                     inputStream.EndRead(beginReadResult);
-    
+
                     Assert.Throws<InvalidOperationException>(() => inputStream.EndRead(beginReadResult));
                 }
 

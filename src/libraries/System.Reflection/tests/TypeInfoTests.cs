@@ -528,7 +528,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(IDisposable), typeof(Stream), true)]
         [InlineData(typeof(IList), typeof(ArrayList), true)]
         [InlineData(typeof(object), typeof(int), true)]
-        [InlineData(typeof(object), typeof(string), true)]        
+        [InlineData(typeof(object), typeof(string), true)]
         // Null
         [InlineData(typeof(BaseClassWithInterface1Interface2), null, false)]
         // Lists and arrays

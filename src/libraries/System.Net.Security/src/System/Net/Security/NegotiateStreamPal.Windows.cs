@@ -73,7 +73,7 @@ namespace System.Net.Security
         {
             return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES);
         }
-        
+
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
             if (impersonationLevel != TokenImpersonationLevel.Identification &&

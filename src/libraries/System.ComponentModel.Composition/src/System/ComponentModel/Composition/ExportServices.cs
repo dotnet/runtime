@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition
             }
 
             // Consider all types that IDictionary<string, object> derives from, such
-            // as ICollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>> 
+            // as ICollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
             // and IEnumerable, as default metadata view
             return metadataViewType.IsAssignableFrom(DefaultMetadataViewType);
         }

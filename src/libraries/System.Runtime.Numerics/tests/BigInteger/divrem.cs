@@ -40,7 +40,7 @@ namespace System.Numerics.Tests
                 VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
         }
-        
+
         [Fact]
         public static void RunDivRem_OneSmallOneLargeBI()
         {
@@ -206,7 +206,7 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

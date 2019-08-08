@@ -34,4 +34,3 @@ namespace System.Security.Cryptography.Pkcs
         public byte[] Parameters { get; set; } = Array.Empty<byte>();
     }
 }
-

@@ -60,7 +60,7 @@ namespace System.Linq.Parallel
         }
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // PLINQ Query Event IDs (must be unique)
         //
 
@@ -74,7 +74,7 @@ namespace System.Linq.Parallel
         private const int PARALLELQUERYJOIN_EVENTID = 4;
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // PLINQ Query Events
         //
 

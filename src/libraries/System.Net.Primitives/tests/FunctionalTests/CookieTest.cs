@@ -116,7 +116,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             Cookie c = new Cookie();
             Assert.False(c.Expired);
-            
+
             c.Expires = DateTime.Now.AddDays(-1);
             Assert.True(c.Expired);
 
@@ -188,7 +188,7 @@ namespace System.Net.Primitives.Functional.Tests
             c.Path = null;
             Assert.Equal(string.Empty, c.Path);
         }
-        
+
         [Fact]
         public static void Port_GetSet_Success()
         {
@@ -307,7 +307,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.NotEqual(c2, c5);
             Assert.NotEqual(c2, c6);
             Assert.NotEqual(c2, c9);
-            
+
             Assert.NotEqual(c2.GetHashCode(), c4.GetHashCode());
             Assert.NotEqual(c2.GetHashCode(), c5.GetHashCode());
             Assert.NotEqual(c2.GetHashCode(), c6.GetHashCode());
@@ -316,7 +316,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(c6, c7);
             Assert.NotEqual(c6, c8);
             Assert.NotEqual(c6, c9);
-            
+
             Assert.NotEqual(c6.GetHashCode(), c8.GetHashCode());
             Assert.NotEqual(c6.GetHashCode(), c9.GetHashCode());
 

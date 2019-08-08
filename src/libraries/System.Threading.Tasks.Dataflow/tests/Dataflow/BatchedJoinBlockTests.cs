@@ -15,11 +15,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var blocks2 = new[]
             {
                 new BatchedJoinBlock<int, string>(1),
-                new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions {
                     MaxNumberOfGroups = 1 }),
-                new BatchedJoinBlock<int, string>(3, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string>(3, new GroupingDataflowBlockOptions {
                     MaxMessagesPerTask = 1 }),
-                new BatchedJoinBlock<int, string>(4, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string>(4, new GroupingDataflowBlockOptions {
                     MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
             };
             for (int i = 0; i < blocks2.Length; i++)
@@ -32,11 +32,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var blocks3 = new[]
             {
                 new BatchedJoinBlock<int, string, double>(1),
-                new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions {
                     MaxNumberOfGroups = 1 }),
-                new BatchedJoinBlock<int, string, double>(3, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string, double>(3, new GroupingDataflowBlockOptions {
                     MaxMessagesPerTask = 1 }),
-                new BatchedJoinBlock<int, string, double>(4, new GroupingDataflowBlockOptions { 
+                new BatchedJoinBlock<int, string, double>(4, new GroupingDataflowBlockOptions {
                     MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
             };
             for (int i = 0; i < blocks3.Length; i++)
@@ -277,7 +277,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceled2()
         {
-            var b = new BatchedJoinBlock<int, int>(42, 
+            var b = new BatchedJoinBlock<int, int>(42,
                 new GroupingDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 });
 
             Tuple<IList<int>, IList<int>> ignoredValue;
@@ -286,14 +286,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.NotNull(b.LinkTo(new ActionBlock<Tuple<IList<int>, IList<int>>>(delegate { })));
             Assert.False(b.Target1.Post(42));
             Assert.False(b.Target2.Post(42));
-            
+
             foreach (var target in new[] { b.Target1, b.Target2 })
             {
                 var t = target.SendAsync(42);
                 Assert.True(t.IsCompleted);
                 Assert.False(t.Result);
             }
-            
+
             Assert.False(b.TryReceiveAll(out ignoredValues));
             Assert.False(b.TryReceive(out ignoredValue));
             Assert.Equal(expected: 0, actual: b.OutputCount);

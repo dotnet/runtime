@@ -19,9 +19,9 @@ namespace System.Xml.XPath.DataBinding
         Element,
         Attribute,
         ElementNested,
-        Repeat, 
-        Sequence, 
-        Choice, 
+        Repeat,
+        Sequence,
+        Choice,
         All
     }
 
@@ -43,7 +43,7 @@ namespace System.Xml.XPath.DataBinding
             this.bindingType = bindingType;
         }
 
-        public string Name { 
+        public string Name {
             get { return this.name; }
             set { this.name = value; }
         }

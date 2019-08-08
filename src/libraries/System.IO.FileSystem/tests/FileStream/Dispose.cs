@@ -51,7 +51,7 @@ namespace System.IO.Tests
             {
                 DisposeMethod = disposeMethod;
             }
-            
+
             public Action<bool> DisposeMethod { get; set; }
 
             protected override void Dispose(bool disposing)
@@ -136,7 +136,7 @@ namespace System.IO.Tests
                         fswrite.WriteByte(0);
                     };
                     act();
-                    
+
                     // Dispose is not getting called here.
                     // instead, make sure finalizer gets called and doesnt throw exception
                     for (int i = 0; i < 2; i++)

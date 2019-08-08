@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition
 
             Assert.Throws<ArgumentNullException>(() =>
             {
-                provider.GetExports((ImportDefinition)null);                
+                provider.GetExports((ImportDefinition)null);
             });
         }
 
@@ -41,7 +41,7 @@ namespace System.ComponentModel.Composition
 
             IEnumerable<Export> exports = new Export[0];
             IEnumerable<Export> results = exports;
-            
+
             Assert.Throws<ArgumentNullException>(() =>
             {
                 provider.TryGetExports((ImportDefinition)null, null, out results);

@@ -53,7 +53,7 @@ namespace System.Xml {
             if ( key == null ) {
                 throw new ArgumentNullException( "key" );
             }
-            int len = key.Length;            
+            int len = key.Length;
             if ( len == 0 ) {
                 return string.Empty;
             }
@@ -63,13 +63,13 @@ namespace System.Xml {
                 hashCode += ( hashCode << 7 ) ^ key[i];
             }
             // mix it a bit more
-            hashCode -= hashCode >> 17; 
-            hashCode -= hashCode >> 11; 
+            hashCode -= hashCode >> 17;
+            hashCode -= hashCode >> 11;
             hashCode -= hashCode >> 5;
 
             Entry[] entries = this.entries;
-            for ( Entry e = entries[hashCode & (entries.Length-1)]; 
-                  e != null; 
+            for ( Entry e = entries[hashCode & (entries.Length-1)];
+                  e != null;
                   e = e.next ) {
                 if ( e.hashCode == hashCode && e.str.Equals( key ) ) {
                     return e.str;
@@ -90,13 +90,13 @@ namespace System.Xml {
                 hashCode += ( hashCode << 7 ) ^ key[i];
             }
             // mix it a bit more
-            hashCode -= hashCode >> 17; 
-            hashCode -= hashCode >> 11; 
+            hashCode -= hashCode >> 17;
+            hashCode -= hashCode >> 11;
             hashCode -= hashCode >> 5;
 
             Entry[] entries = this.entries;
-            for ( Entry e = entries[hashCode & (entries.Length-1)]; 
-                  e != null; 
+            for ( Entry e = entries[hashCode & (entries.Length-1)];
+                  e != null;
                   e = e.next ) {
                 if ( e.hashCode == hashCode && TextEquals( e.str, key, start ) ) {
                     return e.str;
@@ -120,13 +120,13 @@ namespace System.Xml {
                 hashCode += ( hashCode << 7 ) ^ value[i];
             }
             // mix it a bit more
-            hashCode -= hashCode >> 17; 
-            hashCode -= hashCode >> 11; 
+            hashCode -= hashCode >> 17;
+            hashCode -= hashCode >> 11;
             hashCode -= hashCode >> 5;
-            
+
             Entry[] entries = this.entries;
-            for ( Entry e = entries[hashCode & (entries.Length-1)]; 
-                  e != null; 
+            for ( Entry e = entries[hashCode & (entries.Length-1)];
+                  e != null;
                   e = e.next ) {
                 if ( e.hashCode == hashCode && e.str.Equals( value ) ) {
                     return e.str;
@@ -147,13 +147,13 @@ namespace System.Xml {
                 hashCode += ( hashCode << 7 ) ^ key[i];
             }
             // mix it a bit more
-            hashCode -= hashCode >> 17; 
-            hashCode -= hashCode >> 11; 
+            hashCode -= hashCode >> 17;
+            hashCode -= hashCode >> 11;
             hashCode -= hashCode >> 5;
-            
+
             Entry[] entries = this.entries;
-            for ( Entry e = entries[hashCode & (entries.Length-1)]; 
-                  e != null; 
+            for ( Entry e = entries[hashCode & (entries.Length-1)];
+                  e != null;
                   e = e.next ) {
                 if ( e.hashCode == hashCode && TextEquals( e.str, key, start ) ) {
                     return e.str;
@@ -190,7 +190,7 @@ namespace System.Xml {
             Entry[] oldEntries = entries;
             Entry[] newEntries = new Entry[newMask+1];
 
-            // use oldEntries.Length to eliminate the range check            
+            // use oldEntries.Length to eliminate the range check
             for ( int i = 0; i < oldEntries.Length; i++ ) {
                 Entry e = oldEntries[i];
                 while ( e != null ) {
@@ -201,7 +201,7 @@ namespace System.Xml {
                     e = tmp;
                 }
             }
-            
+
             entries = newEntries;
             mask = newMask;
         }
@@ -217,7 +217,7 @@ namespace System.Xml {
         }
     }
 
-#else 
+#else
 
     // XmlNameTable implemented as a multi-threaded splay tree.
     [Obsolete("This class is going away")]
@@ -237,7 +237,7 @@ namespace System.Xml {
         }
 
         public MTNameTable(): this( false ) {
-        }    
+        }
 
 
 
@@ -377,7 +377,7 @@ namespace System.Xml {
             return currentNode;
         }
 
-        // Sets the root node given a string 
+        // Sets the root node given a string
         private MTNameTableNode AddRoot( ref MTNameTableName name, bool fLock ) {
             MTNameTableNode newNode = null;
 
@@ -477,7 +477,7 @@ namespace System.Xml {
                     LockCookie lc = rwLock.UpgradeToWriterLock(timeout);
 
                     // recheck for failsafe against race-condition
-                    if (node != rootNode && 
+                    if (node != rootNode &&
                         node.counter > threshhold &&
                         node.counter > node.parentNode.counter * 2) {
                         InternalPromote( node );
@@ -577,7 +577,7 @@ namespace System.Xml {
                 hash = hash | (((Int64)value[3]) & 0xFF);
 
             return hash;
-        }    
+        }
 
         private static Int64 Hash(char[] key, int start, int len) {
             Int64 hash = 0;

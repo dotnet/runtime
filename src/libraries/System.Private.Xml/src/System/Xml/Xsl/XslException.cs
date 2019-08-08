@@ -135,7 +135,7 @@ namespace System.Xml.Xsl
 
             if (errorLine == 0)
             {
-                // If the compiler reported error on Line 0 - ignore columns, 
+                // If the compiler reported error on Line 0 - ignore columns,
                 //   0 means it doesn't know where the error was and our SourceLineInfo
                 //   expects either all zeroes or all non-zeroes
                 errorColumn = 0;

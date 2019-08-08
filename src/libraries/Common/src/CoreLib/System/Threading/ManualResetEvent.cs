@@ -9,4 +9,3 @@ namespace System.Threading
         public ManualResetEvent(bool initialState) : base(initialState, EventResetMode.ManualReset) { }
     }
 }
-

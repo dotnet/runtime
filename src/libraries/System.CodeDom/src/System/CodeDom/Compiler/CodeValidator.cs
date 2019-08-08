@@ -8,8 +8,8 @@ namespace System.CodeDom.Compiler
 {
     // This is an internal helper class which walks the tree for the ValidateIdentifiers API in the CodeGenerator. For the most part the generator code has been copied and
     // turned into validation code. This code will only validate identifiers and types to check that they are ok in a language
-    // independent manner. By default, this will not be turned on. This gives clients of codedom a mechanism to 
-    // protect themselves against certain types of code injection attacks (using identifier and type names). 
+    // independent manner. By default, this will not be turned on. This gives clients of codedom a mechanism to
+    // protect themselves against certain types of code injection attacks (using identifier and type names).
     // You can pass in any node in the tree that is a subclass of CodeObject.
     internal sealed class CodeValidator
     {
@@ -662,7 +662,7 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateArity(CodeTypeReference e)
         {
-            // Verify that the number of TypeArguments agrees with the arity on the type.  
+            // Verify that the number of TypeArguments agrees with the arity on the type.
             string baseType = e.BaseType;
             int totalTypeArgs = 0;
             for (int i = 0; i < baseType.Length; i++)

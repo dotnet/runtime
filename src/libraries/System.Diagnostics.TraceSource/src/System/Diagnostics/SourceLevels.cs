@@ -22,4 +22,3 @@ namespace System.Diagnostics
         All = unchecked((int)0xFFFFFFFF),
     }
 }
-

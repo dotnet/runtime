@@ -201,7 +201,7 @@ namespace System.Net.Sockets.Tests
                 firstListener.BindToAnonymousPort(IPAddress.Loopback);
                 firstListener.Listen(1);
                 firstListener.AcceptAsync();
-                
+
                 secondListener.BindToAnonymousPort(IPAddress.Loopback);
                 secondListener.Listen(1);
                 secondListener.AcceptAsync();

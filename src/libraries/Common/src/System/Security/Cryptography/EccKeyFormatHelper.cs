@@ -297,7 +297,7 @@ namespace System.Security.Cryptography
 
             writer.PopSequence();
         }
- 
+
         internal static AsnWriter WritePkcs8PrivateKey(in ECParameters ecParameters)
         {
             ecParameters.Validate();

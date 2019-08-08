@@ -10,13 +10,13 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    // This proxy is needed to pretty up CompositionScopeDefinitionCatalog.Parts; IQueryable<T> 
+    // This proxy is needed to pretty up CompositionScopeDefinitionCatalog.Parts; IQueryable<T>
     // instances are not displayed in a very friendly way in the debugger.
     internal class CompositionScopeDefinitionDebuggerProxy
     {
         private readonly CompositionScopeDefinition _compositionScopeDefinition;
 
-        public CompositionScopeDefinitionDebuggerProxy(CompositionScopeDefinition compositionScopeDefinition) 
+        public CompositionScopeDefinitionDebuggerProxy(CompositionScopeDefinition compositionScopeDefinition)
         {
             Requires.NotNull(compositionScopeDefinition, nameof(compositionScopeDefinition));
 
@@ -27,14 +27,14 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get { return _compositionScopeDefinition.Parts.ToReadOnlyCollection(); }
         }
-        
+
         public IEnumerable<ExportDefinition> PublicSurface
         {
             get
             {
                 return _compositionScopeDefinition.PublicSurface.ToReadOnlyCollection();
             }
-        } 
+        }
 
         public virtual IEnumerable<CompositionScopeDefinition> Children
         {

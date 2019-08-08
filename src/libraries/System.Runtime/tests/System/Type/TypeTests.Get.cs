@@ -37,7 +37,7 @@ namespace System.Tests
             yield return new object[] { typeof(ClassWithNamespacedInterfaces), "System.Tests.Inner.", false, null };
             yield return new object[] { typeof(ClassWithNamespacedInterfaces), ".Interface1", false, null };
             yield return new object[] { typeof(ClassWithNamespacedInterfaces), ".", false, null };
-        
+
             // Potential amibguities.
             yield return new object[]  { typeof(ClassWithMixedCaseInterfaces), "MixedInterface", false, typeof(MixedInterface) };
 

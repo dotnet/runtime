@@ -97,6 +97,3 @@ namespace System.Net.Security
         public abstract bool IsServer { get; }
     }
 }
-
-
-

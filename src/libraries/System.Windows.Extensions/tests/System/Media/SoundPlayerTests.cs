@@ -85,7 +85,7 @@ namespace System.Media.Test
             yield return new object[] { "ima.wav" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Load_SourceLocation_Success(string sourceLocation)
@@ -100,7 +100,7 @@ namespace System.Media.Test
             soundPlayer.Play();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public async Task LoadAsync_SourceLocationFromNetwork_Success(string sourceLocation)
@@ -143,7 +143,7 @@ namespace System.Media.Test
             player.Play();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [OuterLoop]
         public void Play_InvalidFile_ShortTimeout_ThrowsWebException()
         {
@@ -156,7 +156,7 @@ namespace System.Media.Test
                 player.SoundLocation = $"http://{ep.Address}:{ep.Port}";
                 player.LoadTimeout = 1;
                 Assert.Throws<WebException>(() => player.Play());
-            } 
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
@@ -213,7 +213,7 @@ namespace System.Media.Test
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Play_SourceLocation_Success(string sourceLocation)
@@ -228,14 +228,14 @@ namespace System.Media.Test
             soundPlayer.Load();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         public void Play_NoSuchFile_ThrowsFileNotFoundException()
         {
             var soundPlayer = new SoundPlayer("noSuchFile");
             Assert.Throws<FileNotFoundException>(() => soundPlayer.Play());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Play_Stream_Success(string sourceLocation)

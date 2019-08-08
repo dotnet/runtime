@@ -61,7 +61,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void GetNativeOverlappedState_WhenUnderlyingStateIsIAsyncResult_ReturnsIAsyncResult()
-    {   // CoreCLR/Desktop CLR version of overlapped sits on top of Overlapped class 
+    {   // CoreCLR/Desktop CLR version of overlapped sits on top of Overlapped class
         // and treats IAsyncResult specially, which is why we special case this case.
 
         AsyncResult context = new AsyncResult();

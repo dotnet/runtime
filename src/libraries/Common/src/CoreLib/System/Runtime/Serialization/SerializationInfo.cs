@@ -14,7 +14,7 @@ namespace System.Runtime.Serialization
     {
         private const int DefaultSize = 4;
 
-        // Even though we have a dictionary, we're still keeping all the arrays around for back-compat. 
+        // Even though we have a dictionary, we're still keeping all the arrays around for back-compat.
         // Otherwise we may run into potentially breaking behaviors like GetEnumerator() not returning entries in the same order they were added.
         private string[] _names;
         private object?[] _values;
@@ -25,8 +25,8 @@ namespace System.Runtime.Serialization
         private string _rootTypeName;
         private string _rootTypeAssemblyName;
         private Type _rootType;
-        
-        internal static AsyncLocal<bool> AsyncDeserializationInProgress { get; } = new AsyncLocal<bool>();        
+
+        internal static AsyncLocal<bool> AsyncDeserializationInProgress { get; } = new AsyncLocal<bool>();
 
 #if !CORECLR
         // On AoT, assume private members are reflection blocked, so there's no further protection required
@@ -157,12 +157,12 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
-            
+
             return new DeserializationToken(null);
         }
 
         [CLSCompliant(false)]
-        public SerializationInfo(Type type, IFormatterConverter converter) 
+        public SerializationInfo(Type type, IFormatterConverter converter)
         {
             if ((object)type == null)
             {
@@ -405,13 +405,13 @@ namespace System.Runtime.Serialization
 
         /// <summary>
         /// Finds the value if it exists in the current data. If it does, we replace
-        /// the values, if not, we append it to the end. This is useful to the 
+        /// the values, if not, we append it to the end. This is useful to the
         /// ObjectManager when it's performing fixups.
-        /// 
+        ///
         /// All error checking is done with asserts. Although public in coreclr,
         /// it's not exposed in a contract and is only meant to be used by corefx.
         ///
-        /// This isn't a public API, but it gets invoked dynamically by 
+        /// This isn't a public API, but it gets invoked dynamically by
         /// BinaryFormatter
         ///
         /// This should not be used by clients: exposing out this functionality would allow children

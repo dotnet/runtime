@@ -1140,7 +1140,7 @@ namespace System.Dynamic
 namespace System.Runtime.CompilerServices
 {
     //
-    // Note: these helpers are kept as simple wrappers so they have a better 
+    // Note: these helpers are kept as simple wrappers so they have a better
     // chance of being inlined.
     //
     public static partial class RuntimeOps

@@ -4,7 +4,7 @@
 
 namespace System
 {
-    // This enumeration represents the colors that can be used for 
+    // This enumeration represents the colors that can be used for
     // console text foreground and background colors.
 
     public enum ConsoleColor

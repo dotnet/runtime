@@ -116,4 +116,3 @@ namespace Windows.Foundation
 #if !FEATURE_SLJ_PROJECTION_COMPAT
 #pragma warning restore 436
 #endif // !FEATURE_SLJ_PROJECTION_COMPAT
-

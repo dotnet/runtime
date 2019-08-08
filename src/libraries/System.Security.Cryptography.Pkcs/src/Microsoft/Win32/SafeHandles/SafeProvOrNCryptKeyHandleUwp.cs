@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
     //
     // A UWP-safe implementation of SafeProvOrNCryptKeyHandle. On UWP, NCryptIsKeyHandle() is a prohibited api. So to use this,
     // you must tell SafeProvOrNCryptKeyHandleUwp which type of handle it is.
-    // 
+    //
     internal sealed class SafeProvOrNCryptKeyHandleUwp : SafeProvOrNCryptKeyHandle
     {
         internal SafeProvOrNCryptKeyHandleUwp(IntPtr handle, SafeHandle parentHandle)
@@ -60,4 +60,3 @@ namespace Microsoft.Win32.SafeHandles
         private SafeHandle _parentHandle;
     }
 }
-

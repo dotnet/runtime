@@ -38,7 +38,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         /// <summary>
-        /// Scale, only valid for numeric types. 
+        /// Scale, only valid for numeric types.
         /// </summary>
         public int Scale
         {

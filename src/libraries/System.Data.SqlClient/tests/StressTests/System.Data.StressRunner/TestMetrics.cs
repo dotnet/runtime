@@ -43,27 +43,27 @@ namespace DPStressHarness
 
         /// <summary>Starts the sample profiler.</summary>
         /// <remarks>
-        /// Do not inline to avoid errors when the functionality is not used 
+        /// Do not inline to avoid errors when the functionality is not used
         /// and the profiling DLL is not available.
         /// </remarks>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void InternalStartProfiling()
         {
             //            Microsoft.VisualStudio.Profiler.DataCollection.StartProfile(
-            //                Microsoft.VisualStudio.Profiler.ProfileLevel.Global, 
+            //                Microsoft.VisualStudio.Profiler.ProfileLevel.Global,
             //                Microsoft.VisualStudio.Profiler.DataCollection.CurrentId);
         }
 
         /// <summary>Stops the sample profiler.</summary>
         /// <remarks>
-        /// Do not inline to avoid errors when the functionality is not used 
+        /// Do not inline to avoid errors when the functionality is not used
         /// and the profiling DLL is not available.
         /// </remarks>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void InternalStopProfiling()
         {
             //            Microsoft.VisualStudio.Profiler.DataCollection.StopProfile(
-            //                Microsoft.VisualStudio.Profiler.ProfileLevel.Global, 
+            //                Microsoft.VisualStudio.Profiler.ProfileLevel.Global,
             //                Microsoft.VisualStudio.Profiler.DataCollection.CurrentId);
         }
 

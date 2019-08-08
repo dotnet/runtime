@@ -310,12 +310,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (disposing)
             {
-                // free other state (managed objects)                
+                // free other state (managed objects)
                 if (cachedEntry != null)
                     cachedEntry.Dispose();
             }
 
-            // free your own state (unmanaged objects)   
+            // free your own state (unmanaged objects)
 
             _disposed = true;
         }

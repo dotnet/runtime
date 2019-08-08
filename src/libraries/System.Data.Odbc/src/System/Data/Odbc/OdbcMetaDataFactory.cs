@@ -182,7 +182,7 @@ namespace System.Data.Odbc
         private void DataTableFromDataReaderDataTypes(DataTable dataTypesTable, OdbcDataReader dataReader, OdbcConnection connection)
         {
             DataTable schemaTable = null;
-            // 
+            //
 
             // Build a DataTable from the reader
             schemaTable = dataReader.GetSchemaTable();

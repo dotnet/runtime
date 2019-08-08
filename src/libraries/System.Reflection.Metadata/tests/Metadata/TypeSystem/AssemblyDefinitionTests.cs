@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Tests
         public void ValidateAssemblyNameWithCultureSet()
         {
             var assembly = new { Assembly = Misc.Satellite, Name = "SatelliteAssembly.resources", Version = new Version(1, 0, 0, 0), ContentType = AssemblyContentType.Default, Culture = "de-DE" };
-            
+
             var reader = MetadataReaderTests.GetMetadataReader(assembly.Assembly, options: MetadataReaderOptions.ApplyWindowsRuntimeProjections);
 
             foreach (var assemblyRefHandle in reader.AssemblyReferences)
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata.Tests
         public void ValidateAssemblyNameWithPublicKey()
         {
             var assembly = new { Assembly = Misc.Signed, Name = "Signed", Version = new Version(0, 0, 0, 0), ContentType = AssemblyContentType.Default, Flags = AssemblyNameFlags.PublicKey };
-            
+
             var reader = MetadataReaderTests.GetMetadataReader(assembly.Assembly, options: MetadataReaderOptions.ApplyWindowsRuntimeProjections);
 
             foreach (var assemblyRefHandle in reader.AssemblyReferences)
@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata.Tests
             foreach (var item in assemblyItems)
             {
                 var reader = MetadataReaderTests.GetMetadataReader(item.Assembly, options: MetadataReaderOptions.ApplyWindowsRuntimeProjections);
-                
+
                 foreach (var assemblyRefHandle in reader.AssemblyReferences)
                 {
                     var assemblyDef = reader.GetAssemblyDefinition();

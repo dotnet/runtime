@@ -77,7 +77,7 @@ namespace System.Numerics
             Debug.Assert(right.GetLength() >= 2);
             Debug.Assert(left.GetLength() >= right.GetLength());
 
-            // Executes Lehmer's gcd algorithm, but uses the most 
+            // Executes Lehmer's gcd algorithm, but uses the most
             // significant bits to work with 64-bit (not 32-bit) values.
             // Furthermore we're using an optimized version due to Jebelean.
 

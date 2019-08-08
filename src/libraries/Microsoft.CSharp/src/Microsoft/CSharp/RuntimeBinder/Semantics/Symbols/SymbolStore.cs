@@ -18,12 +18,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // The RuntimeBinder uses a global lock when Binding that keeps this dictionary safe.
         private static readonly Dictionary<Key, Symbol> s_dictionary = new Dictionary<Key, Symbol>();
 
-        public static Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask) 
+        public static Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask)
         {
             RuntimeBinder.EnsureLockIsTaken();
             return s_dictionary.TryGetValue(new Key(name, parent), out Symbol sym) ? FindCorrectKind(sym, kindmask) : null;
         }
-        
+
         public static void InsertChild(ParentSymbol parent, Symbol child)
         {
             Debug.Assert(child.nextSameName == null);

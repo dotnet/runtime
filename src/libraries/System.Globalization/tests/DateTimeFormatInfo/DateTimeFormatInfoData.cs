@@ -56,12 +56,12 @@ namespace System.Globalization.Tests
             {
                 return CalendarWeekRule.FirstDay;
             }
-            
+
             if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
                 return CalendarWeekRule.FirstFullWeek;
             }
-            
+
             return CalendarWeekRule.FirstFourDayWeek;
         }
 

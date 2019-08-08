@@ -14,4 +14,3 @@ internal partial class Interop
         internal const int BCRYPT_KEY_DATA_BLOB_VERSION1 = 1;
     }
 }
-

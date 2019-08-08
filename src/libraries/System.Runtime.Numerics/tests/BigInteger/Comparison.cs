@@ -219,7 +219,7 @@ namespace System.Numerics.Tests
 
             // One Larger (BigInteger), Int64.MaxValue
             VerifyComparison((BigInteger)long.MaxValue + 1, long.MaxValue, 1);
-            
+
 
             //1 Random Inputs
             // Random BigInteger only differs by sign
@@ -229,7 +229,7 @@ namespace System.Numerics.Tests
                 do
                 {
                     byteArray = GetRandomByteArray(random);
-                } 
+                }
                 while (MyBigIntImp.IsZero(byteArray));
 
                 BigInteger b2 = new BigInteger(byteArray);
@@ -293,7 +293,7 @@ namespace System.Numerics.Tests
             do
             {
                 byteArray = GetRandomByteArray(random);
-            } 
+            }
             while (MyBigIntImp.IsZero(byteArray));
 
             isNegative = 0 == random.Next(0, 2);
@@ -340,7 +340,7 @@ namespace System.Numerics.Tests
             do
             {
                 byteArray = GetRandomByteArray(random);
-            } 
+            }
             while (MyBigIntImp.IsZero(byteArray));
 
             BigInteger b1 = new BigInteger(byteArray);
@@ -444,7 +444,7 @@ namespace System.Numerics.Tests
                 Assert.Equal(x.GetHashCode(), ((BigInteger)y).GetHashCode());
                 Assert.Equal(x.ToString(), ((BigInteger)y).ToString());
             }
-            
+
             Assert.Equal(x.GetHashCode(), x.GetHashCode());
             Assert.Equal(((BigInteger)y).GetHashCode(), ((BigInteger)y).GetHashCode());
 
@@ -637,7 +637,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
-        
+
         private static void VerifyCompareResult(int expected, int actual, string message)
         {
             if (0 == expected)

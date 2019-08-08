@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Regex.CacheSize = 3;
                 Assert.True(Regex.IsMatch("1", "1"));
-                Assert.True(Regex.IsMatch("2", "2")); 
+                Assert.True(Regex.IsMatch("2", "2"));
                 Assert.True(Regex.IsMatch("3", "3"));
                 Assert.True(GetCachedItemsNum() == 3);
                 Assert.True(Regex.IsMatch("1", "1")); // should be put first

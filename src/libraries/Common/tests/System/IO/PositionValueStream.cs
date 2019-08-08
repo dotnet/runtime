@@ -40,7 +40,7 @@ namespace Test.IO.Streams
             {
                 localLimit = count;
             }
-            
+
             for (int i = 0; i < localLimit; i++)
             {
                 buffer[offset + i] = _written;

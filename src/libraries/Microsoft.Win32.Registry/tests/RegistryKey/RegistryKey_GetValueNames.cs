@@ -41,7 +41,7 @@ namespace Microsoft.Win32.RegistryTests
             }
 
             Assert.Equal(expected, TestRegistryKey.GetValueNames());
-            
+
             TestRegistryKey.DeleteValue(TestRegistryKeyName);
             Assert.Equal(expected: 0, actual: TestRegistryKey.GetValueNames().Length);
         }

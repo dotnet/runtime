@@ -217,7 +217,7 @@ namespace System.Collections.Immutable
         /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
         /// <returns>A value indicating whether the search was successful.</returns>
         /// <remarks>
-        /// This can be useful when you want to reuse a previously stored reference instead of 
+        /// This can be useful when you want to reuse a previously stored reference instead of
         /// a newly constructed one (so that more sharing of references can occur) or to look up
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
@@ -591,10 +591,10 @@ namespace System.Collections.Immutable
         /// <param name="item">The value whose position is being sought.</param>
         /// <returns>
         /// The index of the specified <paramref name="item"/> in the sorted set,
-        /// if <paramref name="item"/> is found.  If <paramref name="item"/> is not 
-        /// found and <paramref name="item"/> is less than one or more elements in this set, 
-        /// a negative number which is the bitwise complement of the index of the first 
-        /// element that is larger than value. If <paramref name="item"/> is not found 
+        /// if <paramref name="item"/> is found.  If <paramref name="item"/> is not
+        /// found and <paramref name="item"/> is less than one or more elements in this set,
+        /// a negative number which is the bitwise complement of the index of the first
+        /// element that is larger than value. If <paramref name="item"/> is not found
         /// and <paramref name="item"/> is greater than any of the elements in the set,
         /// a negative number which is the bitwise complement of (the index of the last
         /// element plus 1).
@@ -999,7 +999,7 @@ namespace System.Collections.Immutable
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         /// <remarks>
-        /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
+        /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable
         /// or by passing it to another method.  When this enumerator is disposed of it returns a mutable reference type stack to a resource pool,
         /// and if the value type enumerator is copied (which can easily happen unintentionally if you pass the value around) there is a risk
         /// that a stack that has already been returned to the resource pool may still be in use by one of the enumerator copies, leading to data
@@ -1104,7 +1104,7 @@ namespace System.Collections.Immutable
             // Rather than build up the immutable structure in the incremental way,
             // build it in such a way as to generate minimal garbage, by assembling
             // the immutable binary tree from leaf to root.  This requires
-            // that we know the length of the item sequence in advance, sort it, 
+            // that we know the length of the item sequence in advance, sort it,
             // and can index into that sequence like a list, so the limited
             // garbage produced is a temporary mutable data structure we use
             // as a reference when creating the immutable one.

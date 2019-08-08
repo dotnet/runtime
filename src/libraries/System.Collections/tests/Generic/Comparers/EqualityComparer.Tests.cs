@@ -44,7 +44,7 @@ namespace System.Collections.Generic.Tests
 
             Assert.Equal(expected, comparer.Equals(left, right));
             Assert.Equal(expected, comparer.Equals(right, left)); // Should be commutative.
-            
+
             Assert.True(comparer.Equals(left, left)); // Should be reflexive.
             Assert.True(comparer.Equals(right, right));
 
@@ -147,7 +147,7 @@ namespace System.Collections.Generic.Tests
 
             // These should hold true for the non-generic comparer as well.
             Assert.True(nonGenericComparer.Equals(null, null));
-            
+
             Assert.False(nonGenericComparer.Equals(left, null));
             Assert.False(nonGenericComparer.Equals(null, left));
 
@@ -204,7 +204,7 @@ namespace System.Collections.Generic.Tests
                 { "foo", "bar", false }
             };
         }
-        
+
         public static EqualsData<Equatable> IEquatableData()
         {
             var one = new Equatable(1);
@@ -265,7 +265,7 @@ namespace System.Collections.Generic.Tests
                 { Int64Enum.One, Int64Enum.Min + 1, false }
             };
         }
-        
+
         public static EqualsData<NonEquatableValueType> NonEquatableValueTypeData()
         {
             // Comparisons for structs that do not override ValueType.Equals or
@@ -420,7 +420,7 @@ namespace System.Collections.Generic.Tests
             Debug.Assert(input != null);
 
             var result = new HashData<T>();
-            
+
             foreach (T item in input.Items)
             {
                 result.Add(item, item?.GetHashCode() ?? 0);

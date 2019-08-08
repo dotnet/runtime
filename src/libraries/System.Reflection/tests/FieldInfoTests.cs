@@ -431,7 +431,7 @@ namespace System.Reflection.Tests
             Assert.True(info.IsSecurityCritical);
             Assert.False(info.IsSecuritySafeCritical);
             Assert.False(info.IsSecurityTransparent);
-        }        
+        }
 
         private static FieldInfo GetField(Type type, string name)
         {

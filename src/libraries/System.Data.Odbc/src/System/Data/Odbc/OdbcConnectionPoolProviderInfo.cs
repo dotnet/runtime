@@ -242,5 +242,3 @@ namespace System.Data.Odbc
         }
     }
 }
-
-

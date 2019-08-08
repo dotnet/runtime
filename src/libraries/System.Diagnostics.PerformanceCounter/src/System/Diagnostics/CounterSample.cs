@@ -6,7 +6,7 @@ namespace System.Diagnostics
 {
     /// <summary>
     ///     A struct holding the raw data for a performance counter.
-    /// </summary>    
+    /// </summary>
     public readonly struct CounterSample
     {
         private readonly long _rawValue;

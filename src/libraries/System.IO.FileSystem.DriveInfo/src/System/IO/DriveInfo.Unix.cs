@@ -91,7 +91,7 @@ namespace System.IO
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
                 return checked((long)mpi.TotalFreeSpace);
-            } 
+            }
         }
 
         public long TotalSize

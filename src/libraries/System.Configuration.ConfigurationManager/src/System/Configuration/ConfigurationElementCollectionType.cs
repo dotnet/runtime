@@ -34,7 +34,7 @@ namespace System.Configuration
                        D, E, F, A, B, C
 
           That means that the Alternate allows the "nearest" config file entries to
-          take precedence over the "parent" config file entries.  
+          take precedence over the "parent" config file entries.
 
         - AddRemoveClearMap and AddRemoveClearMapAlternate
 

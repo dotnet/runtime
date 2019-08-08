@@ -53,7 +53,7 @@ namespace System.Reflection.PortableExecutable
         {
             // Major version encodes the version of Portable PDB format itself.
             // Minor version encodes the version of Embedded Portable PDB blob.
-            // Accept any version of Portable PDB >= 1.0, 
+            // Accept any version of Portable PDB >= 1.0,
             // but only accept version 1.* of the Embedded Portable PDB blob.
             // Any breaking change in the format should rev major version of the embedded blob.
             ushort formatVersion = entry.MajorVersion;
@@ -69,12 +69,12 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        
+
         // internal for testing
         internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
         {
             byte[] decompressed;
-            
+
             var headerReader = block.GetReader();
             if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
             {
@@ -114,8 +114,8 @@ namespace System.Reflection.PortableExecutable
                 }
             }
 
-            // Check that there is no more compressed data left, 
-            // in case the decompressed size specified in the header is smaller 
+            // Check that there is no more compressed data left,
+            // in case the decompressed size specified in the header is smaller
             // than the actual decompressed size of the data.
             if (deflate.ReadByte() != -1)
             {

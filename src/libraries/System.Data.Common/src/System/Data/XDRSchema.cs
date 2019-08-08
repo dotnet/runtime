@@ -46,7 +46,7 @@ namespace System.Data
 
             ds.Namespace = _schemaUri;
 
-            // Walk all the top level Element tags.  
+            // Walk all the top level Element tags.
             for (XmlNode n = schemaRoot.FirstChild; n != null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
@@ -227,41 +227,41 @@ namespace System.Data
 
         // XDR spec: http://www.ltg.ed.ac.uk/~ht/XMLData-Reduced.htm
         private static NameType[] s_mapNameTypeXdr = {
-            new NameType("bin.base64"          , typeof(byte[])  ), /* XDR */ 
-            new NameType("bin.hex"             , typeof(byte[])  ), /* XDR */ 
-            new NameType("boolean"             , typeof(bool)    ), /* XDR */ 
+            new NameType("bin.base64"          , typeof(byte[])  ), /* XDR */
+            new NameType("bin.hex"             , typeof(byte[])  ), /* XDR */
+            new NameType("boolean"             , typeof(bool)    ), /* XDR */
             new NameType("byte"                , typeof(sbyte)   ), /* XDR */
-            new NameType("char"                , typeof(char)    ), /* XDR */ 
-            new NameType("date"                , typeof(DateTime)), /* XDR */ 
-            new NameType("dateTime"            , typeof(DateTime)), /* XDR */ 
-            new NameType("dateTime.tz"         , typeof(DateTime)), /* XDR */ 
-            new NameType("entities"            , typeof(string)  ), /* XDR */ 
-            new NameType("entity"              , typeof(string)  ), /* XDR */ 
-            new NameType("enumeration"         , typeof(string)  ), /* XDR */ 
-            new NameType("fixed.14.4"          , typeof(decimal) ), /* XDR */ 
+            new NameType("char"                , typeof(char)    ), /* XDR */
+            new NameType("date"                , typeof(DateTime)), /* XDR */
+            new NameType("dateTime"            , typeof(DateTime)), /* XDR */
+            new NameType("dateTime.tz"         , typeof(DateTime)), /* XDR */
+            new NameType("entities"            , typeof(string)  ), /* XDR */
+            new NameType("entity"              , typeof(string)  ), /* XDR */
+            new NameType("enumeration"         , typeof(string)  ), /* XDR */
+            new NameType("fixed.14.4"          , typeof(decimal) ), /* XDR */
             new NameType("float"               , typeof(double)  ), /* XDR */
-            new NameType("i1"                  , typeof(sbyte)   ), /* XDR */ 
-            new NameType("i2"                  , typeof(short)   ), /* XDR */ 
-            new NameType("i4"                  , typeof(int)   ), /* XDR */ 
-            new NameType("i8"                  , typeof(long)   ), /* XDR */         
-            new NameType("id"                  , typeof(string)  ), /* XDR */ 
-            new NameType("idref"               , typeof(string)  ), /* XDR */ 
-            new NameType("idrefs"              , typeof(string)  ), /* XDR */ 
-            new NameType("int"                 , typeof(int)   ), /* XDR */ 
-            new NameType("nmtoken"             , typeof(string)  ), /* XDR */ 
-            new NameType("nmtokens"            , typeof(string)  ), /* XDR */ 
-            new NameType("notation"            , typeof(string)  ), /* XDR */ 
-            new NameType("number"              , typeof(decimal) ), /* XDR */ 
-            new NameType("r4"                  , typeof(float)  ), /* XDR */ 
-            new NameType("r8"                  , typeof(double)  ), /* XDR */ 
-            new NameType("string"              , typeof(string)  ), /* XDR */ 
-            new NameType("time"                , typeof(DateTime)), /* XDR */ 
-            new NameType("time.tz"             , typeof(DateTime)), /* XDR */ 
-            new NameType("ui1"                 , typeof(byte)    ), /* XDR */ 
-            new NameType("ui2"                 , typeof(ushort)  ), /* XDR */ 
-            new NameType("ui4"                 , typeof(uint)  ), /* XDR */ 
-            new NameType("ui8"                 , typeof(ulong)  ), /* XDR */ 
-            new NameType("uri"                 , typeof(string)  ), /* XDR */ 
+            new NameType("i1"                  , typeof(sbyte)   ), /* XDR */
+            new NameType("i2"                  , typeof(short)   ), /* XDR */
+            new NameType("i4"                  , typeof(int)   ), /* XDR */
+            new NameType("i8"                  , typeof(long)   ), /* XDR */
+            new NameType("id"                  , typeof(string)  ), /* XDR */
+            new NameType("idref"               , typeof(string)  ), /* XDR */
+            new NameType("idrefs"              , typeof(string)  ), /* XDR */
+            new NameType("int"                 , typeof(int)   ), /* XDR */
+            new NameType("nmtoken"             , typeof(string)  ), /* XDR */
+            new NameType("nmtokens"            , typeof(string)  ), /* XDR */
+            new NameType("notation"            , typeof(string)  ), /* XDR */
+            new NameType("number"              , typeof(decimal) ), /* XDR */
+            new NameType("r4"                  , typeof(float)  ), /* XDR */
+            new NameType("r8"                  , typeof(double)  ), /* XDR */
+            new NameType("string"              , typeof(string)  ), /* XDR */
+            new NameType("time"                , typeof(DateTime)), /* XDR */
+            new NameType("time.tz"             , typeof(DateTime)), /* XDR */
+            new NameType("ui1"                 , typeof(byte)    ), /* XDR */
+            new NameType("ui2"                 , typeof(ushort)  ), /* XDR */
+            new NameType("ui4"                 , typeof(uint)  ), /* XDR */
+            new NameType("ui8"                 , typeof(ulong)  ), /* XDR */
+            new NameType("uri"                 , typeof(string)  ), /* XDR */
             new NameType("uuid"                , typeof(Guid)    ), /* XDR */
         };
 

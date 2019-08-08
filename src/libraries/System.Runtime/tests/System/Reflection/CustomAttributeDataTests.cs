@@ -29,10 +29,10 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find MyAttribute");
         }
-    
+
         [Fact]
         [My((short)5)]
         public static void Test_CustomAttributeData_Constructor1()
@@ -51,10 +51,10 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find MyAttribute");
         }
-    
+
         [Fact]
         public static void Test_CustomAttribute_Constructor_CrossAssembly1()
         {
@@ -70,10 +70,10 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find FlagsAttribute");
         }
-    
+
         [Fact]
         [ComVisible(false)]
         public static void Test_CustomAttribute_Constructor_CrossAssembly2()
@@ -92,10 +92,10 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find ComVisibleAttribute");
         }
-    
+
         [Fact]
         public static void Test_CustomAttribute_Constructor_PseudoCa()
         {
@@ -113,7 +113,7 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find FieldOffsetAttribute");
         }
 
@@ -140,23 +140,23 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-    
+
             Assert.True(false, "Expected to find MyAttribute");
         }
 
         [Flags]
-        private enum MyEnum { } 
-    
+        private enum MyEnum { }
+
         private class MyAttribute : Attribute
         {
             internal MyAttribute() { }
             internal MyAttribute(int i) { }
             internal MyAttribute(string s) { }
             internal MyAttribute(int i, int j) { }
-    
+
             static MyAttribute() { }
         }
-    
+
         [StructLayout(LayoutKind.Explicit)]
         private class MyExplicitClass
         {

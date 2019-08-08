@@ -25,7 +25,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new TableAttribute(name));
         }
-        
+
         [Theory]
         [InlineData("Mrs Letice Earwig")]
         public static void Schema_Set_ReturnsExpected(string value)

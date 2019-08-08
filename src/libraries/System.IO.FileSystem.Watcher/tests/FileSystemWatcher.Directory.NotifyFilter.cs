@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,7 +12,7 @@ namespace System.IO.Tests
     {
         [DllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW",
             CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        private static extern uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation, 
+        private static extern uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation,
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
 
         private const uint ERROR_SUCCESS = 0;

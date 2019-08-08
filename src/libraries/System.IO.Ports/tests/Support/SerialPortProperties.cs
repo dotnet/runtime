@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace Legacy.Support
         // just the default constructor has been called. The names of the data members here must
         // begin with default followed by the EXACT(case sensitive) name of
         // the property in SerialPort class. If a default for a property is not set
-        // here then the property can never be set in this class and will never be 
+        // here then the property can never be set in this class and will never be
         // used for verification.
 
         private const int defaultBaudRate = 9600;
@@ -159,18 +159,18 @@ namespace Legacy.Support
             Type serialPortType = typeof(SerialPort);
             Hashtable badProps = new Hashtable();
 
-            // If we could not get the type of SerialPort then verification can not 
+            // If we could not get the type of SerialPort then verification can not
             // occur and we should throw an exception
             if (null == serialPortType)
             {
                 throw new Exception("Could not create a Type object of SerialPort");
             }
 
-            // For each key in the properties Hashtable verify that the property in the 
+            // For each key in the properties Hashtable verify that the property in the
             // SerialPort Object port with the same name as the key has the same value as
-            // the value corresponding to the key in the HashTable. If the port is in a 
+            // the value corresponding to the key in the HashTable. If the port is in a
             // state where accessing a property is suppose to throw an exception this can be
-            // verified by setting the value in the hashtable to the System.Type of the 
+            // verified by setting the value in the hashtable to the System.Type of the
             // expected exception
             foreach (object key in _properties.Keys)
             {
@@ -206,8 +206,8 @@ namespace Legacy.Support
                 }
                 catch (Exception e)
                 {
-                    // An exception was thrown while retrieving the value of the property in 
-                    // the SerialPort object. However this may be the exepected operation of 
+                    // An exception was thrown while retrieving the value of the property in
+                    // the SerialPort object. However this may be the exepected operation of
                     // SerialPort so the type of the exception must be verified. Reflection
                     // throws it's own exception ontop of SerialPorts so we must use the
                     // InnerException of the own that Reflection throws
@@ -267,7 +267,7 @@ namespace Legacy.Support
             Type serialPropertiesType = typeof(SerialPortProperties);
 
             // For each field in this class that starts with the string startsWith create
-            // a key value pair in the hashtable fields with key being the rest of the 
+            // a key value pair in the hashtable fields with key being the rest of the
             // field name after startsWith and the value is whatever the value is of the field
             // in this class
             foreach (FieldInfo defaultField in serialPropertiesType.GetFields())
@@ -300,7 +300,7 @@ namespace Legacy.Support
         {
             object retVal = null;
 
-            // Only Set the default value if it exists in the defaultProperties Hashtable 
+            // Only Set the default value if it exists in the defaultProperties Hashtable
             // This will prevent the ability to create arbitrary keys(Property names)
             if (null != defaultProperties[name])
             {

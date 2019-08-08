@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
-    // 
+    //
     // When we want to store an object of type Foo<M> for each possible M, it's convenient to use
     // an array of length MemberTypeIndex.Count, which each possible M assigned an index.
     //

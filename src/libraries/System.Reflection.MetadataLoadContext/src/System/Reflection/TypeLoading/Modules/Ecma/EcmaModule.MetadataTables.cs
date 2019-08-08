@@ -17,8 +17,8 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             get
             {
-                return _lazyTypeDefTable ?? 
-                    Interlocked.CompareExchange(ref _lazyTypeDefTable, CreateTable<EcmaDefinitionType>(TableIndex.TypeDef), null) ?? 
+                return _lazyTypeDefTable ??
+                    Interlocked.CompareExchange(ref _lazyTypeDefTable, CreateTable<EcmaDefinitionType>(TableIndex.TypeDef), null) ??
                     _lazyTypeDefTable;
             }
         }
@@ -41,7 +41,7 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             get
             {
-                return _lazyTypeRefTable ?? 
+                return _lazyTypeRefTable ??
                     Interlocked.CompareExchange(ref _lazyTypeRefTable, CreateTable<RoDefinitionType>(TableIndex.TypeRef), null) ??
                     _lazyTypeRefTable;
             }
@@ -52,8 +52,8 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             get
             {
-                return _lazyGenericParamTable ?? 
-                    Interlocked.CompareExchange(ref _lazyGenericParamTable, CreateTable<EcmaGenericParameterType>(TableIndex.GenericParam), null) ?? 
+                return _lazyGenericParamTable ??
+                    Interlocked.CompareExchange(ref _lazyGenericParamTable, CreateTable<EcmaGenericParameterType>(TableIndex.GenericParam), null) ??
                     _lazyGenericParamTable;
             }
         }
@@ -63,8 +63,8 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             get
             {
-                return _lazyAssemblyRefTable ?? 
-                    Interlocked.CompareExchange(ref _lazyAssemblyRefTable, CreateTable<RoAssembly>(TableIndex.AssemblyRef), null) ?? 
+                return _lazyAssemblyRefTable ??
+                    Interlocked.CompareExchange(ref _lazyAssemblyRefTable, CreateTable<RoAssembly>(TableIndex.AssemblyRef), null) ??
                     _lazyAssemblyRefTable;
             }
         }

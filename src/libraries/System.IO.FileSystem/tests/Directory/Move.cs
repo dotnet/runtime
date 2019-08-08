@@ -256,7 +256,7 @@ namespace System.IO.Tests
         public void UnixWildCharacterPath()
         {
             // Wildcards are allowed in paths for Unix move commands as literals as well as functional wildcards,
-            // but to implement the latter in .NET would be confusing (e.g. having a DirectoryInfo represent multiple directories), 
+            // but to implement the latter in .NET would be confusing (e.g. having a DirectoryInfo represent multiple directories),
             // so the implementation assumes the former.
             // Thus, any "*" characters will act the same as any other character when used in a file/directory name.
             string testDir = GetTestFilePath();

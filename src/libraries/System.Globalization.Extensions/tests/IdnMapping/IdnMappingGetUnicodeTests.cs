@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { "xn--yda", 0, 7, "\u0101" };
             yield return new object[] { "axn--ydab", 1, 7, "\u0101" };
-            
+
             yield return new object[] { "xn--aa-cla", 0, 10, "\u0101\u0061a" };
             yield return new object[] { "xn--ab-dla", 0, 10, "\u0061\u0101\u0062" };
             yield return new object[] { "xn--ab-ela", 0, 10, "\u0061\u0062\u0101"  };
@@ -29,10 +29,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" }; // Fully qualified domain name
 
             // Embedded domain name conversion (NLS + only)(Priority 1)
-            // Per the spec [7], "The index and count parameters (when provided) allow the 
-            // conversion to be done on a larger string where the domain name is embedded 
-            // (such as a URI or IRI). The output string is only the converted FQDN or 
-            // label, not the whole input string (if the input string contains more 
+            // Per the spec [7], "The index and count parameters (when provided) allow the
+            // conversion to be done on a larger string where the domain name is embedded
+            // (such as a URI or IRI). The output string is only the converted FQDN or
+            // label, not the whole input string (if the input string contains more
             // character than the substring to convert)."
             // Fully Qualified Domain Name (Label1.Label2.Label3)
             yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
@@ -93,9 +93,9 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { "abc" + (char)i + "def", 0, 7, typeof(ArgumentException) };
             }
-            
+
             yield return new object[] { "abc" + (char)0x7F + "def", 0, 7, typeof(ArgumentException) };
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
             {
                 yield return new object[] { "xn--\u1234", 0, 5, typeof(ArgumentException) };

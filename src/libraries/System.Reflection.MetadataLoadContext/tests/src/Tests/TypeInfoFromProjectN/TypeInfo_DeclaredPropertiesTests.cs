@@ -13,21 +13,21 @@ namespace System.Reflection.Tests
 {
     public class TypeInfoDeclaredPropertiesTests
     {
-        // Verify Declared Properties for Base class 
+        // Verify Declared Properties for Base class
         [Fact]
         public static void TestBaseClassProperty1()
         {
             VerifyProperty(typeof(TypeInfoPropertiesBaseClass).Project(), "Pubprop1");
         }
 
-        // Verify Declared Properties for Base class 
+        // Verify Declared Properties for Base class
         [Fact]
         public static void TestBaseClassProperty2()
         {
             VerifyProperty(typeof(TypeInfoPropertiesBaseClass).Project(), "SubPubprop1");
         }
 
-        // Verify Declared Properties for Base class 
+        // Verify Declared Properties for Base class
         [Fact]
         public static void TestBaseClassProperty3()
         {
@@ -35,28 +35,28 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify Declared Properties for Base class 
+        // Verify Declared Properties for Base class
         [Fact]
         public static void TestBaseClassProperty4()
         {
             VerifyProperty(typeof(TypeInfoPropertiesBaseClass).Project(), "Pubprop3");
         }
 
-        // Verify Declared Properties for Derived class 
+        // Verify Declared Properties for Derived class
         [Fact]
         public static void TestSubClassProperty1()
         {
             VerifyProperty(typeof(TypeInfoPropertiesSubClass).Project(), "Pubprop1");
         }
 
-        // Verify Declared Properties for Derived class 
+        // Verify Declared Properties for Derived class
         [Fact]
         public static void TestSubClassProperty2()
         {
             VerifyProperty(typeof(TypeInfoPropertiesSubClass).Project(), "Pubprop2");
         }
 
-        // Verify Declared Properties for Derived class 
+        // Verify Declared Properties for Derived class
         [Fact]
         public static void TestSubClassProperty3()
         {

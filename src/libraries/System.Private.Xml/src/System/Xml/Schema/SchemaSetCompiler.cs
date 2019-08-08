@@ -382,7 +382,7 @@ namespace System.Xml.Schema
                 ((XmlSchemaIdentityConstraint)element.Constraints[i]).CompiledConstraint = null;
             }
             element.ElementDecl = null;
-            element.IsLocalTypeDerivationChecked = false; //clear Local element type derivation check 
+            element.IsLocalTypeDerivationChecked = false; //clear Local element type derivation check
         }
 
         private void CleanupAttributes(XmlSchemaObjectCollection attributes)
@@ -923,7 +923,7 @@ namespace System.Xml.Schema
                     {
                         datatype = baseType.Datatype;
                         //There is a bug here. Need to check if simpleRestriction has facets.
-                        //If yes, Need tp apply these facets as well. 
+                        //If yes, Need tp apply these facets as well.
                     }
                     else
                     {
@@ -1081,7 +1081,7 @@ namespace System.Xml.Schema
             {
                 case XmlSchemaContentType.Empty:
                     if (baseType.ElementDecl != null && !baseType.ElementDecl.ContentValidator.IsEmptiable)
-                    { //base is either TextOnly or its ElementOnly/Mixed and not emptiable 
+                    { //base is either TextOnly or its ElementOnly/Mixed and not emptiable
                         SendValidationEvent(SR.Sch_InvalidContentRestrictionDetailed, SR.Sch_InvalidBaseToEmpty, complexType);
                     }
                     break;
@@ -1723,7 +1723,7 @@ namespace System.Xml.Schema
             else {
                 //Base partilce's and Derived Element's range is simple
                 //If all particles in baseParticle also have simple ranges, then can use our algorithm
-                //So that we dont break common cases that we used to accept earlier 
+                //So that we dont break common cases that we used to accept earlier
                 //Example Choice -> Element
                 if (IsElementFromGroupBaseHack(derivedElement, baseGroupBase, skipEmptableOnly)) {
                     return true;
@@ -1745,7 +1745,7 @@ namespace System.Xml.Schema
                     if ( baseParticle.MaxOccurs != decimal.MaxValue) {
                         if (baseGroupBase.MaxOccurs == decimal.MaxValue)
                              baseParticle.MaxOccurs = decimal.MaxValue;
-                        else 
+                        else
                              baseParticle.MaxOccurs *= baseGroupBase.MaxOccurs;
                     }
                     isMatched  = IsValidRestriction(derivedElement, baseParticle);
@@ -1841,7 +1841,7 @@ namespace System.Xml.Schema
                 else if (skipEmptableOnly && !IsParticleEmptiable(baseParticle))
                 {
                     if (_restrictionErrorMsg == null)
-                    { //If restriction failed on previous check, do not overwrite error 
+                    { //If restriction failed on previous check, do not overwrite error
                         _restrictionErrorMsg = SR.Sch_GroupBaseRestNotEmptiable;
                     }
                     return false;
@@ -2199,7 +2199,7 @@ namespace System.Xml.Schema
                         {
                             Debug.Assert(attribute.Use != XmlSchemaUse.Prohibited);
                             if (attributeBase.Use != XmlSchemaUse.Prohibited && attribute.AttributeSchemaType != attributeBase.AttributeSchemaType)
-                            { //Extension allows previously prohibited attributes to be re-added, 
+                            { //Extension allows previously prohibited attributes to be re-added,
                                 SendValidationEvent(SR.Sch_InvalidAttributeExtension, attribute);
                             }
                         }

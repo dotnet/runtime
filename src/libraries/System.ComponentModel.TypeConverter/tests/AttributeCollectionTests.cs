@@ -309,7 +309,7 @@ namespace System.ComponentModel.Tests
             };
 
             var collection = new AttributeCollection(attributes);
-            
+
             Assert.True(collection.Matches(attributes));
             Assert.False(collection.Matches(notInCollection));
         }

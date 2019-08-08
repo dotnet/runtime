@@ -18,7 +18,7 @@ namespace System.Collections.Generic
         internal LinkedListNode<T>? head;
         internal int count;
         internal int version;
-        private SerializationInfo? _siInfo; //A temporary variable which we need during deserialization.  
+        private SerializationInfo? _siInfo; //A temporary variable which we need during deserialization.
 
         // names for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
@@ -495,7 +495,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                // No need to use reflection to verify that the types are compatible because it isn't 100% correct and we can rely 
+                // No need to use reflection to verify that the types are compatible because it isn't 100% correct and we can rely
                 // on the runtime validation during the cast that happens below (i.e. we will get an ArrayTypeMismatchException).
                 object?[]? objects = array as object[];
                 if (objects == null)
@@ -613,7 +613,7 @@ namespace System.Collections.Generic
         }
     }
 
-    // Note following class is not serializable since we customized the serialization of LinkedList. 
+    // Note following class is not serializable since we customized the serialization of LinkedList.
     public sealed class LinkedListNode<T>
     {
         internal LinkedList<T>? list;
@@ -661,4 +661,3 @@ namespace System.Collections.Generic
         }
     }
 }
-

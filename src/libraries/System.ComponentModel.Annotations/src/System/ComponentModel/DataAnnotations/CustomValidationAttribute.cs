@@ -122,9 +122,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public string Method { get; }
 
-        public override bool RequiresValidationContext 
+        public override bool RequiresValidationContext
         {
-            get 
+            get
             {
                 // If attribute is not valid, throw an exception right away to inform the developer
                 ThrowIfAttributeNotWellFormed();

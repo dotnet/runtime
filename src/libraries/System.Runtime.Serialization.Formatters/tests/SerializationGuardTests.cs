@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             Assembly.Load(new byte[1000]);
         }
-        
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
         }
@@ -102,7 +102,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             Process.Start("calc.exe");
         }
-        
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
         }
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             File.WriteAllText(tempPath, "This better not be written...");
             throw new InvalidOperationException("Unreachable code (SerializationGuard should have kicked in)");
         }
-        
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
         }
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             Assembly.Load(new byte[1000]);
         }
-        
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
         }

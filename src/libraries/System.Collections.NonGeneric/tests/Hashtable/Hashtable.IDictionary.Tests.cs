@@ -34,7 +34,7 @@ namespace System.Collections.Tests
             rand.NextBytes(bytes);
             return Convert.ToBase64String(bytes);
         }
-        
+
         protected override object CreateTValue(int seed) => CreateTKey(seed);
 
         [Theory]

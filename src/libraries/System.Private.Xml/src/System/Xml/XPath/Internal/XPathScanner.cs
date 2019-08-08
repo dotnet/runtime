@@ -111,8 +111,8 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        // To parse PathExpr we need a way to distinct name from function. 
-        // This distinction can't be done without context: "or (1 != 0)" this is a function or 'or' in OrExp 
+        // To parse PathExpr we need a way to distinct name from function.
+        // This distinction can't be done without context: "or (1 != 0)" this is a function or 'or' in OrExp
         public bool CanBeFunction
         {
             get
@@ -405,4 +405,3 @@ namespace MS.Internal.Xml.XPath
         };
     }
 }
-

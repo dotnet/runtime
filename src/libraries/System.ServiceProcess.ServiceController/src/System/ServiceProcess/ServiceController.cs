@@ -387,7 +387,7 @@ namespace System.ServiceProcess
                     finally
                     {
                         Marshal.FreeHGlobal(bufPtr);
-                    } 
+                    }
                 }
 
                 return _startType;
@@ -483,7 +483,7 @@ namespace System.ServiceProcess
 
             if (string.IsNullOrEmpty(_name))
             {
-                // Figure out the _name based on the information we have. 
+                // Figure out the _name based on the information we have.
                 // We must either have _displayName or the constructor parameter _eitherName.
                 string userGivenName = string.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
 

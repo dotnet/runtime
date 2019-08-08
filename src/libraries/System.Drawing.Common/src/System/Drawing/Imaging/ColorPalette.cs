@@ -11,9 +11,9 @@ namespace System.Drawing.Imaging
     /// </summary>
     public sealed class ColorPalette
     {
-        // We don't provide a public constructor for ColorPalette because if we allow 
-        // arbitrary creation of color palettes you could in theroy not only change the color entries, but the size 
-        // of the palette and that is not valid for an image (meaning you cannot change the palette size for an image).  
+        // We don't provide a public constructor for ColorPalette because if we allow
+        // arbitrary creation of color palettes you could in theroy not only change the color entries, but the size
+        // of the palette and that is not valid for an image (meaning you cannot change the palette size for an image).
         // ColorPalettes are only valid for "indexed" images like GIFs.
 
         private int _flags;

@@ -157,11 +157,11 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Desc = "Conflicts: NS redefinition", Priority = 2, Params = new object[] {   "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D xmlns:p='nsp'/></p:C></p:B></p:A>",
                 //                                                                                        "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D/></p:C></p:B></p:A>" })]
-                //[Variation(Desc = "Conflicts: NS redefinition, default NS", Priority = 2, Params = new object[] {   "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS redefinition, default NS", Priority = 2, Params = new object[] {   "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
                 //                                                                                                    "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D/></C></B></A>" })]
-                //[Variation(Desc = "Conflicts: NS redefinition, default NS II.", Priority = 2, Params = new object[] {   "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xmlns=''/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS redefinition, default NS II.", Priority = 2, Params = new object[] {   "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xmlns=''/></C></B></A>",
                 //                                                                                                        "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A>" })]
-                //[Variation(Desc = "Conflicts: NS undeclaration, default NS", Priority = 2, Params = new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS undeclaration, default NS", Priority = 2, Params = new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
                 //                                                                                                    "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C></B></A>" })]
                 public static object[][] ConFlictsNSRedefenitionParams = new object[][] {
                     new object[] {   "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D xmlns:p='nsp'/></p:C></p:B></p:A>",

@@ -15,7 +15,7 @@ using System.Threading;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// An inlined sum aggregation and its enumerator, for longs. 
+    /// An inlined sum aggregation and its enumerator, for longs.
     /// </summary>
     internal sealed class LongSumAggregationOperator : InlinedAggregationOperator<long, long, long>
     {
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
 
         protected override long InternalAggregate(ref Exception singularExceptionToThrow)
         {
-            // Because the final reduction is typically much cheaper than the intermediate 
+            // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
             // will do a lot of work to produce a single output element, we prefer to turn off
             // pipelining, and process the final reductions serially.

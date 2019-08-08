@@ -72,7 +72,7 @@ namespace System.Xml
         private bool _replayCache;
 
         //Current Node handling
-        private ValidatingReaderNodeData _cachedNode; //Used to cache current node when looking ahead or default attributes                           
+        private ValidatingReaderNodeData _cachedNode; //Used to cache current node when looking ahead or default attributes
         private AttributePSVIInfo _attributePSVI;
 
         //Attributes
@@ -371,7 +371,7 @@ namespace System.Xml
             }
         }
 
-        // Gets the current xml:space scope. 
+        // Gets the current xml:space scope.
         public override XmlSpace XmlSpace
         {
             get
@@ -713,7 +713,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime 
+                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -1046,7 +1046,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime 
+                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -1377,7 +1377,7 @@ namespace System.Xml
                         goto case ValidatingReaderState.Read;
                     }
 
-                case ValidatingReaderState.ReadAhead: //Will enter here on calling Skip() 
+                case ValidatingReaderState.ReadAhead: //Will enter here on calling Skip()
                     ClearAttributesInfo();
                     ProcessReaderEvent();
                     _validationState = ValidatingReaderState.Read;
@@ -2322,7 +2322,7 @@ namespace System.Xml
                     typedValue = _atomicValue;
                 }
                 originalString = _originalAtomicValueString;
-                xmlType = ElementXmlType; //Set this for default values 
+                xmlType = ElementXmlType; //Set this for default values
                 this.Read();
 
                 return typedValue;
@@ -2626,4 +2626,3 @@ namespace System.Xml
         }
     }
 }
-

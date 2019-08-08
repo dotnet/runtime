@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     {
         private static readonly string s_simpleContent = "Hello World\r\n";
 
-        // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
+        // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support.
         private bool IsRetrySupported => !IsWinHttpHandler;
 
         public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
                     Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
 
-                    // Send second request.  Should reuse same connection.  
+                    // Send second request.  Should reuse same connection.
                     // The server will close the connection, but HttpClient should retry the request.
                     HttpResponseMessage response2 = await client.GetAsync(url);
                     Assert.Equal(HttpStatusCode.OK, response1.StatusCode);

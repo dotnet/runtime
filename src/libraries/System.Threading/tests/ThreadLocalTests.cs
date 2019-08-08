@@ -121,7 +121,7 @@ namespace System.Threading.Tests
             var threadLocal = new ThreadLocal<SetMreOnFinalize>();
             var mres = new ManualResetEventSlim(false);
 
-            // (Careful when editing this test: saving the created thread into a local variable would likely break the 
+            // (Careful when editing this test: saving the created thread into a local variable would likely break the
             // test in Debug build.)
             // We are creating the task using TaskCreationOptions.LongRunning because...
             // there is no guarantee that the Task will be created on another thread.

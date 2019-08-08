@@ -325,4 +325,3 @@ namespace System.Reflection.CustomAttributesTests.Data
         public int[] arrayProperty { get { return null; } set { } }
     }
 }
-

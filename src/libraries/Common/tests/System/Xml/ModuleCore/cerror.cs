@@ -61,7 +61,7 @@ namespace OLEDB.Test.ModuleCore
 
         internal static void Dispose()
         {
-            //Reset the info.  
+            //Reset the info.
             s_rIError = null;
             s_rITestConsole = null;
 
@@ -215,7 +215,7 @@ namespace OLEDB.Test.ModuleCore
 
             //Compare not only compares but throws - so your test stops processing
             //This way processing stops upon the first error, so you don't have to check return
-            //values or validate values afterwards.  If you have other items to do, then use the 
+            //values or validate values afterwards.  If you have other items to do, then use the
             //CError.Equals instead of CError.Compare
             Console.WriteLine("ERROR: {0}", message);
             Console.WriteLine("Expected: {0}", expected);
@@ -230,7 +230,7 @@ namespace OLEDB.Test.ModuleCore
 
             //Compare not only compares but throws - so your test stops processing
             //This way processing stops upon the first error, so you don't have to check return
-            //values or validate values afterwards.  If you have other items to do, then use the 
+            //values or validate values afterwards.  If you have other items to do, then use the
             //CError.Equals instead of CError.Compare
             Console.WriteLine("expected1: " + expected1);
             Console.WriteLine("expected2: " + expected2);

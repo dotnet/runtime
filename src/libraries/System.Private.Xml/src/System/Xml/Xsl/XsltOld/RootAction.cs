@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     ArrayList dstAttList = dstAttSet.containedActions;
                     // We adding attributes in reverse order for purpuse. In the mirged list most importent attset shoud go last one
-                    // so we'll need to invert dstAttList finaly. 
+                    // so we'll need to invert dstAttList finaly.
                     if (srcAttList != null)
                     {
                         for (int src = srcAttList.Count - 1; 0 <= src; src--)
@@ -291,7 +291,7 @@ namespace System.Xml.Xsl.XsltOld
                     Debug.Assert(Processor.IsRoot(frame.Node));
                     if (processor.Debugger != null)
                     {
-                        // this is like apply-templates, but we don't have it on stack. 
+                        // this is like apply-templates, but we don't have it on stack.
                         // Pop the stack, otherwise last instruction will be on it.
                         processor.PopDebuggerStack();
                     }

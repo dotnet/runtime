@@ -16,13 +16,13 @@ using System.Text.RegularExpressions;
 namespace BasicEventSourceTests
 {
     /// <summary>
-    /// Tests the user experience for common user errors.  
+    /// Tests the user experience for common user errors.
     /// </summary>
     public partial class TestsUserErrors
     {
         /// <summary>
         /// Try to pass a user defined class (even with EventData)
-        /// to a manifest based eventSource 
+        /// to a manifest based eventSource
         /// </summary>
         [Fact]
         public void Test_BadTypes_Manifest_UserClass()
@@ -45,7 +45,7 @@ namespace BasicEventSourceTests
 
                     listener.Dispose();
 
-                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.
                     Assert.Equal(1, events.Count);
                     Event _event = events[0];
                     Assert.Equal("EventSourceMessage", _event.EventName);
@@ -62,7 +62,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Test the 
+        /// Test the
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
         public void Test_BadEventSource_MismatchedIds()
@@ -75,7 +75,7 @@ namespace BasicEventSourceTests
 
             var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
 
-            // For every interesting combination, run the test and see that we get a nice failure message.  
+            // For every interesting combination, run the test and see that we get a nice failure message.
             foreach (bool onStartup in onStartups)
             {
                 foreach (Func<Listener> listenerGenerator in listenerGenerators)
@@ -94,14 +94,14 @@ namespace BasicEventSourceTests
         /// A helper that can run the test under a variety of conditions
         /// * Whether the eventSource is enabled at startup
         /// * Whether the listener is ETW or an EventListern
-        /// * Whether the ETW output is self describing or not.  
+        /// * Whether the ETW output is self describing or not.
         /// </summary>
         private void Test_Bad_EventSource_Startup(bool onStartup, Listener listener, EventSourceSettings settings)
         {
             var eventSourceName = typeof(BadEventSource_MismatchedIds).Name;
             Debug.WriteLine("***** Test_BadEventSource_Startup(OnStartUp: " + onStartup + " Listener: " + listener + " Settings: " + settings + ")");
 
-            // Activate the source before the source exists (if told to).  
+            // Activate the source before the source exists (if told to).
             if (onStartup)
                 listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
 
@@ -111,14 +111,14 @@ namespace BasicEventSourceTests
             using (var source = new BadEventSource_MismatchedIds(settings))
             {
                 Assert.Equal(eventSourceName, source.Name);
-                // activate the source after the source exists (if told to).  
+                // activate the source after the source exists (if told to).
                 if (!onStartup)
                     listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
-                source.Event1(1);       // Try to send something.  
+                source.Event1(1);       // Try to send something.
             }
             listener.Dispose();
 
-            // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+            // Confirm that we get exactly one event from this whole process, that has the error message we expect.
             Assert.Equal(1, events.Count);
             Event _event = events[0];
             Assert.Equal("EventSourceMessage", _event.EventName);
@@ -145,7 +145,7 @@ namespace BasicEventSourceTests
                 EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
 
                 bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter();
-                
+
                 using (var listener = new EventListenerListener())
                 {
                     var events = new List<Event>();
@@ -155,7 +155,7 @@ namespace BasicEventSourceTests
 
                     bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
 
-                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.
                     Assert.Equal(1, events.Count);
                     Event _event = events[0];
                     Assert.Equal("EventSourceMessage", _event.EventName);
@@ -182,13 +182,13 @@ namespace BasicEventSourceTests
 
     /// <summary>
     /// This EventSource has a common user error, and we want to make sure EventSource
-    /// gives a reasonable experience in that case. 
+    /// gives a reasonable experience in that case.
     /// </summary>
     internal class BadEventSource_MismatchedIds : EventSource
     {
         public BadEventSource_MismatchedIds(EventSourceSettings settings) : base(settings) { }
         public void Event1(int arg) { WriteEvent(1, arg); }
-        // Error Used the same event ID for this event. 
+        // Error Used the same event ID for this event.
         public void Event2(int arg) { WriteEvent(1, arg); }
     }
 

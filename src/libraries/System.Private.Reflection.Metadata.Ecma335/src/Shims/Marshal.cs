@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
         {
             PInvokeMarshal.CopyToNative(array, startIndex, destination, length);
         }
-        
+
         public static IntPtr AllocHGlobal(int cb)
         {
             return PInvokeMarshal.AllocHGlobal(cb);

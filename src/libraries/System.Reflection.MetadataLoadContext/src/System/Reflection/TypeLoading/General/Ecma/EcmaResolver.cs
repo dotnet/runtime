@@ -67,7 +67,7 @@ namespace System.Reflection.TypeLoading.Ecma
             if (scope.IsNil)
             {
                 // Special case for non-prime Modules - the type is somewhere in the Assembly. Technically, we're supposed
-                // to walk the manifest module's ExportedType table for non-forwarder entries that have a matching name and 
+                // to walk the manifest module's ExportedType table for non-forwarder entries that have a matching name and
                 // namespace (Ecma-355 11.22.38).
                 //
                 // Pragmatically speaking, searching the entire assembly should get us the same result and avoids writing a significant

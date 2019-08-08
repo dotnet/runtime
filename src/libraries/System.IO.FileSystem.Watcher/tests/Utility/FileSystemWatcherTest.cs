@@ -224,7 +224,7 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Helper for the ExpectEvent function. 
+        /// Helper for the ExpectEvent function.
         /// </summary>
         /// <param name="watcher">The FileSystemWatcher to test</param>
         /// <param name="expectedEvents">All of the events that are expected to be raised by this action</param>

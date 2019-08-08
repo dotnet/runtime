@@ -145,7 +145,7 @@ namespace System.Drawing.Imaging
             return _guid.GetHashCode();
         }
 
-#if !FEATURE_PAL        
+#if !FEATURE_PAL
         // Find any random encoder which supports this format
         internal ImageCodecInfo FindEncoder()
         {

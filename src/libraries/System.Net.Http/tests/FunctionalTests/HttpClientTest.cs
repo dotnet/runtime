@@ -338,7 +338,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestContentNotDisposed()
         {
             var content = new ByteArrayContent(new byte[1]);
-            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content }) 
+            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 await client.SendAsync(request);

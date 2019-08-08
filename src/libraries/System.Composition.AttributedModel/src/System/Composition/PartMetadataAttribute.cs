@@ -11,15 +11,15 @@ namespace System.Composition
     public class PartMetadataAttribute : Attribute
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="PartMetadataAttribute"/> with the 
+        ///     Initializes a new instance of the <see cref="PartMetadataAttribute"/> with the
         ///     specified name and metadata value.
         /// </summary>
         /// <param name="name">
-        ///     A <see cref="string"/> containing the name of the metadata value; or 
+        ///     A <see cref="string"/> containing the name of the metadata value; or
         ///     <see langword="null"/> to use an empty string ("").
         /// </param>
         /// <param name="value">
-        ///     An <see cref="object"/> containing the metadata value. This can be 
+        ///     An <see cref="object"/> containing the metadata value. This can be
         ///     <see langword="null"/>.
         /// </param>
         public PartMetadataAttribute(string name, object value)

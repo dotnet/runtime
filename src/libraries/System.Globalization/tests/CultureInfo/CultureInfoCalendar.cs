@@ -15,7 +15,7 @@ namespace System.Globalization.Tests
             Assert.IsType<GregorianCalendar>(cultureInfo.Calendar);
             Assert.Same(cultureInfo.Calendar, cultureInfo.Calendar);
         }
-        
+
         [Fact]
         public void OptionalCalendars_Get_InvariantInfo()
         {

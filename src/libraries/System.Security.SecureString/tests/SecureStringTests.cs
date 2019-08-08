@@ -340,7 +340,7 @@ namespace System.Security.Tests
 
             using (SecureString ss = CreateSecureString(input))
             {
-                IntPtr marshaledSecureString = allocHGlobal ? 
+                IntPtr marshaledSecureString = allocHGlobal ?
                     SecureStringMarshal.SecureStringToGlobalAllocAnsi(ss) :
                     SecureStringMarshal.SecureStringToCoTaskMemAnsi(ss);
 
@@ -522,7 +522,7 @@ namespace System.Security.Tests
         // WARNING:
         // A key value of SecureString is in keeping string data off of the GC heap, such that it can
         // be reliably cleared when no longer needed.  Creating a SecureString from a string or converting
-        // a SecureString to a string diminishes that value. These conversion functions are for testing that 
+        // a SecureString to a string diminishes that value. These conversion functions are for testing that
         // SecureString works, and does not represent a pattern to follow in any non-test situation.
 
         private static unsafe SecureString CreateSecureString(string value)

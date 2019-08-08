@@ -16,12 +16,12 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Sets the last access and last modified time of a file 
+        /// Sets the last access and last modified time of a file
         /// </summary>
         /// <param name="path">The path to the item to get time values for</param>
         /// <param name="times">The output time values of the item</param>
         /// <returns>
-        /// Returns 0 on success; otherwise, returns -1 
+        /// Returns 0 on success; otherwise, returns -1
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UTimensat", SetLastError = true)]
         internal static extern unsafe int UTimensat(string path, TimeSpec* times);

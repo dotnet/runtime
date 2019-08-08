@@ -6,7 +6,7 @@ namespace System.ComponentModel.Design
 {
     /// <summary>
     /// Identifies a transaction within a designer. Transactions are
-    /// used to wrap several changes into one unit of work, which 
+    /// used to wrap several changes into one unit of work, which
     /// helps performance.
     /// </summary>
     public abstract class DesignerTransaction : IDisposable
@@ -16,7 +16,7 @@ namespace System.ComponentModel.Design
         protected DesignerTransaction() : this("")
         {
         }
-        
+
         protected DesignerTransaction(string description) => Description = description;
 
         public bool Canceled { get; private set; }

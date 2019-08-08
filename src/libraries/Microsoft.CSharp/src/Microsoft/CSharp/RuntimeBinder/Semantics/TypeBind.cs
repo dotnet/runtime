@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     /////////////////////////////////////////////////////////////////////////////////
     // TypeBind has static methods to accomplish most tasks.
-    // 
+    //
     // For some of these tasks there are also instance methods. The instance
     // method versions don't report not found errors (they may report others) but
     // instead record error information in the TypeBind instance. Call the
@@ -131,7 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Check whether typeArgs satisfies the constraints of typeVars. The 
+        // Check whether typeArgs satisfies the constraints of typeVars. The
         // typeArgsCls and typeArgsMeth are used for substitution on the bounds. The
         // tree and symErr are used for error reporting.
         private static bool CheckConstraintsCore(Symbol symErr, TypeArray typeVars, TypeArray typeArgs, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
@@ -178,8 +178,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (var.HasValConstraint)
             {
                 // If we have a type variable that is constrained to a value type, then we
-                // want to check if its a nullable type, so that we can report the 
-                // constraint error below. In order to do this however, we need to check 
+                // want to check if its a nullable type, so that we can report the
+                // constraint error below. In order to do this however, we need to check
                 // that either the type arg is not a value type, or it is a nullable type.
                 //
                 // To check whether or not its a nullable type, we need to get the resolved
@@ -215,14 +215,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         //  - nullable type, from which there is a boxing conversion to the constraint type(see below for details)
                         //  - type variable
                         //  - value type
-                        // These cases are broken out because: a) The sets of conversions which can be used 
-                        // for constraint satisfaction is different based on the type argument supplied, 
+                        // These cases are broken out because: a) The sets of conversions which can be used
+                        // for constraint satisfaction is different based on the type argument supplied,
                         // and b) Nullable is one funky type, and user's can use all the help they can get
                         // when using it.
                         ErrorCode error;
                         if (arg.IsReferenceType)
                         {
-                            // A reference type can only satisfy bounds to types 
+                            // A reference type can only satisfy bounds to types
                             // to which they have an implicit reference conversion
                             error = ErrorCode.ERR_GenericConstraintNotSatisfiedRefType;
                         }
@@ -243,7 +243,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             else
                             {
                                 // Nullable types don't satisfy the bounds of any interface type
-                                // even when there is a boxing conversion from the Nullable type to 
+                                // even when there is a boxing conversion from the Nullable type to
                                 // the interface type. This will be a relatively common scenario
                                 // so we cal it out separately from the previous case.
                                 Debug.Assert(typeBnd.IsInterfaceType);
@@ -295,7 +295,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Determine whether the arg type satisfies the typeBnd constraint. Note that 
+        // Determine whether the arg type satisfies the typeBnd constraint. Note that
         // typeBnd could be just about any type (since we added naked type parameter
         // constraints).
 

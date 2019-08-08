@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
                     sock.Connect(new IPEndPoint(_serverAddress, port));
-                    
+
                     AssertExtensions.Throws<ArgumentNullException>("e", () => sock.SendPacketsAsync(null));
                 }
             }
@@ -389,7 +389,7 @@ namespace System.Net.Sockets.Tests
         {
             // this test checks that FileStreams opened by the implementation of SendPacketsAsync
             // are properly disposed of when the SendPacketsAsync operation fails asynchronously.
-            // To trigger this codepath we must call SendPacketsAsync with a wrong offset (to create an error), 
+            // To trigger this codepath we must call SendPacketsAsync with a wrong offset (to create an error),
             // and twice (to avoid synchronous completion).
 
             SendPacketsElement[] goodElements = new[] { new SendPacketsElement(TestFileName, 0, 0) };
@@ -517,7 +517,7 @@ namespace System.Net.Sockets.Tests
                         }
                         Assert.Equal(expectedResult, args.SocketError);
                         Assert.Equal(bytesExpected, args.BytesTransferred);
-                    
+
                     }
 
                     if (contentExpected != null) {

@@ -42,7 +42,7 @@ namespace System.ComponentModel.Composition.Factories
                                               IEnumerable<ExportDefinition> exports)
         {
             return Create(metadata, partCreator, () => imports, () => exports);
-        }      
+        }
 
         public static ComposablePartDefinition Create(IDictionary<string, object> metadata,
                                                       Func<ComposablePart> partCreator,
@@ -50,6 +50,6 @@ namespace System.ComponentModel.Composition.Factories
                                                       Func<IEnumerable<ExportDefinition>> exportsCreator)
         {
             return new DerivedComposablePartDefinition(metadata, partCreator, importsCreator, exportsCreator);
-        }        
+        }
     }
 }

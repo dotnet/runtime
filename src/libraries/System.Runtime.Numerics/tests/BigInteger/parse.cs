@@ -469,7 +469,7 @@ namespace System.Numerics.Tests
             }
             else
             {
-                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, ns, nfi); });                
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, ns, nfi); });
                 Assert.False(BigInteger.TryParse(num1, ns, nfi, out test), string.Format("Expected TryParse to fail on {0}", num1));
             }
 

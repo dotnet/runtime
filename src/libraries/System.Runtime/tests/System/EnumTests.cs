@@ -348,7 +348,7 @@ namespace System.Tests
             yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
             yield return new object[] { s_boolEnumType, true, "Value1" };
             yield return new object[] { s_boolEnumType, false, "Value2" };
-#endif // netcoreapp            
+#endif // netcoreapp
         }
 
         [Theory]
@@ -397,8 +397,8 @@ namespace System.Tests
         [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
         public static void GetName_NonIntegralTypes(Type enumType, object value, string expected)
         {
-            // Despite what MSDN says, GetName() does not require passing in the exact integral type. 
-            // For the purposes of comparison: 
+            // Despite what MSDN says, GetName() does not require passing in the exact integral type.
+            // For the purposes of comparison:
             //  - The enum member value are normalized as follows:
             //      - unsigned ints zero-extended to 64-bits
             //      - signed ints sign-extended to 64-bits
@@ -509,7 +509,7 @@ namespace System.Tests
             yield return new object[] { s_boolEnumType, "Value1", true };
             yield return new object[] { s_boolEnumType, true, true };
             yield return new object[] { s_boolEnumType, false, true };
-#endif // netcoreapp            
+#endif // netcoreapp
         }
 
         [Theory]
@@ -737,7 +737,7 @@ namespace System.Tests
             // Bool
             yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
             yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
-#endif // netcoreapp            
+#endif // netcoreapp
         }
 
         [Theory]
@@ -754,7 +754,7 @@ namespace System.Tests
             yield return new object[] { typeof(object), typeof(ArgumentException) };
 #if netcoreapp
             yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
-#endif // netcoreapp            
+#endif // netcoreapp
         }
 
         [Theory]
@@ -777,7 +777,7 @@ namespace System.Tests
         {
             yield return new object[] { typeof(SimpleEnum), null, typeof(ArgumentNullException) };
             yield return new object[] { typeof(SimpleEnum), "Hello", typeof(ArgumentException) };
-#if netcoreapp            
+#if netcoreapp
             yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
             yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
             yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
@@ -911,7 +911,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), (UIntPtr)1, false };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), new object(), false };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, false };
-#endif // netcoreapp 
+#endif // netcoreapp
         }
 
         [Theory]
@@ -1009,7 +1009,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 2), -1 };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 3), Enum.ToObject(s_uintPtrEnumType, 2), 1 };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, 1 };
-#endif // netcoreapp 
+#endif // netcoreapp
         }
 
         [Theory]
@@ -1423,7 +1423,7 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One | UInt64Enum.Two, "F", "One, Two" };
             yield return new object[] { (UInt64Enum)5, "F", "5" };
             yield return new object[] { UInt64Enum.Max, "F", "Max" };
-            
+
 #if netcoreapp
             // "F": Char
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };

@@ -244,7 +244,7 @@ namespace System
             else
                 return $"{message} {userMessage}";
         }
-        
+
         /// <summary>
         /// Tests whether the specified string contains the specified substring
         /// and throws an exception if the substring does not occur within the

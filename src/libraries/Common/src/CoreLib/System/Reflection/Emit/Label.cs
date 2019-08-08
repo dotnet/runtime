@@ -4,21 +4,21 @@
 
 /*============================================================
 **
-** 
-** 
 **
-**  
+**
+**
+**
 **
 ** Purpose: Represents a Label to the ILGenerator class.
 **
-** 
+**
 ===========================================================*/
 
 namespace System.Reflection.Emit
 {
-    // The Label class is an opaque representation of a label used by the 
+    // The Label class is an opaque representation of a label used by the
     // ILGenerator class.  The token is used to mark where labels occur in the IL
-    // stream and then the necessary offsets are put back in the code when the ILGenerator 
+    // stream and then the necessary offsets are put back in the code when the ILGenerator
     // is passed to the MethodWriter.
     // Labels are created by using ILGenerator.CreateLabel and their position is set
     // by using ILGenerator.MarkLabel.

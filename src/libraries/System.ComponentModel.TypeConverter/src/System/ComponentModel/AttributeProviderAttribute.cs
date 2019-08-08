@@ -41,7 +41,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The TypeName property returns the assembly qualified type name 
+        /// The TypeName property returns the assembly qualified type name
         /// passed into the constructor.
         /// </summary>
         public string TypeName { get; }

@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             //encoded single certificate
             CERT_QUERY_CONTENT_CERT = 1,
-            //encoded single CTL                   
+            //encoded single CTL
             CERT_QUERY_CONTENT_CTL = 2,
             //encoded single CRL
             CERT_QUERY_CONTENT_CRL = 3,

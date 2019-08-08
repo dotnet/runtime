@@ -7,7 +7,7 @@ using System.Net.Sockets;
 namespace System.Net.NetworkInformation
 {
     // Provides information specific to a network interface.
-    // Note: Provides information specific to a network interface. A network interface can have more 
+    // Note: Provides information specific to a network interface. A network interface can have more
     // than one IPAddress associated with it. We call the native GetAdaptersAddresses API to
     // pre-populate all of the interface instances and most of their associated information.
     internal class SystemIPInterfaceProperties : IPInterfaceProperties

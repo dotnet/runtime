@@ -1222,7 +1222,7 @@ namespace System.Xml
             _fAssociateDataRow = false;
 
             DataTable[] orderedTables = OrderTables(ds);
-            // problem is after we add support for Namespace  for DataTable, when inferring we do not guarantee that table would be 
+            // problem is after we add support for Namespace  for DataTable, when inferring we do not guarantee that table would be
             // in the same sequence that they were in XML because of namespace, some would be on different schema, so since they
             // won't be in the same sequence as in XML, we may end up with having a child table, before its parent (which is not doable
             // with XML; and this happend because they are in different namespace)
@@ -3011,7 +3011,7 @@ namespace System.Xml
 
         //  after adding Namespace support foir datatable, DataSet does not guarantee that infered tabels would be in the same sequence as they rae in XML, because
         //  of Namespace. if a table is in different namespace than its children and DataSet, that table would efinetely be added to DataSet after its children. Its By Design
-        // so in order to maintain backward compatability, we reorder the copy of the datatable collection and use it 
+        // so in order to maintain backward compatability, we reorder the copy of the datatable collection and use it
         private DataTable[] OrderTables(DataSet ds)
         {
             DataTable[] retValue = null;
@@ -3031,7 +3031,7 @@ namespace System.Xml
             {
                 retValue = new DataTable[ds.Tables.Count];
                 List<DataTable> tableList = new List<DataTable>();
-                // first take the root tables that have no parent 
+                // first take the root tables that have no parent
                 foreach (DataTable dt in ds.Tables)
                 {
                     if (dt.ParentRelations.Count == 0)
@@ -3041,7 +3041,7 @@ namespace System.Xml
                 }
 
                 if (tableList.Count > 0)
-                { // if we have some  table inside; 
+                { // if we have some  table inside;
                     foreach (DataTable dt in ds.Tables)
                     {
                         if (IsSelfRelatedDataTable(dt))

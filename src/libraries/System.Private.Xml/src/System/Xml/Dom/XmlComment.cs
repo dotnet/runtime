@@ -54,4 +54,3 @@ namespace System.Xml
         internal override XPathNodeType XPNodeType { get { return XPathNodeType.Comment; } }
     }
 }
-

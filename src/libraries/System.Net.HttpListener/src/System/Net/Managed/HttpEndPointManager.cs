@@ -15,10 +15,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -83,7 +83,7 @@ namespace System.Net
                 // root can't be -1 here, since we've already checked for ending '/' in ListenerPrefix.
                 int root = p.IndexOf('/', colon, p.Length - colon);
                 string portString = p.Substring(colon + 1, root - colon - 1);
-                
+
                 int port;
                 if (!int.TryParse(portString, out port) || port <= 0 || port >= 65536)
                 {

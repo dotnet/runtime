@@ -36,13 +36,13 @@ namespace System.Drawing.Internal
 
         /// <summary>
         /// Creates a WindowsRegion from a region handle, if 'takeOwnership' is true, the handle is added to the
-        /// HandleCollector and is removed &amp; destroyed on dispose. 
+        /// HandleCollector and is removed &amp; destroyed on dispose.
         /// </summary>
         public static WindowsRegion FromHregion(IntPtr hRegion, bool takeOwnership)
         {
             WindowsRegion wr = new WindowsRegion();
 
-            // Note: Passing IntPtr.Zero for hRegion is ok.  GDI+ infinite regions will have hRegion == null.  
+            // Note: Passing IntPtr.Zero for hRegion is ok.  GDI+ infinite regions will have hRegion == null.
             // GDI's SelectClipRgn interprets null region handle as resetting the clip region (all region will be available for painting).
             if (hRegion != IntPtr.Zero)
             {
@@ -57,7 +57,7 @@ namespace System.Drawing.Internal
         }
 
         /// <summary>
-        /// Creates a WindowsRegion from a System.Drawing.Region. 
+        /// Creates a WindowsRegion from a System.Drawing.Region.
         /// </summary>
         public static WindowsRegion FromRegion(Region region, Graphics g)
         {
@@ -89,7 +89,7 @@ namespace System.Drawing.Internal
 
         /// <summary>
         /// Combines region1 &amp; region2 into this region. The regions cannot be null. The three regions need not be
-        /// distinct. For example, the sourceRgn1 can equal this region. 
+        /// distinct. For example, the sourceRgn1 can equal this region.
         /// </summary>
         public IntNativeMethods.RegionFlags CombineRegion(WindowsRegion region1, WindowsRegion region2, RegionCombineMode mode)
         {
@@ -128,14 +128,14 @@ namespace System.Drawing.Internal
         ~WindowsRegion() => Dispose(false);
 
         /// <summary>
-        /// The native region handle. 
+        /// The native region handle.
         /// </summary>
         public IntPtr HRegion => _nativeHandle;
 
         public bool IsInfinite => _nativeHandle == IntPtr.Zero;
 
         /// <summary>
-        /// A rectangle representing the window region set with the SetWindowRgn function. 
+        /// A rectangle representing the window region set with the SetWindowRgn function.
         /// </summary>
         public Rectangle ToRectangle()
         {

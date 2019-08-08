@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClient_SelectedSites_Test(ITestOutputHelper output) : base(output) { }
 
-        public static bool IsSelectedSitesTestEnabled() 
+        public static bool IsSelectedSitesTestEnabled()
         {
             string envVar = Environment.GetEnvironmentVariable("CORFX_NET_HTTP_SELECTED_SITES");
             return envVar != null &&

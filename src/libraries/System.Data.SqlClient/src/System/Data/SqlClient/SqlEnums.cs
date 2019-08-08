@@ -543,7 +543,7 @@ namespace System.Data.SqlClient
             Debug.Assert(attributes.Length > 0, failedAssertMessage);
         }
 
-        // devnote: This method should not be used with SqlDbType.Date and SqlDbType.DateTime2. 
+        // devnote: This method should not be used with SqlDbType.Date and SqlDbType.DateTime2.
         //          With these types the values should be used directly as CLR types instead of being converted to a SqlValue
         internal static object GetSqlValueFromComVariant(object comVal)
         {
@@ -898,4 +898,3 @@ namespace System.Data.SqlClient
         public int time;
     }
 }
-

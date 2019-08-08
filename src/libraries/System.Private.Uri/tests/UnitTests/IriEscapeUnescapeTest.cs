@@ -11,7 +11,7 @@ namespace System.Net.Test.Uri.IriTest
 {
     /// <summary>
     /// IriEscapeUnescape heap corruption and crash test.
-    /// These tests do not check for output correctness although they do validate that normalization is 
+    /// These tests do not check for output correctness although they do validate that normalization is
     /// locale-independent.
     /// </summary>
     public class IriEscapeUnescapeTest
@@ -290,7 +290,7 @@ namespace System.Net.Test.Uri.IriTest
         [Fact]
         public void Iri_MatchUTF8Sequence_decoder_different_from_encoder()
         {
-            // Found by fuzzing: 
+            // Found by fuzzing:
             // Input string:                %98%C8%D4%F3%D4%A8%7A%CF%DE%41%16
             // Valid Unicode sequences:           %D4      %A8%7A      %41%16
 

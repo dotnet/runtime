@@ -23,4 +23,3 @@ namespace Microsoft.Win32
         SystemShutdown = 2,
     }
 }
-

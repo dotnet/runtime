@@ -1189,7 +1189,7 @@ namespace System.Linq.Tests
                 e => e,
                 e => ForceNotCollection(e),
                 e => ForceNotCollection(e).Skip(1),
-                e => ForceNotCollection(e).Where(i => true), 
+                e => ForceNotCollection(e).Where(i => true),
                 e => e.ToArray().Where(i => true),
                 e => e.ToList().Where(i => true),
                 e => new LinkedList<int>(e).Where(i => true),

@@ -26,7 +26,7 @@ namespace System.Threading.Tasks.Test
         private readonly IEnumerable<int> _collection = null;  // the collection used in Foreach
         private readonly Barrier _barrier;
 
-        // Holds list of available actions 
+        // Holds list of available actions
         private readonly Dictionary<string, Action<long, ParallelLoopState>> _availableActions = new Dictionary<string, Action<long, ParallelLoopState>>();
         private readonly Dictionary<string, Action<ParallelLoopResult?>> _availableVerifications = new Dictionary<string, Action<ParallelLoopResult?>>();
 
@@ -37,7 +37,7 @@ namespace System.Threading.Tasks.Test
 
         // data structure used with ParallelLoopState<TLocal>
         // each row is the sequence of loop "index" finished in the same thread
-        // private Dictionary<int, List<int>> sequences; 
+        // private Dictionary<int, List<int>> sequences;
         private long _threadCount;
         private readonly List<int>[] _sequences;
         private readonly List<long>[] _sequences64;
@@ -221,7 +221,7 @@ namespace System.Threading.Tasks.Test
         // Workload for Parallel.For / Foreach
         private void Work(long i)
         {
-            // 
+            //
             // Make sure all task are spawned, before moving on
             //
             _barrier.SignalAndWait();
@@ -288,8 +288,8 @@ namespace System.Threading.Tasks.Test
         }
 
         /// <summary>
-        /// This action waits for the other iteration to call Stop and 
-        /// set the MRE when its done. Once the MRE is set, this function 
+        /// This action waits for the other iteration to call Stop and
+        /// set the MRE when its done. Once the MRE is set, this function
         /// calls Break which results in an InvalidOperationException
         /// </summary>
         /// <param name="i"></param>
@@ -301,8 +301,8 @@ namespace System.Threading.Tasks.Test
         }
 
         /// <summary>
-        /// This action waits for the other iteration to call Break and 
-        /// set the MRE when its done. Once the MRE is set, this function 
+        /// This action waits for the other iteration to call Break and
+        /// set the MRE when its done. Once the MRE is set, this function
         /// calls Stop which results in an InvalidOperationException
         /// </summary>
         /// <param name="i"></param>
@@ -314,8 +314,8 @@ namespace System.Threading.Tasks.Test
         }
 
         /// <summary>
-        /// This action waits for the other iteration to call Break and 
-        /// set the MRE when its done. Once the MRE is set, this function 
+        /// This action waits for the other iteration to call Break and
+        /// set the MRE when its done. Once the MRE is set, this function
         /// calls Break which results in the lower iteration winning
         /// </summary>
         /// <param name="i"></param>
@@ -372,7 +372,7 @@ namespace System.Threading.Tasks.Test
         }
 
         /// <summary>
-        /// This action waits for another iteration to throw an exception and notify 
+        /// This action waits for another iteration to throw an exception and notify
         /// when it is done by setting the MRE
         /// </summary>
         /// <param name="i"></param>
@@ -429,9 +429,9 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// Note!! This function is not threadsafe and care must be taken so that it is not called concurrently
-        /// 
+        ///
         /// Helper function that calls Stop for the current iteration and sets test flag(m_isStopped) to true
-        /// 
+        ///
         /// 1) If stop was already called, check if ParallelLoopState-->IsStopped is true
         /// 2) If stop was already called, check if ParallelLoopState-->ShouldExitCurrentIteration is true
         /// </summary>
@@ -465,9 +465,9 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// Thread safe version of Stop Action. This can safely be invoked concurrently
-        /// 
+        ///
         /// Stops the loop for first parameters.Count/2 iterations and sets the test flag (m_iterCount) to indicate this
-        /// 
+        ///
         /// 1) If Stop was previously called, then check that ParallelLoopState-->IsStopped is set to true
         /// 2) If Stop was previously called, then check that ParallelLoopState-->ShouldExitCurrentIteration is true
         /// </summary>
@@ -494,11 +494,11 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// NOTE!!! that this function is not thread safe and cannot be called concurrently
-        /// 
-        /// Helper function that calls Break for the current iteration if 
+        ///
+        /// Helper function that calls Break for the current iteration if
         /// 1) Break has never been called so far
         /// 2) if the current iteration is smaller than the iteration for which Break was previously called
-        /// 
+        ///
         /// If Break was already called then check that
         /// 1) The lowest break iteration stored by us is the same as the one passed in State
         /// 2) If this iteration is greater than the lowest break iteration, then shouldExitCurrentIteration should be true
@@ -531,24 +531,24 @@ namespace System.Threading.Tasks.Test
                 // we expect all lower iterations see the state's ShouldExitCurrentIteration to be false.
                 // There is however a race condition during the check here, another Break could've happen
                 // in between retrieving LowestBreakIteration value and ShouldExitCurrentIteration
-                // which changes the value of ShouldExitCurrentIteration. 
+                // which changes the value of ShouldExitCurrentIteration.
                 // We do another sample instead of LowestBreakIteration before failing the test
                 Assert.False(i < lbi, string.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
             }
 
             if (!_lowestBreakIter.HasValue || (_lowestBreakIter.HasValue && i < _lowestBreakIter.Value))
             {
-                // If calls Break for the first time or if current iteration less than LowestBreakIteration, 
+                // If calls Break for the first time or if current iteration less than LowestBreakIteration,
                 // call Break() again, and make sure LowestBreakIteration value gets updated
                 try
                 {
                     state.Break();
                     _lowestBreakIter = state.LowestBreakIteration; // Save the lowest beak iteration
-                    // If the test is checking the scenario where break is called after stop then 
+                    // If the test is checking the scenario where break is called after stop then
                     // we expect an InvalidOperationException
                     Assert.False(catchException, "Not getting InvalidOperationException from Break() when expecting one");
                 }
-                // If the test is checking the scenario where break is called after stop then 
+                // If the test is checking the scenario where break is called after stop then
                 // we expect an InvalidOperationException
                 catch (InvalidOperationException) when (catchException)
                 {
@@ -558,9 +558,9 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// This actions tests multiple Break calls from different iteration loops
-        ///  
+        ///
         /// Helper function that calls Break for the first parameters.Count/2 iterations
-        /// 
+        ///
         /// If Break was already called then check that
         /// 1) If this iteration is greater than the lowest break iteration, then shouldExitCurrentIteration should be true
         /// 2) if this iteration is lower than the lowest break iteration then shouldExitCurrentIteration should be false
@@ -576,7 +576,7 @@ namespace System.Threading.Tasks.Test
                 lock (_lock)
                 {
                     // Save the lowest beak iteration
-                    //m_lowestBreakIter = !m_lowestBreakIter.HasValue ? i : Math.Min(m_lowestBreakIter.Value, i); 
+                    //m_lowestBreakIter = !m_lowestBreakIter.HasValue ? i : Math.Min(m_lowestBreakIter.Value, i);
                     if (!_lowestBreakIter.HasValue)
                         _lowestBreakIter = i;
 
@@ -602,7 +602,7 @@ namespace System.Threading.Tasks.Test
                     // we expect all lower iterations see the state's ShouldExitCurrentIteration to be false.
                     // There is however a race condition during the check here, another Break could've happen
                     // in between retrieving LowestBreakIteration value and ShouldExitCurrentIteration
-                    // which changes the value of ShouldExitCurrentIteration. 
+                    // which changes the value of ShouldExitCurrentIteration.
                     // We do another sample instead of LowestBreakIteration before failing the test
                     Assert.False(i < lbi, string.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
                 }
@@ -611,13 +611,13 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// Note!! This function is not thread safe and care must be taken so it is not called concurrently
-        /// 
+        ///
         /// This helper throws an exception from the current iteration if an exception is not already thrown
-        /// 
-        /// 1) If an exception was previously thrown (m_isExceptional = true), then it checks if 
+        ///
+        /// 1) If an exception was previously thrown (m_isExceptional = true), then it checks if
         ///    ParallelLoopState-->IsExceptional is set
         /// 2) If an exception was previously thrown then it checks if ParallelLoopState-->ShouldExitCurrentIteration is true
-        /// 
+        ///
         /// If an exception was not thrown before this, then throw an exception and set test flag m_isExceptional to true
         /// </summary>
         /// <param name="i"></param>
@@ -643,9 +643,9 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// This is the thread safe version of an action that throws exceptions and called be called concurrently
-        /// 
+        ///
         /// This action throws an exception for the first parameters.Count/2 iterations
-        /// 
+        ///
         /// For the rest of the actions, it performs the following checks
         /// 1) If an exception was already thrown then check that ParallelLoopState->IsException is true
         /// 2) If an exception was already thrown then check that ParallelLoopState->ShouldExitCurrentIteration is true
@@ -717,7 +717,7 @@ namespace System.Threading.Tasks.Test
         }
 
         /// <summary>
-        /// Called when a Thread is being used for the first time in the Parallel loop        
+        /// Called when a Thread is being used for the first time in the Parallel loop
         /// </summary>
         /// <returns>a list where each loop body will store a unique result for verification</returns>
         private List<int> ThreadLocalInit()
@@ -747,7 +747,7 @@ namespace System.Threading.Tasks.Test
         private void Verify(int i)
         {
             //Function point comparison cant be done by rounding off to nearest decimal points since
-            //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons, 
+            //1.64 could be represented as 1.63999999 or as 1.6499999999. To perform floating point comparisons,
             //a range has to be defined and check to ensure that the result obtained is within the specified range
             double minLimit = 1.63;
             double maxLimit = 1.65;
@@ -766,8 +766,8 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// Used to verify the result of a loop that was 'Stopped'
-        /// 
-        /// Expected: 
+        ///
+        /// Expected:
         /// 1) A ParallelLoopResult with IsCompleted = false and LowestBreakIteration = null
         /// 2) For results that were processed, the body stored the correct value
         /// </summary>
@@ -786,7 +786,7 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// This verification is used we successfully called 'Break' on the loop
-        /// 
+        ///
         /// Expected:
         /// 1) A valid ParallelLoopResult was returned with IsCompleted = false & LowestBreakIteration = lowest iteration on which
         ///    the test called Break
@@ -807,7 +807,7 @@ namespace System.Threading.Tasks.Test
 
         /// <summary>
         /// This verification is called when we expect an exception from the test
-        /// 
+        ///
         /// Expected: ParallelLoopResult is returned as null
         /// </summary>
         /// <param name="loopResult"></param>

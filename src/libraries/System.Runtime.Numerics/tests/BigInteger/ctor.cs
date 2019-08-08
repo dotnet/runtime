@@ -1161,7 +1161,7 @@ namespace System.Numerics.Tests
             // 1 * x = x
             Assert.Equal(bigInteger, (BigInteger.One * bigInteger));
         }
-        
+
         private static bool IsOutOfRangeUInt64(byte[] value)
         {
             if (value.Length == 0)

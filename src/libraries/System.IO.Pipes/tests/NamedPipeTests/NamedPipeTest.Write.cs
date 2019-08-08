@@ -27,7 +27,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Write_ServerIn_ClientOut : PipeTest_Write
     {
@@ -47,7 +47,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Write_ServerInOut_ClientInOut : PipeTest_Write
     {

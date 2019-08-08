@@ -20,7 +20,3 @@ namespace System.Data.SqlClient
         UseInternalTransaction = 1 << 5,
     }
 }
-
-
-
-

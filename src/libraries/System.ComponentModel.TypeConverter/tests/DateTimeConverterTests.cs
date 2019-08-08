@@ -69,10 +69,10 @@ namespace System.ComponentModel.Tests
                 string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern;
                 string format = formatInfo.ShortDatePattern;
                 DateTime testDateAndTime = new DateTime(1998, 12, 5, 22, 30, 30);
-                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[] 
+                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
                     {
-                        typeof(int), typeof(int), typeof(int), typeof(int), 
-                        typeof(int), typeof(int), typeof(int) 
+                        typeof(int), typeof(int), typeof(int), typeof(int),
+                        typeof(int), typeof(int), typeof(int)
                     });
 
                 InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
@@ -95,9 +95,9 @@ namespace System.ComponentModel.Tests
 
                 object describedInstanceCulture = s_converter.ConvertTo(TypeConverterTests.s_context, CultureInfo.InvariantCulture, testDateAndTime, descriptor.GetType());
                 describedInstanceCulture = ((InstanceDescriptor)describedInstanceCulture).Invoke();
-                
+
                 Assert.Equal(testDateAndTime, describedInstanceNoCulture);
-                Assert.Equal(testDateAndTime, describedInstanceCulture); 
+                Assert.Equal(testDateAndTime, describedInstanceCulture);
 
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();

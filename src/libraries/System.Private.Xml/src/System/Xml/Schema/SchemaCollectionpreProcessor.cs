@@ -125,7 +125,7 @@ namespace System.Xml.Schema
             }
         }
 
-        // SxS: This method reads resource names from the source documents and does not return any resources to the caller 
+        // SxS: This method reads resource names from the source documents and does not return any resources to the caller
         // It's fine to suppress the SxS warning
         private void LoadExternals(XmlSchema schema, XmlSchemaCollection xsc)
         {
@@ -138,7 +138,7 @@ namespace System.Xml.Schema
             {
                 XmlSchemaExternal include = (XmlSchemaExternal)schema.Includes[i];
                 Uri includeLocation = null;
-                //CASE 1: If the Schema object of the include has been set 
+                //CASE 1: If the Schema object of the include has been set
                 if (include.Schema != null)
                 {
                     // already loaded
@@ -278,7 +278,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            //Add the schema's targetnamespace 
+            //Add the schema's targetnamespace
             if (schema.TargetNamespace != null && _referenceNamespaces[schema.TargetNamespace] == null)
                 _referenceNamespaces.Add(schema.TargetNamespace, schema.TargetNamespace);
         }
@@ -995,7 +995,7 @@ namespace System.Xml.Schema
             }
             else
             { // ref
-                PreprocessAnnotation(element); //Check annotation child for ref and set parent 
+                PreprocessAnnotation(element); //Check annotation child for ref and set parent
                 if (element.RefName.IsEmpty)
                 {
                     SendValidationEvent(SR.Sch_ElementNameRef, element);

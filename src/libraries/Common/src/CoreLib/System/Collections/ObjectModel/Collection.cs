@@ -235,7 +235,7 @@ namespace System.Collections.ObjectModel
                 }
 
                 //
-                // We can't cast array of value type to object[], so we don't support 
+                // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
                 //
                 object?[]? objects = array as object[];
@@ -290,7 +290,7 @@ namespace System.Collections.ObjectModel
             get
             {
                 // There is no IList<T>.IsFixedSize, so we must assume that only
-                // readonly collections are fixed size, if our internal item 
+                // readonly collections are fixed size, if our internal item
                 // collection does not implement IList.  Note that Array implements
                 // IList, and therefore T[] and U[] will be fixed-size.
                 if (items is IList list)
@@ -373,7 +373,7 @@ namespace System.Collections.ObjectModel
         private static bool IsCompatibleObject(object? value)
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
-            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             return ((value is T) || (value == null && default(T)! == null));
         }
     }

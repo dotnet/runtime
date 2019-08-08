@@ -11,7 +11,7 @@ namespace System.Diagnostics
     public partial class Activity
     {
         /// <summary>
-        /// Gets or sets the current operation (Activity) for the current thread.  This flows 
+        /// Gets or sets the current operation (Activity) for the current thread.  This flows
         /// across async calls.
         /// </summary>
         public static Activity Current
@@ -23,7 +23,7 @@ namespace System.Diagnostics
             {
                 ObjectHandle activityHandle = (ObjectHandle)CallContext.LogicalGetData(FieldKey);
 
-                // Unwrap the Activity if it was set in the same AppDomain (as FieldKey is AppDomain-specific). 
+                // Unwrap the Activity if it was set in the same AppDomain (as FieldKey is AppDomain-specific).
                 if (activityHandle != null)
                 {
                     return (Activity)activityHandle.Unwrap();
@@ -51,14 +51,14 @@ namespace System.Diagnostics
         private static void SetCurrent(Activity activity)
         {
             // Applications may implicitly or explicitly call other AppDomains
-            // that do not have DiagnosticSource DLL, therefore may not be able to resolve Activity type stored in the logical call context. 
+            // that do not have DiagnosticSource DLL, therefore may not be able to resolve Activity type stored in the logical call context.
             // To avoid it, we wrap Activity with ObjectHandle.
             CallContext.LogicalSetData(FieldKey, new ObjectHandle(activity));
         }
 
         // Slot name depends on the AppDomain Id in order to prevent AppDomains to use the same Activity
-        // Cross AppDomain calls are considered as 'external' i.e. only Activity Id and Baggage should be propagated and 
-        // new Activity should be started for the RPC calls (incoming and outgoing) 
+        // Cross AppDomain calls are considered as 'external' i.e. only Activity Id and Baggage should be propagated and
+        // new Activity should be started for the RPC calls (incoming and outgoing)
         private static readonly string FieldKey = $"{typeof(Activity).FullName}_{AppDomain.CurrentDomain.Id}";
 #endregion //private
     }

@@ -361,7 +361,7 @@ namespace System.Net.Sockets.Tests
                     saea.SetBuffer(buffer, 0, buffer.Length);
                     saea.RemoteEndPoint = server.LocalEndPoint;
                     saea.SendPacketsElements = new[] { new SendPacketsElement(buffer) };
-                    
+
                     bool pending;
                     asyncLocal.Value = 42;
                     if (suppressContext) ExecutionContext.SuppressFlow();

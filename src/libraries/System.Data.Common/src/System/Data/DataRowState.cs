@@ -10,7 +10,7 @@ namespace System.Data
     {
         // DataViewRowState.None = 00000000;
         // The row has been created but is not part of any DataRowCollection.
-        // A DataRow is in this state immediately after it has been created and 
+        // A DataRow is in this state immediately after it has been created and
         // before it is added to a collection, or if it has been removed from a collection.
         Detached = 0x00000001,
         // The row has not changed since AcceptChanges was last called.

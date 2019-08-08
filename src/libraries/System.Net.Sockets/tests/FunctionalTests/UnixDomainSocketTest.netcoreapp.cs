@@ -186,7 +186,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
-        {             
+        {
             var writeBuffer = new byte[writeBufferSize * iterations];
             new Random().NextBytes(writeBuffer);
             var readData = new MemoryStream();

@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
 
             ti = (TextInfo) ti.Clone();
             Assert.False(ti.IsReadOnly, "IsReadOnly should be false with cloned TextInfo object");
-            
+
             ti = TextInfo.ReadOnly(ti);
             Assert.True(ti.IsReadOnly, "IsReadOnly should be true with created read-nly TextInfo object");
         }
@@ -126,7 +126,7 @@ namespace System.Globalization.Tests
         {
             Assert.NotEqual(string.Empty, new CultureInfo("en-US").TextInfo.ListSeparator);
         }
-        
+
         [Theory]
         [InlineData("")]
         [InlineData(" ")]
@@ -158,7 +158,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-US").TextInfo, new object(), false };
             yield return new object[] { new CultureInfo("en-US").TextInfo, 123, false };
             yield return new object[] { new CultureInfo("en-US").TextInfo, "en-US", false };
-           
+
         }
 
         [Theory]
@@ -174,7 +174,7 @@ namespace System.Globalization.Tests
 
         private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
 
-        // ToLower_TestData_netcore has the data which is specific to netcore framework 
+        // ToLower_TestData_netcore has the data which is specific to netcore framework
         public static IEnumerable<object[]> ToLower_TestData_netcore()
         {
             foreach (string cultureName in s_cultureNames)
@@ -267,7 +267,7 @@ namespace System.Globalization.Tests
         {
             TestToLower(name, str, expected);
         }
-        
+
         [Fact]
         public void ToLower_InvalidSurrogates()
         {
@@ -289,7 +289,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToLower(null));
         }
 
-        // ToUpper_TestData_netcore has the data which is specific to netcore framework 
+        // ToUpper_TestData_netcore has the data which is specific to netcore framework
         public static IEnumerable<object[]> ToUpper_TestData_netcore()
         {
             foreach (string cultureName in s_cultureNames)
@@ -298,7 +298,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
             }
         }
-        
+
         public static IEnumerable<object[]> ToUpper_TestData()
         {
             foreach (string cultureName in s_cultureNames)

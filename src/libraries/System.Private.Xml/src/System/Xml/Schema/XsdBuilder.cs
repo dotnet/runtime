@@ -95,7 +95,7 @@ namespace System.Xml.Schema
             public XsdAttributeEntry[] Attributes;       // allowed attributes
             public XsdInitFunction InitFunc;             // "init" functions in XsdBuilder
             public XsdEndChildFunction EndChildFunc;     // "end" functions in XsdBuilder for EndChildren
-            public bool ParseContent;                       // whether text content is allowed  
+            public bool ParseContent;                       // whether text content is allowed
 
             public XsdEntry(SchemaNames.Token n,
                             State state,
@@ -407,7 +407,7 @@ namespace System.Xml.Schema
         };
         //
         // XSD Schema entries
-        //                        
+        //
 
         private static readonly XsdEntry[] s_schemaEntries = {
        /* Root */                       new XsdEntry( SchemaNames.Token.Empty, State.Root, s_schemaElement, null,
@@ -1110,14 +1110,14 @@ namespace System.Xml.Schema
         }
 
         /*
-            <schema 
+            <schema
               attributeFormDefault = qualified | unqualified : unqualified
-              blockDefault = #all or (possibly empty) subset of {substitution, extension, restriction} 
+              blockDefault = #all or (possibly empty) subset of {substitution, extension, restriction}
               elementFormDefault = qualified | unqualified : unqualified
-              finalDefault = #all or (possibly empty) subset of {extension, restriction} 
-              id = ID 
-              targetNamespace = uriReference 
-              version = string 
+              finalDefault = #all or (possibly empty) subset of {extension, restriction}
+              id = ID
+              targetNamespace = uriReference
+              version = string
               {any attributes with non-schema namespace . . .}>
               Content: ((include | import | redefine | annotation)* , ((attribute | attributeGroup | complexType | element | group | notation | simpleType) , annotation*)*)
             </schema>
@@ -1160,9 +1160,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <include 
-              id = ID 
-              schemaLocation = uriReference 
+            <include
+              id = ID
+              schemaLocation = uriReference
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </include>
@@ -1183,10 +1183,10 @@ namespace System.Xml.Schema
         }
 
         /*
-            <import 
-              id = ID 
-              namespace = uriReference 
-              schemaLocation = uriReference 
+            <import
+              id = ID
+              namespace = uriReference
+              schemaLocation = uriReference
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </import>
@@ -1212,8 +1212,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <redefine 
-              schemaLocation = uriReference 
+            <redefine
+              schemaLocation = uriReference
               {any attributes with non-schema namespace . . .}>
               Content: (annotation | (attributeGroup | complexType | group | simpleType))*
             </redefine>
@@ -1239,14 +1239,14 @@ namespace System.Xml.Schema
         }
 
         /*
-            <attribute 
-              form = qualified | unqualified 
-              id = ID 
-              name = NCName 
-              ref = QName 
-              type = QName 
+            <attribute
+              form = qualified | unqualified
+              id = ID
+              name = NCName
+              ref = QName
+              type = QName
               use = prohibited | optional | required | default | fixed : optional
-              value = string 
+              value = string
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (simpleType?))
             </attribute>
@@ -1297,21 +1297,21 @@ namespace System.Xml.Schema
         }
 
         /*
-            <element 
+            <element
               abstract = boolean : false
-              block = #all or (possibly empty) subset of {substitution, extension, restriction} 
-              default = string 
-              final = #all or (possibly empty) subset of {extension, restriction} 
-              fixed = string 
-              form = qualified | unqualified 
-              id = ID 
+              block = #all or (possibly empty) subset of {substitution, extension, restriction}
+              default = string
+              final = #all or (possibly empty) subset of {extension, restriction}
+              fixed = string
+              form = qualified | unqualified
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
-              name = NCName 
+              name = NCName
               nillable = boolean : false
-              ref = QName 
-              substitutionGroup = QName 
-              type = QName 
+              ref = QName
+              substitutionGroup = QName
+              type = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((simpleType | complexType)? , (key | keyref | unique)*))
             </element>
@@ -1406,9 +1406,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <simpleType 
-              id = ID 
-              name = NCName 
+            <simpleType
+              id = ID
+              name = NCName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((list | restriction | union)))
             </simpleType>
@@ -1491,8 +1491,8 @@ namespace System.Xml.Schema
 
 
         /*
-            <union 
-              id = ID 
+            <union
+              id = ID
               memberTypes = List of [anon]
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (simpleType*))
@@ -1524,9 +1524,9 @@ namespace System.Xml.Schema
 
 
         /*
-            <list 
-              id = ID 
-              itemType = QName 
+            <list
+              id = ID
+              itemType = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (simpleType?))
             </list>
@@ -1547,9 +1547,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <restriction 
-              base = QName 
-              id = ID 
+            <restriction
+              base = QName
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (simpleType? , ((duration | encoding | enumeration | length | maxExclusive | maxInclusive | maxLength | minExclusive | minInclusive | minLength | pattern | period | TotalDigits | FractionDigits)*)))
             </restriction>
@@ -1570,13 +1570,13 @@ namespace System.Xml.Schema
         }
 
         /*
-            <complexType 
+            <complexType
               abstract = boolean : false
-              block = #all or (possibly empty) subset of {extension, restriction} 
-              final = #all or (possibly empty) subset of {extension, restriction} 
-              id = ID 
+              block = #all or (possibly empty) subset of {extension, restriction}
+              final = #all or (possibly empty) subset of {extension, restriction}
+              id = ID
               mixed = boolean : false
-              name = NCName 
+              name = NCName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (simpleContent | complexContent | ((group | all | choice | sequence)? , ((attribute | attributeGroup)* , anyAttribute?))))
             </complexType>
@@ -1633,9 +1633,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <complexContent 
-              id = ID 
-              mixed = boolean 
+            <complexContent
+              id = ID
+              mixed = boolean
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (restriction | extension))
             </complexContent>
@@ -1658,9 +1658,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <extension 
-              base = QName 
-              id = ID 
+            <extension
+              base = QName
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((group | all | choice | sequence)? , ((attribute | attributeGroup)* , anyAttribute?)))
             </extension>
@@ -1681,9 +1681,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <restriction 
-              base = QName 
-              id = ID 
+            <restriction
+              base = QName
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (group | all | choice | sequence)? , ((attribute | attributeGroup)* , anyAttribute?))
             </restriction>
@@ -1700,8 +1700,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <simpleContent 
-              id = ID 
+            <simpleContent
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (restriction | extension))
             </simpleContent>
@@ -1719,9 +1719,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <extension 
-              base = QName 
-              id = ID 
+            <extension
+              base = QName
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((attribute | attributeGroup)* , anyAttribute?))
             </extension>
@@ -1744,9 +1744,9 @@ namespace System.Xml.Schema
 
 
         /*
-            <restriction 
-              base = QName 
-              id = ID 
+            <restriction
+              base = QName
+              id = ID
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((duration | encoding | enumeration | length | maxExclusive | maxInclusive | maxLength | minExclusive | minInclusive | minLength | pattern | period | totalDigits | fractionDigits)*)? , ((attribute | attributeGroup)* , anyAttribute?))
             </restriction>
@@ -1767,10 +1767,10 @@ namespace System.Xml.Schema
         }
 
         /*
-            <attributeGroup 
-              id = ID 
-              name = NCName 
-              ref = QName 
+            <attributeGroup
+              id = ID
+              name = NCName
+              ref = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , ((attribute | attributeGroup)* , anyAttribute?))
             </attributeGroup>
@@ -1796,9 +1796,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <attributeGroup 
-              id = ID 
-              ref = QName 
+            <attributeGroup
+              id = ID
+              ref = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </attributeGroup>
@@ -1815,8 +1815,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <anyAttribute 
-              id = ID 
+            <anyAttribute
+              id = ID
               namespace = ##any | ##other | list of {uri, ##targetNamespace, ##local} : ##any
               processContents = skip | lax | strict : strict
               {any attributes with non-schema namespace . . .}>
@@ -1888,9 +1888,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <group 
-              id = ID 
-              name = NCName 
+            <group
+              id = ID
+              name = NCName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (all | choice | sequence)?)
             </group>
@@ -1916,11 +1916,11 @@ namespace System.Xml.Schema
         }
 
         /*
-            <group 
-              id = ID 
+            <group
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
-              ref = QName 
+              ref = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </group>
@@ -1947,8 +1947,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <all 
-              id = ID 
+            <all
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
               {any attributes with non-schema namespace . . .}>
@@ -1962,8 +1962,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <choice 
-              id = ID 
+            <choice
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
               {any attributes with non-schema namespace . . .}>
@@ -1977,8 +1977,8 @@ namespace System.Xml.Schema
         }
 
         /*
-             <sequence 
-              id = ID 
+             <sequence
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
               {any attributes with non-schema namespace . . .}>
@@ -1992,8 +1992,8 @@ namespace System.Xml.Schema
         }
 
         /*
-            <any 
-              id = ID 
+            <any
+              id = ID
               maxOccurs = for maxOccurs : 1
               minOccurs = nonNegativeInteger : 1
               namespace = ##any | ##other | list of {uri, ##targetNamespace, ##local} : ##any
@@ -2019,11 +2019,11 @@ namespace System.Xml.Schema
         }
 
         /*
-            <notation 
-              id = ID 
-              name = NCName 
-              public = A public identifier, per ISO 8879 
-              system = uriReference 
+            <notation
+              id = ID
+              name = NCName
+              public = A public identifier, per ISO 8879
+              system = uriReference
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </notation>
@@ -2054,9 +2054,9 @@ namespace System.Xml.Schema
         // Facets
         //
         /*
-            <duration 
-              id = ID 
-              value = timeDuration 
+            <duration
+              id = ID
+              value = timeDuration
               fixed = boolean : false>
               Content: (annotation?)
             </duration>
@@ -2128,24 +2128,24 @@ namespace System.Xml.Schema
         }
 
         /*
-            <unique 
-              id = ID 
-              name = NCName 
+            <unique
+              id = ID
+              name = NCName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (selector , field+))
             </unique>
- 
-            <key 
-              id = ID 
-              name = NCName 
+
+            <key
+              id = ID
+              name = NCName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (selector , field+))
             </key>
- 
-            <keyref 
-              id = ID 
-              name = NCName 
-              refer = QName 
+
+            <keyref
+              id = ID
+              name = NCName
+              refer = QName
               {any attributes with non-schema namespace . . .}>
               Content: (annotation? , (selector , field+))
             </keyref>
@@ -2190,9 +2190,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <selector 
-              id = ID 
-              xpath = An XPath expression 
+            <selector
+              id = ID
+              xpath = An XPath expression
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </selector>
@@ -2216,9 +2216,9 @@ namespace System.Xml.Schema
         }
 
         /*
-            <field 
-              id = ID 
-              xpath = An XPath expression 
+            <field
+              id = ID
+              xpath = An XPath expression
               {any attributes with non-schema namespace . . .}>
               Content: (annotation?)
             </field>
@@ -2246,7 +2246,7 @@ namespace System.Xml.Schema
         */
         private static void InitAnnotation(XsdBuilder builder, string value)
         {
-            // On most elements annotations are only allowed to be the first child 
+            // On most elements annotations are only allowed to be the first child
             //   (so the element must not have any children by now), and only one annotation is allowed.
             // Exceptions are xs:schema and xs:redefine, these can have any number of annotations
             //   in any place.
@@ -2261,7 +2261,7 @@ namespace System.Xml.Schema
         }
 
         /*
-            <appinfo 
+            <appinfo
               source = uriReference>
               Content: ({any})*
             </appinfo>
@@ -2285,7 +2285,7 @@ namespace System.Xml.Schema
 
 
         /*
-            <documentation 
+            <documentation
               source = uriReference>
               Content: ({any})*
             </documentation>

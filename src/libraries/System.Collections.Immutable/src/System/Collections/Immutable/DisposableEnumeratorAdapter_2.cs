@@ -83,7 +83,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns a copy of this struct. 
+        /// Returns a copy of this struct.
         /// </summary>
         /// <remarks>
         /// This member is here so that it can be used in C# foreach loops.

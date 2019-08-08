@@ -22,7 +22,7 @@ namespace System.Xml.Xsl.Runtime
     /// Namespace               Error                   Floating
     /// at top-level                                    Namespace
     ///
-    /// Elements, Text, PI      Implicit Root           Floating            
+    /// Elements, Text, PI      Implicit Root           Floating
     /// Comments at top-level                           Nodes
     ///
     /// Root at top-level       Ignored                 Root

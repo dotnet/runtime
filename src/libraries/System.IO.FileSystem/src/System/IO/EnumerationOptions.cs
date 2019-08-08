@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,7 +69,7 @@ namespace System.IO
         /// useful is with remote share enumeration on Windows. Having a large buffer may result in
         /// better performance as more results can be batched over the wire (e.g. over a network
         /// share). A "large" buffer, for example, would be 16K. Typical is 4K.
-        /// 
+        ///
         /// We will not use the suggested buffer size if it has no meaning for the native APIs on the
         /// current platform or if it would be too small for getting at least a single result.
         /// </remarks>

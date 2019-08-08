@@ -58,7 +58,7 @@ namespace Microsoft.Test.ModuleCore
 
         internal static void Dispose()
         {
-            //Reset the info.  
+            //Reset the info.
             s_pinternal = null;
             s_passerthandler = null;
         }
@@ -203,7 +203,7 @@ namespace Microsoft.Test.ModuleCore
 
             //Compare not only compares but throws - so your test stops processing
             //This way processing stops upon the first error, so you don't have to check return
-            //values or validate values afterwards.  If you have other items to do, then use the 
+            //values or validate values afterwards.  If you have other items to do, then use the
             //TestLog.Equals instead of TestLog.Compare
             throw new TestFailedException(message, actual, expected, null);
         }
@@ -215,7 +215,7 @@ namespace Microsoft.Test.ModuleCore
 
             //Compare not only compares but throws - so your test stops processing
             //This way processing stops upon the first error, so you don't have to check return
-            //values or validate values afterwards.  If you have other items to do, then use the 
+            //values or validate values afterwards.  If you have other items to do, then use the
             //TestLog.Equals instead of TestLog.Compare
             throw new TestFailedException(message, actual, expected2, null);
         }
@@ -292,7 +292,7 @@ namespace Microsoft.Test.ModuleCore
             if (Internal != null)
             {
                 Internal.Error(result,
-                            TestLogFlags.Text,         //flags        
+                            TestLogFlags.Text,         //flags
                             StringEx.Format(actual),   //actual
                             StringEx.Format(expected), //expected
                             source,                    //source
@@ -457,10 +457,10 @@ namespace Microsoft.Test.ModuleCore
             pflags = flags;
         }
 
-        //Overrides    
+        //Overrides
         public override void Write(char ch)
         {
-            //A subclass must minimally implement the Write(Char) method. 
+            //A subclass must minimally implement the Write(Char) method.
             Write(ch.ToString());
         }
 
@@ -472,7 +472,7 @@ namespace Microsoft.Test.ModuleCore
 
         public override void Write(char[] ch)
         {
-            //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly 
+            //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly
             //writes 1 char at a time, which means \r\n is written sperately and then gets fixed
             //up to be two carriage returns!
             if (ch != null)
@@ -490,8 +490,8 @@ namespace Microsoft.Test.ModuleCore
 
         public override void WriteLine()
         {
-            //Writes a line terminator to the text stream. 
-            //The default line terminator is a carriage return followed by a line feed ("\r\n"), 
+            //Writes a line terminator to the text stream.
+            //The default line terminator is a carriage return followed by a line feed ("\r\n"),
             //but this value can be changed using the NewLine property.
             Write(this.NewLine);
         }

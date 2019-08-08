@@ -22,8 +22,8 @@ namespace System.Drawing
         ///    </para>
         /// </summary>
         public static readonly PointF Empty = new PointF();
-        private float x; // Do not rename (binary serialization) 
-        private float y; // Do not rename (binary serialization) 
+        private float x; // Do not rename (binary serialization)
+        private float y; // Do not rename (binary serialization)
 
         /// <summary>
         ///    <para>
@@ -108,7 +108,7 @@ namespace System.Drawing
         ///    <para>
         ///       Compares two <see cref='System.Drawing.PointF'/> objects. The result specifies whether the values
         ///       of the <see cref='System.Drawing.PointF.X'/> or <see cref='System.Drawing.PointF.Y'/> properties of the two
-        ///    <see cref='System.Drawing.PointF'/> 
+        ///    <see cref='System.Drawing.PointF'/>
         ///    objects are unequal.
         /// </para>
         /// </summary>

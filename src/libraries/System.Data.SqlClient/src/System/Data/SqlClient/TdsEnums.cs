@@ -131,7 +131,7 @@ namespace System.Data.SqlClient
         public const byte SQLDEBUG_CMD = 0x60;
         public const byte SQLLOGINACK = 0xad;
         public const byte SQLFEATUREEXTACK = 0xae;    // TDS 7.4 - feature ack
-        public const byte SQLSESSIONSTATE = 0xe4;    // TDS 7.4 - connection resiliency session state  
+        public const byte SQLSESSIONSTATE = 0xe4;    // TDS 7.4 - connection resiliency session state
         public const byte SQLENVCHANGE = 0xe3;    // Environment change notification
         public const byte SQLSECLEVEL = 0xed;    // Security level token ???
         public const byte SQLROWCRC = 0x39;    // ROWCRC datastream???
@@ -238,7 +238,7 @@ namespace System.Data.SqlClient
         public const byte MAX_NIC_SIZE = 6;               // The size of a MAC or client address
         public const byte SQLVARIANT_SIZE = 2;               // size of the fixed portion of a sql variant (type, cbPropBytes)
         public const byte VERSION_SIZE = 4;               // size of the tds version (4 unsigned bytes)
-        public const int CLIENT_PROG_VER = 0x06000000;      // Client interface version       
+        public const int CLIENT_PROG_VER = 0x06000000;      // Client interface version
         public const int YUKON_LOG_REC_FIXED_LEN = 0x5e;
         // misc
         public const int TEXT_TIME_STAMP_LEN = 8;
@@ -971,4 +971,3 @@ namespace System.Data.SqlClient
         FedAuthRequiredPreLoginResponseInvalidValue = 20,
     }
 }
-

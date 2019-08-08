@@ -203,7 +203,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Creates a NamespaceDataBuilder instance that contains a synthesized NamespaceDefinitionHandle, 
+        /// Creates a NamespaceDataBuilder instance that contains a synthesized NamespaceDefinitionHandle,
         /// as well as the name provided.
         /// </summary>
         private NamespaceDataBuilder SynthesizeNamespaceData(string fullName, NamespaceDefinitionHandle realChild)
@@ -248,7 +248,7 @@ namespace System.Reflection.Metadata.Ecma335
             var child = realChild;
 
             // The condition for this loop is very complex -- essentially, we keep going
-            // until we: 
+            // until we:
             //   A. Encounter the root namespace as 'child'
             //   B. Find a preexisting namespace as 'parent'
             while (true)
@@ -304,7 +304,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// This will link all parents/children in the given namespaces dictionary up to each other.
-        /// 
+        ///
         /// In some cases, we need to synthesize namespaces that do not have any type definitions or forwarders
         /// of their own, but do have child namespaces. These are returned via the virtualNamespaces out
         /// parameter.
@@ -402,7 +402,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// same purpose in NamespaceData got ugly. With the current design of how we create our Namespace
         /// dictionary, this needs to be a class because we have a many-to-one mapping between NamespaceHandles
         /// and NamespaceData. So, the pointer semantics must be preserved.
-        /// 
+        ///
         /// This class assumes that the builders will not be modified in any way after the first call to
         /// Freeze().
         /// </summary>
@@ -430,7 +430,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             /// <summary>
             /// Returns a NamespaceData that represents this NamespaceDataBuilder instance. After calling
-            /// this method, it is an error to use any methods or fields except Freeze() on the target 
+            /// this method, it is an error to use any methods or fields except Freeze() on the target
             /// NamespaceDataBuilder.
             /// </summary>
             public NamespaceData Freeze()

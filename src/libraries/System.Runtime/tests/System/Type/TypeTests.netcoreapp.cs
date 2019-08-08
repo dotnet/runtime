@@ -190,7 +190,7 @@ namespace System.Tests
                 Type theT = typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0];
 
                 yield return new object[] { typeof(int[]) };
-                yield return new object[] { theT.MakeArrayType(1) }; // Using an open type as element type gets around .NET Native nonsupport of rank-1 multidim arrays 
+                yield return new object[] { theT.MakeArrayType(1) }; // Using an open type as element type gets around .NET Native nonsupport of rank-1 multidim arrays
                 yield return new object[] { typeof(int[,]) };
 
                 yield return new object[] { typeof(int).MakeByRefType() };

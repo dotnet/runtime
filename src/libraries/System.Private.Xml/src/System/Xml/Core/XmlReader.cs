@@ -13,12 +13,12 @@ using System.Runtime.Versioning;
 
 namespace System.Xml
 {
-    // Represents a reader that provides fast, non-cached forward only stream access to XML data. 
+    // Represents a reader that provides fast, non-cached forward only stream access to XML data.
     [DebuggerDisplay("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : IDisposable
     {
         private static uint s_isTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
-        // 0 None, 
+        // 0 None,
         // 0 Element,
         // 0 Attribute,
         // 1 Text,
@@ -38,7 +38,7 @@ namespace System.Xml
         // 0 XmlDeclaration
 
         private static uint s_canReadContentAsBitmap = 0x1E1BC; // 01 1110 0001 1011 1100
-        // 0 None, 
+        // 0 None,
         // 0 Element,
         // 1 Attribute,
         // 1 Text,
@@ -58,7 +58,7 @@ namespace System.Xml
         // 0 XmlDeclaration
 
         private static uint s_hasValueBitmap = 0x2659C; // 10 0110 0101 1001 1100
-        // 0 None, 
+        // 0 None,
         // 0 Element,
         // 1 Attribute,
         // 1 Text,
@@ -200,7 +200,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and returns the content as the most appropriate type (by default as string). Stops at start tags and end tags.
         public virtual object ReadContentAsObject()
         {
@@ -211,7 +211,7 @@ namespace System.Xml
             return InternalReadContentAsString();
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a boolean. Stops at start tags and end tags.
         public virtual bool ReadContentAsBoolean()
         {
@@ -229,7 +229,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a DateTime. Stops at start tags and end tags.
         public virtual DateTime ReadContentAsDateTime()
         {
@@ -247,7 +247,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a DateTimeOffset. Stops at start tags and end tags.
         public virtual DateTimeOffset ReadContentAsDateTimeOffset()
         {
@@ -265,7 +265,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a double. Stops at start tags and end tags.
         public virtual double ReadContentAsDouble()
         {
@@ -283,7 +283,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a float. Stops at start tags and end tags.
         public virtual float ReadContentAsFloat()
         {
@@ -301,7 +301,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a decimal. Stops at start tags and end tags.
         public virtual decimal ReadContentAsDecimal()
         {
@@ -319,7 +319,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to an int. Stops at start tags and end tags.
         public virtual int ReadContentAsInt()
         {
@@ -337,7 +337,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to a long. Stops at start tags and end tags.
         public virtual long ReadContentAsLong()
         {
@@ -355,7 +355,7 @@ namespace System.Xml
             }
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and returns the content as a string. Stops at start tags and end tags.
         public virtual string ReadContentAsString()
         {
@@ -366,7 +366,7 @@ namespace System.Xml
             return InternalReadContentAsString();
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to the requested type. Stops at start tags and end tags.
         public virtual object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
         {
@@ -447,7 +447,7 @@ namespace System.Xml
             return XmlConvert.ToDateTime(string.Empty, XmlDateTimeSerializationMode.RoundtripKind);
         }
 
-        // Checks local name and namespace of the current element and returns its content as a DateTime. 
+        // Checks local name and namespace of the current element and returns its content as a DateTime.
         // Moves to the node following the element's end tag.
         public virtual DateTime ReadElementContentAsDateTime(string localName, string namespaceURI)
         {
@@ -467,7 +467,7 @@ namespace System.Xml
             return XmlConvert.ToDouble(string.Empty);
         }
 
-        // Checks local name and namespace of the current element and returns its content as a double. 
+        // Checks local name and namespace of the current element and returns its content as a double.
         // Moves to the node following the element's end tag.
         public virtual double ReadElementContentAsDouble(string localName, string namespaceURI)
         {
@@ -487,7 +487,7 @@ namespace System.Xml
             return XmlConvert.ToSingle(string.Empty);
         }
 
-        // Checks local name and namespace of the current element and returns its content as a float. 
+        // Checks local name and namespace of the current element and returns its content as a float.
         // Moves to the node following the element's end tag.
         public virtual float ReadElementContentAsFloat(string localName, string namespaceURI)
         {
@@ -507,7 +507,7 @@ namespace System.Xml
             return XmlConvert.ToDecimal(string.Empty);
         }
 
-        // Checks local name and namespace of the current element and returns its content as a decimal. 
+        // Checks local name and namespace of the current element and returns its content as a decimal.
         // Moves to the node following the element's end tag.
         public virtual decimal ReadElementContentAsDecimal(string localName, string namespaceURI)
         {
@@ -527,7 +527,7 @@ namespace System.Xml
             return XmlConvert.ToInt32(string.Empty);
         }
 
-        // Checks local name and namespace of the current element and returns its content as an int. 
+        // Checks local name and namespace of the current element and returns its content as an int.
         // Moves to the node following the element's end tag.
         public virtual int ReadElementContentAsInt(string localName, string namespaceURI)
         {
@@ -547,7 +547,7 @@ namespace System.Xml
             return XmlConvert.ToInt64(string.Empty);
         }
 
-        // Checks local name and namespace of the current element and returns its content as a long. 
+        // Checks local name and namespace of the current element and returns its content as a long.
         // Moves to the node following the element's end tag.
         public virtual long ReadElementContentAsLong(string localName, string namespaceURI)
         {
@@ -567,7 +567,7 @@ namespace System.Xml
             return string.Empty;
         }
 
-        // Checks local name and namespace of the current element and returns its content as a string. 
+        // Checks local name and namespace of the current element and returns its content as a string.
         // Moves to the node following the element's end tag.
         public virtual string ReadElementContentAsString(string localName, string namespaceURI)
         {
@@ -587,7 +587,7 @@ namespace System.Xml
             return (returnType == typeof(string)) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver);
         }
 
-        // Checks local name and namespace of the current element and returns its content as the requested type. 
+        // Checks local name and namespace of the current element and returns its content as the requested type.
         // Moves to the node following the element's end tag.
         public virtual object ReadElementContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver, string localName, string namespaceURI)
         {
@@ -758,7 +758,7 @@ namespace System.Xml
             }
         }
 
-        // Returns a chunk of the value of the current node. Call this method in a loop to get all the data. 
+        // Returns a chunk of the value of the current node. Call this method in a loop to get all the data.
         // Use this method to get a streaming access to the value of the current node.
         public virtual int ReadValueChunk(char[] buffer, int index, int count)
         {
@@ -803,7 +803,7 @@ namespace System.Xml
         }
 
         // Checks whether the current node is a content (non-whitespace text, CDATA, Element, EndElement, EntityReference
-        // or EndEntity) node. If the node is not a content node, then the method skips ahead to the next content node or 
+        // or EndEntity) node. If the node is not a content node, then the method skips ahead to the next content node or
         // end of file. Skips over nodes of type ProcessingInstruction, DocumentType, Comment, Whitespace and SignificantWhitespace.
         public virtual XmlNodeType MoveToContent()
         {
@@ -930,7 +930,7 @@ namespace System.Xml
             return result;
         }
 
-        // Checks that the LocalName and NamespaceURI properties of the element found matches the given strings 
+        // Checks that the LocalName and NamespaceURI properties of the element found matches the given strings
         // before reading a text-only element.
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual string ReadElementString(string localname, string ns)
@@ -1967,4 +1967,3 @@ namespace System.Xml
         }
     }
 }
-

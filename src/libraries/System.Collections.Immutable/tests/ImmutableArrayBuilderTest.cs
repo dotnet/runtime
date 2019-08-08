@@ -465,7 +465,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, array[0]);
             Assert.Equal(1, array[1]);
             Assert.Equal(2, array[2]);
-            
+
             builder[1] = 5;
             Assert.Equal(5, builder[1]);
             Assert.Equal(1, array[1]);

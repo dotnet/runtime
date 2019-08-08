@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
             // Make sure not to delete a key that we want to keep in the key container or an ephemeral key
             if (!_fPersistKeyInCsp && 0 == (_flags & (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
             {
-                // Delete the key container. 
+                // Delete the key container.
 
                 uint flags = (_flags & (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                 SafeProvHandle hIgnoredProv;

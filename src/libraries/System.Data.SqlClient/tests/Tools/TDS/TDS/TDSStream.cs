@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -119,7 +119,7 @@ namespace Microsoft.SqlServer.TDS
         }
 
         /// <summary>
-        /// Call back function before calling InnerStream.Write 
+        /// Call back function before calling InnerStream.Write
         /// the func should return actual packet length to send
         /// </summary>
         public Func<byte[], int, int, ushort> PreWriteCallBack { get; set; }
@@ -483,10 +483,10 @@ namespace Microsoft.SqlServer.TDS
                 // store the OutgoingPacketHeader.Length, it could be updated in PreWriteCallBack (for Fuzz test)
                 ushort outgoingPacketHeader_Length = OutgoingPacketHeader.Length;
 
-                // PreWrite call before packet writing 
+                // PreWrite call before packet writing
                 if (PreWriteCallBack != null)
                 {
-                    // By calling PreWriteCallBack, 
+                    // By calling PreWriteCallBack,
                     // The length value in OutgoingPacketHeader (i.e. OutgoingPacketHeader.Length) could be fuzzed
                     // The actual written length of the packet (i.e. outgoingPacketHeader_Length) could be fuzzed
                     outgoingPacketHeader_Length = PreWriteCallBack(_outgoingPacket, 0, OutgoingPacketHeader.Length);

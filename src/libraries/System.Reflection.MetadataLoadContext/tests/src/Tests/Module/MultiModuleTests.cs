@@ -255,7 +255,7 @@ namespace System.Reflection.Tests
                 Assert.NotNull(winner);
                 Assert.Equal(winner, m1);
 
-                // Compat quirk: Why does the second Assembly.LoadModule() call not return the module that actually won the race 
+                // Compat quirk: Why does the second Assembly.LoadModule() call not return the module that actually won the race
                 // like the LoadAssemblyFrom() apis do?
                 Assert.NotEqual(m1, m2);
             }

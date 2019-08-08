@@ -442,7 +442,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
             }
-            
+
             return false;
         }
 

@@ -10,7 +10,7 @@
 // Contains tests for ensuring thread safety of Range Partitioner:
 //  - For different overload of Range Partitioner, calling from multiple threads
 //    will not results in any exception, and will do the partition correctly
-// 
+//
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Concurrent;

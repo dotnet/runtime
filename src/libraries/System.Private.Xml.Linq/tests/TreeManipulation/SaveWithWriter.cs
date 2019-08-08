@@ -75,7 +75,7 @@ namespace XLinqTests
         public Encoding[] GetEncodings()
         {
             Encoding[] encodings = { Encoding.UTF8
-                //Encoding.Unicode, 
+                //Encoding.Unicode,
                 //Encoding.BigEndianUnicode,
             };
 
@@ -139,7 +139,7 @@ namespace XLinqTests
         public void writer_20()
         {
             var doc = new XDocument(new XElement("PurchaseOrder"));
-            //save with TextWriter              
+            //save with TextWriter
             try
             {
                 doc.Save((TextWriter)null);
@@ -188,7 +188,7 @@ namespace XLinqTests
                 {
                 }
             }
-            //save with XmlWriter             
+            //save with XmlWriter
             try
             {
                 doc.Save((XmlWriter)null);
@@ -211,7 +211,7 @@ namespace XLinqTests
         public void writer_21()
         {
             var doc = new XElement(new XElement("PurchaseOrder"));
-            //save with TextWriter              
+            //save with TextWriter
             try
             {
                 doc.Save((TextWriter)null);
@@ -238,7 +238,7 @@ namespace XLinqTests
             {
             }
 
-            //save with XmlWriter             
+            //save with XmlWriter
             try
             {
                 doc.Save((XmlWriter)null);
@@ -307,8 +307,8 @@ namespace XLinqTests
         #endregion
 
         //
-        // helpers 
-        //       
+        // helpers
+        //
 
         #region Methods
 
@@ -350,9 +350,9 @@ namespace XLinqTests
             ws.ConformanceLevel = conformanceLevel;
 
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(GenerateTestFileName(count++)));
-            xmlWriters.Add(new CoreXml.Test.XLinq.CustomWriter(tw, ws)); // CustomWriter                  
-            xmlWriters.Add(XmlWriter.Create(FilePathUtil.getStream(GenerateTestFileName(count++)), s)); // Factory XmlWriter       
-            xmlWriters.Add(XmlWriter.Create(FilePathUtil.getStream(GenerateTestFileName(count++)), ws)); // Factory Writer   
+            xmlWriters.Add(new CoreXml.Test.XLinq.CustomWriter(tw, ws)); // CustomWriter
+            xmlWriters.Add(XmlWriter.Create(FilePathUtil.getStream(GenerateTestFileName(count++)), s)); // Factory XmlWriter
+            xmlWriters.Add(XmlWriter.Create(FilePathUtil.getStream(GenerateTestFileName(count++)), ws)); // Factory Writer
 
             return xmlWriters;
         }

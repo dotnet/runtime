@@ -369,4 +369,3 @@ namespace System.Buffers.Text.Tests
         }
     }
 }
-

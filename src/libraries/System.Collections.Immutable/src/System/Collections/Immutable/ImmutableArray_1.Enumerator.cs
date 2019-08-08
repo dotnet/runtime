@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         public struct Enumerator
         {
-            /// <summary> 
+            /// <summary>
             /// The array being enumerated.
             /// </summary>
             private readonly T[] _array;

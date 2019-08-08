@@ -154,7 +154,7 @@ namespace System.Xml
             return false;
         }
 
-        //the function is only called for XPathNodeList enumerate nodes and 
+        //the function is only called for XPathNodeList enumerate nodes and
         // shouldn't be promoted to frequently use because it will cause foliation
         XmlNode IHasXmlNode.GetNode() => _curNode.Node;
 

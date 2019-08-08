@@ -9,7 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class EventBuilderSetRaiseMethod
     {
         public delegate void TestEventHandler(object sender, object arg);
-        
+
         [Fact]
         public void SetRaiseMethod_AbstractMethod_Twice()
         {

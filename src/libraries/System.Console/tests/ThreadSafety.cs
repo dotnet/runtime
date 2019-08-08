@@ -70,7 +70,7 @@ public class ThreadSafety
                             Console.SetOut(sw);
                         });
                     }
-                        
+
                 }
             }
         }

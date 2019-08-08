@@ -11,7 +11,7 @@ namespace System.Reflection
     {
         public static MethodInfo GetRuntimeMethod(this Type type, string name, Type[] parameters)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -19,4 +19,3 @@ namespace System.Reflection
         }
     }
 }
-

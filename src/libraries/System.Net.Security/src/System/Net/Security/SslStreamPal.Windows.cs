@@ -215,7 +215,7 @@ namespace System.Net.Security
 
             // Copy the input into the output buffer to prepare for SCHANNEL's expectations
             input.Span.CopyTo(new Span<byte>(output, headerSize, input.Length));
-            
+
             const int NumSecBuffers = 4; // header + data + trailer + empty
             var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
             var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);

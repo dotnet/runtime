@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
 {
     /// <summary>
     /// The operator type for Where statements. This operator filters out elements that
-    /// don't match a filter function (supplied at instantiation time). 
+    /// don't match a filter function (supplied at instantiation time).
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     internal sealed class WhereQueryOperator<TInputOutput> : UnaryQueryOperator<TInputOutput, TInputOutput>

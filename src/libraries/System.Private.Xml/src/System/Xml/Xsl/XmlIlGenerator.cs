@@ -68,7 +68,7 @@ namespace System.Xml.Xsl
         /// Given the logical query plan (QilExpression) generate a physical query plan (MSIL) that can be executed.
         /// </summary>
         // SxS Note: The way the trace file names are created (hardcoded) is NOT SxS safe. However the files are
-        // created only for internal tracing purposes. In addition XmlILTrace class is not compiled into retail 
+        // created only for internal tracing purposes. In addition XmlILTrace class is not compiled into retail
         // builds. As a result it is fine to suppress the FxCop SxS warning.
         public XmlILCommand Generate(QilExpression query, TypeBuilder typeBldr)
         {

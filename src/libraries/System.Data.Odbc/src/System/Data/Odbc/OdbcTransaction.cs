@@ -131,7 +131,7 @@ namespace System.Data.Odbc
                     }
                     catch (Exception e)
                     {
-                        // 
+                        //
                         if (!ADP.IsCatchableExceptionType(e))
                         {
                             throw;
@@ -180,4 +180,3 @@ namespace System.Data.Odbc
         }
     }
 }
-

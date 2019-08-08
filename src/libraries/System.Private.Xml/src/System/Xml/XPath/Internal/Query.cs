@@ -102,7 +102,7 @@ namespace MS.Internal.Xml.XPath
             int l = 0;
             int r = buffer.Count;
 
-            // In most cases nodes are already sorted. 
+            // In most cases nodes are already sorted.
             // This means that nav often will be equal or after then last item in the buffer
             // So let's check this first.
             if (r != 0)

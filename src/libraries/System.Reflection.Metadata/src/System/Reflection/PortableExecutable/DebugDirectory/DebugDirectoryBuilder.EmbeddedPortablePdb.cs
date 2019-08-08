@@ -34,7 +34,7 @@ namespace System.Reflection.PortableExecutable
             int dataSize = WriteEmbeddedPortablePdbData(_dataBuilder, debugMetadata);
 
             AddEntry(
-                type: DebugDirectoryEntryType.EmbeddedPortablePdb, 
+                type: DebugDirectoryEntryType.EmbeddedPortablePdb,
                 version: PortablePdbVersions.DebugDirectoryEmbeddedVersion(portablePdbVersion),
                 stamp: 0,
                 dataSize);

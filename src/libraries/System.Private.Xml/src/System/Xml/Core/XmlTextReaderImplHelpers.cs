@@ -702,9 +702,9 @@ namespace System.Xml
             }
         }
 
-        // 
+        //
         // DtdDefaultAttributeInfoToNodeDataComparer
-        // 
+        //
         // Compares IDtdDefaultAttributeInfo to NodeData
         private class DtdDefaultAttributeInfoToNodeDataComparer : IComparer<object>
         {

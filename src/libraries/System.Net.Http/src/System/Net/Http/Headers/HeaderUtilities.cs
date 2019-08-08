@@ -39,7 +39,7 @@ namespace System.Net.Http.Headers
                 // Note that even if we check the value here, we can't prevent a user from adding an invalid quality
                 // value using Parameters.Add(). Even if we would prevent the user from adding an invalid value
                 // using Parameters.Add() he could always add invalid values using HttpHeaders.AddWithoutValidation().
-                // So this check is really for convenience to show users that they're trying to add an invalid 
+                // So this check is really for convenience to show users that they're trying to add an invalid
                 // value.
                 if ((value < 0) || (value > 1))
                 {
@@ -144,7 +144,7 @@ namespace System.Net.Http.Headers
                 {
                     return qualityValue;
                 }
-                // If the stored value is an invalid quality value, just return null and log a warning. 
+                // If the stored value is an invalid quality value, just return null and log a warning.
                 if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_invalid_quality, qualityParameter.Value));
             }
             return null;
@@ -381,7 +381,7 @@ namespace System.Net.Http.Headers
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)
         {
-            // Appends all headers as string similar to: 
+            // Appends all headers as string similar to:
             // {
             //    HeaderName1: Value1
             //    HeaderName1: Value2

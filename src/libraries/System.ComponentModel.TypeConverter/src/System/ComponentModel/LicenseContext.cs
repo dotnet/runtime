@@ -17,7 +17,7 @@ namespace System.ComponentModel
         public virtual LicenseUsageMode UsageMode => LicenseUsageMode.Runtime;
 
         /// <summary>
-        /// When overridden in a derived class, gets a saved license 
+        /// When overridden in a derived class, gets a saved license
         /// key for the specified type, from the specified resource assembly.
         /// </summary>
         public virtual string GetSavedLicenseKey(Type type, Assembly resourceAssembly) => null;

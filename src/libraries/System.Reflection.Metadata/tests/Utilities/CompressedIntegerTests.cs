@@ -32,7 +32,7 @@ namespace System.Reflection.Metadata.Tests
         public void CompressUnsignedIntegersFromSpecExamples()
         {
             // These examples are straight from the CLI spec.
-            // Test that our compression routine (written below for test purposes) encodes them the same way. 
+            // Test that our compression routine (written below for test purposes) encodes them the same way.
 
             Assert.Equal(CompressUnsignedInteger(0x03), new byte[] { 0x03 });
             Assert.Equal(CompressUnsignedInteger(0x7F), new byte[] { 0x7f });
@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata.Tests
         public void CompressSignedIntegersFromSpecExamples()
         {
             // These examples are straight from the CLI spec.
-            // Test that our compression routine (written below for test purposes) encodes them the same way. 
+            // Test that our compression routine (written below for test purposes) encodes them the same way.
             Assert.Equal(CompressSignedInteger(3), new byte[] { 0x06 });
             Assert.Equal(CompressSignedInteger(-3), new byte[] { 0x7b });
             Assert.Equal(CompressSignedInteger(64), new byte[] { 0x80, 0x80 });
@@ -186,7 +186,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         // NOTE: The compression routines below can be optimized, but please don't do that.
-        // The whole idea is to follow the verbal descriptions of the algorithms in 
+        // The whole idea is to follow the verbal descriptions of the algorithms in
         // the spec as closely as possible.
 
         private byte[] CompressUnsignedInteger(int value)
@@ -253,7 +253,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.True(value < (1 << 7));
                     return new byte[]
                     {
-                        // 1 byte encoding: bit 7 clear, 
+                        // 1 byte encoding: bit 7 clear,
                         // 7-bit value in bits 0-6
                         (byte)value
                     };
@@ -262,7 +262,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.True(value < (1 << 14));
                     return new byte[]
                     {
-                        // 2 byte encoding: bit 15 set, bit 14 clear, 
+                        // 2 byte encoding: bit 15 set, bit 14 clear,
                         // 14-bit value stored big-endian in bits 0-13
                         (byte)(0x80 | ((value >> 8) & 0x3f)),
                         (byte)(       ((value >> 0) & 0xff)),

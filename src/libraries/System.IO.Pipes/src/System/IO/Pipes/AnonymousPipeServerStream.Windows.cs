@@ -59,10 +59,10 @@ namespace System.IO.Pipes
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
-            // Duplicate the server handle to make it not inheritable.  Note: We need to do this so that the child 
+            // Duplicate the server handle to make it not inheritable.  Note: We need to do this so that the child
             // process doesn't end up getting another copy of the server handle.  If it were to get a copy, the
             // OS wouldn't be able to inform the child that the server has closed its handle because it will see
-            // that there is still one server handle that is open.  
+            // that there is still one server handle that is open.
             bSuccess = Interop.Kernel32.DuplicateHandle(Interop.Kernel32.GetCurrentProcess(), serverHandle, Interop.Kernel32.GetCurrentProcess(),
                 out newServerHandle, 0, false, Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS);
 

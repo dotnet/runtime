@@ -10,7 +10,7 @@ namespace System.ComponentModel.Composition.Factories
 {
     partial class CatalogFactory
     {
-        // NOTE: Do not add any more behavior to this class, as ComposablePartCatalogTests.cs 
+        // NOTE: Do not add any more behavior to this class, as ComposablePartCatalogTests.cs
         // uses this to verify default behavior of the base class.
         private class DisposableComposablePartCatalog : ComposablePartCatalog
         {

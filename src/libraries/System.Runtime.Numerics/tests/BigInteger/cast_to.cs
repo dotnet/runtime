@@ -13,7 +13,7 @@ namespace System.Numerics.Tests
 
         private const int NumberOfRandomIterations = 10;
         private static Random s_random = new Random(100);
-        
+
         [Fact]
         public static void RunByteImplicitCastToBigIntegerTests()
         {
@@ -573,7 +573,7 @@ namespace System.Numerics.Tests
             {
                 Assert.Equal((short)(value - 1), (short)(bigInteger - 1));
             }
-    
+
             VerifyBigIntegerUsingIdentities(bigInteger, 0 == value);
         }
 

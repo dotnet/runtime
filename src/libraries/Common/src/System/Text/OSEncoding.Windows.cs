@@ -74,7 +74,7 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowBytes);
             }
-            
+
             fixed (char* pChars = s)
             fixed (byte *pBytes = &bytes[0])
             {
@@ -103,7 +103,7 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowBytes);
             }
-            
+
             fixed (char* pChars = chars)
             fixed (byte *pBytes = &bytes[0])
             {
@@ -212,9 +212,9 @@ namespace System.Text
         {
             switch (CodePage)
             {
-                case 932:   // Japanese (Shift-JIS) 
+                case 932:   // Japanese (Shift-JIS)
                 case 936:   // Chinese Simplified (GB2312)
-                case 949:   // Korean                                   
+                case 949:   // Korean
                 case 950:   // Chinese Traditional (Big5)
                 case 1361:  // Korean (Johab)
                 case 10001: // Japanese (Mac)

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -80,7 +80,7 @@ namespace System.Collections.Tests
         }
 
         /// <summary>
-        /// Used in IDictionary_NonGeneric_Values_ModifyingTheDictionaryUpdatesTheCollection and 
+        /// Used in IDictionary_NonGeneric_Values_ModifyingTheDictionaryUpdatesTheCollection and
         /// IDictionary_NonGeneric_Keys_ModifyingTheDictionaryUpdatesTheCollection.
         /// Some collections (e.g ConcurrentDictionary) use iterators in the Keys and Values properties,
         /// and do not respond to updates in the base collection.
@@ -88,7 +88,7 @@ namespace System.Collections.Tests
         protected virtual bool IDictionary_NonGeneric_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => true;
 
         /// <summary>
-        /// Used in IDictionary_NonGeneric_Values_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator and 
+        /// Used in IDictionary_NonGeneric_Values_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator and
         /// IDictionary_NonGeneric_Keys_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator.
         /// Some collections (e.g. ConcurrentDictionary) do not throw an InvalidOperationException
         /// when enumerating the Keys or Values property and the parent is modified.

@@ -315,10 +315,10 @@ namespace System.Xml.Tests
 
 
         /// <summary>
-        /// This function writes the test nodes on the factoryWriter. 
+        /// This function writes the test nodes on the factoryWriter.
         /// This will be called from Test(). If successful it will just return,
         /// else it will throw an appropriate XmlException. This function can use
-        /// the knowledge of the current writertype to write appropriate data if 
+        /// the knowledge of the current writertype to write appropriate data if
         /// really needed.
         /// </summary>
         protected void WriteNodes()

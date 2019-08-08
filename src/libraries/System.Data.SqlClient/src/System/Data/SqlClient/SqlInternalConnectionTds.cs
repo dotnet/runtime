@@ -134,21 +134,21 @@ namespace System.Data.SqlClient
             10928,
 
             // SQL Error Code: 10929
-            // Resource ID: %d. The %s minimum guarantee is %d, maximum limit is %d and the current usage for the database is %d. 
+            // Resource ID: %d. The %s minimum guarantee is %d, maximum limit is %d and the current usage for the database is %d.
             // However, the server is currently too busy to support requests greater than %d for this database.
             10929,
 
             // SQL Error Code: 40197
-            // You will receive this error, when the service is down due to software or hardware upgrades, hardware failures, 
-            // or any other failover problems. The error code (%d) embedded within the message of error 40197 provides 
-            // additional information about the kind of failure or failover that occurred. Some examples of the error codes are 
+            // You will receive this error, when the service is down due to software or hardware upgrades, hardware failures,
+            // or any other failover problems. The error code (%d) embedded within the message of error 40197 provides
+            // additional information about the kind of failure or failover that occurred. Some examples of the error codes are
             // embedded within the message of error 40197 are 40020, 40143, 40166, and 40540.
             40197,
 
             // The service is currently busy. Retry the request after 10 seconds. Incident ID: %ls. Code: %d.
             40501,
 
-            // Database '%.*ls' on server '%.*ls' is not currently available. Please retry the connection later. 
+            // Database '%.*ls' on server '%.*ls' is not currently available. Please retry the connection later.
             // If the problem persists, contact customer support, and provide them the session tracing ID of '%.*ls'.
             40613
         };
@@ -259,7 +259,7 @@ namespace System.Data.SqlClient
             internal void Release()
             {
                 if (_semaphore.CurrentCount == 0)
-                {  //  semaphore methods were used for locking                   
+                {  //  semaphore methods were used for locking
                     _semaphore.Release();
                 }
                 else
@@ -277,7 +277,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            // Necessary but not sufficient condition for thread to have lock (since semaphore may be obtained by any thread)            
+            // Necessary but not sufficient condition for thread to have lock (since semaphore may be obtained by any thread)
             internal bool ThreadMayHaveLock()
             {
                 return Monitor.IsEntered(_semaphore) || _semaphore.CurrentCount == 0;
@@ -409,7 +409,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        
+
         // Returns true if the Sql error is a transient.
         private bool IsTransientError(SqlException exc)
         {
@@ -658,15 +658,15 @@ namespace System.Data.SqlClient
         /// <remarks>
         /// <para>
         /// This method must be called while holding a lock on the SqlInternalConnection instance,
-        /// to ensure we don't accidentally execute after the transaction has completed on a different thread, 
+        /// to ensure we don't accidentally execute after the transaction has completed on a different thread,
         /// causing us to unwittingly execute in auto-commit mode.
         /// </para>
-        /// 
+        ///
         /// <para>
-        /// When using Explicit transaction unbinding, 
+        /// When using Explicit transaction unbinding,
         /// verify that the enlisted transaction is active and equal to the current ambient transaction.
         /// </para>
-        /// 
+        ///
         /// <para>
         /// When using Implicit transaction unbinding,
         /// verify that the enlisted transaction is active.
@@ -755,7 +755,7 @@ namespace System.Data.SqlClient
                 DoomThisConnection();
             }
 
-            // If we're deactivating with a delegated transaction, we 
+            // If we're deactivating with a delegated transaction, we
             // should not be cleaning up the parser just yet, that will
             // cause our transaction to be rolled back and the connection
             // to be reset.  We'll get called again once the delegated
@@ -954,17 +954,17 @@ namespace System.Data.SqlClient
 
                 // SQLBUDT #20010853 - Promote, Commit and Rollback requests for
                 // delegated transactions often happen while there is an open result
-                // set, so we need to handle them by using a different MARS session, 
+                // set, so we need to handle them by using a different MARS session,
                 // otherwise we'll write on the physical state objects while someone
-                // else is using it.  When we don't have MARS enabled, we need to 
-                // lock the physical state object to syncronize it's use at least 
-                // until we increment the open results count.  Once it's been 
+                // else is using it.  When we don't have MARS enabled, we need to
+                // lock the physical state object to syncronize it's use at least
+                // until we increment the open results count.  Once it's been
                 // incremented the delegated transaction requests will fail, so they
                 // won't stomp on anything.
-                // 
+                //
                 // We need to keep this lock through the duration of the TM reqeuest
                 // so that we won't hijack a different request's data stream and a
-                // different request won't hijack ours, so we have a lock here on 
+                // different request won't hijack ours, so we have a lock here on
                 // an object that the ExecTMReq will also lock, but since we're on
                 // the same thread, the lock is a no-op.
 
@@ -1122,7 +1122,7 @@ namespace System.Data.SqlClient
             }
 
             // VSTS#795621 - Ensure ServerName is Sent During TdsLogin To Enable Sql Azure Connectivity.
-            // Using server.UserServerName (versus ConnectionOptions.DataSource) since TdsLogin requires 
+            // Using server.UserServerName (versus ConnectionOptions.DataSource) since TdsLogin requires
             // serverName to always be non-null.
             login.serverName = server.UserServerName;
 
@@ -1300,11 +1300,11 @@ namespace System.Data.SqlClient
             // Only three ways out of this loop:
             //  1) Successfully connected
             //  2) Parser threw exception while main timer was expired
-            //  3) Parser threw logon failure-related exception 
+            //  3) Parser threw logon failure-related exception
             //  4) Parser threw exception in post-initial connect code,
             //      such as pre-login handshake or during actual logon. (parser state != Closed)
             //
-            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception 
+            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception
             //  back into the parser for the error cases.
             int attemptNumber = 0;
             TimeoutTimer intervalTimer = null;
@@ -1313,7 +1313,7 @@ namespace System.Data.SqlClient
                 if (connectionOptions.MultiSubnetFailover)
                 {
                     attemptNumber++;
-                    // Set timeout for this attempt, but don't exceed original timer                
+                    // Set timeout for this attempt, but don't exceed original timer
                     long nextTimeoutInterval = checked(timeoutUnitInterval * attemptNumber);
                     long milliseconds = timeout.MillisecondsRemaining;
                     if (nextTimeoutInterval > milliseconds)
@@ -1336,7 +1336,7 @@ namespace System.Data.SqlClient
                     AttemptOneLogin(serverInfo,
                                     newPassword,
                                     newSecurePassword,
-                                    !connectionOptions.MultiSubnetFailover,    // ignore timeout for SniOpen call unless MSF 
+                                    !connectionOptions.MultiSubnetFailover,    // ignore timeout for SniOpen call unless MSF
                                     connectionOptions.MultiSubnetFailover ? intervalTimer : timeout);
 
                     if (connectionOptions.MultiSubnetFailover && null != ServerProvidedFailOverPartner)
@@ -1425,7 +1425,7 @@ namespace System.Data.SqlClient
                     return; // LoginWithFailover successfully connected and handled entire connection setup
                 }
 
-                // Sleep for a bit to prevent clogging the network with requests, 
+                // Sleep for a bit to prevent clogging the network with requests,
                 //  then update sleep interval for next iteration (max 1 second interval)
                 Thread.Sleep(sleepInterval);
                 sleepInterval = (sleepInterval < 500) ? sleepInterval * 2 : 1000;
@@ -1434,7 +1434,7 @@ namespace System.Data.SqlClient
             if (null != PoolGroupProviderInfo)
             {
                 // We must wait for CompleteLogin to finish for to have the
-                // env change from the server to know its designated failover 
+                // env change from the server to know its designated failover
                 // partner; save this information in _currentFailoverPartner.
                 PoolGroupProviderInfo.FailoverCheck(this, false, connectionOptions, ServerProvidedFailOverPartner);
             }
@@ -1500,7 +1500,7 @@ namespace System.Data.SqlClient
             //  2) Parser threw exception while main timer was expired
             //  3) Parser threw logon failure-related exception (LOGON_FAILED, PASSWORD_EXPIRED, etc)
             //
-            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception 
+            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception
             //  back into the parser for the error cases.
             while (true)
             {
@@ -1555,7 +1555,7 @@ namespace System.Data.SqlClient
                     {
                         // We are in login with failover scenation and server sent routing information
                         // If it is read-only routing - we did not supply AppIntent=RO (it should be checked before)
-                        // If it is something else, not known yet (future server) - this client is not designed to support this.                    
+                        // If it is something else, not known yet (future server) - this client is not designed to support this.
                         // In any case, server should not have sent the routing info.
                         throw SQL.ROR_UnexpectedRoutingInfo(this);
                     }
@@ -1588,7 +1588,7 @@ namespace System.Data.SqlClient
 
                 // We only get here when we failed to connect, but are going to re-try
 
-                // After trying to connect to both servers fails, sleep for a bit to prevent clogging 
+                // After trying to connect to both servers fails, sleep for a bit to prevent clogging
                 //  the network with requests, then update sleep interval for next iteration (max 1 second interval)
                 if (1 == attemptNumber % 2)
                 {
@@ -1612,7 +1612,7 @@ namespace System.Data.SqlClient
             if (null != PoolGroupProviderInfo)
             {
                 // We must wait for CompleteLogin to finish for to have the
-                // env change from the server to know its designated failover 
+                // env change from the server to know its designated failover
                 // partner; save this information in _currentFailoverPartner.
                 PoolGroupProviderInfo.FailoverCheck(this, useFailoverHost, connectionOptions, ServerProvidedFailOverPartner);
             }
@@ -1640,7 +1640,7 @@ namespace System.Data.SqlClient
                                 TimeoutTimer timeout,
                                 bool withFailover = false)
         {
-            _routingInfo = null; // forget routing information 
+            _routingInfo = null; // forget routing information
 
             _parser._physicalStateObj.SniContext = SniContext.Snix_Connect;
 
@@ -1812,7 +1812,7 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_PROMOTETRANSACTION:
-                    byte[] dtcToken = null; 
+                    byte[] dtcToken = null;
                     if (rec.newBinRented)
                     {
                         dtcToken = new byte[rec.newLength];
@@ -1834,7 +1834,7 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_SPRESETCONNECTIONACK:
-                    // connection is being reset 
+                    // connection is being reset
                     if (_currentSessionData != null)
                     {
                         _currentSessionData.Reset();
@@ -1980,7 +1980,7 @@ namespace System.Data.SqlClient
                     }
                 default:
                     {
-                        // Unknown feature ack 
+                        // Unknown feature ack
                         throw SQL.ParsingError();
                     }
             }
@@ -2027,7 +2027,7 @@ namespace System.Data.SqlClient
         internal string ExtendedServerName { get; private set; } // the resolved servername with protocol
         internal string ResolvedServerName { get; private set; } // the resolved servername only
         internal string ResolvedDatabaseName { get; private set; } // name of target database after resolution
-        internal string UserProtocol { get; private set; } // the user specified protocol        
+        internal string UserProtocol { get; private set; } // the user specified protocol
 
         // The original user-supplied server name from the connection string.
         // If connection string has no Data Source, the value is set to string.Empty.
@@ -2047,7 +2047,7 @@ namespace System.Data.SqlClient
 
         internal readonly string PreRoutingServerName;
 
-        // Initialize server info from connection options, 
+        // Initialize server info from connection options,
         internal ServerInfo(SqlConnectionString userOptions) : this(userOptions, userOptions.DataSource) { }
 
         // Initialize server info from connection options, but override DataSource with given server name
@@ -2112,4 +2112,3 @@ namespace System.Data.SqlClient
         }
     }
 }
-

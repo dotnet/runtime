@@ -270,7 +270,7 @@ namespace System.Net.NetworkInformation
                 NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
                 ContextCallback callbackContext = isAvailable ? s_runHandlerAvailable : s_runHandlerNotAvailable;
 
-                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext> 
+                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext>
                     subscriber in availabilityChangedSubscribers)
                 {
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;

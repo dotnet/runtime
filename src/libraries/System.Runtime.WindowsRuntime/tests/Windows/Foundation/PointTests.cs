@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -30,7 +30,7 @@ namespace Windows.Foundation.Tests
         [InlineData(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity)]
         public void Ctor_X_Y(double x, double y, double expectedX, double expectedY)
         {
-            var point = new Point(x, y);    
+            var point = new Point(x, y);
             Assert.Equal(expectedX, point.X);
             Assert.Equal(expectedY, point.Y);
         }
@@ -85,7 +85,7 @@ namespace Windows.Foundation.Tests
                 Assert.Equal(expected, point.GetHashCode().Equals(other.GetHashCode()));
             }
         }
-        
+
         public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { new Point(1, 2), null, null, "1,2" };

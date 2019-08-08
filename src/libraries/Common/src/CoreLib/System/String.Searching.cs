@@ -165,7 +165,7 @@ namespace System
         // The character map is an array of 8 integers acting as map blocks. The 3 lsb
         // in each byte in the character is used to index into this map to get the
         // right block, the value of the remaining 5 msb are used as the bit position
-        // inside this block. 
+        // inside this block.
         private static unsafe void InitializeProbabilisticMap(uint* charMap, ReadOnlySpan<char> anyOf)
         {
             bool hasAscii = false;

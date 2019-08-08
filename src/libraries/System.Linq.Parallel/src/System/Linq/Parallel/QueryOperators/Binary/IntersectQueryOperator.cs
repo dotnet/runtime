@@ -15,7 +15,7 @@ using System.Threading;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// Operator that yields the intersection of two data sources. 
+    /// Operator that yields the intersection of two data sources.
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     internal sealed class IntersectQueryOperator<TInputOutput> :
@@ -42,7 +42,7 @@ namespace System.Linq.Parallel
         internal override QueryResults<TInputOutput> Open(
             QuerySettings settings, bool preferStriping)
         {
-            // We just open our child operators, left and then right.  Do not propagate the preferStriping value, but 
+            // We just open our child operators, left and then right.  Do not propagate the preferStriping value, but
             // instead explicitly set it to false. Regardless of whether the parent prefers striping or range
             // partitioning, the output will be hash-partitioned.
             QueryResults<TInputOutput> leftChildResults = LeftChild.Open(settings, false);

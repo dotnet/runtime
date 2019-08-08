@@ -66,7 +66,7 @@ internal static partial class Interop
 #if DEBUG
             static GssBuffer()
             {
-                // Verify managed size on both 32-bit and 64-bit matches the PAL_GssBuffer 
+                // Verify managed size on both 32-bit and 64-bit matches the PAL_GssBuffer
                 // native struct size, which is also padded on 32-bit.
                 Debug.Assert(Marshal.SizeOf<GssBuffer>() == 16);
             }

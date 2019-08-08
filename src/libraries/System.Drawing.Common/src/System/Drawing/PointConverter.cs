@@ -23,7 +23,7 @@ namespace System.Drawing {
     ///      class through the TypeDescriptor.
     /// </devdoc>
     public class PointConverter : TypeConverter {
-    
+
         /// <include file='doc\PointConverter.uex' path='docs/doc[@for="PointConverter.CanConvertFrom"]/*' />
         /// <devdoc>
         ///      Determines if this converter can convert an object in the given source
@@ -51,7 +51,7 @@ namespace System.Drawing {
         /// <include file='doc\PointConverter.uex' path='docs/doc[@for="PointConverter.ConvertFrom"]/*' />
         /// <devdoc>
         ///      Converts the given object to the converter's native type.
-        /// </devdoc>        
+        /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
 
@@ -60,17 +60,17 @@ namespace System.Drawing {
             if (strValue != null) {
 
                 string text = strValue.Trim();
-            
+
                 if (text.Length == 0) {
                     return null;
                 }
                 else {
-                
+
                     // Parse 2 integer values.
                     //
                     if (culture == null) {
                         culture = CultureInfo.CurrentCulture;
-                    }                    
+                    }
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(new char[] {sep});
                     int[] values = new int[tokens.Length];
@@ -79,7 +79,7 @@ namespace System.Drawing {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
                         values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
                     }
-                    
+
                     if (values.Length == 2) {
                         return new Point(values[0], values[1]);
                     }
@@ -90,7 +90,7 @@ namespace System.Drawing {
                     }
                 }
             }
-            
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -110,7 +110,7 @@ namespace System.Drawing {
             if(value is Point){
                 if (destinationType == typeof(string)) {
                     Point pt = (Point)value;
-                    
+
                     if (culture == null) {
                         culture = CultureInfo.CurrentCulture;
                     }
@@ -118,11 +118,11 @@ namespace System.Drawing {
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     string[] args = new string[2];
                     int nArg = 0;
-                    
+
                     // Note: ConvertToString will raise exception if value cannot be converted.
                     args[nArg++] = intConverter.ConvertToString(context, culture, pt.X);
                     args[nArg++] = intConverter.ConvertToString(context, culture, pt.Y);
-                    
+
                     return string.Join(sep, args);
                 }
                 if (destinationType == typeof(InstanceDescriptor)) {
@@ -134,7 +134,7 @@ namespace System.Drawing {
                     }
                 }
             }
-            
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
@@ -144,7 +144,7 @@ namespace System.Drawing {
         ///      for the object.  This is useful for objects that are immutable, but still
         ///      want to provide changable properties.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]        
+        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
             if( propertyValues == null ) {
@@ -154,15 +154,15 @@ namespace System.Drawing {
             object x = propertyValues["X"];
             object y = propertyValues["Y"];
 
-            if(x == null || y == null || 
+            if(x == null || y == null ||
                 !(x is int) || !(y is int)) {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
-    
-            
+
+
             return new Point((int)x,
                               (int)y);
-            
+
         }
 
         /// <include file='doc\PointConverter.uex' path='docs/doc[@for="PointConverter.GetCreateInstanceSupported"]/*' />
@@ -173,7 +173,7 @@ namespace System.Drawing {
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) {
             return true;
         }
-       
+
         /// <include file='doc\PointConverter.uex' path='docs/doc[@for="PointConverter.GetProperties"]/*' />
         /// <devdoc>
         ///      Retrieves the set of properties for this type.  By default, a type has
@@ -185,7 +185,7 @@ namespace System.Drawing {
             return props.Sort(new string[] {"X", "Y"});
         }
 
-       
+
         /// <include file='doc\PointConverter.uex' path='docs/doc[@for="PointConverter.GetPropertiesSupported"]/*' />
         /// <devdoc>
         ///      Determines if this object supports properties.  By default, this
@@ -194,7 +194,6 @@ namespace System.Drawing {
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) {
             return true;
         }
-        
+
     }
 }
-

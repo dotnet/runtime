@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(Marshal.GetLastWin32Error());
 
             // We use CertAddCertificateLinkToStore to keep a link to the original store, so any property changes get
-            // applied to the original store. This has a limit of 99 links per cert context however.          
+            // applied to the original store. This has a limit of 99 links per cert context however.
             foreach (X509Certificate2 x509 in collection)
             {
                 using (SafeCertContextHandle handle = DuplicateCertificateContext(x509))

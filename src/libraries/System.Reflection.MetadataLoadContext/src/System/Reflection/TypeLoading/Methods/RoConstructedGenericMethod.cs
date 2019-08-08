@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
         private readonly RoDefinitionMethod _genericMethodDefinition;
         private readonly RoType[] _genericMethodArguments;
 
-        internal RoConstructedGenericMethod(RoDefinitionMethod genericMethodDefinition, RoType[] genericMethodArguments) 
+        internal RoConstructedGenericMethod(RoDefinitionMethod genericMethodDefinition, RoType[] genericMethodArguments)
             : base(genericMethodDefinition.ReflectedType)
         {
             Debug.Assert(genericMethodDefinition != null);

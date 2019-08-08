@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Linq.Tests
 {
     public class ThenByDescendingTests : EnumerableBasedTests
-    {        
+    {
         [Fact]
         public void AscendingKeyThenDescendingKey()
         {

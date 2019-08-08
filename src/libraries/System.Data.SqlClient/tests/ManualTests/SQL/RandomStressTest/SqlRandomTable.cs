@@ -418,7 +418,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 if (isNull)
                 {
                     // columns such as sparse cannot have DEFAULT constraint, thus it is safe to ignore the value of the column when inserting new row
-                    // this also significantly reduces number of columns updated during insert, to prevent "The number of target 
+                    // this also significantly reduces number of columns updated during insert, to prevent "The number of target
                     // columns that are specified in an INSERT, UPDATE, or MERGE statement exceeds the maximum of 4096."
                     continue;
                 }
@@ -665,7 +665,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     if (ti.Type == SqlDbType.Timestamp)
                     {
-                        // while table can contain single timestamp column only, there is no way to insert values into it. 
+                        // while table can contain single timestamp column only, there is no way to insert values into it.
                         // thus, do not allow this
                         if (hasTimestamp || maxColumnsCount == 1)
                         {

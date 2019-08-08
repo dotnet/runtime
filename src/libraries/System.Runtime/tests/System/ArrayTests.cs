@@ -126,7 +126,7 @@ namespace System.Tests
 
             yield return new object[] { stringArray, 0, 7, "bb", null, 3 };
             yield return new object[] { stringArray, 0, 7, "ee", null, 6 };
-            
+
             yield return new object[] { stringArray, 3, 4, "bb", null, 3 };
             yield return new object[] { stringArray, 4, 3, "bb", null, -5 };
             yield return new object[] { stringArray, 4, 0, "bb", null, -5 };
@@ -320,7 +320,7 @@ namespace System.Tests
 
             yield return new object[] { new double[0], 0, 0, 0d, null, -1 };
         }
-        
+
         [Theory]
         // Workaround: Move these tests to BinarySearch_SZArray_TestData if/ when https://github.com/xunit/xunit/pull/965 is available
         [InlineData(new sbyte[] { 0 }, 0, 1, null, null, -1)]
@@ -378,7 +378,7 @@ namespace System.Tests
                     BinarySearch_Array(nonZeroLowerBoundArray, index + lowerBound, length, value, (IComparer)comparer, lowerBoundExpected);
                 }
             }
-            
+
             if (index == 0 && length == array.Length)
             {
                 if (isDefaultComparer)
@@ -863,7 +863,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null, 0, 0)); // Array is null
 
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], -1, 0)); // Index < 0
-            Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], 0, -1)); // Length < 0 
+            Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], 0, -1)); // Length < 0
 
             // Index + length > array.Length
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], 0, 11));
@@ -952,7 +952,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("converter", () => Array.ConvertAll<string, string>(new string[] { }, null));
         }
-        
+
         [Fact]
         public void ConvertAll_ConverterActionThrows_RethrowsException()
         {
@@ -991,7 +991,7 @@ namespace System.Tests
             // Int64[] -> Int64[]
             yield return new object[] { new long[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
             yield return new object[] { new long[] { 1, 2, 3 }, 1, new long[] { 1, 2, 3, 4, 5 }, 2, 2, new long[] { 1, 2, 2, 3, 5 } };
-            
+
             // UInt64[] -> UInt64[]
             yield return new object[] { new ulong[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
             yield return new object[] { new ulong[] { 1, 2, 3 }, 1, new ulong[] { 1, 2, 3, 4, 5 }, 2, 2, new ulong[] { 1, 2, 2, 3, 5 } };
@@ -1023,7 +1023,7 @@ namespace System.Tests
             // Char[] -> Char[]
             yield return new object[] { new char[] { '1', '2', '3' }, 0, new char[3], 0, 3, new char[] { '1', '2', '3' } };
             yield return new object[] { new char[] { '1', '2', '3' }, 1, new char[] { '1', '2', '3', '4', '5' }, 2, 2, new char[] { '1', '2', '2', '3', '5' } };
-            
+
             // Bool[] -> Bool[]
             yield return new object[] { new bool[] { false, true, false }, 0, new bool[3], 0, 3, new bool[] { false, true, false } };
             yield return new object[] { new bool[] { false, true, false }, 1, new bool[] { false, true, false, true, false }, 2, 2, new bool[] { false, true, true, false, false } };
@@ -1031,11 +1031,11 @@ namespace System.Tests
             // Single[] -> Single[]
             yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2.2f, 3 } };
             yield return new object[] { new float[] { 1, 2.2f, 3 }, 1, new float[] { 1, 2, 3.3f, 4, 5 }, 2, 2, new float[] { 1, 2, 2.2f, 3, 5 } };
-            
+
             // Double[] -> Double[]
             yield return new object[] { new double[] { 1, 2.2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2, 3 } };
             yield return new object[] { new double[] { 1, 2.2, 3 }, 1, new double[] { 1, 2, 3.3, 4, 5 }, 2, 2, new double[] { 1, 2, 2.2, 3, 5 } };
-            
+
             // IntPtr[] -> IntPtr[]
             yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 }, 0, new IntPtr[3], 0, 3, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 } };
             yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3 }, 1, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)4, (IntPtr)5 }, 2, 2, new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)2, (IntPtr)3, (IntPtr)5 } };
@@ -1080,7 +1080,7 @@ namespace System.Tests
 
             string[] stringArray = new string[] { "Red", "Green", null, "Blue" };
             yield return new object[] { stringArray, 1, stringArray, 2, 2, new string[] { "Red", "Green", "Green", null } };
-            
+
             // Struct[] -> Struct[]
             NonGenericStruct[] structArray1 = CreateStructArray();
             yield return new object[] { structArray1, 0, new NonGenericStruct[5], 0, 5, structArray1 };
@@ -1100,7 +1100,7 @@ namespace System.Tests
             // SubClass[] -> BaseClass[]
             yield return new object[] { new NonGenericSubClass1[10], 0, new NonGenericClass1[10], 0, 10, new NonGenericClass1[10] };
         }
-        
+
         public static IEnumerable<object[]> Copy_SZArray_PrimitiveWidening_TestData()
         {
             // Int64[] -> primitive[]
@@ -1127,7 +1127,7 @@ namespace System.Tests
             yield return new object[] { new short[] { 1, 2, 3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
             yield return new object[] { new short[] { 1, 2, 3 }, 0, new float[3], 0, 3, new float[] { 1, 2, 3 } };
             yield return new object[] { new short[] { 1, 2, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2, 3 } };
-            
+
             // UInt16[] -> primitive[]
             yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
             yield return new object[] { new ushort[] { 1, 2, 3 }, 0, new ulong[3], 0, 3, new ulong[] { 1, 2, 3 } };
@@ -1772,7 +1772,7 @@ namespace System.Tests
             CreateInstance(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
             CreateInstance(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
         }
-        
+
         [Theory]
         [InlineData(typeof(int), new int[] { 1 }, new int[] { 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 1, 2 }, new int[] { 0, 0 }, default(int))]
@@ -1916,7 +1916,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
         }
-        
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
         {
@@ -2009,7 +2009,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindIndex(new int[3], -1, i => i == 43));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindIndex(new int[3], -1, 0, i => i == 43));
 
-            // Start index > array.Length 
+            // Start index > array.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindIndex(new int[3], 4, i => i == 43));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindIndex(new int[3], 4, 0, i => i == 43));
 
@@ -2055,7 +2055,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], -1, i => i == 43));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], -1, 0, i => i == 43));
 
-            // Start index > array.Length 
+            // Start index > array.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], 4, i => i == 43));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], 4, 0, i => i == 43));
 
@@ -2462,7 +2462,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_Array_TestData))]
-        public static void IndexOf_Array(Array array, object value, int startIndex, int count, int expected) 
+        public static void IndexOf_Array(Array array, object value, int startIndex, int count, int expected)
         {
             if (startIndex + count == array.GetLowerBound(0) + array.Length)
             {
@@ -2837,7 +2837,7 @@ namespace System.Tests
             // Use LastIndexOf(Array, object, int, int)
             Assert.Equal(expected, Array.LastIndexOf(array, value, startIndex, count));
         }
-        
+
         [Fact]
         public static void LastIndexOf_NonInferrableEntries()
         {
@@ -3338,7 +3338,7 @@ namespace System.Tests
             yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, 0, 0, null, new char[] { (char)5, (char)6, (char)3, (char)6 } };
             yield return new object[] { new char[1], 0, 1, null, new char[1] };
             yield return new object[] { new char[0], 0, 0, null, new char[0] };
-        
+
             // Bool
             yield return new object[] { new bool[] { false, false, true, true }, 0, 4, null, new bool[] { false, false, true, true } };
             yield return new object[] { new bool[] { true, false, true, false }, 0, 4, null, new bool[] { false, false, true, true } };
@@ -3369,7 +3369,7 @@ namespace System.Tests
             // IntPtr
             yield return new object[] { new IntPtr[1], 0, 0, null, new IntPtr[1] };
             yield return new object[] { new IntPtr[0], 0, 0, null, new IntPtr[0] };
-    
+
             // UIntPtr
             yield return new object[] { new UIntPtr[1], 0, 0, null, new UIntPtr[1] };
             yield return new object[] { new UIntPtr[0], 0, 0, null, new UIntPtr[0] };
@@ -3504,7 +3504,7 @@ namespace System.Tests
             Assert.Throws<InvalidOperationException>(() => Array.Sort(array, (IComparer<T>)null));
             Assert.Throws<InvalidOperationException>(() => Array.Sort(array, 0, array.Length));
             Assert.Throws<InvalidOperationException>(() => Array.Sort(array, 0, array.Length, (IComparer<T>)null));
-            
+
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array));
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array, (IComparer)null));
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array, 0, array.Length));
@@ -3714,7 +3714,7 @@ namespace System.Tests
             yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 }, 0, 0, null, new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 } };
             yield return new object[] { new char[1], new char[1], 0, 1, null, new char[1], new char[1] };
             yield return new object[] { new char[0], new char[0], 0, 0, null, new char[0], new char[0] };
-        
+
             // Bool
             yield return new object[] { new bool[] { false, false, true, true }, new bool[] { false, true, false, true }, 0, 4, null, new bool[] { false, false, true, true }, new bool[] { false, true, false, true } };
             yield return new object[] { new bool[] { true, false, true, false }, null, 0, 4, null, new bool[] { false, false, true, true }, null };
@@ -3745,7 +3745,7 @@ namespace System.Tests
             // IntPtr
             yield return new object[] { new IntPtr[1], new IntPtr[1], 0, 0, null, new IntPtr[1], new IntPtr[1] };
             yield return new object[] { new IntPtr[0], new IntPtr[0], 0, 0, null, new IntPtr[0], new IntPtr[0] };
-    
+
             // UIntPtr
             yield return new object[] { new UIntPtr[1], new UIntPtr[1], 0, 0, null, new UIntPtr[1], new UIntPtr[1] };
             yield return new object[] { new UIntPtr[0], new UIntPtr[0], 0, 0, null, new UIntPtr[0], new UIntPtr[0] };
@@ -3962,7 +3962,7 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, -1 })); // Indices[1] < 0
             Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].SetValue(1, new int[] { 1, 9 })); // Indices[1] > array.GetLength(1)
         }
-            
+
         public static IEnumerable<object[]> TrueForAll_TestData()
         {
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, (Predicate<int>)(i => i > 0), true };
@@ -4055,7 +4055,7 @@ namespace System.Tests
             Assert.Throws<NotSupportedException>(() => Array.LastIndexOf((Array)new int*[2], null));
             Assert.Equal(-1, Array.LastIndexOf((Array)new int*[0], null));
         }
-        
+
         [Fact]
         public static unsafe void Reverse_ArrayOfPointers_ThrowsNotSupportedException()
         {
@@ -4077,7 +4077,7 @@ namespace System.Tests
                 }
             }
         }
-        
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds)
         {
             Assert.Equal(elementType, array.GetType().GetElementType());
@@ -4094,7 +4094,7 @@ namespace System.Tests
                 Assert.Equal(lowerBounds[dimension], array.GetLowerBound(dimension));
                 Assert.Equal(lowerBounds[dimension] + lengths[dimension] - 1, array.GetUpperBound(dimension));
             }
-            
+
             Assert.Throws<IndexOutOfRangeException>(() => array.GetLength(-1)); // Dimension < 0
             Assert.Throws<IndexOutOfRangeException>(() => array.GetLength(array.Rank)); // Dimension >= array.Rank
 
@@ -4120,7 +4120,7 @@ namespace System.Tests
         {
             IList iList = array;
             Assert.Equal(array.Length, iList.Count);
-            
+
             Assert.Equal(array, iList.SyncRoot);
 
             Assert.False(iList.IsSynchronized);
@@ -4367,7 +4367,7 @@ namespace System.Tests
             Two = 2,
             Max = short.MaxValue
         }
-            
+
         public enum Int32Enum
         {
             Case1,
@@ -4378,4 +4378,3 @@ namespace System.Tests
         public enum Int64Enum : long { }
     }
 }
-

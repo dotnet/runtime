@@ -27,7 +27,7 @@ namespace System.Net.Sockets
 
         public static void Initialize()
         {
-            // Ensure that WSAStartup has been called once per process.  
+            // Ensure that WSAStartup has been called once per process.
             // The System.Net.NameResolution contract is responsible for the initialization.
             Dns.GetHostName();
         }
@@ -822,17 +822,17 @@ namespace System.Net.Sockets
                 Socket.SocketListToFileDescriptorSet(checkWrite, writefileDescriptorSet);
                 Span<IntPtr> errfileDescriptorSet = ShouldStackAlloc(checkError, ref leaseError, out tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
                 Socket.SocketListToFileDescriptorSet(checkError, errfileDescriptorSet);
-                
-                // This code used to erroneously pass a non-null timeval structure containing zeroes 
-                // to select() when the caller specified (-1) for the microseconds parameter.  That 
+
+                // This code used to erroneously pass a non-null timeval structure containing zeroes
+                // to select() when the caller specified (-1) for the microseconds parameter.  That
                 // caused select to actually have a *zero* timeout instead of an infinite timeout
                 // turning the operation into a non-blocking poll.
                 //
                 // Now we pass a null timeval struct when microseconds is (-1).
-                // 
-                // Negative microsecond values that weren't exactly (-1) were originally successfully 
-                // converted to a timeval struct containing unsigned non-zero integers.  This code 
-                // retains that behavior so that any app working around the original bug with, 
+                //
+                // Negative microsecond values that weren't exactly (-1) were originally successfully
+                // converted to a timeval struct containing unsigned non-zero integers.  This code
+                // retains that behavior so that any app working around the original bug with,
                 // for example, (-2) specified for microseconds, will continue to get the same behavior.
 
                 int socketCount;
@@ -974,10 +974,10 @@ namespace System.Net.Sockets
             }
         }
 
-        // This assumes preBuffer/postBuffer are pinned already 
+        // This assumes preBuffer/postBuffer are pinned already
 
         private static unsafe bool TransmitFileHelper(
-            SafeHandle socket, 
+            SafeHandle socket,
             SafeHandle fileHandle,
             NativeOverlapped* overlapped,
             byte[] preBuffer,
@@ -1013,11 +1013,11 @@ namespace System.Net.Sockets
             try
             {
                 bool success = TransmitFileHelper(
-                    handle, 
-                    fileStream?.SafeFileHandle, 
+                    handle,
+                    fileStream?.SafeFileHandle,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    preBuffer, 
-                    postBuffer, 
+                    preBuffer,
+                    postBuffer,
                     flags);
 
                 return asyncResult.ProcessOverlappedResult(success, 0);
@@ -1202,7 +1202,7 @@ namespace System.Net.Sockets
                 bool success = socket.DisconnectEx(
                     handle,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 
+                    (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0),
                     0);
 
                 return asyncResult.ProcessOverlappedResult(success, 0);

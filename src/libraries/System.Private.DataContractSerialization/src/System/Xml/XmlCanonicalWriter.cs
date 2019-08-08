@@ -198,7 +198,7 @@ namespace System.Xml
             _element.localNameLength = Encoding.UTF8.GetByteCount(localName);
             _elementWriter.WriteStartElement(prefix, localName);
 
-            // If we have a inclusivenamespace prefix list and the namespace declaration is in the 
+            // If we have a inclusivenamespace prefix list and the namespace declaration is in the
             // outer context, then Add it to the root element.
             if (isRootElement && (_inclusivePrefixes != null))
             {
@@ -247,7 +247,7 @@ namespace System.Xml
             _element.localNameLength = localNameLength;
             _elementWriter.WriteStartElement(prefixBuffer, prefixOffset, prefixLength, localNameBuffer, localNameOffset, localNameLength);
 
-            // If we have a inclusivenamespace prefix list and the namespace declaration is in the 
+            // If we have a inclusivenamespace prefix list and the namespace declaration is in the
             // outer context, then Add it to the root element.
             if (isRootElement && (_inclusivePrefixes != null))
             {
@@ -303,7 +303,7 @@ namespace System.Xml
                             // referred.
                             if (_xmlnsAttributes[j].referred)
                             {
-                                // This has been referred previously. So we don't have 
+                                // This has been referred previously. So we don't have
                                 // to output the namespace again.
                                 alreadyReferred = true;
                                 break;
@@ -311,7 +311,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            // The prefix is the same, but the namespace value has changed. So we have to 
+                            // The prefix is the same, but the namespace value has changed. So we have to
                             // output this namespace.
                             break;
                         }
@@ -746,7 +746,7 @@ namespace System.Xml
 
         private void AddXmlnsAttribute(ref XmlnsAttribute xmlnsAttribute)
         {
-            //            Console.WriteLine("{0}={1}", Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), 
+            //            Console.WriteLine("{0}={1}", Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength),
             //                                Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.nsOffset, xmlnsAttribute.nsLength));
 
             if (_xmlnsAttributes == null)
@@ -760,7 +760,7 @@ namespace System.Xml
                 _xmlnsAttributes = newXmlnsAttributes;
             }
 
-            // If the prefix is in the inclusive prefix list, then mark it as 
+            // If the prefix is in the inclusive prefix list, then mark it as
             // to be rendered. Depth 0 is outer context and those can be ignored
             // for now.
             if ((_depth > 0) && (_inclusivePrefixes != null))

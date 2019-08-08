@@ -167,7 +167,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             string data;
-            // Taiwanese calendar get listed as one of the optional zh-TW calendars only when having zh-TW UI 
+            // Taiwanese calendar get listed as one of the optional zh-TW calendars only when having zh-TW UI
             return CallGetCalendarInfoEx("zh-TW", CalendarId.TAIWAN, CAL_SCALNAME, out data);
         }
 

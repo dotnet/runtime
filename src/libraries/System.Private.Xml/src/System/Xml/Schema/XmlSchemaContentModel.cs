@@ -12,4 +12,3 @@ namespace System.Xml.Schema
         public abstract XmlSchemaContent Content { get; set; }
     }
 }
-

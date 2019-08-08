@@ -127,8 +127,3 @@ namespace System.Resources.ResourceWriterTests
     }
 
 }
-
-
-
-
-

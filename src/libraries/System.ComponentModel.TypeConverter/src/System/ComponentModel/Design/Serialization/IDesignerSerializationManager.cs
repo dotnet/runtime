@@ -23,15 +23,15 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// The Properties property provides a set of custom properties
         /// the serialization manager may surface. The set of properties
-        /// exposed here is defined by the implementor of 
-        /// IDesignerSerializationManager. 
+        /// exposed here is defined by the implementor of
+        /// IDesignerSerializationManager.
         /// </summary>
         PropertyDescriptorCollection Properties { get; }
 
         /// <summary>
         /// ResolveName event. This event
         /// is raised when GetName is called, but the name is not found
-        /// in the serialization manager's name table. It provides a 
+        /// in the serialization manager's name table. It provides a
         /// way for a serializer to demand-create an object so the serializer
         /// does not have to order object creation by dependency. This
         /// delegate is cleared immediately after serialization or deserialization
@@ -59,15 +59,15 @@ namespace System.ComponentModel.Design.Serialization
         event EventHandler SerializationComplete;
 
         /// <summary>
-        /// This method adds a custom serialization provider to the 
+        /// This method adds a custom serialization provider to the
         /// serialization manager. A custom serialization provider will
         /// get the opportunity to return a serializer for a data type
         /// before the serialization manager looks in the type's
-        /// metadata. 
+        /// metadata.
         /// </summary>
         void AddSerializationProvider(IDesignerSerializationProvider provider);
 
-        /// <summary>                
+        /// <summary>
         /// Creates an instance of the given type and adds it to a collection
         /// of named instances. Objects that implement IComponent will be
         /// added to the design time container if addToContainer is true.
@@ -107,14 +107,14 @@ namespace System.ComponentModel.Design.Serialization
         /// manager may implement a logging scheme to alert the caller
         /// to all non-fatal errors at once. If it doesn't, it should
         /// immediately throw in this method, which should abort
-        /// serialization. 
+        /// serialization.
         /// Serialization may continue after calling this function.
         /// </summary>
         void ReportError(object errorInformation);
 
         /// <summary>
         /// Provides a way to set the name of an existing object.
-        /// This is useful when it is necessary to create an 
+        /// This is useful when it is necessary to create an
         /// instance of an object without going through CreateInstance.
         /// An exception will be thrown if you try to rename an existing
         /// object or if you try to give a new object a name that
@@ -123,4 +123,3 @@ namespace System.ComponentModel.Design.Serialization
         void SetName(object instance, string name);
     }
 }
-

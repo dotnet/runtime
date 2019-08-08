@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,11 +14,11 @@ namespace System.Diagnostics.Tests
     //Complex types are not supported on EventSource for .NET 4.5
     public class DiagnosticSourceEventSourceBridgeTests
     {
-        // To avoid interactions between tests when they are run in parallel, we run all these tests in their 
-        // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvinient to debug the test.   
-        // By seting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful 
+        // To avoid interactions between tests when they are run in parallel, we run all these tests in their
+        // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvinient to debug the test.
+        // By seting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
         // in debugging.
-#if false    
+#if false
         class NullDispose : IDisposable
         {
             public void Dispose()
@@ -30,9 +30,9 @@ namespace System.Diagnostics.Tests
             a();
             return new NullDispose();
         }
-#endif 
+#endif
         /// <summary>
-        /// Tests the basic functionality of turning on specific EventSources and specifying 
+        /// Tests the basic functionality of turning on specific EventSources and specifying
         /// the events you want.
         /// </summary>
         [Fact]
@@ -45,15 +45,15 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // Turn on events with both implicit and explicit types You can have whitespace 
-                    // before and after each spec.  
+                    // Turn on events with both implicit and explicit types You can have whitespace
+                    // before and after each spec.
                     eventSourceListener.Enable(
                         "  TestSpecificEventsSource/TestEvent1:cls_Point_X=cls.Point.X;cls_Point_Y=cls.Point.Y\r\n" +
                         "  TestSpecificEventsSource/TestEvent2:cls_Url=cls.Url\r\n"
                         );
 
                     /***************************************************************************************/
-                    // Emit an event that matches the first pattern. 
+                    // Emit an event that matches the first pattern.
                     MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
@@ -70,11 +70,11 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.ResetEventCountAndLastEvent();
 
                     /***************************************************************************************/
-                    // Emit an event that matches the second pattern. 
+                    // Emit an event that matches the second pattern.
                     if (diagnosticSourceListener.IsEnabled("TestEvent2"))
                         diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
 
-                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                     Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
                     Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
                     Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
@@ -87,28 +87,28 @@ namespace System.Diagnostics.Tests
                     // Emit an event that does not match either pattern.  (thus will be filtered out)
                     if (diagnosticSourceListener.IsEnabled("TestEvent3"))
                         diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
-                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
 
                     /***************************************************************************************/
-                    // Emit an event from another diagnostic source with the same event name.  
-                    // It will be filtered out.  
+                    // Emit an event from another diagnostic source with the same event name.
+                    // It will be filtered out.
                     using (var diagnosticSourceListener2 = new DiagnosticListener("TestSpecificEventsSource2"))
                     {
                         if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
                             diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
                     }
-                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
 
-                    // Disable all the listener and insure that no more events come through.  
+                    // Disable all the listener and insure that no more events come through.
                     eventSourceListener.Disable();
 
                     diagnosticSourceListener.Write("TestEvent1", null);
                     diagnosticSourceListener.Write("TestEvent2", null);
 
-                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be received.  
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be received.
                 }
 
-                // Make sure that there are no Diagnostic Listeners left over.  
+                // Make sure that there are no Diagnostic Listeners left over.
                 DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
                 {
                     Assert.True(!listen.Name.StartsWith("BuildTestSource"));
@@ -117,7 +117,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Test that things work properly for Linux newline conventions. 
+        /// Test that things work properly for Linux newline conventions.
         /// </summary>
         [Fact]
         public void LinuxNewLineConventions()
@@ -129,15 +129,15 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // Turn on events with both implicit and explicit types You can have whitespace 
-                    // before and after each spec.   Use \n rather than \r\n 
+                    // Turn on events with both implicit and explicit types You can have whitespace
+                    // before and after each spec.   Use \n rather than \r\n
                     eventSourceListener.Enable(
                         "  LinuxNewLineConventionsSource/TestEvent1:-cls_Point_X=cls.Point.X\n" +
                         "  LinuxNewLineConventionsSource/TestEvent2:-cls_Url=cls.Url\n"
                         );
 
                     /***************************************************************************************/
-                    // Emit an event that matches the first pattern. 
+                    // Emit an event that matches the first pattern.
                     MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
@@ -150,11 +150,11 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.ResetEventCountAndLastEvent();
 
                     /***************************************************************************************/
-                    // Emit an event that matches the second pattern. 
+                    // Emit an event that matches the second pattern.
                     if (diagnosticSourceListener.IsEnabled("TestEvent2"))
                         diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
 
-                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                     Assert.Equal("LinuxNewLineConventionsSource", eventSourceListener.LastEvent.SourceName);
                     Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
                     Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
@@ -164,10 +164,10 @@ namespace System.Diagnostics.Tests
                     // Emit an event that does not match either pattern.  (thus will be filtered out)
                     if (diagnosticSourceListener.IsEnabled("TestEvent3"))
                         diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
-                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
                 }
 
-                // Make sure that there are no Diagnostic Listeners left over.  
+                // Make sure that there are no Diagnostic Listeners left over.
                 DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
                 {
                     Assert.True(!listen.Name.StartsWith("BuildTestSource"));
@@ -190,7 +190,7 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.Filter = (DiagnosticSourceEvent evnt) => evnt.SourceName.StartsWith("TestWildCardSourceName");
 
                     // Turn On Everything.  Note that because of concurrent testing, we may get other sources as well.
-                    // but we filter them out because we set eventSourceListener.Filter.   
+                    // but we filter them out because we set eventSourceListener.Filter.
                     eventSourceListener.Enable("");
 
                     Assert.True(diagnosticSourceListener1.IsEnabled("TestEvent1"));
@@ -240,7 +240,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests what happens when you wildcard event name (but not the source name) 
+        /// Tests what happens when you wildcard event name (but not the source name)
         /// </summary>
         [Fact]
         public void TestWildCardEventName()
@@ -252,7 +252,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // Turn on events with both implicit and explicit types 
+                    // Turn on events with both implicit and explicit types
                     eventSourceListener.Enable("TestWildCardEventNameSource");
 
                     /***************************************************************************************/
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.ResetEventCountAndLastEvent();
 
                     /***************************************************************************************/
-                    // Emit the same event, with a different set of implicit properties 
+                    // Emit the same event, with a different set of implicit properties
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", new { propStr2 = "hi2", cls = val });
 
@@ -312,14 +312,14 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.ResetEventCountAndLastEvent();
 
                     /***************************************************************************************/
-                    // Emit an event from another diagnostic source with the same event name.  
-                    // It will be filtered out.  
+                    // Emit an event from another diagnostic source with the same event name.
+                    // It will be filtered out.
                     using (var diagnosticSourceListener2 = new DiagnosticListener("TestWildCardEventNameSource2"))
                     {
                         if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
                             diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
                     }
-                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
                 }
             }).Dispose();
         }
@@ -327,7 +327,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test what happens when there are nulls passed in the event payloads
         /// Basically strings get turned into empty strings and other nulls are typically
-        /// ignored.  
+        /// ignored.
         /// </summary>
         [Fact]
         public void TestNulls()
@@ -339,11 +339,11 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // Turn on events with both implicit and explicit types 
+                    // Turn on events with both implicit and explicit types
                     eventSourceListener.Enable("TestNullsTestSource/TestEvent1:cls.Url;cls_Point_X=cls.Point.X");
 
                     /***************************************************************************************/
-                    // Emit a null arguments object. 
+                    // Emit a null arguments object.
 
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", null);
@@ -355,7 +355,7 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.ResetEventCountAndLastEvent();
 
                     /***************************************************************************************/
-                    // Emit an arguments object with nulls in it.   
+                    // Emit an arguments object with nulls in it.
 
                     MyClass val = null;
                     string strVal = null;
@@ -366,7 +366,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
                     Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
                     Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["cls"]);           // Tostring() on a null end up as an empty string. 
+                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["cls"]);           // Tostring() on a null end up as an empty string.
                     Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
                     Assert.Equal("", eventSourceListener.LastEvent.Arguments["propStrNull"]);   // null strings get turned into empty strings
                     eventSourceListener.ResetEventCountAndLastEvent();
@@ -407,8 +407,8 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests the feature that suppresses the implicit inclusion of serialable properties 
-        /// of the payload object.  
+        /// Tests the feature that suppresses the implicit inclusion of serialable properties
+        /// of the payload object.
         /// </summary>
         [Fact]
         public void TestNoImplicitTransforms()
@@ -420,11 +420,11 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // use the - prefix to suppress the implicit properties.  Thus you should only get propStr and Url.  
+                    // use the - prefix to suppress the implicit properties.  Thus you should only get propStr and Url.
                     eventSourceListener.Enable("TestNoImplicitTransformsSource/TestEvent1:-propStr;cls.Url");
 
                     /***************************************************************************************/
-                    // Emit an event that matches the first pattern. 
+                    // Emit an event that matches the first pattern.
                     MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val, propStr2 = "there" });
@@ -441,7 +441,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests what happens when wacky characters are used in property specs.  
+        /// Tests what happens when wacky characters are used in property specs.
         /// </summary>
         [Fact]
         public void TestBadProperties()
@@ -453,11 +453,11 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // This has a syntax error in the Url case, so it should be ignored.  
+                    // This has a syntax error in the Url case, so it should be ignored.
                     eventSourceListener.Enable("TestBadPropertiesSource/TestEvent1:cls.Ur-+l");
 
                     /***************************************************************************************/
-                    // Emit an event that matches the first pattern. 
+                    // Emit an event that matches the first pattern.
                     MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
                     if (diagnosticSourceListener.IsEnabled("TestEvent1"))
                         diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
@@ -474,7 +474,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        // Tests that messages about DiagnosticSourceEventSource make it out.  
+        // Tests that messages about DiagnosticSourceEventSource make it out.
         [Fact]
         public void TestMessages()
         {
@@ -485,7 +485,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
 
-                    // This is just to make debugging easier.  
+                    // This is just to make debugging easier.
                     var messages = new List<string>();
 
                     eventSourceListener.OtherEventWritten += delegate (EventWrittenEventArgs evnt)
@@ -497,7 +497,7 @@ namespace System.Diagnostics.Tests
                         }
                     };
 
-                    // This has a syntax error in the Url case, so it should be ignored.  
+                    // This has a syntax error in the Url case, so it should be ignored.
                     eventSourceListener.Enable("TestMessagesSource/TestEvent1:-cls.Url");
                     Assert.Equal(0, eventSourceListener.EventCount);
                     Assert.True(3 <= messages.Count);
@@ -506,7 +506,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests the feature to send the messages as EventSource Activities.  
+        /// Tests the feature to send the messages as EventSource Activities.
         /// </summary>
         [Fact]
         public void TestActivities()
@@ -545,7 +545,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
 
-                    // Send a normal event 
+                    // Send a normal event
                     diagnosticSourceListener.Write("TestEvent", new { propStr = "event" });
                     Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                     Assert.Equal("Event", eventSourceListener.LastEvent.EventSourceEventName);
@@ -579,7 +579,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests that keywords that define shortcuts work.    
+        /// Tests that keywords that define shortcuts work.
         /// </summary>
         [Fact]
         public void TestShortcutKeywords()
@@ -587,31 +587,31 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-                // These are look-alikes for the real ones.  
+                // These are look-alikes for the real ones.
                 using (var aspNetCoreSource = new DiagnosticListener("Microsoft.AspNetCore"))
                 using (var entityFrameworkCoreSource = new DiagnosticListener("Microsoft.EntityFrameworkCore"))
                 {
                     // Sadly we have a problem where if something else has turned on Microsoft-Diagnostics-DiagnosticSource then
-                    // its keywords are ORed with our and because the shortcuts require that IgnoreShortCutKeywords is OFF 
-                    // Something outside this test (the debugger seems to do this), will cause the test to fail.  
-                    // Currently we simply give up in that case (but it really is a deeper problem. 
+                    // its keywords are ORed with our and because the shortcuts require that IgnoreShortCutKeywords is OFF
+                    // Something outside this test (the debugger seems to do this), will cause the test to fail.
+                    // Currently we simply give up in that case (but it really is a deeper problem.
                     var IgnoreShortCutKeywords = (EventKeywords)0x0800;
                     foreach (var eventSource in EventSource.GetSources())
                     {
                         if (eventSource.Name == "Microsoft-Diagnostics-DiagnosticSource")
                         {
                             if (eventSource.IsEnabled(EventLevel.Informational, IgnoreShortCutKeywords))
-                                return; // Don't do the testing.  
+                                return; // Don't do the testing.
                         }
                     }
 
-                    // These are from DiagnosticSourceEventListener.  
+                    // These are from DiagnosticSourceEventListener.
                     var Messages = (EventKeywords)0x1;
                     var Events = (EventKeywords)0x2;
                     var AspNetCoreHosting = (EventKeywords)0x1000;
                     var EntityFrameworkCoreCommands = (EventKeywords)0x2000;
 
-                    // Turn on listener using just the keywords 
+                    // Turn on listener using just the keywords
                     eventSourceListener.Enable(null, Messages | Events | AspNetCoreHosting | EntityFrameworkCoreCommands);
 
                     Assert.Equal(0, eventSourceListener.EventCount);
@@ -631,7 +631,7 @@ namespace System.Diagnostics.Tests
                                 }
                             }
                         });
-                    // Check that the morphs work as expected.  
+                    // Check that the morphs work as expected.
                     Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                     Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
                     Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
@@ -645,7 +645,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("MyQuery", eventSourceListener.LastEvent.Arguments["QueryString"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
 
-                    // Start a SQL command 
+                    // Start a SQL command
                     entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.BeforeExecuteCommand",
                         new
                         {
@@ -669,7 +669,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("MyCommand", eventSourceListener.LastEvent.Arguments["CommandText"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
 
-                    // Stop the SQL command 
+                    // Stop the SQL command
                     entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.AfterExecuteCommand", null);
                     Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                     Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
@@ -677,7 +677,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("Microsoft.EntityFrameworkCore.AfterExecuteCommand", eventSourceListener.LastEvent.EventName);
                     eventSourceListener.ResetEventCountAndLastEvent();
 
-                    // Stop the ASP.NET request.  
+                    // Stop the ASP.NET request.
                     aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest",
                         new
                         {
@@ -737,10 +737,10 @@ namespace System.Diagnostics.Tests
     }
 
     /****************************************************************************/
-    // classes to make up data for the tests.  
+    // classes to make up data for the tests.
 
     /// <summary>
-    /// classes for test data. 
+    /// classes for test data.
     /// </summary>
     internal class MyClass
     {
@@ -749,7 +749,7 @@ namespace System.Diagnostics.Tests
     }
 
     /// <summary>
-    /// classes for test data. 
+    /// classes for test data.
     /// </summary>
     internal class MyPoint
     {
@@ -760,7 +760,7 @@ namespace System.Diagnostics.Tests
     /****************************************************************************/
     // Harness infrastructure
     /// <summary>
-    /// TestDiagnosticSourceEventListener installs a EventWritten callback that updates EventCount and LastEvent.  
+    /// TestDiagnosticSourceEventListener installs a EventWritten callback that updates EventCount and LastEvent.
     /// </summary>
     internal sealed class TestDiagnosticSourceEventListener : DiagnosticSourceEventListener
     {
@@ -772,7 +772,7 @@ namespace System.Diagnostics.Tests
         public int EventCount;
         public DiagnosticSourceEvent LastEvent;
 #if DEBUG
-        // Here just for debugging.  Lets you see the last 3 events that were sent.  
+        // Here just for debugging.  Lets you see the last 3 events that were sent.
         public DiagnosticSourceEvent SecondLast;
         public DiagnosticSourceEvent ThirdLast;
 #endif
@@ -791,11 +791,11 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// If present, will ignore events that don't cause this filter predicate to return true.  
+        /// If present, will ignore events that don't cause this filter predicate to return true.
         /// </summary>
         public Predicate<DiagnosticSourceEvent> Filter;
 
-        #region private 
+        #region private
         private void UpdateLastEvent(DiagnosticSourceEvent anEvent)
         {
             if (Filter != null && !Filter(anEvent))
@@ -813,7 +813,7 @@ namespace System.Diagnostics.Tests
     }
 
     /// <summary>
-    /// Represents a single DiagnosticSource event.  
+    /// Represents a single DiagnosticSource event.
     /// </summary>
     internal sealed class DiagnosticSourceEvent
     {
@@ -821,8 +821,8 @@ namespace System.Diagnostics.Tests
         public string EventName;
         public Dictionary<string, string> Arguments;
 
-        // Not typically important. 
-        public string EventSourceEventName;    // This is the name of the EventSourceEvent that carried the data.   Only important for activities.  
+        // Not typically important.
+        public string EventSourceEventName;    // This is the name of the EventSourceEvent that carried the data.   Only important for activities.
 
         public override string ToString()
         {
@@ -848,20 +848,20 @@ namespace System.Diagnostics.Tests
     /// <summary>
     /// A helper class that listens to Diagnostic sources and send events to the 'EventWritten'
     /// callback.   Standard use is to create the class set up the events of interested and
-    /// use 'Enable'.  .   
+    /// use 'Enable'.  .
     /// </summary>
     internal class DiagnosticSourceEventListener : EventListener
     {
         public DiagnosticSourceEventListener() { }
 
         /// <summary>
-        /// Will be called when a DiagnosticSource event is fired. 
+        /// Will be called when a DiagnosticSource event is fired.
         /// </summary>
         public new event Action<DiagnosticSourceEvent> EventWritten;
 
         /// <summary>
-        /// It is possible that there are other events besides those that are being forwarded from 
-        /// the DiagnosticSources.   These come here.   
+        /// It is possible that there are other events besides those that are being forwarded from
+        /// the DiagnosticSources.   These come here.
         /// </summary>
         public event Action<EventWrittenEventArgs> OtherEventWritten;
 
@@ -879,7 +879,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Cleans this class up.  Among other things disables the DiagnosticSources being listened to.  
+        /// Cleans this class up.  Among other things disables the DiagnosticSources being listened to.
         /// </summary>
         public override void Dispose()
         {
@@ -890,7 +890,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        #region private 
+        #region private
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             bool wroteEvent = false;

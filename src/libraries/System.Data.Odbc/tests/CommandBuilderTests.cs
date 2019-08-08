@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -50,7 +50,7 @@ namespace System.Data.Odbc.Tests
             Assert.Equal("'Te''st'", commandBuilder.QuoteIdentifier("Te'st", connection));
             Assert.Equal("Test", commandBuilder.UnquoteIdentifier("'Test'", connection));
             Assert.Equal("Te'st", commandBuilder.UnquoteIdentifier("'Te''st'", connection));
-            
+
             // Ensure we don't need active connection:
             Assert.Equal("'Test'", commandBuilder.QuoteIdentifier("Test", null));
             Assert.Equal("Test", commandBuilder.UnquoteIdentifier("'Test'", null));

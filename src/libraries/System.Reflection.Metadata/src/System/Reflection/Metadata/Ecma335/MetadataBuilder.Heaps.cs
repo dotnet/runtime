@@ -57,19 +57,19 @@ namespace System.Reflection.Metadata.Ecma335
         /// Creates a builder for metadata tables and heaps.
         /// </summary>
         /// <param name="userStringHeapStartOffset">
-        /// Start offset of the User String heap. 
+        /// Start offset of the User String heap.
         /// The cumulative size of User String heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
         /// </param>
         /// <param name="stringHeapStartOffset">
-        /// Start offset of the String heap. 
+        /// Start offset of the String heap.
         /// The cumulative size of String heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
         /// </param>
         /// <param name="blobHeapStartOffset">
-        /// Start offset of the Blob heap. 
+        /// Start offset of the Blob heap.
         /// The cumulative size of Blob heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
         /// </param>
         /// <param name="guidHeapStartOffset">
-        /// Start offset of the Guid heap. 
+        /// Start offset of the Guid heap.
         /// The cumulative size of Guid heaps of all previous EnC generations. Should be 0 unless the metadata is EnC delta metadata.
         /// </param>
         /// <exception cref="ImageFormatLimitationException">Offset is too big.</exception>
@@ -115,7 +115,7 @@ namespace System.Reflection.Metadata.Ecma335
             // Add zero-th entry to all heaps, even in EnC delta.
             // We don't want generation-relative handles to ever be IsNil.
             // In both full and delta metadata all nil heap handles should have zero value.
-            // There should be no blob handle that references the 0 byte added at the 
+            // There should be no blob handle that references the 0 byte added at the
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
 
@@ -134,7 +134,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Sets the capacity of the specified table. 
+        /// Sets the capacity of the specified table.
         /// </summary>
         /// <param name="heap">Heap index.</param>
         /// <param name="byteCount">Number of bytes.</param>
@@ -253,7 +253,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 return GetOrAddBlobUTF16(str);
             }
-            
+
             var builder = PooledBlobBuilder.GetInstance();
             builder.WriteConstant(value);
             var result = GetOrAddBlob(builder);
@@ -409,13 +409,13 @@ namespace System.Reflection.Metadata.Ecma335
 
         private GuidHandle GetNewGuidHandle()
         {
-            // Unlike #Blob, #String and #US streams delta #GUID stream is padded to the 
+            // Unlike #Blob, #String and #US streams delta #GUID stream is padded to the
             // size of the previous generation #GUID stream before new GUIDs are added.
-            // The first GUID added in a delta will thus have an index that equals the number 
+            // The first GUID added in a delta will thus have an index that equals the number
             // of GUIDs in all previous generations + 1.
 
-            // Metadata Spec: 
-            // The Guid heap is an array of GUIDs, each 16 bytes wide. 
+            // Metadata Spec:
+            // The Guid heap is an array of GUIDs, each 16 bytes wide.
             // Its first element is numbered 1, its second 2, and so on.
             return GuidHandle.FromIndex((_guidBuilder.Count >> 4) + 1);
         }
@@ -453,7 +453,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="length">The number of characters to reserve.</param>
         /// <returns>
         /// Handle to the reserved User String and a <see cref="Blob"/> representing the entire User String blob (including its length and terminal character).
-        /// 
+        ///
         /// Handle may be used in <see cref="InstructionEncoder.LoadString(UserStringHandle)"/>.
         /// Use <see cref="BlobWriter.WriteUserString(string)"/> to fill in the blob content.
         /// </returns>
@@ -505,7 +505,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             int offset = _userStringHeapStartOffset + _userStringBuilder.Count;
 
-            // Native metadata emitter allows strings to exceed the heap size limit as long 
+            // Native metadata emitter allows strings to exceed the heap size limit as long
             // as the index is within the limits (see https://github.com/dotnet/roslyn/issues/9852)
             if (offset >= UserStringHeapSizeLimit)
             {
@@ -541,7 +541,7 @@ namespace System.Reflection.Metadata.Ecma335
             foreach (KeyValuePair<string, StringHandle> entry in sorted)
             {
                 int position = stringHeapStartOffset + heapBuilder.Count;
-                
+
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
                 {
@@ -563,7 +563,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Sorts strings such that a string is followed immediately by all strings
-        /// that are a suffix of it.  
+        /// that are a suffix of it.
         /// </summary>
         private sealed class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
         {
@@ -605,9 +605,9 @@ namespace System.Reflection.Metadata.Ecma335
 
             var writer = new BlobWriter(builder.ReserveBytes(_blobHeapSize + alignment));
 
-            // Perf consideration: With large heap the following loop may cause a lot of cache misses 
-            // since the order of entries in _blobs dictionary depends on the hash of the array values, 
-            // which is not correlated to the heap index. If we observe such issue we should order 
+            // Perf consideration: With large heap the following loop may cause a lot of cache misses
+            // since the order of entries in _blobs dictionary depends on the hash of the array values,
+            // which is not correlated to the heap index. If we observe such issue we should order
             // the entries by heap position before running this loop.
 
             int startOffset = _blobHeapStartOffset;

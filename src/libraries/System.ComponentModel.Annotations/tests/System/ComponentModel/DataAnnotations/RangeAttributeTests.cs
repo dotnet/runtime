@@ -183,7 +183,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 Thread.CurrentThread.CurrentCulture = _original;
             }
-        }      
+        }
 
         [Theory]
         [MemberData(nameof(DotDecimalRanges))]
@@ -196,7 +196,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
                 Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(null));
 
-                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");               
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
 
                 RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
                 AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
@@ -644,7 +644,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
                 RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
                 AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
-  
+
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
 
                 Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(v));

@@ -19,7 +19,7 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
-            // GetLogicalDrives returns a bitmask starting from 
+            // GetLogicalDrives returns a bitmask starting from
             // position 0 "A" indicating whether a drive is present.
             // Loop over each bit, creating a string for each one
             // that is set.

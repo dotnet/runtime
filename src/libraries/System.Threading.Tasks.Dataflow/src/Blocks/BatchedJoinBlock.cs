@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Dataflow
             _target2 = new BatchedJoinBlockTarget<T2>(_sharedResources);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow
             _target3 = new BatchedJoinBlockTarget<T3>(_sharedResources);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -566,8 +566,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Debug.Assert(sharedResources != null, "Targets require a shared resources through which to communicate.");
 
-            // Store the shared resources, and register with it to let it know there's 
-            // another target. This is done in a non-thread-safe manner and must be done 
+            // Store the shared resources, and register with it to let it know there's
+            // another target. This is done in a non-thread-safe manner and must be done
             // during construction of the batched join instance.
             _sharedResources = sharedResources;
             sharedResources._remainingAliveTargets++;
@@ -726,7 +726,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 allTargetsDecliningAction();
 
                 // Don't accept any more messages.  We should already
-                // be doing this anyway through each individual target's declining flag, 
+                // be doing this anyway through each individual target's declining flag,
                 // so setting it to true is just a precaution and is also helpful
                 // when onceOnly is true.
                 _decliningPermanently = true;
@@ -749,7 +749,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// A lock used to synchronize all incoming messages on all targets. It protects all of the rest 
+        /// A lock used to synchronize all incoming messages on all targets. It protects all of the rest
         /// of the shared Resources's state and will be held while invoking the delegates.
         /// </summary>
         internal readonly object _incomingLock;

@@ -41,7 +41,7 @@ namespace System.ComponentModel.Tests
             yield return ConvertTest.Throws<ArgumentException>("&h4");
             yield return ConvertTest.Throws<ArgumentException>("&H4");
             yield return ConvertTest.Throws<ArgumentException>(" &H4 ");
-            
+
             foreach (ConvertTest test in base.ConvertFromTestData())
             {
                 yield return test;

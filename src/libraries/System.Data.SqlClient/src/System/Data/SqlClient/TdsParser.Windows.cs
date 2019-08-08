@@ -79,9 +79,9 @@ namespace System.Data.SqlClient
         {
             if (TdsParserStateObjectFactory.UseManagedSNI)
                 return;
-            // in the case where an async connection is made, encryption is used and Windows Authentication is used, 
-            // wait for SSL handshake to complete, so that the SSL context is fully negotiated before we try to use its 
-            // Channel Bindings as part of the Windows Authentication context build (SSL handshake must complete 
+            // in the case where an async connection is made, encryption is used and Windows Authentication is used,
+            // wait for SSL handshake to complete, so that the SSL context is fully negotiated before we try to use its
+            // Channel Bindings as part of the Windows Authentication context build (SSL handshake must complete
             // before calling SNISecGenClientContext).
             error = _physicalStateObj.WaitForSSLHandShakeToComplete();
             if (error != TdsEnums.SNI_SUCCESS)

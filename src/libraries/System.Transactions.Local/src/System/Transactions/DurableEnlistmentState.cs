@@ -35,7 +35,7 @@ namespace System.Transactions
             LazyInitializer.EnsureInitialized(ref s_durableEnlistmentEnded, ref s_classSyncObject, () => new DurableEnlistmentEnded());
     }
 
-    // Active state for a durable enlistment.  In this state the transaction can be aborted 
+    // Active state for a durable enlistment.  In this state the transaction can be aborted
     // asynchronously by calling abort.
     internal class DurableEnlistmentActive : DurableEnlistmentState
     {
@@ -288,7 +288,7 @@ namespace System.Transactions
 
         internal override void InternalAborted(InternalEnlistment enlistment)
         {
-            // From the Aborting state the transaction may tell the enlistment to abort.  At this point 
+            // From the Aborting state the transaction may tell the enlistment to abort.  At this point
             // it already knows.  Eat this message.
         }
 

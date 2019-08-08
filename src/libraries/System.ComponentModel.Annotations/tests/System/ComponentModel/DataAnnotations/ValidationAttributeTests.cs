@@ -135,7 +135,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute.ErrorMessageResourceType = null;
             Assert.Equal(expected, attribute.FormatErrorMessage("name"));
         }
-        
+
         [Theory]
         [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestProperty), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty")]
         [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestPropertyWithName), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty With Name <name>")]

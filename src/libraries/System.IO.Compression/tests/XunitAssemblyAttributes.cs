@@ -8,4 +8,3 @@ using Xunit;
 // Since that static field then ends up affecting how all instances do compression/decompression, we want
 // to avoid parallelism so that one test doesn't affect another.
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
-

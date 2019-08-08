@@ -188,7 +188,7 @@ namespace System.Drawing
         {
             Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Xor));
         }
-        
+
         public void Xor(GraphicsPath path)
         {
             if (path == null)
@@ -343,7 +343,7 @@ namespace System.Drawing
         }
 
         public bool IsVisible(float x, float y) => IsVisible(new PointF(x, y), null);
-        
+
         public bool IsVisible(PointF point) => IsVisible(point, null);
 
         public bool IsVisible(float x, float y, Graphics g) => IsVisible(new PointF(x, y), g);
@@ -407,7 +407,7 @@ namespace System.Drawing
 
             return isVisible != 0;
         }
- 
+
         public unsafe RectangleF[] GetRegionScans(Matrix matrix)
         {
             if (matrix == null)

@@ -41,7 +41,7 @@ namespace System.IO.Pipes
         /// <param name="handle">The handle.</param>
         private void InitializeAsyncHandle(SafePipeHandle handle)
         {
-            // If the handle is of async type, bind the handle to the ThreadPool so that we can use 
+            // If the handle is of async type, bind the handle to the ThreadPool so that we can use
             // the async operations (it's needed so that our native callbacks get called).
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
         }
@@ -97,8 +97,8 @@ namespace System.IO.Pipes
             // - On error, r==-1.
             // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
             // - On async requests that completed sequentially, r==0
-            // 
-            // You will NEVER RELIABLY be able to get the number of buffer read back from this call 
+            //
+            // You will NEVER RELIABLY be able to get the number of buffer read back from this call
             // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
             // ReadFile when using overlapped structures!  This is by design NT behavior.
             if (r == -1)
@@ -113,7 +113,7 @@ namespace System.IO.Pipes
 
                         unsafe
                         {
-                            // Clear the overlapped status bit for this special case. Failure to do so looks 
+                            // Clear the overlapped status bit for this special case. Failure to do so looks
                             // like we are freeing a pending overlapped.
                             completionSource.Overlapped->InternalLow = IntPtr.Zero;
                         }
@@ -158,15 +158,15 @@ namespace System.IO.Pipes
                 r = WriteFileNative(_handle, buffer.Span, completionSource.Overlapped, out errorCode);
             }
 
-            // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative 
+            // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative
             // wrapper returns -1. This will return the following:
             // - On error, r==-1.
             // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
             // - On async requests that completed sequentially, r==0
-            // 
-            // You will NEVER RELIABLY be able to get the number of buffer written back from this 
-            // call when using overlapped structures!  You must not pass in a non-null 
-            // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design 
+            //
+            // You will NEVER RELIABLY be able to get the number of buffer written back from this
+            // call when using overlapped structures!  You must not pass in a non-null
+            // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design
             // NT behavior.
             if (r == -1 && errorCode != Interop.Errors.ERROR_IO_PENDING)
             {
@@ -194,7 +194,7 @@ namespace System.IO.Pipes
             }
         }
 
-        // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can 
+        // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can
         // override this in cases where only one mode is legal (such as anonymous pipes)
         public unsafe virtual PipeTransmissionMode TransmissionMode
         {
@@ -249,9 +249,9 @@ namespace System.IO.Pipes
             }
         }
 
-        // Gets the buffer size in the outbound direction for the pipe. This uses cached version 
+        // Gets the buffer size in the outbound direction for the pipe. This uses cached version
         // if it's an outbound only pipe because GetNamedPipeInfo requires read access to the pipe.
-        // However, returning cached is good fallback, especially if user specified a value in 
+        // However, returning cached is good fallback, especially if user specified a value in
         // the ctor.
         public unsafe virtual int OutBufferSize
         {
@@ -435,7 +435,7 @@ namespace System.IO.Pipes
 
 
         /// <summary>
-        /// Determine pipe read mode from Win32 
+        /// Determine pipe read mode from Win32
         /// </summary>
         private unsafe void UpdateReadMode()
         {

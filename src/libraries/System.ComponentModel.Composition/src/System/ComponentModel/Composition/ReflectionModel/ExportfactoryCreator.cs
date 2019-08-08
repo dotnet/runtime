@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
-            
+
             Func<Export, object> exportFactoryFactory = (Func<Export, object>)Delegate.CreateDelegate(typeof(Func<Export, object>), this, genericMethod);
             return (e) => exportFactoryFactory.Invoke(e);
         }

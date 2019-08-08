@@ -179,7 +179,7 @@ namespace System.CodeDom.Compiler
             {
                 if (ea[i] == null)
                 {
-                    continue; // the other two batch methods just work if one element is null, so we'll match that. 
+                    continue; // the other two batch methods just work if one element is null, so we'll match that.
                 }
 
                 ResolveReferencedAssemblies(options, ea[i]);

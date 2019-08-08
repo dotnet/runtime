@@ -560,12 +560,12 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                         int requestCount = proxyServer.Requests.Count;
-                        
+
                         // We expect 2 requests to the proxy server. One without the 'Proxy-Authorization' header and
                         // one with the header.
                         Assert.Equal(2, requestCount);
                         Assert.Equal("Negotiate", proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
-                        
+
                         // Base64 tokens that use SPNEGO protocol start with 'Y'. NTLM tokens start with 'T'.
                         Assert.Equal('Y', proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken[0]);
                     }

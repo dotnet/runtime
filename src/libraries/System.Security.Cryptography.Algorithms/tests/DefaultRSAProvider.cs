@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             return RSA.Create(keySize);
 #else
             RSA rsa = Create();
-            
+
             rsa.KeySize = keySize;
             return rsa;
 #endif

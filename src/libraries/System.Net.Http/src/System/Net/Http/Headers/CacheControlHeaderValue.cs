@@ -450,7 +450,7 @@ namespace System.Net.Http.Headers
 
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
-            // from this string to the existing instances. 
+            // from this string to the existing instances.
             CacheControlHeaderValue result = storeValue;
             if (result == null)
             {
@@ -462,7 +462,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // If we had an existing store value and we just updated that instance, return 'null' to indicate that 
+            // If we had an existing store value and we just updated that instance, return 'null' to indicate that
             // we don't have a new instance of CacheControlHeaderValue, but just updated an existing one. This is the
             // case if we have multiple 'Cache-Control' headers set in a request/response message.
             if (storeValue == null)

@@ -42,7 +42,7 @@
 ** progress). The runtime cannot protect you from undefined program
 ** behvior that might result from such scenarios. You have been warned.
 **
-** 
+**
 ===========================================================*/
 
 using System.Runtime.ConstrainedExecution;
@@ -77,7 +77,7 @@ using System.Runtime.ConstrainedExecution;
 
   Most classes using CriticalHandle should not provide a finalizer.  If they do
   need to do so (ie, for flushing out file buffers, needing to write some data
-  back into memory, etc), then they can provide a finalizer that will be 
+  back into memory, etc), then they can provide a finalizer that will be
   guaranteed to run before the CriticalHandle's critical finalizer.
 
   Subclasses are expected to be written as follows:
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-        protected IntPtr handle;    // This must be protected so derived classes can use out params. 
+        protected IntPtr handle;    // This must be protected so derived classes can use out params.
         private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
         // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.

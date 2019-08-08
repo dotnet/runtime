@@ -366,7 +366,7 @@ namespace System.IO.Tests
         // eg. Create a new volume, bitlocker it, and lock it. This new volume is no longer accessible
         // and any attempt to access this drive will return false.
         // We just care that we can access an accessible drive directly, we don't care which one.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void DriveAsPath()
         {

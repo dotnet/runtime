@@ -10,4 +10,3 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public delegate void ResolveNameEventHandler(object sender, ResolveNameEventArgs e);
 }
-

@@ -46,7 +46,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void GetStringValue()
         {
-            // [] Pass name=Existing key, default value = null 
+            // [] Pass name=Existing key, default value = null
             const string valueName = "MyTestKey";
             const string expected = "This is a test string";
 

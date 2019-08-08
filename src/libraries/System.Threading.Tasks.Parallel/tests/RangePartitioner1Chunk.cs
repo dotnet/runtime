@@ -13,7 +13,7 @@
 // The included scenarios are:
 //  1. Partitioner Correctness:
 //          - Chunk is one
-//          - ParallelForEach support iteration dependencies 
+//          - ParallelForEach support iteration dependencies
 //  2. Enumerators are disposed in ParallelForEach usage
 //  3. Negative tests.
 //
@@ -29,9 +29,9 @@ namespace System.Threading.Tasks.Tests
     public static class Partitioner1Chunk
     {
         /// <summary>
-        /// Test the fact that every call of the get*DynamicPartitions.GetEnumerator().MoveNext 
+        /// Test the fact that every call of the get*DynamicPartitions.GetEnumerator().MoveNext
         /// results in only one call of the datasource.GetEnumerator().MoveNext
-        /// 
+        ///
         /// the default chunking algorithm use 2^n chunks. Use these values as the test input data.
         /// </summary>
         /// <param name="length">the data source length</param>
@@ -62,8 +62,8 @@ namespace System.Threading.Tasks.Tests
             Action<int> moveNextUserAction = (currentElement) =>
             {
                 //keep track how many times the move next of the data source was called
-                //it is expected as 
-                //every call of MoveNext on partitioner>GetDynamicPartions.GetEnumerator 
+                //it is expected as
+                //every call of MoveNext on partitioner>GetDynamicPartions.GetEnumerator
                 //to result in only one call of datasource Move Next
                 //there is not need to guard for concurrency issues because this scenario is single threaded
                 dataSourceMoveNextCalls++;
@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Tests
                 while (enumerator.MoveNext())
                 {
                     Assert.Equal(1, dataSourceMoveNextCalls);
-                    //reset the count - for the next moveNext call 
+                    //reset the count - for the next moveNext call
                     dataSourceMoveNextCalls = 0;
                 }
             }
@@ -90,7 +90,7 @@ namespace System.Threading.Tasks.Tests
                 while (enumerator.MoveNext())
                 {
                     Assert.Equal(1, dataSourceMoveNextCalls);
-                    //reset the count - for the next moveNext call 
+                    //reset the count - for the next moveNext call
                     dataSourceMoveNextCalls = 0;
                 }
             }
@@ -123,7 +123,7 @@ namespace System.Threading.Tasks.Tests
                     }
                     if (index == dependencyIndex)
                     {
-                        //if the chunk size will not be one, 
+                        //if the chunk size will not be one,
                         //this iteration and the next one will not be processed by the same thread
                         //waiting here will lead to a deadlock
                         mre.WaitOne();
@@ -166,7 +166,7 @@ namespace System.Threading.Tasks.Tests
         /// Negative test:
         /// Move Next throws
         /// Partitioner is used in ParallelForEach
-        /// Exception is expected and the enumerators are disposed 
+        /// Exception is expected and the enumerators are disposed
         /// </summary>
         [Fact]
         public static void ExceptionOnMoveNext()
@@ -293,7 +293,7 @@ namespace System.Threading.Tasks.Tests
         //the enumerators should be disposed
         private ConcurrentBag<UserActionEnumerator<T>> _allEnumerators = new ConcurrentBag<UserActionEnumerator<T>>();
 
-        //called in the beginning of enumerator Move Next 
+        //called in the beginning of enumerator Move Next
         private Action<int> _moveNextAction = null;
 
         public UserActionEnumerable(List<T> enumerable, Action<int> moveNextAction)
@@ -362,7 +362,7 @@ namespace System.Threading.Tasks.Tests
         private object _lock = new object();
         private int _length = 0;
 
-        //called in enumerator's MoveNext 
+        //called in enumerator's MoveNext
         private Action<int> _moveNextAction = null;
 
         internal UserActionEnumerator(List<T> data, Action<int> moveNextAction)
@@ -374,8 +374,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// MoveNext - 
-        /// the move next is performed under lock in order to avoid race condition with the Current 
+        /// MoveNext -
+        /// the move next is performed under lock in order to avoid race condition with the Current
         /// </summary>
         /// <returns></returns>
         public bool MoveNext()

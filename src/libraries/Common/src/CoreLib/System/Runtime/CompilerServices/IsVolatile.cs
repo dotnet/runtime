@@ -9,4 +9,3 @@ namespace System.Runtime.CompilerServices
         // no instantiation, please!
     }
 }
-

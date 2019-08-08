@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     Assert.Equal(expectedCount, chain.ChainElements.Count);
                     Assert.Equal(expectedAllErrors, chain.AllStatusFlags());
-                    
+
                     Assert.Equal(endEntityErrors, chain.ChainElements[0].AllStatusFlags());
 
                     if (expectedCount > 2)

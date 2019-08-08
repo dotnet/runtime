@@ -203,7 +203,7 @@ namespace System.IO.Pipes.Tests
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                     (pair.readablePipe is NamedPipeClientStream || pair.writeablePipe is NamedPipeClientStream))
                 {
-                    // On Unix, NamedPipe*Stream is implemented in term of sockets, where information 
+                    // On Unix, NamedPipe*Stream is implemented in term of sockets, where information
                     // about shutdown is not immediately propagated.
                     return;
                 }

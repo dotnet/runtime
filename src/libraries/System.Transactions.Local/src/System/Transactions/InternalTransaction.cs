@@ -10,12 +10,12 @@ using System.Transactions.Distributed;
 
 namespace System.Transactions
 {
-    // InternalTransaction 
+    // InternalTransaction
     //
     // This class holds the state and all data common to a transaction instance
     internal class InternalTransaction : IDisposable
     {
-        // This variable manages the state of the transaction it should be one of the 
+        // This variable manages the state of the transaction it should be one of the
         // static elements of TransactionState derived from TransactionState.
         protected TransactionState _transactionState;
 
@@ -37,7 +37,7 @@ namespace System.Transactions
         internal Guid _promoterType = Guid.Empty;
 
         // The promoted token for the transaction.
-        // This is set when the transaction is promoted. For an MSDTC transaction, it is the 
+        // This is set when the transaction is promoted. For an MSDTC transaction, it is the
         // same as the DTC propagation token.
         internal byte[] promotedToken;
 
@@ -74,16 +74,16 @@ namespace System.Transactions
             set { _creationTime = value; }
         }
 
-        // The goal for the LTM is to only allocate as few heap objects as possible for a given 
-        // transaction and all of its enlistments.  To accomplish this, enlistment objects are 
-        // held in system arrays.  The transaction contains one enlistment for the single durable 
-        // enlistment it can handle and a small array of volatile enlistments.  If the number of 
-        // enlistments for a given transaction exceeds the capacity of the current array a new 
-        // larger array will be created and the contents of the old array will be copied into it.  
-        // Heuristic data based on TransactionType can be created to avoid this sort of copy 
-        // operation repeatedly for a given type of transaction.  So if a transaction of a specific 
-        // type continually causes the array size to be increased the LTM could start 
-        // allocating a larger array initially for transactions of that type. 
+        // The goal for the LTM is to only allocate as few heap objects as possible for a given
+        // transaction and all of its enlistments.  To accomplish this, enlistment objects are
+        // held in system arrays.  The transaction contains one enlistment for the single durable
+        // enlistment it can handle and a small array of volatile enlistments.  If the number of
+        // enlistments for a given transaction exceeds the capacity of the current array a new
+        // larger array will be created and the contents of the old array will be copied into it.
+        // Heuristic data based on TransactionType can be created to avoid this sort of copy
+        // operation repeatedly for a given type of transaction.  So if a transaction of a specific
+        // type continually causes the array size to be increased the LTM could start
+        // allocating a larger array initially for transactions of that type.
         internal InternalEnlistment _durableEnlistment;
         internal VolatileEnlistmentSet _phase0Volatiles;
         internal VolatileEnlistmentSet _phase1Volatiles;

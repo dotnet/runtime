@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ using System.Xml.Xsl;
 
 namespace System.Security.Cryptography.Xml
 {
-    // XML Decryption Transform is used to specify the order of XML Digital Signature 
+    // XML Decryption Transform is used to specify the order of XML Digital Signature
     // and XML Encryption when performed on the same document.
 
     public class XmlDecryptionTransform : Transform
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Xml
             if (parent.NodeType == XmlNodeType.Document)
             {
                 // We're replacing the root element.  In order to correctly reflect the semantics of the
-                // decryption transform, we need to replace the entire document with the decrypted data. 
+                // decryption transform, we need to replace the entire document with the decrypted data.
                 // However, EncryptedXml.ReplaceData will preserve other top-level elements such as the XML
                 // entity declaration and top level comments.  So, in this case we must do the replacement
                 // ourselves.

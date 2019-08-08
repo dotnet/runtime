@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             var parser = new BinaryParser(serializationStream, reader);
             return reader.Deserialize(parser, check);
         }
-        public void Serialize(Stream serializationStream, object graph) => 
+        public void Serialize(Stream serializationStream, object graph) =>
             Serialize(serializationStream, graph, true);
 
         internal void Serialize(Stream serializationStream, object graph, bool check)

@@ -68,7 +68,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Reserved.
         /// </summary>
-        ThreadTerm = 0x0008, 
+        ThreadTerm = 0x0008,
 
         /// <summary>
         /// Image can handle a high entropy 64-bit virtual address space.

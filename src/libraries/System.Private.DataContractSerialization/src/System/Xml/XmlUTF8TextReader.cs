@@ -888,8 +888,8 @@ namespace System.Xml
             ProcessAttributes();
         }
 
-        // NOTE: Call only if 0xEF has been seen in the stream AND there are three valid bytes to check (buffer[offset], buffer[offset + 1], buffer[offset + 2]). 
-        // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF. 
+        // NOTE: Call only if 0xEF has been seen in the stream AND there are three valid bytes to check (buffer[offset], buffer[offset + 1], buffer[offset + 2]).
+        // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF.
         private bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
         {
             Fx.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
@@ -1170,8 +1170,8 @@ namespace System.Xml
                 }
                 else
                 {
-                    // Ensure that we have three bytes (buffer[offset], buffer[offset + 1], buffer[offset + 2])  
-                    // available for IsNextCharacterNonFFFE to check. 
+                    // Ensure that we have three bytes (buffer[offset], buffer[offset + 1], buffer[offset + 2])
+                    // available for IsNextCharacterNonFFFE to check.
                     if (offset + 2 < offsetMax)
                     {
                         if (IsNextCharacterNonFFFE(buffer, offset))

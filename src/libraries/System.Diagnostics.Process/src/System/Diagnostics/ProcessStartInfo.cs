@@ -113,7 +113,7 @@ namespace System.Diagnostics
         public Encoding StandardInputEncoding { get; set; }
 
         public Encoding StandardErrorEncoding { get; set; }
-        
+
         public Encoding StandardOutputEncoding { get; set; }
 
         /// <devdoc>
@@ -147,7 +147,7 @@ namespace System.Diagnostics
         }
 
         [DefaultValue("")]
-        public string Verb 
+        public string Verb
         {
             get => _verb ?? string.Empty;
             set => _verb = value;
@@ -156,14 +156,14 @@ namespace System.Diagnostics
         [DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
         public ProcessWindowStyle WindowStyle
         {
-            get => _windowStyle; 
-            set 
+            get => _windowStyle;
+            set
             {
                 if (!Enum.IsDefined(typeof(ProcessWindowStyle), value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessWindowStyle));
-                } 
-                    
+                }
+
                 _windowStyle = value;
             }
         }

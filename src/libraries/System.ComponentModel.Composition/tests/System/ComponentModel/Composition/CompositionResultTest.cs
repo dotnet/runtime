@@ -226,7 +226,7 @@ namespace System.ComponentModel.Composition
                 var mergedErrors = result.Errors.Concat(new CompositionError[] { error });
 
                 EqualityExtensions.CheckEquals(mergedErrors, mergedResult.Errors);
-                Assert.False(mergedResult.Succeeded);                
+                Assert.False(mergedResult.Succeeded);
             }
         }
 

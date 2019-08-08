@@ -75,7 +75,7 @@ namespace System.IO.Pipes
             Debug.Assert(direction != PipeDirection.InOut, "anonymous pipes are unidirectional, caller should have verified before calling Init");
             Debug.Assert(safePipeHandle != null && !safePipeHandle.IsInvalid, "safePipeHandle must be valid");
             ValidateHandleIsPipe(safePipeHandle);
-            
+
             InitializeHandle(safePipeHandle, true, false);
             State = PipeState.Connected;
         }

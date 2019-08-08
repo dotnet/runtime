@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -362,7 +362,7 @@ namespace System.Net.Http.Functional.Tests
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonNoSpace);
             }
         }
-        
+
         [Theory]
         [InlineData("HTTP/1.1 200", 200, "")] // This test data requires the fix in .NET Framework 4.7.3
         [InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
@@ -403,7 +403,7 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/1.1 2345";
             yield return "HTTP/A.1 200 OK";
             yield return "HTTP/X.Y.Z 200 OK";
-            
+
             // Only pass on .NET Core Windows & SocketsHttpHandler.
             if (PlatformDetection.IsNetCore && !PlatformDetection.IsUap && PlatformDetection.IsWindows)
             {
@@ -426,7 +426,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return "HTTP/1.1\t";
                 yield return "HTTP/1.1  ";
             }
-            
+
             // Skip these test cases on UAP since the behavior is different.
             if (!PlatformDetection.IsUap)
             {
@@ -447,7 +447,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return "NOTHTTP/1.1 200 OK";
             }
         }
-        
+
         public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
 
         [Theory]
@@ -456,7 +456,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await GetAsyncThrowsExceptionHelper(responseString);
         }
-        
+
         [Fact]
         public async Task GetAsync_ReasonPhraseHasLF_BehaviorDifference()
         {

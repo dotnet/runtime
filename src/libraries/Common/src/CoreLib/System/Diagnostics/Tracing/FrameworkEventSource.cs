@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
             ThreadPoolDequeueWork((long)*((void**)Unsafe.AsPointer(ref workID)));
         }
 
-        // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
+        // id -   represents a correlation ID that allows correlation of two activities, one stamped by
         //        ThreadTransferSend, the other by ThreadTransferReceive
         // kind - identifies the transfer: values below 64 are reserved for the runtime. Currently used values:
         //        1 - managed Timers ("roaming" ID)
@@ -137,7 +137,7 @@ namespace System.Diagnostics.Tracing
             ThreadTransferSend((long)*((void**)Unsafe.AsPointer(ref id)), kind, info, multiDequeues, intInfo1, intInfo2);
         }
 
-        // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
+        // id -   represents a correlation ID that allows correlation of two activities, one stamped by
         //        ThreadTransferSend, the other by ThreadTransferReceive
         // kind - identifies the transfer: values below 64 are reserved for the runtime. Currently used values:
         //        1 - managed Timers ("roaming" ID)
@@ -159,4 +159,3 @@ namespace System.Diagnostics.Tracing
         }
     }
 }
-

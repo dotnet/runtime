@@ -9,7 +9,7 @@ using System.Reflection.Metadata;
 namespace System.Reflection.TypeLoading.Ecma
 {
     //
-    // Common base type for an ISignatureTypeProvider that captures modified types and pinned types. Note that this only captures custom modifiers 
+    // Common base type for an ISignatureTypeProvider that captures modified types and pinned types. Note that this only captures custom modifiers
     // modifying the Type at the root of the Type expression tree. (This is all that the Reflection api will give you. They're shaped around
     // a broken understanding of custom modifiers.) Wrapped types appearing anywhere else must get peeled and thrown away before
     // passing it to a type factory method as these methods are completely unprepared to receive these ill-tempered Types.

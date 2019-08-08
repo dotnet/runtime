@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -169,7 +169,7 @@ namespace System.Text.Json.Serialization.Tests
             const string json = @"{""Point1"":""1,2""}";
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
-            
+
             // The property attribute overides the type attribute.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);

@@ -88,7 +88,7 @@ namespace System.Xml.Serialization
             {
                 string ns = (element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty);
                 if (element.IsNullable)
-                {                    
+                {
                     if (mapping.IsSoap)
                     {
                         WriteNullTagEncoded(element.Name, ns);

@@ -636,10 +636,10 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException( "helper" );
             }
-            
+
             Privilege p = new Privilege( privilege );
 
-            try 
+            try
             {
                 if (enabled)
                 {

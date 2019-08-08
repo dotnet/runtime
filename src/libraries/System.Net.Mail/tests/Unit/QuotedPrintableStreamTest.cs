@@ -59,8 +59,8 @@ namespace System.Net.Mime.Tests
 
             testStream.Flush();
 
-            // We told it not to encode them, but they got split across writes so it could not 
-            // detect the sequence.  This can happen any time we try to encode only a subset 
+            // We told it not to encode them, but they got split across writes so it could not
+            // detect the sequence.  This can happen any time we try to encode only a subset
             // of the data at a time.
             const string ExpectedOutput = "Hello =0D=0A World";
             outputStream.Seek(0, SeekOrigin.Begin);

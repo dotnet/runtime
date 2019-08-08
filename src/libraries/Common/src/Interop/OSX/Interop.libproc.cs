@@ -17,7 +17,7 @@ internal static partial class Interop
         // Constants from sys\param.h
         private const int MAXCOMLEN = 16;
         private const int MAXPATHLEN = 1024;
-        
+
         // Constants from proc_info.h
         private const int MAXTHREADNAMESIZE = 64;
         private const int PROC_PIDTASKALLINFO = 2;
@@ -172,7 +172,7 @@ internal static partial class Interop
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
         private static extern unsafe int proc_listallpids(
-            int*    pBuffer, 
+            int*    pBuffer,
             int     buffersize);
 
         /// <summary>
@@ -226,7 +226,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the allocated block above</param>
         /// <returns>
         /// The amount of data actually returned. If this size matches the bufferSize parameter then
-        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
@@ -247,7 +247,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the allocated block above</param>
         /// <returns>
         /// The amount of data actually returned. If this size matches the bufferSize parameter then
-        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
@@ -268,7 +268,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the allocated block above</param>
         /// <returns>
         /// The amount of data actually returned. If this size matches the bufferSize parameter then
-        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
@@ -289,7 +289,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the allocated block above</param>
         /// <returns>
         /// The amount of data actually returned. If this size matches the bufferSize parameter then
-        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
@@ -305,7 +305,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="pid">The PID (process ID) of the process</param>
         /// <returns>
-        /// Returns a valid proc_taskallinfo struct for valid processes that the caller 
+        /// Returns a valid proc_taskallinfo struct for valid processes that the caller
         /// has permission to access; otherwise, returns null
         /// </returns>
         internal static unsafe proc_taskallinfo? GetProcessInfoById(int pid)
@@ -378,7 +378,7 @@ internal static partial class Interop
 
                 if (result <= 0)
                 {
-                    // If we were unable to access the information, just return the empty list.  
+                    // If we were unable to access the information, just return the empty list.
                     // This is likely to happen for privileged processes, if the process went away
                     // by the time we tried to query it, etc.
                     return threads;
@@ -399,7 +399,7 @@ internal static partial class Interop
             int count = (int)(result / sizeof(ulong));
             threads.Capacity = count;
             for (int i = 0; i < count; i++)
-            {        
+            {
                 threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(threadIds[i], GetThreadInfoById(pid, threadIds[i])));
             }
 
@@ -415,8 +415,8 @@ internal static partial class Interop
         /// <returns>Returns the length of the path returned on success</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
         private static extern unsafe int proc_pidpath(
-            int pid, 
-            byte* buffer, 
+            int pid,
+            byte* buffer,
             uint bufferSize);
 
         /// <summary>

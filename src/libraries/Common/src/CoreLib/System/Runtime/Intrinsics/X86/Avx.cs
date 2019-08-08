@@ -667,7 +667,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) => Permute2x128(left, right, control);
-        
+
         /// <summary>
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8

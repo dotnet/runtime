@@ -15,7 +15,7 @@ internal partial class Interop
         internal class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             private SafeWinHttpHandle _parentHandle = null;
-            
+
             public SafeWinHttpHandle() : base(true)
             {
             }
@@ -37,11 +37,11 @@ internal partial class Interop
 
                 bool ignore = false;
                 parentHandle.DangerousAddRef(ref ignore);
-                
+
                 _parentHandle = parentHandle;
             }
-            
-            // Important: WinHttp API calls should not happen while another WinHttp call for the same handle did not 
+
+            // Important: WinHttp API calls should not happen while another WinHttp call for the same handle did not
             // return. During finalization that was not initiated by the Dispose pattern we don't expect any other WinHttp
             // calls in progress.
             protected override bool ReleaseHandle()
@@ -51,7 +51,7 @@ internal partial class Interop
                     _parentHandle.DangerousRelease();
                     _parentHandle = null;
                 }
-                
+
                 // TODO (#7856): Add logging so we know when the handle gets closed.
                 return Interop.WinHttp.WinHttpCloseHandle(handle);
             }

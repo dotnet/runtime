@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             _serverSocketEP = new IPEndPoint(IPAddress.Any, port);
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
         }
-        
+
         // Used by the class to provide the underlying network socket.
         public Socket Server
         {

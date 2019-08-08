@@ -79,7 +79,7 @@ internal partial class Interop
     {
         return Interop.Kernel32.VirtualAlloc(baseAddress, size, allocationType, protection);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SplitLong(long number, out int high, out int low)
     {

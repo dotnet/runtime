@@ -36,7 +36,7 @@ namespace System.Net.WebSockets
         {
             _webSocket = webSocket;
         }
-        
+
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             if (options.RemoteCertificateValidationCallback != null)

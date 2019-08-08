@@ -148,7 +148,7 @@ namespace System.Drawing
         private static readonly object s_whiteSmokeKey = new object();
         private static readonly object s_yellowKey = new object();
         private static readonly object s_yellowGreenKey = new object();
-        
+
         public static Brush Transparent => GetBrush(s_transparentKey, Color.Transparent);
 
         public static Brush AliceBlue => GetBrush(s_aliceBlueKey, Color.AliceBlue);
@@ -323,4 +323,3 @@ namespace System.Drawing
         }
     }
 }
-

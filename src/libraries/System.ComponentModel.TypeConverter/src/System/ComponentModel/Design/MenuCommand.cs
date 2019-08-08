@@ -114,7 +114,7 @@ namespace System.ComponentModel.Design
         /// Occurs when the menu command changes.
         /// </summary>
         public event EventHandler CommandChanged;
-        
+
 
         /// <summary>
         /// Gets the <see cref='System.ComponentModel.Design.CommandID'/> associated with this menu command.
@@ -143,7 +143,7 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// Invokes a menu item. The default implementation of this method ignores 
+        /// Invokes a menu item. The default implementation of this method ignores
         /// the argument, but deriving classes may override this method.
         /// </summary>
         public virtual void Invoke(object arg) => Invoke();
@@ -154,7 +154,7 @@ namespace System.ComponentModel.Design
         public virtual int OleStatus => _status;
 
         /// <summary>
-        /// Provides notification and is called in response to 
+        /// Provides notification and is called in response to
         /// a <see cref='System.ComponentModel.Design.MenuCommand.CommandChanged'/> event.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.

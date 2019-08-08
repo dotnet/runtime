@@ -81,4 +81,3 @@ namespace System.DirectoryServices.AccountManagement
         private TrackedCollectionEnumerator<T> _inner;
     }
 }
-

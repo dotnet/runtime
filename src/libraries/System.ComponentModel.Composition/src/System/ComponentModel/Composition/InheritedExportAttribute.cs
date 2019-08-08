@@ -19,12 +19,12 @@ namespace System.ComponentModel.Composition
         /// </summary>
         /// <remarks>
         ///     <para>
-        ///         The default contract name is the result of calling 
-        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on the type itself, 
-        ///         that is marked with this attribute. 
+        ///         The default contract name is the result of calling
+        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on the type itself,
+        ///         that is marked with this attribute.
         ///     </para>
         ///     <para>
-        ///         The contract name is compared using a case-sensitive, non-linguistic comparison 
+        ///         The contract name is compared using a case-sensitive, non-linguistic comparison
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
@@ -38,23 +38,23 @@ namespace System.ComponentModel.Composition
         ///     type marked with this attribute under a contract name derived from the specified type.
         /// </summary>
         /// <param name="contractType">
-        ///     A <see cref="Type"/> of which to derive the contract name to export the type  
-        ///     marked with this attribute, under; or <see langword="null"/> to use the 
+        ///     A <see cref="Type"/> of which to derive the contract name to export the type
+        ///     marked with this attribute, under; or <see langword="null"/> to use the
         ///     default contract name.
         /// </param>
         /// <remarks>
         ///     <para>
-        ///         The contract name is the result of calling 
-        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on 
+        ///         The contract name is the result of calling
+        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on
         ///         <paramref name="contractType"/>.
         ///     </para>
         ///     <para>
-        ///         The default contract name is the result of calling 
-        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on the type of the 
-        ///         itself, that is marked with this attribute. 
+        ///         The default contract name is the result of calling
+        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on the type of the
+        ///         itself, that is marked with this attribute.
         ///     </para>
         ///     <para>
-        ///         The contract name is compared using a case-sensitive, non-linguistic comparison 
+        ///         The contract name is compared using a case-sensitive, non-linguistic comparison
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
@@ -68,18 +68,18 @@ namespace System.ComponentModel.Composition
         ///     type or member marked with this attribute under the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="string"/> containing the contract name to export the type 
-        ///      marked with this attribute, under; or <see langword="null"/> or an empty string 
+        ///      A <see cref="string"/> containing the contract name to export the type
+        ///      marked with this attribute, under; or <see langword="null"/> or an empty string
         ///      ("") to use the default contract name.
         /// </param>
         /// <remarks>
         ///     <para>
-        ///         The default contract name is the result of calling 
-        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on 
-        ///         the type itself that this is marked with this attribute. 
+        ///         The default contract name is the result of calling
+        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on
+        ///         the type itself that this is marked with this attribute.
         ///     </para>
         ///     <para>
-        ///         The contract name is compared using a case-sensitive, non-linguistic comparison 
+        ///         The contract name is compared using a case-sensitive, non-linguistic comparison
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
@@ -93,23 +93,23 @@ namespace System.ComponentModel.Composition
         ///     type or member marked with this attribute under the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="string"/> containing the contract name to export the type 
-        ///      marked with this attribute, under; or <see langword="null"/> or an empty string 
+        ///      A <see cref="string"/> containing the contract name to export the type
+        ///      marked with this attribute, under; or <see langword="null"/> or an empty string
         ///      ("") to use the default contract name.
         /// </param>
         /// <param name="contractType">
-        ///     A <see cref="Type"/> of which to derive the contract name to export the type  
-        ///     marked with this attribute, under; or <see langword="null"/> to use the 
+        ///     A <see cref="Type"/> of which to derive the contract name to export the type
+        ///     marked with this attribute, under; or <see langword="null"/> to use the
         ///     default contract name.
         /// </param>
         /// <remarks>
         ///     <para>
-        ///         The default contract name is the result of calling 
-        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on 
-        ///         the type itself that this is marked with this attribute. 
+        ///         The default contract name is the result of calling
+        ///         <see cref="AttributedModelServices.GetContractName(Type)"/> on
+        ///         the type itself that this is marked with this attribute.
         ///     </para>
         ///     <para>
-        ///         The contract name is compared using a case-sensitive, non-linguistic comparison 
+        ///         The contract name is compared using a case-sensitive, non-linguistic comparison
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>

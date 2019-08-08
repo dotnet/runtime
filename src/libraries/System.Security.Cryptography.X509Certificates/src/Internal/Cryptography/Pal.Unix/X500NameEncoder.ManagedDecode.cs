@@ -66,7 +66,7 @@ namespace Internal.Cryptography.Pal
 
                 // RelativeDistinguishedName ::=
                 //   SET SIZE (1..MAX) OF AttributeTypeAndValue
-                // 
+                //
                 // AttributeTypeAndValue::= SEQUENCE {
                 //   type AttributeType,
                 //   value    AttributeValue }

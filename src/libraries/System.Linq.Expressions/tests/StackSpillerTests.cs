@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -423,33 +423,33 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref v                  // spill reference to v [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // v[0] = try { 42 }           // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldc.i4.0   
-                      IL_0010: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldc.i4.0
+                      IL_0010: ldloc.1
                       IL_0011: call       instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueVector::set_Item(int32,int32)
 
                       // return v[0]
                       IL_0016: ldloca.s   V_2
-                      IL_0018: ldc.i4.0   
+                      IL_0018: ldc.i4.0
                       IL_0019: call       instance int32 valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueVector::get_Item(int32)
-                      IL_001e: ret        
+                      IL_001e: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -526,27 +526,27 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref v                  // spill reference to v [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // return v[try { 42 }]        // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: call       instance int32 valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::get_Item(int32)
-                      IL_0015: ret        
+                      IL_0015: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -621,31 +621,31 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref v                  // spill reference to v [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // v.Foo = try { 42 }          // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: call       instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::set_Foo(int32)
 
                       // return v.Foo
                       IL_0015: ldloca.s   V_2
                       IL_0017: call       instance int32 valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::get_Foo()
-                      IL_001c: ret        
+                      IL_001c: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -726,31 +726,31 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref v                  // spill reference to v [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // V1 = try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // v.Qux(try { 42 })           // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: call       instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::Qux(int32)
 
                       // return v.Foo
                       IL_0015: ldloca.s   V_2
                       IL_0017: call       instance int32 valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::get_Foo()
-                      IL_001c: ret        
+                      IL_001c: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -820,30 +820,30 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref x                  // spill reference to x [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // V1 = try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // Assign(ref x, try { 42 })   // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: call       void class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ByRefs::Assign(int32&,int32)
 
                       // return x
-                      IL_0015: ldloc.2    
-                      IL_0016: ret        
+                      IL_0015: ldloc.2
+                      IL_0016: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -912,31 +912,31 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref x                       // spill reference to x [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // V1 = try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // new ByRefs(ref x, try { 42 })    // using spilled reference in V0
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: newobj     instance void class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ByRefs::.ctor(int32&,int32)
-                      IL_0015: pop        
+                      IL_0015: pop
 
                       // return x
-                      IL_0016: ldloc.2    
-                      IL_0017: ret        
+                      IL_0016: ldloc.2
+                      IL_0017: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -995,35 +995,35 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref x                       // spill reference to x [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // V1 = try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // f.Invoke(ref x, try { 42 })      // using spilled reference in V0
-                      IL_000e: ldarg.0    
+                      IL_000e: ldarg.0
                       IL_000f: ldfld      class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure::Constants
-                      IL_0014: ldc.i4.0   
-                      IL_0015: ldelem.ref 
+                      IL_0014: ldc.i4.0
+                      IL_0015: ldelem.ref
                       IL_0016: castclass  class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Assign
-                      IL_001b: ldloc.0    
-                      IL_001c: ldloc.1    
+                      IL_001b: ldloc.0
+                      IL_001c: ldloc.1
                       IL_001d: callvirt   instance void class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Assign::Invoke(int32&,int32)
 
                       // return x
-                      IL_0022: ldloc.2    
-                      IL_0023: ret        
+                      IL_0022: ldloc.2
+                      IL_0023: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1109,26 +1109,26 @@ namespace System.Linq.Expressions.Tests
 
                       // V0 = ref x                       // spill reference to x [V2] into V0
                       IL_0000: ldloca.s   V_2
-                      IL_0002: stloc.0    
+                      IL_0002: stloc.0
 
                       // V1 = try { 42 } finally { }
                       .try
                       {
                         IL_0003: ldc.i4.s   42
-                        IL_0005: stloc.3    
+                        IL_0005: stloc.3
                         IL_0006: leave      IL_000c
                       }
                       finally
                       {
-                        IL_000b: endfinally 
+                        IL_000b: endfinally
                       }
-                      IL_000c: ldloc.3    
-                      IL_000d: stloc.1    
+                      IL_000c: ldloc.3
+                      IL_000d: stloc.1
 
                       // l [V4] = ref x
                       // r [V5] = try { 42 }
-                      IL_000e: ldloc.0    
-                      IL_000f: ldloc.1    
+                      IL_000e: ldloc.0
+                      IL_000f: ldloc.1
                       IL_0010: stloc.s    V_5
                       IL_0012: stloc.s    V_4
 
@@ -1139,11 +1139,11 @@ namespace System.Linq.Expressions.Tests
                       // l = r
                       IL_0018: ldloc.s    V_4
                       IL_001a: ldloc.s    V_6
-                      IL_001c: stind.i4   
+                      IL_001c: stind.i4
 
                       // return x
-                      IL_001d: ldloc.2    
-                      IL_001e: ret        
+                      IL_001d: ldloc.2
+                      IL_001e: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1216,11 +1216,11 @@ namespace System.Linq.Expressions.Tests
                       IL_0000: ldloca.s   V_4
                       IL_0002: initobj    valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueList
                       IL_0008: ldloc.s    V_4
-                      IL_000a: stloc.0    
+                      IL_000a: stloc.0
 
                       // V0 = ref t                  // spill reference to t [V0] into V1
                       IL_000b: ldloca.s   V_0
-                      IL_000d: stloc.1    
+                      IL_000d: stloc.1
 
                       // V2 = try { 42 } finally { }
                       .try
@@ -1231,23 +1231,23 @@ namespace System.Linq.Expressions.Tests
                       }
                       finally
                       {
-                        IL_0017: endfinally 
+                        IL_0017: endfinally
                       }
                       IL_0018: ldloc.s    V_5
-                      IL_001a: stloc.2    
+                      IL_001a: stloc.2
 
                       // t.Add(try { 42 })           // using spilled reference in V0
-                      IL_001b: ldloc.1    
-                      IL_001c: ldloc.2    
+                      IL_001b: ldloc.1
+                      IL_001c: ldloc.2
                       IL_001d: call       instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueList::Add(int32)
 
                       // l = t
-                      IL_0022: ldloc.0    
-                      IL_0023: stloc.3    
+                      IL_0022: ldloc.0
+                      IL_0023: stloc.3
 
                       // return l
-                      IL_0024: ldloc.3    
-                      IL_0025: ret        
+                      IL_0024: ldloc.3
+                      IL_0025: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1323,11 +1323,11 @@ namespace System.Linq.Expressions.Tests
                       IL_0000: ldloca.s   V_4
                       IL_0002: initobj    valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IL_0008: ldloc.s    V_4
-                      IL_000a: stloc.0    
+                      IL_000a: stloc.0
 
                       // V0 = ref t                  // spill reference to t [V0] into V1
                       IL_000b: ldloca.s   V_0
-                      IL_000d: stloc.1    
+                      IL_000d: stloc.1
 
                       // V2 = try { 42 } finally { }
                       .try
@@ -1338,23 +1338,23 @@ namespace System.Linq.Expressions.Tests
                       }
                       finally
                       {
-                        IL_0017: endfinally 
+                        IL_0017: endfinally
                       }
                       IL_0018: ldloc.s    V_5
-                      IL_001a: stloc.2    
+                      IL_001a: stloc.2
 
                       // t.Baz = try { 42 }          // using spilled reference in V0
-                      IL_001b: ldloc.1    
-                      IL_001c: ldloc.2    
+                      IL_001b: ldloc.1
+                      IL_001c: ldloc.2
                       IL_001d: stfld      valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::Baz
 
                       // l = t
-                      IL_0022: ldloc.0    
-                      IL_0023: stloc.3    
+                      IL_0022: ldloc.0
+                      IL_0023: stloc.3
 
                       // return l
-                      IL_0024: ldloc.3    
-                      IL_0025: ret        
+                      IL_0024: ldloc.3
+                      IL_0025: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1430,11 +1430,11 @@ namespace System.Linq.Expressions.Tests
                       IL_0000: ldloca.s   V_4
                       IL_0002: initobj    valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IL_0008: ldloc.s    V_4
-                      IL_000a: stloc.0    
+                      IL_000a: stloc.0
 
                       // V0 = ref t                  // spill reference to t [V0] into V1
                       IL_000b: ldloca.s   V_0
-                      IL_000d: stloc.1    
+                      IL_000d: stloc.1
 
                       // V2 = try { 42 } finally { }
                       .try
@@ -1445,23 +1445,23 @@ namespace System.Linq.Expressions.Tests
                       }
                       finally
                       {
-                        IL_0017: endfinally 
+                        IL_0017: endfinally
                       }
                       IL_0018: ldloc.s    V_5
-                      IL_001a: stloc.2    
+                      IL_001a: stloc.2
 
                       // t.Foo = try { 42 }          // using spilled reference in V0
-                      IL_001b: ldloc.1    
-                      IL_001c: ldloc.2    
+                      IL_001b: ldloc.1
+                      IL_001c: ldloc.2
                       IL_001d: call       instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::set_Foo(int32)
 
                       // l = t
-                      IL_0022: ldloc.0    
-                      IL_0023: stloc.3    
+                      IL_0022: ldloc.0
+                      IL_0023: stloc.3
 
                       // return l
-                      IL_0024: ldloc.3    
-                      IL_0025: ret        
+                      IL_0024: ldloc.3
+                      IL_0025: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1522,15 +1522,15 @@ namespace System.Linq.Expressions.Tests
                         [4] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [5] int32
                       )
-                
+
                       IL_0000: newobj     instance void class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Baz::.ctor()
                       IL_0005: newobj     instance void valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::.ctor(class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Baz)
-                      IL_000a: stloc.0    
+                      IL_000a: stloc.0
                       IL_000b: ldloca.s   V_0
-                      IL_000d: stloc.1    
-                      IL_000e: ldloc.1    
+                      IL_000d: stloc.1
+                      IL_000e: ldloc.1
                       IL_000f: call       instance class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Baz valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::get_Baz2()
-                      IL_0014: stloc.2    
+                      IL_0014: stloc.2
                       .try
                       {
                         IL_0015: ldc.i4.s   42
@@ -1539,17 +1539,17 @@ namespace System.Linq.Expressions.Tests
                       }
                       finally
                       {
-                        IL_001e: endfinally 
+                        IL_001e: endfinally
                       }
                       IL_001f: ldloc.s    V_5
-                      IL_0021: stloc.3    
-                      IL_0022: ldloc.2    
-                      IL_0023: ldloc.3    
+                      IL_0021: stloc.3
+                      IL_0022: ldloc.2
+                      IL_0023: ldloc.3
                       IL_0024: stfld      class [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+Baz::Foo
-                      IL_0029: ldloc.0    
+                      IL_0029: ldloc.0
                       IL_002a: stloc.s    V_4
                       IL_002c: ldloc.s    V_4
-                      IL_002e: ret        
+                      IL_002e: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -1615,16 +1615,16 @@ namespace System.Linq.Expressions.Tests
                         [5] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [6] int32
                       )
-                
+
                       IL_0000: ldloca.s   V_5
                       IL_0002: initobj    valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar
                       IL_0008: ldloc.s    V_5
-                      IL_000a: stloc.0    
+                      IL_000a: stloc.0
                       IL_000b: ldloca.s   V_0
-                      IL_000d: stloc.1    
-                      IL_000e: ldloc.1    
+                      IL_000d: stloc.1
+                      IL_000e: ldloc.1
                       IL_000f: call       instance class [System.Private.CoreLib]System.Collections.Generic.List`1<int32> valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar::get_Xs()
-                      IL_0014: stloc.2    
+                      IL_0014: stloc.2
                       .try
                       {
                         IL_0015: ldc.i4.s   42
@@ -1633,17 +1633,17 @@ namespace System.Linq.Expressions.Tests
                       }
                       finally
                       {
-                        IL_001e: endfinally 
+                        IL_001e: endfinally
                       }
                       IL_001f: ldloc.s    V_6
-                      IL_0021: stloc.3    
-                      IL_0022: ldloc.2    
-                      IL_0023: ldloc.3    
+                      IL_0021: stloc.3
+                      IL_0022: ldloc.2
+                      IL_0023: ldloc.3
                       IL_0024: callvirt   instance void class [System.Private.CoreLib]System.Collections.Generic.List`1<int32>::Add(int32)
-                      IL_0029: ldloc.0    
+                      IL_0029: ldloc.0
                       IL_002a: stloc.s    V_4
                       IL_002c: ldloc.s    V_4
-                      IL_002e: ret        
+                      IL_002e: ret
                     }",
                 instructions: @"
                     object lambda_method(object[])
@@ -2353,7 +2353,7 @@ namespace System.Linq.Expressions.Tests
 
                 _values.Add(x);
             }
-            
+
             public IEnumerator<int> GetEnumerator()
             {
                 if (_values != null)

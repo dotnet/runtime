@@ -57,7 +57,7 @@ namespace System.Xml.Tests
 
             XmlAttributeCollection target = element.Attributes;
             // can find first, middle or last attribute
-            Assert.Same(attr1, target[attrName1]); 
+            Assert.Same(attr1, target[attrName1]);
             Assert.Same(attr2, target[attrName2]);
             Assert.Same(attr3, target[attrName3]);
         }

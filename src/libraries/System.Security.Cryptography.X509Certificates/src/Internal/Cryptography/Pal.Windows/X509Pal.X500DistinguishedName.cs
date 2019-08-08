@@ -147,4 +147,3 @@ namespace Internal.Cryptography.Pal
         }
     }
 }
-

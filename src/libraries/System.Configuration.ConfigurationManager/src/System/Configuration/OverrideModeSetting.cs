@@ -109,7 +109,7 @@ namespace System.Configuration
                         ((y._mode & XmlDefinedAny) != 0))
                         result = (x._mode & XmlDefinedAny) == (y._mode & XmlDefinedAny);
 
-                    // Neither "x" nor "y" was XML defined - they are a match since they can both go 
+                    // Neither "x" nor "y" was XML defined - they are a match since they can both go
                     // to a default <location> with no explicit mode setting written out
                 }
             }

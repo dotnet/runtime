@@ -45,7 +45,7 @@ namespace System.Collections.Immutable
             /// The number of elements contained by this subtree starting at this node.
             /// </summary>
             /// <remarks>
-            /// If this node would benefit from saving 4 bytes, we could have only a few nodes 
+            /// If this node would benefit from saving 4 bytes, we could have only a few nodes
             /// scattered throughout the graph actually record the count of nodes beneath them.
             /// Those without the count could query their descendants, which would often short-circuit
             /// when they hit a node that *does* include a count field.
@@ -428,7 +428,7 @@ namespace System.Collections.Immutable
                         // We have a match.
                         mutated = true;
 
-                        // If this is a leaf, just remove it 
+                        // If this is a leaf, just remove it
                         // by returning Empty.  If we have only one child,
                         // replace the node with the child.
                         if (_right.IsEmpty && _left.IsEmpty)

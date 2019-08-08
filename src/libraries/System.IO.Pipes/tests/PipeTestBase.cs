@@ -8,7 +8,7 @@ namespace System.IO.Pipes.Tests
 {
     /// <summary>
     /// The class that all Pipes tests will inherit from.
-    /// 
+    ///
     /// Contains methods and variables with code that is frequently repeated
     /// </summary>
     public class PipeTestBase
@@ -48,8 +48,8 @@ namespace System.IO.Pipes.Tests
 
         /// <summary>
         /// Represents a Server-Client pair where "readablePipe" refers to whichever
-        /// of the two streams is defined with PipeDirection.In and "writeablePipe" is 
-        /// defined with PipeDirection.Out. 
+        /// of the two streams is defined with PipeDirection.In and "writeablePipe" is
+        /// defined with PipeDirection.Out.
         /// </summary>
         /// <remarks>
         /// For tests where InOut is used, writeablePipe will refer to whichever pipe
@@ -93,7 +93,7 @@ namespace System.IO.Pipes.Tests
         /// <summary>
         /// Virtual method to create a Server-Client PipeStream pair
         /// that the test methods can override and make use of.
-        /// 
+        ///
         /// The default (in PipeTest) will return a null ServerClientPair.
         /// </summary>
         protected virtual ServerClientPair CreateServerClientPair()

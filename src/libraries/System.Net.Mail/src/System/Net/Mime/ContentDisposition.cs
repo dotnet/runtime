@@ -325,7 +325,7 @@ namespace System.Net.Mime
                         throw new FormatException(SR.ContentDispositionInvalid);
                     }
 
-                    // if validation is needed, the parameters dictionary will have a validator registered  
+                    // if validation is needed, the parameters dictionary will have a validator registered
                     // for the parameter that is being set so no additional formatting checks are needed here
                     Parameters.Add(paramAttribute, paramValue);
                 }

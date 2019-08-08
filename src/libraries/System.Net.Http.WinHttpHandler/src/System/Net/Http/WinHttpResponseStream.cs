@@ -18,7 +18,7 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
         private SafeWinHttpHandle _requestHandle;
-        
+
         internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state)
         {
             _state = state;
@@ -299,7 +299,7 @@ namespace System.Net.Http
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
         }
-        
+
         // The only way to abort pending async operations in WinHTTP is to close the request handle.
         // This causes WinHTTP to cancel any pending I/O and accelerating its callbacks on the handle.
         // This causes our related TaskCompletionSource objects to move to a terminal state.
@@ -321,6 +321,6 @@ namespace System.Net.Http
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-        }        
+        }
     }
 }

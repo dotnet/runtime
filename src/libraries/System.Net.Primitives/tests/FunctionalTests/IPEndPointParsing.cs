@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -67,7 +67,7 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(IPAddressParsing.InvalidIpv4AddressesStandalone), MemberType = typeof(IPAddressParsing))]
         public void Parse_InvalidAddress_IPv4_Throws(string address)
         {
-            Parse_InvalidAddress_Throws(address, true);            
+            Parse_InvalidAddress_Throws(address, true);
         }
 
         [Theory]
@@ -165,7 +165,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         public static readonly object[][] ValidIpv6AddressesNoPort =
-        {   
+        {
             new object[] { "Fe08::1", "fe08::1" },
             new object[] { "0000:0000:0000:0000:0000:0000:0000:0000", "::" },
             new object[] { "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" },

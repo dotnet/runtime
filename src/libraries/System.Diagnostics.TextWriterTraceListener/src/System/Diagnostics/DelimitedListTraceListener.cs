@@ -183,7 +183,7 @@ namespace System.Diagnostics
             else
             {
                 for (int i = 0; i < 5; i++)
-                    Write(Delimiter); // Use get_Delimiter 
+                    Write(Delimiter); // Use get_Delimiter
             }
 
             WriteLine("");
@@ -214,7 +214,7 @@ namespace System.Diagnostics
                 {
                     first = false;
                 }
-                
+
                 string operation = obj.ToString();
                 EscapeMessage(operation, sb);
             }

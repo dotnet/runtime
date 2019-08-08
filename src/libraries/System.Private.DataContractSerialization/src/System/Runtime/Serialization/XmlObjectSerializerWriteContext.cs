@@ -769,7 +769,7 @@ namespace System.Runtime.Serialization
 
                 if (dataType == Globals.TypeOfObject)
                 {
-                    // NOTE: serialize value in DataNode<object> since it may contain non-primitive 
+                    // NOTE: serialize value in DataNode<object> since it may contain non-primitive
                     // deserialized object (ex. empty class)
                     object o = dataNode.Value;
                     if (o != null)

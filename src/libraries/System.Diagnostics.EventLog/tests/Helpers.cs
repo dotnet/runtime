@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
 
             return RetryOnAllPlatforms(func);
             // We are retrying on windows 7 because it throws win32exception while some operations like Writing,retrieving and Deleting log.
-            // So We just try to do the operation again in case of this exception 
+            // So We just try to do the operation again in case of this exception
         }
 
         public static T RetryOnAllPlatforms<T>(Func<T> func)

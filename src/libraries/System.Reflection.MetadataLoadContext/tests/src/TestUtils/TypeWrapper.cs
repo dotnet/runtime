@@ -9,7 +9,7 @@ namespace System.Reflection.Tests
 {
     //
     // Do not put Type objects in XUnit Theory data lists. Especially Reflection-only Type objects. XUnit sees "Type", builds up a serialized
-    // string for its output which involves everything including grabbing custom attributes using the invoking apis. 
+    // string for its output which involves everything including grabbing custom attributes using the invoking apis.
     //
     public sealed class TypeWrapper
     {

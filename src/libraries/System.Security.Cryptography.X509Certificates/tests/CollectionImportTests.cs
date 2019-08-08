@@ -324,7 +324,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => coll.Import(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
-            
+
             // No test is performed here for the ephemeral flag failing downlevel, because the live
             // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
         }

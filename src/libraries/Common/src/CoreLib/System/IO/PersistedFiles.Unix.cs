@@ -89,12 +89,12 @@ namespace System.IO
             if (!string.IsNullOrEmpty(userHomeDirectory))
                 return userHomeDirectory;
 
-            // In initialization conditions, however, the "HOME" environment variable may 
+            // In initialization conditions, however, the "HOME" environment variable may
             // not yet be set. For such cases, consult with the password entry.
             unsafe
             {
                 // First try with a buffer that should suffice for 99% of cases.
-                // Note that, theoretically, userHomeDirectory may be null in the success case 
+                // Note that, theoretically, userHomeDirectory may be null in the success case
                 // if we simply couldn't find a home directory for the current user.
                 // In that case, we pass back the null value and let the caller decide
                 // what to do.
@@ -149,7 +149,7 @@ namespace System.IO
 
             var errorInfo = new Interop.ErrorInfo(error);
 
-            // If the call failed because the buffer was too small, return false to 
+            // If the call failed because the buffer was too small, return false to
             // indicate the caller should try again with a larger buffer.
             if (errorInfo.Error == Interop.Error.ERANGE)
             {

@@ -36,7 +36,7 @@ namespace System.ComponentModel.Design
         /// an adapter to the technology of the host. Hosting environments such as Visual
         /// Studio will provide a way to plug in new view technology adapters. The default
         /// view object for the Windows Forms designer is a Control instance, while the
-        /// default view object for the Avalon designer is an Element instance. 
+        /// default view object for the Avalon designer is an Element instance.
         /// </summary>
         Default = 2
     }

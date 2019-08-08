@@ -49,7 +49,7 @@ namespace System.Net
         }
 
         private void WriteCore(byte[] buffer, int offset, int size)
-        {            
+        {
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (size == 0 && _leftToWrite != 0)
             {

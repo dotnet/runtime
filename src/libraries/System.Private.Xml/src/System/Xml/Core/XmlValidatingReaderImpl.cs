@@ -630,7 +630,7 @@ namespace System.Xml
             // call to the helper
             int readCount = _readBinaryHelper.ReadContentAsBase64(buffer, index, count);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -654,7 +654,7 @@ namespace System.Xml
             // call to the helper
             int readCount = _readBinaryHelper.ReadContentAsBinHex(buffer, index, count);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -678,7 +678,7 @@ namespace System.Xml
             // call to the helper
             int readCount = _readBinaryHelper.ReadElementContentAsBase64(buffer, index, count);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -702,7 +702,7 @@ namespace System.Xml
             // call to the helper
             int readCount = _readBinaryHelper.ReadElementContentAsBinHex(buffer, index, count);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -1067,7 +1067,7 @@ namespace System.Xml
 
             if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
-                // it is safe to return valid resolver as it'll be used in the schema validation 
+                // it is safe to return valid resolver as it'll be used in the schema validation
                 if (s_tempResolver == null)
                     s_tempResolver = new XmlUrlResolver();
                 return s_tempResolver;
@@ -1184,4 +1184,3 @@ namespace System.Xml
         }
     }
 }
-

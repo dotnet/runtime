@@ -97,7 +97,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
             if (index < input.Length)
             {
-                // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would 
+                // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would
                 // handle this, but ProductInfoHeaderValue does not derive from BaseHeaderParser.
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, input.Substring(index)));
             }
@@ -114,7 +114,7 @@ namespace System.Net.Http.Headers
             {
                 if (index < input.Length)
                 {
-                    // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would 
+                    // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would
                     // handle this, but ProductInfoHeaderValue does not derive from BaseHeaderParser.
                     return false;
                 }

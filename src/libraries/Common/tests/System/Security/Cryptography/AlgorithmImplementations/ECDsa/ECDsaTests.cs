@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyHash(new byte[0], null));
         }
     }
-    
+
     public sealed class ECDsaTests_Stream : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         protected abstract byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
 
         public static IEnumerable<object[]> RealImplementations() =>
-            new[] { 
+            new[] {
                 new ECDsa[] { ECDsaFactory.Create() },
             };
 
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             // Explicitly larger than Array.Empty
             byte[] data = new byte[10];
             byte[] signature = SignData(ecdsa, Array.Empty<byte>(), HashAlgorithmName.SHA256);
-            
+
             Assert.True(VerifyData(ecdsa, data, data.Length, 0, signature, HashAlgorithmName.SHA256));
         }
 
@@ -256,8 +256,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         public static IEnumerable<object[]> InteroperableSignatureConfigurations()
         {
-            foreach (HashAlgorithmName hashAlgorithm in new[] { 
-                HashAlgorithmName.MD5, 
+            foreach (HashAlgorithmName hashAlgorithm in new[] {
+                HashAlgorithmName.MD5,
                 HashAlgorithmName.SHA1,
                 HashAlgorithmName.SHA256,
                 HashAlgorithmName.SHA384,

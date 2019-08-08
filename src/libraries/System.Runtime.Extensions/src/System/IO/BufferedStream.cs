@@ -13,10 +13,10 @@ namespace System.IO
     /// down underlying stream accesses when it is not needed. If you always read &amp; write for sizes
     /// greater than the internal buffer size, then this class may not even allocate the internal buffer.
     /// See a large comment in Write for the details of the write buffer heuristic.
-    /// 
+    ///
     /// This class buffers reads &amp; writes in a shared buffer.
     /// (If you maintained two buffers separately, one operation would always trash the other buffer
-    /// anyways, so we might as well use one buffer.) 
+    /// anyways, so we might as well use one buffer.)
     /// The assumption here is you will almost always be doing a series of reads or writes, but rarely
     /// alternate between the two of them on the same stream.
     ///
@@ -38,7 +38,7 @@ namespace System.IO
     /// faster than IO operations on the underlying stream (if this was not true, using buffering is never appropriate).
     /// The max size of this "shadow" buffer is limited as to not allocate it on the LOH.
     /// Shadowing is always transient. Even when using this technique, this class still guarantees that the number of
-    /// bytes cached (not yet written to the target stream or not yet consumed by the user) is never larger than the 
+    /// bytes cached (not yet written to the target stream or not yet consumed by the user) is never larger than the
     /// actual specified buffer size.
     /// </summary>
     public sealed class BufferedStream : Stream
@@ -126,7 +126,7 @@ namespace System.IO
             Debug.Assert(_buffer != null);
             Debug.Assert(_bufferSize > 0);
 
-            // Already have a shadow buffer? 
+            // Already have a shadow buffer?
             // Or is the user-specified buffer size already so large that we don't want to create one?
             if (_buffer.Length != _bufferSize || _bufferSize >= MaxShadowBufferSize)
                 return;
@@ -376,8 +376,8 @@ namespace System.IO
             }
         }
 
-        // Reading is done in blocks, but someone could read 1 byte from the buffer then write. 
-        // At that point, the underlying stream's pointer is out of sync with this stream's position. 
+        // Reading is done in blocks, but someone could read 1 byte from the buffer then write.
+        // At that point, the underlying stream's pointer is out of sync with this stream's position.
         // All write functions should call this function to ensure that the buffered data is not lost.
         private void FlushRead()
         {
@@ -507,8 +507,8 @@ namespace System.IO
 
             // Reading again for more data may cause us to block if we're using a device with no clear end of file,
             // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-            // process's standard output, this can lead to deadlocks involving two processes.              
-            // BUT - this is a breaking change. 
+            // process's standard output, this can lead to deadlocks involving two processes.
+            // BUT - this is a breaking change.
             // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
             // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
             if (bytesFromBuffer == count)
@@ -630,7 +630,7 @@ namespace System.IO
 
             int bytesFromBuffer = 0;
             // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
-            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this 
+            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
             // an Async operation.
             SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync();
@@ -645,8 +645,8 @@ namespace System.IO
                     // If we satisfied enough data from the buffer, we can complete synchronously.
                     // Reading again for more data may cause us to block if we're using a device with no clear end of file,
                     // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-                    // process's standard output, this can lead to deadlocks involving two processes.              
-                    // BUT - this is a breaking change. 
+                    // process's standard output, this can lead to deadlocks involving two processes.
+                    // BUT - this is a breaking change.
                     // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
                     // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
                     completeSynchronously = (bytesFromBuffer == count || error != null);
@@ -724,12 +724,12 @@ namespace System.IO
             Debug.Assert(_bufferSize > 0);
             Debug.Assert(semaphoreLockTask != null);
 
-            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.        
+            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
             await semaphoreLockTask.ConfigureAwait(false);
             try
             {
                 // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                // Check it now again.            
+                // Check it now again.
                 int bytesFromBuffer = ReadFromBuffer(buffer.Span);
                 if (bytesFromBuffer == buffer.Length)
                 {
@@ -748,7 +748,7 @@ namespace System.IO
                 // If there was anything in the write buffer, clear it.
                 if (_writePos > 0)
                 {
-                    await FlushWriteAsync(cancellationToken).ConfigureAwait(false);  // no Begin-End read version for Flush. Use Async.            
+                    await FlushWriteAsync(cancellationToken).ConfigureAwait(false);  // no Begin-End read version for Flush. Use Async.
                 }
 
                 // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
@@ -879,7 +879,7 @@ namespace System.IO
             // buffer space without filling it up completely, the heuristic will always tell us to use the buffer. It will also
             // tell us to use the buffer in cases where the current write would fill the buffer, but the remaining data is small
             // enough such that subsequent operations can use the buffer again.
-            // 
+            //
             // Algorithm:
             // Determine whether or not to buffer according to the heuristic (below).
             // If we decided to use the buffer:
@@ -917,7 +917,7 @@ namespace System.IO
             //
             //     +---------------------------------------+---------------------------------------+
             //     |             current buffer            | next iteration's "future" buffer      |
-            //     +---------------------------------------+---------------------------------------+ 
+            //     +---------------------------------------+---------------------------------------+
             //     |0| | | | | | | | | |1| | | | | | | | | |2| | | | | | | | | |3| | | | | | | | | |
             //     |0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|
             //     +-----------+-------------------+-------------------+---------------------------+
@@ -1121,8 +1121,8 @@ namespace System.IO
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
-        /// WriteAsync of the underlying _stream rather than calling the base Stream which implements the one 
-        /// in terms of the other. This allows BufferedStream to affect the semantics of the stream it wraps as 
+        /// WriteAsync of the underlying _stream rather than calling the base Stream which implements the one
+        /// in terms of the other. This allows BufferedStream to affect the semantics of the stream it wraps as
         /// little as possible.
         /// </summary>
         private async Task WriteToUnderlyingStreamAsync(
@@ -1166,7 +1166,7 @@ namespace System.IO
                     Debug.Assert(buffer.Length >= 0);
                     Debug.Assert(_writePos == _bufferSize);
                     Debug.Assert(_buffer != null);
-                   
+
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
 
@@ -1256,7 +1256,7 @@ namespace System.IO
             if (_readLen - _readPos > 0 && origin == SeekOrigin.Current)
             {
                 // If we have bytes in the read buffer, adjust the seek offset to account for the resulting difference
-                // between this stream's position and the underlying stream's position.            
+                // between this stream's position and the underlying stream's position.
                 offset -= (_readLen - _readPos);
             }
 
@@ -1343,7 +1343,7 @@ namespace System.IO
             {
                 int readBytes = _readLen - _readPos;
                 Debug.Assert(readBytes >= 0, $"Expected a non-negative number of bytes in buffer, got {readBytes}");
-                
+
                 if (readBytes > 0)
                 {
                     // If there's any read data in the buffer, write it all to the destination stream.

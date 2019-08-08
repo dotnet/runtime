@@ -115,11 +115,11 @@ namespace System.Configuration
                     }
                     else
                     {
-                        //No value found and no default specified 
+                        //No value found and no default specified
                         value.PropertyValue = string.Empty;
                     }
 
-                    value.IsDirty = false; //reset IsDirty so that it is correct when SetPropertyValues is called 
+                    value.IsDirty = false; //reset IsDirty so that it is correct when SetPropertyValues is called
                     values.Add(value);
                     continue;
                 }
@@ -155,11 +155,11 @@ namespace System.Configuration
                 }
                 else
                 {
-                    //No value found and no default specified 
+                    //No value found and no default specified
                     value.PropertyValue = null;
                 }
 
-                value.IsDirty = false; //reset IsDirty so that it is correct when SetPropertyValues is called 
+                value.IsDirty = false; //reset IsDirty so that it is correct when SetPropertyValues is called
                 values.Add(value);
             }
 
@@ -200,13 +200,13 @@ namespace System.Configuration
                     }
                     else
                     {
-                        // This is an app-scoped or connection string setting that has been written to. 
+                        // This is an app-scoped or connection string setting that has been written to.
                         // We don't support saving these.
                     }
                 }
             }
 
-            // Semi-hack: If there are roamable settings, let's write them before local settings so if a handler 
+            // Semi-hack: If there are roamable settings, let's write them before local settings so if a handler
             // declaration is necessary, it goes in the roaming config file in preference to the local config file.
             if (roamingUserSettings.Count > 0)
             {
@@ -220,7 +220,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        ///     Implementation of IClientSettingsProvider.Reset. Resets user scoped settings to the values 
+        ///     Implementation of IClientSettingsProvider.Reset. Resets user scoped settings to the values
         ///     in app.exe.config, does nothing for app scoped settings.
         /// </summary>
         public void Reset(SettingsContext context)
@@ -391,7 +391,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Retrieves the values of settings from the given config file (as opposed to using 
+        /// Retrieves the values of settings from the given config file (as opposed to using
         /// the configuration for the current context)
         /// </summary>
         private SettingsPropertyValueCollection GetSettingValuesFromFile(string configFileName, string sectionName, bool userScoped, SettingsPropertyCollection properties)
@@ -509,7 +509,7 @@ namespace System.Configuration
 
         /// <summary>
         /// Private version of upgrade that uses isRoaming to determine which config file to use.
-        /// </summary> 
+        /// </summary>
         private void Upgrade(SettingsContext context, SettingsPropertyCollection properties, bool isRoaming)
         {
             string prevConfig = GetPreviousConfigFileName(isRoaming);

@@ -91,7 +91,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             get
             {
-                // ThreadSafeListener is only meaningful when not using a global lock, 
+                // ThreadSafeListener is only meaningful when not using a global lock,
                 // so UseGlobalLock will be auto-disabled in that mode.
                 return true && !ThreadSafeListener;
             }

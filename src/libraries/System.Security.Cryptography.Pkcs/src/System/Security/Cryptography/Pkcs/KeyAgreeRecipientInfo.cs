@@ -94,5 +94,3 @@ namespace System.Security.Cryptography.Pkcs
         private volatile CryptographicAttributeObject _lazyOtherKeyAttribute = null;
     }
 }
-
-

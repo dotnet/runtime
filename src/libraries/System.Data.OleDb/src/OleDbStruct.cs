@@ -145,7 +145,7 @@ namespace System.Data.OleDb
         DBTYPE wType;
         BYTE bPrecision;
         BYTE bScale;
-    } 
+    }
 #endif
 
 #if (WIN32 && !ARCH_arm)
@@ -171,13 +171,13 @@ namespace System.Data.OleDb
     /* [switch_is][switch_type] */ union {
         /* [case()] */ GUID guid;
         /* [case()] */ GUID *pguid;
-        /* [default] */  /* Empty union arm */ 
+        /* [default] */  /* Empty union arm */
         }   uGuid;
     DBKIND eKind;
     /* [switch_is][switch_type] */ union  {
         /* [case()] */ LPOLESTR pwszName;
         /* [case()] */ ULONG ulPropid;
-        /* [default] */  /* Empty union arm */ 
+        /* [default] */  /* Empty union arm */
         }   uName;
     }
 #endif
@@ -344,7 +344,7 @@ namespace System.Data.OleDb
         BYTE bScale;
         DBID columnid;
     }
-#endif    
+#endif
 #if (WIN32 && !ARCH_arm)
     [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
 #else
@@ -464,4 +464,3 @@ namespace System.Data.OleDb
         internal Guid guidPropertySet;
     }
 }
-

@@ -9,9 +9,9 @@ namespace System.Drawing.Imaging
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public sealed class MetaHeader
     {
-        // The ENHMETAHEADER structure is defined natively as a union with WmfHeader.  
-        // Extreme care should be taken if changing the layout of the corresponding managaed 
-        // structures to minimize the risk of buffer overruns.  The affected managed classes 
+        // The ENHMETAHEADER structure is defined natively as a union with WmfHeader.
+        // Extreme care should be taken if changing the layout of the corresponding managaed
+        // structures to minimize the risk of buffer overruns.  The affected managed classes
         // are the following: ENHMETAHEADER, MetaHeader, MetafileHeaderWmf, MetafileHeaderEmf.
         private short _type;
         private short _headerSize;

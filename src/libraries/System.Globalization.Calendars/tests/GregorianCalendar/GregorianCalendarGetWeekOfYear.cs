@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
             int dayOfWeekForJan1 = dayOfWeek - (dayOfYear - 1) % DaysPerWeek; // 1-based
             if (dayOfWeekForJan1 <= 0)
                 dayOfWeekForJan1 += DaysPerWeek; // Make it a positive value
-            
+
             // When the day of specific time falls on the previous year,
             // return the number of days from January 1 directly.
             // There could be 6 weeks within a month.

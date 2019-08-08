@@ -46,7 +46,7 @@ namespace MS.Internal.Xml.XPath
         // --------------- Expression Parsing ----------------------
 
 
-        //The recursive is like 
+        //The recursive is like
         //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpression
         //So put 200 limitation here will max cause about 2000~3000 depth stack.
         private int _parseDepth = 0;
@@ -63,7 +63,7 @@ namespace MS.Internal.Xml.XPath
             return result;
         }
 
-        //>> OrExpr ::= ( OrExpr 'or' )? AndExpr 
+        //>> OrExpr ::= ( OrExpr 'or' )? AndExpr
         private AstNode ParseOrExpr(AstNode qyInput)
         {
             AstNode opnd = ParseAndExpr(qyInput);
@@ -79,7 +79,7 @@ namespace MS.Internal.Xml.XPath
             } while (true);
         }
 
-        //>> AndExpr ::= ( AndExpr 'and' )? EqualityExpr 
+        //>> AndExpr ::= ( AndExpr 'and' )? EqualityExpr
         private AstNode ParseAndExpr(AstNode qyInput)
         {
             AstNode opnd = ParseEqualityExpr(qyInput);
@@ -118,7 +118,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> RelationalOp ::= '<' | '>' | '<=' | '>='
-        //>> RelationalExpr    ::= ( RelationalExpr RelationalOp )? AdditiveExpr  
+        //>> RelationalExpr    ::= ( RelationalExpr RelationalOp )? AdditiveExpr
         private AstNode ParseRelationalExpr(AstNode qyInput)
         {
             AstNode opnd = ParseAdditiveExpr(qyInput);
@@ -206,7 +206,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        //>> UnionExpr ::= ( UnionExpr '|' )? PathExpr  
+        //>> UnionExpr ::= ( UnionExpr '|' )? PathExpr
         private AstNode ParseUnionExpr(AstNode qyInput)
         {
             AstNode opnd = ParsePathExpr(qyInput);
@@ -238,7 +238,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> PathOp   ::= '/' | '//'
-        //>> PathExpr ::= LocationPath | 
+        //>> PathExpr ::= LocationPath |
         //>>              FilterExpr ( PathOp  RelativeLocationPath )?
         private AstNode ParsePathExpr(AstNode qyInput)
         {
@@ -265,7 +265,7 @@ namespace MS.Internal.Xml.XPath
             return opnd;
         }
 
-        //>> FilterExpr ::= PrimaryExpr | FilterExpr Predicate 
+        //>> FilterExpr ::= PrimaryExpr | FilterExpr Predicate
         private AstNode ParseFilterExpr(AstNode qyInput)
         {
             AstNode opnd = ParsePrimaryExpr(qyInput);
@@ -318,7 +318,7 @@ namespace MS.Internal.Xml.XPath
         } // ParseLocationPath
 
         //>> PathOp   ::= '/' | '//'
-        //>> RelativeLocationPath ::= ( RelativeLocationPath PathOp )? Step 
+        //>> RelativeLocationPath ::= ( RelativeLocationPath PathOp )? Step
         private AstNode ParseRelativeLocationPath(AstNode qyInput)
         {
             AstNode opnd = qyInput;
@@ -617,7 +617,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> LocationPathPattern ::= '/' | RelativePathPattern | '//' RelativePathPattern  |  '/' RelativePathPattern
-        //>>                       | IdKeyPattern (('/' | '//') RelativePathPattern)?  
+        //>>                       | IdKeyPattern (('/' | '//') RelativePathPattern)?
         private AstNode ParseLocationPathPattern()
         {
             AstNode opnd = null;
@@ -660,7 +660,7 @@ namespace MS.Internal.Xml.XPath
             return ParseRelativePathPattern(opnd);
         }
 
-        //>> IdKeyPattern ::= 'id' '(' Literal ')' | 'key' '(' Literal ',' Literal ')'  
+        //>> IdKeyPattern ::= 'id' '(' Literal ')' | 'key' '(' Literal ',' Literal ')'
         private AstNode ParseIdKeyPattern()
         {
             Debug.Assert(_scanner.CanBeFunction);
@@ -714,8 +714,8 @@ namespace MS.Internal.Xml.XPath
             return opnd;
         }
 
-        //>> StepPattern    ::=    ChildOrAttributeAxisSpecifier NodeTest Predicate*   
-        //>> ChildOrAttributeAxisSpecifier    ::=    @ ? | ('child' | 'attribute') '::' 
+        //>> StepPattern    ::=    ChildOrAttributeAxisSpecifier NodeTest Predicate*
+        //>> ChildOrAttributeAxisSpecifier    ::=    @ ? | ('child' | 'attribute') '::'
         private AstNode ParseStepPattern(AstNode qyInput)
         {
             AstNode opnd;

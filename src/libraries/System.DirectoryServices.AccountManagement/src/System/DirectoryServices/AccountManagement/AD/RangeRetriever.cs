@@ -9,26 +9,26 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    /// 
+    ///
     /// <summary>
     /// Retrieves all the values of the specified attribute using the supplied DirectoryEntry object.
     /// This function would additionally dispose the supplied DirectoryEntry object in its Dispose() method
     /// if disposeDirEntry parameter is set to true in its constructor.
     /// </summary>
-    /// 
+    ///
     internal class RangeRetriever : CollectionBase, IEnumerable, IEnumerator, IDisposable
     {
-        /// 
+        ///
         /// <summary>
         /// Creates a new RangeRetriever object.
         /// </summary>
         /// <param name="de">DirectoryEntry object whose attribute needs to be range retrieved</param>
         /// <param name="propertyName">name of the attribute that needs to be range retrieved, ex: "memberOf"</param>
         /// <param name="disposeDirEntry">
-        /// If set to true, the supplied DirectoryEntry will be disposed, 
+        /// If set to true, the supplied DirectoryEntry will be disposed,
         /// by this object's Dispose() method
         /// </param>
-        /// 
+        ///
         public RangeRetriever(DirectoryEntry de, string propertyName, bool disposeDirEntry)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "RangeRetriever: de.Path={0}, propertyName={1}", de.Path, propertyName);
@@ -204,7 +204,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        /// 
+        ///
         /// <summary>
         /// If set to true then the attribute values will be cached in the InnerList
         /// </summary>
@@ -220,7 +220,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                // Technically, should throw an InvalidOperationException if the enumerator is positioned before 
+                // Technically, should throw an InvalidOperationException if the enumerator is positioned before
                 // the beginning or after the end, but this will only be used internally.
                 Debug.Assert(_currentResult != null && _endReached == false);
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Current: currentResult={0}", _currentResult.ToString());
@@ -247,4 +247,3 @@ namespace System.DirectoryServices.AccountManagement
         private IEnumerator _currentEnumerator = null;   // the PropertyValueCollection enumerator for the current chunk
     }
 }
-

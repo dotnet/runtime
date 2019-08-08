@@ -37,7 +37,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <param name="allowedRanges">Set of characters that the encoder is allowed to not encode.</param>
         /// <returns>A new instance of the <see cref="UrlEncoder"/>.</returns>
-        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks> 
+        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks>
         public static UrlEncoder Create(params UnicodeRange[] allowedRanges)
         {
             return new DefaultUrlEncoder(allowedRanges);
@@ -71,7 +71,7 @@ namespace System.Text.Encodings.Web
             _allowedCharacters.ForbidUndefinedCharacters();
 
             // Forbid characters that are special in HTML.
-            // Even though this is a not HTML encoder, 
+            // Even though this is a not HTML encoder,
             // it's unfortunately common for developers to
             // forget to HTML-encode a string once it has been URL-encoded,
             // so this offers extra protection.
@@ -82,38 +82,38 @@ namespace System.Text.Encodings.Web
             // 'iquery', and 'ifragment'. The relevant definitions are below.
             //
             //    ipath-noscheme = isegment-nz-nc *( "/" isegment )
-            // 
+            //
             //    isegment       = *ipchar
-            // 
+            //
             //    isegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
             //                         / "@" )
             //                   ; non-zero-length segment without any colon ":"
             //
             //    ipchar         = iunreserved / pct-encoded / sub-delims / ":"
             //                   / "@"
-            // 
+            //
             //    iquery         = *( ipchar / iprivate / "/" / "?" )
-            // 
+            //
             //    ifragment      = *( ipchar / "/" / "?" )
-            // 
+            //
             //    iunreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~" / ucschar
-            // 
+            //
             //    ucschar        = %xA0-D7FF / %xF900-FDCF / %xFDF0-FFEF
             //                   / %x10000-1FFFD / %x20000-2FFFD / %x30000-3FFFD
             //                   / %x40000-4FFFD / %x50000-5FFFD / %x60000-6FFFD
             //                   / %x70000-7FFFD / %x80000-8FFFD / %x90000-9FFFD
             //                   / %xA0000-AFFFD / %xB0000-BFFFD / %xC0000-CFFFD
             //                   / %xD0000-DFFFD / %xE1000-EFFFD
-            // 
+            //
             //    pct-encoded    = "%" HEXDIG HEXDIG
-            // 
+            //
             //    sub-delims     = "!" / "$" / "&" / "'" / "(" / ")"
             //                   / "*" / "+" / "," / ";" / "="
             //
             // The only common characters between these four components are the
             // intersection of 'isegment-nz-nc' and 'ipchar', which is really
             // just 'isegment-nz-nc' (colons forbidden).
-            // 
+            //
             // From this list, the base encoder already forbids "&", "'", "+",
             // and we'll additionally forbid "=" since it has special meaning
             // in x-www-form-urlencoded representations.

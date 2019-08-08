@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(99, new JapaneseCalendar().TwoDigitYearMax);
         }
-        
+
         [Theory]
         [InlineData(200)]
         [InlineData(99)]

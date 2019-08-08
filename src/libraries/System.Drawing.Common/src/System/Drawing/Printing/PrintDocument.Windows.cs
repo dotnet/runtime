@@ -75,7 +75,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        // If true, positions the origin of the graphics object 
+        // If true, positions the origin of the graphics object
         // associated with the page at the point just inside
         // the user-specified margins of the page.
         // If false, the graphics origin is at the top-left

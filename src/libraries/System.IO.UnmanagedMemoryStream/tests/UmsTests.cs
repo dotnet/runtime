@@ -71,7 +71,7 @@ namespace System.IO.Tests
             {
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadWriteUmsInvariants(stream);
-                Assert.Throws<IOException>(() => stream.SetLength(1001)); 
+                Assert.Throws<IOException>(() => stream.SetLength(1001));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(sbyte.MinValue));
 
                 const long expectedLength = 500;
@@ -98,7 +98,7 @@ namespace System.IO.Tests
                 stream.Seek(10, SeekOrigin.Begin);
                 Assert.Equal(10, stream.Position);
 
-                Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin)); // An attempt was made to move the position before the beginning of the stream 
+                Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin)); // An attempt was made to move the position before the beginning of the stream
                 Assert.Equal(10, stream.Position);
 
                 Assert.Throws<IOException>(() => stream.Seek(-(stream.Position + 1), SeekOrigin.Current)); // An attempt was made to move the position before the beginning of the stream

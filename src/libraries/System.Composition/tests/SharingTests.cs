@@ -335,7 +335,7 @@ namespace System.Composition.UnitTests
         }
 
         /// <summary>
-        /// Need a partcreationpolicy currently. 
+        /// Need a partcreationpolicy currently.
         /// Needs to be fixed so that specifying boundary would automatically create the shared
         /// </summary>
         [Fact]
@@ -451,8 +451,8 @@ namespace System.Composition.UnitTests
         }
 
         /// <summary>
-        /// ExportFactory class is itself shared and 
-        /// will still respect the CreationPolicyAttribute on a part.  If the export factory 
+        /// ExportFactory class is itself shared and
+        /// will still respect the CreationPolicyAttribute on a part.  If the export factory
         /// is creating a part which is shared, it will return back the same instance of the part.
         /// </summary>
         [Fact]
@@ -469,7 +469,7 @@ namespace System.Composition.UnitTests
         }
 
         /// <summary>
-        /// Class which is nonShared has an exportFactory in it for a shared part. 
+        /// Class which is nonShared has an exportFactory in it for a shared part.
         /// Two instances of the root class are created , the part created using export factory should not be shared
         /// </summary>
         [Fact]

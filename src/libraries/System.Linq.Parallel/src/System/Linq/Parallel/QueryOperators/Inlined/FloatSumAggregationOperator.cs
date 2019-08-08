@@ -15,7 +15,7 @@ using System.Threading;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// An inlined sum aggregation and its enumerator, for floats. 
+    /// An inlined sum aggregation and its enumerator, for floats.
     /// </summary>
     internal sealed class FloatSumAggregationOperator : InlinedAggregationOperator<float, double, float>
     {
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
 
         protected override float InternalAggregate(ref Exception singularExceptionToThrow)
         {
-            // Because the final reduction is typically much cheaper than the intermediate 
+            // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
             // will do a lot of work to produce a single output element, we prefer to turn off
             // pipelining, and process the final reductions serially.

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
             /// <summary>
             ///         ImportParameters will replace the existing key that ECDsaCng is working with by creating a
             ///         new CngKey. If the parameters contains only Q, then only a public key will be imported.
-            ///         If the parameters also contains D, then a full key pair will be imported. 
+            ///         If the parameters also contains D, then a full key pair will be imported.
             ///         The parameters Curve value specifies the type of the curve to import.
             /// </summary>
             /// <exception cref="CryptographicException">

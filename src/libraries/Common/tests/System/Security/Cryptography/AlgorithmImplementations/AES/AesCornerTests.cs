@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 a.Mode = CipherMode.CBC;
                 a.Padding = PaddingMode.None;
 
-                // To ensure that each ICryptoTransform maintains an independent encryption state, we'll create two encryptors and two decryptors. 
+                // To ensure that each ICryptoTransform maintains an independent encryption state, we'll create two encryptors and two decryptors.
                 // Then we'll feed them one block each in an interleaved fashion. At the end, they'd better still come up with the correct result.
 
                 MemoryStream plain1 = new MemoryStream(plainText);

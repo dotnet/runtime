@@ -30,7 +30,7 @@ namespace System.IO.Pipes.Tests
             // handle is null - throws on Windows but not Unix.
             CheckPipePropertyOperations();
         }
-            
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Null handle throws on Windows only
         public void TestCheckPipePropertyOperations_Windows()

@@ -149,7 +149,7 @@ namespace System.IO.Compression.Tests
                     source.CopyTo(ms);
                     Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
                     byte[] buffer = new byte[s_bufferSize];
-                    Assert.Equal(0, source.Read(buffer, 0, buffer.Length)); // shouldn't be able read more                        
+                    Assert.Equal(0, source.Read(buffer, 0, buffer.Length)); // shouldn't be able read more
                     ms.Seek(0, SeekOrigin.Begin);
                     int read;
                     while ((read = ms.Read(buffer, 0, buffer.Length)) != 0)
@@ -182,7 +182,7 @@ namespace System.IO.Compression.Tests
                         ms.Write(buffer, 0, read);
                     }
                     Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
-                    Assert.Equal(0, source.Read(buffer, 0, s_bufferSize)); // shouldn't be able read more 
+                    Assert.Equal(0, source.Read(buffer, 0, s_bufferSize)); // shouldn't be able read more
                     ms.Seek(0, SeekOrigin.Begin);
                     while ((read = ms.Read(buffer, 0, buffer.Length)) != 0)
                     { // No need to do anything, just making sure all bytes readable from output stream
@@ -315,7 +315,7 @@ namespace System.IO.Compression.Tests
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 ZipArchiveEntry e = archive.GetEntry("bigFile.bin");
-                
+
                 Assert.Equal(6_442_450_944, e.Length);
                 Assert.Equal(6_261_752, e.CompressedLength);
 
@@ -324,7 +324,7 @@ namespace System.IO.Compression.Tests
                     byte[] buffer = new byte[s_bufferSize];
                     int read = source.Read(buffer, 0, buffer.Length);   // We don't want to inflate this large archive entirely
                                                                         // just making sure it read successfully
-                    Assert.Equal(s_bufferSize, read);                   
+                    Assert.Equal(s_bufferSize, read);
                 }
             }
         }
@@ -367,7 +367,7 @@ namespace System.IO.Compression.Tests
             {
                 var testStream = new WrappedStream(s, false, true, false, null);
                 await CreateFromDir(zfolder("normal"), testStream, ZipArchiveMode.Create);
-              
+
                 PatchDataDescriptorRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), s, 8);  // patch uncompressed size in file descriptor
 
                 using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Read))
@@ -397,7 +397,7 @@ namespace System.IO.Compression.Tests
                 using (Stream s = e.Open())
                 {
                     Assert.Equal(updatedUncompressedLength, s.Length);
-                    s.Seek(0, SeekOrigin.End);                  
+                    s.Seek(0, SeekOrigin.End);
                     s.Write(data, 0, data.Length);
                     Assert.Equal(updatedUncompressedLength + data.Length, s.Length);
                 }
@@ -468,7 +468,7 @@ namespace System.IO.Compression.Tests
             MemoryStream file = await StreamHelpers.CreateTempCopyStream(zmodified(Path.Combine("addFile", addingFile)));
 
             int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
-            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too          
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
 
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, true))
             {
@@ -505,7 +505,7 @@ namespace System.IO.Compression.Tests
                         file.Read(buffer2, 0, buffer2.Length);
                         Assert.Equal(buffer1, buffer2);
                     }
-                }     
+                }
             }
         }
 
@@ -723,9 +723,9 @@ namespace System.IO.Compression.Tests
 
         /// <summary>
         /// This test checks behavior of ZipArchive with unexpected zip files:
-        /// 1. EmptyFileCompressedWithEOT has 
+        /// 1. EmptyFileCompressedWithEOT has
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 2, compressed data: 0x0300 (\u0003 ETX)
-        /// 2. EmptyFileCompressedWrongSize has 
+        /// 2. EmptyFileCompressedWrongSize has
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 4, compressed data: 0xBAAD0300 (just bad data)
         /// ZipArchive is expected to change compression method to Stored (0x00) and ignore "bad" compressed size
         /// </summary>
@@ -762,4 +762,3 @@ namespace System.IO.Compression.Tests
         }
     }
 }
-

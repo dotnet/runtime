@@ -43,7 +43,7 @@ namespace System.Net.Http.Tests
         public void Parameters_AddNull_Throw()
         {
             NameValueWithParametersHeaderValue nameValue = new NameValueWithParametersHeaderValue("name");
-            
+
             Assert.Throws<ArgumentNullException>(() => { nameValue.Parameters.Add(null); });
         }
 

@@ -493,13 +493,13 @@ namespace System.Xml.Tests
             {
                 XmlDiff.XmlDiff xmldiff = new XmlDiff.XmlDiff();
                 xmldiff.Option = XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreEmptyElement | XmlDiffOption.NormalizeNewline;
-                
+
                 string actualValue = File.ReadAllText(_strOutFile);
-                
+
                 //Output the expected and actual values
                 _output.WriteLine("Expected : " + expectedValue);
                 _output.WriteLine("Actual : " + actualValue);
-                
+
                 bool result;
 
                 //Load into XmlTextReaders
@@ -843,7 +843,7 @@ namespace System.Xml.Tests
                             {
                                 tw = new StreamWriter(outFile, Encoding.UTF8);
                                 xslt.Transform(xd, null, tw, xr);
-                            } 
+                            }
                         }
                         catch (Exception ex)
                         {

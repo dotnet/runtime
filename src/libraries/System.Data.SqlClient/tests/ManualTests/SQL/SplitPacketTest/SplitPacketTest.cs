@@ -35,7 +35,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             builder.DataSource = "tcp:127.0.0.1," + Port;
             BaseConnString = builder.ConnectionString;
-        } 
+        }
 
         [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void OneByteSplitTest()

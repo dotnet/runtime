@@ -92,7 +92,7 @@ namespace System.Data.Tests
 
             _dataSet.Tables.Add(_parentTable);
 
-            // Create three new DataRow objects and add 
+            // Create three new DataRow objects and add
             // them to the DataTable
             for (int i = 0; i <= 2; i++)
             {
@@ -651,7 +651,7 @@ namespace System.Data.Tests
                     // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
                     // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
                     Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
-                    
+
                     Assert.Null(ex.ParamName);
                 }
             }
@@ -709,7 +709,7 @@ namespace System.Data.Tests
                 _parentTable.WriteXmlSchema(stream);
             }
 
-            //Create a table and define the full schema 
+            //Create a table and define the full schema
             DataTable table = new DataTable();
             table.Columns.Add(new DataColumn(_parentTable.Columns[0].ColumnName, typeof(int)));
             table.Columns.Add(new DataColumn(_parentTable.Columns[1].ColumnName, typeof(string)));

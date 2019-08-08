@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT 
+#if USE_REFEMIT
     public class ExtensionDataMember
 #else
     internal class ExtensionDataMember

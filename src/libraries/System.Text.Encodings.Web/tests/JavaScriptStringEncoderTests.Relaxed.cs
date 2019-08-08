@@ -54,7 +54,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             // The following two calls could be simply InlineData to the Theory below
             // Unfortunately, the xUnit logger fails to escape the inputs when logging the test results,
-            // and so the suite fails despite all tests passing. 
+            // and so the suite fails despite all tests passing.
             // TODO: I will try to fix it in xUnit, but for now this is a workaround to enable these tests.
             JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple("\b", @"\b");
             JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple("\f", @"\f");

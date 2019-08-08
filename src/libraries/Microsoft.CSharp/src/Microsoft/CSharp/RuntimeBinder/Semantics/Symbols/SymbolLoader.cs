@@ -213,9 +213,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         case AggKindEnum.Delegate:
                             // * From any delegate type to System.Delegate
-                            // 
+                            //
                             // SPEC OMISSION:
-                            // 
+                            //
                             // The spec should actually say
                             //
                             // * From any delegate type to System.Delegate

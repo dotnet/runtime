@@ -296,7 +296,7 @@ namespace BasicEventSourceTests
                 log = new EventSource(esName);
                 log2 = new EventSource(esName2);
 
-                
+
                 using (var listener = new EventListenerListener())
                 {
                     List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();

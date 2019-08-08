@@ -63,7 +63,7 @@ namespace System.Xml
             return OwnerDocument.CreateDocumentType(_name, _publicId, _systemId, _internalSubset);
         }
 
-        // 
+        //
         // Microsoft extensions
         //
 

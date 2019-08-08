@@ -656,7 +656,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 digest = hash.ComputeHash(s);
             }
-            
+
             Assert.Equal("IKbfdK2/DMfXyezCf5QggVCXfk8=", Convert.ToBase64String(digest));
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -953,7 +953,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(VerifySignedXml(doc), "#4");
         }
 
-        // creates a signed XML document with two certificates in the X509Data 
+        // creates a signed XML document with two certificates in the X509Data
         // element, with the second being the one that should be used to verify
         // the signature
         static XmlDocument CreateSignedXml(X509Certificate2 cert, string canonicalizationMethod, string lineFeed)
@@ -1311,7 +1311,7 @@ namespace System.Security.Cryptography.Xml.Tests
             var hmac = new HMACSHA384(hmackey);
             Assert.Equal(hmackey, hmac.Key);
 
-            // works as long as the string can be used by CryptoConfig to create 
+            // works as long as the string can be used by CryptoConfig to create
             // an instance of the required hash algorithm
             SignedXml sign = SignHMAC("SHA384", hmac, true);
             Assert.Equal(more384, sign.SignatureMethod);
@@ -1350,7 +1350,7 @@ namespace System.Security.Cryptography.Xml.Tests
             var hmac = new HMACMD5(hmackey);
             Assert.Equal(hmackey, hmac.Key);
 
-            // works as long as the string can be used by CryptoConfig to create 
+            // works as long as the string can be used by CryptoConfig to create
             // an instance of the required hash algorithm
             SignedXml sign = SignHMAC("MD5", hmac, true);
             Assert.Equal(moreHmacMD5, sign.SignatureMethod);

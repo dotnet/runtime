@@ -454,9 +454,9 @@ namespace System.Transactions.Tests
         #endregion
 
         #region Others
-        /* >1vol  
+        /* >1vol
          * > 1 durable, On .net this becomes a distributed transaction
-         * We don't support this in mono yet. 
+         * We don't support this in mono yet.
          */
         [ActiveIssue(13532)] //Distributed transactions are not supported.
         [Fact]
@@ -1209,4 +1209,3 @@ namespace System.Transactions.Tests
         #endregion
     }
 }
-

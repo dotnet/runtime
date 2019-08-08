@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
         // If isInserted == false, it is an original value and is stored in originalValue.
         // For each originalValue Pair, the left side contains a copy of the value as it was originally retrieved from the store,
         // while the right side contains the current value (which differs from the left side iff the application
-        // modified the value).        
+        // modified the value).
         internal List<ValueEl> combinedValues = new List<ValueEl>();
 
         // Contains values removed by the application for which the removal has not yet been committed
@@ -282,7 +282,7 @@ namespace System.DirectoryServices.AccountManagement
                         if (!el.originalValue.Left.Equals(el.originalValue.Right))
                         {
                             // Don't need to worry about whether we need to copy the T,
-                            // since we're not handing it out to the app and we'll internally treat it as read-only                    
+                            // since we're not handing it out to the app and we'll internally treat it as read-only
                             changedList.Add(new Pair<T, T>(el.originalValue.Left, el.originalValue.Right));
                         }
                     }

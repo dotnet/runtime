@@ -93,7 +93,7 @@ namespace System.ComponentModel.Tests
             {
                 IgnoreCase = true
             };
-            
+
             resourceManager.ApplyResources(value, "Object");
             Assert.Null(value.GetSetProperty);
             Assert.Equal("ObjectGetSetProperty", value.getsetproperty);

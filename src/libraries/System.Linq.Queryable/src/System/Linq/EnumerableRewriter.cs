@@ -118,7 +118,7 @@ namespace System.Linq
             // If we create a constant explicitly typed to be a private nested type,
             // such as Lookup<,>.Grouping or a compiler-generated iterator class, then
             // we cannot use the expression tree in a context which has only execution
-            // permissions.  We should endeavour to translate constants into 
+            // permissions.  We should endeavour to translate constants into
             // new constants which have public types.
             if (t.IsGenericType && t.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>)))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());

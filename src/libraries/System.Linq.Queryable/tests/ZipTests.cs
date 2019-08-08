@@ -17,7 +17,7 @@ namespace System.Linq.Tests
             int[] expected = new int[] { 3, 7, 12 };
             Assert.Equal(expected, first.AsQueryable().Zip(second.AsQueryable(), (x, y) => x + y));
         }
-        
+
         [Fact]
         public void FirstIsNull()
         {
@@ -33,13 +33,13 @@ namespace System.Linq.Tests
             IQueryable<int> second = null;
             AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Zip(second, (x, y) => x + y));
         }
-        
+
         [Fact]
         public void FuncIsNull()
         {
             IQueryable<int> first = new int[] { 1, 2, 3 }.AsQueryable();
             IQueryable<int> second = new int[] { 2, 4, 6 }.AsQueryable();
-            Expression<Func<int, int, int>> func = null;            
+            Expression<Func<int, int, int>> func = null;
             AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
         }
 

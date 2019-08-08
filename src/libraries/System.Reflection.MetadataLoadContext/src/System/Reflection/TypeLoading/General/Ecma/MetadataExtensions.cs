@@ -76,7 +76,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public static bool Equals(this StringHandle handle, string value, MetadataReader reader) => reader.StringComparer.Equals(handle, value, ignoreCase: false);
 
-        // 
+        //
         // utf8.Length does *not* include NUL terminator.
         //
         public static unsafe bool Equals(this StringHandle handle, ReadOnlySpan<byte> utf8, MetadataReader reader)

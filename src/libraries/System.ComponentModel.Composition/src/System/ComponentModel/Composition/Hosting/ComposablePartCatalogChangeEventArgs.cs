@@ -23,17 +23,17 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="ComposablePartCatalogChangeEventArgs"/>.
         /// </summary>
         /// <param name="addedDefinitions">
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that
         ///     are being added to the <see cref="ComposablePartCatalog"/>.
         /// </param>
         /// <param name="removedDefinitions">
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that
         ///     are being removed from the <see cref="ComposablePartCatalog"/>.
         /// </param>
         /// <param name="atomicComposition">
         ///     A <see cref="AtomicComposition"/> representing all tentative changes that will
-        ///     be completed if the change is successful, or discarded if it is not. 
-        ///     <see langword="null"/> if being applied outside a <see cref="AtomicComposition"/> 
+        ///     be completed if the change is successful, or discarded if it is not.
+        ///     <see langword="null"/> if being applied outside a <see cref="AtomicComposition"/>
         ///     or during a <see cref="INotifyComposablePartCatalogChanged.Changed"/> event.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -54,10 +54,10 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the identifiers of the parts that have been added.
         /// </summary>
         /// <value>
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that
         ///     have been added to the <see cref="ComposablePartCatalog"/>.
         /// </value>
-        public IEnumerable<ComposablePartDefinition> AddedDefinitions 
+        public IEnumerable<ComposablePartDefinition> AddedDefinitions
         {
             get
             {
@@ -71,10 +71,10 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the identifiers of the parts that have been removed.
         /// </summary>
         /// <value>
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that
         ///     have been removed from the <see cref="ComposablePartCatalog"/>.
         /// </value>
-        public IEnumerable<ComposablePartDefinition> RemovedDefinitions 
+        public IEnumerable<ComposablePartDefinition> RemovedDefinitions
         {
             get
             {
@@ -88,11 +88,11 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the atomicComposition, if any, that this change applies to.
         /// </summary>
         /// <value>
-        ///     A <see cref="AtomicComposition"/> that this set of changes applies too. 
-        ///     It can be <see langword="null"/> if the changes are being applied outside a 
-        ///     <see cref="AtomicComposition"/> or during a 
+        ///     A <see cref="AtomicComposition"/> that this set of changes applies too.
+        ///     It can be <see langword="null"/> if the changes are being applied outside a
+        ///     <see cref="AtomicComposition"/> or during a
         ///     <see cref="INotifyComposablePartCatalogChanged.Changed"/> event.
-        ///     
+        ///
         ///     When the value is non-null it should be used to record temporary changed state
         ///     and actions that will be executed when the atomicComposition is completeed.
         /// </value>

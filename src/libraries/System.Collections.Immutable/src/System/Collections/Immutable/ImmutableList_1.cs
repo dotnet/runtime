@@ -422,7 +422,7 @@ namespace System.Collections.Immutable
         /// Reverses the order of the elements in the specified range.
         /// </summary>
         /// <param name="index">The zero-based starting index of the range to reverse.</param>
-        /// <param name="count">The number of elements in the range to reverse.</param> 
+        /// <param name="count">The number of elements in the range to reverse.</param>
         /// <returns>The reversed list.</returns>
         [Pure]
         public ImmutableList<T> Reverse(int index, int count) => this.Wrap(_root.Reverse(index, count));
@@ -1104,7 +1104,7 @@ namespace System.Collections.Immutable
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         /// <remarks>
-        /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
+        /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable
         /// or by passing it to another method.  When this enumerator is disposed of it returns a mutable reference type stack to a resource pool,
         /// and if the value type enumerator is copied (which can easily happen unintentionally if you pass the value around) there is a risk
         /// that a stack that has already been returned to the resource pool may still be in use by one of the enumerator copies, leading to data
@@ -1166,7 +1166,7 @@ namespace System.Collections.Immutable
         private static bool IsCompatibleObject(object value)
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
-            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             return ((value is T) || (value == null && default(T) == null));
         }
 
@@ -1206,7 +1206,7 @@ namespace System.Collections.Immutable
             // build it in such a way as to generate minimal garbage, by assembling
             // the immutable binary tree from leaf to root.  This requires
             // that we know the length of the item sequence in advance, and can
-            // index into that sequence like a list, so the one possible piece of 
+            // index into that sequence like a list, so the one possible piece of
             // garbage produced is a temporary array to store the list while
             // we build the tree.
             var list = items.AsOrderedCollection();

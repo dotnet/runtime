@@ -47,8 +47,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             internal readonly ITargetBlock<T> Target;
             /// <summary>The value of the PropagateCompletion link option.</summary>
             internal readonly bool PropagateCompletion;
-            /// <summary>Number of remaining messages to propagate. 
-            /// This counter is initialized to the MaxMessages option and 
+            /// <summary>Number of remaining messages to propagate.
+            /// This counter is initialized to the MaxMessages option and
             /// gets decremented after each successful propagation.</summary>
             internal int RemainingMessages;
             /// <summary>The previous node in the list.</summary>

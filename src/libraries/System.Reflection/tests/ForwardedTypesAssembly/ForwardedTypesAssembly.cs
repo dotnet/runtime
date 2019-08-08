@@ -24,4 +24,3 @@ public static class TypeInForwardedAssembly
     private class PrivatelInner{}
     protected internal class ProjectedInternalInner{}
 }
-

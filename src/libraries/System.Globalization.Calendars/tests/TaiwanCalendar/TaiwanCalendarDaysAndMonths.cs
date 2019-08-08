@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void DayNames_MonthNames()
         {
-            string[] expectedDayNames = 
+            string[] expectedDayNames =
             {
                 "\u661F\u671F\u65E5",
                 "\u661F\u671F\u4E00",
@@ -22,10 +22,10 @@ namespace System.Globalization.Tests
                 "\u661F\u671F\u4E94",
                 "\u661F\u671F\u516D"
             };
-            
+
             DateTimeFormatInfo dtfi = new CultureInfo("zh-TW").DateTimeFormat;
             dtfi.Calendar = new TaiwanCalendar();
-            
+
             Assert.Equal(expectedDayNames, dtfi.DayNames);
             Assert.Equal(GetExpectedMonthNames(), dtfi.MonthNames);
         }
@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return new string[] 
+                return new string[]
                 {
                     "\u4E00\u6708",
                     "\u4E8C\u6708",
@@ -54,7 +54,7 @@ namespace System.Globalization.Tests
             else
             {
                 // CLDR has a digit followed by the month symbol for the month names
-                return new string[] 
+                return new string[]
                 {
                     "1\u6708",
                     "2\u6708",

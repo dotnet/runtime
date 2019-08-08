@@ -16,13 +16,13 @@ namespace System.Net.Mail
     {
         //
         // Reads a domain literal in reverse
-        // 
-        // Preconditions: 
+        //
+        // Preconditions:
         //  - Index must be within the bounds of the data string.
         //  - The char at the given index is the initial bracket. (data[index] == EndSquareBracket)
         //
-        // Return value: 
-        // - The next index past the terminating bracket (data[index + 1] == StartSquareBracket). 
+        // Return value:
+        // - The next index past the terminating bracket (data[index + 1] == StartSquareBracket).
         //   e.g. In (user@[domain]), starting at index=12 (]) returns index=4 (@).
         //
         // A FormatException will be thrown if:

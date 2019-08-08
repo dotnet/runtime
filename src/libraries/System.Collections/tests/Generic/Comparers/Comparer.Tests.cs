@@ -23,7 +23,7 @@ namespace System.Collections.Generic.Tests
         {
             var comparer = Comparer<T>.Default;
             Assert.Equal(expected, Math.Sign(comparer.Compare(left, right)));
-            
+
             // Because of these asserts we don't need to explicitly add tests for
             // 0 being an expected value, it is done automatically for every input
             Assert.Equal(0, comparer.Compare(left, left));
@@ -97,7 +97,7 @@ namespace System.Collections.Generic.Tests
                 Tuple.Create(ulong.MaxValue, (ulong)long.MaxValue, 1),
                 Tuple.Create(ulong.MaxValue - 3, ulong.MaxValue, -1)
             };
-            
+
             foreach (var testCase in testCases)
             {
                 yield return new object[] { (UInt64Enum)testCase.Item1, (UInt64Enum)testCase.Item2, testCase.Item3 };
@@ -148,7 +148,7 @@ namespace System.Collections.Generic.Tests
                 Tuple.Create(long.MinValue, long.MaxValue, -1),
                 Tuple.Create(long.MinValue + 9, long.MinValue, 1)
             };
-            
+
             foreach (var testCase in testCases)
             {
                 yield return new object[] { (Int64Enum)testCase.Item1, (Int64Enum)testCase.Item2, testCase.Item3 };
@@ -226,7 +226,7 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(1, comparer.Compare(left, right));
             Assert.Equal(1, comparer.Compare(right, left));
         }
-        
+
         // The runtime treats nullables specially when they're boxed,
         // for example `object o = new int?(3); o is int` is true.
         // This messes with the xUnit type inference for generic theories,
@@ -280,7 +280,7 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(-1, comparer.Compare(null, default(T)));
             Assert.Equal(1, comparer.Compare(default(T), null));
             Assert.Equal(0, comparer.Compare(default(T), default(T)));
-            
+
             Assert.Equal(-1, nonGenericComparer.Compare(null, default(T)));
             Assert.Equal(1, nonGenericComparer.Compare(default(T), null));
             Assert.Equal(0, nonGenericComparer.Compare(default(T), default(T)));

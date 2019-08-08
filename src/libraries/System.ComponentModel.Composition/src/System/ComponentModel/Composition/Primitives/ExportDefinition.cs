@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.Primitives
     /// </summary>
     public class ExportDefinition
     {
-        // Unlike contract name, metadata has a sensible default; set it to an empty bag, 
+        // Unlike contract name, metadata has a sensible default; set it to an empty bag,
         // so that derived definitions only need to override ContractName by default.
         private readonly IDictionary<string, object> _metadata = MetadataServices.EmptyMetadata;
         private readonly string _contractName;
@@ -33,17 +33,17 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ExportDefinition"/> class with 
+        ///     Initializes a new instance of the <see cref="ExportDefinition"/> class with
         ///     the specified contract name and metadata.
         /// </summary>
         /// <param name="contractName">
-        ///     A <see cref="string"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the
         ///     <see cref="ExportDefinition"/>.
         /// </param>
         /// <param name="metadata">
-        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the 
-        ///     <see cref="ExportDefinition"/>; or <see langword="null"/> to set the 
-        ///     <see cref="Metadata"/> property to an empty, read-only 
+        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the
+        ///     <see cref="ExportDefinition"/>; or <see langword="null"/> to set the
+        ///     <see cref="Metadata"/> property to an empty, read-only
         ///     <see cref="IDictionary{TKey, TValue}"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the contract name of the export definition.
         /// </summary>
         /// <value>
-        ///     A <see cref="string"/> containing the contract name of the 
+        ///     A <see cref="string"/> containing the contract name of the
         ///     <see cref="ExportDefinition"/>.
         /// </value>
         /// <exception cref="NotImplementedException">
@@ -76,13 +76,13 @@ namespace System.ComponentModel.Composition.Primitives
         /// </exception>
         /// <remarks>
         ///     <note type="inheritinfo">
-        ///         Overriders of this property should never return <see langword="null"/> 
+        ///         Overriders of this property should never return <see langword="null"/>
         ///         or an empty string ("").
         ///     </note>
         /// </remarks>
         public virtual string ContractName
         {
-            get 
+            get
             {
                 if (_contractName != null)
                 {
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the metadata of the export definition.
         /// </summary>
         /// <value>
-        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the 
+        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the
         ///     <see cref="ExportDefinition"/>. The default is an empty, read-only
         ///     <see cref="IDictionary{TKey, TValue}"/>.
         /// </value>
@@ -105,21 +105,21 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <para>
         ///         <note type="inheritinfo">
         ///             Overriders of this property should return a read-only
-        ///             <see cref="IDictionary{TKey, TValue}"/> object with a case-sensitive, 
-        ///             non-linguistic comparer, such as <see cref="StringComparer.Ordinal"/>, 
+        ///             <see cref="IDictionary{TKey, TValue}"/> object with a case-sensitive,
+        ///             non-linguistic comparer, such as <see cref="StringComparer.Ordinal"/>,
         ///             and should never return <see langword="null"/>.
-        ///             If the <see cref="ExportDefinition"/> does not contain metadata 
+        ///             If the <see cref="ExportDefinition"/> does not contain metadata
         ///             return an empty <see cref="IDictionary{TKey, TValue}"/> instead.
         ///         </note>
         ///     </para>
         /// </remarks>
         public virtual IDictionary<string, object> Metadata
         {
-            get 
+            get
             {
                 Debug.Assert(_metadata != null);
 
-                return _metadata; 
+                return _metadata;
             }
         }
 

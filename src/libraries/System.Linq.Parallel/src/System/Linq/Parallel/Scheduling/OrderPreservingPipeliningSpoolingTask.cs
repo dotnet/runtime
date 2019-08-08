@@ -39,9 +39,9 @@ namespace System.Linq.Parallel
         private readonly bool _autoBuffered;
 
         /// <summary>
-        /// The number of elements to accumulate on the producer before copying the elements to the 
+        /// The number of elements to accumulate on the producer before copying the elements to the
         /// producer-consumer buffer. This constant is only used in the AutoBuffered mode.
-        /// 
+        ///
         /// Experimentally, 16 appears to be sufficient buffer size to compensate for the synchronization
         /// cost.
         /// </summary>

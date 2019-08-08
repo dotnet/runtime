@@ -165,7 +165,7 @@ namespace System.Collections.Specialized.Tests
             });
             Assert.Equal(0, ld.Count);
         }
-        
+
         private static void Add(this ListDictionary ld, bool addViaSet, object key, object value)
         {
             if (addViaSet) ld[key] = value;

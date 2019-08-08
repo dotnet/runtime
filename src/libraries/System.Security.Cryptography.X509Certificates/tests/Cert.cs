@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     //
     // Helper class centralizes all loading of PFX's. Loading PFX's is a problem because of the key on disk that it creates and gets left behind
-    // if the certificate isn't properly disposed. Properly disposing PFX's imported into a X509Certificate2Collection is a pain because X509Certificate2Collection 
+    // if the certificate isn't properly disposed. Properly disposing PFX's imported into a X509Certificate2Collection is a pain because X509Certificate2Collection
     // doesn't implement IDisposable. To make this easier, we wrap these in an ImportedCollection class that does implement IDisposable.
     //
     internal static class Cert
@@ -88,4 +88,3 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private X509Certificate2[] _certs;
     }
 }
-

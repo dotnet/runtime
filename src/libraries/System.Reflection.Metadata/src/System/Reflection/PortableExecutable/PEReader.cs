@@ -92,7 +92,7 @@ namespace System.Reflection.PortableExecutable
         /// <param name="peStream">PE image stream.</param>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <remarks>
-        /// Ownership of the stream is transferred to the <see cref="PEReader"/> upon successful validation of constructor arguments. It will be 
+        /// Ownership of the stream is transferred to the <see cref="PEReader"/> upon successful validation of constructor arguments. It will be
         /// disposed by the <see cref="PEReader"/> and the caller must not manipulate it.
         /// </remarks>
         public PEReader(Stream peStream)
@@ -106,15 +106,15 @@ namespace System.Reflection.PortableExecutable
         /// <param name="peStream">PE image stream.</param>
         /// <param name="options">
         /// Options specifying how sections of the PE image are read from the stream.
-        /// 
-        /// Unless <see cref="PEStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="PEReader"/> 
+        ///
+        /// Unless <see cref="PEStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="PEReader"/>
         /// upon successful argument validation. It will be disposed by the <see cref="PEReader"/> and the caller must not manipulate it.
-        /// 
-        /// Unless <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/> is specified no data 
+        ///
+        /// Unless <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/> is specified no data
         /// is read from the stream during the construction of the <see cref="PEReader"/>. Furthermore, the stream must not be manipulated
         /// by caller while the <see cref="PEReader"/> is alive and undisposed.
-        /// 
-        /// If <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/>, the <see cref="PEReader"/> 
+        ///
+        /// If <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/>, the <see cref="PEReader"/>
         /// will have read all of the data requested during construction. As such, if <see cref="PEStreamOptions.LeaveOpen"/> is also
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="PEReader"/>
         /// after construction.
@@ -135,15 +135,15 @@ namespace System.Reflection.PortableExecutable
         /// <param name="size">PE image size.</param>
         /// <param name="options">
         /// Options specifying how sections of the PE image are read from the stream.
-        /// 
-        /// Unless <see cref="PEStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="PEReader"/> 
+        ///
+        /// Unless <see cref="PEStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="PEReader"/>
         /// upon successful argument validation. It will be disposed by the <see cref="PEReader"/> and the caller must not manipulate it.
-        /// 
-        /// Unless <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/> is specified no data 
+        ///
+        /// Unless <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/> is specified no data
         /// is read from the stream during the construction of the <see cref="PEReader"/>. Furthermore, the stream must not be manipulated
         /// by caller while the <see cref="PEReader"/> is alive and undisposed.
-        /// 
-        /// If <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/>, the <see cref="PEReader"/> 
+        ///
+        /// If <see cref="PEStreamOptions.PrefetchMetadata"/> or <see cref="PEStreamOptions.PrefetchEntireImage"/>, the <see cref="PEReader"/>
         /// will have read all of the data requested during construction. As such, if <see cref="PEStreamOptions.LeaveOpen"/> is also
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="PEReader"/>
         /// after construction.
@@ -394,12 +394,12 @@ namespace System.Reflection.PortableExecutable
             }
             else
             {
-                // Virtual size can be smaller than size in the image 
-                // since the size in the image is aligned. 
+                // Virtual size can be smaller than size in the image
+                // since the size in the image is aligned.
                 // Trim the alignment.
-                // 
+                //
                 // Virtual size can also be larger than size in the image.
-                // When loaded sizeInImage bytes are mapped from the image 
+                // When loaded sizeInImage bytes are mapped from the image
                 // and the rest of the bytes are zeroed out.
                 // Only return data stored in the image.
 
@@ -600,7 +600,7 @@ namespace System.Reflection.PortableExecutable
 
             using (var block = GetDebugDirectoryEntryDataBlock(entry))
             {
-                return DecodeCodeViewDebugDirectoryData(block);                
+                return DecodeCodeViewDebugDirectoryData(block);
             }
         }
 
@@ -668,10 +668,10 @@ namespace System.Reflection.PortableExecutable
         /// The path to the PE image. The path is used to locate the PDB file located in the directory containing the PE file.
         /// </param>
         /// <param name="pdbFileStreamProvider">
-        /// If specified, called to open a <see cref="Stream"/> for a given file path. 
-        /// The provider is expected to either return a readable and seekable <see cref="Stream"/>, 
+        /// If specified, called to open a <see cref="Stream"/> for a given file path.
+        /// The provider is expected to either return a readable and seekable <see cref="Stream"/>,
         /// or <c>null</c> if the target file doesn't exist or should be ignored for some reason.
-        /// 
+        ///
         /// The provider shall throw <see cref="IOException"/> if it fails to open the file due to an unexpected IO error.
         /// </param>
         /// <param name="pdbReaderProvider">
@@ -686,11 +686,11 @@ namespace System.Reflection.PortableExecutable
         /// <remarks>
         /// Implements a simple PDB file lookup based on the content of the PE image Debug Directory.
         /// A sophisticated tool might need to follow up with additional lookup on search paths or symbol server.
-        /// 
+        ///
         /// The method looks the PDB up in the following steps in the listed order:
         /// 1) Check for a matching PDB file of the name found in the CodeView entry in the directory containing the PE file (the directory of <paramref name="peImagePath"/>).
         /// 2) Check for a PDB embedded in the PE image itself.
-        /// 
+        ///
         /// The first PDB that matches the information specified in the Debug Directory is returned.
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="peImagePath"/> or <paramref name="pdbFileStreamProvider"/> is null.</exception>
@@ -728,7 +728,7 @@ namespace System.Reflection.PortableExecutable
             // First try .pdb file specified in CodeView data (we prefer .pdb file on disk over embedded PDB
             // since embedded PDB needs decompression which is less efficient than memory-mapping the file).
             var codeViewEntry = entries.FirstOrDefault(e => e.IsPortableCodeView);
-            if (codeViewEntry.DataSize != 0 && 
+            if (codeViewEntry.DataSize != 0 &&
                 TryOpenCodeViewPortablePdb(codeViewEntry, peImageDirectory, pdbFileStreamProvider, out pdbReaderProvider, out pdbPath, ref errorToReport))
             {
                 return true;
@@ -745,7 +745,7 @@ namespace System.Reflection.PortableExecutable
                     return true;
             }
 
-            // Report any metadata and IO errors. PDB might exist but we couldn't read some metadata. 
+            // Report any metadata and IO errors. PDB might exist but we couldn't read some metadata.
             // The caller might chose to ignore the failure or report it to the user.
             if (errorToReport != null)
             {
@@ -774,7 +774,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             var id = new BlobContentId(data.Guid, codeViewEntry.Stamp);
-           
+
             // The interpretation os the path in the CodeView needs to be platform agnostic,
             // so that PDBs built on Windows work on Unix-like systems and vice versa.
             // System.IO.Path.GetFileName() on Unix-like systems doesn't treat '\' as a file name separator,

@@ -12,7 +12,7 @@ namespace System.ComponentModel
     {
         public static Exception CreateDiscoveryException(string messageFormat, params string[] arguments)
         {
-            // DiscoveryError (Dev10:602872): This should go through the discovery error reporting when 
+            // DiscoveryError (Dev10:602872): This should go through the discovery error reporting when
             // we add a way to report discovery errors properly.
             return new InvalidOperationException(Format(messageFormat, arguments));
         }
@@ -46,7 +46,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(memberName));
             }
 
-            if(memberName.Length == 0) 
+            if(memberName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(memberName)), nameof(memberName));
             }
@@ -63,7 +63,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(parameterName));
             }
 
-            if(parameterName.Length == 0) 
+            if(parameterName.Length == 0)
             {
                 throw new ArgumentException(SR.ArgumentException_EmptyString);
             }
@@ -81,7 +81,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(parameterName));
             }
 
-            if(parameterName.Length == 0) 
+            if(parameterName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
             }
@@ -97,7 +97,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(part));
             }
-            
+
             if(definition == null)
             {
                 throw new ArgumentNullException(nameof(definition));

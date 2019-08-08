@@ -30,7 +30,7 @@ namespace XmlCoreTest.Common
     /// </summary>
     public static partial class ReaderHelper
     {
-        //All possible enum strings are listed here. 
+        //All possible enum strings are listed here.
         //Some of them are duplicates reader types for legacy readers.
         public enum ReaderType
         {

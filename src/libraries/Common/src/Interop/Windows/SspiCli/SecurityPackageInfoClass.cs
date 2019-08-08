@@ -20,7 +20,7 @@ namespace System.Net
         /*
             This is to support SSL with no client cert.
             Important: safeHandle should not be Disposed during construction of this object.
-           
+
             _SecPkgInfoW in sspi.h
          */
         internal unsafe SecurityPackageInfoClass(SafeHandle safeHandle, int index)

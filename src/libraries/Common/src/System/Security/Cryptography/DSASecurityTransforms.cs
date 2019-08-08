@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
                     SecKeyPair keys = GetKeys();
 
                     if (includePrivateParameters && keys.PrivateKey == null)
-                    { 
+                    {
                         throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                     }
 

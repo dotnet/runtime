@@ -137,7 +137,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TDisposed">Specifies the type of the disposed object.</typeparam>
         /// <param name="disposed">The disposed object.</param>
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.NoInlining)] // inlining this on .NET < 4.5.2 on x64 causes InvalidProgramException. 
+        [MethodImpl(MethodImplOptions.NoInlining)] // inlining this on .NET < 4.5.2 on x64 causes InvalidProgramException.
         public static void FailObjectDisposed<TDisposed>(TDisposed disposed)
         {
             // separating out this throwing helps with inlining of the caller, especially

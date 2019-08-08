@@ -14,7 +14,7 @@ namespace System.Net
     internal static partial class NameResolutionPal
     {
         public const bool SupportsGetAddrInfoAsync = false;
-        
+
         private static SocketError GetSocketErrorForNativeError(int error)
         {
             switch (error)
@@ -60,10 +60,10 @@ namespace System.Net
                 // Our callers expect just one entry for each address.  So we need to deduplicate the results.
                 // It's important to keep the addresses in order, since they are returned in the order in which
                 // connections should be attempted.
-                // 
+                //
                 // We assume that the list returned by getaddrinfo is relatively short; after all, the intent is that
                 // the caller may need to attempt to contact every address in the list before giving up on a connection
-                // attempt.  So an O(N^2) algorithm should be fine here.  Keep in mind that any "better" algorithm 
+                // attempt.  So an O(N^2) algorithm should be fine here.  Keep in mind that any "better" algorithm
                 // is likely to involve extra allocations, hashing, etc., and so will probably be more expensive than
                 // this one in the typical (short list) case.
                 //
@@ -120,7 +120,7 @@ namespace System.Net
                 Aliases = aliases
             };
         }
-    
+
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
             if (name == "")

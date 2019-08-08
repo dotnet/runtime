@@ -40,6 +40,6 @@ namespace System.Diagnostics.Tests
             Assert.ThrowsAsync<EventLogInvalidDataException>(() => throw new EventLogInvalidDataException("message"));
             Assert.ThrowsAsync<EventLogInvalidDataException>(() => throw new EventLogInvalidDataException("message", new Exception("inner exception")));
         }
-        
+
     }
 }

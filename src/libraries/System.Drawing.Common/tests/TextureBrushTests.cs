@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
@@ -277,7 +277,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException>("image", () => new TextureBrush(null, WrapMode.Tile, RectangleF.Empty));
             AssertExtensions.Throws<ArgumentNullException>("image", () => new TextureBrush(null, WrapMode.Tile, Rectangle.Empty));
         }
-        
+
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_DisposedImage_ThrowsArgumentException()
         {
@@ -395,7 +395,7 @@ namespace System.Drawing.Tests
                         clone.MultiplyTransform(matrix);
                         Assert.Equal(expected, clone.Transform);
                     }
-                    
+
                     brush.MultiplyTransform(matrix, matrixOrder);
                     Assert.Equal(expected, brush.Transform);
                 }

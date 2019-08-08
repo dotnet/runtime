@@ -33,7 +33,7 @@ namespace System.Reflection
         /// <typeparam name="T">The interface the proxy should implement.</typeparam>
         /// <typeparam name="TProxy">The base class to use for the proxy class.</typeparam>
         /// <returns>An object instance that implements <typeparamref name="T"/>.</returns>
-        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class, 
+        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class,
         /// or <typeparamref name="TProxy"/> is sealed or does not have a parameterless constructor</exception>
         public static T Create<T, TProxy>()
             where TProxy : DispatchProxy

@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
         public void GetProperySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(Type[] types, int expectedLength)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            
+
             Type[][] customModifiers = new Type[][] { types, types };
             SignatureHelper helper = SignatureHelper.GetPropertySigHelper(module, typeof(string), types, types, types, customModifiers, customModifiers);
             Assert.Equal(expectedLength, helper.GetSignature().Length);

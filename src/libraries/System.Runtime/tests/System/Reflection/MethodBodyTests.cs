@@ -71,7 +71,7 @@ namespace System.Reflection.Tests
 
             Assert.True(false, "Expected to find CatchType clause.");
         }
-    
+
         private static void MethodBodyExample(object arg)
         {
             int var1 = 2;
@@ -86,12 +86,12 @@ namespace System.Reflection.Tests
                 if (arg.GetType() == typeof(string))
                 {
                     throw new ArgumentException("Input argument cannot be a string.");
-                }        
+                }
             }
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
-            }        
+            }
             finally
             {
                 var1 = 3;

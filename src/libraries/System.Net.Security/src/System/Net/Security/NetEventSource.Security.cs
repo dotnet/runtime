@@ -259,7 +259,7 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                WriteEvent(SspiSelectedCipherSuitId, 
+                WriteEvent(SspiSelectedCipherSuitId,
                     process, (int)sslProtocol, (int)cipherAlgorithm, cipherStrength,
                     (int)hashAlgorithm, hashStrength, (int)keyExchangeAlgorithm, keyExchangeStrength);
             }

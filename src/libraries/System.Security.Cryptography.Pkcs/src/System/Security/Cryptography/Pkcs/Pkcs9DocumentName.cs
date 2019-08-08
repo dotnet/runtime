@@ -76,5 +76,3 @@ namespace System.Security.Cryptography.Pkcs
         private volatile string _lazyDocumentName = null;
     }
 }
-
-

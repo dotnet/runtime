@@ -452,7 +452,7 @@ namespace System.Net.Security
             // This value is not used on Unix
             return 0;
         }
-        
+
         internal static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
         {
             return AcquireCredentialsHandle(package, isServer, new NetworkCredential(string.Empty, string.Empty, string.Empty));
@@ -465,7 +465,7 @@ namespace System.Net.Security
             bool ntlmOnly = string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase);
             if (ntlmOnly && isEmptyCredential)
             {
-                // NTLM authentication is not possible with default credentials which are no-op 
+                // NTLM authentication is not possible with default credentials which are no-op
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
             }
 

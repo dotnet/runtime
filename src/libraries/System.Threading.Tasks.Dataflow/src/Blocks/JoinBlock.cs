@@ -22,7 +22,7 @@ using System.Threading.Tasks.Dataflow.Internal;
 namespace System.Threading.Tasks.Dataflow
 {
     /// <summary>
-    /// Provides a dataflow block that joins across multiple dataflow sources, not necessarily of the same type, 
+    /// Provides a dataflow block that joins across multiple dataflow sources, not necessarily of the same type,
     /// waiting for one item to arrive for each type before they?re all released together as a tuple of one item per type.
     /// </summary>
     /// <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
@@ -88,7 +88,7 @@ namespace System.Threading.Tasks.Dataflow
                 CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -251,7 +251,7 @@ namespace System.Threading.Tasks.Dataflow
     }
 
     /// <summary>
-    /// Provides a dataflow block that joins across multiple dataflow sources, not necessarily of the same type, 
+    /// Provides a dataflow block that joins across multiple dataflow sources, not necessarily of the same type,
     /// waiting for one item to arrive for each type before they?re all released together as a tuple of one item per type.
     /// </summary>
     /// <typeparam name="T1">Specifies the type of data accepted by the block's first target.</typeparam>
@@ -319,7 +319,7 @@ namespace System.Threading.Tasks.Dataflow
                 CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -611,7 +611,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Note: If there is a tie, we must return true
                 int count = _messages.Count;
                 foreach (JoinBlockTargetBase target in _sharedResources._targets)
-                    if (target != this && target.NumberOfMessagesAvailableOrPostponed > count) 
+                    if (target != this && target.NumberOfMessagesAvailableOrPostponed > count)
                         return false; // Strictly bigger!
                 return true;
             }
@@ -672,7 +672,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _nonGreedy.ReservedMessage = default(KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>);
 
             // The protocol requires that a reserved message must be consumable,
-            // but it is possible that the source may misbehave. 
+            // but it is possible that the source may misbehave.
             // In that case complete the target and signal to the owning block to shut down gracefully.
             if (!consumed)
             {
@@ -732,7 +732,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     lock (_sharedResources.IncomingLock)
                     {
-                        // The ranking in highest number of available messages cannot have changed because this task is causing OfferMessage to postpone 
+                        // The ranking in highest number of available messages cannot have changed because this task is causing OfferMessage to postpone
                         if (hasTheHighestNumberOfMessagesAvailable) _sharedResources._boundingState.CurrentCount += 1; // track this new item against our bound
                         _messages.Enqueue(consumedValue);
 
@@ -744,7 +744,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Start declining if the number of joins we've already made plus the number we can 
+        /// Start declining if the number of joins we've already made plus the number we can
         /// make from data already enqueued meets our quota.
         /// </summary>
         private void CompleteIfLastJoinIsFeasible()
@@ -851,8 +851,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
 
                 // We can directly accept the message if:
-                //      1) we are being greedy AND we are not bounding, OR 
-                //      2) we are being greedy AND we are bounding AND there is room available AND there are no postponed messages AND we are not currently processing. 
+                //      1) we are being greedy AND we are not bounding, OR
+                //      2) we are being greedy AND we are bounding AND there is room available AND there are no postponed messages AND we are not currently processing.
                 // (If there were any postponed messages, we would need to postpone so that ordering would be maintained.)
                 // (We should also postpone if we are currently processing, because there may be a race between consuming postponed messages and
                 // accepting new ones directly into the queue.)
@@ -874,8 +874,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     _messages.Enqueue(messageValue);
                     CompleteIfLastJoinIsFeasible();
 
-                    // Since we're in greedy mode, we can skip asynchronous processing and 
-                    // make joins aggressively based on enqueued data. 
+                    // Since we're in greedy mode, we can skip asynchronous processing and
+                    // make joins aggressively based on enqueued data.
                     if (_sharedResources.AllTargetsHaveAtLeastOneMessage)
                     {
                         _sharedResources._joinFilledAction();
@@ -902,7 +902,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         /// <summary>Completes/faults the block.
         /// In general, it is not safe to pass releaseReservedMessages:true, because releasing of reserved messages
-        /// is done without taking a lock. We pass releaseReservedMessages:true only when an exception has been 
+        /// is done without taking a lock. We pass releaseReservedMessages:true only when an exception has been
         /// caught inside the message processing loop which is a single instance at any given moment.</summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal override void CompleteCore(Exception exception, bool dropPendingMessages, bool releaseReservedMessages)
@@ -1149,7 +1149,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     //      1) In greedy mode if a target has postponed messages and there is bounding capacity
                     //         available, then we should greedily consume messages up to the bounding capacity
                     //         even if that doesn't lead to an output join.
-                    //      2) The ability to make join depends on: 
+                    //      2) The ability to make join depends on:
                     //          2a) message availability for each target, AND
                     //          2b) availability of bounding space
 
@@ -1207,7 +1207,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 foreach (JoinBlockTargetBase target in _targets)
                 {
-                    // If we couldn't consume a message, release reservations wherever possible 
+                    // If we couldn't consume a message, release reservations wherever possible
                     if (!target.ConsumeReservedMessage())
                     {
                         reservedAll = false;
@@ -1284,7 +1284,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Slow path for ProcessAsyncIfNecessary. 
+        /// Slow path for ProcessAsyncIfNecessary.
         /// Separating out the slow path into its own method makes it more likely that the fast path method will get inlined.
         /// </summary>
         private void ProcessAsyncIfNecessary_Slow(bool isReplacementReplica)
@@ -1311,7 +1311,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Exception exception = Common.StartTaskSafe(_taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
             if (exception != null)
             {
-                // All of the following actions must be performed under the lock. 
+                // All of the following actions must be performed under the lock.
                 // So do them now while the lock is being held.
 
                 // First, log the exception while the processing state is dirty which is preventing the block from completing.
@@ -1346,7 +1346,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     }
                 }
 
-                // We're done forever if there's no task currently processing and 
+                // We're done forever if there's no task currently processing and
                 // either it's impossible we'll have another join or we're canceled.
                 bool currentlyProcessing = _taskForInputProcessing != null;
                 bool shouldComplete = !currentlyProcessing && (impossibleToCompleteAnotherJoin || CanceledOrFaulted);
@@ -1383,8 +1383,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 do
                 {
                     // Retrieve postponed messages.
-                    // In greedy bounded mode, consuming a message through a target is sufficient 
-                    // to consider we've made progress, i.e. to stay in the loop. 
+                    // In greedy bounded mode, consuming a message through a target is sufficient
+                    // to consider we've made progress, i.e. to stay in the loop.
                     madeProgress = !_dataflowBlockOptions.Greedy ?
                                         RetrievePostponedItemsNonGreedy() :
                                         RetrievePostponedItemsGreedyBounded();

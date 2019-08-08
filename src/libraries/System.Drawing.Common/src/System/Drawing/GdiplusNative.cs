@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1171,7 +1171,7 @@ namespace System.Drawing
             // public DebugEventProc DebugEventCallback; // Ignored on free builds
             public IntPtr DebugEventCallback;
 
-            public bool SuppressBackgroundThread;     // FALSE unless you're prepared to call 
+            public bool SuppressBackgroundThread;     // FALSE unless you're prepared to call
                                                       // the hook/unhook functions properly
 
             public bool SuppressExternalCodecs;       // FALSE unless you want GDI+ only to use
@@ -1191,10 +1191,10 @@ namespace System.Drawing
         [StructLayout(LayoutKind.Sequential)]
         internal struct StartupOutput
         {
-            // The following 2 fields won't be used.  They were originally intended 
+            // The following 2 fields won't be used.  They were originally intended
             // for getting GDI+ to run on our thread - however there are marshalling
             // dealing with function *'s and what not - so we make explicit calls
-            // to gdi+ after the fact, via the GdiplusNotificationHook and 
+            // to gdi+ after the fact, via the GdiplusNotificationHook and
             // GdiplusNotificationUnhook methods.
             public IntPtr hook;//not used
             public IntPtr unhook;//not used.

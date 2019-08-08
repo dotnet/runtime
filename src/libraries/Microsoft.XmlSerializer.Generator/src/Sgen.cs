@@ -49,7 +49,7 @@ namespace Microsoft.XmlSerializer.Generator
                 for (int i = 0; i < args.Length; i++)
                 {
                     string arg = args[i];
-  
+
                     if (ArgumentMatch(arg, "help") || ShortNameArgumentMatch(arg, "h"))
                     {
                         WriteHeader();
@@ -68,7 +68,7 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         i++;
                         if(i >= args.Length || codePath != null )
-                        {                         
+                        {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
                         else
@@ -305,8 +305,8 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (!Directory.Exists(outputDirectory))
                 {
-                    //We need double quote the path to escpate the space in the path. 
-                    //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence 
+                    //We need double quote the path to escpate the space in the path.
+                    //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence
                     //e.g. "obj\Debug\netcoreapp2.0\", it will be converted as obj\Debug\netcoreapp2.0", which is not valid and not exist
                     //We need remove the ending quote for this situation
                     if (!outputDirectory.EndsWith("\"") || !Directory.Exists(outputDirectory = outputDirectory.Remove(outputDirectory.Length - 1)))
@@ -347,7 +347,7 @@ namespace Microsoft.XmlSerializer.Generator
                             Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
                         }
                         else
-                        { 
+                        {
                             success = (bool)method.Invoke(null, new object[] { serializableTypes, allMappings, fs });
                         }
                     }
@@ -384,7 +384,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
         }
 
-       
+
         private bool ArgumentMatch(string arg, string formal)
         {
             // Full name format, eg: --assembly
@@ -398,7 +398,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private bool ShortNameArgumentMatch(string arg, string shortName)
         {
-            // Short name format, eg: -a 
+            // Short name format, eg: -a
             if (arg.Length < 2 || arg[0] != '-')
             {
                 return false;
@@ -650,7 +650,7 @@ namespace Microsoft.XmlSerializer.Generator
                     //If for any reasons the rsp file is not generated, this argument will be ignored and serializer will be generated with default settings
                     catch (FileNotFoundException)
                     { }
-                    
+
                 }
             }
             return parsedArgs.ToArray();

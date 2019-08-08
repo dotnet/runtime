@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             activity.Start();
             SpinWait.SpinUntil(() => sw.ElapsedMilliseconds > 1, 2);
             activity.Stop();
-            
+
             sw.Stop();
 
             Assert.True(activity.Duration.TotalMilliseconds > 1 && activity.Duration <= sw.Elapsed);

@@ -10,17 +10,17 @@ namespace System.ComponentModel
     internal static class ComponentModelSwitches
     {
         private static volatile BooleanSwitch commonDesignerServices;
-                
-        public static BooleanSwitch CommonDesignerServices 
+
+        public static BooleanSwitch CommonDesignerServices
         {
-            get 
+            get
             {
-                if (commonDesignerServices == null) 
+                if (commonDesignerServices == null)
                 {
                     commonDesignerServices = new BooleanSwitch("CommonDesignerServices", "Assert if any common designer service is not found.");
                 }
                 return commonDesignerServices;
             }
-        }                                                                                                                                                                      
+        }
     }
 }

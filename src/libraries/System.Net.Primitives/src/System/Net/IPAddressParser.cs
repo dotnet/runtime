@@ -120,7 +120,7 @@ namespace System.Net
         }
 
         internal static StringBuilder IPv6AddressToStringHelper(ushort[] address, uint scopeId)
-        { 
+        {
             const int INET6_ADDRSTRLEN = 65;
             StringBuilder buffer = StringBuilderCache.Acquire(INET6_ADDRSTRLEN);
 

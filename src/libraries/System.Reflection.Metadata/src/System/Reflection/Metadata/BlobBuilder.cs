@@ -15,9 +15,9 @@ namespace System.Reflection.Metadata
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
     public partial class BlobBuilder
     {
-        // The implementation is akin to StringBuilder. 
+        // The implementation is akin to StringBuilder.
         // The differences:
-        // - BlobBuilder allows efficient sequential write of the built content to a stream. 
+        // - BlobBuilder allows efficient sequential write of the built content to a stream.
         // - BlobBuilder allows for chunk allocation customization. A custom allocator can use pooling strategy, for example.
 
         internal const int DefaultChunkSize = 256;
@@ -26,7 +26,7 @@ namespace System.Reflection.Metadata
         internal const int MinChunkSize = 16;
 
         // Builders are linked like so:
-        // 
+        //
         // [1:first]->[2]->[3:last]<-[4:head]
         //     ^_______________|
         //
@@ -395,8 +395,8 @@ namespace System.Reflection.Metadata
 
             // First and last chunks:
             //
-            // [PrefixFirst]->[]->[PrefixLast] <- [prefix]    [First]->[]->[Last] <- [this]    
-            //       ^_________________|                          ^___________|                 
+            // [PrefixFirst]->[]->[PrefixLast] <- [prefix]    [First]->[]->[Last] <- [this]
+            //       ^_________________|                          ^___________|
             //
             // Degenerate cases:
             // this == First == Last and/or prefix == PrefixFirst == PrefixLast.
@@ -406,7 +406,7 @@ namespace System.Reflection.Metadata
             var prefixLast = prefix._nextOrPrevious;
 
             // Relink like so:
-            // [PrefixFirst]->[]->[PrefixLast] -> [prefix] -> [First]->[]->[Last] <- [this] 
+            // [PrefixFirst]->[]->[PrefixLast] -> [prefix] -> [First]->[]->[Last] <- [this]
             //      ^________________________________________________________|
 
             _nextOrPrevious = (last != this) ? last : prefix;
@@ -584,7 +584,7 @@ namespace System.Reflection.Metadata
         {
             Debug.Assert(byteCount >= 0);
 
-            // If write is attempted to a frozen builder we fall back 
+            // If write is attempted to a frozen builder we fall back
             // to expand where an exception is thrown:
             uint result = _length;
             if (result > _buffer.Length - byteCount)
@@ -1003,7 +1003,7 @@ namespace System.Reflection.Metadata
         /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes).
         /// </summary>
         /// <remarks>
-        /// The string is UTF8 encoded and prefixed by the its size in bytes. 
+        /// The string is UTF8 encoded and prefixed by the its size in bytes.
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -1023,10 +1023,10 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <remarks>
         /// The string is UTF16 encoded and prefixed by the its size in bytes.
-        /// 
+        ///
         /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
-        /// or its low byte is any of the following: 0x01–0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0. 
-        /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets. 
+        /// or its low byte is any of the following: 0x01–0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
+        /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteUserString(string value)
@@ -1106,13 +1106,13 @@ namespace System.Reflection.Metadata
         /// Implements compressed signed integer encoding as defined by ECMA-335-II chapter 23.2: Blobs and signatures.
         /// </summary>
         /// <remarks>
-        /// If the value lies between -64 (0xFFFFFFC0) and 63 (0x3F), inclusive, encode as a one-byte integer: 
+        /// If the value lies between -64 (0xFFFFFFC0) and 63 (0x3F), inclusive, encode as a one-byte integer:
         /// bit 7 clear, value bits 5 through 0 held in bits 6 through 1, sign bit (value bit 31) in bit 0.
-        /// 
-        /// If the value lies between -8192 (0xFFFFE000) and 8191 (0x1FFF), inclusive, encode as a two-byte integer: 
+        ///
+        /// If the value lies between -8192 (0xFFFFE000) and 8191 (0x1FFF), inclusive, encode as a two-byte integer:
         /// 15 set, bit 14 clear, value bits 12 through 0 held in bits 13 through 1, sign bit(value bit 31) in bit 0.
-        /// 
-        /// If the value lies between -268435456 (0xF000000) and 268435455 (0x0FFFFFFF), inclusive, encode as a four-byte integer: 
+        ///
+        /// If the value lies between -268435456 (0xF000000) and 268435455 (0x0FFFFFFF), inclusive, encode as a four-byte integer:
         /// 31 set, 30 set, bit 29 clear, value bits 27 through 0 held in bits 28 through 1, sign bit(value bit 31) in bit 0.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed signed integer.</exception>
@@ -1126,12 +1126,12 @@ namespace System.Reflection.Metadata
         /// Implements compressed unsigned integer encoding as defined by ECMA-335-II chapter 23.2: Blobs and signatures.
         /// </summary>
         /// <remarks>
-        /// If the value lies between 0 (0x00) and 127 (0x7F), inclusive, 
+        /// If the value lies between 0 (0x00) and 127 (0x7F), inclusive,
         /// encode as a one-byte integer (bit 7 is clear, value held in bits 6 through 0).
-        /// 
-        /// If the value lies between 28 (0x80) and 214 – 1 (0x3FFF), inclusive, 
+        ///
+        /// If the value lies between 28 (0x80) and 214 – 1 (0x3FFF), inclusive,
         /// encode as a 2-byte integer with bit 15 set, bit 14 clear (value held in bits 13 through 0).
-        /// 
+        ///
         /// Otherwise, encode as a 4-byte integer, with bit 31 set, bit 30 set, bit 29 clear (value held in bits 28 through 0).
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed unsigned integer.</exception>
@@ -1153,8 +1153,8 @@ namespace System.Reflection.Metadata
 
         internal string GetDebuggerDisplay()
         {
-            return IsHead ? 
-                string.Join("->", GetChunks().Select(chunk => $"[{Display(chunk._buffer, chunk.Length)}]")) : 
+            return IsHead ?
+                string.Join("->", GetChunks().Select(chunk => $"[{Display(chunk._buffer, chunk.Length)}]")) :
                 $"<{Display(_buffer, Length)}>";
         }
 

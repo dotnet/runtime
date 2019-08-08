@@ -42,7 +42,7 @@ namespace System.Net.Http.Tests
             // This test verifies that Parse() correctly calls TryParse().
             TimeSpanHeaderParser parser = TimeSpanHeaderParser.Parser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue("a", null, ref index); });
         }
 
@@ -51,7 +51,7 @@ namespace System.Net.Http.Tests
         {
             TimeSpanHeaderParser parser = TimeSpanHeaderParser.Parser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue(null, null, ref index); });
         }
 
@@ -117,7 +117,7 @@ namespace System.Net.Http.Tests
             TimeSpanHeaderParser parser = TimeSpanHeaderParser.Parser;
             object result = 0;
             int newIndex = startIndex;
-            Assert.False(parser.TryParseValue(input, null, ref newIndex, out result), 
+            Assert.False(parser.TryParseValue(input, null, ref newIndex, out result),
                 string.Format("TryParse returned true: {0}", input));
             Assert.Null(result);
             Assert.Equal(startIndex, newIndex);

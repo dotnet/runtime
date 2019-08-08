@@ -66,8 +66,8 @@ namespace System.Xml
         // Nmtoken parsing (no XML namespaces support)
         //-----------------------------------------------
         /// <summary>
-        /// Attempts to parse the input string as an Nmtoken (see the XML spec production [7]) without taking 
-        /// into account the XML Namespaces spec. What it means is that the ':' character is allowed at any 
+        /// Attempts to parse the input string as an Nmtoken (see the XML spec production [7]) without taking
+        /// into account the XML Namespaces spec. What it means is that the ':' character is allowed at any
         /// position and any number of times in the token.
         /// Quits parsing when an invalid Nmtoken char is reached or the end of string is reached.
         /// Returns the number of valid Nmtoken chars that were parsed.

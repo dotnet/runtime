@@ -47,7 +47,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         // In XsltDebugger we have to know variables that are visible from each action.
         // We keepping two different sets of wariables because global and local variables have different rules of visibility.
-        // Globals: All global variables are visible avryware (uncalucaled will have null value), 
+        // Globals: All global variables are visible avryware (uncalucaled will have null value),
         //          Duplicated globals from different stilesheets are replaced (by import presidence)
         // Locals:  Visible only in scope and after it was defined.
         //          No duplicates posible.

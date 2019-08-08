@@ -6,7 +6,7 @@ namespace System.Xml
 {
     //
     // NamespaceHandling specifies how should the XmlWriter handle namespaces.
-    //  
+    //
 
     [Flags]
     public enum NamespaceHandling

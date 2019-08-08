@@ -42,7 +42,7 @@ namespace System.Diagnostics
             _listenerName = name;
         }
 
-        public StringDictionary Attributes 
+        public StringDictionary Attributes
         {
             get {
                 if (_attributes == null)
@@ -170,19 +170,19 @@ namespace System.Diagnostics
         ///    <para>When overridden in a derived class, closes the output stream
         ///       so that it no longer receives tracing or debugging output.</para>
         /// </devdoc>
-        public virtual void Close() 
+        public virtual void Close()
         {
             return;
         }
 
-        protected internal virtual string[] GetSupportedAttributes() 
+        protected internal virtual string[] GetSupportedAttributes()
         {
             return null;
         }
 
         public virtual void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
         {
-            TraceEvent(eventCache, source, TraceEventType.Transfer, id, message + ", relatedActivityId=" + relatedActivityId.ToString()); 
+            TraceEvent(eventCache, source, TraceEventType.Transfer, id, message + ", relatedActivityId=" + relatedActivityId.ToString());
         }
 
         /// <devdoc>

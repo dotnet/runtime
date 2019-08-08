@@ -57,11 +57,11 @@ namespace System.Reflection.Metadata.Ecma335
 
             public ExceptionHandlerInfo(
                 ExceptionRegionKind kind,
-                LabelHandle tryStart, 
+                LabelHandle tryStart,
                 LabelHandle tryEnd,
-                LabelHandle handlerStart, 
-                LabelHandle handlerEnd, 
-                LabelHandle filterStart, 
+                LabelHandle handlerStart,
+                LabelHandle handlerEnd,
+                LabelHandle filterStart,
                 EntityHandle catchType)
             {
                 Kind = kind;
@@ -145,7 +145,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="handlerEnd">Label marking the instruction immediately following the handler.</param>
         /// <exception cref="ArgumentException">A label was not defined by an instruction encoder this builder is associated with.</exception>
         /// <exception cref="ArgumentNullException">A label has default value.</exception>
-        public void AddFinallyRegion(LabelHandle tryStart, LabelHandle tryEnd, LabelHandle handlerStart, LabelHandle handlerEnd) => 
+        public void AddFinallyRegion(LabelHandle tryStart, LabelHandle tryEnd, LabelHandle handlerStart, LabelHandle handlerEnd) =>
             AddExceptionRegion(ExceptionRegionKind.Finally, tryStart, tryEnd, handlerStart, handlerEnd);
 
         /// <summary>
@@ -198,11 +198,11 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         private void AddExceptionRegion(
-            ExceptionRegionKind kind, 
-            LabelHandle tryStart, 
-            LabelHandle tryEnd, 
-            LabelHandle handlerStart, 
-            LabelHandle handlerEnd, 
+            ExceptionRegionKind kind,
+            LabelHandle tryStart,
+            LabelHandle tryEnd,
+            LabelHandle handlerStart,
+            LabelHandle handlerEnd,
             LabelHandle filterStart = default(LabelHandle),
             EntityHandle catchType = default(EntityHandle))
         {
@@ -237,14 +237,14 @@ namespace System.Reflection.Metadata.Ecma335
 
             // offset within the source builder
             int srcOffset = 0;
-            
+
             // current offset within the current source blob
             int srcBlobOffset = 0;
 
             foreach (Blob srcBlob in srcBuilder.GetBlobs())
             {
                 Debug.Assert(
-                    srcBlobOffset == 0 || 
+                    srcBlobOffset == 0 ||
                     srcBlobOffset == 1 && srcBlob.Buffer[0] == 0xff ||
                     srcBlobOffset == 4 && srcBlob.Buffer[0] == 0xff && srcBlob.Buffer[1] == 0xff && srcBlob.Buffer[2] == 0xff && srcBlob.Buffer[3] == 0xff);
 
@@ -270,8 +270,8 @@ namespace System.Reflection.Metadata.Ecma335
 
                     // Note: the 4B operand is contiguous since we wrote it via BlobBuilder.WriteInt32()
                     Debug.Assert(
-                        srcBlobOffset + 1 == srcBlob.Length || 
-                        (isShortInstruction ? 
+                        srcBlobOffset + 1 == srcBlob.Length ||
+                        (isShortInstruction ?
                            srcBlob.Buffer[srcBlobOffset + 1] == 0xff :
                            BitConverter.ToUInt32(srcBlob.Buffer, srcBlobOffset + 1) == 0xffffffff));
 
@@ -285,9 +285,9 @@ namespace System.Reflection.Metadata.Ecma335
                     if (isShortInstruction && !isShortDistance)
                     {
                         // We could potentially implement algortihm that automatically fixes up the branch instructions as well to accomodate bigger distances,
-                        // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions 
-                        // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the 
-                        // distance is unknown upfront. If they do they probably already implement more sophisticad algorithm for IL layout optimization already. 
+                        // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
+                        // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
+                        // distance is unknown upfront. If they do they probably already implement more sophisticad algorithm for IL layout optimization already.
                         throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, branch.OpCode, srcOffset, branchDistance));
                     }
 
@@ -373,7 +373,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 regionEncoder.AddUnchecked(
                     handler.Kind,
-                    tryStart, 
+                    tryStart,
                     tryEnd - tryStart,
                     handlerStart,
                     handlerEnd - handlerStart,

@@ -29,7 +29,7 @@ namespace System.Tests
 
             Assert.Equal(expected, Enum.Parse<T>(value, ignoreCase));
         }
-        
+
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid_NetCoreApp11(Type enumType, string value, bool ignoreCase, Type exceptionType)

@@ -24,7 +24,7 @@ namespace System.Net.Internals
                 HResult = platformError;
             }
 
-            public override string Message => 
+            public override string Message =>
                 (_endPoint == null) ? base.Message : base.Message + " " + _endPoint.ToString();
         }
 

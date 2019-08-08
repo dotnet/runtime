@@ -22,7 +22,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the System.ComponentModel.Design.ParenthesizePropertyNameAttribute 
+        /// Initializes a new instance of the System.ComponentModel.Design.ParenthesizePropertyNameAttribute
         /// class, using the specified value to indicate whether the attribute is
         /// marked for display with parentheses.
         /// </summary>

@@ -130,7 +130,7 @@ namespace System.Collections.Tests
             FooKey nonExistentKey = CreateKey(101);
 
             dictBase[nonExistentKey] = null;
-            Assert.Equal(101, dictBase.Count); // Should add a key/value pair if the key 
+            Assert.Equal(101, dictBase.Count); // Should add a key/value pair if the key
             Assert.Null(dictBase[nonExistentKey]);
         }
 
@@ -590,7 +590,7 @@ namespace System.Collections.Tests
                 StringValue = str;
             }
 
-            public int IntValue { get; set; }            
+            public int IntValue { get; set; }
             public string StringValue { get; set; }
 
             public override bool Equals(object obj)
@@ -621,7 +621,7 @@ namespace System.Collections.Tests
                 IntValue = intValue;
                 StringValue = stringValue;
             }
-            
+
             public int IntValue { get; set; }
             public string StringValue { get; set; }
 

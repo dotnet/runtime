@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,15 +14,15 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     internal partial struct Rfc3161TimeStampReq
     {
         private static byte[] s_defaultCertReq = { 0x01, 0x01, 0x00 };
-  
+
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
         internal Oid ReqPolicy;
         internal ReadOnlyMemory<byte>? Nonce;
         internal bool CertReq;
         internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
-      
-#if DEBUG  
+
+#if DEBUG
         static Rfc3161TimeStampReq()
         {
             Rfc3161TimeStampReq decoded = default;
@@ -33,16 +33,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             reader.ThrowIfNotEmpty();
         }
 #endif
- 
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteInteger(Version);
             MessageImprint.Encode(writer);
 
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.WriteInteger(Nonce.Value.Span);
             }
 
-        
+
             // DEFAULT value handler for CertReq.
             {
                 using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 for (int i = 0; i < Extensions.Length; i++)
                 {
-                    Extensions[i].Encode(writer); 
+                    Extensions[i].Encode(writer);
                 }
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
@@ -92,11 +92,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static Rfc3161TimeStampReq Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-            
+
             Decode(reader, expectedTag, out Rfc3161TimeStampReq decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader defaultReader;
             AsnReader collectionReader;
-            
+
 
             if (!sequenceReader.TryReadInt32(out decoded.Version))
             {
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Asn1.X509ExtensionAsn.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Asn1.X509ExtensionAsn.Decode(collectionReader, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

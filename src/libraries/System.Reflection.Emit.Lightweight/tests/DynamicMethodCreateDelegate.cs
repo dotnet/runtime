@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         public void CreateDelegate_Target_Module(IDClass target)
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;
-            int newId = 0;            
+            int newId = 0;
 
             FieldInfo field = typeof(IDClass).GetField(FieldName, BindingFlags.NonPublic | BindingFlags.Instance);
             DynamicMethod method = new DynamicMethod("Method", typeof(int), new Type[] { typeof(IDClass), typeof(int) }, module, true);
@@ -74,7 +74,7 @@ namespace System.Reflection.Emit.Tests
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;
             int newId = 0;
-            
+
             FieldInfo field = typeof(IDClass).GetField(FieldName, BindingFlags.NonPublic | BindingFlags.Instance);
 
             DynamicMethod method = new DynamicMethod("Method", typeof(int), new Type[] { typeof(IDClass), typeof(int) }, module, true);

@@ -260,7 +260,7 @@ namespace System.Xml.Serialization
             return ToXmlQualifiedName(type, false);
         }
 
-        // throwOnUnknown flag controls whether this method throws an exception or just returns 
+        // throwOnUnknown flag controls whether this method throws an exception or just returns
         // null if typeName.Namespace is unknown. the method still throws if typeName.Namespace
         // is recognized but typeName.Name isn't.
         private Type GetPrimitiveType(XmlQualifiedName typeName, bool throwOnUnknown)

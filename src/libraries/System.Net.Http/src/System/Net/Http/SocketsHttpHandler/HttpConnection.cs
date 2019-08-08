@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -817,7 +817,7 @@ namespace System.Net.Http
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
 
             // Validate the beginning of the status line and set the response version.
-            const int MinStatusLineLength = 12; // "HTTP/1.x 123" 
+            const int MinStatusLineLength = 12; // "HTTP/1.x 123"
             if (line.Length < MinStatusLineLength || line[8] != ' ')
             {
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
@@ -1473,7 +1473,7 @@ namespace System.Net.Http
                 }
             }
 
-            // No data in read buffer. 
+            // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int count = _stream.Read(destination);
@@ -1501,7 +1501,7 @@ namespace System.Net.Http
                 }
             }
 
-            // No data in read buffer. 
+            // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
@@ -1530,7 +1530,7 @@ namespace System.Net.Http
                 }
             }
 
-            // No data in read buffer. 
+            // No data in read buffer.
             _readOffset = _readLength = 0;
 
             // Do a buffered read directly against the underlying stream.
@@ -1576,7 +1576,7 @@ namespace System.Net.Http
                 }
             }
 
-            // No data in read buffer. 
+            // No data in read buffer.
             _readOffset = _readLength = 0;
 
             // Do a buffered read directly against the underlying stream.

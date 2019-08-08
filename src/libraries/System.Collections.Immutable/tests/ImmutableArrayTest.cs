@@ -1224,7 +1224,7 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(expected, array.Remove(item, comparer));
             Assert.Equal(expected, ((IImmutableList<T>)array).Remove(item, comparer));
-            
+
             if (comparer == null || comparer == EqualityComparer<T>.Default)
             {
                 Assert.Equal(expected, array.Remove(item));
@@ -1406,7 +1406,7 @@ namespace System.Collections.Immutable.Tests
         {
             // Validates that a fixed bug in the inappropriate adding of the Empty
             // singleton enumerator to the reusable instances bag does not regress.
-            
+
             IEnumerable<int> oneElementBoxed = s_oneElement;
             IEnumerable<int> emptyBoxed = s_empty;
             IEnumerable<int> emptyDefaultBoxed = s_emptyDefault;
@@ -1697,7 +1697,7 @@ namespace System.Collections.Immutable.Tests
         public void GetIndexer(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
-            
+
             for (int i = 0; i < array.Length; i++)
             {
                 int expected = source.ElementAt(i);
@@ -2214,7 +2214,7 @@ namespace System.Collections.Immutable.Tests
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.
             // This test has a known issue where the two threads will stomp on each others updates, but that's not the point.
             // The point is that ImmutableArray`1.Add should *never* throw. But if it reads its own T[] field more than once,
-            // it *can* throw because the field can be replaced with an array of another length. 
+            // it *can* throw because the field can be replaced with an array of another length.
             // In fact, much worse can happen where we corrupt data if we are for example copying data out of the array
             // in (for example) a CopyTo method and we read from the field more than once.
             // Also noteworthy: this method only tests the thread-safety of the Add method.
@@ -2340,7 +2340,7 @@ namespace System.Collections.Immutable.Tests
             // due to the prohibition on internal framework Reflection.
             //
             // This alternate method is despicable but ImmutableArray`1 has a documented contract of being exactly one reference-type field in size
-            // (for example, ImmutableInterlocked depends on it.) 
+            // (for example, ImmutableInterlocked depends on it.)
             //
             // That leaves precious few candidates for which field is the "array" field...
             //

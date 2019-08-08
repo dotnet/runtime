@@ -52,7 +52,7 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Invoke the completion callback 
+        /// Invoke the completion callback
         /// </summary>
         /// <param name="sniErrorCode">SNI error</param>
         public void InvokeCompletionCallback(uint sniErrorCode)
@@ -80,7 +80,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="dataSize">Number of bytes read from the packet into the buffer</param>
         public void GetData(byte[] buffer, ref int dataSize)
         {
-            Buffer.BlockCopy(_data, _headerLength, buffer, 0, _dataLength); // read from 
+            Buffer.BlockCopy(_data, _headerLength, buffer, 0, _dataLength); // read from
             dataSize = _dataLength;
         }
 

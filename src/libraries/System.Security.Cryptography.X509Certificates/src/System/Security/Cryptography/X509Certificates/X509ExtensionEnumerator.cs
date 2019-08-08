@@ -41,4 +41,3 @@ namespace System.Security.Cryptography.X509Certificates
         private int _current;
     }
 }
-

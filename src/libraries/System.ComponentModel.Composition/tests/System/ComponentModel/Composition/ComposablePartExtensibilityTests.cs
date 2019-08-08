@@ -220,7 +220,7 @@ namespace System.ComponentModel.Composition
             string typeIdentity = AttributedModelServices.GetTypeIdentity(type);
             var metadata = new Dictionary<string, object>();
             metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
-            
+
             Export composableExport = ExportFactory.Create(
                 contractName,
                 metadata,
@@ -282,4 +282,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

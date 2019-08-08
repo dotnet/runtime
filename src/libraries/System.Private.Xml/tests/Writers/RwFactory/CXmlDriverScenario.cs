@@ -8,7 +8,7 @@ using System.Globalization;
 namespace System.Xml.Tests
 {
     /// <summary>
-    /// CXmlDriverScenario 
+    /// CXmlDriverScenario
     /// </summary>
     public abstract class CXmlDriverScenario : CTestCase
     {
@@ -78,7 +78,7 @@ namespace System.Xml.Tests
             _defaultSection = CXmlDriverEngine.DEFAULT_SECTION;
         }
 
-        //Define Name property.     
+        //Define Name property.
         public virtual string ControlFile
         {
             get { return _spec; }

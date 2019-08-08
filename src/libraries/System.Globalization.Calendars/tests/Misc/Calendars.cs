@@ -69,7 +69,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Calendars_TestData()
         {
-            //                              Calendar               yearHasLeapMonth        CalendarAlgorithmType 
+            //                              Calendar               yearHasLeapMonth        CalendarAlgorithmType
             yield return new object[] { new ChineseLunisolarCalendar()  , 2017  , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new GregorianCalendar()         , 0     , CalendarAlgorithmType.SolarCalendar       };
             yield return new object[] { new HebrewCalendar()            , 5345  , CalendarAlgorithmType.LunisolarCalendar   };
@@ -125,7 +125,7 @@ namespace System.Globalization.Tests
             var colnedCal = (Calendar) readOnlyCal.Clone();
             Assert.False(colnedCal.IsReadOnly, "expect colnedCal.IsReadOnly returns false");
         }
-        
+
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void AlgorithmTypeTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)

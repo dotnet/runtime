@@ -273,7 +273,7 @@ namespace System.Text.Tests
             VerificationHelper(decoder, bytes, 0, 0, chars, 0, chars.Length, true, 0, 0, true, "010.2");
             decoder.Reset();
         }
-        
+
         private void VerificationHelper(Decoder decoder, byte[] bytes,
             int byteIndex,
             int byteCount,

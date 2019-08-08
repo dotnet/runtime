@@ -37,4 +37,3 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         DecipherOnly = 1 << 8,
     }
 }
-

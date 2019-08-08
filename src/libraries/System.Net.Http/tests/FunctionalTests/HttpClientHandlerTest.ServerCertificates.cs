@@ -294,13 +294,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 var e = new DivideByZeroException();
                 handler.ServerCertificateCustomValidationCallback = delegate { throw e; };
-                
+
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
                 Assert.Same(e, ex.GetBaseException());
             }
         }
 
-        public static readonly object[][] CertificateValidationServers = 
+        public static readonly object[][] CertificateValidationServers =
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer },
             new object[] { Configuration.Http.SelfSignedCertRemoteServer },
@@ -524,7 +524,7 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 Assert.True((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'), $"Expected hex, got {c}");
                             }
-                        }                        
+                        }
                     }
                     else
                     {

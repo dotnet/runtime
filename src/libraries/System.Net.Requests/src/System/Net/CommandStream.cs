@@ -78,7 +78,7 @@ namespace System.Net
             InvokeRequestCallback(null);
 
             // Do not call base.Dispose(bool), which would close the web request.
-            // This stream effectively should be a wrapper around a web 
+            // This stream effectively should be a wrapper around a web
             // request that does not own the web request.
         }
 
@@ -184,8 +184,8 @@ namespace System.Net
         {
             // In async case, The BeginWrite can actually result in a
             // series of synchronous completions that eventually close
-            // the connection. So we need to save the members that 
-            // we need to access, since they may not be valid after 
+            // the connection. So we need to save the members that
+            // we need to access, since they may not be valid after
             // BeginWrite returns
             bool isAsync = _isAsync;
             while (_index < _commands.Length)
@@ -258,8 +258,8 @@ namespace System.Net
             {
                 // In async case, the next call can actually result in a
                 // series of synchronous completions that eventually close
-                // the connection. So we need to save the members that 
-                // we need to access, since they may not be valid after the 
+                // the connection. So we need to save the members that
+                // we need to access, since they may not be valid after the
                 // next call returns
                 bool isAsync = _isAsync;
                 int index = _index;
@@ -276,7 +276,7 @@ namespace System.Net
                 }
                 catch
                 {
-                    // If we get an exception on the QUIT command (which is 
+                    // If we get an exception on the QUIT command (which is
                     // always the last command), ignore the final exception
                     // and continue with the pipeline regardlss of sync/async
                     if (index < 0 || index >= commands.Length ||
@@ -303,8 +303,8 @@ namespace System.Net
             else
                 entry = _commands[_index];
 
-            // Final QUIT command may get exceptions since the connection 
-            // may be already closed by the server. So there is no response 
+            // Final QUIT command may get exceptions since the connection
+            // may be already closed by the server. So there is no response
             // to process, just advance the pipeline to continue.
             if (_currentResponseDescription == null && entry.Command == "QUIT\r\n")
                 result = PipelineInstruction.Advance;

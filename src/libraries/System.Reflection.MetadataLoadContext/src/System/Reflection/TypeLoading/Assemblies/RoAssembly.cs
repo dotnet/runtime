@@ -71,7 +71,7 @@ namespace System.Reflection.TypeLoading
             // todo: use IEnumerable<T> extension instead: ExportedTypes.ToArray();
             List<Type> list = new List<Type>(ExportedTypes);
             return list.ToArray();
-        } 
+        }
 
         public sealed override IEnumerable<Type> ExportedTypes
         {
@@ -91,9 +91,9 @@ namespace System.Reflection.TypeLoading
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification 
-            // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser. 
-            // (We can't just throw in the assemblyResolve delegate because assembly qualifications are permitted inside generic arguments, 
+            // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
+            // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.
+            // (We can't just throw in the assemblyResolve delegate because assembly qualifications are permitted inside generic arguments,
             // just not in the top level type name.) In the bigger scheme of things, this does not seem worth worrying about.
 
             return Helpers.LoadTypeFromAssemblyQualifiedName(name, defaultAssembly: this, ignoreCase: ignoreCase, throwOnError: throwOnError);
@@ -103,7 +103,7 @@ namespace System.Reflection.TypeLoading
         /// Helper routine for the more general Assembly.GetType() family of apis. Also used in typeRef resolution.
         ///
         /// Resolves top-level named types only. No nested types. No constructed types. The input name must not be escaped.
-        /// 
+        ///
         /// If a type is not contained or forwarded from the assembly, this method returns null (does not throw.)
         /// This supports the "throwOnError: false" behavior of Assembly.GetType(string, bool).
         /// </summary>

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -53,7 +53,7 @@ namespace System.Net.Http
 
         // This will be set when:
         // (1) We receive GOAWAY -- will be set to the value sent in the GOAWAY frame
-        // (2) A connection IO error occurs -- will be set to int.MaxValue 
+        // (2) A connection IO error occurs -- will be set to int.MaxValue
         //     (meaning we must assume all streams have been processed by the server)
         private int _lastStreamId = -1;
 
@@ -134,7 +134,7 @@ namespace System.Net.Http
             s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send SETTINGS frame 
+            // Send SETTINGS frame
             WriteFrameHeader(new FrameHeader(FrameHeader.SettingLength * 2, FrameType.Settings, FrameFlags.None, 0));
 
             // First setting: Disable push promise
@@ -1090,7 +1090,7 @@ namespace System.Net.Http
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
             // Throw a retryable exception that will allow this unprocessed request to be processed on a new connection.
-            // In rare cases, such as receiving GOAWAY immediately after connection establishment, we will not 
+            // In rare cases, such as receiving GOAWAY immediately after connection establishment, we will not
             // actually retry the request, so we must give a useful exception here for these cases.
 
             Exception innerException;

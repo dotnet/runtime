@@ -62,7 +62,7 @@ namespace System.Security.AccessControl.Tests
                 commonSecurityDescriptor.GetBinaryForm(binaryForm, 0);
             });
 
-            //case 3, negative offset                 
+            //case 3, negative offset
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {

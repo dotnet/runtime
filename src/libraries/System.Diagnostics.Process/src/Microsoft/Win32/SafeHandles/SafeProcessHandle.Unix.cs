@@ -4,11 +4,11 @@
 
 /*============================================================
 **
-** Class:  SafeProcessHandle 
+** Class:  SafeProcessHandle
 **
 ** A wrapper for a process handle
 **
-** 
+**
 ===========================================================*/
 
 using System;
@@ -27,7 +27,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle _handle;
         private readonly bool _releaseRef;
 
-        internal SafeProcessHandle(int processId, SafeWaitHandle handle) : 
+        internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
             this(handle.DangerousGetHandle(), ownsHandle: false)
         {
             ProcessId = processId;

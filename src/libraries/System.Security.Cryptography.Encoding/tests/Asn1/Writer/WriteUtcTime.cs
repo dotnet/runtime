@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 new DateTimeOffset(3000, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 "0D3030303130313030303030305A",
-            }, 
+            },
         };
 
         [Theory]

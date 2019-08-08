@@ -2281,7 +2281,7 @@ namespace System
     {
         public STAThreadAttribute() { }
     }
-    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, 
+    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible,
 #nullable disable
         System.IEquatable<string>
 #nullable restore

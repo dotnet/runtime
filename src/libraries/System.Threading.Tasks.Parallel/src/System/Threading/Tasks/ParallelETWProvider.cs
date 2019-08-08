@@ -60,7 +60,7 @@ namespace System.Threading.Tasks
 
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // TPL Event IDs (must be unique)
         //
 
@@ -84,7 +84,7 @@ namespace System.Threading.Tasks
 
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Parallel Events
         //
 
@@ -106,8 +106,8 @@ namespace System.Threading.Tasks
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
                 // There is no explicit WriteEvent() overload matching this event's fields. Therefore calling
-                // WriteEvent() would hit the "params" overload, which leads to an object allocation every time 
-                // this event is fired. To prevent that problem we will call WriteEventCore(), which works with 
+                // WriteEvent() would hit the "params" overload, which leads to an object allocation every time
+                // this event is fired. To prevent that problem we will call WriteEventCore(), which works with
                 // a stack based EventData array populated with the event fields.
                 unsafe
                 {
@@ -253,7 +253,7 @@ namespace System.Threading.Tasks
 
         #region ParallelInvokeEnd
         /// <summary>
-        /// Denotes the exit point for a Parallel.Invoke call. 
+        /// Denotes the exit point for a Parallel.Invoke call.
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
@@ -269,9 +269,9 @@ namespace System.Threading.Tasks
 
         #region ParallelFork
         /// <summary>
-        /// Denotes the start of an individual task that's part of a fork/join context. 
-        /// Before this event is fired, the start of the new fork/join context will be marked 
-        /// with another event that declares a unique context ID. 
+        /// Denotes the start of an individual task that's part of a fork/join context.
+        /// Before this event is fired, the start of the new fork/join context will be marked
+        /// with another event that declares a unique context ID.
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
@@ -287,7 +287,7 @@ namespace System.Threading.Tasks
 
         #region ParallelJoin
         /// <summary>
-        /// Denotes the end of an individual task that's part of a fork/join context. 
+        /// Denotes the end of an individual task that's part of a fork/join context.
         /// This should match a previous ParallelFork event with a matching "OriginatingTaskID"
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>

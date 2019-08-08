@@ -15,8 +15,8 @@ namespace System.Collections.Immutable
         /// The collection to be enumerated.
         /// </summary>
         private readonly ImmutableSortedSet<T>.Builder _set;
-        
-        /// <summary>   
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The collection to display in the debugger</param>

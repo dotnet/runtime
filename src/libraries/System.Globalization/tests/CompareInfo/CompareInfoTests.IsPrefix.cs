@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
             // Hungarian
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false };
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
-            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };            
+            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
 
             // Turkish
             yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.None, false };
@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true };
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false };
-            
+
             // Platform differences
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
         }

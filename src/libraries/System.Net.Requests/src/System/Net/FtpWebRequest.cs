@@ -1831,6 +1831,3 @@ namespace System.Net
         }
     } // class FtpWebRequestCreator
 } // namespace System.Net
-
-
-

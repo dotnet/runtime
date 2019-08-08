@@ -26,9 +26,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
 
             blocks = new[] {
-                new TransformBlock<int, string>(i => i.ToString(), 
+                new TransformBlock<int, string>(i => i.ToString(),
                     new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) }),
-                new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), 
+                new TransformBlock<int, string>(i => Task.Run(() => i.ToString()),
                     new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) })
             };
             foreach (var block in blocks)
@@ -86,7 +86,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         public void TestPost()
         {
             foreach (bool bounded in DataflowTestHelpers.BooleanValues)
-            foreach (var tb in new[] { 
+            foreach (var tb in new[] {
                 new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 }),
                 new TransformBlock<int, int>(i => Task.Run(() => i), new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 })})
             {
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             for (int test = 0; test < 2; test++)
             {
-                foreach (var tb in new[] { 
+                foreach (var tb in new[] {
                     new TransformBlock<int, int>(i => i * 2),
                     new TransformBlock<int, int>(i => Task.Run(() => i * 2)) })
                 {
@@ -398,7 +398,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             IDisposable link = bb.LinkTo(DataflowBlock.NullTarget<int>());
             Assert.NotNull(link);
             link.Dispose();
-            
+
             Assert.False(bb.Post(42));
             var t = bb.SendAsync(42);
             Assert.True(t.IsCompleted);

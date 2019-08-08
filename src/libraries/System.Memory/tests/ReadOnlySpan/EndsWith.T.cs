@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -78,8 +78,8 @@ namespace System.SpanTests
                 bool b = firstSpan.EndsWith(secondSpan);
                 Assert.True(b);
 
-                // Make sure each element of the array was compared once. (Strictly speaking, it would not be illegal for 
-                // EndsWith to compare an element more than once but that would be a non-optimal implementation and 
+                // Make sure each element of the array was compared once. (Strictly speaking, it would not be illegal for
+                // EndsWith to compare an element more than once but that would be a non-optimal implementation and
                 // a red flag. So we'll stick with the stricter test.)
                 Assert.Equal(first.Length, log.Count);
                 foreach (TInt elem in first)

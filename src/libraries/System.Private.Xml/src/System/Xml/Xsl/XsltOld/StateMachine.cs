@@ -147,7 +147,7 @@ namespace System.Xml.Xsl.XsltOld
             /* All                   */ new int[] { Error,     Error,         Error,   Error,   Error,           Error,   Error,   Error,           Error,           Error,           Error,   Error },
         };
 
-        private static readonly int[][] s_EndTransitions = {           
+        private static readonly int[][] s_EndTransitions = {
             /*                                    { Init,      Elem,          NsN,     NsV,     Ns,              AttrN,   AttrV,   Attr,            InElm,           EndEm,           InCmt,   InPI   }, */
             /* Root                  */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           Assrt,   Assrt  },
             /* Element               */ new int[] { Assrt,     EndEm|B|E|P|M, Assrt,   Assrt,   EndEm|D|B|E|P|M, Assrt,   Assrt,   EndEm|D|B|E|P|M, EndEm|D|H|B|E|P, EndEm|D|H|B|E|P, Assrt,   Assrt  },

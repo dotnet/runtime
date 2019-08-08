@@ -4,12 +4,12 @@
 
 /*============================================================
 **
-** Class:  SafeThreadHandle 
+** Class:  SafeThreadHandle
 **
 **
 ** A wrapper for a thread handle
 **
-** 
+**
 ===========================================================*/
 
 using System;

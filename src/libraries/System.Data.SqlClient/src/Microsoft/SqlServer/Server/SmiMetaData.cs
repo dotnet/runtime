@@ -893,7 +893,7 @@ namespace Microsoft.SqlServer.Server
 
     // SmiStorageMetaData
     //
-    //  This class represents the addition of storage-level attributes to the hierarchy (i.e. attributes from 
+    //  This class represents the addition of storage-level attributes to the hierarchy (i.e. attributes from
     //  underlying table, source variables, or whatever).
     //
     //  Most values use Null (either IsNullable == true or CLR null) to indicate "Not specified" state.  Selection

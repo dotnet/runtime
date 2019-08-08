@@ -12,11 +12,11 @@ namespace System.Security.Cryptography
     /// </summary>
     /// <remarks>
     /// Asymmetric Algorithms implemented using Microsoft's CNG (Cryptography Next Generation) API
-    /// will interpret the underlying string value as a CNG algorithm identifier: 
+    /// will interpret the underlying string value as a CNG algorithm identifier:
     ///   * https://msdn.microsoft.com/en-us/library/windows/desktop/aa375534(v=vs.85).aspx
     ///
-    /// As with CNG, the names are case-sensitive. 
-    /// 
+    /// As with CNG, the names are case-sensitive.
+    ///
     /// Asymmetric Algorithms implemented using other technologies:
     ///    * Must recognize at least "MD5", "SHA1", "SHA256", "SHA384", and "SHA512".
     ///    * Should recognize additional CNG IDs for any other hash algorithms that they also support.
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Gets the underlying string representation of the algorithm name. 
+        /// Gets the underlying string representation of the algorithm name.
         /// </summary>
         /// <remarks>
         /// May be null or empty to indicate that no hash algorithm is applicable.

@@ -348,7 +348,7 @@ namespace System.Xml.Xsl.XPath
                 //        <xsl:value-of select="descendant::author/@id | comment()" />
                 //    </xsl:template>
                 //</xsl:stylesheet>
-                
+
                 if (qilAxis.NodeType == QilNodeType.Filter)
                 {
                     QilLoop filter = (QilLoop)qilAxis;

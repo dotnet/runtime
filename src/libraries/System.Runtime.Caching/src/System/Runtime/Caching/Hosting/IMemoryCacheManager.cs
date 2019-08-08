@@ -12,4 +12,3 @@ namespace System.Runtime.Caching.Hosting
         void ReleaseCache(MemoryCache cache);
     }
 }
-

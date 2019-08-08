@@ -22,8 +22,8 @@ namespace System.ComponentModel.Composition.Primitives
             get { return _exception.Element; }
         }
 
-        public Exception InnerException 
-        { 
+        public Exception InnerException
+        {
             get { return _exception.InnerException; }
         }
 

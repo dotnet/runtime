@@ -1881,12 +1881,12 @@ namespace System.Xml.Serialization
                 string memberInfoName = GetReflectionVariable(typeFullName, memberName);
                 if (memberInfoName != null)
                     return memberInfoName + "[" + obj + "]";
-                // member may be part of the basetype 
+                // member may be part of the basetype
                 typeDesc = typeDesc.BaseTypeDesc;
                 if (typeDesc != null && !typeDesc.UseReflection)
                     return "((" + typeDesc.CSharpName + ")" + obj + ").@" + memberName;
             }
-            //throw GetReflectionVariableException(saveTypeDesc.CSharpName,memberName); 
+            //throw GetReflectionVariableException(saveTypeDesc.CSharpName,memberName);
             // NOTE, sowmys:Must never happen. If it does let the code
             // gen continue to help debugging what's gone wrong.
             // Eventually the compilation will fail.
@@ -2178,7 +2178,7 @@ namespace System.Xml.Serialization
     }}
 ";
     }
-    
+
     internal class XmlSerializationWriterCodeGen : XmlSerializationCodeGen
     {
         internal XmlSerializationWriterCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className) : base(writer, scopes, access, className)
@@ -2549,7 +2549,7 @@ namespace System.Xml.Serialization
                 Writer.WriteLine("TopLevelElement();");
             }
 
-            // in the top-level method add check for the parameters length, 
+            // in the top-level method add check for the parameters length,
             // because visual basic does not have a concept of an <out> parameter it uses <ByRef> instead
             // so sometime we think that we have more parameters then supplied
             Writer.WriteLine("int pLength = p.Length;");
@@ -3205,7 +3205,7 @@ namespace System.Xml.Serialization
         private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc)
         {
             // check to see if we can write values of the attribute sequentially
-            // currently we have only one data type (XmlQualifiedName) that we can not write "inline", 
+            // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
             // because we need to output xmlns:qx="..." for each of the qnames
 
             return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);

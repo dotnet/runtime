@@ -102,7 +102,7 @@ namespace System.Reflection.Tests
             Assert.Contains("CanRead", propertyNames);
             Assert.Contains("CanWrite", propertyNames);
             Assert.Contains("CanSeek", propertyNames);
-        }        
+        }
 
         [Fact]
         public void GetRuntimeProperty()
@@ -170,7 +170,7 @@ namespace System.Reflection.Tests
                 typeof(RuntimeReflectionExtensionsTests).GetRuntimeEvent(null);
             });
 
-            Assert.Null(typeof(TestType).GetRuntimeEvent(""));            
+            Assert.Null(typeof(TestType).GetRuntimeEvent(""));
 
             List<string> events = new List<string>();
 
@@ -281,7 +281,7 @@ namespace System.Reflection.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("del", () => default(Action).GetMethodInfo());
             Assert.Equal(typeof(RuntimeReflectionExtensionsTests).GetMethod("GetMethodInfo"), ((Action)GetMethodInfo).GetMethodInfo());
-        }        
+        }
 
         [Fact]
         public void GetRuntimeBaseDefinition()
@@ -301,7 +301,7 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentNullException>("ifaceType", () => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(null));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(ICloneable)));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(string)));
-            
+
             InterfaceMapping map = typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(IDisposable));
             Assert.Same(typeof(TestType), map.TargetType);
             Assert.Same(typeof(IDisposable), map.InterfaceType);
@@ -468,6 +468,6 @@ namespace System.Reflection.Tests
             {
                 throw new NotImplementedException();
             }
-        }        
+        }
     }
 }

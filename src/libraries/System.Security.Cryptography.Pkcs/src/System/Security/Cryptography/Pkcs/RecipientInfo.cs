@@ -47,5 +47,3 @@ namespace System.Security.Cryptography.Pkcs
         internal RecipientInfoPal Pal { get; }
     }
 }
-
-

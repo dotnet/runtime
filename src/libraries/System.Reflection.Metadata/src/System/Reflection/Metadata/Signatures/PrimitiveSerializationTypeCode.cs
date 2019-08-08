@@ -24,4 +24,3 @@ namespace System.Reflection.Metadata
         String = SignatureTypeCode.String,
     }
 }
-

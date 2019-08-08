@@ -32,7 +32,7 @@ namespace System.Text.Tests
             yield return new object[] { "abc", 3, 0 };
             yield return new object[] { "abc", 0, 0 };
         }
-        
+
         [Theory]
         [MemberData(nameof(Encode_TestData))]
         public void Encode(string source, int index, int count)
@@ -53,7 +53,7 @@ namespace System.Text.Tests
                 char b = (char)i;
                 yield return new object[] { b, 0, 1 };
             }
-            
+
             // Unicode chars
             yield return new object[] { "\u1234\u2345", 0, 2 };
             yield return new object[] { "a\u1234\u2345b", 0, 4 };

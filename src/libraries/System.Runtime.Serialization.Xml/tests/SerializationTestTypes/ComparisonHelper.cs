@@ -232,7 +232,7 @@ namespace SerializationTestTypes
                 //Value types can be Primitive types, Structs, Enums, Bool, User Defined Structs
 
                 #region Primitive Types
-                //Numeric types, bool 
+                //Numeric types, bool
                 if (originalDataType.IsPrimitive)
                 {
                     bool different = !originalData.Equals(deserializedData);

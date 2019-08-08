@@ -16,7 +16,7 @@ namespace System.Xml
         //
         protected XmlWriter writer;
 
-        // 
+        //
         // Constructor
         //
         internal XmlWrappingWriter(XmlWriter baseWriter)
@@ -213,4 +213,3 @@ namespace System.Xml
         }
     }
 }
-

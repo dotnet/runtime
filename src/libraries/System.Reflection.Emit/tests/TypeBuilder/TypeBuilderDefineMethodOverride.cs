@@ -27,7 +27,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ldc_I4, 2);
             ilGenerator.Emit(OpCodes.Ret);
-            
+
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
             MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method, decleration);
@@ -47,20 +47,20 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ldc_I4, 2);
             ilGenerator.Emit(OpCodes.Ret);
-            
+
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
             MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method, decleration);
 
             Type createdType = type.CreateTypeInfo().AsType();
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
-   
+
             ConstructorInfo createdTypeCtor = createdType.GetConstructor(new Type[0]);
             object instance = createdTypeCtor.Invoke(new object[0]);
             Assert.Equal(2, createdMethod.Invoke(instance, null));
             Assert.Equal(1, createdMethod.Invoke(Activator.CreateInstance(typeof(DefineMethodOverrideClass)), null));
         }
-        
+
         [Fact]
         public void DefineMethodOverride_GenericInterface_Succeeds()
         {
@@ -178,7 +178,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
-        
+
         [Theory]
         [InlineData(typeof(GenericInterface<>), nameof(GenericInterface<string>.Method))]
         [InlineData(typeof(DefineMethodOverrideInterface), nameof(DefineMethodOverrideInterface.M))]
@@ -227,7 +227,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method1, decleration);
             type.DefineMethodOverride(method2, decleration);
-            
+
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
 

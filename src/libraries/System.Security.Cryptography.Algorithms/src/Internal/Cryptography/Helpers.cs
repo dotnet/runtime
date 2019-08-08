@@ -66,7 +66,7 @@ namespace Internal.Cryptography
                 byte tmp1 = (byte)((oddParityKey[index] & 0xF) ^ (oddParityKey[index] >> 4));
                 byte tmp2 = (byte)((tmp1 & 0x3) ^ (tmp1 >> 2));
                 byte sumBitsMod2 = (byte)((tmp2 & 0x1) ^ (tmp2 >> 1));
-                
+
                 // We need to set the last bit in oddParityKey[index] to the negation
                 // of the last bit in sumBitsMod2
                 if (sumBitsMod2 == 0)

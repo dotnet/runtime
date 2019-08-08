@@ -219,5 +219,3 @@ namespace System.Xml.Schema
         }
     };
 }
-
-

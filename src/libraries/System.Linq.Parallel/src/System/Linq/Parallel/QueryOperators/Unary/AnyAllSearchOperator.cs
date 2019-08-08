@@ -66,7 +66,7 @@ namespace System.Linq.Parallel
 
         internal bool Aggregate()
         {
-            // Because the final reduction is typically much cheaper than the intermediate 
+            // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
             // could do a lot of work to produce a single output element, we prefer to turn off
             // pipelining, and process the final reductions serially.

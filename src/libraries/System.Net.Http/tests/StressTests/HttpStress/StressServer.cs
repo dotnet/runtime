@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -130,7 +130,7 @@ namespace HttpStress
             });
             endpoints.MapGet("/headers", async context =>
             {
-                (string name, StringValues values)[] headersToEcho = 
+                (string name, StringValues values)[] headersToEcho =
                         context.Request.Headers
                         // filter the pseudo-headers surfaced by Kestrel
                         .Where(h => !h.Key.StartsWith(':'))
@@ -289,7 +289,7 @@ namespace HttpStress
     {
         // deterministically generate ascii string of given length
         public static string CreateStringContent(int contentSize) =>
-            new String( 
+            new String(
                 Enumerable
                     .Range(0, contentSize)
                     .Select(i => (char)(i % 128))

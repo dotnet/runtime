@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1271,7 +1271,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("html", feed.Title.Type);
             });
         }
-        
+
         [Theory]
         [InlineData(true, true)]
         [InlineData(false, false)]
@@ -1390,7 +1390,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 SyndicationFeed feed = formatter.Feed;
                 Assert.Empty(feed.AttributeExtensions);
-                
+
                 Assert.Equal(3, feed.Authors.Count);
 
                 SyndicationPerson firstAuthor = feed.Authors[0];
@@ -1485,7 +1485,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("generator", feed.Generator);
 
                 Assert.Empty(feed.ElementExtensions);
-                
+
                 Assert.Equal("id", feed.Id);
 
                 Assert.Equal(new Uri("http://imageurl.com/"), feed.ImageUrl);
@@ -1495,7 +1495,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 SyndicationItem item = items[1];
                 Assert.Empty(item.AttributeExtensions);
-                
+
                 Assert.Equal(3, item.Authors.Count);
 
                 SyndicationPerson itemFirstAuthor = item.Authors[0];
@@ -1594,7 +1594,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("html", item.Copyright.Type);
 
                 Assert.Empty(item.ElementExtensions);
-                
+
                 Assert.Equal("id", item.Id);
 
                 Assert.Equal(DateTimeOffset.MinValue, item.LastUpdatedTime);

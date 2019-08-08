@@ -33,11 +33,11 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionException"/> class 
+        ///     Initializes a new instance of the <see cref="CompositionException"/> class
         ///     with the specified error message.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
@@ -47,17 +47,17 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionException"/> class 
-        ///     with the specified error message and exception that is the cause of the  
+        ///     Initializes a new instance of the <see cref="CompositionException"/> class
+        ///     with the specified error message and exception that is the cause of the
         ///     exception.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
         /// <param name="innerException">
-        ///     The <see cref="Exception"/> that is the underlying cause of the 
+        ///     The <see cref="Exception"/> that is the underlying cause of the
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
@@ -72,13 +72,13 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionException"/> class 
+        ///     Initializes a new instance of the <see cref="CompositionException"/> class
         ///     with the specified errors.
         /// </summary>
         /// <param name="errors">
         ///     An <see cref="IEnumerable{T}"/> of <see cref="CompositionError"/> objects
-        ///     representing the errors that are the cause of the 
-        ///     <see cref="CompositionException"/>; or <see langword="null"/> to set the 
+        ///     representing the errors that are the cause of the
+        ///     <see cref="CompositionException"/>; or <see langword="null"/> to set the
         ///     <see cref="Errors"/> property to an empty <see cref="IEnumerable{T}"/>.
         /// </param>
         /// <exception cref="ArgumentException">
@@ -101,7 +101,7 @@ namespace System.ComponentModel.Composition
         /// </summary>
         /// <value>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="CompositionError"/> objects
-        ///     representing the errors that are the cause of the 
+        ///     representing the errors that are the cause of the
         ///     <see cref="CompositionException"/>.
         /// </value>
         public ReadOnlyCollection<CompositionError> Errors
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition
         ///     Gets a message that describes the exception.
         /// </summary>
         /// <value>
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionException"/>.
         /// </value>
         public override string Message
@@ -121,8 +121,8 @@ namespace System.ComponentModel.Composition
             get
             {
                 if (Errors.Count == 0)
-                {   // If there are no errors, then we simply return base.Message, 
-                    // which will either use the default Exception message, or if 
+                {   // If there are no errors, then we simply return base.Message,
+                    // which will either use the default Exception message, or if
                     // one was specified; the user supplied message.
 
                     return base.Message;
@@ -295,7 +295,7 @@ namespace System.ComponentModel.Composition
             context.Path.Push(error);
 
             if (error.Exception == null)
-            {   // This error is a root cause, so write 
+            {   // This error is a root cause, so write
                 // out the stack from this point
 
                 context.LeafVisitor(context.Path);

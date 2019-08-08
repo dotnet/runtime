@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
         public string MetadataVersion { get; }
 
         /// <summary>
-        /// True to suppresses basic validation of metadata tables. 
+        /// True to suppresses basic validation of metadata tables.
         /// The validation verifies that entries in the tables were added in order required by the ECMA specification.
         /// It does not enforce all specification requirements on metadata tables.
         /// </summary>

@@ -37,7 +37,7 @@ namespace XLinqTests
             AddChild(new TestVariation(EmptySequence) { Attribute = new VariationAttribute("Empty sequence") { Priority = 1 } });
         }
 
-        // From the same element 
+        // From the same element
         //   - all attributes
         //   - some attributes
         // From different elements - the same document

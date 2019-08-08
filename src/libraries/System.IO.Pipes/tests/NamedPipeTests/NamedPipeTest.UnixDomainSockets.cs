@@ -16,7 +16,7 @@ namespace System.IO.Pipes.Tests
         {
             string pipeName = Path.Combine("/tmp", "pipe-tests-corefx-" + Path.GetRandomFileName());
             var endPoint = new UnixDomainSocketEndPoint(pipeName);
-            
+
             using (var pipeServer = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
             using (var sockectClient = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {

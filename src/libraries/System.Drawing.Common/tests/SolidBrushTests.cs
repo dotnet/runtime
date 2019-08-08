@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
@@ -33,7 +33,7 @@ namespace System.Drawing.Tests
             Assert.Equal(brush.Color.ToArgb(), clone.Color.ToArgb());
 
             // Known colors are not preserved across clones.
-            Assert.NotEqual(Color.PeachPuff, clone.Color);  
+            Assert.NotEqual(Color.PeachPuff, clone.Color);
 
             // Modifying the original brush should not modify the clone.
             brush.Color = Color.PapayaWhip;

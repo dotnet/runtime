@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tests
                 return;
             Assert.Throws<ArgumentNullException>(() => new EventLogQuery(null, PathType.LogName, null));
         }
-               
+
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void QueryByLevel_LevelMatchesQuery()
         {

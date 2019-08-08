@@ -11,7 +11,7 @@ namespace System.ComponentModel
     public interface IChangeTracking
     {
         /// <summary>
-        /// Gets a value indicating whether the object's content has changed since 
+        /// Gets a value indicating whether the object's content has changed since
         /// the last call to System.ComponentModel.IChangeTracking.AcceptChanges().
         /// </summary>
         bool IsChanged { get; }

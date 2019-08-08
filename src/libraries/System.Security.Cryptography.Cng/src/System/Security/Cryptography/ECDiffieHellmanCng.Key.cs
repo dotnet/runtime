@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
 
                 _core.SetKey(value);
 
-                // LegalKeySizes stores the values for either the current named curve or for the three 
+                // LegalKeySizes stores the values for either the current named curve or for the three
                 // curves that use size instead of name
                 ForceSetKeySize(value.KeySize);
             }

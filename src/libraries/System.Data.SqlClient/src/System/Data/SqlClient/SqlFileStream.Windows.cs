@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.Data.SqlTypes
 {
     public sealed partial class SqlFileStream : System.IO.Stream
     {
-        // NOTE: if we ever unseal this class, be sure to specify the Name, SafeFileHandle, and 
+        // NOTE: if we ever unseal this class, be sure to specify the Name, SafeFileHandle, and
         // TransactionContext accessors as virtual methods. Doing so now on a sealed class
         // generates a compiler error (CS0549)
 
@@ -26,8 +26,8 @@ namespace System.Data.SqlTypes
         // SQLBUVSTS# 193123 - disable lazy flushing of written data in order to prevent
         // potential exceptions during Close/Finalization. Since System.IO.FileStream will
         // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
-        // usage, will not be used and the user buffer will automatically flush directly to 
-        // the disk cache. In pathological scenarios where the client is writing a single 
+        // usage, will not be used and the user buffer will automatically flush directly to
+        // the disk cache. In pathological scenarios where the client is writing a single
         // byte at a time, we'll explicitly call flush ourselves.
         internal const int DefaultBufferSize = 1;
 
@@ -299,8 +299,8 @@ namespace System.Data.SqlTypes
             // SQLBUVSTS# 193123 - disable lazy flushing of written data in order to prevent
             // potential exceptions during Close/Finalization. Since System.IO.FileStream will
             // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
-            // usage, will not be used and the user buffer will automatically flush directly to 
-            // the disk cache. In pathological scenarios where the client is writing a single 
+            // usage, will not be used and the user buffer will automatically flush directly to
+            // the disk cache. In pathological scenarios where the client is writing a single
             // byte at a time, we'll explicitly call flush ourselves.
             if (count == 1)
             {
@@ -362,7 +362,7 @@ namespace System.Data.SqlTypes
             // potential exceptions during Close/Finalization. Since System.IO.FileStream will
             // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
             // usage, will cause System.IO.FileStream to utilize the user-supplied buffer and
-            // automatically flush the data directly to the disk cache. In pathological scenarios 
+            // automatically flush the data directly to the disk cache. In pathological scenarios
             // where the user is writing a single byte at a time, we'll explicitly call flush ourselves.
             if (count == 1)
             {
@@ -541,7 +541,7 @@ namespace System.Data.SqlTypes
                         ea->EaNameLength = (byte)(s_eaNameString.Length - 1); // Length does not include terminating null character.
                         ea->EaValueLength = (ushort)transactionContext.Length;
 
-                        // We could continue to do pointer math here, chose to use Span for convenience to 
+                        // We could continue to do pointer math here, chose to use Span for convenience to
                         // make sure we get the other members in the right place.
                         Span<byte> data = buffer.AsSpan(headerSize);
                         s_eaNameString.AsSpan().CopyTo(data);
@@ -591,7 +591,7 @@ namespace System.Data.SqlTypes
                                 uint error = Interop.NtDll.RtlNtStatusToDosError(retval);
                                 if (error == ERROR_MR_MID_NOT_FOUND)
                                 {
-                                    // status code could not be mapped to a Win32 error code 
+                                    // status code could not be mapped to a Win32 error code
                                     error = (uint)retval;
                                 }
 
@@ -657,5 +657,3 @@ namespace System.Data.SqlTypes
         }
     }
 }
-
-

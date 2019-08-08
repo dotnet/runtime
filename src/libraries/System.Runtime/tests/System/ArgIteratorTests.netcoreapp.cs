@@ -17,7 +17,7 @@ namespace System.Tests
             Assert.Equal(new object[] {"a", "r", "g", "s", true, "hello", 0.42}, result);
         }
 
-        private static object[] GetAllArgs(Object arg0, Object arg1, Object arg2, Object arg3, __arglist) 
+        private static object[] GetAllArgs(Object arg0, Object arg1, Object arg2, Object arg3, __arglist)
         {
             ArgIterator args = new ArgIterator(__arglist);
             int argCount = args.GetRemainingCount() + 4;
@@ -42,13 +42,13 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArgIteratorSupported))]
         public static void ArgIterator_GetNextArgType()
         {
-            var types = new Type[] 
+            var types = new Type[]
             {
-                typeof(string), 
-                typeof(byte), 
+                typeof(string),
+                typeof(byte),
                 typeof(short),
-                typeof(long), 
-                typeof(int), 
+                typeof(long),
+                typeof(int),
                 typeof(float),
                 typeof(double),
                 typeof(DummyClass),
@@ -56,11 +56,11 @@ namespace System.Tests
             };
 
             VerifyTypes(types, __arglist(
-                default(string), 
-                default(byte), 
+                default(string),
+                default(byte),
                 default(short),
-                default(long), 
-                default(int), 
+                default(long),
+                default(int),
                 default(float),
                 default(double),
                 default(DummyClass),
@@ -71,7 +71,7 @@ namespace System.Tests
         private class DummyClass { }
         private struct DummyStruct { }
 
-        private static void VerifyTypes(Type[] types, __arglist) 
+        private static void VerifyTypes(Type[] types, __arglist)
         {
             ArgIterator args = new ArgIterator(__arglist);
             int argCount = args.GetRemainingCount();

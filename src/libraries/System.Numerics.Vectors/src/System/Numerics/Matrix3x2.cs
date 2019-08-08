@@ -439,7 +439,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Calculates the determinant for this matrix. 
+        /// Calculates the determinant for this matrix.
         /// The determinant is calculated by expanding the matrix with a third column whose values are (0,0,1).
         /// </summary>
         /// <returns>The determinant.</returns>

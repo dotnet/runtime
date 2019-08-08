@@ -59,7 +59,7 @@ namespace System.Xml.Tests
             // Even though GetHashCode gives different results on .NET 4.6 and CoreCLR with disabled
             // hash randomization those pairs are causing collisions on both platforms as they meet
             // certain properties causing hash collisions
-            
+
             // Checking few different hash codes - if at least one is different then
             // CoreCLR implementation is not being used
             foreach (var collPair in _collidingStringsPairs)

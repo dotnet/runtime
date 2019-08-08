@@ -20,7 +20,7 @@ namespace System.Reflection.Emit.Tests
 
             Type[] paramTypes = new Type[] { typeof(IDClass), typeof(int) };
             DynamicMethod method = new DynamicMethod("Method", typeof(int), paramTypes, typeof(IDClass), skipVisibility);
-            
+
             ILGenerator ilGenerator = method.GetILGenerator(8);
             Helpers.EmitMethodBody(ilGenerator, field);
 

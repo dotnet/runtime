@@ -34,7 +34,7 @@ namespace System.Xml.Tests
     }
 
     /// <summary>
-    /// We will basically create two separate spec files and call the below method 
+    /// We will basically create two separate spec files and call the below method
     /// for each of the spec file separately.
     /// </summary>
     //[XmlDriverScenario("XmlReader", "ReaderCreateSpec.xml")]
@@ -203,7 +203,7 @@ namespace System.Xml.Tests
             CError.WriteLineIgnore(str);
         }
         /// <summary>
-        /// This method will be called by ExecuteVariation and it will 
+        /// This method will be called by ExecuteVariation and it will
         /// orchestrate the state.
         /// </summary>
         /// <param name="param"></param>
@@ -262,7 +262,7 @@ namespace System.Xml.Tests
         }
 
         /// <summary>
-        /// These are the abstract methods which each factory 
+        /// These are the abstract methods which each factory
         /// will implement and know how to test the variation
         /// </summary>
         protected abstract void PreTest();
@@ -284,8 +284,8 @@ namespace System.Xml.Tests
         /// Reads the value of the tag in the Spec file under the FilterCriteria Section
         /// </summary>
         /// <param name="tag">Name of the tag to read.</param>
-        /// <param name="throwOnNull">IF true, will check for null and throw, 
-        /// set to true if you want to throw an exception if value is not found. 
+        /// <param name="throwOnNull">IF true, will check for null and throw,
+        /// set to true if you want to throw an exception if value is not found.
         /// If set to false, the return value can be null</param>
         /// <returns>Value of the tag under FilterCriteria Section</returns>
         protected string ReadFilterCriteria(string tag, bool throwOnNull)
@@ -309,8 +309,8 @@ namespace System.Xml.Tests
         /// Reads the value of the tag in the Spec file under the Data Section
         /// </summary>
         /// <param name="tag">Name of the tag to read.</param>
-        /// <param name="throwOnNull">IF true, will check for null and throw, 
-        /// set to true if you want to throw an exception if value is not found. 
+        /// <param name="throwOnNull">IF true, will check for null and throw,
+        /// set to true if you want to throw an exception if value is not found.
         /// If set to false, the return value can be null</param>
         /// <returns>Value of the tag under Data Section</returns>
         protected string ReadData(string tag, bool throwOnNull)

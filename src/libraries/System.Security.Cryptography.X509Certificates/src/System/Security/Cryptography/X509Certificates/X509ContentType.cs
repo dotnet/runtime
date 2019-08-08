@@ -19,4 +19,3 @@ namespace System.Security.Cryptography.X509Certificates
         Authenticode = 0x06,
     }
 }
-

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,13 +10,13 @@ namespace System.Numerics.Tensors
     /// <summary>
     /// Represents a tensor using compressed sparse format
     /// For a two dimensional tensor this is referred to as compressed sparse row (CSR, CRS, Yale), compressed sparse column (CSC, CCS)
-    /// 
+    ///
     /// In this format, data that is in the same value for the compressed dimension has locality
-    /// 
+    ///
     /// In standard layout of a dense tensor, data with the same value for first dimensions has locality.
     /// As such we'll use reverseStride = false (default) to mean that the first dimension is compressed (CSR)
     /// and reverseStride = true to mean that the last dimension is compressed (CSC)
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class CompressedSparseTensor<T> : Tensor<T>
@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors
 
                         SetAt(item, compressedIndex, nonCompressedIndex);
                     }
-                    
+
                     index++;
                 }
             }
@@ -416,7 +416,7 @@ namespace System.Numerics.Tensors
             var newCompressedDimension = IsReversedStride ? dimensions.Length - 1 : 0;
             var newCompressedDimensionLength = dimensions[newCompressedDimension];
             var newCompressedDimensionStride = (int)(Length / newCompressedDimensionLength);
-            
+
             var newValues = (T[])values.ToArray();
             var newCompressedCounts = new int[newCompressedDimensionLength + 1];
             var newIndices = new int[indices.Length];
@@ -487,7 +487,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this tensor as a SparseTensor&lt;T&gt;. 
+        /// Creates a copy of this tensor as a SparseTensor&lt;T&gt;.
         /// </summary>
         /// <returns>A copy of this tensor as a SparseTensor&lt;T&gt;.</returns>
         public override SparseTensor<T> ToSparseTensor()
@@ -508,7 +508,7 @@ namespace System.Numerics.Tensors
                 }
 
                 var index = indicesSpan[valueIndex] + compressedIndex * strides[compressedDimension];
-                
+
                 sparseTensor.SetValue(index, valuesSpan[valueIndex]);
             }
 

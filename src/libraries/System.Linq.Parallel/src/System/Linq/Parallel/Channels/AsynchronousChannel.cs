@@ -14,7 +14,7 @@ using System.Diagnostics;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// This is a bounded channel meant for single-producer/single-consumer scenarios. 
+    /// This is a bounded channel meant for single-producer/single-consumer scenarios.
     /// </summary>
     /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
     internal sealed class AsynchronousChannel<T> : IDisposable
@@ -62,7 +62,7 @@ namespace System.Linq.Parallel
         //   very carefully above, this channel will deadlock, become corrupt, and generally
         //   make you an unhappy camper if you try to use more than 1 producer or more than
         //   1 consumer thread to access this thing concurrently. It's been carefully designed
-        //   to avoid locking, but only because of this restriction... 
+        //   to avoid locking, but only because of this restriction...
 
         private T[][] _buffer;              // The buffer of chunks.
         private readonly int _index;            // Index of this channel
@@ -226,11 +226,11 @@ namespace System.Linq.Parallel
             // considering waiting will notice that the producer is done. This is done
             // after setting the done flag to facilitate a Dekker-style check/recheck.
             //
-            // Because we can race with threads trying to Dispose of the event, we must 
+            // Because we can race with threads trying to Dispose of the event, we must
             // acquire a lock around our setting, and double-check that the event isn't null.
             //
             // Update 8/2/2011: Dispose() should never be called with SetDone() concurrently,
-            // but in order to reduce churn late in the product cycle, we decided not to 
+            // but in order to reduce churn late in the product cycle, we decided not to
             // remove the lock.
             lock (this)
             {
@@ -650,7 +650,7 @@ namespace System.Linq.Parallel
             // and producer threads racing inside of SetDone.
             //
             // Update 8/2/2011: Dispose() should never be called with SetDone() concurrently,
-            // but in order to reduce churn late in the product cycle, we decided not to 
+            // but in order to reduce churn late in the product cycle, we decided not to
             // remove the lock.
             lock (this)
             {

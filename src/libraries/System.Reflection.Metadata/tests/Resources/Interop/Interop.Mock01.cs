@@ -69,7 +69,7 @@ namespace MockInterop01
         [DispId(3), ComConversionLoss, ComAliasName("MockInterop01.UnionStruct"), MarshalAs(UnmanagedType.Struct)]
         public UnionStruct UnionField;
     }
-     
+
     [ComImport /*, TypeIdentifier*/]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("5720C75D-2448-447A-B786-64682CBEF156")]

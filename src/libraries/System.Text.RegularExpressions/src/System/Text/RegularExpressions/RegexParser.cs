@@ -131,10 +131,10 @@ namespace System.Text.RegularExpressions
 
         private static string EscapeImpl(string input, int i)
         {
-            // For small inputs we allocate on the stack. In most cases a buffer three 
-            // times larger the original string should be sufficient as usually not all 
+            // For small inputs we allocate on the stack. In most cases a buffer three
+            // times larger the original string should be sufficient as usually not all
             // characters need to be encoded.
-            // For larger string we rent the input string's length plus a fixed 
+            // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
             Span<char> buffer = input.Length <= (EscapeMaxBufferSize / 3) ? stackalloc char[EscapeMaxBufferSize] : default;
             ValueStringBuilder vsb = !buffer.IsEmpty ?

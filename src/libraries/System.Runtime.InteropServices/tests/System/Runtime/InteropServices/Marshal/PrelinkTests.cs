@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentException>("m", null, () => Marshal.Prelink(new NonRuntimeMethodInfo()));
         }
-        
+
         public class NonRuntimeMethodInfo : MethodInfo
         {
             public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotImplementedException();

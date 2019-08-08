@@ -115,7 +115,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
             for (int i = 0; i < iter; i++)
             {
-                Tuple<int, int> msg = await block2.ReceiveAsync(); 
+                Tuple<int, int> msg = await block2.ReceiveAsync();
                 Assert.Equal(expected: i, actual: msg.Item1);
                 Assert.Equal(expected: i + 1, actual: msg.Item2);
             }
@@ -197,14 +197,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecancellation2()
         {
-            var b = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { 
-                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 
+            var b = new JoinBlock<int, int>(new GroupingDataflowBlockOptions {
+                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1
             });
 
             Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<Tuple<int, int>>()));
             Assert.False(b.Target1.Post(42));
             Assert.False(b.Target2.Post(43));
-            
+
             Task<bool> t1 = b.Target1.SendAsync(42);
             Task<bool> t2 = b.Target2.SendAsync(43);
             Assert.True(t1.IsCompleted);
@@ -356,7 +356,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     return 0;
                 }
             }).ToArray();
-                
+
             var options = new GroupingDataflowBlockOptions { Greedy = false };
             JoinBlock<int, int> join = new JoinBlock<int, int>(options);
 

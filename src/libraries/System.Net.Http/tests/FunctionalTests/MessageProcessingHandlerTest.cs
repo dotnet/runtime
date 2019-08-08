@@ -88,10 +88,10 @@ namespace System.Net.Http.Functional.Tests
         {
             var transport = new MockTransportHandler();
             // ProcessRequest() throws exception.
-            var handler = new MockHandler(transport, true, () => { throw new MockException(); }); 
+            var handler = new MockHandler(transport, true, () => { throw new MockException(); });
 
             // Note that ProcessRequest() is called by SendAsync(). However, the exception is not thrown
-            // by SendAsync(). Instead, the returned Task is marked as faulted and contains the exception. 
+            // by SendAsync(). Instead, the returned Task is marked as faulted and contains the exception.
             await Assert.ThrowsAsync<MockException>(() => handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None));
 
             Assert.Equal(0, transport.SendAsyncCount);
@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var transport = new MockTransportHandler();
             // ProcessResponse() throws exception.
-            var handler = new MockHandler(transport, false, () => { throw new MockException(); }); 
+            var handler = new MockHandler(transport, false, () => { throw new MockException(); });
 
             // Throwing an exception in ProcessResponse() will cause the Task to complete as 'faulted'.
             await Assert.ThrowsAsync<MockException>(() => handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None));
@@ -138,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
                 () => { cts.Cancel(); cts.Token.ThrowIfCancellationRequested(); });
 
             // Note that even ProcessMessage() is called on the same thread, we don't expect SendAsync() to throw.
-            // SendAsync() must complete successfully, but the Task will be canceled. 
+            // SendAsync() must complete successfully, but the Task will be canceled.
             await Assert.ThrowsAsync<TaskCanceledException>(() => handler.TestSendAsync(new HttpRequestMessage(), cts.Token));
             Assert.Equal(0, handler.ProcessResponseCount);
         }
@@ -186,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(1, handler.ProcessResponseCount);
         }
-        
+
         [Fact]
         public async Task SendAsync_ProcessRequestThrowsOperationCanceledExceptionUsingOtherCts_TaskSetToIsFaulted()
         {
@@ -259,7 +259,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 return SendAsync(request, cancellationToken);
             }
-            
+
             protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request,
                 CancellationToken cancellationToken)
             {
@@ -315,7 +315,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 _cts = cts;
             }
-                        
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
                 CancellationToken cancellationToken)
             {

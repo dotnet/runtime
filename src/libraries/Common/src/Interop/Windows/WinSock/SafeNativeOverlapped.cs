@@ -37,7 +37,7 @@ namespace System.Net.Sockets
             _socketHandle.AddRef();
 #endif
         }
-        
+
         public override bool IsInvalid
         {
             get { return handle == IntPtr.Zero; }

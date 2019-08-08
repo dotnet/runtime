@@ -15,8 +15,8 @@ namespace System.Net.Http
 
         public long MaxRequestContentBufferSize
         {
-            // This property is not supported. In the .NET Framework it was only used when the handler needed to 
-            // automatically buffer the request content. That only happened if neither 'Content-Length' nor 
+            // This property is not supported. In the .NET Framework it was only used when the handler needed to
+            // automatically buffer the request content. That only happened if neither 'Content-Length' nor
             // 'Transfer-Encoding: chunked' request headers were specified. So, the handler thus needed to buffer
             // in the request content to determine its length and then would choose 'Content-Length' semantics when
             // POST'ing. In .NET Core and UAP platforms, the handler will resolve the ambiguity by always choosing
@@ -38,7 +38,7 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(value), value,
                         SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_limit,
                         HttpContent.MaxBufferSize));
-                }                
+                }
 
                 CheckDisposedOrStarted();
 

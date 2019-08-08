@@ -15,9 +15,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // MethodOrPropertySymbol
     //
     // MethodOrPropertySymbol - abstract class representing a method or a property. There
-    // are a bunch of algorithms in the compiler (e.g., override and overload 
-    // resolution) that want to treat methods and properties the same. This 
-    // abstract base class has the common parts. 
+    // are a bunch of algorithms in the compiler (e.g., override and overload
+    // resolution) that want to treat methods and properties the same. This
+    // abstract base class has the common parts.
     //
     // Changed to a ParentSymbol to allow generic methods to parent their type
     // variables.

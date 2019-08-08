@@ -41,7 +41,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         {
                             int programNameOrdinal = reader.GetOrdinal(COL_PROGRAM_NAME);
                             string programName = reader.GetString(programNameOrdinal);
-                            
+
                             if (programName != null && programName.Trim().Equals(builder.ApplicationName))
                             {
                                 // Get the hostname

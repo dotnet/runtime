@@ -31,7 +31,7 @@ namespace System.Data.SqlTypes
         // SqlBytes has five possible states
         // 1) SqlBytes is Null
         //      - m_stream must be null, m_lCuLen must be x_lNull.
-        // 2) SqlBytes contains a valid buffer, 
+        // 2) SqlBytes contains a valid buffer,
         //      - m_rgbBuf must not be null,m_stream must be null
         // 3) SqlBytes contains a valid pointer
         //      - m_rgbBuf could be null or not,
@@ -381,7 +381,7 @@ namespace System.Data.SqlTypes
 
                 if (IsNull)
                 {
-                    // If NULL and there is buffer inside, we only allow writing from 
+                    // If NULL and there is buffer inside, we only allow writing from
                     // offset zero.
                     //
                     if (offset != 0)
@@ -575,7 +575,7 @@ namespace System.Data.SqlTypes
         //      Static fields, properties
         // --------------------------------------------------------------
 
-        // Get a Null instance. 
+        // Get a Null instance.
         // Since SqlBytes is mutable, have to be property and create a new one each time.
         public static SqlBytes Null
         {
@@ -597,7 +597,7 @@ namespace System.Data.SqlTypes
         //      Data members
         // --------------------------------------------------------------
 
-        private SqlBytes _sb;      // the SqlBytes object 
+        private SqlBytes _sb;      // the SqlBytes object
         private long _lPosition;
 
         // --------------------------------------------------------------
@@ -614,7 +614,7 @@ namespace System.Data.SqlTypes
         //      Public properties
         // --------------------------------------------------------------
 
-        // Always can read/write/seek, unless sb is null, 
+        // Always can read/write/seek, unless sb is null,
         // which means the stream has been closed.
 
         public override bool CanRead

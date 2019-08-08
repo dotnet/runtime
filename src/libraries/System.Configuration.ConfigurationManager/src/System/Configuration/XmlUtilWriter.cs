@@ -13,7 +13,7 @@ namespace System.Configuration
     // When this class is used to copy an XML document that may include a "<!DOCTYPE" directive,
     // we must track what is written until the "<!DOCTYPE" or first document element is found.
     // This is needed because the XML reader does not give us accurate spacing information
-    // for the beginning of the "<!DOCTYPE" element. 
+    // for the beginning of the "<!DOCTYPE" element.
     //
     // Note that tracking this information is expensive, as it requires a scan of everything that is written
     // until "<!DOCTYPE" or the first element is found.
@@ -217,7 +217,7 @@ namespace System.Configuration
             int charactersWritten = 0;
             char quote = reader.QuoteChar;
 
-            // In !DOCTYPE, quote is '\0' for second public attribute. 
+            // In !DOCTYPE, quote is '\0' for second public attribute.
             // Protect ourselves from writing invalid XML by always
             // supplying a valid quote char.
             if ((quote != '"') && (quote != '\'')) quote = '"';

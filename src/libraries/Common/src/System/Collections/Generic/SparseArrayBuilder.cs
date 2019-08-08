@@ -87,7 +87,7 @@ namespace System.Collections.Generic
         /// The total number of items in this builder, including reserved regions.
         /// </summary>
         public int Count => checked(_builder.Count + _reservedCount);
-        
+
         /// <summary>
         /// The list of reserved regions in this builder.
         /// </summary>
@@ -136,7 +136,7 @@ namespace System.Collections.Generic
                     copied += toCopy;
                     count -= toCopy;
                 }
-                
+
                 if (count == 0)
                 {
                     return;

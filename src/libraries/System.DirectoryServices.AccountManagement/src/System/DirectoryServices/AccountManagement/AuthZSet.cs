@@ -102,7 +102,7 @@ namespace System.DirectoryServices.AccountManagement
                         // Extract the group SIDs from the user's context.  Determine the size of the buffer we need.
                         f = UnsafeNativeMethods.AuthzGetInformationFromContext(
                                                     pClientContext,
-                                                    2,                    // AuthzContextInfoGroupsSids 
+                                                    2,                    // AuthzContextInfoGroupsSids
                                                     0,
                                                     out bufferSize,
                                                     IntPtr.Zero
@@ -119,7 +119,7 @@ namespace System.DirectoryServices.AccountManagement
                             // Extract the group SIDs from the user's context, into our buffer.0
                             f = UnsafeNativeMethods.AuthzGetInformationFromContext(
                                                         pClientContext,
-                                                        2,                    // AuthzContextInfoGroupsSids 
+                                                        2,                    // AuthzContextInfoGroupsSids
                                                         bufferSize,
                                                         out bufferSize,
                                                         pBuffer
@@ -136,7 +136,7 @@ namespace System.DirectoryServices.AccountManagement
                                 //        };
                                 //
 
-                                // Extract TOKEN_GROUPS.GroupCount                
+                                // Extract TOKEN_GROUPS.GroupCount
 
                                 UnsafeNativeMethods.TOKEN_GROUPS tokenGroups = (UnsafeNativeMethods.TOKEN_GROUPS)Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.TOKEN_GROUPS));
 
@@ -379,7 +379,7 @@ namespace System.DirectoryServices.AccountManagement
                                         (this.credentials != null ? credentials.UserName : null),
                                         (this.credentials != null ? credentials.Password : null),
                                         DefaultContextOptions.MachineDefaultContextOption);
-                        
+
                         this.contexts[sidIssuerName] = ctx;
                     }
 #endif
@@ -403,11 +403,11 @@ namespace System.DirectoryServices.AccountManagement
                     if (ctx == null)
                     {
                         // Determine the domain DNS name
- 
+
                         // DS_RETURN_DNS_NAME | DS_DIRECTORY_SERVICE_REQUIRED | DS_BACKGROUND_ONLY
                         int flags = unchecked((int) (0x40000000 | 0x00000010 | 0x00000100));
                         UnsafeNativeMethods.DomainControllerInfo info = Utils.GetDcName(null, sidIssuerName, null, flags);
-                   
+
                         // Build a PrincipalContext for the domain
                         ctx = new PrincipalContext(
                                         ContextType.Domain,
@@ -500,7 +500,7 @@ namespace System.DirectoryServices.AccountManagement
             _currentGroup = -1;
         }
 
-        // IDisposable implementation        
+        // IDisposable implementation
         public override void Dispose()
         {
             try
@@ -604,7 +604,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     public SidList(UnsafeNativeMethods.SID_AND_ATTR[] groupSidAndAttrs)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: processing {0} SIDs", groupSidAndAttrs.Length);                                                                
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: processing {0} SIDs", groupSidAndAttrs.Length);
 
                         // Build the list of SIDs to resolve
                         int groupCount = groupSidAndAttrs.Length;
@@ -643,7 +643,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             if (err != 0)
                             {
-                                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);                                                                
+                                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);
 
                                 throw new PrincipalOperationException(SR.Format(
                                                                            SR.AuthZErrorEnumeratingGroups,
@@ -665,7 +665,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             if (err != 0)
                             {
-                                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);                                                                
+                                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
                                 throw new PrincipalOperationException(SR.Format(
                                                                            SR.AuthZErrorEnumeratingGroups,
@@ -680,7 +680,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             for (int i=0; i < groupCount; i++)
                             {
-                                names[i] = (UnsafeNativeMethods.LSA_TRANSLATED_NAME) 
+                                names[i] = (UnsafeNativeMethods.LSA_TRANSLATED_NAME)
                                                 Marshal.PtrToStructure(pCurrentName, typeof(UnsafeNativeMethods.LSA_TRANSLATED_NAME));
 
                                 pCurrentName = new IntPtr(pCurrentName.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_TRANSLATED_NAME)));
@@ -690,7 +690,7 @@ namespace System.DirectoryServices.AccountManagement
                             // Get the domain names in managed form
                             //
 
-                            // Extract LSA_REFERENCED_DOMAIN_LIST.Entries                
+                            // Extract LSA_REFERENCED_DOMAIN_LIST.Entries
                             int domainCount = Marshal.ReadInt32(pDomains);
 
                             // Extract LSA_REFERENCED_DOMAIN_LIST.Domains, by iterating over the array and marshalling
@@ -705,7 +705,7 @@ namespace System.DirectoryServices.AccountManagement
                                 pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_TRUST_INFORMATION)));
                             }
 
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", groupCount, domainCount);                                                                
+                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", groupCount, domainCount);
 
                             //
                             // Build the list of entries
@@ -749,7 +749,7 @@ namespace System.DirectoryServices.AccountManagement
                                 UnsafeNativeMethods.LsaClose(pPolicyHandle);
 
                             if (pOA != IntPtr.Zero)
-                                Marshal.FreeHGlobal(pOA);                        
+                                Marshal.FreeHGlobal(pOA);
                         }
                     }
 
@@ -763,7 +763,7 @@ namespace System.DirectoryServices.AccountManagement
                     public int Length
                     {
                         get { return this.entries.Count; }
-                    }   
+                    }
                 }
 
                 class SidListEntry

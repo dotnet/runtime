@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -26,8 +26,8 @@ namespace Stress.Data.SqlClient
 
         /// <summary>
         /// Connection string for SqlDependency.Start()/Stop()
-        /// 
-        /// The connection string used for SqlDependency.Start() must always be exactly the same every time 
+        ///
+        /// The connection string used for SqlDependency.Start() must always be exactly the same every time
         /// if you are connecting to the same database with the same user and same application domain, so
         /// don't randomise the connection string for calling SqlDependency.Start()
         /// </summary>
@@ -349,7 +349,7 @@ namespace Stress.Data.SqlClient
 
         /// <summary>
         /// SqlClient Async Polling Read Test
-        /// </summary>        
+        /// </summary>
         [StressTest("TestSqlAsyncPollingRead", Weight = 10)]
         public void TestSqlAsyncPollingRead()
         {
@@ -379,7 +379,7 @@ namespace Stress.Data.SqlClient
 
         /// <summary>
         /// SqlClient Async Event Write Test
-        /// </summary>        
+        /// </summary>
         [StressTest("TestSqlAsyncEventWrite", Weight = 10)]
         public void TestSqlAsyncEventWrite()
         {
@@ -390,7 +390,7 @@ namespace Stress.Data.SqlClient
 
         /// <summary>
         /// SqlClient Async Xml Non-blocking Read Test
-        /// </summary>        
+        /// </summary>
         [StressTest("TestSqlXmlAsyncNonBlockingRead", Weight = 10)]
         public void TestSqlXmlAsyncNonBlockingRead()
         {
@@ -400,7 +400,7 @@ namespace Stress.Data.SqlClient
 
         /// <summary>
         /// SqlClient Async Xml Polling Read Test
-        /// </summary>        
+        /// </summary>
         [StressTest("TestSqlXmlAsyncPollingRead", Weight = 10)]
         public void TestSqlXmlAsyncPollingRead()
         {
@@ -534,7 +534,7 @@ namespace Stress.Data.SqlClient
                 if (!OpenConnection(conn)) return;
                 DataStressFactory.TableMetadata table = Factory.GetRandomTable(rnd);
 
-                // MARS session cache is by default 10. 
+                // MARS session cache is by default 10.
                 // This is documented here: https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/sql/enabling-multiple-active-result-sets
                 // We want to stress test this by allowing 11 concurrent commands. Hence the max in rnd.Next below is 12.
                 MARSCommand[] cmds = new MARSCommand[rnd.Next(5, MaxCmds + 1)];

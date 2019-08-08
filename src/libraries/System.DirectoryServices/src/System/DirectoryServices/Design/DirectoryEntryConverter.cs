@@ -12,7 +12,7 @@ namespace System.DirectoryServices.Design
     {
         private static StandardValuesCollection s_values;
         private static Hashtable s_componentsCreated = new Hashtable(StringComparer.OrdinalIgnoreCase);
-                       
+
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == typeof(string))
@@ -22,7 +22,7 @@ namespace System.DirectoryServices.Design
 
             return base.CanConvertFrom(context, sourceType);
         }
-   
+
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value != null && value is string)
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Design
 
             return null;
         }
-           
+
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType != null && destinationType == typeof(string))
@@ -62,7 +62,7 @@ namespace System.DirectoryServices.Design
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
-     
+
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
             if (s_values == null)
@@ -90,9 +90,9 @@ namespace System.DirectoryServices.Design
 
             return null;
         }
-                       
+
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => false;
-            
+
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
     }
 }

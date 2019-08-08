@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var element = new CompositionElement(e);
 
                 Assert.Same(e, element.UnderlyingObject);
-            }            
+            }
         }
 
         [Fact]

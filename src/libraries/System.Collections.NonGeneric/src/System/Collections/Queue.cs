@@ -129,7 +129,7 @@ namespace System.Collections
 
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
-        // 
+        //
         public virtual void CopyTo(Array array, int index)
         {
             if (array == null)
@@ -175,7 +175,7 @@ namespace System.Collections
 
         // GetEnumerator returns an IEnumerator over this Queue.  This
         // Enumerator will support removing.
-        // 
+        //
         public virtual IEnumerator GetEnumerator()
         {
             return new QueueEnumerator(this);
@@ -197,7 +197,7 @@ namespace System.Collections
         }
 
         // Returns the object at the head of the queue. The object remains in the
-        // queue. If the queue is empty, this method throws an 
+        // queue. If the queue is empty, this method throws an
         // InvalidOperationException.
         public virtual object Peek()
         {
@@ -210,7 +210,7 @@ namespace System.Collections
         // Returns a synchronized Queue.  Returns a synchronized wrapper
         // class around the queue - the caller must not use references to the
         // original queue.
-        // 
+        //
         public static Queue Synchronized(Queue queue)
         {
             if (queue == null)

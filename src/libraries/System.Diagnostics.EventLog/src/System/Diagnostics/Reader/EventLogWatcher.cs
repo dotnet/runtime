@@ -8,8 +8,8 @@ using Microsoft.Win32;
 namespace System.Diagnostics.Eventing.Reader
 {
     /// <summary>
-    /// Used for subscribing to event record notifications from 
-    /// event log. 
+    /// Used for subscribing to event record notifications from
+    /// event log.
     /// </summary>
     public class EventLogWatcher : IDisposable
     {
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Eventing.Reader
         private RegisteredWaitHandle _registeredWaitHandle;
 
         /// <summary>
-        /// Maintains cached display / metadata information returned from 
+        /// Maintains cached display / metadata information returned from
         /// EventRecords that were obtained from this reader.
         /// </summary>
         private ProviderMetadataCachedInformation cachedMetadataInformation;
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 if (_callbackThreadId != Thread.CurrentThread.ManagedThreadId)
                 {
-                    // Not calling Stop from within callback - wait for 
+                    // Not calling Stop from within callback - wait for
                     // Any outstanding callbacks to complete.
                     if (_unregisterDoneHandle != null)
                     {

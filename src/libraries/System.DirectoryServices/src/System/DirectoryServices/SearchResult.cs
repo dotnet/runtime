@@ -7,7 +7,7 @@ using System.Net;
 namespace System.DirectoryServices
 {
     /// <devdoc>
-    /// Encapsulates a node in the Active Directory hierarchy 
+    /// Encapsulates a node in the Active Directory hierarchy
     /// that is returned during a search through <see cref='System.DirectoryServices.DirectorySearcher'/>.
     /// </devdoc>
     public class SearchResult
@@ -22,7 +22,7 @@ namespace System.DirectoryServices
         }
 
         /// <devdoc>
-        /// Retrieves the <see cref='System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='System.DirectoryServices.SearchResult'/>, from the Active Directory 
+        /// Retrieves the <see cref='System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='System.DirectoryServices.SearchResult'/>, from the Active Directory
         ///    hierarchy.
         /// </devdoc>
         public DirectoryEntry GetDirectoryEntry()

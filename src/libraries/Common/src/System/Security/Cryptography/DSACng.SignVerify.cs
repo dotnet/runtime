@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
             private ReadOnlySpan<byte> AdjustHashSizeIfNecessary(ReadOnlySpan<byte> hash, Span<byte> stackBuf)
             {
                 Debug.Assert(stackBuf.Length == WindowsMaxQSize);
-                
+
                 // Windows CNG requires that the hash output and q match sizes, but we can better
                 // interoperate with other FIPS 186-3 implementations if we perform truncation
                 // here, before sending it to CNG. Since this is a scenario presented in the

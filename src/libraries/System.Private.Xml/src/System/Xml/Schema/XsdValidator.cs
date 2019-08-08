@@ -237,7 +237,7 @@ namespace System.Xml.Schema
             }
         }
 
-        // SxS: This method processes attributes read from source document and does not expose any resources. 
+        // SxS: This method processes attributes read from source document and does not expose any resources.
         // It's OK to suppress the SxS warning.
         private void ProcessXsiAttributes(out XmlQualifiedName xsiType, out string xsiNil)
         {
@@ -447,7 +447,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    reader.TypedValueObject = null; //Typed value cleanup 
+                    reader.TypedValueObject = null; //Typed value cleanup
                 }
                 if (this.context.ElementDecl.HasRequiredAttribute || HasIdentityConstraints)
                 {
@@ -781,7 +781,7 @@ namespace System.Xml.Schema
             context.IsNill = false;
             context.ProcessContents = _processContents;
             context.NeedValidateChildren = false;
-            context.Constr = null; //resetting the constraints to be null incase context != null 
+            context.Constr = null; //resetting the constraints to be null incase context != null
                                    // when pushing onto stack;
         }
 
@@ -1144,4 +1144,3 @@ namespace System.Xml.Schema
     }
 #pragma warning restore 618
 }
-

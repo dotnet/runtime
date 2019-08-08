@@ -45,7 +45,7 @@ namespace System.Net.Http.Tests
             // This test verifies that Parse() correctly calls TryParse().
             HttpHeaderParser parser = GenericHeaderParser.MultipleValueNameValueWithParametersParser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue("custom;=value", null, ref index); });
         }
 

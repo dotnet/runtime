@@ -102,11 +102,11 @@ namespace System.Diagnostics
                 int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
                 int waitSleep = 0;
 
-                // In some stress situations, querying counter values from 
-                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009 
-                // often returns null/empty data back. We should build fault-tolerance logic to 
-                // make it more reliable because getting null back once doesn't necessarily mean 
-                // that the data is corrupted, most of the time we would get the data just fine 
+                // In some stress situations, querying counter values from
+                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009
+                // often returns null/empty data back. We should build fault-tolerance logic to
+                // make it more reliable because getting null back once doesn't necessarily mean
+                // that the data is corrupted, most of the time we would get the data just fine
                 // in subsequent tries.
                 while (waitRetries > 0)
                 {
@@ -134,7 +134,7 @@ namespace System.Diagnostics
                     catch (IOException)
                     {
                         // RegistryKey throws if it can't find the value.  We want to return an empty table
-                        // and throw a different exception higher up the stack. 
+                        // and throw a different exception higher up the stack.
                         names = null;
                         break;
                     }
@@ -169,7 +169,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                // Counter Name Table 
+                                // Counter Name Table
                                 throw new InvalidOperationException(SR.Format(SR.CounterNameCorrupt, names[index * 2]));
                             }
                         }
@@ -216,14 +216,14 @@ namespace System.Diagnostics
 #endif
             }
 
-            // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some 
-            // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY, 
-            // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the 
-            // wait loop and switch case below). We want to wait most certainly more than a 2min window. 
-            // The current wait time of up to 10mins takes care of the known stress deadlock issues. In most 
-            // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time 
-            // we wait may not be sufficient if the Win32 code keeps running into this deadlock again 
-            // and again. A condition very rare but possible in theory. We would get back to the user 
+            // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some
+            // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY,
+            // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the
+            // wait loop and switch case below). We want to wait most certainly more than a 2min window.
+            // The current wait time of up to 10mins takes care of the known stress deadlock issues. In most
+            // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time
+            // we wait may not be sufficient if the Win32 code keeps running into this deadlock again
+            // and again. A condition very rare but possible in theory. We would get back to the user
             // in this case with InvalidOperationException after the wait time expires.
             internal byte[] GetData(string item)
             {

@@ -38,7 +38,7 @@ namespace System.Diagnostics
 
                 TargetTypeName = value.AssemblyQualifiedName;
                 _target = value;
-            }        
+            }
         }
 
         public string? TargetTypeName { get; set; }

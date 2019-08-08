@@ -11,4 +11,3 @@ namespace System.Drawing.Drawing2D
         internal GraphicsState(int nativeState) => this.nativeState = nativeState;
     }
 }
-

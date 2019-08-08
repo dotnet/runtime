@@ -13,7 +13,7 @@ namespace System.Xml.Schema
     internal struct StateUnion
     {
         [FieldOffset(0)]
-        public int State;  //DFA 
+        public int State;  //DFA
         [FieldOffset(0)]
         public int AllElementsRequired; //AllContentValidator
         [FieldOffset(0)]
@@ -26,7 +26,7 @@ namespace System.Xml.Schema
     {
         public bool IsNill;
         public bool IsDefault;
-        public bool NeedValidateChildren;  // whether need to validate the children of this element   
+        public bool NeedValidateChildren;  // whether need to validate the children of this element
         public bool CheckRequiredAttribute; //PSVI
         public bool ValidationSkipped;
         public XmlSchemaContentProcessing ProcessContents;

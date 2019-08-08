@@ -1133,7 +1133,7 @@ namespace System.Net
                 // However, HttpWebRequest doesn't have a separate 'UseProxy' property. Instead,
                 // the default of the 'Proxy' property is a non-null IWebProxy object which is the
                 // system default proxy object. If the 'Proxy' property were actually null, then
-                // that means don't use any proxy. 
+                // that means don't use any proxy.
                 //
                 // So, we need to map the desired HttpWebRequest proxy settings to equivalent
                 // HttpClientHandler settings.
@@ -1147,7 +1147,7 @@ namespace System.Net
                 }
                 else
                 {
-                    // Since this HttpWebRequest is using the default system proxy, we need to 
+                    // Since this HttpWebRequest is using the default system proxy, we need to
                     // pass any proxy credentials that the developer might have set via the
                     // WebRequest.DefaultWebProxy.Credentials property.
                     handler.DefaultProxyCredentials = _proxy.Credentials;

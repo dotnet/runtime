@@ -74,7 +74,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         protected Thread ListenerThread { get; set; }
 
         /// <summary>
-        /// Delay incoming 
+        /// Delay incoming
         /// </summary>
         public bool SimulatedInDelay { get; set; }
 

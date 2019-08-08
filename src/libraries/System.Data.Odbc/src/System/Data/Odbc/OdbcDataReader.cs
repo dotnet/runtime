@@ -638,8 +638,8 @@ namespace System.Data.Odbc
             //  support it), since we are not making a separate interop call...
 
             // Bug SQLBUVSTS01:110664 - available cases:
-            // 1. random access - always cache the value (as before the fix), to minimize regression risk 
-            // 2. sequential access, fixed-size value: continue caching the value as before, again to minimize regression risk 
+            // 1. random access - always cache the value (as before the fix), to minimize regression risk
+            // 2. sequential access, fixed-size value: continue caching the value as before, again to minimize regression risk
             // 3. sequential access, variable-length value: this scenario did not work properly before the fix. Fix
             //                                              it now by calling GetData(length = 0).
             // 4. sequential access, cache value exists: just check the cache for DbNull (no validations done, again to minimize regressions)
@@ -1001,7 +1001,7 @@ namespace System.Data.Odbc
                         char[] rgChars = new char[cbMaxData / 2];
 
                         // RFC 50002644: negative value cannot be used for capacity.
-                        // in case of SQL_NO_TOTAL, set the capacity to cbMaxData, StringBuilder will automatically reallocate 
+                        // in case of SQL_NO_TOTAL, set the capacity to cbMaxData, StringBuilder will automatically reallocate
                         // its internal buffer when appending more data
                         int cbBuilderInitialCapacity = (lengthOrIndicator == ODBC32.SQL_NO_TOTAL) ? cbMaxData : lengthOrIndicator;
                         StringBuilder builder = new StringBuilder(cbBuilderInitialCapacity / 2);
@@ -1130,7 +1130,7 @@ namespace System.Data.Odbc
             // Possible cases:
             // 1. random access, user asks for the value first time: bring it and cache the value
             // 2. random access, user already queried the value: use the cache
-            // 3. sequential access, cache exists: user already read this value using different method (it becomes cached) 
+            // 3. sequential access, cache exists: user already read this value using different method (it becomes cached)
             //                       use the cache - preserve the original behavior to minimize regression risk
             // 4. sequential access, no cache: (fixed now) user reads the bytes/chars in sequential order (no cache)
 
@@ -1220,7 +1220,7 @@ namespace System.Data.Odbc
                 // sequential access, case 4
 
                 // SQLBU:532243 -- For SequentialAccess we need to read a chunk of
-                // data and not cache it. 
+                // data and not cache it.
                 // Note: If the object was previous cached (see case 3 above), the function will go thru 'if' path, to minimize
                 // regressions
 
@@ -1246,12 +1246,12 @@ namespace System.Data.Odbc
                         //   Reason: returing 0 is wrong behavior since it conflicts with return value in case of empty data
 
                         // GetBytes:
-                        //   In Orcas RTM: GetBytes(null buffer) returned -1 for null value if DbNull is not cached yet. 
+                        //   In Orcas RTM: GetBytes(null buffer) returned -1 for null value if DbNull is not cached yet.
                         //   But, after calling IsDBNull, GetBytes(null) raised InvalidCastException.
-                        //   In Orcas SP1: GetBytes always raises InvalidCastException for null value.                            
+                        //   In Orcas SP1: GetBytes always raises InvalidCastException for null value.
                         //   Managed Providers team has decided to keep the behavior of RTM for this case to fix the RTM's breaking change.
                         //   Reason: while -1 is wrong behavior, people might be already relying on it, so we should not be changing it.
-                        //   Note: this will happen only on the first call to GetBytes(with null buffer). 
+                        //   Note: this will happen only on the first call to GetBytes(with null buffer).
                         //   If IsDbNull has already been called before or for second call to query for size,
                         //   DBNull is cached and GetBytes raises InvalidCastException in case 3 (see the cases above in this method).
 
@@ -1272,7 +1272,7 @@ namespace System.Data.Odbc
                         // If cbLengthOrIndicator is SQL_NO_TOTAL (-4), this call returns -4 or -2, depending on the type (GetChars=>-2, GetBytes=>-4).
                         // This is the Orcas RTM and SP1 behavior, changing this would be a breaking change.
                         // SQL_NO_TOTAL means that the driver does not know what is the remained lenght of the data, so we cannot really guess the value here.
-                        // Reason: while returning different negative values depending on the type seems inconsistent, 
+                        // Reason: while returning different negative values depending on the type seems inconsistent,
                         // this is what we did in Orcas RTM and SP1 and user code might rely on this behavior => changing it would be a breaking change.
                         if (isCharsBuffer)
                         {
@@ -1728,13 +1728,13 @@ namespace System.Data.Odbc
         /// <summary>
         /// Note: use only this method to call SQLGetData! It caches the null value so the fact that the value is null is kept and no other calls
         /// are made after it.
-        /// 
-        /// retrieves the data into this.Buffer. 
+        ///
+        /// retrieves the data into this.Buffer.
         /// * If the data is DbNull, the value be also cached and false is returned.
         /// * if the data is not DbNull, the value is not cached and true is returned
-        /// 
+        ///
         /// Note: cbLengthOrIndicator can be either the length of (remained) data or SQL_NO_TOTAL (-4) when the length is not known.
-        /// in case of SQL_NO_TOTAL, driver fills the buffer till the end. 
+        /// in case of SQL_NO_TOTAL, driver fills the buffer till the end.
         /// The indicator will NOT be SQL_NULL_DATA, GetData will replace it with zero and return false.
         /// </summary>
         /// <returns>false if value is DbNull, true otherwise</returns>
@@ -1782,7 +1782,7 @@ namespace System.Data.Odbc
                     // NO_DATA return value is success value - it means that the driver has fully consumed the current column value
                     // but did not move to the next column yet.
                     // For fixed-size values, we do not expect this to happen because we fully consume the data and store it in cache after the first call.
-                    // For variable-length values (any character or binary data), SQLGetData can be called several times on the same column, 
+                    // For variable-length values (any character or binary data), SQLGetData can be called several times on the same column,
                     // to query for the next chunk of value, even after reaching its end!
                     // Thus, ignore NO_DATA for variable length data, but raise exception for fixed-size types
                     if (sqlctype != ODBC32.SQL_C.WCHAR && sqlctype != ODBC32.SQL_C.BINARY)
@@ -2396,7 +2396,7 @@ namespace System.Data.Odbc
                                     break;  // no need to go over the remaining columns anymore
                                 }
                             }
-                            // 
+                            //
 
 
 

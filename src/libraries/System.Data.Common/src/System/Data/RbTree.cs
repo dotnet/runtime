@@ -610,7 +610,7 @@ namespace System.Data
                             SetKey(z_id, Key(Next(z_id)));
 #if VerifyPath
                             (new NodePath(x_id, z_id)).VerifyPath(this); // verify x_id after its been added
-#endif                            
+#endif
                         }
                         else
                         {
@@ -656,7 +656,7 @@ namespace System.Data
                             SetSubTreeSize(newMainTreeNodeId, savedSize);
 #if VerifyPath
                             (new NodePath(x_id, newMainTreeNodeId)).VerifyPath(this); // verify x_id after its been added
-#endif                            
+#endif
                         }
                         return root_id;
                     }
@@ -797,7 +797,7 @@ namespace System.Data
 
 #if VerifyPath
             (new NodePath(z_id, mainTreeNodeID)).VerifyPath(this); // verify x_id after its been added
-#endif                            
+#endif
             return root_id;
         } //Insert
 
@@ -1352,7 +1352,7 @@ namespace System.Data
             {   // node is a main tree node
 #if VerifyIndex && VerifyPath
                 (new NodePath(Next(node), node)).VerifyPath(this);
-#endif                
+#endif
                 return ComputeIndexWithSatelliteByNode(node);
             }
             else
@@ -1362,14 +1362,14 @@ namespace System.Data
                 {   // node is a main tree node
 #if VerifyIndex && VerifyPath
                     (new NodePath(node, NIL)).VerifyPath(this);
-#endif                
+#endif
                     return ComputeIndexWithSatelliteByNode(node);
                 }
                 else
                 {   //compute the main tree rank + satellite branch rank
 #if VerifyIndex && VerifyPath
                     (new NodePath(node, mainTreeNodeId)).VerifyPath(this);
-#endif 
+#endif
                     return ComputeIndexWithSatelliteByNode(mainTreeNodeId) +
                            ComputeIndexByNode(node);
                 }

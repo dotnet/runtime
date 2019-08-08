@@ -165,7 +165,7 @@ namespace System.Data.SqlClient
 
         public SqlParameter(
             string parameterName,
-            SqlDbType dbType, 
+            SqlDbType dbType,
             int size,
             ParameterDirection direction,
             byte precision,
@@ -389,7 +389,7 @@ namespace System.Data.SqlClient
             long actualLen = GetActualSize();
             long maxLen = this.Size;
 
-            // GetActualSize returns bytes length, but smi expects char length for 
+            // GetActualSize returns bytes length, but smi expects char length for
             //  character types, so adjust
             if (!mt.IsLong)
             {

@@ -2737,7 +2737,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.RowAlreadyInTheCollection();
             }
-            row.BeginEdit(); // ensure something's there.            
+            row.BeginEdit(); // ensure something's there.
 
             int record = row._tempRecord;
             row._tempRecord = -1;
@@ -4583,7 +4583,7 @@ namespace System.Data
                 _loadIndex = null;
 
                 // LoadDataRow may have been called before BeginLoadData and already
-                // initialized loadIndexwithOriginalAdded & loadIndexwithCurrentDeleted 
+                // initialized loadIndexwithOriginalAdded & loadIndexwithCurrentDeleted
 
                 _initialLoad = (Rows.Count == 0);
                 if (_initialLoad)
@@ -5586,7 +5586,7 @@ namespace System.Data
 
             XmlTextReader xr = new XmlTextReader(stream);
 
-            // Prevent Dtd entity in DataTable 
+            // Prevent Dtd entity in DataTable
             xr.XmlResolver = null;
 
             return ReadXml(xr, false);
@@ -5601,7 +5601,7 @@ namespace System.Data
 
             XmlTextReader xr = new XmlTextReader(reader);
 
-            // Prevent Dtd entity in DataTable 
+            // Prevent Dtd entity in DataTable
             xr.XmlResolver = null;
 
             return ReadXml(xr, false);
@@ -5611,7 +5611,7 @@ namespace System.Data
         {
             XmlTextReader xr = new XmlTextReader(fileName);
 
-            // Prevent Dtd entity in DataTable 
+            // Prevent Dtd entity in DataTable
             xr.XmlResolver = null;
 
             try
@@ -6680,8 +6680,8 @@ namespace System.Data
         //        finally {
         //            rowDiffIdUsage.Cleanup();
         //        }
-        // 
-        // Nested calls are allowed on different tables. For example, user can register to row change events and trigger 
+        //
+        // Nested calls are allowed on different tables. For example, user can register to row change events and trigger
         // ReadXml on different table/ds). But, if user code will try to call ReadXml on table that is already in the scope,
         // this code will assert since nested calls on same table are unsupported.
         internal struct RowDiffIdUsageSection
@@ -6693,7 +6693,7 @@ namespace System.Data
             // * in case of ReadXml on empty DataSet, this list can be initialized as empty (so empty list != null).
             // * only one scope is allowed on single thread, either for datatable or dataset
             // * assert is triggered if same table is added to this list twice
-            // 
+            //
             // do not allocate TLS data in RETAIL bits!
             [ThreadStatic]
             internal static List<DataTable> t_usedTables;
@@ -6765,7 +6765,7 @@ namespace System.Data
                 // note: it might remain empty (still initialization is needed for assert to operate)
                 if (RowDiffIdUsageSection.t_usedTables == null)
                     RowDiffIdUsageSection.t_usedTables = new List<DataTable>();
-#endif 
+#endif
                 for (int tableIndex = 0; tableIndex < ds.Tables.Count; ++tableIndex)
                 {
                     DataTable table = ds.Tables[tableIndex];
@@ -6792,7 +6792,7 @@ namespace System.Data
                     {
                         DataTable table = _targetDS.Tables[tableIndex];
 #if DEBUG
-                        // cannot assert that table exists in the usedTables - new tables might be 
+                        // cannot assert that table exists in the usedTables - new tables might be
                         // created during diffgram processing in DataSet.ReadXml.
                         if (RowDiffIdUsageSection.t_usedTables != null)
                             RowDiffIdUsageSection.t_usedTables.Remove(table);

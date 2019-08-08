@@ -371,7 +371,7 @@ namespace System.ComponentModel.Composition
 
                 Assert.Throws<DirectoryNotFoundException>(() =>
                    new DirectoryCatalog(TemporaryFileCopier.GetTemporaryDirectory() + @"\NonexistentDirectoryWithEndingSlash\"));
-            
+
         }
 
         [Fact]

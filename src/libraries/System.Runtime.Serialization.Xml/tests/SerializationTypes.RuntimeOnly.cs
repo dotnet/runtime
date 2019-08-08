@@ -3303,7 +3303,7 @@ public class SquareWithDeserializationCallback : IDeserializationCallback
 
     void IDeserializationCallback.OnDeserialization(object sender)
     {
-        // After being deserialized, initialize the _area field 
+        // After being deserialized, initialize the _area field
         // using the deserialized Radius value.
         _area = Edge * Edge;
     }
@@ -4267,7 +4267,7 @@ public abstract class Invalid_Class_Base_Without_DataContract
 
 }
 
-// Invalid because it is a derived [DataContract] class whose base class is not 
+// Invalid because it is a derived [DataContract] class whose base class is not
 [DataContract]
 public class Invalid_Class_Derived_With_DataContract : Invalid_Class_Base_Without_DataContract
 {

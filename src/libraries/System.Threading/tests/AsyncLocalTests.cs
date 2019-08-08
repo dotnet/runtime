@@ -642,8 +642,8 @@ namespace System.Threading.Tests
                     ClearCounts();
 
                     ExecutionContext.Run(
-                        capturedContexts[contextIndex].CreateCopy(), 
-                        (o) => TestCapturedExecutionContext((int)o), 
+                        capturedContexts[contextIndex].CreateCopy(),
+                        (o) => TestCapturedExecutionContext((int)o),
                         contextIndex);
 
                     // Validate locals have been restored to the Default context's values
@@ -659,8 +659,8 @@ namespace System.Threading.Tests
 
                 // Validate locals are correctly reset Running with a Default context from a non-Default context
                 ExecutionContext.Run(
-                    Default.CreateCopy(), 
-                    _ => ValidateAsyncLocalsValuesNull(), 
+                    Default.CreateCopy(),
+                    _ => ValidateAsyncLocalsValuesNull(),
                     null);
 
                 ValidateCounts(thresholdIndex: contextIndex, maunalSets: 0, automaticUnsets: 1, automaticSets: 2);
@@ -671,7 +671,7 @@ namespace System.Threading.Tests
                 {
                     // Validate locals are correctly restored Running with another non-Default context from a non-Default context
                     ExecutionContext.Run(
-                        capturedContexts[innerContextIndex].CreateCopy(), 
+                        capturedContexts[innerContextIndex].CreateCopy(),
                         o => ValidateAsyncLocalsValues(thresholdIndex: (int)o),
                         innerContextIndex);
 

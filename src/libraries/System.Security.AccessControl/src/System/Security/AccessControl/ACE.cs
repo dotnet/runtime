@@ -1353,21 +1353,21 @@ nameof(opaque),
     //     ULONG SidStart;
     //     // Opaque resouce manager specific data
     // } ACCESS_ALLOWED_CALLBACK_ACE, *PACCESS_ALLOWED_CALLBACK_ACE;
-    // 
+    //
     // typedef struct _ACCESS_DENIED_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     //     // Opaque resouce manager specific data
     // } ACCESS_DENIED_CALLBACK_ACE, *PACCESS_DENIED_CALLBACK_ACE;
-    // 
+    //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     //     // Opaque resouce manager specific data
     // } SYSTEM_AUDIT_CALLBACK_ACE, *PSYSTEM_AUDIT_CALLBACK_ACE;
-    // 
+    //
     // typedef struct _SYSTEM_ALARM_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1778,15 +1778,15 @@ nameof(qualifier),
 
         #region Private Methods
 
-        //  
+        //
         // The following access mask bits in object aces may refer to an objectType that
         // identifies the property set, property, extended right, or type of child object to which the ACE applies
         //
-        //    ADS_RIGHT_DS_CREATE_CHILD = 0x1, 
-        //    ADS_RIGHT_DS_DELETE_CHILD = 0x2, 
+        //    ADS_RIGHT_DS_CREATE_CHILD = 0x1,
+        //    ADS_RIGHT_DS_DELETE_CHILD = 0x2,
         //    ADS_RIGHT_DS_SELF = 0x8,
-        //    ADS_RIGHT_DS_READ_PROP = 0x10, 
-        //    ADS_RIGHT_DS_WRITE_PROP = 0x20, 
+        //    ADS_RIGHT_DS_READ_PROP = 0x10,
+        //    ADS_RIGHT_DS_WRITE_PROP = 0x20,
         //    ADS_RIGHT_DS_CONTROL_ACCESS = 0x100
         //
         internal const int AccessMaskWithObjectType = 0x1 | 0x2 | 0x8 | 0x10 | 0x20 | 0x100;

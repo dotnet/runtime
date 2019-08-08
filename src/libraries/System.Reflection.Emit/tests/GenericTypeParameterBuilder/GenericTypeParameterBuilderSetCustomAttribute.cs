@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => typeParams[0].SetCustomAttribute(null));
         }
     }

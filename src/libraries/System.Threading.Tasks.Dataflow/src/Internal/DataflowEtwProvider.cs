@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Dataflow Event IDs (must be unique)
         //
 
@@ -57,7 +57,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private const int BLOCKUNLINKED_EVENTID = 5;
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Dataflow Events
         //
 

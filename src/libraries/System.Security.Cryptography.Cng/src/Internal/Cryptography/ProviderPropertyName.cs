@@ -15,4 +15,3 @@ namespace Internal.Cryptography
         internal const string Name = "Name";        // NCRYPT_NAME_PROPERTY
     }
 }
-

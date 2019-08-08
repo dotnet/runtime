@@ -24,7 +24,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             return i;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

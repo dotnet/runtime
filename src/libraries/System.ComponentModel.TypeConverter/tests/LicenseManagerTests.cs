@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information. 
+// See the LICENSE file in the project root for more information.
 
 //
 // System.ComponentModel.LicenseManagerTests test cases
@@ -266,7 +266,7 @@ namespace System.ComponentModel.Tests
             }
             //Check the exception was thrown
             Assert.True(exceptionThrown);
-            //Test we can create DesignTime with A new DesignTimeContext 
+            //Test we can create DesignTime with A new DesignTimeContext
             cwc = null;
             cwc = LicenseManager.CreateWithContext(typeof(DesigntimeLicensedObject),
                 new DesigntimeLicenseContext());

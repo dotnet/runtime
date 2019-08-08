@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
 {
     /// <summary>
     /// The operator type for Select statements. This operator transforms elements as it
-    /// enumerates them through the use of a selector delegate. 
+    /// enumerates them through the use of a selector delegate.
     /// </summary>
     /// <typeparam name="TInput"></typeparam>
     /// <typeparam name="TOutput"></typeparam>

@@ -126,7 +126,7 @@ namespace System.Tests
             // When used with LazyThreadSafetyMode.PublicationOnly this causes a stack overflow
             // Value_Invalid_Impl(ref x, new Lazy<int>(f, LazyThreadSafetyMode.PublicationOnly));
         }
-        
+
         public class InitiallyExceptionThrowingCtor
         {
             public static int counter = 0;
@@ -261,7 +261,7 @@ namespace System.Tests
         }
 
         public static IEnumerable<object[]> Value_FuncCtor_Exception_MemberData()
-        { 
+        {
             yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99)) };
             yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), true) };
             yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), false) };

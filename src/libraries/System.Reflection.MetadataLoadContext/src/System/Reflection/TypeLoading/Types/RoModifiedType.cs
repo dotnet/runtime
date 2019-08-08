@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Reflection.TypeLoading
 {
     /// <summary>
-    /// This is used to represent a ModifiedType. It is quite ill-behaved so the only time it is created is by the EcmaModifiedTypeProvider. 
+    /// This is used to represent a ModifiedType. It is quite ill-behaved so the only time it is created is by the EcmaModifiedTypeProvider.
     /// It is only used to implement the GetCustomModifiers apis.
     /// </summary>
     internal sealed class RoModifiedType : RoWrappedType

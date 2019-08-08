@@ -34,7 +34,7 @@ namespace System.SpanTests
             Memory<string> pinnedMemory = MemoryMarshal.CreateFromPinnedArray(a, 4, 3);
             pinnedMemory.Validate("94", "95", "96");
         }
-        
+
         [Fact]
         public static void CreateFromPinnedArrayIntSliceRemainsPinned()
         {
@@ -62,7 +62,7 @@ namespace System.SpanTests
             Assert.Equal(4 | (1 << 31), testSlice._index);
             Assert.Equal(2, testSlice._length);
         }
-        
+
         [Fact]
         public static void CreateFromPinnedArrayIntReadOnlyMemorySliceRemainsPinned()
         {

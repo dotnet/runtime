@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -18,7 +18,7 @@ namespace System.Net.Http
         /// <summary>
         /// DiagnosticHandler constructor
         /// </summary>
-        /// <param name="innerHandler">Inner handler: Windows or Unix implementation of HttpMessageHandler. 
+        /// <param name="innerHandler">Inner handler: Windows or Unix implementation of HttpMessageHandler.
         /// Note that DiagnosticHandler is the latest in the pipeline </param>
         public DiagnosticsHandler(HttpMessageHandler innerHandler) : base(innerHandler)
         {
@@ -35,7 +35,7 @@ namespace System.Net.Http
             CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
-            // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)  
+            // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
@@ -66,7 +66,7 @@ namespace System.Net.Http
             }
 
             Guid loggingRequestId = Guid.Empty;
-            
+
             // There is a listener. Check if listener wants to be notified about HttpClient Activities
             if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
             {
@@ -137,7 +137,7 @@ namespace System.Net.Http
                         Response = responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
-                        // and not retain all requests in Start 
+                        // and not retain all requests in Start
                         Request = request,
                         RequestTaskStatus = responseTask?.Status ?? TaskStatus.Faulted
                     });

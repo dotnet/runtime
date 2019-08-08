@@ -264,7 +264,7 @@ Ji0iy6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp");
                 Assert.ThrowsAny<CryptographicException>(
                     () => ImportECPrivateKey(key, explicitECPrivateKey, out _));
 
-                // Win10 supports explicit curve PKCS8 on the CNG types. 
+                // Win10 supports explicit curve PKCS8 on the CNG types.
                 if (!PlatformDetection.IsWindows10Version1607OrGreater)
                 {
                     Assert.ThrowsAny<CryptographicException>(

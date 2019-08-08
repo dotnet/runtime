@@ -29,7 +29,7 @@ namespace System.Diagnostics
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId, string machineName)
         {
-            // Performance optimization for the local machine: 
+            // Performance optimization for the local machine:
             // First try to OpenProcess by id, if valid handle is returned, the process is definitely running
             // Otherwise enumerate all processes and compare ids
             if (!IsRemoteMachine(machineName))
@@ -92,9 +92,9 @@ namespace System.Diagnostics
         /// <returns>An array of process IDs from the specified machine.</returns>
         public static int[] GetProcessIds(string machineName)
         {
-            // Due to the lack of support for EnumModules() on coresysserver, we rely 
+            // Due to the lack of support for EnumModules() on coresysserver, we rely
             // on PerformanceCounters to get the ProcessIds for both remote desktop
-            // and the local machine, unlike Desktop on which we rely on PCs only for 
+            // and the local machine, unlike Desktop on which we rely on PCs only for
             // remote machines.
             return IsRemoteMachine(machineName) ?
                 NtProcessManager.GetProcessIds(machineName, true) :
@@ -192,7 +192,7 @@ namespace System.Diagnostics
                 throw new Win32Exception(5);
             }
 
-            // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.            
+            // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.
             // Assume the process is still running if the error was ERROR_ACCESS_DENIED for better performance
             if (result != Interop.Errors.ERROR_ACCESS_DENIED && !IsProcessRunning(processId))
             {

@@ -197,8 +197,7 @@ namespace System.Data.SqlClient
 
             SqlParameterFlags setFlags = SqlParameterFlags.SourceColumnNullMapping | SqlParameterFlags.IsNullable | SqlParameterFlags.IsNull;
             destination._flags = (destination._flags & ~setFlags) | (_flags & setFlags);
-            
+
         }
     }
 }
-

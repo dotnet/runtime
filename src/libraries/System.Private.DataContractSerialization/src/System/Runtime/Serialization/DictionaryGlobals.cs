@@ -70,21 +70,21 @@ namespace System.Runtime.Serialization
         public static readonly XmlDictionaryString hexBinaryLocalName = s_dictionary.Add("hexBinary");
         public static readonly XmlDictionaryString gYearMonthLocalName = s_dictionary.Add("gYearMonth");
         public static readonly XmlDictionaryString gYearLocalName = s_dictionary.Add("gYear");
-        
+
         // 40
         public static readonly XmlDictionaryString gMonthDayLocalName = s_dictionary.Add("gMonthDay");
         public static readonly XmlDictionaryString gDayLocalName = s_dictionary.Add("gDay");
         public static readonly XmlDictionaryString gMonthLocalName = s_dictionary.Add("gMonth");
         public static readonly XmlDictionaryString integerLocalName = s_dictionary.Add("integer");
         public static readonly XmlDictionaryString positiveIntegerLocalName = s_dictionary.Add("positiveInteger");
-        
+
         // 45
         public static readonly XmlDictionaryString negativeIntegerLocalName = s_dictionary.Add("negativeInteger");
         public static readonly XmlDictionaryString nonPositiveIntegerLocalName = s_dictionary.Add("nonPositiveInteger");
         public static readonly XmlDictionaryString nonNegativeIntegerLocalName = s_dictionary.Add("nonNegativeInteger");
         public static readonly XmlDictionaryString normalizedStringLocalName = s_dictionary.Add("normalizedString");
         public static readonly XmlDictionaryString tokenLocalName = s_dictionary.Add("token");
-        
+
         // 50
         public static readonly XmlDictionaryString languageLocalName = s_dictionary.Add("language");
         public static readonly XmlDictionaryString NameLocalName = s_dictionary.Add("Name");
@@ -98,9 +98,8 @@ namespace System.Runtime.Serialization
         public static readonly XmlDictionaryString ENTITIESLocalName = s_dictionary.Add("ENTITIES");
         public static readonly XmlDictionaryString NMTOKENLocalName = s_dictionary.Add("NMTOKEN");
         public static readonly XmlDictionaryString NMTOKENSLocalName = s_dictionary.Add("NMTOKENS");
-        
+
         // 60
         public static readonly XmlDictionaryString AsmxTypesNamespace = s_dictionary.Add("http://microsoft.com/wsdl/types/");
     }
 }
-

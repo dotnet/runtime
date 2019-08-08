@@ -48,7 +48,7 @@ internal partial class Interop
         QS_INPUT = QS_MOUSE | QS_KEY,
         QS_ALLEVENTS = QS_INPUT | QS_POSTMESSAGE | QS_TIMER | QS_PAINT | QS_HOTKEY,
         QS_ALLINPUT = QS_INPUT | QS_POSTMESSAGE | QS_TIMER | QS_PAINT | QS_HOTKEY | QS_SENDMESSAGE;
- 
+
         public const int SPI_GETBEEP = 1;
         public const int SPI_SETBEEP = 2;
         public const int SPI_GETMOUSE = 3;

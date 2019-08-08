@@ -103,11 +103,11 @@ namespace System.Runtime.InteropServices.Tests.Common
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("710D252E-22BF-4A33-9544-40D8D03C29FF")]
     public interface ManagedInterfaceSupportIUnknown { }
-    
+
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("B68116E6-B341-4596-951F-F95262CA5612")]
     public interface ManagedInterfaceSupportIUnknownWithMethods
-    { 
+    {
         void M1();
         void M2();
     }
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.Tests.Common
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)]
     [Guid("857A6ACD-E462-4379-8314-44B9C0078217")]
     public interface ManagedInterfaceSupportIDispatchWithMethods
-    { 
+    {
         void M1();
         void M2();
     }
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.Tests.Common
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
     [Guid("D235E3E7-344F-4645-BBB6-6A82C2B34C34")]
     public interface ManagedInterfaceSupportDualInterfaceWithMethods
-    { 
+    {
         void M1();
         void M2();
     }

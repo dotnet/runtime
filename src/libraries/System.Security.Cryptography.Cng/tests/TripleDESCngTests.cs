@@ -18,9 +18,9 @@ namespace System.Security.Cryptography.Cng.Tests
         [InlineData(2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
         // 3DES192-CBC-NoPadding at 2 blocks
         [InlineData(2 * BlockSizeBytes, CipherMode.CBC, PaddingMode.None)]
-        // 3DES192-CBC-Zeros at 1.5 blocks 
+        // 3DES192-CBC-Zeros at 1.5 blocks
         [InlineData(BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.Zeros)]
-        // 3DES192-CBC-PKCS7 at 1.5 blocks 
+        // 3DES192-CBC-PKCS7 at 1.5 blocks
         [InlineData(BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.PKCS7)]
         public static void VerifyPersistedKey(
             int plainBytesCount,
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Cng.Tests
             SymmetricCngTestHelpers.VerifyMachineKey(
                 s_cngAlgorithm,
                 8 * BlockSizeBytes,
-                keyName => new TripleDESCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), 
+                keyName => new TripleDESCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey),
                 () => new TripleDESCng());
         }
 

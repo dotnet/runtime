@@ -21,10 +21,10 @@ namespace System.Linq.Parallel
     ///
     /// 1. Open the query results as a partitioned stream by calling GivePartitionedStream
     ///    and pass a generic action as an argument.
-    ///    
+    ///
     /// 2. Access individual elements of the results list by calling GetElement(index) and
     ///    ElementsCount. This method of accessing the query results is available only if
-    ///    IsIndexible return true. 
+    ///    IsIndexible return true.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     internal abstract class QueryResults<T> : IList<T>
@@ -57,7 +57,7 @@ namespace System.Linq.Parallel
         // Assumptions:
         //    IsIndexible returns true
         //    0 <= index < ElementsCount
-        //    
+        //
 
         internal virtual T GetElement(int index)
         {
@@ -70,7 +70,7 @@ namespace System.Linq.Parallel
         //
         // Assumptions:
         //    IsIndexible returns true
-        //   
+        //
 
         internal virtual int ElementsCount
         {

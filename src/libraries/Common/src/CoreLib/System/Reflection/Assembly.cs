@@ -296,7 +296,7 @@ namespace System.Reflection
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
-            
+
             string fullPath = Path.GetFullPath(assemblyFile);
 
             if (!s_loadFromHandlerSet)

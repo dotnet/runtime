@@ -91,7 +91,7 @@ namespace System.Xml
             // call to the helper
             int readCount = await _readBinaryHelper.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -115,7 +115,7 @@ namespace System.Xml
             // call to the helper
             int readCount = await _readBinaryHelper.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -139,7 +139,7 @@ namespace System.Xml
             // call to the helper
             int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -163,7 +163,7 @@ namespace System.Xml
             // call to the helper
             int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
-            // setup parsingFunction 
+            // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
             return readCount;
         }
@@ -199,4 +199,3 @@ namespace System.Xml
         }
     }
 }
-

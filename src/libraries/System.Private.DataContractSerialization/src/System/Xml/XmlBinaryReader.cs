@@ -885,9 +885,9 @@ namespace System.Xml
                 int actual = Math.Max(maxLength - maxTextNodeLength, 0);
                 int offset = BufferReader.ReadBytes(actual);
 
-                // We need to make sure we don't split a utf8  character, so scan backwards for a 
-                // character boundary.  We'll actually always push off at least one character since 
-                // although we find the character boundary, we don't bother to figure out if we have 
+                // We need to make sure we don't split a utf8  character, so scan backwards for a
+                // character boundary.  We'll actually always push off at least one character since
+                // although we find the character boundary, we don't bother to figure out if we have
                 // all the bytes that comprise the character.
                 int i;
                 for (i = offset + actual - 1; i >= offset; i--)

@@ -205,7 +205,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
             Assert.Equal("TestEnum*", arrayType.Name);
         }
-        
+
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray()
         {

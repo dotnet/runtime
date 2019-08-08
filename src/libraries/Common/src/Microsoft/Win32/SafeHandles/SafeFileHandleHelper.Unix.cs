@@ -24,14 +24,14 @@ namespace Microsoft.Win32.SafeHandles
             // otherwise we blame the file.
             bool enoentDueToDirectory = (flags & Interop.Sys.OpenFlags.O_CREAT) != 0;
 
-            // Open the file. 
+            // Open the file.
             SafeFileHandle handle = Interop.CheckIo(
                 Interop.Sys.Open(path, flags, mode),
-                path, 
+                path,
                 isDirectory: enoentDueToDirectory,
                 errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
 
-            // Make sure it's not a directory; we do this after opening it once we have a file descriptor 
+            // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
             Interop.Sys.FileStatus status;
             if (Interop.Sys.FStat(handle, out status) != 0)

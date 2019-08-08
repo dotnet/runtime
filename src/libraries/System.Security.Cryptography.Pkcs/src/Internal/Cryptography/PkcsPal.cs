@@ -97,4 +97,3 @@ namespace Internal.Cryptography
         }
     }
 }
-

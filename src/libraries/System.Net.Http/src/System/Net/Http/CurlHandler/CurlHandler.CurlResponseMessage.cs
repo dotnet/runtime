@@ -159,7 +159,7 @@ namespace System.Net.Http
             /// Writes the <paramref name="length"/> bytes starting at <paramref name="pointer"/> to the stream.
             /// </summary>
             /// <returns>
-            /// <paramref name="length"/> if all of the data was written, or 
+            /// <paramref name="length"/> if all of the data was written, or
             /// <see cref="Interop.Http.CURL_WRITEFUNC_PAUSE"/> if the data wasn't copied and the connection
             /// should be paused until a reader is available.
             /// </returns>
@@ -181,7 +181,7 @@ namespace System.Net.Http
                 {
                     VerifyInvariants();
 
-                    // If there's existing data in the remaining data buffer, or if there's no pending read request, 
+                    // If there's existing data in the remaining data buffer, or if there's no pending read request,
                     // we need to pause until the existing data is consumed or until there's a waiting read.
                     if (_remainingDataCount > 0)
                     {
@@ -194,7 +194,7 @@ namespace System.Net.Http
                         return Interop.Http.CURL_WRITEFUNC_PAUSE;
                     }
 
-                    // There's no data in the buffer and there is a pending read request.  
+                    // There's no data in the buffer and there is a pending read request.
                     // Transfer as much data as we can to the read request, completing it.
                     int numBytesForTask = (int)Math.Min(length, _pendingReadRequest._buffer.Length);
                     Debug.Assert(numBytesForTask > 0, "We must be copying a positive amount.");
@@ -317,7 +317,7 @@ namespace System.Net.Http
                         return new ValueTask<int>(0);
                     }
 
-                    // Finally, the stream is still alive, and we want to read some data, but there's no data 
+                    // Finally, the stream is still alive, and we want to read some data, but there's no data
                     // in the buffer so we need to register ourself to get the next write.
                     if (cancellationToken.CanBeCanceled)
                     {
@@ -461,7 +461,7 @@ namespace System.Net.Http
 
                 base.Dispose(disposing);
             }
-            
+
             private void CheckDisposed()
             {
                 if (_disposed)

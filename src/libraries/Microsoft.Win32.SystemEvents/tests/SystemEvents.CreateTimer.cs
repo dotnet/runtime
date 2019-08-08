@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -161,7 +161,7 @@ namespace Microsoft.Win32.SystemEventsTests
                 Assert.True(elapsed.WaitOne(interval * SystemEventsTest.ExpectedEventMultiplier));
 
                 var proportionDifference = (double)(stopwatch.ElapsedMilliseconds - interval) / interval;
-                Assert.True(permittedProportionUnder < proportionDifference && proportionDifference < permittedProportionOver, 
+                Assert.True(permittedProportionUnder < proportionDifference && proportionDifference < permittedProportionOver,
                     $"Timer should fire less than {permittedProportionUnder * 100.0}% before and less than {permittedProportionOver * 100.0}% after expected interval {interval}, actual: {stopwatch.ElapsedMilliseconds}, difference: {proportionDifference * 100.0}%");
             }
             finally

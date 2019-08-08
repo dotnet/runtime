@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -225,7 +225,7 @@ namespace System.Xml.Serialization
                 {
                     membersList.Add(anyMember);
                 }
-                else if (mapping.TypeDesc.IsArrayLike 
+                else if (mapping.TypeDesc.IsArrayLike
                     && !(mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                 {
                     anyMember.Collection = new CollectionMember();
@@ -461,7 +461,7 @@ namespace System.Xml.Serialization
             var memberMapping = new MemberMapping();
             memberMapping.TypeDesc = mapping.TypeDesc;
             memberMapping.Elements = new ElementAccessor[] { element };
-                       
+
             object o = null;
             var holder = new ObjectHolder();
             var member = new Member(memberMapping);
@@ -708,8 +708,8 @@ namespace System.Xml.Serialization
 
         private bool IsSequence(Member[] members)
         {
-            // #10586: Currently the reflection based method treat this kind of type as normal types. 
-            // But potentially we can do some optimization for types that have ordered properties. 
+            // #10586: Currently the reflection based method treat this kind of type as normal types.
+            // But potentially we can do some optimization for types that have ordered properties.
             return false;
         }
 
@@ -850,9 +850,9 @@ namespace System.Xml.Serialization
                     Reader.Skip();
                 }
                 else if(element.Mapping.TypeDesc.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
-                {                   
+                {
                     Reader.Skip();
-                    value = default(TimeSpan);                   
+                    value = default(TimeSpan);
                 }
                 else
                 {
@@ -1069,7 +1069,7 @@ namespace System.Xml.Serialization
                     {
                         WriteAddCollectionFixup(member.GetSource, member.Source, rre, td, readOnly);
 
-                        // member.Source has been set at this point. 
+                        // member.Source has been set at this point.
                         // Setting the source to no-op to avoid setting the
                         // source again.
                         member.Source = NoopAction;
@@ -1082,7 +1082,7 @@ namespace System.Xml.Serialization
                         }
 
                         member.Source(rre);
-                    }                    
+                    }
                 }
 
                 o = rre;

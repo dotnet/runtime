@@ -196,7 +196,7 @@ namespace System.Runtime.CompilerServices
         private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
         {
             // If we got here, the key was not in the table. Invoke the callback (outside the lock)
-            // to generate the new value for the key. 
+            // to generate the new value for the key.
             TValue newValue = createValueCallback(key);
 
             lock (_lock)
@@ -397,17 +397,17 @@ namespace System.Runtime.CompilerServices
         //    - Used with live key (linked into a bucket list where _buckets[hashCode & (_buckets.Length - 1)] points to first entry)
         //         depHnd.IsAllocated == true, depHnd.GetPrimary() != null
         //         hashCode == RuntimeHelpers.GetHashCode(depHnd.GetPrimary()) & int.MaxValue
-        //         next links to next Entry in bucket. 
-        //                          
+        //         next links to next Entry in bucket.
+        //
         //    - Used with dead key (linked into a bucket list where _buckets[hashCode & (_buckets.Length - 1)] points to first entry)
         //         depHnd.IsAllocated == true, depHnd.GetPrimary() is null
-        //         hashCode == <notcare> 
-        //         next links to next Entry in bucket. 
+        //         hashCode == <notcare>
+        //         next links to next Entry in bucket.
         //
         //    - Has been removed from the table (by a call to Remove)
         //         depHnd.IsAllocated == true, depHnd.GetPrimary() == <notcare>
-        //         hashCode == -1 
-        //         next links to next Entry in bucket. 
+        //         hashCode == -1
+        //         next links to next Entry in bucket.
         //
         // The only difference between "used with live key" and "used with dead key" is that
         // depHnd.GetPrimary() returns null. The transition from "used with live key" to "used with dead key"

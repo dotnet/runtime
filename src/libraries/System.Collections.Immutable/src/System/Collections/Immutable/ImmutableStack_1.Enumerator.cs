@@ -170,7 +170,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an <see cref="ObjectDisposedException"/> if this 
+            /// Throws an <see cref="ObjectDisposedException"/> if this
             /// enumerator has already been disposed.
             /// </summary>
             private void ThrowIfDisposed()

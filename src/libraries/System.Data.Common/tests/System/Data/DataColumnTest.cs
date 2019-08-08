@@ -18,10 +18,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -108,7 +108,7 @@ namespace System.Data.Tests
             tbl.Rows.Add(new object[] { 2, "RowState 2" });
             tbl.Rows.Add(new object[] { 3, "RowState 3" });
             tbl.AcceptChanges();
-            // Update Table with following changes: Row0 unmodified, 
+            // Update Table with following changes: Row0 unmodified,
             // Row1 modified, Row2 deleted, Row3 added, Row4 not-present.
             tbl.Rows[1]["name"] = "Modify 2";
             tbl.Rows[2].Delete();
@@ -689,7 +689,7 @@ namespace System.Data.Tests
             table.Columns.Add("result_var", typeof(double), "var(test)");
             table.Columns.Add("result_stdev", typeof(double), "stdev(test)");
 
-            // Check DBNull.Value is set as the result 
+            // Check DBNull.Value is set as the result
             Assert.Equal(typeof(DBNull), (table.Rows[0]["result_var"]).GetType());
             Assert.Equal(typeof(DBNull), (table.Rows[0]["result_stdev"]).GetType());
         }
@@ -761,7 +761,7 @@ namespace System.Data.Tests
             for (int j = 0; j < 10; j++)
                 table2.Rows.Add(new object[] { 1, j });
 
-            // Check the values for the expression columns in parent table 
+            // Check the values for the expression columns in parent table
             Assert.Equal(10, table.Rows[0]["result_count"]);
             Assert.Equal(0, table.Rows[1]["result_count"]);
 
@@ -838,7 +838,7 @@ namespace System.Data.Tests
             {
             }
 
-            // Check predicates 
+            // Check predicates
             try
             {
                 table2.Columns.Add("result", typeof(int), "(child.test) IN (1,2,3)");
@@ -1003,11 +1003,11 @@ namespace System.Data.Tests
             var c = MakeColumn ("foobar", "'foo'+'bar'");
 
                 var table = new DataTable();
-                
+
                 table.Columns.Add(a);
                 table.Columns.Add(b);
                 table.Columns.Add(c);
-        
+
                 var row = table.NewRow();
                 table.Rows.Add(row);
             Assert.Equal (row [0], DBNull.Value);

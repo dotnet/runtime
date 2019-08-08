@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection.TypeLoading
 {
-    // 
+    //
     // These sentinel instances are used only for lazy-evaluation latches when "null" is a valid value for that property.
     //
     internal static class Sentinels

@@ -8,7 +8,7 @@
 // Tests Ported from the TPL test bed
 //
 // Summary:
-// Implements the tests for the new scheduler ConcurrentExclusiveSchedulerPair 
+// Implements the tests for the new scheduler ConcurrentExclusiveSchedulerPair
 //
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 
@@ -27,7 +27,7 @@ namespace System.Threading.Tasks.Tests
     {
         public TrackingTaskScheduler(int maxConLevel)
         {
-            //We need to set the value to 1 so that each time a scheduler is created, its tasks will start with one. 
+            //We need to set the value to 1 so that each time a scheduler is created, its tasks will start with one.
             _counter = 1;
             if (maxConLevel < 1 && maxConLevel != -1/*infinite*/)
                 throw new ArgumentException("Maximum concurrency level should between 1 and int32.Maxvalue");
@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Tests
         protected override IEnumerable<Task> GetScheduledTasks() { return null; }
         private object _lockObj = new object();
         private int _counter = 1; //This is used to keep track of how many scheduler tasks were created
-        public ThreadLocal<int> SchedulerID = new ThreadLocal<int>(); //This is the ID of the scheduler. 
+        public ThreadLocal<int> SchedulerID = new ThreadLocal<int>(); //This is the ID of the scheduler.
 
         /// <summary>The maximum concurrency level for the scheduler.</summary>
         private readonly int _maxConcurrencyLevel;
@@ -132,7 +132,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < 50; i++)
             {
                 //In the current design, when there are no more tasks to execute, the Task used by concurrentexclusive scheduler dies
-                //by sleeping we simulate some non trivial work that takes time and causes the concurrentexclusive scheduler Task 
+                //by sleeping we simulate some non trivial work that takes time and causes the concurrentexclusive scheduler Task
                 //to stay around for addition work.
                 taskList.Add(readers.StartNew(() => { var sw = new SpinWait(); while (!sw.NextSpinWillYield) sw.SpinOnce() ; }));
             }
@@ -202,7 +202,7 @@ namespace System.Threading.Tasks.Tests
             ThreadLocal<int> itemsExecutedCount = new ThreadLocal<int>(); //Track the items executed by CEScheduler Task
             ThreadLocal<int> schedulerIDInsideTask = new ThreadLocal<int>(); //Used to store the Scheduler ID observed by a Task Executed by CEScheduler Task
 
-            //Work done by both reader and writer tasks  
+            //Work done by both reader and writer tasks
             Action work = () =>
             {
                 //Get the id of the parent Task (which is the task created by the scheduler). Each task run by the scheduler task should
@@ -222,7 +222,7 @@ namespace System.Threading.Tasks.Tests
                     itemsExecutedCount.Value = 1;
                 }
                 //Give enough time for a Task to stay around, so that other tasks will be executed by the same CEScheduler Task
-                //or else the CESchedulerTask will die and each Task might get executed by a different CEScheduler Task. This does not affect the 
+                //or else the CESchedulerTask will die and each Task might get executed by a different CEScheduler Task. This does not affect the
                 //verifications, but its increases the chance of finding a bug if the maxItemPerTask is not respected
                 new ManualResetEvent(false).WaitOne(1);
             };
@@ -269,7 +269,7 @@ namespace System.Threading.Tasks.Tests
             ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair(scheduler, int.MaxValue);
             Assert.Equal(scheduler.MaximumConcurrencyLevel, schedPair.ConcurrentScheduler.MaximumConcurrencyLevel);
 
-            //Now schedule a reader task that would block and verify that more reader tasks scheduled are not executed 
+            //Now schedule a reader task that would block and verify that more reader tasks scheduled are not executed
             //(as long as the first task is blocked)
             TaskFactory readers = new TaskFactory(schedPair.ConcurrentScheduler);
             ManualResetEvent blockReaderTaskEvent = new ManualResetEvent(false);

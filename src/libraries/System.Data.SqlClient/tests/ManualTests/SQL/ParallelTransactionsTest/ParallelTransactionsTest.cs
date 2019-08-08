@@ -154,5 +154,3 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
     }
 }
-
-

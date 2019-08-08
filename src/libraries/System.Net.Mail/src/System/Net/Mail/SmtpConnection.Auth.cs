@@ -49,7 +49,7 @@ namespace System.Net.Mail
                 if (string.Compare(extension, 0, AuthExtension, 0,
                     SizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    // remove the AUTH text including the following character 
+                    // remove the AUTH text including the following character
                     // to ensure that split only gets the modules supported
                     string[] authTypes = extension.Remove(0, SizeOfAuthExtension).Split(s_authExtensionSplitters, StringSplitOptions.RemoveEmptyEntries);
                     foreach (string authType in authTypes)

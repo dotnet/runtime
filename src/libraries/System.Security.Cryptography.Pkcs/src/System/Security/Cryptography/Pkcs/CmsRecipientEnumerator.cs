@@ -49,5 +49,3 @@ namespace System.Security.Cryptography.Pkcs
         private int _current;
     }
 }
-
-

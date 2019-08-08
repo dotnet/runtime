@@ -24,7 +24,7 @@ namespace System.Security.AccessControl
         //
         // Current enumeration index
         //
-        
+
         private int _current;
 
         //
@@ -74,7 +74,7 @@ namespace System.Security.AccessControl
         public bool MoveNext()
         {
             _current++;
-            
+
             return ( _current < _acl.Count );
         }
 
@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
         //
 
         internal const int HeaderLength = 8;
-        
+
         #endregion
 
         #region Public Properties
@@ -198,7 +198,7 @@ nameof(array),
             }
         }
 
-        public void CopyTo( GenericAce[] array, int index ) 
+        public void CopyTo( GenericAce[] array, int index )
         {
             (( ICollection )this ).CopyTo( array, index );
         }
@@ -375,9 +375,9 @@ nameof(binaryForm));
                     //
 
                     Debug.Assert( false, "aceLength % 4 != 0" );
-                    // Replacing SystemException with InvalidOperationException. This code path 
-                    // indicates a bad ACE, but I don't know of a great exception to represent that. 
-                    // InvalidOperation seems to be the closest, though it's definitely not exactly 
+                    // Replacing SystemException with InvalidOperationException. This code path
+                    // indicates a bad ACE, but I don't know of a great exception to represent that.
+                    // InvalidOperation seems to be the closest, though it's definitely not exactly
                     // right for this scenario.
                     throw new InvalidOperationException();
                 }
@@ -387,9 +387,9 @@ nameof(binaryForm));
                 if ( _revision == AclRevisionDS )
                 {
                     //
-                    // Increment the offset by the advertised length rather than the 
+                    // Increment the offset by the advertised length rather than the
                     // actual binary length. (Ideally these two should match, but for
-                    // object aces created through ADSI, the actual length is 32 bytes 
+                    // object aces created through ADSI, the actual length is 32 bytes
                     // less than the allocated size of the ACE. This is a bug in ADSI.)
                     //
                     offset += (binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8);
@@ -518,9 +518,9 @@ nameof(binaryForm));
                     //
 
                     Debug.Assert( false, "aceLength % 4 != 0" );
-                    // Replacing SystemException with InvalidOperationException. This code path 
-                    // indicates a bad ACE, but I don't know of a great exception to represent that. 
-                    // InvalidOperation seems to be the closest, though it's definitely not exactly 
+                    // Replacing SystemException with InvalidOperationException. This code path
+                    // indicates a bad ACE, but I don't know of a great exception to represent that.
+                    // InvalidOperation seems to be the closest, though it's definitely not exactly
                     // right for this scenario.
                     throw new InvalidOperationException();
                 }
@@ -557,9 +557,9 @@ nameof(binaryForm));
                     //
 
                     Debug.Assert( false, "aceLength % 4 != 0" );
-                    // Replacing SystemException with InvalidOperationException. This code path 
-                    // indicates a bad ACE, but I don't know of a great exception to represent that. 
-                    // InvalidOperation seems to be the closest, though it's definitely not exactly 
+                    // Replacing SystemException with InvalidOperationException. This code path
+                    // indicates a bad ACE, but I don't know of a great exception to represent that.
+                    // InvalidOperation seems to be the closest, though it's definitely not exactly
                     // right for this scenario.
                     throw new InvalidOperationException();
                 }
@@ -1045,7 +1045,7 @@ nameof(binaryForm));
                 {
                     right--;
                 }
-                
+
                 if ( left != right )
                 {
                     _acl[left] = _acl[right];
@@ -1057,19 +1057,19 @@ nameof(binaryForm));
                 {
                     left++;
                 }
-                
+
                 if ( left != right )
                 {
                     _acl[right] = _acl[left];
                     right--;
                 }
             }
-            
+
             _acl[left] = pivot;
             pivotIndex = left;
             left = leftHold;
             right = rightHold;
-            
+
             if ( left < pivotIndex )
             {
                 QuickSort( left, pivotIndex - 1, isDacl );
@@ -1244,7 +1244,7 @@ nameof(binaryForm));
             // that purpose, we fix the ace's _indexInAcl here and use it for creating the
             // ace's sorting order value.
             //
- 
+
             for (ushort aclIndex = 0; aclIndex < _acl.Count; aclIndex++)
             {
                 _acl[aclIndex]._indexInAcl = aclIndex;
@@ -1280,9 +1280,9 @@ nameof(binaryForm));
 
         //
         // This method determines whether the object type and inherited object type from the original ace
-        // should be retained or not based on access mask and aceflags for a given split 
+        // should be retained or not based on access mask and aceflags for a given split
         //
-        private void GetObjectTypesForSplit( ObjectAce originalAce, int accessMask, AceFlags aceFlags, out ObjectAceFlags objectFlags, out Guid objectType, out Guid inheritedObjectType ) 
+        private void GetObjectTypesForSplit( ObjectAce originalAce, int accessMask, AceFlags aceFlags, out ObjectAceFlags objectFlags, out Guid objectType, out Guid inheritedObjectType )
         {
 
             objectFlags = 0;
@@ -1292,7 +1292,7 @@ nameof(binaryForm));
             //
             // We should retain the object type if the access mask for this split contains any bits that refer to object type
             //
-            if (( accessMask & ObjectAce.AccessMaskWithObjectType ) != 0 ) 
+            if (( accessMask & ObjectAce.AccessMaskWithObjectType ) != 0 )
             {
                 // keep the original ace's object flags and object type
                 objectType = originalAce.ObjectAceType;
@@ -1302,7 +1302,7 @@ nameof(binaryForm));
             //
             // We should retain the inherited object type if the aceflags for this contains inheritance (ContainerInherit)
             //
-            if (( aceFlags & AceFlags.ContainerInherit ) != 0 ) 
+            if (( aceFlags & AceFlags.ContainerInherit ) != 0 )
             {
                 // keep the original ace's object flags and object type
                 inheritedObjectType = originalAce.InheritedObjectAceType;
@@ -1331,7 +1331,7 @@ nameof(binaryForm));
             //
             // The access masks are mergeable in any of the following conditions
             // 1. Object types match
-            // 2. (Object types do not match) The existing ace does not have an object type and 
+            // 2. (Object types do not match) The existing ace does not have an object type and
             //     already contains all the bits of the new ace which refer to the object type
             //
 
@@ -1356,8 +1356,8 @@ nameof(binaryForm));
         {
             //
             // The ace flags can be considered for merge in any of the following conditions
-            // 1. Inherited object types match 
-            // 2. (Inherited object types do not match) The existing ace does not have an inherited object type and 
+            // 1. Inherited object types match
+            // 2. (Inherited object types do not match) The existing ace does not have an inherited object type and
             //     already contains all the bits of the new ace
             //
 
@@ -1385,32 +1385,32 @@ nameof(binaryForm));
 
         private bool GetAccessMaskForRemoval( QualifiedAce ace, ObjectAceFlags objectFlags, Guid objectType, ref int accessMask )
         {
-            if (( ace.AccessMask & accessMask & ObjectAce.AccessMaskWithObjectType ) != 0 ) 
+            if (( ace.AccessMask & accessMask & ObjectAce.AccessMaskWithObjectType ) != 0 )
             {
 
-                // 
+                //
                 // If the aces have access bits in common which refer to object types
                 // then we follow these rules:
                 //
                 //       Remove    No OT    OT = A        OT = B
                 // Existing
-                // 
+                //
                 //   No OT          Remove   Invalid        Invalid
                 //
                 //   OT = A        Remove   Remove      Nothing Common
                 //
-            
-                
+
+
                 if ( ace is ObjectAce )
                 {
                     bool commonAccessBitsWithObjectTypeExist = true;
                     ObjectAce objectAce = ace as ObjectAce;
 
                     //
-                    // if what we are trying to remove has an object type 
+                    // if what we are trying to remove has an object type
                     // but the existing ace does not then this is an invalid case
                     //
-                    if ((( objectFlags & ObjectAceFlags.ObjectAceTypePresent ) != 0 ) && 
+                    if ((( objectFlags & ObjectAceFlags.ObjectAceTypePresent ) != 0 ) &&
                         (( objectAce.ObjectAceFlags & ObjectAceFlags.ObjectAceTypePresent ) == 0 ))
                     {
                         return false;
@@ -1418,22 +1418,22 @@ nameof(binaryForm));
 
                     //
                     // if what we are trying to remove has no object type or
-                    // if object types match (since at this point we have ensured that both have object types present) 
+                    // if object types match (since at this point we have ensured that both have object types present)
                     // then we have common access bits with object type
                     //
                     commonAccessBitsWithObjectTypeExist = (( objectFlags & ObjectAceFlags.ObjectAceTypePresent ) == 0 ) ||
                                                                                     objectAce.ObjectTypesMatch( objectFlags, objectType );
-                    if ( !commonAccessBitsWithObjectTypeExist ) 
+                    if ( !commonAccessBitsWithObjectTypeExist )
                     {
                         accessMask &= ~ObjectAce.AccessMaskWithObjectType;
                     }
                 }
-                else if (( objectFlags & ObjectAceFlags.ObjectAceTypePresent ) != 0 ) 
+                else if (( objectFlags & ObjectAceFlags.ObjectAceTypePresent ) != 0 )
                 {
-                    // the existing ace is a common ace and the one we're removing 
+                    // the existing ace is a common ace and the one we're removing
                     // refers to a specific object type so this is invalid
                     return false;
-                }               
+                }
             }
 
             return true;
@@ -1445,29 +1445,29 @@ nameof(binaryForm));
             if ((( ace.AceFlags & AceFlags.ContainerInherit ) != 0 )  && (( aceFlags & AceFlags.ContainerInherit ) != 0 ))
             {
 
-                // 
-                // If the aces have inheritance bits in common 
+                //
+                // If the aces have inheritance bits in common
                 // then we follow these rules:
                 //
                 //       Remove    No IOT    IOT = A        IOT = B
                 // Existing
-                // 
+                //
                 //   No IOT          Remove   Invalid        Invalid
                 //
                 //   IOT = A        Remove   Remove      Nothing Common
                 //
-            
-                
+
+
                 if ( ace is ObjectAce )
                 {
                     bool commonInheritanceFlagsExist = true;
                     ObjectAce objectAce = ace as ObjectAce;
 
                     //
-                    // if what we are trying to remove has an inherited object type 
+                    // if what we are trying to remove has an inherited object type
                     // but the existing ace does not then this is an invalid case
                     //
-                    if ((( objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) != 0 ) && 
+                    if ((( objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) != 0 ) &&
                         (( objectAce.ObjectAceFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) == 0 ))
                     {
                         return false;
@@ -1475,21 +1475,21 @@ nameof(binaryForm));
 
                     //
                     // if what we are trying to remove has no inherited object type or
-                    // if inherited object types match then we have common inheritance flags                     
+                    // if inherited object types match then we have common inheritance flags
                     //
                     commonInheritanceFlagsExist = (( objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) == 0 ) ||
                                                                        objectAce.InheritedObjectTypesMatch( objectFlags, inheritedObjectType );
-                    if ( !commonInheritanceFlagsExist ) 
+                    if ( !commonInheritanceFlagsExist )
                     {
                         aceFlags &= ~AceFlags.InheritanceFlags;
                     }
                 }
-                else if (( objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) != 0 ) 
+                else if (( objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent ) != 0 )
                 {
-                    // the existing ace is a common ace and the one we're removing 
+                    // the existing ace is a common ace and the one we're removing
                     // refers to a specific child type so this is invalid
                     return false;
-                }               
+                }
             }
 
             return true;
@@ -1600,7 +1600,7 @@ nameof(binaryForm));
 
             if ( ace.AceFlags == newAce.AceFlags )
             {
-                if ( ace is ObjectAce  || newAce is ObjectAce ) 
+                if ( ace is ObjectAce  || newAce is ObjectAce )
                 {
                     // for object aces we need to match the inherited object types (for ace flags equality)
                     if ( InheritedObjectTypesMatch( ace, newAce ))
@@ -1613,46 +1613,46 @@ nameof(binaryForm));
                         }
                     }
                 }
-                else 
+                else
                 {
                     ace.AccessMask |= newAce.AccessMask;
                     return true;
                 }
             }
-            
-           
-            
+
+
+
             //
             // Stage 2: Audit flags can be combined if the rest of the
             //          flags (both access mask and inheritance) match
             //
-            
+
             if ((( ace.AceFlags & AceFlags.InheritanceFlags ) == ( newAce.AceFlags & AceFlags.InheritanceFlags )) &&
                 ( ace.AccessMask == newAce.AccessMask ))
-            {           
+            {
                 if (( ace is ObjectAce ) || ( newAce is ObjectAce ))
                 {
                     // for object aces we need to match the inherited object types (for inheritance flags equality) and object type (for access mask equality) as well
-                    if ( InheritedObjectTypesMatch( ace, newAce ) && 
+                    if ( InheritedObjectTypesMatch( ace, newAce ) &&
                         ( ObjectTypesMatch( ace, newAce )))
                     {
                         ace.AceFlags |= ( newAce.AceFlags & AceFlags.AuditFlags );
                         return true;
                     }
                 }
-                else 
+                else
                 {
                     ace.AceFlags |= ( newAce.AceFlags & AceFlags.AuditFlags );
                     return true;
                 }
-                
+
             }
-            
+
             //
             // Stage 3: Inheritance flags can be combined in some cases
             //          provided access mask and audit bits are the same
             //
-            
+
             if ((( ace.AceFlags & AceFlags.AuditFlags ) == ( newAce.AceFlags & AceFlags.AuditFlags )) &&
                 ( ace.AccessMask == newAce.AccessMask ))
             {
@@ -1661,11 +1661,11 @@ nameof(binaryForm));
                 //
                 // See whether the inheritance bits can be merged
                 //
-            
+
                 if (( ace is ObjectAce ) || ( newAce is ObjectAce ))
                 {
-                    // object types need to match (for access mask equality) and inheritance flags need additional DS specific logic 
-                    // to check whether they can be merged                  
+                    // object types need to match (for access mask equality) and inheritance flags need additional DS specific logic
+                    // to check whether they can be merged
                     if (( ObjectTypesMatch( ace, newAce )) &&
                          ( AceFlagsAreMergeable( ace, newAce )))
                     {
@@ -1684,7 +1684,7 @@ nameof(binaryForm));
                         return true;
                     }
                 }
-                
+
             }
 
             return false;
@@ -1771,7 +1771,7 @@ nameof(binaryForm));
             {
                 //
                 // SACL canonical order:
-                //   Explicit - Inherited                
+                //   Explicit - Inherited
                 //
 
                 const int Explicit = 0;
@@ -1910,7 +1910,7 @@ nameof(binaryForm));
                 //
 
                 _acl = new RawAcl( rawAcl.Revision, rawAcl.Count );
-            
+
                 for ( int i = 0; i < rawAcl.Count; i++ )
                 {
                     //
@@ -2239,7 +2239,7 @@ nameof(flags));
 
             bool evaluationPass = true;
             bool removePossible = true; // unless proven otherwise
-            
+
             //
             // Needed for DS acls to keep track of the original access mask specified for removal
             //
@@ -2298,20 +2298,20 @@ nameof(flags));
                     if ( ace.SecurityIdentifier != sid )
                     {
                         continue;
-                    }               
+                    }
 
                     //
                     // If access masks have nothing in common, skip the whole exercise
                     //
 
-                    if ( IsDS ) 
+                    if ( IsDS )
                     {
                         //
-                        // incase of directory aces, if the access mask of the 
-                        // existing and new ace have any bits in common that need 
+                        // incase of directory aces, if the access mask of the
+                        // existing and new ace have any bits in common that need
                         // an object type, then we need to perform some checks on the
                         // object types in the two aces. Since certain bits are further qualified
-                        // by the object type they cannot be determined to be common without 
+                        // by the object type they cannot be determined to be common without
                         // inspecting the object type. It is possible that the same bits may be set but
                         // the object types are different in which case they are really not common bits.
                         //
@@ -2325,15 +2325,15 @@ nameof(flags));
                         }
 
                         //
-                        // incase of directory aces, if the existing and new ace are being inherited, 
+                        // incase of directory aces, if the existing and new ace are being inherited,
                         // then we need to perform some checks on the
                         // inherited object types in the two aces. Since inheritance is further qualified
-                        // by the inherited object type the inheritance flags cannot be determined to be common without 
+                        // by the inherited object type the inheritance flags cannot be determined to be common without
                         // inspecting the inherited object type. It is possible that both aces may be further inherited but if
                         // the inherited object types are different the inheritance may not be common.
                         //
                         flags = originalFlags;
-                        bool inheritedObjectTypesConflict = !GetInheritanceFlagsForRemoval( ace, objectFlags, inheritedObjectType, ref flags );  
+                        bool inheritedObjectTypesConflict = !GetInheritanceFlagsForRemoval( ace, objectFlags, inheritedObjectType, ref flags );
 
                         if (((( ace.AceFlags & AceFlags.ContainerInherit ) == 0 ) && (( flags & AceFlags.ContainerInherit ) != 0 )  && (( flags & AceFlags.InheritOnly ) != 0 )) ||
                              ((( flags & AceFlags.ContainerInherit ) == 0 ) && (( ace.AceFlags & AceFlags.ContainerInherit ) != 0 )  && (( ace.AceFlags & AceFlags.InheritOnly ) != 0)))
@@ -2341,12 +2341,12 @@ nameof(flags));
                             // if one ace applies only to self and the other only to children/descendents we have nothing in common
                             continue;
                         }
-                        
+
                         //
                         // if the ace being removed referred only to child types and child types among existing ace and
                         // ace being removed are not common then there is nothing in common between these aces (skip)
                         //
-                        if ((( originalFlags & AceFlags.ContainerInherit ) != 0 ) && (( originalFlags & AceFlags.InheritOnly ) != 0 ) && (( flags & AceFlags.ContainerInherit ) == 0 )) 
+                        if ((( originalFlags & AceFlags.ContainerInherit ) != 0 ) && (( originalFlags & AceFlags.InheritOnly ) != 0 ) && (( flags & AceFlags.ContainerInherit ) == 0 ))
                         {
                             continue;
                         }
@@ -2361,7 +2361,7 @@ nameof(flags));
                             break;
                         }
                     }
-                    else 
+                    else
                     {
                         if (( ace.AccessMask & accessMask ) == 0 )
                         {
@@ -2418,7 +2418,7 @@ nameof(flags));
                     //
                     // PermissionSplit: CI CC(Guid) // Remove GR
                     //        MergeSplit: CI LC // Ready for merge
-                    //           Remove: CI(Guid) IO CC // Removal is not possible since we are trying to remove 
+                    //           Remove: CI(Guid) IO CC // Removal is not possible since we are trying to remove
                     //                                                     inheritance for a specific child type when it exists for all child types
                     //
 
@@ -2454,14 +2454,14 @@ nameof(flags));
                     ps_AceFlags = ace.AceFlags;
                     unchecked { ps_AccessMask = ace.AccessMask & ~accessMask; }
 
-                    if ( ace is ObjectAce ) 
+                    if ( ace is ObjectAce )
                     {
                         //
                         // determine what should be the object/inherited object types on the permission split
                         //
                         GetObjectTypesForSplit( ace as ObjectAce, ps_AccessMask /* access mask for this split */, ps_AceFlags /* flags remain the same */, out ps_ObjectAceFlags, out ps_ObjectAceType, out ps_InheritedObjectAceType );
                     }
-                    
+
                     //
                     // Next, for SACLs only, compute the auditing split
                     //
@@ -2483,7 +2483,7 @@ nameof(flags));
 
                         as_AccessMask = ( ace.AccessMask & accessMask );
 
-                        if ( ace is ObjectAce ) 
+                        if ( ace is ObjectAce )
                         {
                             //
                             // determine what should be the object/inherited object types on the audit split
@@ -2499,7 +2499,7 @@ nameof(flags));
                     ms_AceFlags = ( ace.AceFlags & AceFlags.InheritanceFlags ) | ( flags & ace.AceFlags & AceFlags.AuditFlags );
                     ms_AccessMask = ( ace.AccessMask & accessMask );
 
-                   
+
                     //
                     // Now is the time to obtain the result of applying the remove
                     // operation to the merge split
@@ -2509,7 +2509,7 @@ nameof(flags));
 
                     if ( !saclSemantics ||
                         (( ms_AceFlags & AceFlags.AuditFlags ) != 0 ))
-                    {         
+                    {
                         if ( false == RemoveInheritanceBits( ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal ))
                         {
                             removePossible = false;
@@ -2519,14 +2519,14 @@ nameof(flags));
                         if ( !mergeRemoveTotal )
                         {
                             mergeResultFlags |= ( ms_AceFlags & AceFlags.AuditFlags );
-                            
-                            if ( ace is ObjectAce ) 
+
+                            if ( ace is ObjectAce )
                             {
                                 //
                                 // determine what should be the object/inherited object types on the merge split
                                 //
                                 GetObjectTypesForSplit( ace as ObjectAce, ms_AccessMask /* access mask for this split */, mergeResultFlags /* flags for this split */, out ms_ObjectAceFlags, out ms_ObjectAceType, out ms_InheritedObjectAceType );
-                            }    
+                            }
                         }
                     }
 
@@ -2541,7 +2541,7 @@ nameof(flags));
                         //
                         // Modify the existing ACE in-place if it has any access
                         // mask bits left, otherwise simply remove it
-                        // However, if for an object ace we are removing the object type 
+                        // However, if for an object ace we are removing the object type
                         // then we should really remove this ace and add a new one since
                         // we would be changing the size of this ace
                         //
@@ -2558,15 +2558,15 @@ nameof(flags));
                                 newObjectAce = new ObjectAce( ps_AceFlags, qualifier, ps_AccessMask, ace.SecurityIdentifier, ps_ObjectAceFlags, ps_ObjectAceType, ps_InheritedObjectAceType, false, null );
                                 _acl.InsertAce( i, newObjectAce );
                             }
-                            else 
+                            else
                             {
                                 ace.AceFlags = ps_AceFlags;
                                 ace.AccessMask = ps_AccessMask;
 
-                                if ( ace is ObjectAce ) 
+                                if ( ace is ObjectAce )
                                 {
                                     ObjectAce objectAce = ace as ObjectAce;
-                                    
+
                                     objectAce.ObjectAceFlags = ps_ObjectAceFlags;
                                     objectAce.ObjectAceType = ps_ObjectAceType;
                                     objectAce.InheritedObjectAceType = ps_InheritedObjectAceType;
@@ -2665,7 +2665,7 @@ nameof(accessMask));
                     SR.Arg_EnumAtLeastOneFlag,
 nameof(flags));
             }
-        
+
             if ( sid == null )
             {
                 throw new ArgumentNullException( nameof(sid));
@@ -2731,22 +2731,22 @@ nameof(flags));
                     continue;
                 }
 
-                if ( IsDS ) 
+                if ( IsDS )
                 {
                     //
-                    // Incase of object aces, only interested in ACEs which match in their 
+                    // Incase of object aces, only interested in ACEs which match in their
                     // objectType and inheritedObjectType
                     //
 
                     if (( ace is ObjectAce ) && ( objectFlags != ObjectAceFlags.None ))
-                    {                 
+                    {
                         //
                         // both are object aces, so must match in object type and inherited object type
                         //
                         ObjectAce objectAce = ace as ObjectAce;
-                        
+
                         if (( !objectAce.ObjectTypesMatch( objectFlags, objectType ))
-                            || ( !objectAce.InheritedObjectTypesMatch( objectFlags, inheritedObjectType ))) 
+                            || ( !objectAce.InheritedObjectTypesMatch( objectFlags, inheritedObjectType )))
                         {
                             continue;
                         }
@@ -2892,7 +2892,7 @@ nameof(flags));
             }
 
             ThrowIfNotCanonical();
-            
+
             for ( int i = Count - 1; i >= 0; i-- )
             {
                 KnownAce ace = _acl[i] as KnownAce;
@@ -3003,9 +3003,9 @@ nameof(flags));
         public void AddAudit(AuditFlags auditFlags, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
-            if ( !IsDS ) 
+            if ( !IsDS )
             {
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
@@ -3023,7 +3023,7 @@ nameof(flags));
         public void SetAudit(AuditFlags auditFlags, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3043,7 +3043,7 @@ nameof(flags));
         public bool RemoveAudit(AuditFlags auditFlags, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3062,7 +3062,7 @@ nameof(flags));
         public void RemoveAuditSpecific(AuditFlags auditFlags, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3162,7 +3162,7 @@ nameof(flags));
         public void AddAccess(AccessControlType accessType, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3184,7 +3184,7 @@ nameof(flags));
         public void SetAccess(AccessControlType accessType, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3206,7 +3206,7 @@ nameof(flags));
         public bool RemoveAccess(AccessControlType accessType, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3227,7 +3227,7 @@ nameof(flags));
         public void RemoveAccessSpecific(AccessControlType accessType, SecurityIdentifier sid, int accessMask, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
             //
-            // This is valid only for DS Acls 
+            // This is valid only for DS Acls
             //
             if ( !IsDS )
             {
@@ -3245,11 +3245,11 @@ nameof(flags));
         #region internals and privates
 
         //
-        // DACL's "allow everyone full access may be created to replace a null DACL because managed 
+        // DACL's "allow everyone full access may be created to replace a null DACL because managed
         // access control does not want to leave null DACLs around. But we need to remember this MACL
         // created ACE when the DACL is modified, we can remove it to match the same native semantics of
         // a null DACL.
-        //         
+        //
         internal bool EveryOneFullAccessForNullDacl
         {
             get { return everyOneFullAccessForNullDacl; }
@@ -3272,7 +3272,7 @@ nameof(flags));
         /// <param name="isContainer">whether it is a container</param>
         /// <returns>The single ACE DACL</returns>
         /// Note: This method is created to get the best behavior for using "allow everyone full access"
-        /// single ACE DACL to replace null DACL from CommonSecurityObject. 
+        /// single ACE DACL to replace null DACL from CommonSecurityObject.
         internal static DiscretionaryAcl CreateAllowEveryoneFullAccess(bool isDS, bool isContainer)
         {
             DiscretionaryAcl dcl = new DiscretionaryAcl( isContainer, isDS, 1 );

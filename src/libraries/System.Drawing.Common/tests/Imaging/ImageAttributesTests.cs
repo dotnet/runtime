@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2005-2006 Novell, Inc (http://www.novell.com)
@@ -589,7 +589,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]        
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearThreshold_Success()
         {
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))

@@ -5,7 +5,7 @@
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    /// Option placed on a type that controls when the <see cref="Hosting.CompositionContainer"/> creates 
+    /// Option placed on a type that controls when the <see cref="Hosting.CompositionContainer"/> creates
     /// a new instance of a <see cref="Primitives.ComposablePart"/>.
     /// </summary>
     public enum CreationPolicy : int

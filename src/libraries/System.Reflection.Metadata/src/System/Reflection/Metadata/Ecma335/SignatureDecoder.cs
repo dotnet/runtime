@@ -132,7 +132,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        /// <summary> 
+        /// <summary>
         /// Decodes a list of types, with at least one instance that is preceded by its count as a compressed integer.
         /// </summary>
         private ImmutableArray<TType> DecodeTypeSequence(ref BlobReader blobReader)

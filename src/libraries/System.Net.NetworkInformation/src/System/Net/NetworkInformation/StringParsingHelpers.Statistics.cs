@@ -444,7 +444,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static long ParseUInt64AndClampToInt64(string value) 
+        private static long ParseUInt64AndClampToInt64(string value)
         {
             return (long)Math.Min((ulong)long.MaxValue, ulong.Parse(value, CultureInfo.InvariantCulture));
         }

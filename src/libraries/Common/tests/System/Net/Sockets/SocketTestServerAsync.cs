@@ -10,10 +10,10 @@ namespace System.Net.Sockets.Tests
 {
     // Code taken from https://msdn.microsoft.com/en-us/library/system.net.sockets.socketasynceventargs.aspx
 
-    // Implements the connection logic for the socket server.   
-    // After accepting a connection, all data read from the client  
-    // is sent back to the client. The read and echo back to the client pattern  
-    // is continued until the client disconnects. 
+    // Implements the connection logic for the socket server.
+    // After accepting a connection, all data read from the client
+    // is sent back to the client. The read and echo back to the client pattern
+    // is continued until the client disconnects.
     public class SocketTestServerAsync : SocketTestServer
     {
         private const int OpsToPreAlloc = 2;  // Read, write (don't alloc buffer space for accepts).
@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
             _maxNumConnections = numConnections;
             _receiveBufferSize = receiveBufferSize;
 
-            // Allocate buffers such that the maximum number of sockets can have one outstanding read and  
+            // Allocate buffers such that the maximum number of sockets can have one outstanding read and
             // write posted to the socket simultaneously.
             _bufferManager = new BufferManager(receiveBufferSize * numConnections * OpsToPreAlloc,
                 receiveBufferSize);
@@ -72,14 +72,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // Initializes the server by preallocating reusable buffers and  
-        // context objects.  These objects do not need to be preallocated  
-        // or reused, but it is done this way to illustrate how the API can  
-        // easily be used to create reusable objects to increase server performance. 
-        // 
+        // Initializes the server by preallocating reusable buffers and
+        // context objects.  These objects do not need to be preallocated
+        // or reused, but it is done this way to illustrate how the API can
+        // easily be used to create reusable objects to increase server performance.
+        //
         private void Init()
         {
-            // Allocates one large byte buffer which all I/O operations use a piece of.  This guards  
+            // Allocates one large byte buffer which all I/O operations use a piece of.  This guards
             // against memory fragmentation.
             _bufferManager.InitBuffer();
 
@@ -101,11 +101,11 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // Starts the server such that it is listening for  
-        // incoming connection requests.     
-        // 
+        // Starts the server such that it is listening for
+        // incoming connection requests.
+        //
         // <param name="localEndPoint">The endpoint which the server will listen
-        // for connection requests on</param> 
+        // for connection requests on</param>
         private void Start(EndPoint localEndPoint)
         {
             // Create the socket which listens for incoming connections.
@@ -119,10 +119,10 @@ namespace System.Net.Sockets.Tests
             StartAccept(null);
         }
 
-        // Begins an operation to accept a connection request from the client  
-        // 
-        // <param name="acceptEventArg">The context object to use when issuing 
-        // the accept operation on the server's listening socket</param> 
+        // Begins an operation to accept a connection request from the client
+        //
+        // <param name="acceptEventArg">The context object to use when issuing
+        // the accept operation on the server's listening socket</param>
         private void StartAccept(SocketAsyncEventArgs acceptEventArg)
         {
             if (acceptEventArg == null)
@@ -167,7 +167,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // This method is the callback method associated with Socket.AcceptAsync  
+        // This method is the callback method associated with Socket.AcceptAsync
         // operations and is invoked when an accept operation is complete.
         private void AcceptEventArg_Completed(object sender, SocketAsyncEventArgs e)
         {
@@ -217,11 +217,11 @@ namespace System.Net.Sockets.Tests
         }
 
         // This method is called whenever a receive or send operation is completed on a socket.
-        // 
+        //
         // <param name="e">SocketAsyncEventArg associated with the completed receive operation</param>
         private void IO_Completed(object sender, SocketAsyncEventArgs e)
         {
-            // determine which type of operation just completed and call the associated handler 
+            // determine which type of operation just completed and call the associated handler
             switch (e.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
@@ -252,9 +252,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // This method is invoked when an asynchronous receive operation completes.  
-        // If the remote host closed the connection, then the socket is closed.   
-        // If data was received then the data is echoed back to the client. 
+        // This method is invoked when an asynchronous receive operation completes.
+        // If the remote host closed the connection, then the socket is closed.
+        // If data was received then the data is echoed back to the client.
         private bool ProcessReceive(SocketAsyncEventArgs e)
         {
             _log.WriteLine(
@@ -282,10 +282,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // This method is invoked when an asynchronous send operation completes.   
-        // The method issues another receive on the socket to read any additional  
+        // This method is invoked when an asynchronous send operation completes.
+        // The method issues another receive on the socket to read any additional
         // data sent from the client.
-        // 
+        //
         // <param name="e"></param>
         private bool ProcessSend(SocketAsyncEventArgs e)
         {
@@ -355,14 +355,14 @@ namespace System.Net.Sockets.Tests
         public Socket Socket { get; set; }
     }
 
-    // Represents a collection of reusable SocketAsyncEventArgs objects.   
+    // Represents a collection of reusable SocketAsyncEventArgs objects.
     internal class SocketAsyncEventArgsPool
     {
         private Stack<SocketAsyncEventArgs> _pool;
 
         // Initializes the object pool to the specified size.
-        // 
-        // The "capacity" parameter is the maximum number of 
+        //
+        // The "capacity" parameter is the maximum number of
         // SocketAsyncEventArgs objects the pool can hold.
         public SocketAsyncEventArgsPool(int capacity)
         {
@@ -370,8 +370,8 @@ namespace System.Net.Sockets.Tests
         }
 
         // Add a SocketAsyncEventArg instance to the pool.
-        // 
-        // The "item" parameter is the SocketAsyncEventArgs instance 
+        //
+        // The "item" parameter is the SocketAsyncEventArgs instance
         // to add to the pool.
         public void Push(SocketAsyncEventArgs item)
         {
@@ -382,7 +382,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // Removes a SocketAsyncEventArgs instance from the pool 
+        // Removes a SocketAsyncEventArgs instance from the pool
         // and returns the object removed from the pool.
         public SocketAsyncEventArgs Pop()
         {
@@ -399,14 +399,14 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    // This class creates a single large buffer which can be divided up  
-    // and assigned to SocketAsyncEventArgs objects for use with each  
-    // socket I/O operation.   
+    // This class creates a single large buffer which can be divided up
+    // and assigned to SocketAsyncEventArgs objects for use with each
+    // socket I/O operation.
     //
-    // This enables buffers to be easily reused and guards against  
-    // fragmenting heap memory. 
-    //  
-    // The operations exposed on the BufferManager class are not thread safe. 
+    // This enables buffers to be easily reused and guards against
+    // fragmenting heap memory.
+    //
+    // The operations exposed on the BufferManager class are not thread safe.
     internal class BufferManager
     {
         private readonly int _numBytes;  // The total number of bytes controlled by the buffer pool.
@@ -426,15 +426,15 @@ namespace System.Net.Sockets.Tests
         // Allocates buffer space used by the buffer pool.
         public void InitBuffer()
         {
-            // Create one big large buffer and divide that  
+            // Create one big large buffer and divide that
             // out to each SocketAsyncEventArg object.
             _buffer = new byte[_numBytes];
         }
 
-        // Assigns a buffer from the buffer pool to the  
+        // Assigns a buffer from the buffer pool to the
         // specified SocketAsyncEventArgs object.
-        // 
-        // <returns>true if the buffer was successfully set, else false</returns> 
+        //
+        // <returns>true if the buffer was successfully set, else false</returns>
         public bool SetBuffer(SocketAsyncEventArgs args)
         {
             if (_freeIndexPool.Count > 0)
@@ -453,7 +453,7 @@ namespace System.Net.Sockets.Tests
             return true;
         }
 
-        // Removes the buffer from a SocketAsyncEventArg object.   
+        // Removes the buffer from a SocketAsyncEventArg object.
         // This frees the buffer back to the buffer pool.
         public void FreeBuffer(SocketAsyncEventArgs args)
         {

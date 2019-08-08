@@ -369,7 +369,7 @@ namespace System.Collections.ObjectModel.Tests
             collection.GetKeyForItemHandler = i => i + "_key";
             collection.Add("first");
             Assert.Null(collection.Dictionary);
-            
+
             Assert.Equal(expected, collection.Remove(key));
             Assert.Equal(expectedItems, collection.Items.Cast<string>());
             Assert.Null(collection.Dictionary);
@@ -409,7 +409,7 @@ namespace System.Collections.ObjectModel.Tests
             collection.Add("third");
             collection.Add("fourth");
             Assert.NotNull(collection.Dictionary);
-            
+
             Assert.Equal(expected, collection.Remove(key));
             Assert.Equal(expectedItems, collection.Items.Cast<string>());
             Assert.Equal(expectedDictionary, collection.Dictionary);

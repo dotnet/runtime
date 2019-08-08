@@ -34,8 +34,8 @@ namespace System.IO.MemoryMappedFiles
         {
             try
             {
-                // Explicitly flush the changes.  The OS will do this for us anyway, but not until after the 
-                // MemoryMappedFile object itself is closed. 
+                // Explicitly flush the changes.  The OS will do this for us anyway, but not until after the
+                // MemoryMappedFile object itself is closed.
                 if (disposing && !_view.IsClosed)
                 {
                     Flush();
@@ -55,7 +55,7 @@ namespace System.IO.MemoryMappedFiles
         }
 
         // Flushes the changes such that they are in sync with the FileStream bits (ones obtained
-        // with the win32 ReadFile and WriteFile functions).  Need to call FileStream's Flush to 
+        // with the win32 ReadFile and WriteFile functions).  Need to call FileStream's Flush to
         // flush to the disk.
         // NOTE: This will flush all bytes before and after the view up until an offset that is a
         // multiple of SystemPageSize.

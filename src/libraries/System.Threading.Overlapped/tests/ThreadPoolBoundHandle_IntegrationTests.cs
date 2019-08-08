@@ -33,7 +33,7 @@ public partial class ThreadPoolBoundHandleTests
 
             if (retval == 0)
             {
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());                
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
             }
 
             // Wait for overlapped operation to complete
@@ -197,7 +197,7 @@ public partial class ThreadPoolBoundHandleTests
 
         int? result  = null;
         IOCompletionCallback callback = (_, __, ___) => {
-            
+
             result = asyncLocal.Value;
             OnOverlappedOperationCompleted(_, __, ___);
         };
@@ -233,7 +233,7 @@ public partial class ThreadPoolBoundHandleTests
         // Signal original thread to indicate overlapped completed
         result.Event.Set();
     }
-    
+
     private class OverlappedContext
     {
         public readonly ManualResetEvent Event = new ManualResetEvent(false);

@@ -338,7 +338,7 @@ namespace System.Data.ProviderBase
             else if (-1 == _pooledCount && !_owningObject.IsAlive)
             {
                 // When _pooledCount is -1 and the owning object no longer exists,
-                // it indicates a closed (or leaked), non-pooled connection so 
+                // it indicates a closed (or leaked), non-pooled connection so
                 // it is safe to dispose.
 
                 TerminateStasis(false);
@@ -347,13 +347,13 @@ namespace System.Data.ProviderBase
 
                 // it's a non-pooled connection, we need to dispose of it
                 // once and for all, or the server will have fits about us
-                // leaving connections open until the client-side GC kicks 
+                // leaving connections open until the client-side GC kicks
                 // in.
                 Dispose();
             }
             // When _pooledCount is 0, the connection is a pooled connection
             // that is either open (if the owning object is alive) or leaked (if
-            // the owning object is not alive)  In either case, we can't muck 
+            // the owning object is not alive)  In either case, we can't muck
             // with the connection here.
         }
 
@@ -372,7 +372,7 @@ namespace System.Data.ProviderBase
                 enlistedTransaction.Dispose();
             }
         }
-        
+
         public abstract void EnlistTransaction(Transaction transaction);
 
         // Cleanup connection's transaction-specific structures (currently used by Delegated transaction).

@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization
     public class SerializationException : SystemException
     {
         /// <summary>
-        /// Creates a new SerializationException with its message  
+        /// Creates a new SerializationException with its message
         /// string set to a default message.
         /// </summary>
         public SerializationException()

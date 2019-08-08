@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -26,7 +26,7 @@ namespace System.IO.Tests.Enumeration
 
             protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
             {
-                LastDirectory = new string(entry.Directory); 
+                LastDirectory = new string(entry.Directory);
                 return false;
             }
         }

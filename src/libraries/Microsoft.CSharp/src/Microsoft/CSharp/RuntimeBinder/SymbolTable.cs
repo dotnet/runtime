@@ -715,7 +715,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 // Now we return an array of nesting level corresponding to the rank.
                 return TypeManager.GetArray(
-                    GetCTypeFromType(t.GetElementType()), 
+                    GetCTypeFromType(t.GetElementType()),
                     t.GetArrayRank(),
 #if netcoreapp
                     t.IsSZArray
@@ -1406,7 +1406,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             MethodInfo method = member as MethodInfo;
 
             Debug.Assert(method != null || member is ConstructorInfo);
-      
+
             // If we are trying to add an actual method via MethodKindEnum.Actual, and
             // the memberinfo is a special name, and its not static, then return null.
             // We'll re-add the thing later with some other method kind.

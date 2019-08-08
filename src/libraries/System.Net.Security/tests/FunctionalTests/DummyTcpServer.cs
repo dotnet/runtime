@@ -13,12 +13,12 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    // Callback method that is called when the server receives data from a connected client.  
+    // Callback method that is called when the server receives data from a connected client.
     // The callback method should return a byte array and the number of bytes to send from that array.
     public delegate void DummyTcpServerReceiveCallback(byte[] bufferReceived, int bytesReceived, Stream stream);
 
     // Provides a dummy TCP/IP server that accepts connections and supports SSL/TLS.
-    // It normally echoes data received but can be configured to write a byte array 
+    // It normally echoes data received but can be configured to write a byte array
     // specified by a callback method.
     public class DummyTcpServer : IDisposable
     {
@@ -323,4 +323,3 @@ namespace System.Net.Security.Tests
         }
     }
 }
-

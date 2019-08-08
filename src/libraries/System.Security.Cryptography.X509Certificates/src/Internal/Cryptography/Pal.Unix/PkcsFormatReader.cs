@@ -227,7 +227,7 @@ namespace Internal.Cryptography.Pal
                 {
                     // In single mode for a PKCS#7 signed or signed-and-enveloped file we're supposed to return
                     // the certificate which signed the PKCS#7 file.
-                    // 
+                    //
                     // X509Certificate2Collection::Export(X509ContentType.Pkcs7) claims to be a signed PKCS#7,
                     // but doesn't emit a signature block. So this is hard to test.
                     //

@@ -109,7 +109,7 @@ namespace System.Xml.Tests
             XmlDataDocument doc = new XmlDataDocument();
             Assert.Throws<FileNotFoundException>(() => doc.Load("missingfile"));
         }
-        
+
         [Fact]
         public static void XmlDataDocument_LoadXmlReader()
         {

@@ -30,7 +30,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static readonly SafeX509Handle InvalidHandle = new SafeX509Handle();
 
-        private SafeX509Handle() : 
+        private SafeX509Handle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

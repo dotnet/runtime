@@ -178,4 +178,3 @@ namespace XmlCoreTest.Common
         }
     }
 }
-

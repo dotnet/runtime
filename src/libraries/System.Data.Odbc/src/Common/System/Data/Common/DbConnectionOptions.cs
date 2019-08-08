@@ -440,7 +440,7 @@ namespace System.Data.Common
 
             if (!expanded)
             {
-                // 
+                //
                 Debug.Assert(!_useOdbcRules, "ExpandKeyword not ready for Odbc");
                 AppendKeyValuePairBuilder(builder, keyword, replacementValue, _useOdbcRules);
             }

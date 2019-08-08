@@ -398,7 +398,7 @@ namespace System.Net.NetworkInformation
                 {
                     if (!s_socketInitialized)
                     {
-                        // Ensure that WSAStartup has been called once per process.  
+                        // Ensure that WSAStartup has been called once per process.
                         // The System.Net.NameResolution contract is responsible with the initialization.
                         Dns.GetHostName();
 

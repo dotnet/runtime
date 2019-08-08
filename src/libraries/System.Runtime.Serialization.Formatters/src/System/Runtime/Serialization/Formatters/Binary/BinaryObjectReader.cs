@@ -489,7 +489,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // indexMap 1 [0,0,1]
             // indexMap 2 [0,0,2]
             // indexMap 3 [0,0,3]
-            // indexMap 4 [0,1,0]       
+            // indexMap 4 [0,1,0]
             for (int irank = pr._rank - 1; irank > -1; irank--)
             {
                 // Find the current or lower dimension which can be incremented.
@@ -669,7 +669,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         }
                         else
                         {
-                            ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type   
+                            ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type
                         }
                     }
                 }
@@ -868,7 +868,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         }
                     }
                 }
-                // SerializationInfo is always needed for ISerialization                        
+                // SerializationInfo is always needed for ISerialization
                 si = pr._si;
 
                 if (bIsString)
@@ -994,7 +994,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     return null;
                 }
 
-                // before adding it to cache, let us do the security check 
+                // before adding it to cache, let us do the security check
                 CheckTypeForwardedTo(assm, type.Assembly, type);
 
                 entry = new TypeNAssembly();
@@ -1073,7 +1073,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         objectType = FormatterServices.GetTypeFromAssembly(sourceAssembly, name);
                     }
 
-                    // here let us do the security check 
+                    // here let us do the security check
                     if (objectType != null)
                     {
                         CheckTypeForwardedTo(sourceAssembly, objectType.Assembly, objectType);

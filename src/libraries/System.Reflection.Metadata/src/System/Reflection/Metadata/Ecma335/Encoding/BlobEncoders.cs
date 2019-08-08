@@ -41,7 +41,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericArgumentCount"/> is not in range [0, 0xffff].</exception>
         public GenericTypeArgumentsEncoder MethodSpecificationSignature(int genericArgumentCount)
         {
-            if (unchecked((uint)genericArgumentCount) > ushort.MaxValue) 
+            if (unchecked((uint)genericArgumentCount) > ushort.MaxValue)
             {
                 Throw.ArgumentOutOfRange(nameof(genericArgumentCount));
             }
@@ -62,7 +62,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericParameterCount"/> is not in range [0, 0xffff].</exception>
         public MethodSignatureEncoder MethodSignature(
             SignatureCallingConvention convention = SignatureCallingConvention.Default,
-            int genericParameterCount = 0, 
+            int genericParameterCount = 0,
             bool isInstanceMethod = false)
         {
             if (unchecked((uint)genericParameterCount) > ushort.MaxValue)
@@ -70,8 +70,8 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentOutOfRange(nameof(genericParameterCount));
             }
 
-            var attributes = 
-                (genericParameterCount != 0 ? SignatureAttributes.Generic : 0) | 
+            var attributes =
+                (genericParameterCount != 0 ? SignatureAttributes.Generic : 0) |
                 (isInstanceMethod ? SignatureAttributes.Instance : 0);
 
             Builder.WriteByte(new SignatureHeader(SignatureKind.Method, convention, attributes).RawValue);
@@ -425,7 +425,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Encodes the type and the items of a vector literal.
         /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
-        /// </summary>        
+        /// </summary>
         /// <param name="arrayType">Use first, to encode the type of the vector.</param>
         /// <param name="vector">Use second, to encode the items of the vector.</param>
         public void TaggedVector(out CustomAttributeArrayTypeEncoder arrayType, out VectorEncoder vector)
@@ -513,7 +513,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Encodes constant literal.
         /// </summary>
         /// <param name="value">
-        /// Constant of type 
+        /// Constant of type
         /// <see cref="bool"/>,
         /// <see cref="byte"/>,
         /// <see cref="sbyte"/>,
@@ -633,7 +633,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 Throw.ArgumentOutOfRange(nameof(count));
             }
-            
+
             Builder.WriteUInt16((ushort)count);
             return new NamedArgumentsEncoder(Builder);
         }
@@ -932,8 +932,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="attributes"/> is invalid.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="genericParameterCount"/> is not in range [0, 0xffff].</exception>
         public MethodSignatureEncoder FunctionPointer(
-            SignatureCallingConvention convention = SignatureCallingConvention.Default, 
-            FunctionPointerAttributes attributes = FunctionPointerAttributes.None, 
+            SignatureCallingConvention convention = SignatureCallingConvention.Default,
+            FunctionPointerAttributes attributes = FunctionPointerAttributes.None,
             int genericParameterCount = 0)
         {
             // Spec:
@@ -1111,7 +1111,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Dimension sizes. The array may be shorter than <paramref name="rank"/> but not longer.
         /// </param>
         /// <param name="lowerBounds">
-        /// Dimension lower bounds, or <c>default(<see cref="ImmutableArray{Int32}"/>)</c> to set all <paramref name="rank"/> lower bounds to 0. 
+        /// Dimension lower bounds, or <c>default(<see cref="ImmutableArray{Int32}"/>)</c> to set all <paramref name="rank"/> lower bounds to 0.
         /// The array may be shorter than <paramref name="rank"/> but not longer.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -1122,7 +1122,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="sizes"/> is null.</exception>
         public void Shape(int rank, ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
         {
-            // The specification doesn't impose a limit on the max number of array dimensions. 
+            // The specification doesn't impose a limit on the max number of array dimensions.
             // The CLR supports <64. More than 0xffff is causing crashes in various tools (ildasm).
             if (unchecked((uint)(rank - 1)) > ushort.MaxValue - 1)
             {

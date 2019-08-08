@@ -472,7 +472,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
             const string s =
                 "47fa59852c9ae5e181381e3457a33b25420011d6f911efa90f3eaced1dee1329";
-            
+
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 

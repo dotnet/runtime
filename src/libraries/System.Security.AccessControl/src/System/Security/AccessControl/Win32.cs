@@ -259,7 +259,7 @@ nameof(handle));
             if ((securityInformation & SecurityInfos.SystemAcl) != 0)
             {
                 //
-                // Enable security privilege if trying to set a SACL. 
+                // Enable security privilege if trying to set a SACL.
                 // Note: even setting it by handle needs this privilege enabled!
                 //
 

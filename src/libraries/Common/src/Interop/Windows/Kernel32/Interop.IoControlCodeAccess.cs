@@ -28,7 +28,7 @@ internal partial class Interop
             FILE_READ_DATA = 0x01,
 
             /// <summary>
-            /// The I/O manager sends the IRP only for a caller with write access rights, allowing the underlying device driver to transfer 
+            /// The I/O manager sends the IRP only for a caller with write access rights, allowing the underlying device driver to transfer
             /// data from system memory to its device.
             /// </summary>
             FILE_WRITE_DATA = 0x02

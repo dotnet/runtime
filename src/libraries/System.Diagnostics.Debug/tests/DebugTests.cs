@@ -64,7 +64,7 @@ namespace System.Diagnostics.Tests
             FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
             writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
-            
+
             FieldInfo failCoreHook = typeof(DebugProvider).GetField("s_FailCore", BindingFlags.Static | BindingFlags.NonPublic);
             var originalFailCoreHook = failCoreHook.GetValue(null);
             failCoreHook.SetValue(null, new Action<string, string, string, string>(WriteLogger.s_instance.FailCore));

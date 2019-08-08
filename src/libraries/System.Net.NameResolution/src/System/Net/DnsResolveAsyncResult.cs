@@ -6,14 +6,14 @@ namespace System.Net
 {
     internal sealed class DnsResolveAsyncResult : ContextAwareResult
     {
-        internal string HostName { get; }        
+        internal string HostName { get; }
         internal IPAddress IpAddress { get; }
 
         // Forward lookup
         internal DnsResolveAsyncResult(string hostName, object myObject, object myState, AsyncCallback myCallBack)
             : base(myObject, myState, myCallBack)
         {
-            HostName = hostName;            
+            HostName = hostName;
         }
 
         // Reverse lookup

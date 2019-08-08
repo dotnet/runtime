@@ -32,7 +32,7 @@ namespace Internal.Cryptography
         }
 
         public abstract void AppendHashData(ReadOnlySpan<byte> data);
-        
+
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public abstract byte[] FinalizeHashAndReset();
 

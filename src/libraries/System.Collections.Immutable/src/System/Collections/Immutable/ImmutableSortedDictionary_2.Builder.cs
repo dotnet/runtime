@@ -676,7 +676,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private KeyValuePair<TKey, TValue>[] _contents;
 
-        /// <summary>   
+        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>

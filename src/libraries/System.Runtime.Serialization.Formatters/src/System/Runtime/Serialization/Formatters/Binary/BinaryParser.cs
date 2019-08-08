@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal long _topId;
         internal long _headerId;
         internal SizedArray _objectMapIdTable;
-        internal SizedArray _assemIdToAssemblyTable;    // Used to hold assembly information        
+        internal SizedArray _assemIdToAssemblyTable;    // Used to hold assembly information
         internal SerStack _stack = new SerStack("ObjectProgressStack");
 
         internal BinaryTypeEnum _expectedType = BinaryTypeEnum.ObjectUrt;
@@ -146,7 +146,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
 
                     // If an assembly is encountered, don't advance
-                    // object Progress, 
+                    // object Progress,
                     if (binaryHeaderEnum != BinaryHeaderEnum.Assembly)
                     {
                         // End of parse loop.
@@ -664,7 +664,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             _objectReader.Parse(PRs);
         }
-        
+
         private void ReadMemberPrimitiveTyped()
         {
             if (_memberPrimitiveTyped == null)
@@ -673,7 +673,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             _memberPrimitiveTyped.Read(this);
 
-            PRs._objectTypeEnum = InternalObjectTypeE.Object; //Get rid of 
+            PRs._objectTypeEnum = InternalObjectTypeE.Object; //Get rid of
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
 
             PRs.Init();
@@ -748,7 +748,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else
             {
-                // Nested Object            
+                // Nested Object
                 pr._parseTypeEnum = InternalParseTypeE.Member;
                 pr._memberValueEnum = InternalMemberValueE.Nested;
                 op._memberValueEnum = InternalMemberValueE.Nested;
@@ -894,7 +894,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
         }
-        
+
         private void ReadMemberPrimitiveUnTyped()
         {
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();

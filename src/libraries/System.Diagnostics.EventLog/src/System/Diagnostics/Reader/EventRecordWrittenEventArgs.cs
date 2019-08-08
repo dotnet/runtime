@@ -13,7 +13,7 @@ namespace System.Diagnostics.Eventing.Reader
         internal EventRecordWrittenEventArgs(Exception exception) { EventException = exception; }
 
         /// <summary>
-        /// The EventRecord being notified.  
+        /// The EventRecord being notified.
         /// NOTE: If non null, then caller is required to call Dispose().
         /// </summary>
         public EventRecord EventRecord { get; }

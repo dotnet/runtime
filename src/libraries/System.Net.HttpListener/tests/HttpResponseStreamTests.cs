@@ -450,7 +450,7 @@ namespace System.Net.Tests
                 {
                     Assert.Throws<HttpListenerException>(() => context.Response.OutputStream.Write(buffer, 0, buffer.Length));
                 }
-                
+
                 // Closing a response from a closed client if a writing has already failed should not fail.
                 context.Response.Close();
             }

@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         !expectedExponent.SequenceEqual(rsaParameters.Exponent))
                     {
                         Console.WriteLine("New key handle ExportParameters was not successful either");
-                    }    
+                    }
                 }
             }
 

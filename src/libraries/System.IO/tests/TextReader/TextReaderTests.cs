@@ -76,7 +76,7 @@ namespace System.IO.Tests
             using (CharArrayTextReader tr = GetCharArray().textReader)
             {
                 Assert.Equal(0, tr.Read(new char[0], 0, 0));
-            }            
+            }
         }
 
         [Fact]

@@ -143,7 +143,7 @@ namespace System.Drawing
                     }
                     catch (Exception ex) when (!IsCriticalFontException(ex)) { }
                 }
-    
+
                 // First try DEFAULT_GUI.
                 if (defaultFont == null)
                 {

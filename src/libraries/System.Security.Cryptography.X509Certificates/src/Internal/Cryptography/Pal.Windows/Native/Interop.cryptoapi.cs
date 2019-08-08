@@ -20,5 +20,3 @@ internal static partial class Interop
         public static extern unsafe bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, CryptAcquireContextFlags dwFlags);
     }
 }
-
-

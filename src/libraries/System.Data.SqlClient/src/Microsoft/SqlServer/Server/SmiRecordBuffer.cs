@@ -13,8 +13,8 @@ using System.Data.SqlTypes;
 namespace Microsoft.SqlServer.Server
 {
     // Class for implementing a record object that could take advantage of the
-    // environment available to a particular protocol level (such as storing data 
-    // in native structures for in-proc data access).  Includes methods to send 
+    // environment available to a particular protocol level (such as storing data
+    // in native structures for in-proc data access).  Includes methods to send
     // the record to a context pipe (useful for in-proc scenarios).
     internal abstract class SmiRecordBuffer : SmiTypedGetterSetter, ITypedGettersV3, ITypedSettersV3, ITypedGetters, ITypedSetters, IDisposable
     {
@@ -47,7 +47,7 @@ namespace Microsoft.SqlServer.Server
         #region Value getters
 
         //  SmiRecordBuffer subclasses that expose CanGet == true must implement all Getters from SmiTypedGetterSetter
-        //  SmiRecordBuffer itself does not need to implement these, since it inherits the default implementation from 
+        //  SmiRecordBuffer itself does not need to implement these, since it inherits the default implementation from
         //      SmiTypedGetterSetter
 
         #endregion
@@ -55,7 +55,7 @@ namespace Microsoft.SqlServer.Server
         #region Value setters
 
         // SmiRecordBuffer subclasses that expose CanSet == true must implement all Setters from SmiTypedGetterSetter
-        //  SmiRecordBuffer itself does not need to implement these, since it inherits the default implementation from 
+        //  SmiRecordBuffer itself does not need to implement these, since it inherits the default implementation from
         //      SmiTypedGetterSetter
 
         #endregion

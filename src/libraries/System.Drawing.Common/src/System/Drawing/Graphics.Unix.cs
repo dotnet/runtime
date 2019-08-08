@@ -19,10 +19,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -415,7 +415,7 @@ namespace System.Drawing
             Gdip.CheckStatus(status);
         }
 
-        // according to MSDN fillmode "is required but ignored" which makes _some_ sense since the unmanaged 
+        // according to MSDN fillmode "is required but ignored" which makes _some_ sense since the unmanaged
         // GDI+ call doesn't support it (issue spotted using Gendarme's AvoidUnusedParametersRule)
         public void DrawClosedCurve(Pen pen, Point[] points, float tension, FillMode fillmode)
         {
@@ -429,7 +429,7 @@ namespace System.Drawing
             Gdip.CheckStatus(status);
         }
 
-        // according to MSDN fillmode "is required but ignored" which makes _some_ sense since the unmanaged 
+        // according to MSDN fillmode "is required but ignored" which makes _some_ sense since the unmanaged
         // GDI+ call doesn't support it (issue spotted using Gendarme's AvoidUnusedParametersRule)
         public void DrawClosedCurve(Pen pen, PointF[] points, float tension, FillMode fillmode)
         {
@@ -1647,7 +1647,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
 
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
-                throw new ArgumentException("Cannot create Graphics from an indexed bitmap.", nameof(image));            
+                throw new ArgumentException("Cannot create Graphics from an indexed bitmap.", nameof(image));
 
             int status = Gdip.GdipGetImageGraphicsContext(image.nativeImage, out graphics);
             Gdip.CheckStatus(status);

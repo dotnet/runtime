@@ -107,7 +107,7 @@ namespace System.Net.Http.Headers
         }
 
         // Note that if multiple ETag values are allowed (e.g. 'If-Match', 'If-None-Match'), according to the RFC
-        // the value must either be '*' or a list of ETag values. It's not allowed to have both '*' and a list of 
+        // the value must either be '*' or a list of ETag values. It's not allowed to have both '*' and a list of
         // ETag values. We're not that strict: We allow both '*' and ETag values in a list. If the server sends such
         // an invalid list, we want to be able to represent it using the corresponding header property.
         private static int ParseMultipleEntityTags(string value, int startIndex, out object parsedValue)

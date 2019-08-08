@@ -451,7 +451,7 @@ namespace System.Collections.Specialized.Tests
             // The next section would be created "off the end"
             //     - the current offset is 30, and the current mask requires more than the remaining 1 bit.
             Assert.InRange(CountBitsRequired(overflow.Mask), 2, 15);
-            
+
             Assert.Throws<InvalidOperationException>(() => BitVector32.CreateSection(invalid, overflow));
         }
 
@@ -500,7 +500,7 @@ namespace System.Collections.Specialized.Tests
         public static void Section_ToStringTest()
         {
             Random random = new Random(-55);
-            
+
             short maxValue = (short)random.Next(1, short.MaxValue);
             BitVector32.Section section1 = BitVector32.CreateSection(maxValue);
             BitVector32.Section section2 = BitVector32.CreateSection(maxValue);

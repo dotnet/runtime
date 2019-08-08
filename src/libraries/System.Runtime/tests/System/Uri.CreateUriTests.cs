@@ -101,7 +101,7 @@ namespace System.Tests
             yield return new object[] { "http://host/", "C:/x", UriKind.Absolute, "file:///C:/x" };
             yield return new object[] { "http://hostold/", "http://host/path/page", UriKind.Absolute, "http://host/path/page" };
         }
-        
+
         [Theory]
         [MemberData(nameof(Create_Uri_TestData))]
         public void Create_Uri(string uriString1, string uriString2, UriKind uriKind, string expectedUriString)
@@ -113,16 +113,16 @@ namespace System.Tests
 
             Uri uri = new Uri(baseUri, relativeUri);
             Assert.Equal(expected, uri);
-            
+
             if (uriKind !=  UriKind.Relative)
             {
                 uri = new Uri(baseUri, relativeUri.OriginalString);
                 Assert.Equal(expected, uri);
-                
+
                 Assert.True(Uri.TryCreate(baseUri, relativeUri.OriginalString, out uri));
                 Assert.Equal(expected, uri);
             }
-            
+
             Assert.True(Uri.TryCreate(baseUri, relativeUri, out uri));
             Assert.Equal(expected, uri);
         }

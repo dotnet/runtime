@@ -15,7 +15,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new TaiwanCalendar().MaxSupportedDateTime };
             yield return new object[] { TaiwanCalendarUtilities.RandomDateTime() };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetDayOfWeek_TestData))]
         public void GetDayOfWeek(DateTime time)

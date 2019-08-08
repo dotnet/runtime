@@ -6,7 +6,7 @@ namespace System.Reflection.Metadata
 {
     /// <summary>
     /// Specifies how arguments in a given signature are passed from the caller to the callee.
-    /// Underlying values correspond to the representation in the leading signature byte 
+    /// Underlying values correspond to the representation in the leading signature byte
     /// represented by <see cref="SignatureHeader"/>.
     /// </summary>
     public enum SignatureCallingConvention : byte

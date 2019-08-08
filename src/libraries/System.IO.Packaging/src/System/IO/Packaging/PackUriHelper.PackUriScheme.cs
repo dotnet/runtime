@@ -13,7 +13,7 @@ namespace System.IO.Packaging
     /// </summary>
     public static partial class PackUriHelper
     {
-        // We need to perform Escaping for the following - '%'; '@'; ',' and '?' 
+        // We need to perform Escaping for the following - '%'; '@'; ',' and '?'
         // !!Important!! - The order is important - The '%' sign should be escaped first.
         // If any more characters need to be added to the array below they should be added at the end.
         // All of these arrays must maintain the same ordering.
@@ -25,7 +25,7 @@ namespace System.IO.Packaging
         /// This method is used to create a valid pack Uri
         /// </summary>
         /// <param name="packageUri">This is the uri that points to the entire package.
-        /// This parameter should be an absolute Uri. This parameter cannot be null or empty 
+        /// This parameter should be an absolute Uri. This parameter cannot be null or empty
         /// This method will create a valid pack uri that references the entire package</param>
         /// <returns>A Uri with the "pack://" scheme</returns>
         /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
@@ -84,7 +84,7 @@ namespace System.IO.Packaging
             }
 
             // Step 2 - Remove fragment identifier from the package URI, if it is present
-            // Since '#" is an excluded character in Uri syntax, it can only occur as the 
+            // Since '#" is an excluded character in Uri syntax, it can only occur as the
             // fragment identifier, in all other places it should be escaped.
             // Hence we can safely use IndexOf to find the begining of the fragment.
             string absolutePackageUri = packageUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped);
@@ -94,13 +94,13 @@ namespace System.IO.Packaging
                 absolutePackageUri = absolutePackageUri.Substring(0, absolutePackageUri.IndexOf('#'));
             }
 
-            // Step 3 - Escape: "%", "?", "@", "#" and "," in the package URI 
+            // Step 3 - Escape: "%", "?", "@", "#" and "," in the package URI
             absolutePackageUri = EscapeSpecialCharacters(absolutePackageUri);
 
             // Step 4 - Replace all '/' with ',' in the resulting string
             absolutePackageUri = absolutePackageUri.Replace('/', ',');
 
-            // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far            
+            // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far
             absolutePackageUri = string.Concat(PackUriHelper.UriSchemePack, Uri.SchemeDelimiter, absolutePackageUri);
 
             Uri packUri = new Uri(absolutePackageUri);
@@ -114,7 +114,7 @@ namespace System.IO.Packaging
                 packUri = new Uri(string.Concat(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped), fragment));
 
             // We want to ensure that internal content of resulting Uri has canonical form
-            // i.e.  result.OrignalString would appear as perfectly formatted Uri string 
+            // i.e.  result.OrignalString would appear as perfectly formatted Uri string
             // so we roundtrip the result.
 
             return new Uri(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped));
@@ -139,9 +139,9 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// This method parses the pack uri and returns the absolute 
-        /// path of the URI. This corresponds to the part within the 
-        /// package. This corresponds to the absolute path component in 
+        /// This method parses the pack uri and returns the absolute
+        /// path of the URI. This corresponds to the part within the
+        /// package. This corresponds to the absolute path component in
         /// the Uri. If there is no part component present, this method
         /// returns a null
         /// </summary>
@@ -162,7 +162,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// This method compares two pack uris and returns an int to indicate the equivalence. 
+        /// This method compares two pack uris and returns an int to indicate the equivalence.
         /// </summary>
         /// <param name="firstPackUri">First Uri of pack:// scheme to be compared</param>
         /// <param name="secondPackUri">Second Uri of pack:// scheme to be compared</param>
@@ -207,7 +207,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Methods
-        
+
         #region Internal Methods
 
         //This method validates the packUri and returns its two components if they are valid-
@@ -275,13 +275,13 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Escapes -  %', '@', ',', '?' in the package URI 
-        /// This method modifies the string in a culture safe and case safe manner. 
+        /// Escapes -  %', '@', ',', '?' in the package URI
+        /// This method modifies the string in a culture safe and case safe manner.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
         private static string EscapeSpecialCharacters(string path)
-        {            
+        {
             // Escaping for the following - '%'; '@'; ',' and '?'
             // !!Important!! - The order is important - The '%' sign should be escaped first.
             // This is currently enforced by the order of characters in the s_specialCharacterChars array
@@ -320,7 +320,7 @@ namespace System.IO.Packaging
         private static PackUriHelper.ValidatedPartUri GetPartUriComponent(Uri packUri)
         {
             Debug.Assert(packUri != null, "packUri parameter cannot be null");
-            
+
             string partName = GetStringForPartUriFromAnyUri(packUri);
 
             if (partName == string.Empty)

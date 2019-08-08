@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var seenInterfaces = new List<Type>();
 
             var rb = new RegistrationBuilder();
-            
+
             rb.ForType<ClassWithLifetimeConcerns>()
                 .ExportInterfaces(i => { seenInterfaces.Add(i); return true; });
 

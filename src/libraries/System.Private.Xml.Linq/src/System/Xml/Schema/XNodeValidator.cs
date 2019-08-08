@@ -456,8 +456,8 @@ namespace System.Xml.Schema
         /// </summary>
         /// <param name="source">Extension point</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> 
-        /// that receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/>
+        /// that receives schema validation warnings and errors encountered during schema
         /// validation</param>
         public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler)
         {
@@ -469,11 +469,11 @@ namespace System.Xml.Schema
         /// </summary>
         /// <param name="source">Extension point</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> 
-        /// that receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/>
+        /// that receives schema validation warnings and errors encountered during schema
         /// validation</param>
-        /// <param name="addSchemaInfo">If enabled the <see cref="XDocument"/> and the corresponding 
-        /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations, 
+        /// <param name="addSchemaInfo">If enabled the <see cref="XDocument"/> and the corresponding
+        /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
@@ -487,12 +487,12 @@ namespace System.Xml.Schema
         /// Validate a <see cref="XElement"/>
         /// </summary>
         /// <param name="source">Extension point</param>
-        /// <param name="partialValidationType">An <see cref="XmlSchemaElement"/> or 
-        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation 
+        /// <param name="partialValidationType">An <see cref="XmlSchemaElement"/> or
+        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation
         /// context</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that 
-        /// receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that
+        /// receives schema validation warnings and errors encountered during schema
         /// validation</param>
         public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler)
         {
@@ -503,15 +503,15 @@ namespace System.Xml.Schema
         /// Validate a <see cref="XElement"/>
         /// </summary>
         /// <param name="source">Extension point</param>
-        /// <param name="partialValidationType">An <see cref="XmlSchemaElement"/> or 
-        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation 
+        /// <param name="partialValidationType">An <see cref="XmlSchemaElement"/> or
+        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation
         /// context</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that 
-        /// receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that
+        /// receives schema validation warnings and errors encountered during schema
         /// validation</param>
-        /// <param name="addSchemaInfo">If enabled the <see cref="XElement"/> and the corresponding 
-        /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations, 
+        /// <param name="addSchemaInfo">If enabled the <see cref="XElement"/> and the corresponding
+        /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
@@ -526,12 +526,12 @@ namespace System.Xml.Schema
         /// Validate a <see cref="XAttribute"/>
         /// </summary>
         /// <param name="source">Extension point</param>
-        /// <param name="partialValidationType">An <see cref="XmlSchemaAttribute"/> or 
-        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation 
+        /// <param name="partialValidationType">An <see cref="XmlSchemaAttribute"/> or
+        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation
         /// context</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that 
-        /// receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that
+        /// receives schema validation warnings and errors encountered during schema
         /// validation</param>
         public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler)
         {
@@ -542,15 +542,15 @@ namespace System.Xml.Schema
         /// Validate a <see cref="XAttribute"/>
         /// </summary>
         /// <param name="source">Extension point</param>
-        /// <param name="partialValidationType">An <see cref="XmlSchemaAttribute"/> or 
-        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation 
+        /// <param name="partialValidationType">An <see cref="XmlSchemaAttribute"/> or
+        /// <see cref="XmlSchemaType"/> object used to initialize the partial validation
         /// context</param>
         /// <param name="schemas">The <see cref="XmlSchemaSet"/> used for validation</param>
-        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that 
-        /// receives schema validation warnings and errors encountered during schema 
+        /// <param name="validationEventHandler">The <see cref="ValidationEventHandler"/> that
+        /// receives schema validation warnings and errors encountered during schema
         /// validation</param>
-        /// <param name="addSchemaInfo">If enabled the <see cref="XAttribute"/> is augmented with PSVI 
-        /// in the form of <see cref="IXmlSchemaInfo"/> annotations, default attributes and 
+        /// <param name="addSchemaInfo">If enabled the <see cref="XAttribute"/> is augmented with PSVI
+        /// in the form of <see cref="IXmlSchemaInfo"/> annotations, default attributes and
         /// default element values</param>
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)

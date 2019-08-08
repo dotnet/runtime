@@ -12,10 +12,10 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class ADDNConstraintLinkedAttrSet : ADDNLinkedAttrSet
     {
-        /// 
+        ///
         /// <summary>
         /// Result validator - Delegate function signature.
-        /// 
+        ///
         /// The result validator should return true if the result is valid
         /// and false if the result is invalid and needs to be skipped.
         /// </summary>
@@ -27,13 +27,13 @@ namespace System.DirectoryServices.AccountManagement
         /// True - if the result is valid (further processing with the result will happen in this case)
         /// False - If the result is invalid. In this case the result will skipped.
         /// </returns>
-        /// 
+        ///
         internal delegate bool ResultValidator(dSPropertyCollection resultPropCollection);
 
         internal enum ConstraintType
         {
             ContainerStringMatch = 0,  // match = the objects distinguishedName begins with the string supplied as constraintData,  i.e.  the object is under that container.
-            ResultValidatorDelegateMatch = 1, //match = the result object will be passed as an argument to the 
+            ResultValidatorDelegateMatch = 1, //match = the result object will be passed as an argument to the
                                               //function supplied as constraintData and it should return true.
         }
 

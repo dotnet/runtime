@@ -63,7 +63,7 @@ internal static partial class Interop
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
-            SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo  
+            SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo
         }
 
         // These values are defined within sspi.h as ISC_REQ_*, ISC_RET_*, ASC_REQ_* and ASC_RET_*.

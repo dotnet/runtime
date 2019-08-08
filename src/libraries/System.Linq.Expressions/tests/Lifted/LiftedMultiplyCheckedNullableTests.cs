@@ -513,7 +513,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Equal(expected, f());
         }
-        
+
         private static void VerifyMultiplyCheckedNullableNumber(Number? a, Number? b, bool useInterpreter)
         {
             Expression<Func<Number?>> e =

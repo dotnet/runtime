@@ -28,7 +28,7 @@ namespace System.Collections.Concurrent
     /// <see cref="System.ArgumentOutOfRangeException"/> if the requested partition count is less than or
     /// equal to zero.</li>
     /// <li><see cref="GetPartitions"/> should always return a number of enumerables equal to the requested
-    /// partition count. If the partitioner runs out of data and cannot create as many partitions as 
+    /// partition count. If the partitioner runs out of data and cannot create as many partitions as
     /// requested, an empty enumerator should be returned for each of the remaining partitions. If this rule
     /// is not followed, consumers of the implementation may throw a <see
     /// cref="System.InvalidOperationException"/>.</li>

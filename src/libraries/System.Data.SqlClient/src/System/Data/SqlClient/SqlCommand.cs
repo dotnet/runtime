@@ -198,7 +198,7 @@ namespace System.Data.SqlClient
 
         // Volatile bool used to synchronize with cancel thread the state change of an executing
         // command going from pre-processing to obtaining a stateObject.  The cancel synchronization
-        // we require in the command is only from entering an Execute* API to obtaining a 
+        // we require in the command is only from entering an Execute* API to obtaining a
         // stateObj.  Once a stateObj is successfully obtained, cancel synchronization is handled
         // by the stateObject.
         private volatile bool _pendingCancel;
@@ -287,7 +287,7 @@ namespace System.Data.SqlClient
                         }
                         catch (Exception)
                         {
-                            // we do not really care about errors in unprepare (may be the old connection went bad)                                        
+                            // we do not really care about errors in unprepare (may be the old connection went bad)
                         }
                         finally
                         {
@@ -720,7 +720,7 @@ namespace System.Data.SqlClient
                 }
 
                 // The lock here is to protect against the command.cancel / connection.close race condition
-                // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and 
+                // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and
                 // the command will no longer be cancelable.  It might be desirable to be able to cancel the close operation, but this is
                 // outside of the scope of Whidbey RTM.  See (SqlConnection::Close) for other lock.
                 lock (connection)
@@ -742,7 +742,7 @@ namespace System.Data.SqlClient
                       // Before attempting actual cancel, set the _pendingCancel flag to false.
                       // This denotes to other thread before obtaining stateObject from the
                       // session pool that there is another thread wishing to cancel.
-                      // The period in question is between entering the ExecuteAPI and obtaining 
+                      // The period in question is between entering the ExecuteAPI and obtaining
                       // a stateObject.
                         _pendingCancel = true;
 
@@ -1185,7 +1185,7 @@ namespace System.Data.SqlClient
                     if (task != null)
                     {
                         task = AsyncHelper.CreateContinuationTaskWithState(task,
-                            state: reader, 
+                            state: reader,
                             onSuccess: state => ((SqlDataReader)state).Close()
                         );
                     }
@@ -2229,7 +2229,7 @@ namespace System.Data.SqlClient
                             r[colNames[(int)ProcParamsColIndex.TypeName]];
 
                         // the constructed type name above is incorrectly formatted, it should be a 2 part name not 3
-                        // for compatibility we can't change this because the bug has existed for a long time and been 
+                        // for compatibility we can't change this because the bug has existed for a long time and been
                         // worked around by users, so identify that it is present and catch it later in the execution
                         // process once users can no longer interact with the parameter type name
                         p.IsDerivedParameterTypeName = true;
@@ -2330,7 +2330,7 @@ namespace System.Data.SqlClient
             // ctor is called.  But, if we are using default queue, then we do not have this data until
             // Start().  Due to this, we always delay setting options until execute.
 
-            // There is a variance in order between Start(), SqlDependency(), and Execute.  This is the 
+            // There is a variance in order between Start(), SqlDependency(), and Execute.  This is the
             // best way to solve that problem.
             if (null != Notification)
             {
@@ -2463,7 +2463,7 @@ namespace System.Data.SqlClient
                     }
                     else
                     {
-                        AsyncHelper.ContinueTaskWithState(subTask, completion, 
+                        AsyncHelper.ContinueTaskWithState(subTask, completion,
                             state: completion,
                             onSuccess: (state) => ((TaskCompletionSource<object>)state).SetResult(null)
                         );
@@ -2474,13 +2474,13 @@ namespace System.Data.SqlClient
 
         internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, [CallerMemberName] string method = "")
         {
-            Task unused; // sync execution 
+            Task unused; // sync execution
             SqlDataReader reader = RunExecuteReader(cmdBehavior, runBehavior, returnStream, completion: null, timeout: CommandTimeout, task: out unused, method: method);
             Debug.Assert(unused == null, "returned task during synchronous execution");
             return reader;
         }
 
-        // task is created in case of pending asynchronous write, returned SqlDataReader should not be utilized until that task is complete 
+        // task is created in case of pending asynchronous write, returned SqlDataReader should not be utilized until that task is complete
         internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, TaskCompletionSource<object> completion, int timeout, out Task task, bool asyncWrite = false, [CallerMemberName] string method = "")
         {
             bool async = (null != completion);
@@ -2696,7 +2696,7 @@ namespace System.Data.SqlClient
                 {
                     SqlInternalConnectionTds innerConnectionTds = (_activeConnection.InnerConnection as SqlInternalConnectionTds);
                     if (null != innerConnectionTds)
-                    { // it may be closed 
+                    { // it may be closed
                         innerConnectionTds.DecrementAsyncCount();
                     }
                 }
@@ -2715,13 +2715,13 @@ namespace System.Data.SqlClient
             return ds;
         }
 
-        // This is in its own method to avoid always allocating the lambda in RunExecuteReaderTds 
+        // This is in its own method to avoid always allocating the lambda in RunExecuteReaderTds
         private Task RunExecuteReaderTdsSetupContinuation(RunBehavior runBehavior, SqlDataReader ds, string optionSettings, Task writeTask)
         {
-            Task task = AsyncHelper.CreateContinuationTask(writeTask, 
+            Task task = AsyncHelper.CreateContinuationTask(writeTask,
                 onSuccess: () =>
                 {
-                    _activeConnection.GetOpenTdsConnection(); // it will throw if connection is closed 
+                    _activeConnection.GetOpenTdsConnection(); // it will throw if connection is closed
                     cachedAsyncState.SetAsyncReaderState(ds, runBehavior, optionSettings);
                 },
                 onFailure: (exc) =>
@@ -2732,7 +2732,7 @@ namespace System.Data.SqlClient
             return task;
         }
 
-        // This is in its own method to avoid always allocating the lambda in RunExecuteReaderTds 
+        // This is in its own method to avoid always allocating the lambda in RunExecuteReaderTds
         private void RunExecuteReaderTdsSetupReconnectContinuation(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, bool async, int timeout, bool asyncWrite, SqlDataReader ds, Task reconnectTask, long reconnectionStart, TaskCompletionSource<object> completion)
         {
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
@@ -2754,7 +2754,7 @@ namespace System.Data.SqlClient
                     }
                     else
                     {
-                        AsyncHelper.ContinueTaskWithState(subTask, completion, 
+                        AsyncHelper.ContinueTaskWithState(subTask, completion,
                             state: completion,
                             onSuccess: (state) => ((TaskCompletionSource<object>)state).SetResult(null)
                         );
@@ -3714,7 +3714,7 @@ namespace System.Data.SqlClient
 
             // Stitching back together is a little tricky. Assume we want to build a full multi-part name
             //  with all parts except trimming separators for leading empty names (null or empty strings,
-            //  but not whitespace). Separators in the middle should be added, even if the name part is 
+            //  but not whitespace). Separators in the middle should be added, even if the name part is
             //  null/empty, to maintain proper location of the parts.
             for (int i = 0; i < strings.Length; i++)
             {
@@ -4054,5 +4054,3 @@ namespace System.Data.SqlClient
         public SqlCommand Clone() => new SqlCommand(this);
     }
 }
-
-

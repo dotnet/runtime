@@ -21,7 +21,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ldfld, field);
             methodILGenerator.Emit(OpCodes.Ret);
-            
+
             property.SetGetMethod(method);
             Assert.True(property.CanRead);
         }

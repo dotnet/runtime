@@ -32,12 +32,12 @@ namespace System.Threading.Tasks
     /// purposes. For example, to create a <see cref="Task{TResult}"/> that runs a function, the factory's StartNew
     /// method may be used:
     /// <code>
-    /// // C# 
+    /// // C#
     /// var t = Task&lt;int&gt;.Factory.StartNew(() => GenerateResult());
     /// - or -
     /// var t = Task.Factory.StartNew(() => GenerateResult());
-    /// 
-    /// ' Visual Basic 
+    ///
+    /// ' Visual Basic
     /// Dim t = Task&lt;int&gt;.Factory.StartNew(Function() GenerateResult())
     /// - or -
     /// Dim t = Task.Factory.StartNew(Function() GenerateResult())
@@ -47,12 +47,12 @@ namespace System.Threading.Tasks
     /// The <see cref="Task{TResult}"/> class also provides constructors that initialize the task but that do not
     /// schedule it for execution. For performance reasons, the StartNew method should be the
     /// preferred mechanism for creating and scheduling computational tasks, but for scenarios where creation
-    /// and scheduling must be separated, the constructors may be used, and the task's 
+    /// and scheduling must be separated, the constructors may be used, and the task's
     /// <see cref="System.Threading.Tasks.Task.Start()">Start</see>
     /// method may then be used to schedule the task for execution at a later time.
     /// </para>
     /// <para>
-    /// All members of <see cref="Task{TResult}"/>, except for 
+    /// All members of <see cref="Task{TResult}"/>, except for
     /// <see cref="System.Threading.Tasks.Task.Dispose()">Dispose</see>, are thread-safe
     /// and may be used from multiple threads concurrently.
     /// </para>
@@ -83,7 +83,7 @@ namespace System.Threading.Tasks
         {
         }
 
-        // Construct a promise-style task with state and options.  
+        // Construct a promise-style task with state and options.
         internal Task(object? state, TaskCreationOptions options) :
             base(state, options, promiseStyle: true)
         {
@@ -392,7 +392,7 @@ namespace System.Threading.Tasks
             bool returnValue = false;
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
-            // has been made, (2) The result has not already been set, (3) An exception has not previously 
+            // has been made, (2) The result has not already been set, (3) An exception has not previously
             // been recorded, and (4) Cancellation has not been requested.
             //
             // If the reservation is successful, then set the result and finish completion processing.
@@ -508,7 +508,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
-        /// </summary>        
+        /// </summary>
         internal override void InnerInvoke()
         {
             // Invoke the delegate

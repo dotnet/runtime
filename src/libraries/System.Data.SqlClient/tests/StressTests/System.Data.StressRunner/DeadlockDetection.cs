@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -41,7 +41,7 @@ namespace DPStressHarness
 
         /// <summary>
         /// Maximum time that a test thread (i.e. a thread that is directly executing a [StressTest] method) can
-        /// execute before it is considered to be deadlocked. This should be longer than the 
+        /// execute before it is considered to be deadlocked. This should be longer than the
         /// TaskThreadDeadlockTimeoutTicks because if the test is waiting for a task then the test will always
         /// take longer to execute than the task.
         /// </summary>

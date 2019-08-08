@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
         TType GetGenericInstantiation(TType genericType, ImmutableArray<TType> typeArguments);
 
         /// <summary>
-        /// Gets the type symbol for a generalized array of the given element type and shape. 
+        /// Gets the type symbol for a generalized array of the given element type and shape.
         /// </summary>
         TType GetArrayType(TType elementType, ArrayShape shape);
 

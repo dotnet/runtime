@@ -99,7 +99,7 @@ namespace System.Diagnostics
 
             if (result != Interop.Errors.ERROR_SUCCESS)
             {
-                // If the numbers go negative, just return 0.  This better matches the old behavior. 
+                // If the numbers go negative, just return 0.  This better matches the old behavior.
                 if (result == Interop.Kernel32.PerformanceCounterOptions.PDH_CALC_NEGATIVE_VALUE || result == Interop.Kernel32.PerformanceCounterOptions.PDH_CALC_NEGATIVE_DENOMINATOR || result == Interop.Kernel32.PerformanceCounterOptions.PDH_NO_DATA)
                     return 0;
                 else
@@ -110,7 +110,7 @@ namespace System.Diagnostics
 
         }
 
-        // This method figures out which values are supposed to go into which structures so that PDH can do the 
+        // This method figures out which values are supposed to go into which structures so that PDH can do the
         // calculation for us.  This was ported from Window's cutils.c
         private static void FillInValues(CounterSample oldSample, CounterSample newSample, ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue, ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue)
         {

@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
                     pbeParameters,
                     password,
                     ReadOnlySpan<byte>.Empty);
-                
+
                 if (CngPkcs8.IsPlatformScheme(pbeParameters))
                 {
                     return TryExportEncryptedPkcs8(

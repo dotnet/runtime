@@ -381,7 +381,7 @@ namespace System.Diagnostics
 
         private IEnumerable<Exception> KillTree()
         {
-            // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or 
+            // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or
             // is terminated. A handle is held here to ensure a stable reference to the process during execution.
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
             {

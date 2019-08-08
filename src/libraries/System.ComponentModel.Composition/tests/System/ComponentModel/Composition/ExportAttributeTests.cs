@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition
     }
 
     public class ExportOnIndexer { }
-    
+
     public class ExportAttributeTests
     {
         [Fact]
@@ -61,7 +61,7 @@ namespace System.ComponentModel.Composition
         public void Constructor2_ValueAsContractNameArgument_ShouldSetContractNameProperty()
         {
             var expectations = Expectations.GetContractNamesWithEmpty();
-            
+
             foreach (var e in expectations)
             {
                 var attribute = new ExportAttribute(e);
@@ -85,6 +85,6 @@ namespace System.ComponentModel.Composition
                 Console.WriteLine(v2.ToString());
             });
         }
-    
+
     }
 }

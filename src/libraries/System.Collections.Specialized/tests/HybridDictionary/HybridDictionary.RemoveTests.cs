@@ -44,7 +44,7 @@ namespace System.Collections.Specialized.Tests
         public void Remove_CaseSensitivity(int count, bool caseInsensitive)
         {
             HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count, caseInsensitive);
-            
+
             hybridDictionary.Add("key", "value");
             if (caseInsensitive)
             {

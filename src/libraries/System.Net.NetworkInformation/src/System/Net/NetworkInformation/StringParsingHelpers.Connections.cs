@@ -281,7 +281,7 @@ namespace System.Net.NetworkInformation
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
-            
+
             ipAddress = new IPAddress(addressValue);
             return ipAddress;
         }

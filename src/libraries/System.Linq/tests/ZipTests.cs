@@ -18,7 +18,7 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, first.Zip(second, (x, y) => x + y));
         }
-        
+
         [Fact]
         public void ExplicitTypeParameters()
         {
@@ -34,7 +34,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> first = null;
             IEnumerable<int> second = new int[] { 2, 5, 9 };
-            
+
             AssertExtensions.Throws<ArgumentNullException>("first", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
 
@@ -43,17 +43,17 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("second", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
-        
+
         [Fact]
         public void FuncIsNull()
         {
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             Func<int, int, int> func = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
         }
 
@@ -64,13 +64,13 @@ namespace System.Linq.Tests
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             Func<int, int, int> func = (x, y) => x + y;
             IEnumerable<int> expected = new int[] { 3, 7, 9 };
-            
+
             Assert.Equal(expected, first.Zip(second, func));
 
             first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 2, 3 }, 2);
-            
+
             var zip = first.Zip(second, func);
-            
+
             Assert.Throws<Exception>(() => zip.ToList());
         }
 
@@ -85,7 +85,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, first.Zip(second, func));
 
             second = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 2, 3 }, 2);
-            
+
             var zip = first.Zip(second, func);
 
             Assert.Throws<Exception>(() => zip.ToList());

@@ -319,4 +319,3 @@ namespace System.Data.SqlClient
         }
     };
 }
-

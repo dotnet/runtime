@@ -9,7 +9,7 @@ namespace System.Tests
 {
     public static class EntryPointNotFoundExceptionTests
     {
-        public const int COR_E_ENTRYPOINTNOTFOUND = -2146233053; 
+        public const int COR_E_ENTRYPOINTNOTFOUND = -2146233053;
 
         [Fact]
         public static void Ctor_Empty()

@@ -13,7 +13,7 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile
     {
         /// <summary>
-        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
+        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
@@ -74,17 +74,17 @@ namespace System.IO.MemoryMappedFiles
         /// Used by the CreateOrOpen factory method groups.
         /// </summary>
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
-            string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, 
+            string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
             // Try to open the file if it exists -- this requires a bit more work. Loop until we can
             // either create or open a memory mapped file up to a timeout. CreateFileMapping may fail
             // if the file exists and we have non-null security attributes, in which case we need to
             // use OpenFileMapping.  But, there exists a race condition because the memory mapped file
-            // may have closed between the two calls -- hence the loop. 
-            // 
-            // The retry/timeout logic increases the wait time each pass through the loop and times 
-            // out in approximately 1.4 minutes. If after retrying, a MMF handle still hasn't been opened, 
+            // may have closed between the two calls -- hence the loop.
+            //
+            // The retry/timeout logic increases the wait time each pass through the loop and times
+            // out in approximately 1.4 minutes. If after retrying, a MMF handle still hasn't been opened,
             // throw an InvalidOperationException.
 
             Debug.Assert(access != MemoryMappedFileAccess.Write, "Callers requesting write access shouldn't try to create a mmf");
@@ -163,8 +163,8 @@ namespace System.IO.MemoryMappedFiles
         // -----------------------------
 
         /// <summary>
-        /// This converts a MemoryMappedFileRights to its corresponding native FILE_MAP_XXX value to be used when 
-        /// creating new views.  
+        /// This converts a MemoryMappedFileRights to its corresponding native FILE_MAP_XXX value to be used when
+        /// creating new views.
         /// </summary>
         private static int GetFileMapAccess(MemoryMappedFileRights rights)
         {
@@ -172,8 +172,8 @@ namespace System.IO.MemoryMappedFiles
         }
 
         /// <summary>
-        /// This converts a MemoryMappedFileAccess to its corresponding native FILE_MAP_XXX value to be used when 
-        /// creating new views.  
+        /// This converts a MemoryMappedFileAccess to its corresponding native FILE_MAP_XXX value to be used when
+        /// creating new views.
         /// </summary>
         internal static int GetFileMapAccess(MemoryMappedFileAccess access)
         {
@@ -191,8 +191,8 @@ namespace System.IO.MemoryMappedFiles
         }
 
         /// <summary>
-        /// This converts a MemoryMappedFileAccess to it's corresponding native PAGE_XXX value to be used by the 
-        /// factory methods that construct a new memory mapped file object. MemoryMappedFileAccess.Write is not 
+        /// This converts a MemoryMappedFileAccess to it's corresponding native PAGE_XXX value to be used by the
+        /// factory methods that construct a new memory mapped file object. MemoryMappedFileAccess.Write is not
         /// valid here since there is no corresponding PAGE_XXX value.
         /// </summary>
         internal static int GetPageAccess(MemoryMappedFileAccess access)

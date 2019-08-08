@@ -1417,7 +1417,7 @@ namespace System.Data
 
             if (-1 != _tempRecord)
             {
-                //Copy temp record for the row in edit mode.                
+                //Copy temp record for the row in edit mode.
                 for (int i = 0; i < _columns.Count; i++)
                 {
                     _columns[i].CopyValueIntoStore(_tempRecord, storeList[i], (BitArray)nullbitList[i], storeIndex);

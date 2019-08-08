@@ -38,7 +38,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal(count - i - 1, stringDictionary.Count);
             }
         }
-        
+
         [Fact]
         public void Remove_DuplicateValues()
         {

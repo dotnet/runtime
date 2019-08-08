@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition
                 {
                     AttributedModelServices.GetContractName((Type)null);
                 });
-        }        
+        }
 
         [Fact]
         [Description("Verifies adding custom modifiers to contract name.")]
@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition
             expectations.Add(typeof(GenericContract8<int>), "System.ComponentModel.Composition.GenericContract8(System.Int32)");
             expectations.Add(typeof(GenericContract4<int,double>.GenericContract5<double,int>[][,,,,]), "System.ComponentModel.Composition.GenericContract4(System.Int32,System.Double)+GenericContract5(System.Double,System.Int32)[][,,,,]");
             expectations.Add(typeof(GenericContract4<int,double>.GenericContract5<double,int>).MakePointerType(), "System.ComponentModel.Composition.GenericContract4(System.Int32,System.Double)+GenericContract5(System.Double,System.Int32)*");
-            expectations.Add(typeof(GenericContract4<int,double>.GenericContract5<double,int>[][,]).MakePointerType().MakeArrayType(4), "System.ComponentModel.Composition.GenericContract4(System.Int32,System.Double)+GenericContract5(System.Double,System.Int32)[][,]*[,,,]");            
+            expectations.Add(typeof(GenericContract4<int,double>.GenericContract5<double,int>[][,]).MakePointerType().MakeArrayType(4), "System.ComponentModel.Composition.GenericContract4(System.Int32,System.Double)+GenericContract5(System.Double,System.Int32)[][,]*[,,,]");
             expectations.Add(typeof(OuterClassWithGenericNested.GenericNested<int>), "System.ComponentModel.Composition.OuterClassWithGenericNested+GenericNested(System.Int32)");
             expectations.Add(typeof(Delegate), "System.Delegate");
             expectations.Add(typeof(MulticastDelegate), "System.MulticastDelegate");

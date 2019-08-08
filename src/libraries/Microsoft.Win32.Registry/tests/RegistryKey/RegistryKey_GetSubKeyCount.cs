@@ -36,7 +36,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
             Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
             Assert.Equal(expected: 1, actual: TestRegistryKey.SubKeyCount);
-            
+
             TestRegistryKey.DeleteSubKey(TestRegistryKeyName);
             Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
         }
@@ -50,7 +50,7 @@ namespace Microsoft.Win32.RegistryTests
             {
                 TestRegistryKey.CreateSubKey(subKey);
             }
-            
+
             Assert.Equal(testSubKeys.Length, TestRegistryKey.SubKeyCount);
         }
     }

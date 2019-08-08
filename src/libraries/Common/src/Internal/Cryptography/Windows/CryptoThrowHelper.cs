@@ -23,6 +23,6 @@ namespace Internal.Cryptography
             {
                 HResult = hr;
             }
-        }        
+        }
     }
 }

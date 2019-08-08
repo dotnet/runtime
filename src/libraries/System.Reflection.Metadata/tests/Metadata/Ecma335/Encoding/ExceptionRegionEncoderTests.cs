@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             builder.WriteByte(0xff);
             ExceptionRegionEncoder.SerializeTableHeader(builder, ExceptionRegionEncoder.MaxSmallExceptionRegions, hasSmallRegions: true);
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0xff, 0x00, 0x00, 0x00, // padding
                 0x01, // flags
@@ -185,7 +185,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void Add_Errors()
         {
             Assert.Throws<InvalidOperationException>(() => default(ExceptionRegionEncoder).Add(ExceptionRegionKind.Fault, 0, 0, 0, 0));
-        
+
             var builder = new BlobBuilder();
             var smallEncoder = new ExceptionRegionEncoder(builder, hasSmallFormat: true);
             var fatEncoder = new ExceptionRegionEncoder(builder, hasSmallFormat: false);

@@ -20,7 +20,7 @@ namespace System.Reflection.Internal
             _array = array;
         }
 
-        protected override void Dispose(bool disposing) 
+        protected override void Dispose(bool disposing)
         {
             Debug.Assert(disposing);
             Interlocked.Exchange(ref _pinned, null)?.Dispose();

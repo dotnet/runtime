@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Pkcs
         public CryptographicAttributeObjectCollection UnprotectedAttributes { get; private set; }
 
         //
-        // Recipients invoke this property to retrieve the recipient information after a Decode() operation. 
+        // Recipients invoke this property to retrieve the recipient information after a Decode() operation.
         // Senders should not invoke this property.
         //
         public RecipientInfoCollection RecipientInfos
@@ -301,5 +301,3 @@ namespace System.Security.Cryptography.Pkcs
         }
     }
 }
-
-

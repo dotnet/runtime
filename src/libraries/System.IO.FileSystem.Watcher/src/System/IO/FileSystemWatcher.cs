@@ -653,7 +653,7 @@ namespace System.IO
                 base.Site = value;
 
                 // set EnableRaisingEvents to true at design time so the user
-                // doesn't have to manually. 
+                // doesn't have to manually.
                 if (Site != null && Site.DesignMode)
                     EnableRaisingEvents = true;
             }

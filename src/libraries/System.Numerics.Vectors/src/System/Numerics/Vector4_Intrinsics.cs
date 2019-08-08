@@ -9,7 +9,7 @@ namespace System.Numerics
     // This file contains the definitions for all of the JIT intrinsic methods and properties that are recognized by the current x64 JIT compiler.
     // The implementation defined here is used in any circumstance where the JIT fails to recognize these members as intrinsic.
     // The JIT recognizes these methods and properties by name and signature: if either is changed, the JIT will no longer recognize the member.
-    // Some methods declared here are not strictly intrinsic, but delegate to an intrinsic method. For example, only one overload of CopyTo() 
+    // Some methods declared here are not strictly intrinsic, but delegate to an intrinsic method. For example, only one overload of CopyTo()
 
     public partial struct Vector4
     {

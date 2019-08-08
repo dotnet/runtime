@@ -6,7 +6,7 @@ namespace System.Reflection
 {
     public abstract partial class MethodInfo : MethodBase
     {
-#if CORERT        
+#if CORERT
         public // Needs to be public so that Reflection.Core can see it.
 #else
         internal

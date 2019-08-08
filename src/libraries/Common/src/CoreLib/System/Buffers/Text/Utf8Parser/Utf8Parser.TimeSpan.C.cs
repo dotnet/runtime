@@ -64,4 +64,3 @@ namespace System.Buffers.Text
         }
     }
 }
-

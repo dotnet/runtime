@@ -585,7 +585,7 @@ namespace System.Collections.Immutable
             /// true if the element is successfully removed; otherwise, false.  This method also returns false if <paramref name="key"/> was not found in the original <see cref="IDictionary{TKey, TValue}"/>.
             /// </returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
-            ///   
+            ///
             /// <exception cref="NotSupportedException">The <see cref="IDictionary{TKey, TValue}"/> is read-only.</exception>
             public bool Remove(TKey key)
             {
@@ -739,7 +739,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private KeyValuePair<TKey, TValue>[] _contents;
 
-        /// <summary>   
+        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>

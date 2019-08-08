@@ -23,7 +23,7 @@ namespace System.Xml.Linq
         /// <param name="y">The second node to compare.</param>
         /// <returns>
         /// 0 if the nodes are equal;
-        /// -1 if x is before y; 
+        /// -1 if x is before y;
         /// 1 if x is after y.
         /// </returns>
         /// <exception cref="InvalidOperationException">
@@ -41,15 +41,15 @@ namespace System.Xml.Linq
         /// <param name="y">The second node to compare.</param>
         /// <returns>
         /// 0 if the nodes are equal;
-        /// -1 if x is before y; 
+        /// -1 if x is before y;
         /// 1 if x is after y.
         /// </returns>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the two nodes do not share a common ancestor.
-        /// </exception>        
+        /// </exception>
         /// <exception cref="ArgumentException">
         /// Thrown if either of the two nodes are not derived from XNode.
-        /// </exception>        
+        /// </exception>
         int IComparer.Compare(object x, object y)
         {
             XNode n1 = x as XNode;

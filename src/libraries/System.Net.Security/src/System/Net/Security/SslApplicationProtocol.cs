@@ -86,7 +86,7 @@ namespace System.Net.Security
                 // In case of decoding errors, return the byte values as hex string.
                 char[] byteChars = new char[arr.Length * 5];
                 int index = 0;
-                
+
                 for (int i = 0; i < byteChars.Length; i += 5)
                 {
                     byte b = arr[index++];

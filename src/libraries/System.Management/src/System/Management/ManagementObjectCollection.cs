@@ -7,44 +7,44 @@ using System.Runtime.InteropServices;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC// 
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
-    ///    <para> Represents different collections of management objects 
+    ///    <para> Represents different collections of management objects
     ///       retrieved through WMI. The objects in this collection are of <see cref='System.Management.ManagementBaseObject'/>-derived types, including <see cref='System.Management.ManagementObject'/> and <see cref='System.Management.ManagementClass'/>
     ///       .</para>
-    ///    <para> The collection can be the result of a WMI 
+    ///    <para> The collection can be the result of a WMI
     ///       query executed through a <see cref='System.Management.ManagementObjectSearcher'/> object, or an enumeration of
     ///       management objects of a specified type retrieved through a <see cref='System.Management.ManagementClass'/> representing that type.
     ///       In addition, this can be a collection of management objects related in a specified
     ///       way to a specific management object - in this case the collection would
     ///       be retrieved through a method such as <see cref='System.Management.ManagementObject.GetRelated()'/>.</para>
-    /// <para>The collection can be walked using the <see cref='System.Management.ManagementObjectCollection.ManagementObjectEnumerator'/> and objects in it can be inspected or 
+    /// <para>The collection can be walked using the <see cref='System.Management.ManagementObjectCollection.ManagementObjectEnumerator'/> and objects in it can be inspected or
     ///    manipulated for various management tasks.</para>
     /// </summary>
     /// <example>
-    ///    <code lang='C#'>using System; 
-    /// using System.Management; 
-    /// 
+    ///    <code lang='C#'>using System;
+    /// using System.Management;
+    ///
     /// // This example demonstrates how to enumerate instances of a ManagementClass object.
-    /// class Sample_ManagementObjectCollection 
-    /// { 
-    ///     public static int Main(string[] args) { 
+    /// class Sample_ManagementObjectCollection
+    /// {
+    ///     public static int Main(string[] args) {
     ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk");
-    ///         ManagementObjectCollection disks = diskClass.GetInstances(); 
-    ///         foreach (ManagementObject disk in disks) { 
-    ///             Console.WriteLine("Disk = " + disk["deviceid"]); 
-    ///         } 
+    ///         ManagementObjectCollection disks = diskClass.GetInstances();
+    ///         foreach (ManagementObject disk in disks) {
+    ///             Console.WriteLine("Disk = " + disk["deviceid"]);
+    ///         }
     ///         return 0;
     ///     }
     /// }
     ///    </code>
-    ///    <code lang='VB'>Imports System 
-    /// Imports System.Management 
-    /// 
+    ///    <code lang='VB'>Imports System
+    /// Imports System.Management
+    ///
     /// ' This example demonstrates how to enumerate instances of a ManagementClass object.
-    /// Class Sample_ManagementObjectCollection 
-    ///     Overloads Public Shared Function Main(args() As String) As Integer 
-    ///         Dim diskClass As New ManagementClass("Win32_LogicalDisk") 
+    /// Class Sample_ManagementObjectCollection
+    ///     Overloads Public Shared Function Main(args() As String) As Integer
+    ///         Dim diskClass As New ManagementClass("Win32_LogicalDisk")
     ///         Dim disks As ManagementObjectCollection = diskClass.GetInstances()
     ///         Dim disk As ManagementObject
     ///         For Each disk In disks
@@ -69,7 +69,7 @@ namespace System.Management
         //Constructor
         internal ManagementObjectCollection(
             ManagementScope scope,
-            EnumerationOptions options, 
+            EnumerationOptions options,
             IEnumWbemClassObject enumWbem)
         {
             if (null != options)
@@ -87,7 +87,7 @@ namespace System.Management
 
         /// <summary>
         /// <para>Disposes of resources the object is holding. This is the destructor for the object.</para>
-        /// </summary>      
+        /// </summary>
         ~ManagementObjectCollection ()
         {
             Dispose ( false );
@@ -131,7 +131,7 @@ namespace System.Management
         ///    <para>This property is very expensive - it requires that
         ///    all members of the collection be enumerated.</para>
         /// </remarks>
-        public int Count 
+        public int Count
         {
             get
             {
@@ -158,10 +158,10 @@ namespace System.Management
         ///    <para>Represents whether the object is synchronized.</para>
         /// </summary>
         /// <value>
-        /// <para><see langword='true'/>, if the object is synchronized; 
+        /// <para><see langword='true'/>, if the object is synchronized;
         ///    otherwise, <see langword='false'/>.</para>
         /// </value>
-        public bool IsSynchronized 
+        public bool IsSynchronized
         {
             get
             {
@@ -178,14 +178,14 @@ namespace System.Management
         /// <value>
         ///    <para> The object to be used for synchronization.</para>
         /// </value>
-        public object SyncRoot 
-        { 
+        public object SyncRoot
+        {
             get
             {
                 if (isDisposed)
                     throw new ObjectDisposedException(name);
 
-                return this; 
+                return this;
             }
         }
 
@@ -197,7 +197,7 @@ namespace System.Management
         /// </summary>
         /// <param name='array'>An array to copy to. </param>
         /// <param name='index'>The index to start from. </param>
-        public void CopyTo (Array array, int index) 
+        public void CopyTo (Array array, int index)
         {
             if (isDisposed)
                 throw new ObjectDisposedException(name);
@@ -237,7 +237,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// <para>Copies the items in the collection to a <see cref='System.Management.ManagementBaseObject'/> 
+        /// <para>Copies the items in the collection to a <see cref='System.Management.ManagementBaseObject'/>
         /// array.</para>
         /// </summary>
         /// <param name='objectCollection'>The target array.</param>
@@ -274,7 +274,7 @@ namespace System.Management
             //
             // We do not clone the enumerator if its the first enumerator.
             // If it is the first enumerator we pass the reference
-            // to the enumerator implementation rather than a clone. If the enumerator is used 
+            // to the enumerator implementation rather than a clone. If the enumerator is used
             // from within a foreach statement in the client code, the foreach statement will
             // dec the ref count on the reference which also happens to be the reference to the
             // original enumerator causing subsequent uses of the collection to fail.
@@ -285,7 +285,7 @@ namespace System.Management
             // not cloned) and if it gets disposed we end up throwing the next time its used. Essentially,
             // the enumerator becomes the collection.
             //
-            
+
             // Unless this is the first enumerator, we have
             // to clone. This may throw if we are non-rewindable.
             if ( this.options.Rewindable == true )
@@ -293,7 +293,7 @@ namespace System.Management
                 IEnumWbemClassObject enumWbemClone = null;
                 int status = (int)ManagementStatus.NoError;
 
-                try 
+                try
                 {
                     status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem ).Clone_( ref enumWbemClone);
 
@@ -303,8 +303,8 @@ namespace System.Management
                         //to reset the new one.
                         status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbemClone ).Reset_( );
                     }
-                } 
-                catch (COMException e) 
+                }
+                catch (COMException e)
                 {
                     ManagementException.ThrowWithExtendedInfo (e);
                 }
@@ -345,7 +345,7 @@ namespace System.Management
             return GetEnumerator ();
         }
 
-        
+
 
         //
         // ManagementObjectCollection methods
@@ -356,19 +356,19 @@ namespace System.Management
         ///    <para>Represents the enumerator on the collection.</para>
         /// </summary>
         /// <example>
-        ///    <code lang='C#'>using System; 
-        /// using System.Management; 
-        /// 
-        /// // This example demonstrates how to enumerate all logical disks 
-        /// // using the ManagementObjectEnumerator object. 
-        /// class Sample_ManagementObjectEnumerator 
+        ///    <code lang='C#'>using System;
+        /// using System.Management;
+        ///
+        /// // This example demonstrates how to enumerate all logical disks
+        /// // using the ManagementObjectEnumerator object.
+        /// class Sample_ManagementObjectEnumerator
         /// {
-        ///     public static int Main(string[] args) { 
+        ///     public static int Main(string[] args) {
         ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk");
         ///         ManagementObjectCollection disks = diskClass.GetInstances();
         ///         ManagementObjectCollection.ManagementObjectEnumerator disksEnumerator =
         ///             disks.GetEnumerator();
-        ///         while(disksEnumerator.MoveNext()) { 
+        ///         while(disksEnumerator.MoveNext()) {
         ///             ManagementObject disk = (ManagementObject)disksEnumerator.Current;
         ///            Console.WriteLine("Disk found: " + disk["deviceid"]);
         ///         }
@@ -417,7 +417,7 @@ namespace System.Management
                 this.enumWbem = enumWbem;
                 this.collectionObject = collectionObject;
                 cachedObjects = new IWbemClassObjectFreeThreaded[collectionObject.options.BlockSize];
-                cachedCount = 0; 
+                cachedCount = 0;
                 cacheIndex = -1; // Reset position
                 atEndOfCollection = false;
             }
@@ -425,7 +425,7 @@ namespace System.Management
 
             /// <summary>
             /// <para>Disposes of resources the object is holding. This is the destructor for the object.</para>
-            /// </summary>      
+            /// </summary>
             ~ManagementObjectEnumerator ()
             {
                 Dispose ();
@@ -448,7 +448,7 @@ namespace System.Management
                     }
 
                     cachedObjects = null;
-                    
+
                     // DO NOT dispose of collectionObject.  It is merely a reference - its lifetime
                     // exceeds that of this object.  If collectionObject.Dispose was to be done here,
                     // a reference count would be needed.
@@ -461,7 +461,7 @@ namespace System.Management
                 }
             }
 
-            
+
             /// <summary>
             /// <para>Gets the current <see cref='System.Management.ManagementBaseObject'/> that this enumerator points
             ///    to.</para>
@@ -469,9 +469,9 @@ namespace System.Management
             /// <value>
             ///    <para>The current object in the enumeration.</para>
             /// </value>
-            public ManagementBaseObject Current 
+            public ManagementBaseObject Current
             {
-                get 
+                get
                 {
                     if (isDisposed)
                         throw new ObjectDisposedException(name);
@@ -491,9 +491,9 @@ namespace System.Management
             /// <value>
             ///    <para>The current object in the enumeration.</para>
             /// </value>
-            object IEnumerator.Current 
+            object IEnumerator.Current
             {
-                get 
+                get
                 {
                     return Current;
                 }
@@ -507,7 +507,7 @@ namespace System.Management
             ///    the next object in the enumeration.
             /// </summary>
             /// <returns>
-            /// <para><see langword='true'/>, if the enumerator was 
+            /// <para><see langword='true'/>, if the enumerator was
             ///    successfully advanced to the next element; <see langword='false'/> if the enumerator has
             ///    passed the end of the collection.</para>
             /// </returns>
@@ -515,9 +515,9 @@ namespace System.Management
             {
                 if (isDisposed)
                     throw new ObjectDisposedException(name);
-                
+
                 //If there are no more objects in the collection return false
-                if (atEndOfCollection) 
+                if (atEndOfCollection)
                     return false;
 
                 //Look for the next object
@@ -527,7 +527,7 @@ namespace System.Management
                 {
 
                     //If the timeout is set to infinite, need to use the WMI infinite constant
-                    int timeout = (collectionObject.options.Timeout.Ticks == long.MaxValue) ? 
+                    int timeout = (collectionObject.options.Timeout.Ticks == long.MaxValue) ?
                         (int)tag_WBEM_TIMEOUT_TYPE.WBEM_INFINITE : (int)collectionObject.options.Timeout.TotalMilliseconds;
 
                     //Get the next [BLockSize] objects within the specified timeout
@@ -564,7 +564,7 @@ namespace System.Management
                     }
                     else
                     {
-                        //If there was a timeout and no object can be returned we throw a timeout exception... 
+                        //If there was a timeout and no object can be returned we throw a timeout exception...
                         if ((status == (int)tag_WBEMSTATUS.WBEM_S_TIMEDOUT) && (cachedCount == 0))
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 
@@ -576,7 +576,7 @@ namespace System.Management
 
                             /* This call to Dispose is being removed as per discussion with URT people and the newly supported
                              * Dispose() call in the foreach implementation itself.
-                             * 
+                             *
                              *                              //Release the COM object (so that the user doesn't have to)
                                                             Dispose();
                             */
@@ -610,15 +610,15 @@ namespace System.Management
                     SecurityHandler securityHandler = collectionObject.scope.GetSecurityHandler();
                     int status = (int)ManagementStatus.NoError;
 
-                    try 
+                    try
                     {
                         status = collectionObject.scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem).Reset_();
-                    } 
-                    catch (COMException e) 
+                    }
+                    catch (COMException e)
                     {
                         ManagementException.ThrowWithExtendedInfo (e);
-                    } 
-                    finally 
+                    }
+                    finally
                     {
                         securityHandler.Reset ();
                     }
@@ -634,10 +634,10 @@ namespace System.Management
 
                     //Flush the current enumeration cache
                     for (int i=(cacheIndex >= 0 ? cacheIndex : 0); i<cachedCount; i++)
-                        Marshal.ReleaseComObject((IWbemClassObject_DoNotMarshal)(Marshal.GetObjectForIUnknown(cachedObjects[i]))); 
+                        Marshal.ReleaseComObject((IWbemClassObject_DoNotMarshal)(Marshal.GetObjectForIUnknown(cachedObjects[i])));
 
-                    cachedCount = 0; 
-                    cacheIndex = -1; 
+                    cachedCount = 0;
+                    cacheIndex = -1;
                     atEndOfCollection = false;
                 }
             }

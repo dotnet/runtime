@@ -12,7 +12,7 @@ using System.Data.SqlTypes;
 
 namespace Microsoft.SqlServer.Server
 {
-    // Central interface for getting/setting data values from/to a set of values indexed by ordinal 
+    // Central interface for getting/setting data values from/to a set of values indexed by ordinal
     //  (record, row, array, etc)
     //  Which methods are allowed to be called depends on SmiMetaData type of data offset.
     internal abstract class SmiTypedGetterSetter : ITypedGettersV3, ITypedSettersV3

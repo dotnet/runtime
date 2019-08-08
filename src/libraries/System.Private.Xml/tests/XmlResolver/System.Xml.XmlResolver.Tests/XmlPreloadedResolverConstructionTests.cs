@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -51,7 +51,7 @@ namespace System.Xml.XmlResolver.Tests
         public void XmlResolverWithFallbackResolverConstructor()
         {
             var fallbackResolver = new XmlPreloadedResolver(XmlKnownDtds.None);
-            var resolver = new XmlPreloadedResolver(fallbackResolver);            
+            var resolver = new XmlPreloadedResolver(fallbackResolver);
             string[] expectedUris = { "-//W3C//DTD XHTML 1.0 Strict//EN" , "-//W3C//DTD XHTML 1.0 Transitional//EN" ,
             "-//W3C//ENTITIES Symbols for XHTML//EN", "-//W3C//ENTITIES Latin 1 for XHTML//EN", "-//W3C//ENTITIES Symbols for XHTML//EN",
             "-//W3C//ENTITIES Special for XHTML//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd",
@@ -59,7 +59,7 @@ namespace System.Xml.XmlResolver.Tests
             "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent", "http://www.w3.org/TR/xhtml1/DTD/xhtml-symbol.ent",
             "http://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent", "-//Netscape Communications//DTD RSS 0.91//EN",
                 "http://my.netscape.com/publish/formats/rss-0.91.dtd" };
-            Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());            
+            Assert.Equal(expectedUris.Length, resolver.PreloadedUris.Count());
             foreach (string uriString in expectedUris)
             {
                 Assert.Contains(resolver.PreloadedUris, u => u.OriginalString.Equals(uriString));

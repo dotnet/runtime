@@ -53,5 +53,3 @@ namespace System.Xml.Xsl
         public string Right { get { return _right; } }
     }
 }
-
-

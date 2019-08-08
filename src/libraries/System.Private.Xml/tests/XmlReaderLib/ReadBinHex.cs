@@ -1133,7 +1133,7 @@ namespace System.Xml.Tests
         [Variation("call ReadContentAsBinHex on two or more nodes and whitespace")]
         public int TestReadBinHex_35()
         {
-            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123 
+            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123
 <elem2>
 123  </elem2>" + "\r\n" + @"  123</elem1>          123           </elem0>";
             ReloadSource(new StringReader(xml));
@@ -1162,7 +1162,7 @@ namespace System.Xml.Tests
         [Variation("call ReadContentAsBinHex on two or more nodes and whitespace after call Value")]
         public int TestReadBinHex_36()
         {
-            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123 
+            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123
 <elem2>
 123  </elem2>" + "\r\n" + @"  123</elem1>          123           </elem0>";
             ReloadSource(new StringReader(xml));

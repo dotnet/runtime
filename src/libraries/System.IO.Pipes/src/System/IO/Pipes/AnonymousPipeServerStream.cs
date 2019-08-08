@@ -28,7 +28,7 @@ namespace System.IO.Pipes
 
         public AnonymousPipeServerStream(PipeDirection direction, HandleInheritability inheritability)
             : this(direction, inheritability, 0)
-        { 
+        {
         }
 
         // Create an AnonymousPipeServerStream from two existing pipe handles.
@@ -88,7 +88,7 @@ namespace System.IO.Pipes
         }
 
         // This method should exist until we add a first class way of passing handles between parent and child
-        // processes. For now, people do it via command line arguments. 
+        // processes. For now, people do it via command line arguments.
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Justification = "By design")]
         public string GetClientHandleAsString()
         {
@@ -106,15 +106,15 @@ namespace System.IO.Pipes
             }
         }
 
-        // This method is an annoying one but it has to exist at least until we make passing handles between 
+        // This method is an annoying one but it has to exist at least until we make passing handles between
         // processes first class.  We need this because once the child handle is inherited, the OS considers
-        // the parent and child's handles to be different.  Therefore, if a child closes its handle, our 
+        // the parent and child's handles to be different.  Therefore, if a child closes its handle, our
         // Read/Write methods won't throw because the OS will think that there is still a child handle around
         // that can still Write/Read to/from the other end of the pipe.
         //
         // Ideally, we would want the Process class to close this handle after it has been inherited.  See
         // the pipe spec future features section for more information.
-        // 
+        //
         // Right now, this is the best signal to set the anonymous pipe as connected; if this is called, we
         // know the client has been passed the handle and so the connection is live.
         public void DisposeLocalCopyOfClientHandle()
@@ -129,7 +129,7 @@ namespace System.IO.Pipes
         {
             try
             {
-                // We should dispose of the client handle if it was not exposed. 
+                // We should dispose of the client handle if it was not exposed.
                 if (!_clientHandleExposed && _clientHandle != null && !_clientHandle.IsClosed)
                 {
                     _clientHandle.Dispose();

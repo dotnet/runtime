@@ -14,9 +14,9 @@ namespace System.ComponentModel.Composition.AttributedModel
     {
         [Fact]
         public void PartContainingOnlyStaticExports_ShouldNotCauseInstanceToBeCreated()
-        {  
+        {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(HasOnlyStaticExports));
-            
+
             Assert.Equal("Field", container.GetExportedValue<string>("Field"));
             Assert.Equal("Property", container.GetExportedValue<string>("Property"));
             Assert.NotNull(container.GetExportedValue<Func<string>>("Method")());
@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         [Fact]
         public void ExportOnAbstractBase_DoesNotReturnNull()
-        {   // 499393 - Classes inheriting from an exported 
+        {   // 499393 - Classes inheriting from an exported
             // abstract class are exported as 'null'
 
             var container = ContainerFactory.Create();
@@ -208,7 +208,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         [Fact]
         public void ImportValueMismatchFromDoubleToSingle()
         {
-            var container = ContainerFactory.Create(); 
+            var container = ContainerFactory.Create();
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());

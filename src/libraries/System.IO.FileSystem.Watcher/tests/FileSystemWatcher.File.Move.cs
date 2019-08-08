@@ -128,7 +128,7 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, eventType, action, cleanup, new string[] { dir.Path, dir_adjacent.Path });
             }
         }
-        
+
         private void FileMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

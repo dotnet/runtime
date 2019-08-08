@@ -208,7 +208,7 @@ namespace System.Net.Http
             {
                 // Make sure it completed successfully.
                 responseMessage.EnsureSuccessStatusCode();
-                
+
                 // Get the response content.
                 HttpContent c = responseMessage.Content;
                 if (c != null)

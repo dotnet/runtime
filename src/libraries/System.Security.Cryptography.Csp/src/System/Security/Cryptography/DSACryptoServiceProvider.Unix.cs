@@ -230,7 +230,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(rgbHash));
             if (rgbSignature == null)
                 throw new ArgumentNullException(nameof(rgbSignature));
-            
+
             // For compat with Windows, no check for rgbHash.Length != SHA1_HASHSIZE
 
             // Only SHA1 allowed; the default value is SHA1

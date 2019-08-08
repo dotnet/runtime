@@ -23,7 +23,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     // --------------------
     // SourceCore employs two locks: OutgoingLock and ValueLock.  Additionally, targets we call out to
     // likely utilize their own IncomingLock.  We can hold OutgoingLock while acquiring ValueLock or IncomingLock.
-    // However, we cannot hold ValueLock while calling out to external code or while acquiring OutgoingLock, and 
+    // However, we cannot hold ValueLock while calling out to external code or while acquiring OutgoingLock, and
     // we cannot hold IncomingLock when acquiring OutgoingLock. Additionally, the locks employed must be reentrant.
 
     /// <summary>Provides a core implementation for blocks that implement <see cref="ISourceBlock{TOutput}"/>.</summary>
@@ -142,7 +142,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             lock (OutgoingLock)
             {
                 // If completion has been reserved, the target registry has either been cleared already
-                // or is about to be cleared. So we can link and offer only if completion is not reserved. 
+                // or is about to be cleared. So we can link and offer only if completion is not reserved.
                 if (!_completionReserved)
                 {
                     _targetRegistry.Add(ref target, linkOptions);
@@ -169,7 +169,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             lock (OutgoingLock)
             {
                 // If this target doesn't hold the reservation, then for this ConsumeMessage
-                // to be valid, there must not be any reservation (since otherwise we can't 
+                // to be valid, there must not be any reservation (since otherwise we can't
                 // consume a message destined for someone else).
                 if (_nextMessageReservedFor != target &&
                     _nextMessageReservedFor != null)
@@ -374,7 +374,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal int OutputCount { get { lock (OutgoingLock) lock (ValueLock) return _messages.Count; } }
 
         /// <summary>
-        /// Adds a message to the source block for propagation. 
+        /// Adds a message to the source block for propagation.
         /// This method must only be used by one thread at a time, and must not be used concurrently
         /// with any other producer side methods, e.g. AddMessages, Complete.
         /// </summary>
@@ -397,7 +397,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Adds messages to the source block for propagation. 
+        /// Adds messages to the source block for propagation.
         /// This method must only be used by one thread at a time, and must not be used concurrently
         /// with any other producer side methods, e.g. AddMessage, Complete.
         /// </summary>
@@ -411,7 +411,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             if (_decliningPermanently) return;
 
-            // Special case arrays and lists, for which we can avoid the 
+            // Special case arrays and lists, for which we can avoid the
             // enumerator allocation that'll result from using a foreach.
             // This also avoids virtual method calls that we'd get if we
             // didn't special case.
@@ -506,7 +506,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 _decliningPermanently = true;
 
-                // CompleteAdding may be called in a context where an incoming lock is held.  We need to 
+                // CompleteAdding may be called in a context where an incoming lock is held.  We need to
                 // call CompleteBlockIfPossible, but we can't do so if the incoming lock is held.
                 // However, we know that _decliningPermanently has been set, and thus the timing of
                 // CompleteBlockIfPossible doesn't matter, so we schedule it to run asynchronously
@@ -547,9 +547,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             TOutput message = default(TOutput);
             bool offerJustToLinkToTarget = false;
 
-            // If offering isn't enabled and if we're not doing this as 
-            // a result of LinkTo, bail. Otherwise, with offering disabled, we must have 
-            // already offered this message to all existing targets, so we can just offer 
+            // If offering isn't enabled and if we're not doing this as
+            // a result of LinkTo, bail. Otherwise, with offering disabled, we must have
+            // already offered this message to all existing targets, so we can just offer
             // it to the newly linked target.
             if (!Volatile.Read(ref _enableOffering))
             {
@@ -576,13 +576,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
                 else
                 {
-                    // Otherwise, we've not yet offered this message to anyone, so even 
+                    // Otherwise, we've not yet offered this message to anyone, so even
                     // if linkToTarget is non-null, we need to propagate the message in order
                     // through all of the registered targets, the last of which will be the linkToTarget
                     // if it's non-null (no need to special-case it, though).
 
                     // Note that during OfferMessageToTarget, a target may call ConsumeMessage (taking advantage of the
-                    // reentrancy of OutgoingLock), which may unlink the target if the target is registered as "unlinkAfterOne".  
+                    // reentrancy of OutgoingLock), which may unlink the target if the target is registered as "unlinkAfterOne".
                     // Doing so will remove the target from the targets list. As such, we maintain the next node
                     // separately from cur.Next, in case cur.Next changes by cur being removed from the list.
                     // No other node in the list should change, as we're protected by OutgoingLock.
@@ -613,7 +613,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     // SourceCore set consumeToAccept to false.  However, it's possible
                     // that an incorrectly written target may ignore that parameter and synchronously consume
-                    // even though they weren't supposed to.  To recover from that, 
+                    // even though they weren't supposed to.  To recover from that,
                     // we'll only dequeue if the correct message is still at the head of the queue.
                     // However, we'll assert so that we can at least catch this in our own debug builds.
                     TOutput dropped;
@@ -658,7 +658,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="target">The single target to which the message should be offered.</param>
         /// <param name="messageWasAccepted">true if the message was accepted by the target; otherwise, false.</param>
         /// <returns>
-        /// true if the message should not be offered to additional targets; 
+        /// true if the message should not be offered to additional targets;
         /// false if propagation should be allowed to continue.
         /// </returns>
         private bool OfferMessageToTarget(
@@ -807,13 +807,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // possible offerings.  The former ensures that other operations don't get starved,
                 // while the latter is much more efficient (not continually acquiring and releasing
                 // the lock).  For blocks that aren't linked to any targets, this won't matter
-                // (no offering is done), and for blocks that are only linked to targets, this shouldn't 
+                // (no offering is done), and for blocks that are only linked to targets, this shouldn't
                 // matter (no one is contending for the lock), thus
                 // the only case it would matter is when a block both has targets and is being
                 // explicitly received from, which is an uncommon scenario.  Thus, we want to lock
                 // around the whole thing to improve performance, but just in case we do hit
-                // an uncommon scenario, in the default case we release the lock every now and again.  
-                // If a developer wants to control this, they can limit the duration of the 
+                // an uncommon scenario, in the default case we release the lock every now and again.
+                // If a developer wants to control this, they can limit the duration of the
                 // lock by using MaxMessagesPerTask.
 
                 const int DEFAULT_RELEASE_LOCK_ITERATIONS = 10; // Dialable
@@ -903,7 +903,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Slow path for CompleteBlockIfPossible. 
+        /// Slow path for CompleteBlockIfPossible.
         /// Separating out the slow path into its own method makes it more likely that the fast path method will get inlined.
         /// </summary>
         private void CompleteBlockIfPossible_Slow()

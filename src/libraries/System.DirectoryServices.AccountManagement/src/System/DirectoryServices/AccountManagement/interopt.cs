@@ -360,7 +360,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         /*
-        typedef enum 
+        typedef enum
         {
           DsRole_RoleStandaloneWorkstation,
           DsRole_RoleMemberWorkstation,
@@ -390,7 +390,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         /*
-        typedef enum 
+        typedef enum
         {
           DsRolePrimaryDomainInfoBasic,
           DsRoleUpgradeStatus,
@@ -408,12 +408,12 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         /*
-         typedef struct _DSROLE_PRIMARY_DOMAIN_INFO_BASIC {  
-         DSROLE_MACHINE_ROLE MachineRole;  
-         ULONG Flags;  
-         LPWSTR DomainNameFlat;  
-         LPWSTR DomainNameDns;  
-         LPWSTR DomainForestName;  
+         typedef struct _DSROLE_PRIMARY_DOMAIN_INFO_BASIC {
+         DSROLE_MACHINE_ROLE MachineRole;
+         ULONG Flags;
+         LPWSTR DomainNameFlat;
+         LPWSTR DomainNameDns;
+         LPWSTR DomainForestName;
          GUID DomainGuid;
          } DSROLE_PRIMARY_DOMAIN_INFO_BASIC,  *PDSROLE_PRIMARY_DOMAIN_INFO_BASIC;
          */
@@ -480,11 +480,11 @@ namespace System.DirectoryServices.AccountManagement
             [In] IntPtr buffer);
 
         /*DWORD DsGetDcName(
-            LPCTSTR ComputerName, 
-            LPCTSTR DomainName, 
-            GUID* DomainGuid, 
-            LPCTSTR SiteName, 
-            ULONG Flags, 
+            LPCTSTR ComputerName,
+            LPCTSTR DomainName,
+            GUID* DomainGuid,
+            LPCTSTR SiteName,
+            ULONG Flags,
             PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
         );*/
         [DllImport("logoncli.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
@@ -611,7 +611,7 @@ namespace System.DirectoryServices.AccountManagement
                                         );
 
         /*
-                [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]                
+                [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]
                 static extern public bool AuthzInitializeContextFromToken(
                                                 int Flags,
                                                 IntPtr TokenHandle,
@@ -824,4 +824,3 @@ namespace System.DirectoryServices.AccountManagement
         public static extern int RevertToSelf();
     }
 }
-

@@ -27,7 +27,7 @@ namespace System.DirectoryServices.AccountManagement
             // and not loaded (p.unpersisted = false, p.loaded = false).
 
             // Since there should be no more multistore contexts, the owning context IS
-            // the specific context     
+            // the specific context
 
             // If we know the type we should just construct it ourselves so that we don't need to incur the costs of reflection.
             // If this is an extension type then we must reflect teh constructor to create the object.
@@ -88,7 +88,7 @@ namespace System.DirectoryServices.AccountManagement
             // and not loaded (p.unpersisted = false, p.loaded = false).
 
             // Since there should be no more multistore contexts, the owning context IS
-            // the specific context     
+            // the specific context
 
             if (typeof(UserPrincipal) == principalType)
             {
@@ -538,7 +538,7 @@ namespace System.DirectoryServices.AccountManagement
                 case PropertyNames.AcctInfoDelegationPermitted:
                     // UF_NOT_DELEGATED
                     // Note that the logic is inverted on this one.  That's because we expose
-                    // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"                        
+                    // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"
                     flag = ((uacValue & 0x100000) == 0);
                     break;
 
@@ -679,7 +679,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 // We don't have the userAccountControl property, this must be a persisted principal.  Perhaps we don't have access
-                // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.            
+                // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.
                 Debug.Assert(p.unpersisted == false);
                 throw new PrincipalOperationException(
                                 SR.ADStoreCtxUnableToReadExistingAccountControlFlagsForUpdate);
@@ -718,7 +718,7 @@ namespace System.DirectoryServices.AccountManagement
                 case PropertyNames.AcctInfoDelegationPermitted:
                     // UF_NOT_DELEGATED
                     // Note that the logic is inverted on this one.  That's because we expose
-                    // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"                        
+                    // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"
                     bitmask = 0x100000;
                     flag = !flag;
                     break;

@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             return new ReflectionComposablePart(definition, attributedPart);
         }
-        
+
         public static ReflectionComposablePart CreatePart(object attributedPart, ReflectionContext reflectionContext)
         {
             if (attributedPart == null)

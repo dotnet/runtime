@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             private SafeNCryptKeyHandle GetDuplicatedKeyHandle() => _key.GetDuplicatedKeyHandle(KeySize);
 
             private void DisposeKey() => _key.DisposeKey();
-            
+
             /// <summary>
             ///     Public key used to generate key material with the second party
             /// </summary>

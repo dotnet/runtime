@@ -16,7 +16,7 @@ internal static partial class Interop
         // which obtains the raw errno that varies between unixes. The strong typing as an enum is meant to
         // prevent confusing the two. Casting to or from int is suspect. Use GetLastErrorInfo() if you need to
         // correlate these to the underlying platform values or obtain the corresponding error message.
-        // 
+        //
 
         SUCCESS          = 0,
 

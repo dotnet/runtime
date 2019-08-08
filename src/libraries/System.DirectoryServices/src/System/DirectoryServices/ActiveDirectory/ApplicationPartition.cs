@@ -77,9 +77,9 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    // if there are any managed or unmanaged 
+                    // if there are any managed or unmanaged
                     // resources to be freed, those should be done here
-                    // if disposing = true, only unmanaged resources should 
+                    // if disposing = true, only unmanaged resources should
                     // be freed, else both managed and unmanaged.
                     if (_crossRefEntry != null)
                     {
@@ -192,7 +192,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //  work with copy of the context
             context = new DirectoryContext(context);
 
-            // search in the partitions container of the forest for 
+            // search in the partitions container of the forest for
             // crossRef objects that have their nCName set to the specified distinguishedName
             directoryEntryMgr = new DirectoryEntryManager(context);
             DirectoryEntry partitionsEntry = null;
@@ -556,7 +556,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
             }
 
-            // Get the partitions container and delete the crossRef entry for this 
+            // Get the partitions container and delete the crossRef entry for this
             // application partition
             DirectoryEntry partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
             try
@@ -642,7 +642,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                     }
 
-                    // if the crossRef is created manually we need to refresh the cross ref entry to get the changes that were made 
+                    // if the crossRef is created manually we need to refresh the cross ref entry to get the changes that were made
                     // due to the creation of the partition
                     try
                     {
@@ -657,7 +657,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // When we create a domainDNS object on DC1 (Naming Master = DC2),
                 // then internally DC1 will contact DC2 to create the disabled crossRef object.
                 // DC2 will force replicate the crossRef object to DC1. DC1 will then create
-                // the domainDNS object and enable the crossRef on DC1 (not DC2). 
+                // the domainDNS object and enable the crossRef on DC1 (not DC2).
                 // Here we need to force replicate the enabling of the crossRef to the FSMO (DC2)
                 // so that we can later add replicas (which need to modify an attribute on the crossRef
                 // on DC2, the FSMO, and can only be done if the crossRef on DC2 is enabled)
@@ -718,13 +718,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                // just save the crossRef entry for teh directory servers and the 
+                // just save the crossRef entry for teh directory servers and the
                 // security reference domain information
                 if ((_cachedDirectoryServers != null) || (_securityRefDomainModified))
                 {
                     try
                     {
-                        // we should already have the crossRef entries as some attribute on it has already 
+                        // we should already have the crossRef entries as some attribute on it has already
                         // been modified
                         Debug.Assert(_crossRefEntry != null, "ApplicationPartition::Save - crossRefEntry on already committed partition which is being modified is null.");
                         _crossRefEntry.CommitChanges();
@@ -772,9 +772,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         GetCrossRefEntry();
                     }
-                    // 
+                    //
                     // If the application partition is already committed at this point, we pass in the directory entry for teh crossRef, so any modifications
-                    // are made directly on the crossRef entry. If at this point we do not have a crossRefEntry, we pass in null, while saving, we get the information 
+                    // are made directly on the crossRef entry. If at this point we do not have a crossRefEntry, we pass in null, while saving, we get the information
                     // from the collection and set it on the appropriate attribute on the crossRef directory entry.
                     //
                     //
@@ -832,7 +832,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (_committed)
                 {
                     GetCrossRefEntry();
-                    // modify the security reference domain 
+                    // modify the security reference domain
                     // this will get committed when the crossRefEntry is committed
                     if (value == null)
                     {
@@ -863,7 +863,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #region private methods
         private void ValidateApplicationPartitionParameters(DirectoryContext context, string distinguishedName, string objectClass, bool objectClassSpecified)
         {
-            // validate context 
+            // validate context
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
@@ -1016,7 +1016,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
 
                         authType |= AuthenticationTypes.ServerBind;
-                        
+
                         tempEntry = new DirectoryEntry("LDAP://" + context.Name + "/" + distinguishedName, context.UserName, context.Password, authType);
                         parent = tempEntry.Parent;
                         _domainDNSEntry = parent.Children.Add(Utils.GetRdnFromDN(distinguishedName), objectClass);
@@ -1214,7 +1214,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(domainControllerInfo.DomainControllerName.Length > 2, "ApplicationPartition:FindDirectoryServerInternal - domainControllerInfo.DomainControllerName.Length <= 2");
             string dcName = domainControllerInfo.DomainControllerName.Substring(2);
 
-            // create a new context object for the domain controller passing on only the 
+            // create a new context object for the domain controller passing on only the
             // credentials from the forest context
             DirectoryContext dcContext = Utils.GetNewDirectoryContext(dcName, DirectoryContextType.DirectoryServer, context);
 

@@ -484,8 +484,8 @@ namespace System.Xml.XPath
             }
             if (null == namespaceURI)
                 namespaceURI = string.Empty;
-            // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists, 
-            // because XPathNavigator.GetAttribute return string.Empty for both when the attribute is not there or when 
+            // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists,
+            // because XPathNavigator.GetAttribute return string.Empty for both when the attribute is not there or when
             // it has an empty value. XmlReader.GetAttribute must return null if the attribute does not exist.
             if ((object)nav == (object)_nav)
                 nav = nav.Clone();
@@ -529,7 +529,7 @@ namespace System.Xml.XPath
                 goto Error;
             if (nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
             {
-                // namespaces are returned in reverse order, 
+                // namespaces are returned in reverse order,
                 // but we want to return them in the correct order,
                 // so first count the namespaces
                 int nsCount;
@@ -1084,7 +1084,7 @@ namespace System.Xml.XPath
 
 #if NAVREADER_SUPPORTSLINEINFO
     internal class XPathNavigatorReaderWithLI : XPathNavigatorReader, System.Xml.IXmlLineInfo {
-        internal XPathNavigatorReaderWithLI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo xsi ) 
+        internal XPathNavigatorReaderWithLI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo xsi )
             : base( navToRead, xli, xsi ) {
         }
 
@@ -1098,7 +1098,7 @@ namespace System.Xml.XPath
     }
 
     internal class XPathNavigatorReaderWithLIAndSI : XPathNavigatorReaderWithLI, System.Xml.IXmlLineInfo, System.Xml.Schema.IXmlSchemaInfo {
-        internal XPathNavigatorReaderWithLIAndSI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo xsi ) 
+        internal XPathNavigatorReaderWithLIAndSI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo xsi )
             : base( navToRead, xli, xsi ) {
         }
 

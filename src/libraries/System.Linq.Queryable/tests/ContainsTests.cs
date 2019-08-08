@@ -21,7 +21,7 @@ namespace System.Linq.Tests
         public void NotPresent()
         {
             int[] source = { 8, 10, 3, 0, -8 };
-            
+
             Assert.False(source.AsQueryable().Contains(6));
         }
 
@@ -29,7 +29,7 @@ namespace System.Linq.Tests
         public void MultipleMatches()
         {
             int[] source = { 8, 0, 10, 3, 0, -8, 0 };
-            
+
             Assert.True(source.AsQueryable().Contains(0));
         }
 
@@ -46,16 +46,16 @@ namespace System.Linq.Tests
         public void CustomComparerFromNull()
         {
             string[] source = { "Bob", "Robert", "Tim" };
-            
+
             Assert.True(source.AsQueryable().Contains("trboeR", new AnagramEqualityComparer()));
             Assert.False(source.AsQueryable().Contains("nevar", new AnagramEqualityComparer()));
         }
-        
+
         [Fact]
         public void NullSource()
         {
             IQueryable<int> source = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.Contains(42));
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.Contains(42, EqualityComparer<int>.Default));
         }

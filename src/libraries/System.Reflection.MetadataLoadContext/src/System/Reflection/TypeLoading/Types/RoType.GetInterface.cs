@@ -26,8 +26,8 @@ namespace System.Reflection.TypeLoading
                 if (!simpleNameMatches)
                     continue;
 
-                // This check exists for desktop compat: 
-                //   (1) caller can optionally omit namespace part of name in pattern- we'll still match. 
+                // This check exists for desktop compat:
+                //   (1) caller can optionally omit namespace part of name in pattern- we'll still match.
                 //   (2) ignoreCase:true does not apply to the namespace portion.
                 if (ns.Length != 0 && !ns.Equals(ifc.Namespace))
                     continue;

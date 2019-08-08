@@ -350,7 +350,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private class TemporaryX509Store : IDisposable
         {
             private X509Store _store;
- 
+
             public TemporaryX509Store(X509Store store)
             {
                 _store = store;

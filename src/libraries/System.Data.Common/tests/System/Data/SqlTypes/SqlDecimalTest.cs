@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -419,9 +419,9 @@ Assert.False(true);
                 Assert.Equal(typeof(OverflowException), e.GetType());
             }
 
-            // ToSqlInt32 () 
+            // ToSqlInt32 ()
             // 6464.6464 --> 64646464 ??? with windows
-            // MS.NET seems to return the first 32 bit integer (i.e. 
+            // MS.NET seems to return the first 32 bit integer (i.e.
             // Data [0]) but we don't have to follow such stupidity.
             //            Assert.Equal ((int)64646464, Test1.ToSqlInt32 ().Value);
             //            Assert.Equal ((int)1212, new SqlDecimal(12.12m).ToSqlInt32 ().Value);

@@ -17,7 +17,7 @@ namespace System.Tests
 
         protected abstract bool InvariantTryParseDouble(string s, out double result);
         protected abstract bool InvariantTryParseSingle(string s, out float result);
-        
+
         /// <summary>
         /// Test some specific floating-point literals that have been shown to be problematic
         /// in some implementation.
@@ -194,7 +194,7 @@ namespace System.Tests
         // Test cases from Rick Regan's article, "Incorrectly Rounded Conversions in Visual C++":
         //
         //     http://www.exploringbinary.com/incorrectly-rounded-conversions-in-visual-c-plus-plus/
-        // 
+        //
         // Example 1:
         [InlineData("9214843084008499", 0x43405e6cec57761a)]
         // Example 2:

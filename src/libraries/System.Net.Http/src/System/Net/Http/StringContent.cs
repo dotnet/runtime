@@ -27,19 +27,19 @@ namespace System.Net.Http
         public StringContent(string content, Encoding encoding, string mediaType)
             : base(GetContentByteArray(content, encoding))
         {
-            // Initialize the 'Content-Type' header with information provided by parameters. 
+            // Initialize the 'Content-Type' header with information provided by parameters.
             MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? DefaultMediaType : mediaType);
             headerValue.CharSet = (encoding == null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
 
             Headers.ContentType = headerValue;
         }
 
-        // A StringContent is essentially a ByteArrayContent. We serialize the string into a byte-array in the 
+        // A StringContent is essentially a ByteArrayContent. We serialize the string into a byte-array in the
         // constructor using encoding information provided by the caller (if any). When this content is sent, the
         // Content-Length can be retrieved easily (length of the array).
         private static byte[] GetContentByteArray(string content, Encoding encoding)
         {
-            // In this case we treat 'null' strings different from string.Empty in order to be consistent with our 
+            // In this case we treat 'null' strings different from string.Empty in order to be consistent with our
             // other *Content constructors: 'null' throws, empty values are allowed.
             if (content == null)
             {

@@ -302,7 +302,7 @@ namespace System
 
                 if (index >= _stringSectionNumOffsets)
                 {
-                    // Some terminfo files may not contain enough entries to actually 
+                    // Some terminfo files may not contain enough entries to actually
                     // have the requested one.
                     return null;
                 }
@@ -381,7 +381,7 @@ namespace System
                     return null;
                 }
 
-                // Skip over the extended bools.  We don't need them now and can add this in later 
+                // Skip over the extended bools.  We don't need them now and can add this in later
                 // if needed. Also skip over extended numbers, for the same reason.
 
                 // Get the location where the extended string offsets begin.  These point into
@@ -482,9 +482,9 @@ namespace System
             /// <returns>The 32-bit value read.</returns>
             private static int ReadInt32(byte[] buffer, int pos)
             {
-                return (int)((buffer[pos] & 0xff) | 
-                             buffer[pos + 1] << 8 | 
-                             buffer[pos + 2] << 16 | 
+                return (int)((buffer[pos] & 0xff) |
+                             buffer[pos + 1] << 8 |
+                             buffer[pos + 2] << 16 |
                              buffer[pos + 3] << 24);
             }
 
@@ -612,7 +612,7 @@ namespace System
                 string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
                 ref FormatParam[] dynamicVars, ref FormatParam[] staticVars)
             {
-                // Create a StringBuilder to store the output of this processing.  We use the format's length as an 
+                // Create a StringBuilder to store the output of this processing.  We use the format's length as an
                 // approximation of an upper-bound for how large the output will be, though with parameter processing,
                 // this is just an estimate, sometimes way over, sometimes under.
                 StringBuilder output = StringBuilderCache.Acquire(format.Length);
@@ -776,8 +776,8 @@ namespace System
                                 ~value);
                             break;
 
-                        // Some terminfo files appear to have a fairly liberal interpretation of %i. The spec states that %i increments the first two arguments, 
-                        // but some uses occur when there's only a single argument. To make sure we accommodate these files, we increment the values 
+                        // Some terminfo files appear to have a fairly liberal interpretation of %i. The spec states that %i increments the first two arguments,
+                        // but some uses occur when there's only a single argument. To make sure we accommodate these files, we increment the values
                         // of up to (but not requiring) two arguments.
                         case 'i':
                             if (args.Length > 0)
@@ -924,7 +924,7 @@ namespace System
 
             /// <summary>
             /// Represents a parameter to a terminfo formatting string.
-            /// It is a discriminated union of either an integer or a string, 
+            /// It is a discriminated union of either an integer or a string,
             /// with characters represented as integers.
             /// </summary>
             public readonly struct FormatParam

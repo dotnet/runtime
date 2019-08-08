@@ -330,7 +330,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // because this collection can contain values from the superior classes,
-                // these values would not exist in the classEntry 
+                // these values would not exist in the classEntry
                 // and therefore cannot be removed
                 // we need to throw an exception here
                 string valueName = ((ActiveDirectorySchemaProperty)value).Name;
@@ -386,4 +386,3 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 }
-

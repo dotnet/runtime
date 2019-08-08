@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -24,7 +24,7 @@ namespace System.Net.Test.Common
 
             public IPAddress Address { get; set; } = IPAddress.Loopback;
 
-            public X509Certificate2 ServerCertificate { get; set; } = 
+            public X509Certificate2 ServerCertificate { get; set; } =
                 Configuration.Certificates.GetServerCertificate();
 
             public SslProtocols AllowedProtocols { get; set; } = SslProtocols.None;
@@ -40,7 +40,7 @@ namespace System.Net.Test.Common
         private int _port;
         private TcpListener _listener;
         private VerboseTestLogging _log = VerboseTestLogging.GetInstance();
-        
+
         public HttpsTestServer(Options options = null)
         {
             if (options != null)
@@ -54,7 +54,7 @@ namespace System.Net.Test.Common
         }
 
         public SslStream Stream { get; private set; }
-        
+
         public int Port
         {
             get

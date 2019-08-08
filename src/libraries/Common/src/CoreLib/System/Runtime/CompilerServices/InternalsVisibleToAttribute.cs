@@ -16,4 +16,3 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get; set; } = true;
     }
 }
-

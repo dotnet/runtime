@@ -7,7 +7,7 @@ using System.Collections;
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    /// IComponentInitializer can be implemented on an object that also implements IDesigner. 
+    /// IComponentInitializer can be implemented on an object that also implements IDesigner.
     /// This interface allows a newly created component to be given some stock default values,
     /// such as a caption, default size, or other values. Recommended default values for
     /// the component's properties are passed in as a dictionary.
@@ -31,7 +31,7 @@ namespace System.ComponentModel.Design
         /// to a design surface. The defaultValues property contains a name/value dictionary of default
         /// values that should be applied to properties. This dictionary may be null if no default values
         /// are specified. You may perform any initialization of this component that you like, and you
-        /// may even ignore the defaultValues dictionary altogether if you wish. 
+        /// may even ignore the defaultValues dictionary altogether if you wish.
         /// </summary>
         void InitializeNewComponent(IDictionary defaultValues);
     }

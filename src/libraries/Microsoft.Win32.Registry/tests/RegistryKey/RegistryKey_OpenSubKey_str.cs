@@ -59,7 +59,7 @@ namespace Microsoft.Win32.RegistryTests
             {
                 TestRegistryKey.CreateSubKey(subKeyName);
             }
-            
+
             Assert.Equal(subKeyNames.Length, TestRegistryKey.SubKeyCount);
             Assert.Equal(subKeyNames, TestRegistryKey.GetSubKeyNames());
         }

@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Collections.ObjectModel.Tests
 {
     /// <summary>
-    /// Tests that the INotifyCollectionChanged and IPropertyChanged events are fired 
+    /// Tests that the INotifyCollectionChanged and IPropertyChanged events are fired
     /// when an item is changed in the underlying ObservableCollection<T>.
     /// </summary>
     public class ReadOnlyObservableCollection_EventsTests
@@ -132,7 +132,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         /// <summary>
-        /// Tests that items can be moved throughout a collection whether from 
+        /// Tests that items can be moved throughout a collection whether from
         /// beginning to end, etc. And the events are forwarded.
         /// </summary>
         [Fact]
@@ -149,7 +149,7 @@ namespace System.Collections.ObjectModel.Tests
 
         /// <summary>
         /// Tests that:
-        /// ArgumentOutOfRangeException is thrown when the source or destination 
+        /// ArgumentOutOfRangeException is thrown when the source or destination
         /// Index is >= collection.Count or Index < 0.
         /// And the events are not forwarded.
         /// </summary>
@@ -230,7 +230,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         /// <summary>
-        /// Tests that the appropriate collectionchanged and propertychanged events are 
+        /// Tests that the appropriate collectionchanged and propertychanged events are
         /// fired when an item is replaced in the collection.
         /// </summary>
         [Fact]
@@ -271,7 +271,7 @@ namespace System.Collections.ObjectModel.Tests
         #endregion
 
         /// <summary>
-        /// Will perform an Add or Insert on the given Collection depending on whether the 
+        /// Will perform an Add or Insert on the given Collection depending on whether the
         /// insertIndex is null or not. If it is null, will Add, otherwise, will Insert.
         /// </summary>
         public void AddOrInsertItemTest(ReadOnlyObservableCollection<string> readOnlyCol, ObservableCollection<string> collection,

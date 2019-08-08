@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ using Xunit;
 namespace System.Net.Security.Tests
 {
     using Configuration =   System.Net.Test.Common.Configuration;
-    
+
     public class SslStreamEKUTest
     {
         public static bool IsRootCertificateInstalled => Capability.IsTrustedRootCertificateInstalled();
@@ -34,7 +34,7 @@ namespace System.Net.Security.Tests
         {
             var serverOptions = new HttpsTestServer.Options();
             serverOptions.ServerCertificate = serverCertificateNoEku;
-            
+
             using (var server = new HttpsTestServer(serverOptions))
             {
                 server.Start();
@@ -89,7 +89,7 @@ namespace System.Net.Security.Tests
                 var clientOptions = new HttpsTestClient.Options(new IPEndPoint(IPAddress.Loopback, server.Port));
                 clientOptions.ServerName = serverOptions.ServerCertificate.GetNameInfo(X509NameType.SimpleName, false);
                 clientOptions.ClientCertificate = clientCertificateNoEku;
-                
+
                 var client = new HttpsTestClient(clientOptions);
 
                 var tasks = new Task[2];

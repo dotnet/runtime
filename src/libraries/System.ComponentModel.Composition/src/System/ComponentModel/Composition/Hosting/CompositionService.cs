@@ -8,7 +8,7 @@ using Microsoft.Internal;
 namespace System.ComponentModel.Composition.Hosting
 {
     /// <summary>
-    ///     A mutable collection of <see cref="ComposablePartCatalog"/>s.  
+    ///     A mutable collection of <see cref="ComposablePartCatalog"/>s.
     /// </summary>
     /// <remarks>
     ///     This type is thread safe.
@@ -35,7 +35,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 var compositionOptions = CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService;
                 var compositionContainer = new CompositionContainer(composablePartCatalog, compositionOptions);
-    
+
                 _compositionContainer = compositionContainer;
             }
             catch
@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
-            
+
             // Delegates are cool there is no concern if you try to remove an item from them and they don't exist
             if (_notifyCatalog != null)
             {

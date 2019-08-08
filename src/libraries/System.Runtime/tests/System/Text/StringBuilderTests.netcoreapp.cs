@@ -359,7 +359,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, -1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, 4, 5));
-            
+
             Assert.Throws<ArgumentNullException>(() => sb.Append( (StringBuilder)null, 2, 2));
             Assert.Throws<ArgumentNullException>(() => sb.Append((StringBuilder)null, 2, 3));
             Assert.Throws<ArgumentOutOfRangeException>(() => new StringBuilder(3, 6).Append("Hello").Append(sb));
@@ -406,13 +406,13 @@ namespace System.Text.Tests
         public static void ForEach()
         {
             // Test on a variety of lengths, at least up to the point of 9 8K chunks = 72K because this is where
-            // we start using a different technique for creating the ChunkEnumerator.   200 * 500 = 100K which hits this.   
+            // we start using a different technique for creating the ChunkEnumerator.   200 * 500 = 100K which hits this.
             for (int i = 0; i < 200; i++)
             {
                 StringBuilder inBuilder = new StringBuilder();
                 for (int j = 0; j < i; j++)
                 {
-                    // Make some unique strings that are at least 500 bytes long.  
+                    // Make some unique strings that are at least 500 bytes long.
                     inBuilder.Append(j);
                     inBuilder.Append("_abcdefghijklmnopqrstuvwxyz01234567890__Abcdefghijklmnopqrstuvwxyz01234567890__ABcdefghijklmnopqrstuvwxyz01_");
                     inBuilder.Append("_abcdefghijklmnopqrstuvwxyz01234567890__Abcdefghijklmnopqrstuvwxyz01234567890__ABcdefghijklmnopqrstuvwxyz0123_");
@@ -421,12 +421,12 @@ namespace System.Text.Tests
                     inBuilder.Append("_abcdefghijklmnopqrstuvwxyz01234567890__Abcdefghijklmnopqrstuvwxyz01234567890__ABcdefghijklmnopqrstuvwxyz01234567890_");
                 }
 
-                // Copy the string out (not using StringBuilder).  
+                // Copy the string out (not using StringBuilder).
                 string outStr = "";
                 foreach (ReadOnlyMemory<char> chunk in inBuilder.GetChunks())
                     outStr += new string(chunk.Span);
 
-                // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder. 
+                // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
                 Assert.Equal(outStr, inBuilder.ToString());
             }
         }

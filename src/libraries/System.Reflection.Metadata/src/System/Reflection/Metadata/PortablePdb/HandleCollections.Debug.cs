@@ -378,8 +378,8 @@ namespace System.Reflection.Metadata
 
                     int nextEndOffset = _reader.LocalScopeTable.GetEndOffset(nextRowId);
 
-                    // If the end of the next scope is lesser than or equal the current end 
-                    // then it's nested into the current scope and thus not a child of 
+                    // If the end of the next scope is lesser than or equal the current end
+                    // then it's nested into the current scope and thus not a child of
                     // the current scope parent.
                     if (nextEndOffset > currentEndOffset)
                     {

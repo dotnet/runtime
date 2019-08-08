@@ -128,7 +128,7 @@ namespace System.Json.Tests
                 Assert.Equal("[1, 2, 3, null, null]", value.ToString());
             });
         }
-        
+
         [Fact]
         public void JsonValue_ToString_JsonObjectWithNulls()
         {
@@ -173,7 +173,7 @@ namespace System.Json.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("jsonString", () => JsonValue.Parse(null));
         }
-        
+
         [Theory]
         [InlineData("")]
         [InlineData("-")]
@@ -361,7 +361,7 @@ namespace System.Json.Tests
             Assert.Equal("1E-30", JsonValue.Parse("1e-30").ToString());
             Assert.Equal("1E+30", JsonValue.Parse("1e+30").ToString());
         }
-        
+
         [Theory]
         [InlineData("Fact\b\f\n\r\t\"\\/</\0x")]
         [InlineData("x\ud800")]
@@ -392,14 +392,14 @@ namespace System.Json.Tests
         public void JsonPrimitive_StringHandling()
         {
             Assert.Equal("\"Fact\"", new JsonPrimitive("Fact").ToString());
-            
+
             // Handling of characters
             Assert.Equal("\"f\"", new JsonPrimitive('f').ToString());
             Assert.Equal('f', (char)JsonValue.Parse("\"f\""));
 
             // Control characters with special escape sequence
             Assert.Equal("\"\\b\\f\\n\\r\\t\"", new JsonPrimitive("\b\f\n\r\t").ToString());
-            
+
             // Other characters which must be escaped
             Assert.Equal(@"""\""\\""", new JsonPrimitive("\"\\").ToString());
 
@@ -596,7 +596,7 @@ namespace System.Json.Tests
             JsonValue fromPrimitive = toPrimitive;
             Assert.Equal(primitive, toPrimitive);
         }
-        
+
         [Fact]
         public void ImplicitCast_Double()
         {

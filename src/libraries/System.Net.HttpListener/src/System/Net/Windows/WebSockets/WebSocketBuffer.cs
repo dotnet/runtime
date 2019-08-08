@@ -12,13 +12,13 @@ namespace System.Net.WebSockets
 {
     // This class helps to abstract the internal WebSocket buffer, which is used to interact with the native WebSocket
     // protocol component (WSPC). It helps to shield the details of the layout and the involved pointer arithmetic.
-    // The internal WebSocket buffer also contains a segment, which is used by the WebSocketBase class to buffer 
+    // The internal WebSocket buffer also contains a segment, which is used by the WebSocketBase class to buffer
     // payload (parsed by WSPC already) for the application, if the application requested fewer bytes than the
     // WSPC returned. The internal buffer is pinned for the whole lifetime if this class.
     // LAYOUT:
     // | Native buffer              | PayloadReceiveBuffer | PropertyBuffer |
     // | RBS + SBS + 144            | RBS                  | PBS            |
-    // | Only WSPC may modify       | Only WebSocketBase may modify         | 
+    // | Only WSPC may modify       | Only WebSocketBase may modify         |
     //
     // *RBS = ReceiveBufferSize, *SBS = SendBufferSize
     // *PBS = PropertyBufferSize (32-bit: 16, 64 bit: 20 bytes)
@@ -180,7 +180,7 @@ namespace System.Net.WebSockets
             if (previousState != SendBufferState.None)
             {
                 Debug.Fail("'m_SendBufferState' MUST BE 'None' at this point.");
-                // Indicates a violation in the API contract that could indicate 
+                // Indicates a violation in the API contract that could indicate
                 // memory corruption because the pinned sendbuffer is shared between managed and native code
                 throw new AccessViolationException();
             }
@@ -203,7 +203,7 @@ namespace System.Net.WebSockets
         {
             if (!IsPinnedSendPayloadBuffer(buffer, offset, count))
             {
-                // Indicates a violation in the API contract that could indicate 
+                // Indicates a violation in the API contract that could indicate
                 // memory corruption because the pinned sendbuffer is shared between managed and native code
                 throw new AccessViolationException();
             }
@@ -221,7 +221,7 @@ namespace System.Net.WebSockets
         {
             if (!IsPinnedSendPayloadBuffer(buffer, bufferType))
             {
-                // Indicates a violation in the API contract that could indicate 
+                // Indicates a violation in the API contract that could indicate
                 // memory corruption because the pinned sendbuffer is shared between managed and native code
                 throw new AccessViolationException();
             }
@@ -380,7 +380,7 @@ namespace System.Net.WebSockets
             }
 
             Debug.Fail("'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
-            // Indicates a violation in the contract with native Websocket.dll and could indicate 
+            // Indicates a violation in the contract with native Websocket.dll and could indicate
             // memory corruption because the internal buffer is shared between managed and native code
             throw new AccessViolationException();
         }
@@ -413,7 +413,7 @@ namespace System.Net.WebSockets
                 else
                 {
                     Debug.Fail("'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
-                    // Indicates a violation in the contract with native Websocket.dll and could indicate 
+                    // Indicates a violation in the contract with native Websocket.dll and could indicate
                     // memory corruption because the internal buffer is shared between managed and native code
                     throw new AccessViolationException();
                 }
@@ -438,7 +438,7 @@ namespace System.Net.WebSockets
             if (dataBufferCount > dataBuffers.Length)
             {
                 Debug.Fail("'dataBufferCount' MUST NOT be bigger than 'dataBuffers.Length'.");
-                // Indicates a violation in the contract with native Websocket.dll and could indicate 
+                // Indicates a violation in the contract with native Websocket.dll and could indicate
                 // memory corruption because the internal buffer is shared between managed and native code
                 throw new AccessViolationException();
             }
@@ -475,7 +475,7 @@ namespace System.Net.WebSockets
                     if (!isSendActivity || !isPinnedSendPayloadBuffer)
                     {
                         Debug.Fail("'dataBuffer.BufferLength' MUST NOT be bigger than 'm_ReceiveBufferSize' and 'm_SendBufferSize'.");
-                        // Indicates a violation in the contract with native Websocket.dll and could indicate 
+                        // Indicates a violation in the contract with native Websocket.dll and could indicate
                         // memory corruption because the internal buffer is shared between managed and native code
                         throw new AccessViolationException();
                     }
@@ -484,7 +484,7 @@ namespace System.Net.WebSockets
                 if (!isPinnedSendPayloadBuffer && !IsNativeBuffer(bufferData, bufferLength))
                 {
                     Debug.Fail("WebSocketGetAction MUST return a pointer within the pinned internal buffer.");
-                    // Indicates a violation in the contract with native Websocket.dll and could indicate 
+                    // Indicates a violation in the contract with native Websocket.dll and could indicate
                     // memory corruption because the internal buffer is shared between managed and native code
                     throw new AccessViolationException();
                 }

@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedThumbprint, thumbPrint);
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
         [Fact]
         public static void TestPrivateKeyProperty()
         {
@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {

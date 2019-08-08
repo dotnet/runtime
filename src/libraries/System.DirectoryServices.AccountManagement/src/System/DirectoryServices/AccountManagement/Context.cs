@@ -90,7 +90,7 @@ namespace System.DirectoryServices.AccountManagement
             adsPath.Append("WinNT://");
             adsPath.Append(_serverName);
             adsPath.Append(",computer");
-            Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown                
+            Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown
             object value = null;
             // always attempt secure auth..
             int authenticationType = 1;
@@ -397,7 +397,7 @@ namespace System.DirectoryServices.AccountManagement
             if ((contextType != ContextType.Machine) &&
                 (contextType != ContextType.Domain) &&
                 (contextType != ContextType.ApplicationDirectory)
-#if TESTHOOK                
+#if TESTHOOK
                 && (contextType != ContextType.Test)
 #endif
                 )
@@ -525,7 +525,7 @@ namespace System.DirectoryServices.AccountManagement
         /// </summary>
         public bool ValidateCredentials(string userName, string password, ContextOptions options)
         {
-            // Perform credential validation using fast concurrent bind...            
+            // Perform credential validation using fast concurrent bind...
             CheckDisposed();
 
             if ((userName == null && password != null) ||
@@ -547,7 +547,7 @@ namespace System.DirectoryServices.AccountManagement
 
         //
         // Private methods for initialization
-        //                
+        //
         private void Initialize()
         {
             if (!_initialized)
@@ -881,7 +881,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Build DEs for the Users and Computers containers.
                 // The Users container will also be used as the default for Groups.
                 // The reason there are different contexts for groups, users and computers is so that
-                // when a principal is created it will go into the appropriate default container.  This is so users don't 
+                // when a principal is created it will go into the appropriate default container.  This is so users don't
                 // be default create principals in the root of their directory.  When a search happens the base context is used so that
                 // the whole directory will be covered.
                 //
@@ -946,7 +946,7 @@ namespace System.DirectoryServices.AccountManagement
                 PrincipalContext ctx = new PrincipalContext(ContextType.Test);
                 ctx.SetupContext(storeCtx);
                 ctx.initialized = true;
-                
+
                 storeCtx.OwningContext = ctx;
                 return ctx;
             }
@@ -957,13 +957,13 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 TestStoreCtx storeCtx = new TestStoreCtx(true);
-                storeCtx.SwitchValidationMode = true;                
+                storeCtx.SwitchValidationMode = true;
                 PrincipalContext ctx = new PrincipalContext(ContextType.Test);
                 ctx.SetupContext(storeCtx);
                 ctx.initialized = true;
-                
+
                 storeCtx.OwningContext = ctx;
-                return ctx;                
+                return ctx;
             }
         }
 
@@ -972,13 +972,13 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 TestStoreCtx storeCtx = new TestStoreCtx(true);
-                storeCtx.SupportTimeLimited = false;                
+                storeCtx.SupportTimeLimited = false;
                 PrincipalContext ctx = new PrincipalContext(ContextType.Test);
                 ctx.SetupContext(storeCtx);
                 ctx.initialized = true;
-                
+
                 storeCtx.OwningContext = ctx;
-                return ctx;            
+                return ctx;
             }
         }
 
@@ -1055,7 +1055,7 @@ namespace System.DirectoryServices.AccountManagement
         private string _connectedServer = null;
 
         // The reason there are different contexts for groups, users and computers is so that
-        // when a principal is created it will go into the appropriate default container.  This is so users don't 
+        // when a principal is created it will go into the appropriate default container.  This is so users don't
         // by default create principals in the root of their directory.  When a search happens the base context is used so that
         // the whole directory will be covered.  User and Computers default are the same ( USERS container ), Computers are
         // put under COMPUTERS container.  If a container is specified then all the contexts will point to the same place.
@@ -1262,4 +1262,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-

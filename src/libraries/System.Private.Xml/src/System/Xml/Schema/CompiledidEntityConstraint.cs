@@ -89,5 +89,3 @@ namespace System.Xml.Schema
         }
     }
 }
-
-

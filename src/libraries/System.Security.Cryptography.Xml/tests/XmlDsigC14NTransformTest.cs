@@ -189,10 +189,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         //
-        // Example 1 from C14N spec - PIs, Comments, and Outside of Document Element: 
+        // Example 1 from C14N spec - PIs, Comments, and Outside of Document Element:
         // http://www.w3.org/TR/xml-c14n#Example-OutsideDoc
-        // 
-        // Aleksey: 
+        //
+        // Aleksey:
         // removed reference to an empty external DTD
         //
         static string C14NSpecExample1Input =
@@ -214,9 +214,9 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<?pi-without-data?>";
 
         //
-        // Example 2 from C14N spec - Whitespace in Document Content: 
+        // Example 2 from C14N spec - Whitespace in Document Content:
         // http://www.w3.org/TR/xml-c14n#Example-WhitespaceInContent
-        // 
+        //
         const string C14NSpecExample2Input =
                 "<doc>\n" +
                 "  <clean>   </clean>\n" +
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "</doc>";
 
         //
-        // Example 3 from C14N spec - Start and End Tags: 
+        // Example 3 from C14N spec - Start and End Tags:
         // http://www.w3.org/TR/xml-c14n#Example-SETags
         //
         const string C14NSpecExample3Input =
@@ -284,10 +284,10 @@ namespace System.Security.Cryptography.Xml.Tests
 
 
         //
-        // Example 4 from C14N spec - Character Modifications and Character References: 
+        // Example 4 from C14N spec - Character Modifications and Character References:
         // http://www.w3.org/TR/xml-c14n#Example-Chars
         //
-        // Aleksey: 
+        // Aleksey:
         // This test does not include "normId" element
         // because it has an invalid ID attribute "id" which
         // should be normalized by XML parser. Currently Mono
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "</doc>";
 
         //
-        // Example 5 from C14N spec - Entity References: 
+        // Example 5 from C14N spec - Entity References:
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
         static string C14NSpecExample5Input =>
@@ -338,9 +338,9 @@ namespace System.Security.Cryptography.Xml.Tests
                 "</doc>";
 
         //
-        // Example 6 from C14N spec - UTF-8 Encoding: 
+        // Example 6 from C14N spec - UTF-8 Encoding:
         // http://www.w3.org/TR/xml-c14n#Example-UTF8
-        // 
+        //
         static string C14NSpecExample6Input =
                     "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
                     "<doc>&#169;</doc>\n";

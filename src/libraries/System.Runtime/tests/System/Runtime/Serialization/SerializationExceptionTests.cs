@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization.Tests
             Assert.Equal(innerException, exception.InnerException);
             Assert.Equal(COR_E_SERIALIZATION, exception.HResult);
         }
-        
+
         [Fact]
         public void Ctor_SerializationInfo_StreamingContext()
         {

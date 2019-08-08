@@ -13,16 +13,16 @@ namespace System.Composition
     public sealed class ExportMetadataAttribute : Attribute
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ExportMetadataAttribute"/> with the 
+        ///     Initializes a new instance of the <see cref="ExportMetadataAttribute"/> with the
         ///     specified name and metadata value.
         /// </summary>
         /// <param name="name">
-        ///     A <see cref="string"/> containing the name of the metadata value; or 
-        ///     <see langword="null"/> to set the <see cref="Name"/> property to an empty 
+        ///     A <see cref="string"/> containing the name of the metadata value; or
+        ///     <see langword="null"/> to set the <see cref="Name"/> property to an empty
         ///     string ("").
         /// </param>
         /// <param name="value">
-        ///     An <see cref="object"/> containing the metadata value. This can be 
+        ///     An <see cref="object"/> containing the metadata value. This can be
         ///     <see langword="null"/>.
         /// </param>
         public ExportMetadataAttribute(string name, object value)

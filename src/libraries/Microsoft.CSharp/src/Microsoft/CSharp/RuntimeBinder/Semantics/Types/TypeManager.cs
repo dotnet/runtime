@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //      pbsm is the containing symbol manager
             //      fMeth designates whether this is a method type var or class type var
             //
-            // The standard class type variables are useful during emit, but not for type 
+            // The standard class type variables are useful during emit, but not for type
             // comparison when binding. The standard method type variables are useful during
             // binding for signature comparison.
 
@@ -333,9 +333,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // The following assertion is not always true and indicates a problem where
                 // the signature of override method does not match the one inherited from
-                // the base class. The method match we have found does not take the type 
+                // the base class. The method match we have found does not take the type
                 // arguments of the base class into account. So actually we are not overriding
-                // the method that we "intend" to. 
+                // the method that we "intend" to.
                 // Debug.Assert(taDst == SubstTypeArray(taSrc, typeArgsCls, typeArgsMeth, grfst));
                 return true;
             }
@@ -754,7 +754,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Assembly.GetName() requires FileIOPermission to FileIOPermissionAccess.PathDiscovery.
                 // If we don't have that (we're in low trust), then we are going to effectively turn off
-                // InternalsVisibleTo. The alternative is to crash when this happens. 
+                // InternalsVisibleTo. The alternative is to crash when this happens.
 
                 try
                 {

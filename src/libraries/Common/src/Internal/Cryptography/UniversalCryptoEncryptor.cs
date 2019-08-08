@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     //
-    // A cross-platform ICryptoTransform implementation for encryption. 
+    // A cross-platform ICryptoTransform implementation for encryption.
     //
     //  - Implements the various padding algorithms (as we support padding algorithms that the underlying native apis don't.)
     //
@@ -78,7 +78,7 @@ namespace Internal.Cryptography
                 // xx rr rr rr rr rr rr 07
                 case PaddingMode.ISO10126:
                     result = new byte[count + padBytes];
-                    
+
                     Buffer.BlockCopy(block, offset, result, 0, count);
                     RandomNumberGenerator.Fill(result.AsSpan(count + 1, padBytes - 1));
                     result[result.Length - 1] = (byte)padBytes;

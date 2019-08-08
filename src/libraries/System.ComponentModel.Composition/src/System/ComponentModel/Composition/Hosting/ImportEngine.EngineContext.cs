@@ -7,7 +7,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    public partial class ImportEngine 
+    public partial class ImportEngine
     {
         /// <summary>
         ///     Used to wrap the start and stop of enforcing export changes don't

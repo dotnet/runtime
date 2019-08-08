@@ -329,7 +329,7 @@ namespace System.ComponentModel
         {
             get
             {
-                // If the user set AllowNew, return what they set. If we have a default constructor, allowNew will be 
+                // If the user set AllowNew, return what they set. If we have a default constructor, allowNew will be
                 // true and we should just return true.
                 if (userSetAllowNew || allowNew)
                 {

@@ -58,7 +58,7 @@ namespace System.Collections.Specialized.Tests
         {
             StringValue = stringValue;
         }
-        
+
         public string StringValue { get; }
 
         public override bool Equals(object obj)

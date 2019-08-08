@@ -10,18 +10,18 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile
     {
         /// <summary>
-        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
+        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
-            FileStream fileStream, string mapName, 
-            HandleInheritability inheritability, MemoryMappedFileAccess access, 
+            FileStream fileStream, string mapName,
+            HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
             if (mapName != null)
             {
-                // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using 
+                // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using
                 // shared memory segments (shmget/shmat/shmdt/shmctl/etc.), but that doesn't work on OSX by default due
                 // to very low default limits on OSX for the size of such objects; it also doesn't support behaviors
                 // like copy-on-write or the ability to control handle inheritability, and reliably cleaning them up
@@ -46,7 +46,7 @@ namespace System.IO.MemoryMappedFiles
                     }
                     catch (ArgumentException exc)
                     {
-                        // If the capacity is too large, we'll get an ArgumentException from SetLength, 
+                        // If the capacity is too large, we'll get an ArgumentException from SetLength,
                         // but on Windows this same condition is represented by an IOException.
                         throw new IOException(exc.Message, exc);
                     }
@@ -56,10 +56,10 @@ namespace System.IO.MemoryMappedFiles
             {
                 // This map is backed by memory-only.  With files, multiple views over the same map
                 // will end up being able to share data through the same file-based backing store;
-                // for anonymous maps, we need a similar backing store, or else multiple views would logically 
+                // for anonymous maps, we need a similar backing store, or else multiple views would logically
                 // each be their own map and wouldn't share any data.  To achieve this, we create a backing object
-                // (either memory or on disk, depending on the system) and use its file descriptor as the file handle.  
-                // However, we only do this when the permission is more than read-only.  We can't change the size 
+                // (either memory or on disk, depending on the system) and use its file descriptor as the file handle.
+                // However, we only do this when the permission is more than read-only.  We can't change the size
                 // of an object that has read-only permissions, but we also don't need to worry about sharing
                 // views over a read-only, anonymous, memory-backed map, because the data will never change, so all views
                 // will always see zero and can't change that.  In that case, we just use the built-in anonymous support of
@@ -79,7 +79,7 @@ namespace System.IO.MemoryMappedFiles
         /// Used by the CreateOrOpen factory method groups.
         /// </summary>
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
-            string mapName, 
+            string mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
@@ -119,7 +119,7 @@ namespace System.IO.MemoryMappedFiles
         {
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }
-        
+
         private static FileAccess TranslateProtectionsToFileAccess(Interop.Sys.MemoryMappedProtections protections)
         {
             return
@@ -178,7 +178,7 @@ namespace System.IO.MemoryMappedFiles
 
             try
             {
-                // Unlink the shared memory object immediately so that it'll go away once all handles 
+                // Unlink the shared memory object immediately so that it'll go away once all handles
                 // to it are closed (as with opened then unlinked files, it'll remain usable via
                 // the open handles even though it's unlinked and can't be opened anew via its name).
                 Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));

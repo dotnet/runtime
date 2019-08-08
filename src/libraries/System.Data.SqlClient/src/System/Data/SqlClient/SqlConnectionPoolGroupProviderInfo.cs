@@ -20,7 +20,7 @@ namespace System.Data.SqlClient
         internal SqlConnectionPoolGroupProviderInfo(SqlConnectionString connectionOptions)
         {
             // This is for the case where the user specified the failover partner
-            // in the connection string and we have not yet connected to get the 
+            // in the connection string and we have not yet connected to get the
             // env change.
             _failoverPartner = connectionOptions.FailoverPartner;
 
@@ -77,7 +77,7 @@ namespace System.Data.SqlClient
             // primary data source, not the failover partner.
             if (!_useFailoverPartner && _failoverPartner != actualFailoverPartner)
             {
-                // NOTE: we optimistically generate the permission set to keep 
+                // NOTE: we optimistically generate the permission set to keep
                 //       lock short, but we only do this when we get a new
                 //       failover partner.
 

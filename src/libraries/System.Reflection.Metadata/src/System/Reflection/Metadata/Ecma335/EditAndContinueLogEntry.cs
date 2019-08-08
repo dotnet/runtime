@@ -15,13 +15,13 @@ namespace System.Reflection.Metadata.Ecma335
             Operation = operation;
         }
 
-        public override bool Equals(object obj) => 
+        public override bool Equals(object obj) =>
             obj is EditAndContinueLogEntry && Equals((EditAndContinueLogEntry)obj);
 
-        public bool Equals(EditAndContinueLogEntry other) => 
+        public bool Equals(EditAndContinueLogEntry other) =>
             Operation == other.Operation && Handle == other.Handle;
 
-        public override int GetHashCode() => 
+        public override int GetHashCode() =>
             (int)Operation ^ Handle.GetHashCode();
     }
 }

@@ -20,4 +20,3 @@ internal static class DllImports
     [DllImport("kernel32.dll", EntryPoint = "GetDriveTypeW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
     internal static extern int GetDriveType(string drive);
 }
-

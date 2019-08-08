@@ -13,10 +13,10 @@ namespace System.IO.Tests
         [Fact]
         public void FlushSetLengthAtEndOfBuffer()
         {
-            // This is a regression test for a bug with FileStream’s Flush() 
+            // This is a regression test for a bug with FileStream’s Flush()
             // and SetLength() methods.
             // The read-buffer was not flushed inside Flush and SetLength when
-            // the buffer pointer was at the end. This causes subsequent Seek 
+            // the buffer pointer was at the end. This causes subsequent Seek
             // and Read calls to operate on stale/wrong data.
 
 
@@ -26,7 +26,7 @@ namespace System.IO.Tests
                 fs.SetLength(200);
                 fs.Flush();
 
-                // write 119 bytes starting from Pos = 28 
+                // write 119 bytes starting from Pos = 28
                 fs.Seek(28, SeekOrigin.Begin);
                 byte[] buffer = new byte[119];
                 for (int i = 0; i < buffer.Length; i++)

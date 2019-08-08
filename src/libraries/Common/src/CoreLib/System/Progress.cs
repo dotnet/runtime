@@ -13,7 +13,7 @@ namespace System
     /// <typeparam name="T">Specifies the type of the progress report value.</typeparam>
     /// <remarks>
     /// Any handler provided to the constructor or event handlers registered with
-    /// the <see cref="ProgressChanged"/> event are invoked through a 
+    /// the <see cref="ProgressChanged"/> event are invoked through a
     /// <see cref="System.Threading.SynchronizationContext"/> instance captured
     /// when the instance is constructed.  If there is no current SynchronizationContext
     /// at the time of construction, the callbacks will be invoked on the ThreadPool.
@@ -41,7 +41,7 @@ namespace System
         /// <param name="handler">
         /// A handler to invoke for each reported progress value.  This handler will be invoked
         /// in addition to any delegates registered with the <see cref="ProgressChanged"/> event.
-        /// Depending on the <see cref="System.Threading.SynchronizationContext"/> instance captured by 
+        /// Depending on the <see cref="System.Threading.SynchronizationContext"/> instance captured by
         /// the <see cref="Progress{T}"/> at construction, it's possible that this handler instance
         /// could be invoked concurrently with itself.
         /// </param>
@@ -53,7 +53,7 @@ namespace System
 
         /// <summary>Raised for each reported progress value.</summary>
         /// <remarks>
-        /// Handlers registered with this event will be invoked on the 
+        /// Handlers registered with this event will be invoked on the
         /// <see cref="System.Threading.SynchronizationContext"/> captured when the instance was constructed.
         /// </remarks>
         public event EventHandler<T>? ProgressChanged;
@@ -63,7 +63,7 @@ namespace System
         protected virtual void OnReport(T value)
         {
             // If there's no handler, don't bother going through the sync context.
-            // Inside the callback, we'll need to check again, in case 
+            // Inside the callback, we'll need to check again, in case
             // an event handler is removed between now and then.
             Action<T>? handler = _handler;
             EventHandler<T>? changedEvent = ProgressChanged;

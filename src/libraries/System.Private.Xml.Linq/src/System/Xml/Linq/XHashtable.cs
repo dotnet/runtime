@@ -28,7 +28,7 @@ namespace System.Xml.Linq
     ///    etc. to avoid locks.  Any changes to code which accesses these variables should be carefully reviewed and tested,
     ///    as it can be *very* tricky.  In particular, if you don't understand the CLR memory model or if you don't know
     ///    what a memory barrier is, DON'T attempt to modify this code.  A good discussion of these topics can be found at
-    ///    <![CDATA[http://discuss.develop.com/archives/wa.exe?A2=ind0203B&L=DOTNET&P=R375]]>. 
+    ///    <![CDATA[http://discuss.develop.com/archives/wa.exe?A2=ind0203B&L=DOTNET&P=R375]]>.
     ///
     /// 2. Because I am not sure if the CLR spec has changed since versions 1.0/1.1, I am assuming the weak memory model that
     ///    is described in the ECMA spec, in which normal writes can be reordered.  This means I must introduce more memory

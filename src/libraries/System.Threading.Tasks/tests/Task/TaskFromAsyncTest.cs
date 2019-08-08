@@ -4,7 +4,7 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// Test class using UnitTestDriver that ensures that the FromAsync overload methods are tested 
+// Test class using UnitTestDriver that ensures that the FromAsync overload methods are tested
 //
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 
@@ -620,7 +620,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
 
     public enum API
     {
-        IAsyncResult,  // test the API_FromAsync takes in an IAsyncResult 
+        IAsyncResult,  // test the API_FromAsync takes in an IAsyncResult
         APM,           // test the API_FromAsync takes in the begin/endMethod with no arg
         APM_T,         // test the API_FromAsync takes in the begin/endMethod with 1 arg
         APM_T2,        // test the API_FromAsync takes in the begin/endMethod with 2 args

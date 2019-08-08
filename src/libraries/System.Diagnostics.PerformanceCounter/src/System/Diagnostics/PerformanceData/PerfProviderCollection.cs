@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ namespace System.Diagnostics.PerformanceData
         internal Guid _providerGuid;
         internal int _counterSet;
         internal SafePerfProviderHandle _hProvider;
-        
+
         internal PerfProvider(Guid providerGuid)
         {
             _providerGuid = providerGuid;
@@ -49,11 +49,11 @@ namespace System.Diagnostics.PerformanceData
                 return s_hiddenInternalSyncObject;
             }
         }
-        
+
         internal static PerfProvider QueryProvider(Guid providerGuid)
         {
             // Most of the cases should be that the application contains 1 provider that supports several CounterSets;
-            // that is, ContainsKey should succeed except for the first time.            
+            // that is, ContainsKey should succeed except for the first time.
             lock (s_lockObject)
             {
                 foreach (PerfProvider ProviderEntry in s_providerList)
@@ -69,7 +69,7 @@ namespace System.Diagnostics.PerformanceData
                 return NewProvider;
             }
         }
-        
+
         internal static void RemoveProvider(Guid providerGuid)
         {
             lock (s_lockObject)
@@ -90,7 +90,7 @@ namespace System.Diagnostics.PerformanceData
                 }
             }
         }
-        
+
         internal static void RegisterCounterSet(Guid counterSetGuid)
         {
             // Input counterSetGuid should not be registered yet. That is, ContainsKey() should fail most of times.

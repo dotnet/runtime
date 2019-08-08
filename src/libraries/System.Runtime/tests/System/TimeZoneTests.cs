@@ -95,7 +95,7 @@ namespace System.Tests
             if (transitionTime.IsFixedDateRule)
             {
                 int day = DateTime.DaysInMonth(year, transitionTime.Month);
-                value = new DateTime(year, transitionTime.Month, (day < transitionTime.Day) ? day : transitionTime.Day, 
+                value = new DateTime(year, transitionTime.Month, (day < transitionTime.Day) ? day : transitionTime.Day,
                             timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
             }
             else

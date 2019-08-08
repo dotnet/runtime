@@ -910,7 +910,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
             return false;
         }
-        
+
         public new bool MoveToNextNamespace()
         {
             if (CurrentNode is XmlDiffAttribute)
@@ -939,7 +939,7 @@ namespace System.ServiceModel.Syndication.Tests
         {
             return MoveToNextNamespace();
         }
-    
+
         public override bool MoveToParent()
         {
             if (!(CurrentNode is XmlDiffDocument))

@@ -30,7 +30,7 @@ namespace System.Collections.Generic
         internal bool IsMarked(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;
-            return 
+            return
                 (uint)bitArrayIndex < (uint)_span.Length &&
                 (_span[bitArrayIndex] & (1 << (bitPosition % IntSize))) != 0;
         }

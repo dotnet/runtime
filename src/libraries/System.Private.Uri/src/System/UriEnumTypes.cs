@@ -52,7 +52,7 @@ namespace System
         // If the unescaped sequence results in a new escaped sequence, it will revert to the original sequence.
 
         // This value is reserved for the default ToString() format that is historically none of the above.
-        // V1ToStringUnescape = 0x7FFF  
+        // V1ToStringUnescape = 0x7FFF
     }
 
     // This is used to control when host names are converted to idn names and

@@ -49,7 +49,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_lockObj)
                     {
-                        if (s_addressChangedSubscribers.Count == 0 && 
+                        if (s_addressChangedSubscribers.Count == 0 &&
                             s_availabilityChangedSubscribers.Count == 0)
                         {
                             CreateAndStartRunLoop();
@@ -246,7 +246,7 @@ namespace System.Net.NetworkInformation
 
             if (addressChangedSubscribers != null)
             {
-                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext> 
+                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext>
                     subscriber in addressChangedSubscribers)
                 {
                     NetworkAddressChangedEventHandler handler = subscriber.Key;

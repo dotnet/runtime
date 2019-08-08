@@ -195,7 +195,7 @@ namespace System.Net.Test.Common
                     requestMessage.Headers.Add(header.Key, header.Value);
                 }
             }
-            
+
             // Add 'Via' header.
             if (_addViaRequestHeader)
             {
@@ -361,7 +361,7 @@ namespace System.Net.Test.Common
         }
 
         public string ViaHeader => ViaHeaderValue;
-            
+
         public class ReceivedRequest
         {
             public string RequestLine { get; set; }
@@ -374,6 +374,6 @@ namespace System.Net.Test.Common
             public AuthenticationSchemes AuthenticationSchemes { get; set; } = AuthenticationSchemes.None;
             public bool ConnectionCloseAfter407 { get; set; } = false;
             public bool AddViaRequestHeader { get; set; } = false;
-        }        
+        }
     }
 }

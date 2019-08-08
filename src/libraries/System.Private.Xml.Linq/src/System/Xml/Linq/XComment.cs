@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace System.Xml.Linq
 {
     /// <summary>
-    /// Represents an XML comment. 
+    /// Represents an XML comment.
     /// </summary>
     public class XComment : XNode
     {

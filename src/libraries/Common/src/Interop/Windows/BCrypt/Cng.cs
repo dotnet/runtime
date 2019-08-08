@@ -273,4 +273,3 @@ namespace Internal.NativeCrypto
         private static extern uint BCryptDestroyKey(IntPtr hKey);
     }
 }
-

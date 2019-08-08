@@ -469,7 +469,7 @@ namespace System.Text.Tests
             if (defaultEncoding.CodePage == Encoding.UTF8.CodePage)
             {
                 // if the default encoding is not UTF8 that means either we are running on the full framework
-                // or the encoding provider is registered throw the call Encoding.RegisterProvider. 
+                // or the encoding provider is registered throw the call Encoding.RegisterProvider.
                 // at that time we shouldn't expect exceptions when creating the following encodings.
                 foreach (object[] mapping in CodePageInfo())
                 {

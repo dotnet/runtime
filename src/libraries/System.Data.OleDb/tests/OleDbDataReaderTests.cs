@@ -33,7 +33,7 @@ namespace System.Data.OleDb.Tests
                 DataTable schema = reader.GetSchemaTable();
                 Assert.Equal(5, schema.Rows.Count);
                 AssertExtensions.Throws<IndexOutOfRangeException>(
-                    () => reader.GetString(6), 
+                    () => reader.GetString(6),
                     "Index was outside the bounds of the array.");
             });
         }
@@ -87,7 +87,7 @@ namespace System.Data.OleDb.Tests
         {
             RunTest((reader) => {
                 DataTable schema = reader.GetSchemaTable();
-                Assert.Equal(5, schema.Rows.Count);  
+                Assert.Equal(5, schema.Rows.Count);
                 Assert.Equal("CustomerName", schema.Rows[1].Field<String>("ColumnName"));
                 Assert.Equal(typeof(string), schema.Rows[1].Field<Type>("DataType"));
                 Assert.Equal(40, schema.Rows[1].Field<int>("ColumnSize"));
@@ -100,7 +100,7 @@ namespace System.Data.OleDb.Tests
         {
             RunTest((reader) => {
                 DataTable schema = reader.GetSchemaTable();
-                Assert.Equal(5, schema.Rows.Count);  
+                Assert.Equal(5, schema.Rows.Count);
                 Assert.Equal("CustomerID", schema.Rows[0].Field<String>("ColumnName"));
                 Assert.Equal("CustomerName", schema.Rows[1].Field<String>("ColumnName"));
                 Assert.Equal("SingleAmount", schema.Rows[2].Field<String>("ColumnName"));
@@ -244,8 +244,8 @@ namespace System.Data.OleDb.Tests
             command.CommandText =
                 @"CREATE TABLE " + tableName + @" (
                     CustomerID INT,
-                    CustomerName NVARCHAR(40), 
-                    SingleAmount FLOAT, 
+                    CustomerName NVARCHAR(40),
+                    SingleAmount FLOAT,
                     RealAmount REAL,
                     DateChecked DATETIME);";
             command.ExecuteNonQuery();
@@ -254,10 +254,10 @@ namespace System.Data.OleDb.Tests
             if (!schemaOnly)
             {
                 command.CommandText =
-                    @"INSERT INTO " + tableName + @" ( 
+                    @"INSERT INTO " + tableName + @" (
                         CustomerID,
-                        CustomerName, 
-                        SingleAmount, 
+                        CustomerName,
+                        SingleAmount,
                         RealAmount,
                         DateChecked)
                     VALUES ( 123, 'XYZ', @value, @realValue, '01/11/2015 12:54:01' );";

@@ -8,7 +8,7 @@ namespace System.IO.MemoryMappedFiles
     {
         ReadWrite = 0,
         Read,
-        Write,   // Write is valid only when creating views and not when creating MemoryMappedFiles   
+        Write,   // Write is valid only when creating views and not when creating MemoryMappedFiles
         CopyOnWrite,
         ReadExecute,
         ReadWriteExecute,

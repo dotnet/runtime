@@ -4,11 +4,11 @@
 
 using System.Security;
 using System.Security.Permissions;
- 
+
 namespace System.DirectoryServices
 {
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct |
-        AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event, 
+        AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event,
         AllowMultiple = true, Inherited = false)]
     public class DirectoryServicesPermissionAttribute : CodeAccessSecurityAttribute
     {

@@ -48,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExpressionTreeCallRewriter rewriter = new ExpressionTreeCallRewriter(listOfParameters);
 
             // We should have a ExprBinOp that's an EK_SEQUENCE. The RHS of our sequence
-            // should be a call to PM_EXPRESSION_LAMBDA. The LHS of our sequence is the 
+            // should be a call to PM_EXPRESSION_LAMBDA. The LHS of our sequence is the
             // set of declarations for the parameters that we'll need.
             // Assert all of these first, and then unwrap them.
 
@@ -217,7 +217,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr GenerateLambda(ExprCall pExpr)
         {
-            // We always call Lambda(body, arrayinit) where the arrayinit 
+            // We always call Lambda(body, arrayinit) where the arrayinit
             // is the initialization of the parameters.
             return Visit(((ExprList)pExpr.OptionalArguments).OptionalElement);
 
@@ -281,9 +281,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateArrayIndex(ExprCall pExpr)
         {
-            // We have two possibilities here - we're either a single index array, in which 
+            // We have two possibilities here - we're either a single index array, in which
             // case we'll be PM_EXPRESSION_ARRAYINDEX, or we have multiple dimensions,
-            // in which case we are PM_EXPRESSION_ARRAYINDEX2. 
+            // in which case we are PM_EXPRESSION_ARRAYINDEX2.
             //
             // Our arguments then, are: object, index or object, indices.
             ExprList list = (ExprList)pExpr.OptionalArguments;

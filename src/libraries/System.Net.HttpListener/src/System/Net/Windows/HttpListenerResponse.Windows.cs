@@ -246,8 +246,8 @@ namespace System.Net
             if (StatusCode == (int)HttpStatusCode.Unauthorized)
             {
                 // User set 401
-                // Using the configured Auth schemes, populate the auth challenge headers. This is for scenarios where 
-                // Anonymous access is allowed for some resources, but the server later determines that authorization 
+                // Using the configured Auth schemes, populate the auth challenge headers. This is for scenarios where
+                // Anonymous access is allowed for some resources, but the server later determines that authorization
                 // is required for this request.
                 HttpListenerContext.SetAuthenticationHeaders();
             }
@@ -458,36 +458,36 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             pinnedHeaders = new List<GCHandle>();
 
             //---------------------------------------------------
-            // The Set-Cookie headers are being merged into one. 
-            // There are two issues here. 
+            // The Set-Cookie headers are being merged into one.
+            // There are two issues here.
             // 1. When Set-Cookie headers are set through SetCookie method on the ListenerResponse,
             // there is code in the SetCookie method and the methods it calls to flatten the Set-Cookie
-            // values. This blindly concatenates the cookies with a comma delimiter. There could be 
+            // values. This blindly concatenates the cookies with a comma delimiter. There could be
             // a cookie value that contains comma, but we don't escape it with %XX value
-            //  
+            //
             // As an alternative users can add the Set-Cookie header through the AddHeader method
             // like ListenerResponse.Headers.Add("name", "value")
             // That way they can add multiple headers - AND They can format the value like they want it.
             //
             // 2. Now that the header collection contains multiple Set-Cookie name, value pairs
             // you would think the problem would go away. However here is an interesting thing.
-            // For NameValueCollection, when you add 
+            // For NameValueCollection, when you add
             // "Set-Cookie", "value1"
             // "Set-Cookie", "value2"
             //  The NameValueCollection.Count == 1. Because there is only one key
             //  NameValueCollection.Get("Set-Cookie") would conviniently take these two valuess
-            //  concatenate them with a comma like 
-            //  value1,value2. 
-            //  In order to get individual values, you need to use 
+            //  concatenate them with a comma like
+            //  value1,value2.
+            //  In order to get individual values, you need to use
             //  string[] values = NameValueCollection.GetValues("Set-Cookie");
             //
             //  -------------------------------------------------------------
             //  So here is the proposed fix here.
             //  We must first to loop through all the NameValueCollection keys
-            //  and if the name is a unknown header, we must compute the number of 
-            //  values it has. Then, we should allocate that many unknown header array 
+            //  and if the name is a unknown header, we must compute the number of
+            //  values it has. Then, we should allocate that many unknown header array
             //  elements.
-            //  
+            //
             //  Note that a part of the fix here is to treat Set-Cookie as an unknown header
             //
             //
@@ -543,7 +543,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
 
                             //----------------------------------------
                             //FOR UNKNOWN HEADERS
-                            //ALLOW MULTIPLE HEADERS to be added 
+                            //ALLOW MULTIPLE HEADERS to be added
                             //---------------------------------------
                             string[] headerValues = Headers.GetValues(index);
                             for (int headerValueIndex = 0; headerValueIndex < headerValues.Length; headerValueIndex++)

@@ -34,9 +34,9 @@ namespace System.Linq.Tests
         {
             T[] source = { };
             T expected = default(T);
-            
+
             Assert.IsAssignableFrom<IList<T>>(source);
-            
+
             Assert.Equal(expected, source.RunOnce().LastOrDefault());
         }
 
@@ -56,7 +56,7 @@ namespace System.Linq.Tests
             int expected = 5;
 
             Assert.IsAssignableFrom<IList<int>>(source);
-            
+
             Assert.Equal(expected, source.LastOrDefault());
         }
 
@@ -68,7 +68,7 @@ namespace System.Linq.Tests
             int? expected = null;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
-            
+
             Assert.Equal(expected, source.LastOrDefault());
         }
 
@@ -79,7 +79,7 @@ namespace System.Linq.Tests
             int? expected = 19;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
-            
+
             Assert.Equal(expected, source.LastOrDefault());
         }
 
@@ -92,9 +92,9 @@ namespace System.Linq.Tests
         {
             var source = EmptySource<T>();
             T expected = default(T);
-            
+
             Assert.Null(source as IList<T>);
-            
+
             Assert.Equal(expected, source.RunOnce().LastOrDefault());
         }
 
@@ -114,7 +114,7 @@ namespace System.Linq.Tests
             int expected = -5;
 
             Assert.Null(source as IList<int>);
-            
+
             Assert.Equal(expected, source.LastOrDefault());
         }
 
@@ -125,7 +125,7 @@ namespace System.Linq.Tests
             int expected = 12;
 
             Assert.Null(source as IList<int>);
-            
+
             Assert.Equal(expected, source.LastOrDefault());
         }
 
@@ -144,7 +144,7 @@ namespace System.Linq.Tests
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
             int expected = 4;
-            
+
             Assert.Equal(expected, source.LastOrDefault(predicate));
         }
 

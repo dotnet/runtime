@@ -711,7 +711,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
         public static int Status;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -750,7 +750,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
         public static int Status;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

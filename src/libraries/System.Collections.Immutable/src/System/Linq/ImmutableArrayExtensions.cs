@@ -70,7 +70,7 @@ namespace System.Linq
             // SelectMany accepts an IEnumerable<TSource>, and ImmutableArray<TSource> is a struct.
             // By having a special implementation of SelectMany that operates on the ImmutableArray's
             // underlying array, we can avoid a few allocations, in particular for the boxed
-            // immutable array object that would be allocated when it's passed as an IEnumerable<T>, 
+            // immutable array object that would be allocated when it's passed as an IEnumerable<T>,
             // and for the EnumeratorObject that would be allocated when enumerating the boxed array.
 
             return immutableArray.Length == 0 ?
@@ -369,7 +369,7 @@ namespace System.Linq
         [Pure]
         public static T First<T>(this ImmutableArray<T> immutableArray)
         {
-            // In the event of an empty array, generate the same exception 
+            // In the event of an empty array, generate the same exception
             // that the linq extension method would.
             return immutableArray.Length > 0
                 ? immutableArray[0]
@@ -415,7 +415,7 @@ namespace System.Linq
         [Pure]
         public static T Last<T>(this ImmutableArray<T> immutableArray)
         {
-            // In the event of an empty array, generate the same exception 
+            // In the event of an empty array, generate the same exception
             // that the linq extension method would.
             return immutableArray.Length > 0
                 ? immutableArray[immutableArray.Length - 1]

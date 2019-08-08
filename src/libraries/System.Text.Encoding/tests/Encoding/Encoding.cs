@@ -12,7 +12,7 @@ namespace System.Text.Encodings.Tests
     {
         public static IEnumerable<object[]> Encoding_TestData()
         {
-            //                          CodePage   Name         BodyName      HeaderName    IsBrowserDisplay IsBrowserSave  IsMailNewsDisplay   IsMailNewsSave WindowsCodePage            
+            //                          CodePage   Name         BodyName      HeaderName    IsBrowserDisplay IsBrowserSave  IsMailNewsDisplay   IsMailNewsSave WindowsCodePage
             yield return new object[] { 20127,    "us-ascii",   "us-ascii",   "us-ascii",   false,            false,          true,               true,           1252 };
             yield return new object[] { 28591,    "iso-8859-1", "iso-8859-1", "iso-8859-1", true,             true,           true,               true,           1252 };
             yield return new object[] { 65000,    "utf-7",      "utf-7",      "utf-7",      false,            false,          true,               true,           1200 };
@@ -67,7 +67,7 @@ namespace System.Text.Encodings.Tests
 
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
-        public static void NormalizationTest(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay, 
+        public static void NormalizationTest(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
                                             bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave, int windowsCodePage)
         {
             Encoding encoding = Encoding.GetEncoding(codepage);

@@ -8,7 +8,7 @@ namespace System.Configuration {
     using System.Security;
 
     internal static class PrivilegedConfigurationManager {
-        internal static ConnectionStringSettingsCollection ConnectionStrings { 
+        internal static ConnectionStringSettingsCollection ConnectionStrings {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             get {
                 return ConfigurationManager.ConnectionStrings;
