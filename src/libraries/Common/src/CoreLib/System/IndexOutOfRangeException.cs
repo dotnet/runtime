@@ -37,7 +37,7 @@ namespace System
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
-        internal IndexOutOfRangeException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private IndexOutOfRangeException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
