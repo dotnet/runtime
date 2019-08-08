@@ -2116,11 +2116,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of a set of provided Tasks.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue.</param>
         /// <param name="continuationFunction">The function delegate to execute when all tasks in the
         /// <paramref name="tasks"/> array have completed.</param>
@@ -2144,11 +2144,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of a set of provided Tasks.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue.</param>
         /// <param name="continuationFunction">The function delegate to execute when all tasks in the
         /// <paramref name="tasks"/> array have completed.</param>
@@ -2178,11 +2178,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of a set of provided Tasks.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue.</param>
         /// <param name="continuationFunction">The function delegate to execute when all tasks in the
         /// <paramref name="tasks"/> array have completed.</param>
@@ -2218,11 +2218,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of a set of provided Tasks.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue.</param>
         /// <param name="continuationFunction">The function delegate to execute when all tasks in the
         /// <paramref name="tasks"/> array have completed.</param>
@@ -2697,11 +2697,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of any Task in the provided set.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue when one task completes.</param>
         /// <param name="continuationFunction">The function delegate to execute when one task in the
         /// <paramref name="tasks"/> array completes.</param>
@@ -2724,11 +2724,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of any Task in the provided set.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue when one task completes.</param>
         /// <param name="continuationFunction">The function delegate to execute when one task in the
         /// <paramref name="tasks"/> array completes.</param>
@@ -2758,11 +2758,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of any Task in the provided set.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue when one task completes.</param>
         /// <param name="continuationFunction">The function delegate to execute when one task in the
         /// <paramref name="tasks"/> array completes.</param>
@@ -2798,11 +2798,11 @@ namespace System.Threading.Tasks
         /// Creates a continuation <see cref="System.Threading.Tasks.Task{TResult}">Task</see>
         /// that will be started upon the completion of any Task in the provided set.
         /// </summary>
+        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result that is returned by the <paramref
         /// name="continuationFunction"/>
         /// delegate and associated with the created <see
         /// cref="System.Threading.Tasks.Task{TResult}"/>.</typeparam>
-        /// <typeparam name="TAntecedentResult">The type of the result of the antecedent <paramref name="tasks"/>.</typeparam>
         /// <param name="tasks">The array of tasks from which to continue when one task completes.</param>
         /// <param name="continuationFunction">The function delegate to execute when one task in the
         /// <paramref name="tasks"/> array completes.</param>
