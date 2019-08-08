@@ -291,7 +291,7 @@ namespace System.Threading
 
         /// <summary>
         /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
-        /// specified <see cref="System.Object"/>.
+        /// specified <see cref="object"/>.
         /// </summary>
         /// <param name="other">The other object to which to compare this instance.</param>
         /// <returns>True if <paramref name="other"/> is a <see cref="System.Threading.CancellationToken">CancellationToken</see>

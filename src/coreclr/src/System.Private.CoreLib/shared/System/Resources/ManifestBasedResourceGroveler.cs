@@ -478,7 +478,7 @@ namespace System.Resources
                     resourceSetNames = resourceSetNames[..10];
                     postfix = "\", ...";
                 }
-                return "\"" + String.Join("\", \"", resourceSetNames) + postfix;
+                return "\"" + string.Join("\", \"", resourceSetNames) + postfix;
             }
             catch
             {

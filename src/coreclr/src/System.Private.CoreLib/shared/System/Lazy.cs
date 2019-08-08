@@ -433,7 +433,7 @@ namespace System
         }
 
         /// <summary>Creates and returns a string representation of this instance.</summary>
-        /// <returns>The result of calling <see cref="System.Object.ToString"/> on the <see
+        /// <returns>The result of calling <see cref="object.ToString"/> on the <see
         /// cref="Value"/>.</returns>
         /// <exception cref="System.NullReferenceException">
         /// The <see cref="Value"/> is null.

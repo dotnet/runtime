@@ -771,7 +771,7 @@ namespace System.Globalization
             byte [] keyData;
             if (source.Length == 0)
             {
-                keyData = Array.Empty<Byte>();
+                keyData = Array.Empty<byte>();
             }
             else
             {
