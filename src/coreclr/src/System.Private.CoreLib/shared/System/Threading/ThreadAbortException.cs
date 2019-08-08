@@ -29,7 +29,7 @@ namespace System.Threading
 
         public object? ExceptionState => null;
 
-        internal ThreadAbortException(SerializationInfo info, StreamingContext context)
+        private ThreadAbortException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
