@@ -266,10 +266,14 @@ namespace System.Drawing
 
             using (Graphics g = Graphics.FromImage(ThumbNail))
             {
-                int status = Gdip.GdipDrawImageRectRectI(g.NativeGraphics, nativeImage,
+                int status = Gdip.GdipDrawImageRectRectI(
+                    new HandleRef(this, g.NativeGraphics),
+                    new HandleRef(this, nativeImage),
                     0, 0, thumbWidth, thumbHeight,
                     0, 0, this.Width, this.Height,
-                    GraphicsUnit.Pixel, IntPtr.Zero, null, IntPtr.Zero);
+                    GraphicsUnit.Pixel,
+                    new HandleRef(this, IntPtr.Zero), null,
+                    new HandleRef(this, IntPtr.Zero));
 
                 Gdip.CheckStatus(status);
             }
