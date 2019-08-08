@@ -27,8 +27,8 @@ namespace System.Reflection.Emit
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
         {
             InitCustomAttributeBuilder(con, constructorArgs,
-                                       new PropertyInfo[] { }, new object[] { },
-                                       new FieldInfo[] { }, new object[] { });
+                                       Array.Empty<PropertyInfo>(), Array.Empty<object>(),
+                                       Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor, constructor
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
                                       PropertyInfo[] namedProperties, object[] propertyValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, new FieldInfo[] { }, new object[] { });
+                                       propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor and constructor
@@ -45,8 +45,8 @@ namespace System.Reflection.Emit
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                       FieldInfo[] namedFields, object[] fieldValues)
         {
-            InitCustomAttributeBuilder(con, constructorArgs, new PropertyInfo[] { },
-                                       new object[] { }, namedFields, fieldValues);
+            InitCustomAttributeBuilder(con, constructorArgs, Array.Empty<PropertyInfo>(),
+                                       Array.Empty<object>(), namedFields, fieldValues);
         }
 
         // public constructor to form the custom attribute with constructor and constructor

@@ -510,7 +510,7 @@ namespace System.Reflection
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return new FieldInfo[0];
+                return Array.Empty<FieldInfo>();
 
             return RuntimeType.GetFields(bindingFlags);
         }
@@ -529,7 +529,7 @@ namespace System.Reflection
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return new MethodInfo[0];
+                return Array.Empty<MethodInfo>();
 
             return RuntimeType.GetMethods(bindingFlags);
         }

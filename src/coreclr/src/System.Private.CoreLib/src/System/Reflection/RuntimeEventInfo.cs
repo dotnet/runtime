@@ -158,7 +158,7 @@ namespace System.Reflection
             List<MethodInfo> ret = new List<MethodInfo>();
 
             if (m_otherMethod is null)
-                return new MethodInfo[0];
+                return Array.Empty<MethodInfo>();
 
             for (int i = 0; i < m_otherMethod.Length; i++)
             {
