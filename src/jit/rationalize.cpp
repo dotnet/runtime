@@ -957,9 +957,8 @@ void Rationalizer::DoPhase()
             if (statement->gtStmtILoffsx != BAD_IL_OFFSET)
             {
                 assert(!statement->IsPhiDefnStmt());
-                statement->SetOper(GT_IL_OFFSET);
-
-                BlockRange().InsertBefore(statement->gtStmtList, statement);
+                GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET) GenTreeILOffset(statement->gtStmtILoffsx);
+                BlockRange().InsertBefore(statement->gtStmtList, ilOffset);
             }
 
             m_block = block;

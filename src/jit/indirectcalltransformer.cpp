@@ -351,7 +351,7 @@ private:
         virtual void CreateThen()
         {
             thenBlock                       = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
-            GenTreeStmt* copyOfOriginalStmt = compiler->gtCloneExpr(stmt)->AsStmt();
+            GenTreeStmt* copyOfOriginalStmt = compiler->gtCloneStmt(stmt);
             compiler->fgInsertStmtAtEnd(thenBlock, copyOfOriginalStmt);
         }
 
@@ -411,7 +411,7 @@ private:
         //    created call node.
         GenTreeStmt* CreateFatCallStmt(GenTree* actualCallAddress, GenTree* hiddenArgument)
         {
-            GenTreeStmt* fatStmt = compiler->gtCloneExpr(stmt)->AsStmt();
+            GenTreeStmt* fatStmt = compiler->gtCloneStmt(stmt);
             GenTree*     fatTree = fatStmt->gtStmtExpr;
             GenTreeCall* fatCall = GetCall(fatStmt);
             fatCall->gtCallAddr  = actualCallAddress;

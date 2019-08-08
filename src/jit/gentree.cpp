@@ -329,6 +329,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeObj)          <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeStmt)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeClsVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArgPlace)     <= TREE_NODE_SZ_SMALL);
@@ -2077,12 +2078,6 @@ AGAIN:
                 assert(temp);
                 hash = genTreeHashAdd(hash, gtHashValue(temp));
             }
-            break;
-
-        case GT_STMT:
-            temp = tree->gtStmt.gtStmtExpr;
-            assert(temp);
-            hash = genTreeHashAdd(hash, gtHashValue(temp));
             break;
 
         case GT_ARR_ELEM:
@@ -7316,8 +7311,7 @@ GenTree* Compiler::gtCloneExpr(
     switch (oper)
     {
         case GT_STMT:
-            copy = gtCloneExpr(tree->gtStmt.gtStmtExpr, addFlags, deepVarNum, deepVarVal);
-            copy = gtNewStmt(copy, tree->gtStmt.gtStmtILoffsx);
+            NO_WAY("Use gtCloneStmt instead");
             goto DONE;
 
         case GT_CALL:
@@ -10468,13 +10462,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_IL_OFFSET:
             printf(" IL offset: ");
-            if (tree->gtStmt.gtStmtILoffsx == BAD_IL_OFFSET)
+            if (tree->gtILOffset.gtStmtILoffsx == BAD_IL_OFFSET)
             {
                 printf("???");
             }
             else
             {
-                printf("0x%x", jitGetILoffs(tree->gtStmt.gtStmtILoffsx));
+                printf("0x%x", jitGetILoffs(tree->gtILOffset.gtStmtILoffsx));
             }
             break;
 
