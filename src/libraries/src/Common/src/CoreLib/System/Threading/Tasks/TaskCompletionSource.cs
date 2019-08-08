@@ -21,12 +21,12 @@ using System.Threading;
 namespace System.Threading.Tasks
 {
     /// <summary>
-    /// Represents the producer side of a <see cref="T:System.Threading.Tasks.Task{TResult}"/> unbound to a
+    /// Represents the producer side of a <see cref="System.Threading.Tasks.Task{TResult}"/> unbound to a
     /// delegate, providing access to the consumer side through the <see cref="Task"/> property.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// It is often the case that a <see cref="T:System.Threading.Tasks.Task{TResult}"/> is desired to
+    /// It is often the case that a <see cref="System.Threading.Tasks.Task{TResult}"/> is desired to
     /// represent another asynchronous operation.
     /// <see cref="TaskCompletionSource{TResult}">TaskCompletionSource</see> is provided for this purpose. It enables
     /// the creation of a task that can be handed out to consumers, and those consumers can use the members
@@ -60,13 +60,13 @@ namespace System.Threading.Tasks
         /// with the specified options.
         /// </summary>
         /// <remarks>
-        /// The <see cref="T:System.Threading.Tasks.Task{TResult}"/> created
+        /// The <see cref="System.Threading.Tasks.Task{TResult}"/> created
         /// by this instance and accessible through its <see cref="Task"/> property
         /// will be instantiated using the specified <paramref name="creationOptions"/>.
         /// </remarks>
         /// <param name="creationOptions">The options to use when creating the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> represent options invalid for use
         /// with a <see cref="TaskCompletionSource{TResult}"/>.
         /// </exception>
@@ -80,7 +80,7 @@ namespace System.Threading.Tasks
         /// with the specified state.
         /// </summary>
         /// <param name="state">The state to use as the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/>'s AsyncState.</param>
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/>'s AsyncState.</param>
         public TaskCompletionSource(object? state)
             : this(state, TaskCreationOptions.None)
         {
@@ -91,10 +91,10 @@ namespace System.Threading.Tasks
         /// the specified state and options.
         /// </summary>
         /// <param name="creationOptions">The options to use when creating the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/>.</param>
         /// <param name="state">The state to use as the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/>'s AsyncState.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/>'s AsyncState.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> represent options invalid for use
         /// with a <see cref="TaskCompletionSource{TResult}"/>.
         /// </exception>
@@ -105,12 +105,12 @@ namespace System.Threading.Tasks
 
 
         /// <summary>
-        /// Gets the <see cref="T:System.Threading.Tasks.Task{TResult}"/> created
+        /// Gets the <see cref="System.Threading.Tasks.Task{TResult}"/> created
         /// by this <see cref="TaskCompletionSource{TResult}"/>.
         /// </summary>
         /// <remarks>
         /// This property enables a consumer access to the <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/> that is controlled by this instance.
+        /// cref="System.Threading.Tasks.Task{TResult}"/> that is controlled by this instance.
         /// The <see cref="SetResult"/>, <see cref="SetException(System.Exception)"/>,
         /// <see cref="SetException(System.Collections.Generic.IEnumerable{System.Exception})"/>, and <see cref="SetCanceled"/>
         /// methods (and their "Try" variants) on this instance all result in the relevant state
@@ -130,22 +130,22 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Attempts to transition the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>
         /// state.
         /// </summary>
         /// <param name="exception">The exception to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>This operation will return false if the
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </remarks>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="exception"/> argument is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(Exception exception)
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
@@ -157,24 +157,24 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Attempts to transition the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>
         /// state.
         /// </summary>
         /// <param name="exceptions">The collection of exceptions to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>This operation will return false if the
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </remarks>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="exceptions"/> argument is null.</exception>
-        /// <exception cref="T:System.ArgumentException">There are one or more null elements in <paramref name="exceptions"/>.</exception>
-        /// <exception cref="T:System.ArgumentException">The <paramref name="exceptions"/> collection is empty.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="exceptions"/> argument is null.</exception>
+        /// <exception cref="System.ArgumentException">There are one or more null elements in <paramref name="exceptions"/>.</exception>
+        /// <exception cref="System.ArgumentException">The <paramref name="exceptions"/> collection is empty.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(IEnumerable<Exception> exceptions)
         {
             if (exceptions == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exceptions);
@@ -197,21 +197,21 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Transitions the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>
         /// state.
         /// </summary>
         /// <param name="exception">The exception to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="exception"/> argument is null.</exception>
-        /// <exception cref="T:System.InvalidOperationException">
-        /// The underlying <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null.</exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetException(Exception exception)
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
@@ -224,22 +224,22 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Transitions the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>
         /// state.
         /// </summary>
         /// <param name="exceptions">The collection of exceptions to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
-        /// <exception cref="T:System.ArgumentNullException">The <paramref name="exceptions"/> argument is null.</exception>
-        /// <exception cref="T:System.ArgumentException">There are one or more null elements in <paramref name="exceptions"/>.</exception>
-        /// <exception cref="T:System.InvalidOperationException">
-        /// The underlying <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="exceptions"/> argument is null.</exception>
+        /// <exception cref="System.ArgumentException">There are one or more null elements in <paramref name="exceptions"/>.</exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetException(IEnumerable<Exception> exceptions)
         {
             if (!TrySetException(exceptions))
@@ -251,21 +251,21 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Attempts to transition the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>
         /// state.
         /// </summary>
         /// <param name="result">The result value to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>This operation will return false if the
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </remarks>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetResult(TResult result)
         {
             bool rval = _task.TrySetResult(result);
@@ -275,20 +275,20 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Transitions the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>
         /// state.
         /// </summary>
         /// <param name="result">The result value to bind to this <see
-        /// cref="T:System.Threading.Tasks.Task{TResult}"/>.</param>
-        /// <exception cref="T:System.InvalidOperationException">
-        /// The underlying <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <exception cref="System.InvalidOperationException">
+        /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetResult(TResult result)
         {
             if (!TrySetResult(result))
@@ -297,19 +297,19 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Attempts to transition the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>
         /// state.
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>This operation will return false if the
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </remarks>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetCanceled()
         {
             return TrySetCanceled(default);
@@ -325,18 +325,18 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Transitions the underlying
-        /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>
         /// state.
         /// </summary>
-        /// <exception cref="T:System.InvalidOperationException">
-        /// The underlying <see cref="T:System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// <exception cref="System.InvalidOperationException">
+        /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
         /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
         /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
         /// </exception>
-        /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetCanceled()
         {
             if (!TrySetCanceled())

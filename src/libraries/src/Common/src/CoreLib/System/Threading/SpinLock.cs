@@ -101,7 +101,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:System.Threading.SpinLock"/>
+        /// Initializes a new instance of the <see cref="System.Threading.SpinLock"/>
         /// structure with the option to track thread IDs to improve debugging.
         /// </summary>
         /// <remarks>
@@ -120,7 +120,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:System.Threading.SpinLock"/>
+        /// Initializes a new instance of the <see cref="System.Threading.SpinLock"/>
         /// structure with the option to track thread IDs to improve debugging.
         /// </summary>
         /// <remarks>
@@ -140,10 +140,10 @@ namespace System.Threading
         /// </remarks>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="T:System.Threading.LockRecursionException">
+        /// <exception cref="System.Threading.LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling Enter.
         /// </exception>
         public void Enter(ref bool lockTaken)
@@ -168,10 +168,10 @@ namespace System.Threading
         /// </remarks>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="T:System.Threading.LockRecursionException">
+        /// <exception cref="System.Threading.LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
         public void TryEnter(ref bool lockTaken)
@@ -210,13 +210,13 @@ namespace System.Threading
         /// </param>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="T:System.Threading.LockRecursionException">
+        /// <exception cref="System.Threading.LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="System.Int32.MaxValue"/> milliseconds.
         /// </exception>
@@ -248,13 +248,13 @@ namespace System.Threading
         /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="T:System.Threading.LockRecursionException">
+        /// <exception cref="System.Threading.LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is
         /// a negative number other than -1, which represents an infinite time-out.</exception>
         public void TryEnter(int millisecondsTimeout, ref bool lockTaken)
         {
@@ -564,7 +564,7 @@ namespace System.Threading
         /// by the current thread. It is invalid to use this property when the lock was initialized to not
         /// track thread ownership.
         /// </remarks>
-        /// <exception cref="T:System.InvalidOperationException">
+        /// <exception cref="System.InvalidOperationException">
         /// Thread ownership tracking is disabled.
         /// </exception>
         public bool IsHeldByCurrentThread

@@ -5,7 +5,7 @@
 namespace System.Buffers
 {
     /// <summary>
-    /// Provides a resource pool that enables reusing instances of type <see cref="T:T[]"/>.
+    /// Provides a resource pool that enables reusing instances of arrays.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -66,7 +66,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="minimumLength">The minimum length of the array needed.</param>
         /// <returns>
-        /// An <see cref="T:T[]"/> that is at least <paramref name="minimumLength"/> in length.
+        /// An array that is at least <paramref name="minimumLength"/> in length.
         /// </returns>
         /// <remarks>
         /// This buffer is loaned to the caller and should be returned to the same pool via
