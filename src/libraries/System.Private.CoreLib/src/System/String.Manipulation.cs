@@ -1499,7 +1499,6 @@ namespace System
         /// </summary>
         /// <param name="separators"><see cref="ReadOnlySpan{T}"/> of separator chars</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        /// <returns></returns>
         private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             char sep0, sep1, sep2;
@@ -1582,7 +1581,6 @@ namespace System
         /// </summary>
         /// <param name="separator">separator string</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        /// <returns></returns>
         private void MakeSeparatorList(string separator, ref ValueListBuilder<int> sepListBuilder)
         {
             Debug.Assert(!IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
