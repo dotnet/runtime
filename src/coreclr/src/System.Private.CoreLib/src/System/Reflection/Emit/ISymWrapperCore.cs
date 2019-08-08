@@ -525,14 +525,13 @@ namespace System.Reflection.Emit
         }
 
         private delegate void DRelease(IntPtr punk);         // Delegate type for P/Invoking to coreclr.dll and doing an IUnknown::Release()
-        private static DRelease m_Release;
+        private static DRelease m_Release = (DRelease)Marshal.GetDelegateForFunctionPointer(nGetDReleaseTarget(), typeof(DRelease));
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr nGetDReleaseTarget();     // FCall gets us the native DRelease target (so we don't need named dllexport from coreclr.dll)
 
         static PunkSafeHandle()
         {
-            m_Release = (DRelease)(Marshal.GetDelegateForFunctionPointer(nGetDReleaseTarget(), typeof(DRelease)));
             m_Release((IntPtr)0); // make one call to make sure the delegate is fully prepped before we're in the critical finalizer situation.
         }
     } // PunkSafeHandle
