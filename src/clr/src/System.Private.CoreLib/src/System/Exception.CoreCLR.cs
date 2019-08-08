@@ -351,19 +351,18 @@ namespace System
         private object? _watsonBuckets;
         private string? _stackTraceString; //Needed for serialization.
         private string? _remoteStackTraceString;
-#pragma warning disable 414  // Field is not used from managed.
+#pragma warning disable 414  // Fields are not used from managed.
+#pragma warning disable CA1823
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
         // unless a System.Resolver object roots it.
         private object? _dynamicMethods;
-#pragma warning restore 414
-
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private IntPtr _xptrs;             // Internal EE stuff
-#pragma warning disable 414  // Field is not used from managed.
         private int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+#pragma warning restore CA1823
 #pragma warning restore 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory

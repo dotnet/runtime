@@ -334,6 +334,7 @@ namespace System.Reflection
 
         #region Data Members
 #pragma warning disable 169
+#pragma warning disable CA1823
         // If you add any data members, you need to update the native declaration ReflectModuleBaseObject.
         private RuntimeType m_runtimeType;
         private RuntimeAssembly m_runtimeAssembly;
@@ -341,6 +342,7 @@ namespace System.Reflection
         private IntPtr m_pData;
         private IntPtr m_pGlobals;
         private IntPtr m_pFields;
+#pragma warning restore CA1823
 #pragma warning restore 169
         #endregion
 

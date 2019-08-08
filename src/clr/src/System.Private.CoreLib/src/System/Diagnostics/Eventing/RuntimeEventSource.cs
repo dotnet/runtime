@@ -33,8 +33,6 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _timerCounter;
 
-        private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
-
         public static void Initialize()
         {
             s_RuntimeEventSource = new RuntimeEventSource();

@@ -2353,7 +2353,9 @@ namespace System
 
         #region Private Data Members
 
+#pragma warning disable CA1823
         private object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
+#pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
 
@@ -3376,9 +3378,6 @@ namespace System
         private const BindingFlags BinderGetSetProperty = BindingFlags.GetProperty | BindingFlags.SetProperty;
         private const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
         private const BindingFlags BinderNonFieldGetSet = (BindingFlags)0x00FFF300;
-        private const BindingFlags ClassicBindingMask =
-            BindingFlags.InvokeMethod | BindingFlags.GetProperty | BindingFlags.SetProperty |
-            BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty;
         private static RuntimeType s_typedRef = (RuntimeType)typeof(TypedReference);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -3534,6 +3533,10 @@ namespace System
 #if FEATURE_COMINTEROP
             if (target != null && target.GetType().IsCOMObject)
             {
+                const BindingFlags ClassicBindingMask =
+                    BindingFlags.InvokeMethod | BindingFlags.GetProperty | BindingFlags.SetProperty |
+                    BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty;
+
                 if ((bindingFlags & ClassicBindingMask) == 0)
                     throw new ArgumentException(SR.Arg_COMAccess, nameof(bindingFlags));
 

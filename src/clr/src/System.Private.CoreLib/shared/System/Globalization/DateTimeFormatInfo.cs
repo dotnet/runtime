@@ -1306,10 +1306,6 @@ namespace System.Globalization
             }
         }
 
-        // Whitespaces that we allow in the month names.
-        // U+00a0 is non-breaking space.
-        private static readonly char[] s_monthSpaces = { ' ', '\u00a0' };
-
         internal bool HasSpacesInMonthNames =>(FormatFlags & DateTimeFormatFlags.UseSpacesInMonthNames) != 0;
 
         internal bool HasSpacesInDayNames => (FormatFlags & DateTimeFormatFlags.UseSpacesInDayNames) != 0;
