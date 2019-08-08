@@ -252,6 +252,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
         // If the application is performing a read, assume the child process won't use the terminal.
         if (g_reading)
         {
+            pthread_mutex_unlock(&g_lock);
             return;
         }
 
