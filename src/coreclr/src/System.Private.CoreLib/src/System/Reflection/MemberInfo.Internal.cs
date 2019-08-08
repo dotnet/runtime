@@ -14,7 +14,7 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(other));
 
             // Ensure that "other" is a runtime-implemented MemberInfo. Do this check before calling any methods on it!
-            if (!(other is TOther)) 
+            if (!(other is TOther))
                 return false;
 
             if (MetadataToken != other.MetadataToken)

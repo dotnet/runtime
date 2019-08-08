@@ -86,8 +86,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 target = proxy.GetTarget();
             }
 
-            // You can get PropertyInfo for properties with a private getter/public setter (or vice versa) 
-            // even if you pass BindingFlags.Public only. And in this case, passing binding flags to 
+            // You can get PropertyInfo for properties with a private getter/public setter (or vice versa)
+            // even if you pass BindingFlags.Public only. And in this case, passing binding flags to
             // GetValue/SetValue won't work as the default binder ignores those values
             // Use GetGetMethod/GetSetMethod instead
 

@@ -13,7 +13,7 @@ namespace System.Reflection
     [Flags()]
     internal enum MdSigCallingConvention : byte
     {
-        CallConvMask = 0x0f,  // Calling convention is bottom 4 bits 
+        CallConvMask = 0x0f,  // Calling convention is bottom 4 bits
 
         Default = 0x00,
         C = 0x01,
@@ -28,7 +28,7 @@ namespace System.Reflection
         GenericInst = 0x0a,  // generic method instantiation
 
         Generic = 0x10,  // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
-        HasThis = 0x20,  // Top bit indicates a 'this' parameter    
+        HasThis = 0x20,  // Top bit indicates a 'this' parameter
         ExplicitThis = 0x40,  // This parameter is explicitly in the signature
     }
 
@@ -593,5 +593,3 @@ namespace System.Reflection
         }
     }
 }
-
-

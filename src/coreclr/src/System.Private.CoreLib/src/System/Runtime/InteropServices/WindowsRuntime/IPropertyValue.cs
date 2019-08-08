@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     internal struct Point
     {
         // float X;
-        // float Y;        
+        // float Y;
     }
 
     // Specify size directly instead of fields to avoid warnings
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     internal struct Size
     {
         // float Width;
-        // float Height;   
+        // float Height;
     }
 
     // Specify size directly instead of fields to avoid warnings
@@ -120,6 +120,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // float X;
         // float Y;
         // float Width;
-        // float Height;        
+        // float Height;
     }
 }

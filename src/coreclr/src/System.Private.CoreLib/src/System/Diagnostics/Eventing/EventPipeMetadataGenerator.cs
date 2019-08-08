@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
                 foreach (var parameter in parameters)
                 {
                     int pMetadataLength = parameter.GetMetadataLength();
-                    // The call above may return -1 which means we failed to get the metadata length. 
+                    // The call above may return -1 which means we failed to get the metadata length.
                     // We then return a default metadata blob (with parameterCount of 0) to prevent it from generating malformed metadata.
                     if (pMetadataLength < 0)
                     {
@@ -225,7 +225,7 @@ namespace System.Diagnostics.Tracing
 
                 // Top-level structs don't have a property name, but for simplicity we write a NULL-char to represent the name.
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, '\0');
-               
+
             }
             else
             {
@@ -339,7 +339,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // For simplicity when writing a reader, we write a NULL char
-                // after the metadata for a top-level struct (for its name) so that 
+                // after the metadata for a top-level struct (for its name) so that
                 // readers don't have do special case the outer-most struct.
                 ret += sizeof(char);
             }

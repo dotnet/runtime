@@ -21,7 +21,7 @@ namespace System.Threading
 
         internal ThreadHelper(Delegate start)
         {
-            _start = start; 
+            _start = start;
         }
 
         internal void SetExecutionContextHelper(ExecutionContext? ec)
@@ -139,7 +139,7 @@ namespace System.Threading
         private int _priority; // INT32
 
         // The following field is required for interop with the VS Debugger
-        // Prior to making any changes to this field, please reach out to the VS Debugger 
+        // Prior to making any changes to this field, please reach out to the VS Debugger
         // team to make sure that your changes are not going to prevent the debugger
         // from working.
         private int _managedThreadId; // INT32
@@ -156,7 +156,7 @@ namespace System.Threading
         private void Create(ParameterizedThreadStart start) =>
             SetStartHelper((Delegate)start, 0);
 
-        private void Create(ParameterizedThreadStart start, int maxStackSize) => 
+        private void Create(ParameterizedThreadStart start, int maxStackSize) =>
             SetStartHelper((Delegate)start, maxStackSize);
 
         public extern int ManagedThreadId
@@ -489,7 +489,7 @@ namespace System.Threading
 
         // The upper bits of t_currentProcessorIdCache are the currentProcessorId. The lower bits of
         // the t_currentProcessorIdCache are counting down to get it periodically refreshed.
-        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar 
+        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar
         // actions that are likely to result in changing the executing core
         [ThreadStatic]
         private static int t_currentProcessorIdCache;

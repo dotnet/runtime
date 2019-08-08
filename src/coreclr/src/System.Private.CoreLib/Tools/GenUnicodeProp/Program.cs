@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -26,7 +26,7 @@ namespace GenUnicodeProp
             var numericIndexTable = new DataTable();
             // Create a flat table for Unicode category and BiDi category
             var categoriesValueTable = new FlatDataTable(defaultCategoryValues, GetCategoriesValueBytes);
-            // Create a flat table. 
+            // Create a flat table.
             // GetNumericValueBytes() is the callback used to generate the bytes of each item.
             var numericValueTable = new FlatDataTable("-1", GetNumericValueBytes);
             // Create a flat table for digit values
@@ -120,25 +120,25 @@ namespace GenUnicodeProp
         /// </summary>
         private static readonly Dictionary<string, byte> BiDiCategory = new Dictionary<string, byte>
         {
-            ["L"] = 0,    // Left-to-Right 
-            ["LRE"] = 1,  // Left-to-Right Embedding 
-            ["LRO"] = 2,  // Left-to-Right Override 
-            ["R"] = 3,    // Right-to-Left 
-            ["AL"] = 4,   // Right-to-Left Arabic 
-            ["RLE"] = 5,  // Right-to-Left Embedding 
-            ["RLO"] = 6,  // Right-to-Left Override 
-            ["PDF"] = 7,  // Pop Directional Format 
-            ["EN"] = 8,   // European Number 
-            ["ES"] = 9,   // European Number Separator 
-            ["ET"] = 10,  // European Number Terminator 
-            ["AN"] = 11,  // Arabic Number 
-            ["CS"] = 12,  // Common Number Separator 
-            ["NSM"] = 13, // Non-Spacing Mark 
-            ["BN"] = 14,  // Boundary Neutral 
-            ["B"] = 15,   // Paragraph Separator 
-            ["S"] = 16,   // Segment Separator 
-            ["WS"] = 17,  // Whitespace 
-            ["ON"] = 18,  // Other Neutrals 
+            ["L"] = 0,    // Left-to-Right
+            ["LRE"] = 1,  // Left-to-Right Embedding
+            ["LRO"] = 2,  // Left-to-Right Override
+            ["R"] = 3,    // Right-to-Left
+            ["AL"] = 4,   // Right-to-Left Arabic
+            ["RLE"] = 5,  // Right-to-Left Embedding
+            ["RLO"] = 6,  // Right-to-Left Override
+            ["PDF"] = 7,  // Pop Directional Format
+            ["EN"] = 8,   // European Number
+            ["ES"] = 9,   // European Number Separator
+            ["ET"] = 10,  // European Number Terminator
+            ["AN"] = 11,  // Arabic Number
+            ["CS"] = 12,  // Common Number Separator
+            ["NSM"] = 13, // Non-Spacing Mark
+            ["BN"] = 14,  // Boundary Neutral
+            ["B"] = 15,   // Paragraph Separator
+            ["S"] = 16,   // Segment Separator
+            ["WS"] = 17,  // Whitespace
+            ["ON"] = 18,  // Other Neutrals
             ["LRI"] = 19, // LeftToRightIsolate
             ["RLI"] = 20, // RightToLeftIsolate
             ["FSI"] = 21, // FirstStrongIsolate
@@ -191,7 +191,7 @@ namespace GenUnicodeProp
             // 0	Code value
             // 1	Character name
             // 2	General Category
-            // 	
+            //
             // 3	Canonical Combining Classes
             // 4	Bidirectional Category
             // 5	Character Decomposition Mapping

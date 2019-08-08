@@ -10,7 +10,7 @@ namespace System.Text
     {
         private int GetReplaceBufferCapacity(int requiredCapacity)
         {
-            // This function assumes that required capacity will be less 
+            // This function assumes that required capacity will be less
             // than the max capacity of the StringBuilder
             Diagnostics.Debug.Assert(requiredCapacity <= m_MaxCapacity);
 
@@ -70,12 +70,12 @@ namespace System.Text
 
             fixed (char* pChunkChars = m_ChunkChars)
             {
-                // The incoming string buffer is supposed to have been populated by the 
+                // The incoming string buffer is supposed to have been populated by the
                 // P/Invoke-called native function but there's no way to know if that really
                 // happened, the native function might populate the buffer only in certain
                 // circumstances (e.g. only if the function succeeds).
                 //
-                // As such, the buffer might contain bogus characters that cannot be converted 
+                // As such, the buffer might contain bogus characters that cannot be converted
                 // to Unicode and in that case conversion should not result in exceptions that
                 // the managed caller does not expect. Instead, the caller is expected to know
                 // when the resulting string is not valid and not use it.

@@ -40,7 +40,7 @@ namespace System.Reflection
             int cParamDefs = 0;
 
             // Not all methods have tokens. Arrays, pointers and byRef types do not have tokens as they
-            // are generated on the fly by the runtime. 
+            // are generated on the fly by the runtime.
             if (!MdToken.IsNullToken(tkMethodDef))
             {
                 MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(RuntimeMethodHandle.GetDeclaringType(methodHandle));
@@ -50,7 +50,7 @@ namespace System.Reflection
 
                 cParamDefs = tkParamDefs.Length;
 
-                // Not all parameters have tokens. Parameters may have no token 
+                // Not all parameters have tokens. Parameters may have no token
                 // if they have no name and no attributes.
                 if (cParamDefs > sigArgCount + 1 /* return type */)
                     throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
@@ -163,7 +163,7 @@ namespace System.Reflection
             // Change ownership
             MemberImpl = member;
 
-            // The original owner should always be a method, because this method is only used to 
+            // The original owner should always be a method, because this method is only used to
             // change the owner from a method to a property.
             m_originalMember = accessor.MemberImpl as MethodBase;
             Debug.Assert(m_originalMember != null);
@@ -312,10 +312,10 @@ namespace System.Reflection
 
             object? defaultValue = null;
 
-            // Why check the parameter type only for DateTime and only for the ctor arguments? 
+            // Why check the parameter type only for DateTime and only for the ctor arguments?
             // No check on the parameter type is done for named args and for Decimal.
 
-            // We should move this after MdToken.IsNullToken(m_tkParamDef) and combine it 
+            // We should move this after MdToken.IsNullToken(m_tkParamDef) and combine it
             // with the other custom attribute logic. But will that be a breaking change?
             // For a DateTime parameter on which both an md constant and a ca constant are set,
             // which one should win?

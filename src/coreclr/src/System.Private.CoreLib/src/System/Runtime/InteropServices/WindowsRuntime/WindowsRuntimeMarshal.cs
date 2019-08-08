@@ -1283,10 +1283,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object GetUniqueObjectForIUnknownWithoutUnboxing(IntPtr unknown);
-        
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InitializeWrapper(object o, ref IntPtr pUnk);
-        
+
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
         /// up an IErrorInfo for the exception.
@@ -1296,7 +1296,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetHRForException(Exception e);
 
-        
+
 #if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InitializeManagedWinRTFactoryObject(object o, RuntimeType runtimeClassType);

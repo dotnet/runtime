@@ -67,7 +67,7 @@ namespace System.Reflection
 
                 string typeName = t.FormatTypeName();
 
-                // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
+                // Legacy: Why use "ByRef" for by ref parameters? What language is this?
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
                 // Why don't we just use "&"?
                 if (t.IsByRef)
@@ -104,7 +104,7 @@ namespace System.Reflection
         internal object[] CheckArguments(object[] parameters, Binder? binder,
             BindingFlags invokeAttr, CultureInfo? culture, Signature sig)
         {
-            // copy the arguments in a different array so we detach from any user changes 
+            // copy the arguments in a different array so we detach from any user changes
             object[] copyOfParameters = new object[parameters.Length];
 
             ParameterInfo[] p = null!;

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// For each dynamic assembly there will be two AssemblyBuilder objects: the "internal" 
+// For each dynamic assembly there will be two AssemblyBuilder objects: the "internal"
 // AssemblyBuilder object and the "external" AssemblyBuilder object.
-//  1.  The "internal" object is the real assembly object that the VM creates and knows about. However, 
-//      you can perform RefEmit operations on it only if you have its granted permission. From the AppDomain 
+//  1.  The "internal" object is the real assembly object that the VM creates and knows about. However,
+//      you can perform RefEmit operations on it only if you have its granted permission. From the AppDomain
 //      and other "internal" objects like the "internal" ModuleBuilders and runtime types, you can only
 //      get the "internal" objects. This is to prevent low-trust code from getting a hold of the dynamic
-//      AssemblyBuilder/ModuleBuilder/TypeBuilder/MethodBuilder/etc other people have created by simply 
+//      AssemblyBuilder/ModuleBuilder/TypeBuilder/MethodBuilder/etc other people have created by simply
 //      enumerating the AppDomain and inject code in it.
 //  2.  The "external" object is merely an wrapper of the "internal" object and all operations on it
 //      are directed to the internal object. This is the one you get by calling DefineDynamicAssembly
@@ -30,21 +30,21 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    // When the user calls AppDomain.DefineDynamicAssembly the loader creates a new InternalAssemblyBuilder. 
+    // When the user calls AppDomain.DefineDynamicAssembly the loader creates a new InternalAssemblyBuilder.
     // This InternalAssemblyBuilder can be retrieved via a call to Assembly.GetAssemblies() by untrusted code.
     // In the past, when InternalAssemblyBuilder was AssemblyBuilder, the untrusted user could down cast the
-    // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which 
+    // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which
     // originally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
     // because the Assembly returned via AssemblyGetAssemblies() will be an InternalAssemblyBuilder.
 
-    // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder. 
-    // There is a 1-1 relationship between InternalAssemblyBuilder and AssemblyBuilder. 
+    // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder.
+    // There is a 1-1 relationship between InternalAssemblyBuilder and AssemblyBuilder.
     // AssemblyBuilder is composed of its InternalAssemblyBuilder.
-    // The AssemblyBuilder data members (e.g. m_foo) were changed to properties which then delegate 
-    // the access to the composed InternalAssemblyBuilder. This way, AssemblyBuilder simply wraps 
-    // InternalAssemblyBuilder and still operates on InternalAssemblyBuilder members. 
+    // The AssemblyBuilder data members (e.g. m_foo) were changed to properties which then delegate
+    // the access to the composed InternalAssemblyBuilder. This way, AssemblyBuilder simply wraps
+    // InternalAssemblyBuilder and still operates on InternalAssemblyBuilder members.
     // This also makes the change transparent to the loader. This is good because most of the complexity
-    // of Assembly building is in the loader code so not touching that code reduces the chance of 
+    // of Assembly building is in the loader code so not touching that code reduces the chance of
     // introducing new bugs.
     internal sealed class InternalAssemblyBuilder : RuntimeAssembly
     {
@@ -119,7 +119,7 @@ namespace System.Reflection.Emit
 
         #endregion
     }
-    
+
     public sealed class AssemblyBuilder : Assembly
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name, access, ref stackMark, null);
         }
-        
+
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
@@ -284,7 +284,7 @@ namespace System.Reflection.Emit
         #region DefineDynamicModule
 
         /// <summary>
-        /// Defines a named dynamic module. It is an error to define multiple 
+        /// Defines a named dynamic module. It is an error to define multiple
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
@@ -521,13 +521,13 @@ namespace System.Reflection.Emit
         {
             return InternalAssembly.GetLoadedModules(getResourceModules);
         }
-        
+
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             return InternalAssembly.GetSatelliteAssembly(culture, null);
         }
 
-        /// <sumary> 
+        /// <sumary>
         /// Useful for binding to a very specific version of a satellite assembly
         /// </sumary>
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
@@ -540,7 +540,7 @@ namespace System.Reflection.Emit
         public override bool IsCollectible => InternalAssembly.IsCollectible;
 
         #endregion
-        
+
         /// <param name="name">The name of module for the look up.</param>
         /// <returns>Dynamic module with the specified name.</returns>
         public ModuleBuilder? GetDynamicModule(string name)
@@ -604,7 +604,7 @@ namespace System.Reflection.Emit
                 false,
                 typeof(DebuggableAttribute) == con.DeclaringType);
         }
-        
+
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>

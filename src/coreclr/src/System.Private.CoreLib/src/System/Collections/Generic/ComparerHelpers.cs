@@ -52,7 +52,7 @@ namespace System.Collections.Generic
             {
                 result = TryCreateEnumComparer(runtimeType);
             }
-            
+
             return result ?? CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ObjectComparer<object>), runtimeType);
         }
 
@@ -64,7 +64,7 @@ namespace System.Collections.Generic
         {
             Debug.Assert(nullableType != null);
             Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
-            
+
             var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
 
             if (typeof(IComparable<>).MakeGenericType(embeddedType).IsAssignableFrom(embeddedType))
@@ -88,7 +88,7 @@ namespace System.Collections.Generic
             // ends up doing this anyway, we end up avoiding an unnecessary P/Invoke
             // and virtual method call.
             TypeCode underlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(enumType));
-            
+
             // Depending on the enum type, we need to special case the comparers so that we avoid boxing.
             // Specialize differently for signed/unsigned types so we avoid problems with large numbers.
             switch (underlyingTypeCode)
@@ -103,7 +103,7 @@ namespace System.Collections.Generic
                 case TypeCode.UInt64:
                     return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumComparer<>), enumType);
             }
-            
+
             return null;
         }
 
@@ -145,7 +145,7 @@ namespace System.Collections.Generic
             {
                 result = TryCreateEnumEqualityComparer(runtimeType);
             }
-            
+
             return result ?? CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ObjectEqualityComparer<object>), runtimeType);
         }
 
@@ -164,7 +164,7 @@ namespace System.Collections.Generic
             {
                 return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
             }
-            
+
             return null;
         }
 
@@ -195,7 +195,7 @@ namespace System.Collections.Generic
                 case TypeCode.UInt16:
                     return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<>), enumType);
             }
-            
+
             return null;
         }
     }

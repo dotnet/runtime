@@ -70,7 +70,7 @@ namespace System.StubHelpers
                 // + 1 for the null character from the user.  + 1 for the null character we put in.
                 nb = checked((strManaged.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1);
 
-                // Use the pre-allocated buffer (allocated by localloc IL instruction) if not NULL, 
+                // Use the pre-allocated buffer (allocated by localloc IL instruction) if not NULL,
                 // otherwise fallback to AllocCoTaskMem
                 if (pbNativeBuffer == null)
                 {
@@ -130,7 +130,7 @@ namespace System.StubHelpers
             byte* pbNativeBuffer = (byte*)pNativeBuffer;
 
             // If we are marshaling into a stack buffer allocated by the ILStub
-            // we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.   
+            // we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.
             // else we will allocate the precise native heap memory.
             if (pbNativeBuffer != null)
             {
@@ -138,7 +138,7 @@ namespace System.StubHelpers
                 nb = (strManaged.Length + 1) * MAX_UTF8_CHAR_SIZE;
 
                 // nb is the actual number of bytes written by Encoding.GetBytes.
-                // use nb to de-limit the string since we are allocating more than 
+                // use nb to de-limit the string since we are allocating more than
                 // required on stack
                 nb = strManaged.GetBytesFromEncoding(pbNativeBuffer, nb, Encoding.UTF8);
             }
@@ -182,10 +182,10 @@ namespace System.StubHelpers
                 return IntPtr.Zero;
             }
 
-            // Convert to string first  
+            // Convert to string first
             string strManaged = sb.ToString();
 
-            // Get byte count 
+            // Get byte count
             int nb = Encoding.UTF8.GetByteCount(strManaged);
 
             // EmitConvertSpaceCLRToNative allocates memory
@@ -480,7 +480,7 @@ namespace System.StubHelpers
             long managedUtcTicks = ManagedUtcTicksAtNativeZero + nativeTicks.UniversalTime;
             DateTimeOffset managedUtcDTO = new DateTimeOffset(managedUtcTicks, TimeSpan.Zero);
 
-            // Some Utc times cannot be represented in local time in certain timezones. E.g. 0001-01-01 12:00:00 AM cannot 
+            // Some Utc times cannot be represented in local time in certain timezones. E.g. 0001-01-01 12:00:00 AM cannot
             // be represented in any timezones with a negative offset from Utc. We throw an ArgumentException in that case.
             managedLocalDTO = managedUtcDTO.ToLocalTime(true);
         }
@@ -498,7 +498,7 @@ namespace System.StubHelpers
             if (!Environment.IsWinRTSupported)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             if (managed == null)
-                throw new ArgumentNullException(); // We don't have enough information to get the argument name 
+                throw new ArgumentNullException(); // We don't have enough information to get the argument name
 
             IntPtr hstring;
             int hrCreate = System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString(managed, managed.Length, &hstring);
@@ -518,7 +518,7 @@ namespace System.StubHelpers
             if (!Environment.IsWinRTSupported)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             if (managed == null)
-                throw new ArgumentNullException();  // We don't have enough information to get the argument name 
+                throw new ArgumentNullException();  // We don't have enough information to get the argument name
 
             // The string must also be pinned by the caller to ConvertToNativeReference, which also owns
             // the HSTRING_HEADER.
@@ -743,7 +743,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToNative_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome) 
+        internal static unsafe void ConvertContentsToNative_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -1470,7 +1470,7 @@ namespace System.StubHelpers
                 next = next.m_Next;
             }
         }
-        
+
         public static void AddToCleanupList(ref CleanupWorkListElement list, CleanupWorkListElement newElement)
         {
             if (list == null)

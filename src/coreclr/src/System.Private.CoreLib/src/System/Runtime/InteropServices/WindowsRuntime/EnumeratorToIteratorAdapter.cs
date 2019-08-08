@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not EnumerableToIterableAdapter objects. Rather, they are of type
     // IEnumerable<T>. No actual EnumerableToIterableAdapter object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" to "IEnumerable<T>". 
+    // see a lot of expressions that cast "this" to "IEnumerable<T>".
     internal sealed class EnumerableToIterableAdapter
     {
         private EnumerableToIterableAdapter()

@@ -7,7 +7,7 @@
 **
 **
 **
-** Purpose: Synchronizes access to a shared resource or region of code in a multi-threaded 
+** Purpose: Synchronizes access to a shared resource or region of code in a multi-threaded
 **             program.
 **
 **
@@ -40,7 +40,7 @@ namespace System.Threading
 
 
         // Use a ref bool instead of out to ensure that unverifiable code must
-        // initialize this value to something.  If we used out, the value 
+        // initialize this value to something.  If we used out, the value
         // could be uninitialized if we threw an exception in our prolog.
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
@@ -163,13 +163,13 @@ namespace System.Threading
         private static extern bool IsEnteredNative(object obj);
 
         /*========================================================================
-    ** Waits for notification from the object (via a Pulse/PulseAll). 
+    ** Waits for notification from the object (via a Pulse/PulseAll).
     ** timeout indicates how long to wait before the method returns.
-    ** This method acquires the monitor waithandle for the object 
-    ** If this thread holds the monitor lock for the object, it releases it. 
-    ** On exit from the method, it obtains the monitor lock back. 
-    ** If exitContext is true then the synchronization domain for the context 
-    ** (if in a synchronized context) is exited before the wait and reacquired 
+    ** This method acquires the monitor waithandle for the object
+    ** If this thread holds the monitor lock for the object, it releases it.
+    ** On exit from the method, it obtains the monitor lock back.
+    ** If exitContext is true then the synchronization domain for the context
+    ** (if in a synchronized context) is exited before the wait and reacquired
     **
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
@@ -204,7 +204,7 @@ namespace System.Threading
         }
 
         /*========================================================================
-        ** Sends a notification to a single waiting object. 
+        ** Sends a notification to a single waiting object.
         * Exceptions: SynchronizationLockException if this method is not called inside
         * a synchronized block of code.
         ========================================================================*/
@@ -221,7 +221,7 @@ namespace System.Threading
             ObjPulse(obj);
         }
         /*========================================================================
-        ** Sends a notification to all waiting objects. 
+        ** Sends a notification to all waiting objects.
         ========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void ObjPulseAll(object obj);

@@ -59,29 +59,29 @@ namespace System
             // Use the OA variant lib to convert primitive types.
             try
             {
-#if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Using OAVariantLib.ChangeType() to do the conversion");
-#endif      
+#endif
                 // Specify the LocalBool flag to have BOOL values converted to local language rather
                 // than 0 or -1.
                 object RetObj = OAVariantLib.ChangeType(myValue, type, OAVariantLib.LocalBool, cultureInfo).ToObject()!;
 
-#if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Object returned from ChangeType is of type: " + RetObj.GetType().Name);
 #endif
 
                 return RetObj;
             }
-#if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
             catch(NotSupportedException e)
 #else
             catch (NotSupportedException)
-#endif      
+#endif
             {
-#if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.Write("Exception thrown: ");
                 Console.WriteLine(e);
-#endif      
+#endif
                 throw new COMException(SR.Interop_COM_TypeMismatch, unchecked((int)0x80020005));
             }
         }

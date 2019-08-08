@@ -26,10 +26,10 @@ namespace System.Reflection.Emit
         internal static Type? FormCompoundType(string? format, Type baseType, int curIndex)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
-            // 
+            //
             // Example: [2..4]  - one dimension array with lower bound 2 and size of 3
             // Example: [3, 5, 6] - three dimension array with lower bound 3, 5, 6
-            // Example: [-3, ] [] - one dimensional array of two dimensional array (with lower bound -3 for 
+            // Example: [-3, ] [] - one dimensional array of two dimensional array (with lower bound -3 for
             //          the first dimension)
             // Example: []* - pointer to a one dimensional array
             // Example: *[] - one dimensional array. The element type is a pointer to the baseType
@@ -205,7 +205,7 @@ namespace System.Reflection.Emit
         internal TypeKind m_typeKind;
         internal Type m_baseType = null!;
         internal int m_cRank;        // count of dimension
-        // If LowerBound and UpperBound is equal, that means one element. 
+        // If LowerBound and UpperBound is equal, that means one element.
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[] m_iaLowerBound;
         internal int[] m_iaUpperBound; // count of dimension
@@ -553,20 +553,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

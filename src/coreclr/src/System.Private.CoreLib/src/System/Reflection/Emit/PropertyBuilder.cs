@@ -4,13 +4,13 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 **
 ** Propertybuilder is for client to define properties for a class
 **
-** 
+**
 ===========================================================*/
 
 using System.Runtime.CompilerServices;
@@ -18,13 +18,13 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    // 
+    //
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
-    // 
+    //
     public sealed class PropertyBuilder : PropertyInfo
     {
-        // Constructs a PropertyBuilder.  
+        // Constructs a PropertyBuilder.
         //
         internal PropertyBuilder(
             ModuleBuilder mod,            // the module containing this PropertyBuilder

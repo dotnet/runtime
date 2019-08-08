@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tracing
     {
         private static Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
         private static Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
-        
+
         public XplatEventLogger() {}
 
         private static bool initializedPersistentListener = false;
@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tracing
             sb.Append('{');
 
             // If the event has a message, send that as well as a pseudo-field
-            if (!string.IsNullOrEmpty(eventMessage)) 
+            if (!string.IsNullOrEmpty(eventMessage))
             {
                 sb.Append("\\\"EventSource_Message\\\":\\\"");
                 minimalJsonserializer(eventMessage, sb);
@@ -167,7 +167,7 @@ namespace System.Diagnostics.Tracing
 
             string? eventSourceFilter = eventSourceNameFilter.Value;
             if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
-            {   
+            {
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
         }

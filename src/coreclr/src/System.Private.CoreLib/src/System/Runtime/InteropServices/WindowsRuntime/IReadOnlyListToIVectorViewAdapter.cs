@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not IReadOnlyListToIVectorViewAdapter objects. Rather, they are of type
     // IReadOnlyList<T>. No actual IReadOnlyListToIVectorViewAdapter object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" to "IReadOnlyList<T>". 
+    // see a lot of expressions that cast "this" to "IReadOnlyList<T>".
     [DebuggerDisplay("Size = {Size}")]
     internal sealed class IReadOnlyListToIVectorViewAdapter
     {
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IReadOnlyList<T> _this = Unsafe.As<IReadOnlyList<T>>(this);
 
-            // REX spec says "calling GetMany with startIndex equal to the length of the vector 
+            // REX spec says "calling GetMany with startIndex equal to the length of the vector
             // (last valid index + 1) and any specified capacity will succeed and return zero actual
             // elements".
             if (startIndex == _this.Count)
