@@ -53,7 +53,7 @@ namespace System
             HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
-        internal TypeInitializationException(SerializationInfo info, StreamingContext context)
+        private TypeInitializationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             _typeName = info.GetString("TypeName");
