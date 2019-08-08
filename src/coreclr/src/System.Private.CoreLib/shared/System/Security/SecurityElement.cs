@@ -30,7 +30,6 @@ namespace System.Security
 
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
-        private const string Indent = "   ";
 
         private static readonly char[] s_tagIllegalCharacters = new char[] { ' ', '<', '>' };
         private static readonly char[] s_textIllegalCharacters = new char[] { '<', '>' };

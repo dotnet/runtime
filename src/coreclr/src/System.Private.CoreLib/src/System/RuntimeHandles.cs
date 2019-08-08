@@ -700,6 +700,7 @@ namespace System
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
 #pragma warning disable 414
+#pragma warning disable CA1823
         private object m_a = null!;
         private object m_b = null!;
         private object m_c = null!;
@@ -707,6 +708,7 @@ namespace System
         private object m_e = null!;
         private object m_f = null!;
         private object m_g = null!;
+#pragma warning restore CA1823
 #pragma warning restore 414
 
         public RuntimeMethodHandleInternal m_value;

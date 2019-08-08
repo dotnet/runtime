@@ -62,13 +62,6 @@ namespace System.Threading
         private const int NumWaitersState_MaxValue = (1 << 19) - 1; //512K-1
         // ----------- //
 
-#if DEBUG
-        private static int s_nextId; // The next id that will be given out.
-        private int m_id = Interlocked.Increment(ref s_nextId); // A unique id for debugging purposes only.
-        private long m_lastSetTime;
-        private long m_lastResetTime;
-#endif
-
         /// <summary>
         /// Gets the underlying <see cref="System.Threading.WaitHandle"/> object for this <see
         /// cref="ManualResetEventSlim"/>.
@@ -346,10 +339,6 @@ namespace System.Threading
                     }
                 }
             }
-
-#if DEBUG
-            m_lastSetTime = DateTime.UtcNow.Ticks;
-#endif
         }
 
         /// <summary>
@@ -377,10 +366,6 @@ namespace System.Threading
 
             // And finally set our state back to unsignaled.
             IsSet = false;
-
-#if DEBUG
-            m_lastResetTime = DateTime.UtcNow.Ticks;
-#endif
         }
 
         /// <summary>

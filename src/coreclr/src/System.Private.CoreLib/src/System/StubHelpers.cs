@@ -630,12 +630,14 @@ namespace System.StubHelpers
         // Needs to match exactly with MngdNativeArrayMarshaler in ilmarshalers.h
         internal struct MarshalerState
         {
+#pragma warning disable CA1823 // not used by managed code
             IntPtr m_pElementMT;
             IntPtr m_Array;
             int m_NativeDataValid;
             int m_BestFitMap;
             int m_ThrowOnUnmappableChar;
             short m_vt;
+#pragma warning restore CA1823
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

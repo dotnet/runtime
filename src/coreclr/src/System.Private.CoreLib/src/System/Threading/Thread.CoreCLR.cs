@@ -132,6 +132,7 @@ namespace System.Threading
         ** YOU MODIFY ThreadBaseObject in vm\object.h
         =========================================================================*/
 #pragma warning disable 169 // These fields are not used from managed.
+#pragma warning disable CA1823
         // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
         // fields on 64-bit platforms, where they will be sorted together.
 
@@ -143,6 +144,7 @@ namespace System.Threading
         // team to make sure that your changes are not going to prevent the debugger
         // from working.
         private int _managedThreadId; // INT32
+#pragma warning restore CA1823
 #pragma warning restore 169
 
         private Thread() { }

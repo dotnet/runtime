@@ -1151,15 +1151,8 @@ namespace System.IO
 
         // Windows API definitions, from winbase.h and others
 
-        private const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
-        private const int FILE_ATTRIBUTE_ENCRYPTED = 0x00004000;
-        private const int FILE_FLAG_OVERLAPPED = 0x40000000;
         internal const int GENERIC_READ = unchecked((int)0x80000000);
         private const int GENERIC_WRITE = 0x40000000;
-
-        private const int FILE_BEGIN = 0;
-        private const int FILE_CURRENT = 1;
-        private const int FILE_END = 2;
 
         // Error codes (not HRESULTS), from winerror.h
         internal const int ERROR_BROKEN_PIPE = 109;
