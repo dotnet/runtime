@@ -139,7 +139,7 @@ namespace System.Threading
 
         /// <summary>
         /// Determines whether the current <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the
-        /// specified <see cref="System.Object"/>.
+        /// specified <see cref="object"/>.
         /// </summary>
         /// <param name="obj">The other object to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="obj"/> are equal. False, otherwise.
@@ -151,7 +151,7 @@ namespace System.Threading
 
         /// <summary>
         /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
-        /// specified <see cref="System.Object"/>.
+        /// specified <see cref="object"/>.
         /// </summary>
         /// <param name="other">The other <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="other"/> are equal. False, otherwise.

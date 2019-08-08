@@ -71,7 +71,7 @@ namespace System
             ticks += TimeToTicks(time.systemTime.Hour, time.systemTime.Minute, time.systemTime.Second);
             ticks += time.systemTime.Milliseconds * TicksPerMillisecond;
             ticks += time.hundredNanoSecond;
-            return new DateTime( ((UInt64)(ticks)) | KindUtc);
+            return new DateTime( ((ulong)(ticks)) | KindUtc);
         }
 
         // FullSystemTime struct is the SYSTEMTIME struct with extra hundredNanoSecond field to store more precise time.

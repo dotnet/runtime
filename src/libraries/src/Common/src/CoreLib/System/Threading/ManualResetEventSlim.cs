@@ -429,7 +429,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
