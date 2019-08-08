@@ -6,8 +6,8 @@
 #include "../Native/StringMarshalingNative.h"
 
 using StringType = BSTR;
-using Tests = BStrMarshalingTests<TP_SysStringByteLen, char, CoreClrBStrAlloc>;
+using Tests = BStrMarshalingTests<TP_SysStringLen, WCHAR, CoreClrBStrAlloc>;
 
-#define FUNCTION_NAME CoreClrBStrAlloc(__func__, ARRAYSIZE(__func__) - 1)
+#define FUNCTION_NAME TP_SysAllocString(__FUNCTIONW__)
 
 #include "../Native/StringTestEntrypoints.inl"

@@ -1,10 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
-project (BSTRTestNative)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
-set(SOURCES BSTRTestNative.cpp)
+set(SOURCES BStrTestNative.cpp)
 
 # add the executable
-add_library (BSTRTestNative SHARED ${SOURCES})
+add_library (BStrTestNative SHARED ${SOURCES})
 
 if(WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
@@ -12,7 +11,7 @@ if(WIN32)
     )
 endif(WIN32)
 
-target_link_libraries(BSTRTestNative ${LINK_LIBRARIES_ADDITIONAL}) 
+target_link_libraries(BStrTestNative ${LINK_LIBRARIES_ADDITIONAL}) 
 
 # add the install targets
-install (TARGETS BSTRTestNative DESTINATION bin)
+install (TARGETS BStrTestNative DESTINATION bin)
