@@ -3109,6 +3109,21 @@ no_seq_points_found (MonoMethod *method, int offset)
 	printf ("Unable to find seq points for method '%s', offset 0x%x.\n", mono_method_full_name (method, TRUE), offset);
 }
 
+static int
+calc_il_offset (MonoDomain *domain, MonoMethod *method, int native_offset, gboolean is_top_frame)
+{
+	int ret = -1;
+	if (is_top_frame) {
+		SeqPoint sp;
+		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
+		if (mono_find_prev_seq_point_for_native_offset (domain, method, native_offset, NULL, &sp))
+			ret = sp.il_offset;
+	}
+	if (ret == -1)
+		ret = mono_debug_il_offset_from_address (method, domain, native_offset);
+	return ret;
+}
+
 typedef struct {
 	DebuggerTlsData *tls;
 	GSList *frames;
@@ -3121,7 +3136,6 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	ComputeFramesUserData *ud = (ComputeFramesUserData *)user_data;
 	StackFrame *frame;
 	MonoMethod *method, *actual_method, *api_method;
-	SeqPoint sp;
 	int flags = 0;
 
 	mono_loader_lock ();
@@ -3155,13 +3169,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	}
 
 	if (info->il_offset == -1) {
-		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
-		if (ud->frames == NULL) {
-			if (mono_find_prev_seq_point_for_native_offset (info->domain, method, info->native_offset, NULL, &sp))
-				info->il_offset = sp.il_offset;
-		}
-		if (info->il_offset == -1)
-			info->il_offset = mono_debug_il_offset_from_address (method, info->domain, info->native_offset);
+		info->il_offset = calc_il_offset (info->domain, method, info->native_offset, ud->frames == NULL);
 	}
 
 	DEBUG_PRINTF (1, "\tFrame: %s:[il=0x%x, native=0x%x] %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed);
@@ -3386,6 +3394,21 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	tls->frames = new_frames;
 	tls->frame_count = new_frame_count;
 	tls->frames_up_to_date = TRUE;
+
+	if (CHECK_PROTOCOL_VERSION (2, 52)) {
+		MonoJitTlsData *jit_data = thread->thread_info->jit_data;
+		gboolean has_interp_resume_state = FALSE;
+		MonoInterpFrameHandle interp_resume_frame = NULL;
+		gpointer interp_resume_ip = 0;
+		mini_get_interp_callbacks ()->get_resume_state (jit_data, &has_interp_resume_state, &interp_resume_frame, &interp_resume_ip);
+		if (has_interp_resume_state && tls->frame_count > 0) {
+			StackFrame *top_frame = tls->frames [0];
+			if (interp_resume_frame == top_frame->interp_frame) {
+				int native_offset = (int) ((uintptr_t) interp_resume_ip - (uintptr_t) top_frame->de.ji->code_start);
+				top_frame->il_offset = calc_il_offset (top_frame->de.domain, top_frame->de.method, native_offset, TRUE);
+			}
+		}
+	}
 }
 
 /*

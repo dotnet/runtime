@@ -6519,6 +6519,19 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	context->handler_ip = (guint16*) handler_ip;
 }
 
+static void
+interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_state, MonoInterpFrameHandle *interp_frame, gpointer *handler_ip)
+{
+	g_assert (jit_tls);
+	ThreadContext *context = (ThreadContext*)jit_tls->interp_context;
+	g_assert (context);
+	*has_resume_state = context->has_resume_state;
+	if (context->has_resume_state) {
+		*interp_frame = context->handler_frame;
+		*handler_ip = context->handler_ip;
+	}
+}
+
 /*
  * interp_run_finally:
  *
