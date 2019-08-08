@@ -1884,11 +1884,8 @@ namespace System.Threading.Tasks
         /// <summary>Gets the exception dispatch infos once the task has faulted.</summary>
         internal ReadOnlyCollection<ExceptionDispatchInfo> GetExceptionDispatchInfos()
         {
-            bool exceptionsAvailable = IsFaulted && ExceptionRecorded;
-            Debug.Assert(exceptionsAvailable, "Must only be used when the task has faulted with exceptions.");
-            return exceptionsAvailable ?
-                m_contingentProperties!.m_exceptionsHolder!.GetExceptionDispatchInfos() :
-                new ReadOnlyCollection<ExceptionDispatchInfo>(new ExceptionDispatchInfo[0]);
+            Debug.Assert(IsFaulted && ExceptionRecorded, "Must only be used when the task has faulted with exceptions.");
+            return m_contingentProperties!.m_exceptionsHolder!.GetExceptionDispatchInfos();
         }
 
         /// <summary>Gets the ExceptionDispatchInfo containing the OperationCanceledException for this task.</summary>
@@ -5930,7 +5927,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(tasks != null, "Expected a non-null tasks array");
             return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                new Task<TResult[]>(false, new TResult[0], TaskCreationOptions.None, default) :
+                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
                 new WhenAllPromise<TResult>(tasks);
         }
 
