@@ -22,7 +22,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_TARGETINVOCATION;
         }
 
-        internal TargetInvocationException(SerializationInfo info, StreamingContext context)
+        private TargetInvocationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }

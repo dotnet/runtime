@@ -28,7 +28,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_TARGETPARAMCOUNT;
         }
 
-        internal TargetParameterCountException(SerializationInfo info, StreamingContext context)
+        private TargetParameterCountException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
