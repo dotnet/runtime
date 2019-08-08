@@ -414,7 +414,7 @@ void CodeGen::genCodeForBBlist()
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)
             {
-                GenTreeStmt* ilOffset = node->AsStmt();
+                GenTreeILOffset* ilOffset = node->AsILOffset();
                 genEnsureCodeEmitted(currentILOffset);
                 currentILOffset = ilOffset->gtStmtILoffsx;
                 genIPmappingAdd(currentILOffset, firstMapping);

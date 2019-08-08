@@ -607,8 +607,8 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                                 // Then walk the statement list in reverse execution order
                                                 // until we get to the statement containing the null check.
                                                 // We only need to check the side effects at the root of each statement.
-                                                GenTree* curStmt = compCurStmt->gtPrev;
-                                                currentTree      = curStmt->gtStmt.gtStmtExpr;
+                                                GenTreeStmt* curStmt = compCurStmt->getPrevStmt();
+                                                currentTree          = curStmt->gtStmtExpr;
                                                 while (canRemoveNullCheck && (currentTree != defParent))
                                                 {
                                                     if ((nodesWalked++ > maxNodesWalked) ||
@@ -618,9 +618,9 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                                     }
                                                     else
                                                     {
-                                                        curStmt = curStmt->gtStmt.gtPrevStmt;
+                                                        curStmt = curStmt->getPrevStmt();
                                                         assert(curStmt != nullptr);
-                                                        currentTree = curStmt->gtStmt.gtStmtExpr;
+                                                        currentTree = curStmt->gtStmtExpr;
                                                     }
                                                 }
 
@@ -638,8 +638,7 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                                         additionNode->gtFlags & (GTF_EXCEPT | GTF_DONT_CSE);
 
                                                     // Re-morph the statement.
-                                                    fgMorphBlockStmt(compCurBB,
-                                                                     curStmt->AsStmt() DEBUGARG("optFoldNullCheck"));
+                                                    fgMorphBlockStmt(compCurBB, curStmt DEBUGARG("optFoldNullCheck"));
                                                 }
                                             }
                                         }
