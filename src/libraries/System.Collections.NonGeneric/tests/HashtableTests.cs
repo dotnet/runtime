@@ -442,7 +442,7 @@ namespace System.Collections.Tests
         [OuterLoop]
         public void AddRemove_LargeAmountNumbers()
         {
-            // Generate a random 100,000 array of ints as test data 
+            // Generate a random 100,000 array of ints as test data
             var inputData = new int[100000];
             var random = new Random(341553);
             for (int i = 0; i < inputData.Length; i++)
@@ -1019,7 +1019,7 @@ namespace System.Collections.Tests
     ///        (2) compare the hashcode, if equal, go to step 3. Otherwise end.
     ///        (3) compare the key, if equal, go to step 4. Otherwise end.
     ///        (4) return the value contained in the bucket.
-    ///     The problem is that after step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
+    ///     The problem is that after step 3 and before step 4. A writer can kick in a remove the old item and add a new one
     ///     in the same bucket. In order to make this happen easily, I created two long with same hashcode.
     /// </summary>
     public class Hashtable_ItemThreadSafetyTests

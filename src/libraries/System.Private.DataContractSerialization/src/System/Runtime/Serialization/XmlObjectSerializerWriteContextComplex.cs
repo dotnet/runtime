@@ -252,4 +252,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

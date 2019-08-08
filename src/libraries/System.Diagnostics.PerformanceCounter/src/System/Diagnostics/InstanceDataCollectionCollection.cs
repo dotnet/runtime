@@ -8,12 +8,12 @@ using System.Globalization;
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     The collection returned from  the <see cref='System.Diagnostics.PerformanceCounterCategory.ReadCategory'/> method.  
+    ///     The collection returned from  the <see cref='System.Diagnostics.PerformanceCounterCategory.ReadCategory'/> method.
     ///     that contains all the counter and instance data.
     ///     The collection contains an InstanceDataCollection object for each counter.  Each InstanceDataCollection
     ///     object contains the performance data for all counters for that instance.  In other words the data is
     ///     indexed by counter name and then by instance name.
-    /// </summary>    
+    /// </summary>
     public class InstanceDataCollectionCollection : DictionaryBase
     {
         [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.PerformanceCounterCategory.ReadCategory() to get an instance of this collection instead.  https://go.microsoft.com/fwlink/?linkid=14202")]

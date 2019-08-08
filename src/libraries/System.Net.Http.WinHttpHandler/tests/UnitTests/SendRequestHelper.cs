@@ -26,7 +26,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var invoker = new HttpMessageInvoker(handler, false);
             var request = new HttpRequestMessage(HttpMethod.Get, fakeServerEndpoint);
             Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
-            
+
             return task.GetAwaiter().GetResult();
         }
     }

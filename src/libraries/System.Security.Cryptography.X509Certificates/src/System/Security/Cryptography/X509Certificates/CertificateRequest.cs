@@ -218,27 +218,27 @@ namespace System.Security.Cryptography.X509Certificates
         ///   consisting of <c>-----BEGIN CERTIFICATE REQUEST-----</c>, a newline, the Base-64-encoded
         ///   representation of the request (by convention, linewrapped at 64 characters), a newline,
         ///   and <c>-----END CERTIFICATE REQUEST-----</c>.
-        /// 
+        ///
         ///   <code><![CDATA[
         ///     public static string PemEncodeSigningRequest(CertificateRequest request, PkcsSignatureGenerator generator)
         ///     {
         ///         byte[] pkcs10 = request.CreateSigningRequest(generator);
         ///         StringBuilder builder = new StringBuilder();
-        ///     
+        ///
         ///         builder.AppendLine("-----BEGIN CERTIFICATE REQUEST-----");
-        ///     
+        ///
         ///         string base64 = Convert.ToBase64String(pkcs10);
-        ///     
+        ///
         ///         int offset = 0;
         ///         const int LineLength = 64;
-        ///     
+        ///
         ///         while (offset < base64.Length)
         ///         {
         ///             int lineEnd = Math.Min(offset + LineLength, base64.Length);
         ///             builder.AppendLine(base64.Substring(offset, lineEnd - offset));
         ///             offset = lineEnd;
         ///         }
-        ///     
+        ///
         ///         builder.AppendLine("-----END CERTIFICATE REQUEST-----");
         ///         return builder.ToString();
         ///     }

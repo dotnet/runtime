@@ -38,7 +38,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, attribute, true };
             yield return new object[] { attribute, new ListBindableAttribute(BindableSupport.Yes), true };
             yield return new object[] { attribute, new ListBindableAttribute(BindableSupport.No), false };
-            
+
             yield return new object[] { attribute, new object(), false };
             yield return new object[] { attribute, null, false };
         }

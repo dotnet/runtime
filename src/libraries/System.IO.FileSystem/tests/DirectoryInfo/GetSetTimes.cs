@@ -21,13 +21,13 @@ namespace System.IO.Tests
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {
                 yield return TimeFunction.Create(
-                    ((testDir, time) => {testDir.CreationTime = time; }), 
-                    ((testDir) => testDir.CreationTime), 
+                    ((testDir, time) => {testDir.CreationTime = time; }),
+                    ((testDir) => testDir.CreationTime),
                     DateTimeKind.Local);
                 yield return TimeFunction.Create(
                     ((testDir, time) => {testDir.CreationTimeUtc = time; }),
                     ((testDir) => testDir.CreationTimeUtc),
-                    DateTimeKind.Unspecified); 
+                    DateTimeKind.Unspecified);
                 yield return TimeFunction.Create(
                      ((testDir, time) => { testDir.CreationTimeUtc = time; }),
                      ((testDir) => testDir.CreationTimeUtc),

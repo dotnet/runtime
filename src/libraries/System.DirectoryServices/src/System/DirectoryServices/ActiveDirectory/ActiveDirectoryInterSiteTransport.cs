@@ -178,7 +178,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // NTDSTRANSPORT_OPT_BRIDGES_REQUIRED (1 << 1 ) siteLink bridges are required
-                // That is to say, if this bit is set, it means that all site links are not bridged and user needs to create specific bridge 
+                // That is to say, if this bit is set, it means that all site links are not bridged and user needs to create specific bridge
                 if ((option & 0x2) != 0)
                     return false;
                 else
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         option = (int)_cachedEntry.Properties["options"][0];
 
                     // NTDSTRANSPORT_OPT_BRIDGES_REQUIRED (1 << 1 ) siteLink bridges are required, all site links are not bridged
-                    // That is to say, if this bit is set, it means that all site links are not bridged and user needs to create specific bridge 
+                    // That is to say, if this bit is set, it means that all site links are not bridged and user needs to create specific bridge
                     // if this bit is not set, all the site links are bridged
                     if (value)
                         option &= (~(0x2));
@@ -350,12 +350,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (disposing)
             {
-                // free other state (managed objects)                
+                // free other state (managed objects)
                 if (_cachedEntry != null)
                     _cachedEntry.Dispose();
             }
 
-            // free your own state (unmanaged objects)   
+            // free your own state (unmanaged objects)
 
             _disposed = true;
         }

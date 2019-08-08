@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -158,7 +158,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => dictionary.EnsureCapacity(-1));
         }
 
-        [Fact] 
+        [Fact]
         public void EnsureCapacity_Generic_DictionaryNotInitialized_RequestedZero_ReturnsZero()
         {
             var dictionary = new Dictionary<TKey, TValue>();
@@ -370,7 +370,7 @@ namespace System.Collections.Tests
                 Assert.InRange(dictionary.EnsureCapacity(0), i * finalCount, int.MaxValue);
             }
         }
-        
+
         [Theory]
         [InlineData(1000, 900, 5000, 85, 89)]
         [InlineData(1000, 400, 5000, 85, 89)]
@@ -467,7 +467,7 @@ namespace System.Collections.Tests
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
-        
+
         #endregion
     }
 }

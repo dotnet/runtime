@@ -16,7 +16,7 @@ namespace System.ComponentModel.Design
         /// Retrieves the list of available component types, i.e. types implementing
         /// IComponent. If baseType is null, all components are retrieved; otherwise
         /// only component types derived from the specified baseType are returned.
-        /// </summary>    
+        /// </summary>
         ICollection GetComponentTypes(IDesignerHost designerHost, Type baseType);
     }
 }

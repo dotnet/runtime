@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
 
         [Fact]
         public void RuntimeEnvironmentSysVersion()
-        {            
+        {
             Assert.NotEmpty(RuntimeEnvironment.GetSystemVersion());
         }
 

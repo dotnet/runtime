@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -402,7 +402,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData("", "", 118)]
-        [InlineData("A !#\t1\u1234", "A !#\t14", 125)] // 
+        [InlineData("A !#\t1\u1234", "A !#\t14", 125)] //
         [InlineData("StatusDescription", "StatusDescription", 135)]
         [InlineData("  StatusDescription  ", "  StatusDescription  ", 139)]
         public async Task StatusDescription_SetCustom_Success(string statusDescription, string expectedStatusDescription, int expectedNumberOfBytes)
@@ -416,7 +416,7 @@ namespace System.Net.Tests
             string clientResponse = GetClientResponse(expectedNumberOfBytes);
             Assert.StartsWith($"HTTP/1.1 200 {expectedStatusDescription}\r\n", clientResponse);
         }
-        
+
         [Fact]
         public async Task StatusDescription_SetNull_ThrowsArgumentNullException()
         {
@@ -530,7 +530,7 @@ namespace System.Net.Tests
             string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
-        
+
         [Fact]
         public async Task SendChunked_SetTrueAndRequestHttpVersionMinorIsZero_ThrowsInvalidOperationException()
         {
@@ -583,7 +583,7 @@ namespace System.Net.Tests
                 Assert.Contains("\r\nConnection: close\r\n", clientResponse);
             }
         }
-        
+
         [Fact]
         public async Task KeepAlive_SetDisposed_ThrowsObjectDisposedException()
         {
@@ -599,7 +599,7 @@ namespace System.Net.Tests
             string clientResponse = GetClientResponse(120);
             Assert.DoesNotContain("Connection", clientResponse);
         }
-        
+
         [Fact]
         public async Task KeepAlive_SetAfterHeadersSent_DoesNothing()
         {
@@ -615,7 +615,7 @@ namespace System.Net.Tests
             string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
-        
+
         [Fact]
         public async Task KeepAlive_NoBoundaryAndRequestHttpRequestVersionMinorIsZero_SetsToFalseWhenSendingHeaders()
         {
@@ -630,7 +630,7 @@ namespace System.Net.Tests
             string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
-        
+
         [Fact]
         public async Task KeepAlive_ContentLengthBoundaryAndRequestHttpVersionMinorIsZero_DoesNotChangeWhenSendingHeaders()
         {
@@ -728,7 +728,7 @@ namespace System.Net.Tests
             {
                 response.ContentLength64 = SimpleMessage.Length;
                 response.OutputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
-                
+
                 Assert.Throws<InvalidOperationException>(() => response.ContentLength64 = 10);
                 Assert.Equal(SimpleMessage.Length, response.ContentLength64);
             }

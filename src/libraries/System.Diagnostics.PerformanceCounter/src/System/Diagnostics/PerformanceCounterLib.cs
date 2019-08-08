@@ -125,7 +125,7 @@ namespace System.Diagnostics
                         if (_categoryTable == null)
                         {
                             ReadOnlySpan<byte> data = GetPerformanceData("Global");
-                      
+
                             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
                             int pos = dataBlock.HeaderLength;
 
@@ -642,10 +642,10 @@ namespace System.Diagnostics
             }
         }
 
-        // Ensures that the customCategoryTable is initialized and decides whether the category passed in 
+        // Ensures that the customCategoryTable is initialized and decides whether the category passed in
         //  1) is a custom category
         //  2) is a multi instance custom category
-        // The return value is whether the category is a custom category or not. 
+        // The return value is whether the category is a custom category or not.
         internal bool FindCustomCategory(string category, out PerformanceCounterCategoryType categoryType)
         {
             RegistryKey key = null;
@@ -682,7 +682,7 @@ namespace System.Diagnostics
                             }
                             catch (SecurityException)
                             {
-                                // we may not have permission to read the registry key on the remote machine.  The security exception  
+                                // we may not have permission to read the registry key on the remote machine.  The security exception
                                 // is thrown when RegOpenKeyEx returns ERROR_ACCESS_DENIED or ERROR_BAD_IMPERSONATION_LEVEL
                                 //
                                 // In this case we return an 'Unknown' category type and 'false' to indicate the category is *not* custom.
@@ -769,7 +769,7 @@ namespace System.Diagnostics
             PerformanceCounterLib library;
             string help;
 
-            //First check the current culture for the category. This will allow 
+            //First check the current culture for the category. This will allow
             //PerformanceCounterCategory.CategoryHelp to return localized strings.
             if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
             {
@@ -907,8 +907,8 @@ namespace System.Diagnostics
             bool categoryExists = false;
             string help;
 
-            //First check the current culture for the counter. This will allow 
-            //PerformanceCounter.CounterHelp to return localized strings.            
+            //First check the current culture for the counter. This will allow
+            //PerformanceCounter.CounterHelp to return localized strings.
             if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
@@ -1048,11 +1048,11 @@ namespace System.Diagnostics
                 int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
                 int waitSleep = 0;
 
-                // In some stress situations, querying counter values from 
-                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009 
-                // often returns null/empty data back. We should build fault-tolerance logic to 
-                // make it more reliable because getting null back once doesn't necessarily mean 
-                // that the data is corrupted, most of the time we would get the data just fine 
+                // In some stress situations, querying counter values from
+                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009
+                // often returns null/empty data back. We should build fault-tolerance logic to
+                // make it more reliable because getting null back once doesn't necessarily mean
+                // that the data is corrupted, most of the time we would get the data just fine
                 // in subsequent tries.
                 while (waitRetries > 0)
                 {
@@ -1080,7 +1080,7 @@ namespace System.Diagnostics
                     catch (IOException)
                     {
                         // RegistryKey throws if it can't find the value.  We want to return an empty table
-                        // and throw a different exception higher up the stack. 
+                        // and throw a different exception higher up the stack.
                         names = null;
                         break;
                     }
@@ -1115,7 +1115,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                // Counter Name Table 
+                                // Counter Name Table
                                 throw new InvalidOperationException(SR.Format(SR.CounterNameCorrupt, names[index * 2]));
                             }
                         }
@@ -1306,14 +1306,14 @@ namespace System.Diagnostics
             perfDataKey = null;
         }
 
-        // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some 
-        // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY, 
-        // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the 
-        // wait loop and switch case below). We want to wait most certainly more than a 2min window. 
-        // The curent wait time of up to 10mins takes care of the known stress deadlock issues. In most 
-        // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time 
-        // we wait may not be sufficient if the Win32 code keeps running into this deadlock again 
-        // and again. A condition very rare but possible in theory. We would get back to the user 
+        // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some
+        // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY,
+        // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the
+        // wait loop and switch case below). We want to wait most certainly more than a 2min window.
+        // The curent wait time of up to 10mins takes care of the known stress deadlock issues. In most
+        // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time
+        // we wait may not be sufficient if the Win32 code keeps running into this deadlock again
+        // and again. A condition very rare but possible in theory. We would get back to the user
         // in this case with InvalidOperationException after the wait time expires.
         internal byte[] GetData(string item, bool usePool)
         {
@@ -1475,20 +1475,20 @@ namespace System.Diagnostics
                 int currentSampleType = samples[index]._counterType;
                 if (!PerformanceCounterLib.IsBaseCounter(currentSampleType))
                 {
-                    // We'll put only non-base counters in the table. 
+                    // We'll put only non-base counters in the table.
                     if (currentSampleType != Interop.Kernel32.PerformanceCounterOptions.PERF_COUNTER_NODATA)
                         _counterTable[samples[index]._nameIndex] = samples[index];
                 }
                 else
                 {
-                    // it's a base counter, try to hook it up to the main counter. 
+                    // it's a base counter, try to hook it up to the main counter.
                     Debug.Assert(index > 0, "Index > 0 because base counters should never be at index 0");
                     if (index > 0)
                         samples[index - 1]._baseCounterDefinitionSample = samples[index];
                 }
             }
 
-            // now set up the InstanceNameTable.  
+            // now set up the InstanceNameTable.
             if (!_isMultiInstance)
             {
                 _instanceNameTable = new Hashtable(1, StringComparer.OrdinalIgnoreCase);
@@ -1722,7 +1722,7 @@ namespace System.Diagnostics
             if (!_categorySample._instanceNameTable.ContainsKey(instanceName))
             {
                 // Our native dll truncates instance names to 128 characters.  If we can't find the instance
-                // with the full name, try truncating to 128 characters. 
+                // with the full name, try truncating to 128 characters.
                 if (instanceName.Length > SharedPerformanceCounter.InstanceNameMaxLength)
                     instanceName = instanceName.Substring(0, SharedPerformanceCounter.InstanceNameMaxLength);
 

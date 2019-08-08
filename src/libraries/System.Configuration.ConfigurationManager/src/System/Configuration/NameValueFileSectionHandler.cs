@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,8 +12,8 @@ namespace System.Configuration
     /// This section handler allows &lt;appSettings file="user.config" /&gt;
     /// The file pointed to by the file= attribute is read as if it is
     /// an appSettings section in the config file.
-    /// Note: the user.config file must have its root element match the 
-    /// section referring to it.  So if appSettings has a file="user.config" 
+    /// Note: the user.config file must have its root element match the
+    /// section referring to it.  So if appSettings has a file="user.config"
     /// attribute the root element in user.config must also be named appSettings.
     /// </summary>
     public class NameValueFileSectionHandler : IConfigurationSectionHandler

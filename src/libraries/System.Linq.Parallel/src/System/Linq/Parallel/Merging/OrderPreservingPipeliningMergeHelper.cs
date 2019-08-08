@@ -20,20 +20,20 @@ namespace System.Linq.Parallel
     /// A merge helper that yields results in a streaming fashion, while still ensuring correct output
     /// ordering. This merge only works if each producer task generates outputs in the correct order,
     /// i.e. with an Increasing (or Correct) order index.
-    /// 
+    ///
     /// The merge creates DOP producer tasks, each of which will be  writing results into a separate
     /// buffer.
-    /// 
+    ///
     /// The consumer always waits until each producer buffer contains at least one element. If we don't
-    /// have one element from each producer, we cannot yield the next element. (If the order index is 
+    /// have one element from each producer, we cannot yield the next element. (If the order index is
     /// Correct, or in some special cases with the Increasing order, we could yield sooner. The
     /// current algorithm does not take advantage of this.)
-    /// 
+    ///
     /// The consumer maintains a producer heap, and uses it to decide which producer should yield the next output
     /// result. After yielding an element from a particular producer, the consumer will take another element
     /// from the same producer. However, if the producer buffer exceeded a particular threshold, the consumer
     /// will take the entire buffer, and give the producer an empty buffer to fill.
-    /// 
+    ///
     /// Finally, if the producer notices that its buffer has exceeded an even greater threshold, it will
     /// go to sleep and wait until the consumer takes the entire buffer.
     /// </summary>
@@ -74,7 +74,7 @@ namespace System.Linq.Parallel
         private readonly bool[] _consumerWaiting;
 
         /// <summary>
-        /// Each object is a lock protecting the corresponding elements in _buffers, _producerDone, 
+        /// Each object is a lock protecting the corresponding elements in _buffers, _producerDone,
         /// _producerWaiting and _consumerWaiting.
         /// </summary>
         private readonly object[] _bufferLocks;
@@ -176,10 +176,10 @@ namespace System.Linq.Parallel
 
         /// <summary>
         /// A comparer used by FixedMaxHeap(Of Producer)
-        /// 
+        ///
         /// This comparer will be used by max-heap. We want the producer with the smallest MaxKey to
         /// end up in the root of the heap.
-        /// 
+        ///
         ///     x.MaxKey GREATER_THAN y.MaxKey  =>  x LESS_THAN y     => return -
         ///     x.MaxKey EQUALS y.MaxKey        =>  x EQUALS y        => return 0
         ///     x.MaxKey LESS_THAN y.MaxKey     =>  x GREATER_THAN y  => return +
@@ -213,25 +213,25 @@ namespace System.Linq.Parallel
             /// <summary>
             /// Heap used to efficiently locate the producer whose result should be consumed next.
             /// For each producer, stores the order index for the next element to be yielded.
-            /// 
+            ///
             /// Read and written by the consumer only.
             /// </summary>
             private readonly FixedMaxHeap<Producer<TKey>> _producerHeap;
 
             /// <summary>
             /// Stores the next element to be yielded from each producer. We use a separate array
-            /// rather than storing this information in the producer heap to keep the Producer struct 
+            /// rather than storing this information in the producer heap to keep the Producer struct
             /// small.
-            /// 
+            ///
             /// Read and written by the consumer only.
             /// </summary>
             private readonly TOutput[] _producerNextElement;
 
             /// <summary>
-            /// A private buffer for the consumer. When the size of a producer buffer exceeds a threshold 
+            /// A private buffer for the consumer. When the size of a producer buffer exceeds a threshold
             /// (STEAL_BUFFER_SIZE), the consumer will take ownership of the entire buffer, and give the
             /// producer a new empty buffer to place results into.
-            /// 
+            ///
             /// Read and written by the consumer only.
             /// </summary>
             private readonly Queue<Pair<TKey, TOutput>>[] _privateBuffer;
@@ -275,7 +275,7 @@ namespace System.Linq.Parallel
                 if (!_initialized)
                 {
                     //
-                    // Initialization: wait until each producer has produced at least one element. Since the order indices 
+                    // Initialization: wait until each producer has produced at least one element. Since the order indices
                     // are increasing, we cannot start yielding until we have at least one element from each producer.
                     //
 
@@ -295,7 +295,7 @@ namespace System.Linq.Parallel
                         else
                         {
                             // If this producer didn't produce any results because it encountered an exception,
-                            // cancellation would have been initiated by now. If cancellation has started, we will 
+                            // cancellation would have been initiated by now. If cancellation has started, we will
                             // propagate the exception now.
                             ThrowIfInTearDown();
                         }
@@ -344,7 +344,7 @@ namespace System.Linq.Parallel
 
             /// <summary>
             /// If the cancellation of the query has been initiated (because one or more producers
-            /// encountered exceptions, or because external cancellation token has been set), the method 
+            /// encountered exceptions, or because external cancellation token has been set), the method
             /// will tear down the query and rethrow the exception.
             /// </summary>
             private void ThrowIfInTearDown()
@@ -506,10 +506,10 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A comparer used by FixedMaxHeap(Of Producer)
-    /// 
+    ///
     /// This comparer will be used by max-heap. We want the producer with the smallest MaxKey to
     /// end up in the root of the heap.
-    /// 
+    ///
     ///     x.MaxKey GREATER_THAN y.MaxKey  =>  x LESS_THAN y     => return -
     ///     x.MaxKey EQUALS y.MaxKey        =>  x EQUALS y        => return 0
     ///     x.MaxKey LESS_THAN y.MaxKey     =>  x GREATER_THAN y  => return +

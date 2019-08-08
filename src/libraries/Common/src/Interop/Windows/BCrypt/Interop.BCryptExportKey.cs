@@ -16,4 +16,3 @@ internal partial class Interop
         internal static extern NTSTATUS BCryptExportKey(SafeBCryptKeyHandle hKey, IntPtr hExportKey, string pszBlobType, [Out] byte[] pbOutput, int cbOutput, out int pcbResult, int dwFlags);
     }
 }
-

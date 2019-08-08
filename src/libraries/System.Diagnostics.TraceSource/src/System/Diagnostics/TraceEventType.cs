@@ -21,4 +21,3 @@ namespace System.Diagnostics
         Transfer = 0x1000,
     }
 }
-

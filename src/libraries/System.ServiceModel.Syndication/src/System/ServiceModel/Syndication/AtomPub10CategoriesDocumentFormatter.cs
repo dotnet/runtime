@@ -81,7 +81,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            
+
             ReadDocument(reader);
         }
 
@@ -124,7 +124,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            
+
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             WriteDocument(writer);
             writer.WriteEndElement();

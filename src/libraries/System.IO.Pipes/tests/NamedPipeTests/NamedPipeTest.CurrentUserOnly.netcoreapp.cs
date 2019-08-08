@@ -19,7 +19,7 @@ namespace System.IO.Pipes.Tests
             // Should not throw.
             new NamedPipeClientStream(".", GetUniquePipeName(), PipeDirection.InOut, PipeOptions.CurrentUserOnly).Dispose();
         }
-        
+
         [Fact]
         public static void CreateServer_CurrentUserOnly()
         {

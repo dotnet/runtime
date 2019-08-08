@@ -17,7 +17,7 @@ namespace System.ComponentModel.Design
         private static readonly char[] s_slash = {'\\'};
 
         /// <summary>
-        /// Returns the options collection for this service. There is 
+        /// Returns the options collection for this service. There is
         /// always a global options collection that contains child collections.
         /// </summary>
         public DesignerOptionCollection Options
@@ -26,12 +26,12 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// Creates a new DesignerOptionCollection with the given name, and adds it to 
-        /// the given parent. The "value" parameter specifies an object whose public 
-        /// properties will be used in the Properties collection of the option collection. 
-        /// The value parameter can be null if this options collection does not offer 
-        /// any properties. Properties will be wrapped in such a way that passing 
-        /// anything into the component parameter of the property descriptor will be 
+        /// Creates a new DesignerOptionCollection with the given name, and adds it to
+        /// the given parent. The "value" parameter specifies an object whose public
+        /// properties will be used in the Properties collection of the option collection.
+        /// The value parameter can be null if this options collection does not offer
+        /// any properties. Properties will be wrapped in such a way that passing
+        /// anything into the component parameter of the property descriptor will be
         /// ignored and the value object will be substituted.
         /// </summary>
         protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
@@ -86,15 +86,15 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// This method is called on demand the first time a user asks for child 
-        /// options or properties of an options collection. 
+        /// This method is called on demand the first time a user asks for child
+        /// options or properties of an options collection.
         /// </summary>
         protected virtual void PopulateOptionCollection(DesignerOptionCollection options)
         {
         }
 
         /// <summary>
-        /// This method must be implemented to show the options dialog UI for the given object. 
+        /// This method must be implemented to show the options dialog UI for the given object.
         /// </summary>
         protected virtual bool ShowDialog(DesignerOptionCollection options, object optionObject) => false;
 
@@ -117,11 +117,11 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// The DesignerOptionCollection class is a collection that contains 
-        /// other DesignerOptionCollection objects. This forms a tree of options, 
-        /// with each branch of the tree having a name and a possible collection of 
-        /// properties. Each parent branch of the tree contains a union of the 
-        /// properties if all the branch's children. 
+        /// The DesignerOptionCollection class is a collection that contains
+        /// other DesignerOptionCollection objects. This forms a tree of options,
+        /// with each branch of the tree having a name and a possible collection of
+        /// properties. Each parent branch of the tree contains a union of the
+        /// properties if all the branch's children.
         /// </summary>
         [TypeConverter(typeof(DesignerOptionConverter))]
         public sealed class DesignerOptionCollection : IList
@@ -165,7 +165,7 @@ namespace System.ComponentModel.Design
             }
 
             /// <summary>
-            /// The name of this collection. Names are programmatic names and are not 
+            /// The name of this collection. Names are programmatic names and are not
             /// localized. A name search is case insensitive.
             /// </summary>
             public string Name { get; }
@@ -176,12 +176,12 @@ namespace System.ComponentModel.Design
             public DesignerOptionCollection Parent { get; }
 
             /// <summary>
-            /// The collection of properties that this OptionCollection, along with all of 
-            /// its children, offers. PropertyDescriptors are taken directly from the 
-            /// value passed to CreateObjectCollection and wrapped in an additional property 
-            /// descriptor that hides the value object from the user. This means that any 
-            /// value may be passed into the "component" parameter of the various 
-            /// PropertyDescriptor methods. The value is ignored and is replaced with 
+            /// The collection of properties that this OptionCollection, along with all of
+            /// its children, offers. PropertyDescriptors are taken directly from the
+            /// value passed to CreateObjectCollection and wrapped in an additional property
+            /// descriptor that hides the value object from the user. This means that any
+            /// value may be passed into the "component" parameter of the various
+            /// PropertyDescriptor methods. The value is ignored and is replaced with
             /// the correct value internally.
             /// </summary>
             public PropertyDescriptorCollection Properties
@@ -238,7 +238,7 @@ namespace System.ComponentModel.Design
             }
 
             /// <summary>
-            /// Retrieves the child collection at the given name. The name search is case 
+            /// Retrieves the child collection at the given name. The name search is case
             /// insensitive.
             /// </summary>
             public DesignerOptionCollection this[string name]
@@ -322,8 +322,8 @@ namespace System.ComponentModel.Design
             }
 
             /// <summary>
-            /// Displays a dialog-based user interface that allows the user to 
-            /// configure the various options. 
+            /// Displays a dialog-based user interface that allows the user to
+            /// configure the various options.
             /// </summary>
             public bool ShowDialog()
             {
@@ -513,4 +513,3 @@ namespace System.ComponentModel.Design
         }
     }
 }
-

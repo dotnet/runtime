@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Tests
                 bool>), exp.Type);
 
 #if FEATURE_COMPILE
-            // From this point on, the tests require FEATURE_COMPILE (RefEmit) support as SLE needs to create delegate types on the fly. 
+            // From this point on, the tests require FEATURE_COMPILE (RefEmit) support as SLE needs to create delegate types on the fly.
             // You can't instantiate Func<> over 20 arguments or over byrefs.
             ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
             exp = Expression.Lambda(
@@ -804,7 +804,7 @@ namespace System.Linq.Expressions.Tests
   .maxstack 1
 
   IL_0000: ldarg      V_300
-  IL_0004: ret        
+  IL_0004: ret
 }
 ");
         }
@@ -899,7 +899,7 @@ namespace System.Linq.Expressions.Tests
 
   IL_0000: ldarga     V_300
   IL_0004: call       instance valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.LambdaTests+Mutable valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.LambdaTests+Mutable::Mutate()
-  IL_0009: ret        
+  IL_0009: ret
 }
 ");
         }

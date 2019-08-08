@@ -39,7 +39,7 @@ namespace System.Xml
         Error,
     };
 
-    // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents 
+    // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents
     // that conform to the W3C Extensible Markup Language (XML) 1.0 specification and the Namespaces in XML specification.
     public abstract partial class XmlWriter : IDisposable
     {
@@ -230,7 +230,7 @@ namespace System.Xml
 
         // Scalar Value Methods
 
-        // Writes out the specified name, ensuring it is a valid NmToken according to the XML specification 
+        // Writes out the specified name, ensuring it is a valid NmToken according to the XML specification
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual void WriteNmToken(string name)
         {
@@ -368,7 +368,7 @@ namespace System.Xml
             {
                 do
                 {
-                    // we need to check both XmlReader.IsDefault and XmlReader.SchemaInfo.IsDefault. 
+                    // we need to check both XmlReader.IsDefault and XmlReader.SchemaInfo.IsDefault.
                     // If either of these is true and defattr=false, we should not write the attribute out
                     if (defattr || !reader.IsDefaultInternal)
                     {
@@ -391,7 +391,7 @@ namespace System.Xml
             }
         }
 
-        // Copies the current node from the given reader to the writer (including child nodes), and if called on an element moves the XmlReader 
+        // Copies the current node from the given reader to the writer (including child nodes), and if called on an element moves the XmlReader
         // to the corresponding end element.
         public virtual void WriteNode(XmlReader reader, bool defattr)
         {
@@ -631,7 +631,7 @@ namespace System.Xml
             }
         }
 
-        // Copy local namespaces on the navigator's current node to the raw writer. The namespaces are returned by the navigator in reversed order. 
+        // Copy local namespaces on the navigator's current node to the raw writer. The namespaces are returned by the navigator in reversed order.
         // The recursive call reverses them back.
         private void WriteLocalNamespaces(XPathNavigator nsNav)
         {
@@ -741,4 +741,3 @@ namespace System.Xml
         }
     }
 }
-

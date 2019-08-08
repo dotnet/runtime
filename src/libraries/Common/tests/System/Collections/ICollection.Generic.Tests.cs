@@ -261,7 +261,7 @@ namespace System.Collections.Tests
                     collection.Remove(collection.ElementAt(0));
                 collection.Add(CreateT(254));
                 Assert.Equal(1, collection.Count);
-            }   
+            }
         }
 
         [Theory]

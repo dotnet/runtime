@@ -306,7 +306,7 @@ namespace System.Text.Json.Tests
         {
             WriteComplexValue(
                 indented,
-                @"[ 2, 4, 
+                @"[ 2, 4,
 6                       , 0
 
 

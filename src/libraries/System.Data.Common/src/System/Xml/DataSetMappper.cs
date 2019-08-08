@@ -67,7 +67,7 @@ namespace System.Xml
             return (DataTable)(_tableSchemaMap[tid]);
         }
 
-        // SearchMatchingTableSchema function works only when the elem has not been bound to a DataRow. If you want to get the table associated w/ an element after 
+        // SearchMatchingTableSchema function works only when the elem has not been bound to a DataRow. If you want to get the table associated w/ an element after
         // it has been associated w/ a DataRow use GetTableSchemaForElement function.
         // rowElem is the parent region rowElem or null if there is no parent region (in case elem is a row elem, then rowElem will be the parent region; if elem is not
         //    mapped to a DataRow, then rowElem is the region elem is part of)
@@ -196,7 +196,7 @@ namespace System.Xml
 
         internal static bool IsNotMapped(DataColumn c) => c.ColumnMapping == MappingType.Hidden;
 
-        // ATTENTION: GetRowFromElement( XmlElement ) and GetRowFromElement( XmlBoundElement ) should have the same functionality and side effects. 
+        // ATTENTION: GetRowFromElement( XmlElement ) and GetRowFromElement( XmlBoundElement ) should have the same functionality and side effects.
         // See this code fragment for why:
         //     XmlBoundElement be = ...;
         //     XmlElement e = be;

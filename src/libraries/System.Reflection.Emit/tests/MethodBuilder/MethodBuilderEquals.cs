@@ -38,7 +38,7 @@ namespace System.Reflection.Emit.Tests
 
             MethodBuilder method11 = type.DefineMethod("TestMethod6", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.NewSlot);
             MethodBuilder method12 = type.DefineMethod("TestMethod6", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.NewSlot);
-            
+
             MethodBuilder method13 = type.DefineMethod("TestMethod7", MethodAttributes.Public, typeof(void), new Type[] { typeof(int), typeof(string) });
             MethodBuilder method14 = type.DefineMethod("TestMethod7", MethodAttributes.Public, typeof(void), new Type[] { typeof(int), typeof(string) });
 

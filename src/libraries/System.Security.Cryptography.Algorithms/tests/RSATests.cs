@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             var rsa = new DelegateRSA();
 
             AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.VerifyData((Stream)null, null, HashAlgorithmName.SHA256, null));
-            
+
             AssertExtensions.Throws<ArgumentNullException>("signature", () => rsa.VerifyData(Stream.Null, null, HashAlgorithmName.SHA256, null));
 
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(null), null));

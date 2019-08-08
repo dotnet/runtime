@@ -88,7 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             Assert.Same(expectedPartDefinition, ((ICompositionElement)exportDefinition).Origin);
         }
-        
+
         [Fact]
         public void SetDefinition_PartDefinitionDoesNotContainCreationPolicy_CreationPolicyShouldNotBeInMetadata()
         {

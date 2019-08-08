@@ -479,7 +479,7 @@ namespace System
             // This does mean that Console.get_CursorLeft/Top can't be used concurrently with Console.Read*, etc.;
             // attempting to do so will block one of them until the other completes, but in doing so we prevent
             // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
-            lock (StdInReader) 
+            lock (StdInReader)
             {
                 // Because the CPR request/response protocol involves blocking until we get a certain
                 // response from the terminal, we want to avoid doing so if we don't know the terminal
@@ -830,7 +830,7 @@ namespace System
         }
 
         /// <summary>
-        /// The values of the ConsoleColor enums unfortunately don't map to the 
+        /// The values of the ConsoleColor enums unfortunately don't map to the
         /// corresponding ANSI values.  We need to do the mapping manually.
         /// See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
         /// </summary>
@@ -954,7 +954,7 @@ namespace System
                     }
 
                     // Load special control character codes used for input processing
-                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4] 
+                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
                     {
                         Interop.Sys.ControlCharacterNames.VERASE,
                         Interop.Sys.ControlCharacterNames.VEOL,

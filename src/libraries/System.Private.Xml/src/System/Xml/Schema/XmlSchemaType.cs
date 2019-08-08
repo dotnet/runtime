@@ -339,4 +339,3 @@ namespace System.Xml.Schema
         }
     }
 }
-

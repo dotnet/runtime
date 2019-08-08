@@ -101,5 +101,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-
-

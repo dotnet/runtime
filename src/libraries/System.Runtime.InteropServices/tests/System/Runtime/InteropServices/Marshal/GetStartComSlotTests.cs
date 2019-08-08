@@ -11,21 +11,21 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetStartComSlotTests
-    {        
+    {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetStartComSlot_Unix_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetStartComSlot(null));
         }
-        
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetStartComSlot_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetStartComSlot(null));
         }
-        
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetStartComSlot_NotRuntimeType_ThrowsArgumentException()
@@ -35,13 +35,13 @@ namespace System.Runtime.InteropServices.Tests
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetStartComSlot(typeBuilder));
         }
-        
+
         public static IEnumerable<object[]> GetStartComSlot_InvalidGenericType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStartComSlot_InvalidGenericType_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.Tests
             Type collectibleType = typeBuilder.CreateType();
             yield return new object[] { collectibleType };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStartComSlot_NotComVisibleType_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]

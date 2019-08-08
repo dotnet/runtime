@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,7 +12,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of any class that implements the generic
     /// ISet interface.
-    /// 
+    ///
     /// Tests for an ISet follow a rather different structure because of the consistency in
     /// function signatures. Instead of having a test for every data scenario within a class for
     /// every set function, there is instead a test for every configuration of enumerable parameter.

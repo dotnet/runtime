@@ -50,4 +50,3 @@ internal static partial class Interop
         internal static extern unsafe bool BrotliEncoderCompress(int quality, int window, int v, size_t availableInput, byte* inBytes, ref size_t availableOutput, byte* outBytes);
     }
 }
-

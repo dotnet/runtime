@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             //
             //   makecert -r -len 1024 -n "CN=RSAKeyTransferCapi1" -b 04/15/2015 -e 04/15/2025 RSAKeyTransferCapi1.cer -sv RSAKeyTransferCapi1.pvk -sky exchange
             //   pvk2pfx.exe -pvk RSAKeyTransferCapi1.pvk -spc RSAKeyTransferCapi1.cer -pfx RSAKeyTransferCapi1.pfx -po 1111
-            //  
+            //
             public static byte[] s_RSAKeyTransferCapi1Pfx =
                  ("30820626020103308205e206092a864886f70d010701a08205d3048205cf308205cb3082035806092a864886f70d010701a0"
                 + "82034904820345308203413082033d060b2a864886f70d010c0a0102a08202b6308202b2301c060a2a864886f70d010c0103"
@@ -2047,4 +2047,3 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
     }
 }
-

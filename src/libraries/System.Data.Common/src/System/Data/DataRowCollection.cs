@@ -72,7 +72,7 @@ namespace System.Data
             }
 
             if (_table.NestedParentRelations.Length > 0)
-            { // get in this trouble only if  table has a nested parent 
+            { // get in this trouble only if  table has a nested parent
               // get into trouble if table has JUST a nested parent? how about multi parent!
                 if (pos < _list.Count)
                 {

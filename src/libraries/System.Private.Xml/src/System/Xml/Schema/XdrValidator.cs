@@ -690,4 +690,3 @@ namespace System.Xml.Schema
     };
 #pragma warning restore 618
 }
-

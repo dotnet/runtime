@@ -43,14 +43,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private bool RequiresCollectionNormalization()
         {
             if (Definition.Cardinality != ImportCardinality.ZeroOrMore)
-            {   // If we're not looking at a collection import, then don't 
+            {   // If we're not looking at a collection import, then don't
                 // 'normalize' the collection.
 
                 return false;
             }
 
             if (_member.CanWrite && ImportType.IsAssignableCollectionType)
-            {   // If we can simply replace the entire value of the property/field, then 
+            {   // If we can simply replace the entire value of the property/field, then
                 // we don't need to 'normalize' the collection.
 
                 return false;
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 _member.SetValue(instance, value);
             }
             catch (TargetInvocationException exception)
-            {   // Member threw an exception. Avoid letting this 
+            {   // Member threw an exception. Avoid letting this
                 // leak out as a 'raw' unhandled exception, instead,
                 // we'll add some context and rethrow.
                 throw new ComposablePartException(
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private void EnsureWritable()
         {
             if (!_member.CanWrite)
-            {   // Property does not have a setter, or 
+            {   // Property does not have a setter, or
                 // field is marked as read-only.
 
                 throw new ComposablePartException(
@@ -192,7 +192,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private void EnsureCollectionIsWritable(ICollection<object> collection)
         {
             bool isReadOnly = true;
-                
+
             try
             {
                 if (collection != null)

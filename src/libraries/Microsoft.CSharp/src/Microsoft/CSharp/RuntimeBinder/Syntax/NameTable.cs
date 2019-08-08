@@ -151,7 +151,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             Entry[] oldEntries = _entries;
             Entry[] newEntries = new Entry[newMask + 1];
 
-            // use oldEntries.Length to eliminate the range check            
+            // use oldEntries.Length to eliminate the range check
             for (int i = 0; i < oldEntries.Length; i++)
             {
                 Entry e = oldEntries[i];

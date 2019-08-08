@@ -30,7 +30,7 @@ namespace System.ComponentModel.Design.Serialization
         ICollection Deserialize(object serializationData);
 
         /// <summary>
-        /// Serializes the given collection of objects and 
+        /// Serializes the given collection of objects and
         /// stores them in an opaque serialization data object.
         /// The returning object fully supports runtime serialization.
         /// </summary>

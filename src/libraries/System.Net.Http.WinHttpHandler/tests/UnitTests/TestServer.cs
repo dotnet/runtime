@@ -59,7 +59,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             {
                 return dataAvailablePercentage;
             }
-            
+
             set
             {
                 dataAvailablePercentage = value;
@@ -81,7 +81,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 {
                     allowedBytesToRead = 1;
                 }
-                
+
                 return allowedBytesToRead;
             }
         }

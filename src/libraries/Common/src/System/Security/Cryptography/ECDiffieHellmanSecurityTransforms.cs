@@ -275,7 +275,7 @@ namespace System.Security.Cryptography
 
                 /// <summary>
                 /// There is no key blob format for OpenSSL ECDH like there is for Cng ECDH. Instead of allowing
-                /// this to return a potentially confusing empty byte array, we opt to throw instead. 
+                /// this to return a potentially confusing empty byte array, we opt to throw instead.
                 /// </summary>
                 public override byte[] ToByteArray()
                 {

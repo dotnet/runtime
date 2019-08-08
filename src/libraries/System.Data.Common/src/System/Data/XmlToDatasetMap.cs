@@ -10,7 +10,7 @@ namespace System.Data
 {
     // This is an internal helper class used during Xml load to DataSet/DataDocument.
     // XmlToDatasetMap class provides functionality for binding elemants/attributes
-    // to DataTable / DataColumn 
+    // to DataTable / DataColumn
     internal sealed class XmlToDatasetMap
     {
         private sealed class XmlNodeIdentety
@@ -149,7 +149,7 @@ namespace System.Data
             //       If in future we will build identity map before reading XML we can replace Get() to Add()
             // Sdub: GetIdentity is called from two places: BuildIdentityMap() and LoadRows()
             //       First case deals with decoded names; Second one with encoded names.
-            //       We decided encoded names in first case (instead of decoding them in second) 
+            //       We decided encoded names in first case (instead of decoding them in second)
             //       because it save us time in LoadRows(). We have, as usual, more data them schemas
             string tableLocalName = nameTable.Get(table.EncodedTableName);
             string tableNamespace = nameTable.Get(table.Namespace);
@@ -171,7 +171,7 @@ namespace System.Data
             //       object comparison instead of strings.
             // Sdub: GetIdentity is called from two places: BuildIdentityMap() and LoadRows()
             //       First case deals with decoded names; Second one with encoded names.
-            //       We decided encoded names in first case (instead of decoding them in second) 
+            //       We decided encoded names in first case (instead of decoding them in second)
             //       because it save us time in LoadRows(). We have, as usual, more data them schemas
 
             string _tableLocalName = table.EncodedTableName;            // Table name
@@ -203,7 +203,7 @@ namespace System.Data
             _tableSchemaMap[new XmlNodeIdentety(tableLocalName, tableNamespace)] = tableSchemaInfo;
             // And add it to the hashtable
             return tableSchemaInfo;                                     // Return it as we have to populate
-                                                                        // Column schema map and Child table 
+                                                                        // Column schema map and Child table
                                                                         // schema map in it
         }
 
@@ -251,7 +251,7 @@ namespace System.Data
                 if (col._columnUri != null)                                    // Update namespace
                     col._columnUri = columnNamespace;
             }
-            // Create XmlNodeIdentety 
+            // Create XmlNodeIdentety
             // for this column
             XmlNodeIdentety idColumn = new XmlNodeIdentety(columnLocalName, columnNamespace);
             columns[idColumn] = col;                                            // And add it to hashtable
@@ -380,7 +380,7 @@ namespace System.Data
         private void BuildIdentityMap(XmlNameTable nameTable, DataTable dataTable)
         {
             ArrayList tableList = GetSelfAndDescendants(dataTable);     // Get list of tables we're loading
-                                                                        // This includes our table and 
+                                                                        // This includes our table and
                                                                         // related tables tree
 
             _tableSchemaMap = new XmlNodeIdHashtable(tableList.Count);

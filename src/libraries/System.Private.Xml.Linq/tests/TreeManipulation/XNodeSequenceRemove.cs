@@ -243,11 +243,11 @@ namespace XLinqTests
         //[Variation(Priority = 2, Desc = "XElement.Nodes")]
 
         // XElement:
-        // IEnumerable<XElement> AncestorsAndSelf() 
-        // IEnumerable<XNode> SelfAndDescendantNodes() 
-        // IEnumerable<XElement> DescendantsAndSelf() 
-        // IEnumerable<XElement> DescendantsAndSelf(XName name) 
-        // IEnumerable<XElement> AncestorsAndSelf(XName name) 
+        // IEnumerable<XElement> AncestorsAndSelf()
+        // IEnumerable<XNode> SelfAndDescendantNodes()
+        // IEnumerable<XElement> DescendantsAndSelf()
+        // IEnumerable<XElement> DescendantsAndSelf(XName name)
+        // IEnumerable<XElement> AncestorsAndSelf(XName name)
 
         //[Variation(Priority = 2, Desc = "XElement.AncestorsAndSelf")]
         public void Element_AncestorsAndSelf()

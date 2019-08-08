@@ -137,7 +137,7 @@ namespace System.Tests
             yield return new object[] { typeof(List<>) };
             yield return new object[] { typeof(List<>).GetTypeInfo().GenericTypeParameters[0] };
         }
-        
+
         [Theory]
         [MemberData(nameof(CreateInstance_ContainsGenericParameters_TestData))]
         public void CreateInstance_ContainsGenericParameters_ThrowsArgumentException(Type type)

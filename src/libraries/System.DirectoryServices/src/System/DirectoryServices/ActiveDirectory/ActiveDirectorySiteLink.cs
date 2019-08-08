@@ -484,7 +484,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 //NTDSSITELINK_OPT_DISABLE_COMPRESSION ( 1 << 2 )
                 //  0 - Compression of replication data across this site link enabled
-                //  1 - Compression of replication data across this site link disabled                
+                //  1 - Compression of replication data across this site link disabled
                 if ((options & 0x4) == 0)
                     return true;
                 else
@@ -654,12 +654,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (disposing)
             {
-                // free other state (managed objects)                
+                // free other state (managed objects)
                 if (cachedEntry != null)
                     cachedEntry.Dispose();
             }
 
-            // free your own state (unmanaged objects)   
+            // free your own state (unmanaged objects)
 
             _disposed = true;
         }

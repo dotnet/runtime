@@ -117,7 +117,7 @@ namespace System.DirectoryServices.AccountManagement
         // If the underlying StoreCtx does not expose a native searcher (StoreCtx.SupportsSearchNatively is false),
         // throws an exception.
         //
-        // Otherwise, calls StoreCtx.PushFilterToNativeSearcher to push the current QBE filter 
+        // Otherwise, calls StoreCtx.PushFilterToNativeSearcher to push the current QBE filter
         // into underlyingSearcher (automatically constructing a fresh native searcher if underlyingSearcher is null),
         // and returns underlyingSearcher.
         public object GetUnderlyingSearcher()
@@ -339,4 +339,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-

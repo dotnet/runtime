@@ -227,7 +227,7 @@ namespace System.Net.Mime
                 }
                 else if (permitUnicodeInDisplayName)
                 {
-                    //if data contains Unicode and Unicode is permitted, then 
+                    //if data contains Unicode and Unicode is permitted, then
                     //it is valid in a quoted string in a header.
                     if (data[offset] <= Ascii7bitMaxValue && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
@@ -249,7 +249,7 @@ namespace System.Net.Mime
         internal static string ReadParameterAttribute(string data, ref int offset, StringBuilder builder)
         {
             if (!SkipCFWS(data, ref offset))
-                return null; // 
+                return null; //
 
             return ReadToken(data, ref offset, null);
         }

@@ -35,7 +35,7 @@ internal static partial class Interop
 
         public const int SP_PROT_NONE = 0;
 
-        // These two constants are not taken from schannel.h. 
+        // These two constants are not taken from schannel.h.
         public const int ClientProtocolMask = (SP_PROT_SSL2_CLIENT | SP_PROT_SSL3_CLIENT | SP_PROT_TLS1_0_CLIENT | SP_PROT_TLS1_1_CLIENT | SP_PROT_TLS1_2_CLIENT | SP_PROT_TLS1_3_CLIENT);
         public const int ServerProtocolMask = (SP_PROT_SSL2_SERVER | SP_PROT_SSL3_SERVER | SP_PROT_TLS1_0_SERVER | SP_PROT_TLS1_1_SERVER | SP_PROT_TLS1_2_SERVER | SP_PROT_TLS1_3_SERVER);
     }

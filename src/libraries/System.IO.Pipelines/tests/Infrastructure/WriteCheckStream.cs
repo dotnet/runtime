@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -56,8 +56,8 @@ namespace System.IO.Pipelines.Tests.Infrastructure
                 return _waitSource.Task;
             }
         }
-        
-        private void CheckWaitCount() 
+
+        private void CheckWaitCount()
         {
             if (_waitCnt > 0 && _writeCnt >= _waitCnt)
             {

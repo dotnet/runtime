@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
             int expectedValue = 10;
             object[] ctorParamValues = new object[] { expectedValue };
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor(ctorParamTypes), ctorParamValues);
-            
+
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, returnType, null);
@@ -30,7 +30,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator methodILGenerator = method.GetILGenerator();
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ret);
-            
+
             property.SetGetMethod(method);
 
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static;
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator methodILGenerator = method.GetILGenerator();
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ret);
-            
+
             property.SetGetMethod(method);
 
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static;

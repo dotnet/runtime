@@ -910,7 +910,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
             {
                 d.d4.Field = 20;
                 if (d.d4.Field == 20)
-                    isPass &= true; //value type!  
+                    isPass &= true; //value type!
                 else
                     isPass &= false;
             }

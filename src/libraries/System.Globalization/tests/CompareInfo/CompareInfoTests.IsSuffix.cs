@@ -52,8 +52,8 @@ namespace System.Globalization.Tests
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false };
-            
-            // Platform differences 
+
+            // Platform differences
             yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
         }
 
@@ -72,7 +72,7 @@ namespace System.Globalization.Tests
         public void IsSuffix_UnassignedUnicode()
         {
             bool result = PlatformDetection.IsWindows ? true : false;
-            
+
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }

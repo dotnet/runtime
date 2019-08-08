@@ -33,20 +33,20 @@ namespace System.DirectoryServices.ActiveDirectory
         public string ClientSiteName;
     }
 
-    /*typedef struct {  
-         LPTSTR NetbiosName;  
-        LPTSTR DnsHostName;  
+    /*typedef struct {
+         LPTSTR NetbiosName;
+        LPTSTR DnsHostName;
         LPTSTR SiteName;
-        LPTSTR SiteObjectName;    
-        LPTSTR ComputerObjectName;  
-        LPTSTR ServerObjectName;  
-        LPTSTR NtdsaObjectName;  
-        BOOL fIsPdc;  
-        BOOL fDsEnabled;  
-        BOOL fIsGc;  
-        GUID SiteObjectGuid;  
-        GUID ComputerObjectGuid;  
-        GUID ServerObjectGuid;  
+        LPTSTR SiteObjectName;
+        LPTSTR ComputerObjectName;
+        LPTSTR ServerObjectName;
+        LPTSTR NtdsaObjectName;
+        BOOL fIsPdc;
+        BOOL fDsEnabled;
+        BOOL fIsGc;
+        GUID SiteObjectGuid;
+        GUID ComputerObjectGuid;
+        GUID ServerObjectGuid;
         GUID NtdsDsaObjectGuid;
     } DS_DOMAIN_CONTROLLER_INFO_2, *PDS_DOMAIN_CONTROLLER_INFO_2;*/
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -68,21 +68,21 @@ namespace System.DirectoryServices.ActiveDirectory
         public Guid ntdsDsaObjectGuid;
     }
 
-    /*typedef struct {  
-        LPTSTR NetbiosName;  
-        LPTSTR DnsHostName;  
+    /*typedef struct {
+        LPTSTR NetbiosName;
+        LPTSTR DnsHostName;
         LPTSTR SiteName;
-        LPTSTR SiteObjectName;    
-        LPTSTR ComputerObjectName;  
-        LPTSTR ServerObjectName;  
-        LPTSTR NtdsaObjectName;  
-        BOOL fIsPdc;  
-        BOOL fDsEnabled;  
-        BOOL fIsGc;  
-        BOOL fIsRodc;  
-        GUID SiteObjectGuid;  
-        GUID ComputerObjectGuid;  
-        GUID ServerObjectGuid;  
+        LPTSTR SiteObjectName;
+        LPTSTR ComputerObjectName;
+        LPTSTR ServerObjectName;
+        LPTSTR NtdsaObjectName;
+        BOOL fIsPdc;
+        BOOL fDsEnabled;
+        BOOL fIsGc;
+        BOOL fIsRodc;
+        GUID SiteObjectGuid;
+        GUID ComputerObjectGuid;
+        GUID ServerObjectGuid;
         GUID NtdsDsaObjectGuid;
     } DS_DOMAIN_CONTROLLER_INFO_3, *PDS_DOMAIN_CONTROLLER_INFO_3;*/
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -133,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
         struct _DnsRecord * pNext;
         LPTSTR              pName;
         WORD                wType;
-        WORD                wDataLength; // Not referenced for DNS record 
+        WORD                wDataLength; // Not referenced for DNS record
         //types defined above.
         union {
             DWORD               DW;      // flags as DWORD
@@ -314,11 +314,11 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int STATUS_QUOTA_EXCEEDED = unchecked((int)0xC0000044);
 
         /*DWORD DsGetDcName(
-                LPCTSTR ComputerName, 
-                LPCTSTR DomainName, 
-                GUID* DomainGuid, 
-                LPCTSTR SiteName, 
-                ULONG Flags, 
+                LPCTSTR ComputerName,
+                LPCTSTR DomainName,
+                GUID* DomainGuid,
+                LPCTSTR SiteName,
+                ULONG Flags,
                 PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
                 );*/
         [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
@@ -370,16 +370,16 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] IntPtr getDcContextHandle);
 
         /*NET_API_STATUS NetApiBufferFree(
-                LPVOID Buffer  
+                LPVOID Buffer
                 );*/
         [DllImport("Netapi32.dll")]
         internal static extern int NetApiBufferFree(
             [In] IntPtr buffer);
 
         /*DWORD DsMakePasswordCredentials(
-            LPTSTR User, 
-            LPTSTR Domain, 
-            LPTSTR Password, 
+            LPTSTR User,
+            LPTSTR Domain,
+            LPTSTR Password,
             RPC_AUTH_IDENTITY_HANDLE* pAuthIdentity
             );*/
 
@@ -396,9 +396,9 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] IntPtr authIdentity);
 
         /*DWORD DsBindWithCred(
-            TCHAR* DomainController, 
-            TCHAR* DnsDomainName, 
-            RPC_AUTH_IDENTITY_HANDLE AuthIdentity, 
+            TCHAR* DomainController,
+            TCHAR* DnsDomainName,
+            RPC_AUTH_IDENTITY_HANDLE AuthIdentity,
             HANDLE* phDS
             );*/
         internal delegate int DsBindWithCred(
@@ -431,8 +431,8 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DsDomainControllerInfoLevel3 = 3;
 
         /*VOID DsFreeDomainControllerInfo(
-            DWORD InfoLevel, 
-            DWORD cInfo, 
+            DWORD InfoLevel,
+            DWORD cInfo,
             VOID* pInfo
             );*/
         internal delegate void DsFreeDomainControllerInfo(
@@ -451,7 +451,7 @@ namespace System.DirectoryServices.ActiveDirectory
             [Out] out IntPtr sites);
 
         /*DWORD DsListRoles(
-            HANDLE hDs, 
+            HANDLE hDs,
             PDS_NAME_RESULTW* ppRoles
             );*/
         internal delegate int DsListRoles(
@@ -471,7 +471,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD fOptions,
             PIP4_ARRAY aipServers,
             PDNS_RECORD *ppQueryResultsSet,
-            PVOID *pReserved 
+            PVOID *pReserved
             );*/
         [DllImport("Dnsapi.dll", EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
         internal static extern int DnsQuery(
@@ -499,12 +499,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 [In, Out] OSVersionInfoEx ver);
 
         /*DWORD DsCrackNames(
-            HANDLE hDS, 
-            DS_NAME_FLAGS flags, 
-            DS_NAME_FORMAT formatOffered, 
-            DS_NAME_FORMAT formatDesired, 
-            DWORD cNames, 
-            LPTSTR* rpNames, 
+            HANDLE hDS,
+            DS_NAME_FLAGS flags,
+            DS_NAME_FORMAT formatOffered,
+            DS_NAME_FORMAT formatDesired,
+            DWORD cNames,
+            LPTSTR* rpNames,
             PDS_NAME_RESULT* ppResult
             );*/
         internal delegate int DsCrackNames(

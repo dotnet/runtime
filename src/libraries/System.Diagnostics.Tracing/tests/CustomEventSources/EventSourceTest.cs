@@ -12,15 +12,15 @@ using System.Diagnostics.Tracing;
 #endif
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
-// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind 
+// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind
 
 namespace SdtEventSources
 {
     /// <summary>
-    /// A sample Event source. The Guid and Name attributes are "idempotent", i.e. they 
-    /// don't change the default computed by EventSource; they're specified here just to 
-    /// increase the code coverage. 
-    /// 
+    /// A sample Event source. The Guid and Name attributes are "idempotent", i.e. they
+    /// don't change the default computed by EventSource; they're specified here just to
+    /// increase the code coverage.
+    ///
     /// Also, this EventSource uses manifest-based ETW and is not self-describing. That means
     /// it does not support complex data types, including nullables, as event arguments.
     /// </summary>
@@ -81,7 +81,7 @@ namespace SdtEventSources
 
         [Event(15, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational, Task = Tasks.WorkItem)]
         public void StartTrackingActivity() { WriteEvent(15); }
-        
+
         [Event(17, Keywords = Keywords.Transfer | Keywords.HasStringArgs, Opcode = EventOpcode.Send, Task = Tasks.WorkItem)]
         public unsafe void LogTaskScheduled(Guid RelatedActivityId, string message)
         {

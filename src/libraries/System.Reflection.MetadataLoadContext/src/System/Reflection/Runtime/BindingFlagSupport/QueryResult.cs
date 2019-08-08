@@ -46,7 +46,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
                     if (count == 0)
                     {
-                        // If no matches were found, set ourselves back to the "uninitialized" state so that future 
+                        // If no matches were found, set ourselves back to the "uninitialized" state so that future
                         // calls to Count won't go through this calculation again.
                         _queriedMembers = null;
                     }

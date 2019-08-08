@@ -148,7 +148,7 @@ namespace System.Resources
                     return new CultureInfo(languages[i]);
                 }
 
-                int result = Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH); 
+                int result = Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
                 if (result != 0)
                 {
                     string localeName = new string(localeNameBuffer, 0, result - 1); // result length includes null terminator
@@ -248,12 +248,12 @@ namespace System.Resources
             }
 
             List<string> languages = new List<string>(langs);
-            
+
             if (languages.Count > 0 && languages[0] == c_InvariantCulturePrivateName)
             {
                 languages[0] = CultureInfo.InvariantCulture.Name;
             }
-            
+
             s_globalResourceContextBestFitCultureInfo = GetBestFitCultureFromLanguageList(languages);
             s_globalResourceContextFallBackList = ReadOnlyListToString(languages);
         }
@@ -463,7 +463,7 @@ namespace System.Resources
             {
                 if (!ReferenceEquals(s_globalResourceContextBestFitCultureInfo, ci))
                 {
-                    // We have same culture name but different reference, we'll need to update s_globalResourceContextBestFitCultureInfo only as ci can 
+                    // We have same culture name but different reference, we'll need to update s_globalResourceContextBestFitCultureInfo only as ci can
                     // be a customized subclassed culture which setting different values for NFI, DTFI...etc.
                     s_globalResourceContextBestFitCultureInfo = ci;
                 }

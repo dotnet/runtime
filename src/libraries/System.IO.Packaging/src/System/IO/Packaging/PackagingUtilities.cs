@@ -109,7 +109,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-        
+
         /// <summary>
         /// Synchronize access to IsolatedStorage methods that can step on each-other
         /// </summary>

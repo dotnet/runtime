@@ -473,7 +473,7 @@ namespace System.Diagnostics
             if (!success)
             {
                 // Ignore file not found errors.  ClearEventLog seems to try to delete the file where the event log is
-                // stored.  If it can't find it, it gives an error. 
+                // stored.  If it can't find it, it gives an error.
                 int error = Marshal.GetLastWin32Error();
                 if (error != Interop.Errors.ERROR_FILE_NOT_FOUND)
                     throw new Win32Exception();
@@ -594,7 +594,7 @@ namespace System.Diagnostics
 
             try
             {
-                // if the user cleared the log while we were receiving events, the call to GetEntryWithOldest above could have 
+                // if the user cleared the log while we were receiving events, the call to GetEntryWithOldest above could have
                 // thrown an exception and i could be too large.  Make sure we don't set lastSeenCount to something bogus.
                 int newCount = EntryCount + OldestEntryNumber;
                 if (i > newCount)
@@ -1396,7 +1396,7 @@ namespace System.Diagnostics
                 if (strings[i] == null)
                     strings[i] = string.Empty;
 
-                // make sure the strings aren't too long.  MSDN says each string has a limit of 32k (32768) characters, but 
+                // make sure the strings aren't too long.  MSDN says each string has a limit of 32k (32768) characters, but
                 // experimentation shows that it doesn't like anything larger than 32766
                 if (strings[i].Length > 32766)
                     throw new ArgumentException(SR.LogEntryTooLong);

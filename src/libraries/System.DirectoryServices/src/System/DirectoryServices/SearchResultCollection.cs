@@ -13,9 +13,9 @@ using INTPTR_INTPTRCAST = System.IntPtr;
 namespace System.DirectoryServices
 {
     /// <devdoc>
-    /// Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a 
+    /// Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a
     /// query to the Active Directory hierarchy through <see cref='System.DirectoryServices.DirectorySearcher'/>.
-    /// </devdoc>    
+    /// </devdoc>
     public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable
     {
         private IntPtr _handle;
@@ -41,7 +41,7 @@ namespace System.DirectoryServices
         public SearchResult this[int index] => (SearchResult)InnerList[index];
 
         public int Count => InnerList.Count;
-                                                          
+
         internal string Filter { get; }
 
         private ArrayList InnerList
@@ -69,7 +69,7 @@ namespace System.DirectoryServices
             {
                 if (_searchObject == null)
                 {
-                    _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once                                        
+                    _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once
                 }
                 return _searchObject;
             }
@@ -174,7 +174,7 @@ namespace System.DirectoryServices
                     // IDirectorySearch interface cannot be registered, because it is not automation
                     // compatible. Therefore the QI for IDirectorySearch on this thread fails, and we get
                     // an InvalidCastException. The conclusion is that the user simply must call Dispose
-                    // on this object.         
+                    // on this object.
 
                     _searchObject.CloseSearchHandle(_handle);
 
@@ -199,7 +199,7 @@ namespace System.DirectoryServices
         public IEnumerator GetEnumerator()
         {
             // Two ResultsEnumerators can't exist at the same time over the
-            // same object. Need to get a new handle, which means re-querying.            
+            // same object. Need to get a new handle, which means re-querying.
             return new ResultsEnumerator(this,
                                                        _rootEntry.GetUsername(),
                                                        _rootEntry.GetPassword(),
@@ -249,7 +249,7 @@ namespace System.DirectoryServices
 
             /// <devdoc>
             /// Gets the current element in the collection.
-            /// </devdoc>            
+            /// </devdoc>
             public SearchResult Current
             {
                 get

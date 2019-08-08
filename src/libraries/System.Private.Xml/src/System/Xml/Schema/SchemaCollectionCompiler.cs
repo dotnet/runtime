@@ -852,7 +852,7 @@ namespace System.Xml.Schema
                     {
                         datatype = baseType.Datatype;
                         //There is a bug here. Need to check if simpleRestriction has facets.
-                        //If yes, Need tp apply these facets as well. 
+                        //If yes, Need tp apply these facets as well.
                     }
                     else
                     {

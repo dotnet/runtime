@@ -255,7 +255,7 @@ namespace System.Net.Http.Tests
             cacheControl1.NoCacheHeaders.Add("token1");
             CompareHashCodes(cacheControl1, cacheControl2, true);
 
-            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders 
+            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders
             // have the same values, the hash code will be different.
             cacheControl3.Private = true;
             cacheControl3.PrivateHeaders.Add("token2");
@@ -382,7 +382,7 @@ namespace System.Net.Http.Tests
             cacheControl1.NoCacheHeaders.Add("token1");
             CompareValues(cacheControl1, cacheControl2, true);
 
-            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders 
+            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders
             // have the same values, the hash code will be different.
             cacheControl3.Private = true;
             cacheControl3.PrivateHeaders.Add("token2");

@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             [Import(AllowDefault=true)] public IDisposable  Disposable;
             [Import(AllowDefault=true)] public BareClass    BareClass;
         }
- 
+
         [Fact]
         public void StandardExportInterfacesShouldWork()
         {
@@ -58,10 +58,10 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var catalog = new TypeCatalog(types, builder);
 
             CompositionService cs = catalog.CreateCompositionService();
-            
+
             var importer = new Importer();
             cs.SatisfyImportsOnce(importer);
-            
+
             Assert.NotNull(importer.First);
             Assert.True(importer.First.Count() == 3);
             Assert.NotNull(importer.Second);
@@ -92,10 +92,10 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var catalog = new TypeCatalog(types, builder);
 
             CompositionService cs = catalog.CreateCompositionService();
-            
+
             var importer = new Importer();
             cs.SatisfyImportsOnce(importer);
-            
+
             Assert.NotNull(importer.First);
             Assert.True(importer.First.Count() == 3);
             Assert.NotNull(importer.Second);

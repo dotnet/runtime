@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
         {
             MockHandler handler = new MockHandler();
 
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 { Task t = handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None); });
         }
 
@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
             var transport = new MockTransportHandler();
             var handler = new MockHandler(transport);
 
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 { Task t = handler.TestSendAsync(null, CancellationToken.None); });
         }
 
@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var handler = new MockHandler();
 
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 { Task t = handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None); });
         }
 
@@ -216,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 return SendAsync(request, cancellationToken);
             }
-            
+
             protected override void Dispose(bool disposing)
             {
                 DisposeCount++;

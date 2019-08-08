@@ -21,9 +21,9 @@ namespace System.Linq.Parallel
     ///     This enumerator type won't work properly at all if the analysis engine didn't
     ///     ensure a proper hash-partition. We expect inner and outer elements with equal
     ///     keys are ALWAYS in the same partition. If they aren't (e.g. if the analysis is
-    ///     busted) we'll silently drop items on the floor. :( 
-    ///     
-    ///     
+    ///     busted) we'll silently drop items on the floor. :(
+    ///
+    ///
     ///  This is the enumerator class for two operators:
     ///   - Join
     ///   - GroupJoin
@@ -194,7 +194,7 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A key builder that simply returns the left key, ignoring the right key.
-    /// 
+    ///
     /// Used when the right source is unordered.
     /// </summary>
     /// <typeparam name="TLeftKey"></typeparam>
@@ -209,7 +209,7 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A key builder that simply returns a left key, right key pair.
-    /// 
+    ///
     /// Used when the right source is ordered.
     /// </summary>
     /// <typeparam name="TLeftKey"></typeparam>
@@ -303,7 +303,7 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A wrapper for the HashLookup returned by HashLookupBuilder.
-    /// 
+    ///
     /// This will allow for providing a default if there is no value in the base lookup.
     /// </summary>
     /// <typeparam name="THashKey"></typeparam>
@@ -317,10 +317,10 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A list to handle one or more right elements of a join operation.
-    /// 
+    ///
     /// It optimizes for 1 to 1 joins by only allocating heap space lazily
     /// once a second value is added.
-    /// 
+    ///
     /// This is built in the HashLookupBuilder classes and consumed by the
     /// HashJoinQueryOperatorEnumerator.
     /// </summary>

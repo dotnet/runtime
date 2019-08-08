@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                // Get dns name of the dc 
+                // Get dns name of the dc
                 // by binding to root dse and getting the "dnsHostName" attribute
                 // (also check that the "isGlobalCatalogReady" attribute is true)
                 directoryEntryMgr = new DirectoryEntryManager(context);
@@ -425,7 +425,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(domainControllerInfo.DomainControllerName.Length > 2);
             string globalCatalogName = domainControllerInfo.DomainControllerName.Substring(2);
 
-            // create a new context object for the global catalog 
+            // create a new context object for the global catalog
             DirectoryContext gcContext = Utils.GetNewDirectoryContext(globalCatalogName, DirectoryContextType.DirectoryServer, context);
 
             return new GlobalCatalog(gcContext, globalCatalogName);

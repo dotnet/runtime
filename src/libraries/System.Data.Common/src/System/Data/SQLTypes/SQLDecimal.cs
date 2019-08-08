@@ -956,7 +956,7 @@ namespace System.Data.SqlTypes
             int iCurChar = 0;
             char[] szResult;
 
-            // Increment the result length if scale > 0 (need to add '.')            
+            // Increment the result length if scale > 0 (need to add '.')
             if (_bScale > 0)
             {
                 uiResultLen = 1;
@@ -968,7 +968,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                // Increment the result length if negative (need to add '-')            
+                // Increment the result length if negative (need to add '-')
                 szResult = new char[uiResultLen + iDigits + 1];
                 szResult[iCurChar++] = '-';
             }

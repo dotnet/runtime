@@ -7,7 +7,7 @@ namespace System.Collections.Generic
     /// <summary>
     /// A comparer for two <see cref="SortedSet{T}"/>.
     /// </summary>
-    internal sealed class SortedSetEqualityComparer<T> : IEqualityComparer<SortedSet<T>> 
+    internal sealed class SortedSetEqualityComparer<T> : IEqualityComparer<SortedSet<T>>
     {
         private readonly IComparer<T> _comparer;
         private readonly IEqualityComparer<T> _memberEqualityComparer;
@@ -19,7 +19,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Create a new SetEqualityComparer, given a comparer for member order and another for member equality (these
         /// must be consistent in their definition of equality)
-        /// </summary>        
+        /// </summary>
         private SortedSetEqualityComparer(IComparer<T>? comparer, IEqualityComparer<T>? memberEqualityComparer)
         {
             _comparer = comparer ?? Comparer<T>.Default;
@@ -44,7 +44,7 @@ namespace System.Collections.Generic
             return hashCode;
         }
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj)
         {
             SortedSetEqualityComparer<T>? comparer = obj as SortedSetEqualityComparer<T>;

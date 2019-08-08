@@ -42,13 +42,13 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Methods
-        
+
         #region Internal Constructors
 
         /// <summary>
         /// Constructs a ZipPackagePart for an atomic (i.e. non-interleaved) part.
         /// This is called from the ZipPackage class as a result of GetPartCore,
-        /// GetPartsCore or CreatePartCore methods     
+        /// GetPartsCore or CreatePartCore methods
         /// </summary>
         /// <param name="zipPackage"></param>
         /// <param name="zipArchive"></param>
@@ -88,7 +88,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Properties
-        
+
         #region Private Variables
 
         private ZipPackage _zipPackage;

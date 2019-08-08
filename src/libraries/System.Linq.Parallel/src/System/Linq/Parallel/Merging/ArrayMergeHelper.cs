@@ -67,7 +67,7 @@ namespace System.Linq.Parallel
 
         /// <summary>
         /// Gets the enumerator over the results.
-        /// 
+        ///
         /// We never expect this method to be called. ArrayMergeHelper is intended to be used when we want
         /// to consume the results using GetResultsAsArray().
         /// </summary>

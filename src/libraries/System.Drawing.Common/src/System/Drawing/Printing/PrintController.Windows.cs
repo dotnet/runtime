@@ -12,7 +12,7 @@ namespace System.Drawing.Printing
     /// </summary>
     public abstract class PrintController
     {
-        // DEVMODEs are pretty expensive, so we cache one here and share it with the 
+        // DEVMODEs are pretty expensive, so we cache one here and share it with the
         // Standard and Preview print controllers.  If it weren't for all the rules about API changes,
         // I'd consider making this protected.
 
@@ -213,7 +213,7 @@ namespace System.Drawing.Printing
                     }
                     else
                     {
-                        // This is not the first page and the settings had not changed since the previous page, 
+                        // This is not the first page and the settings had not changed since the previous page,
                         // thus don't re-apply them.
                         pageEvent.CopySettingsToDevMode = false;
                     }

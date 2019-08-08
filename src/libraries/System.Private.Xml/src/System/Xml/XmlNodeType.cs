@@ -178,7 +178,7 @@ namespace System.Xml
         /// </devdoc>
         EndElement,
         /// <devdoc>
-        ///    <para>Returned when XmlReader gets to the end of the entity 
+        ///    <para>Returned when XmlReader gets to the end of the entity
         ///       replacement as a result of a call to <see cref='System.Xml.XmlReader.ResolveEntity'/>
         ///       .</para>
         /// </devdoc>
@@ -191,8 +191,8 @@ namespace System.Xml
         ///       Example XML: &lt;?xml version='1.0'?&gt;;
         ///    </para>
         ///    <para>
-        ///        This has to be the first node in the document. It can have no children. 
-        ///        It is a child of the root node. It can have attributes that provide version 
+        ///        This has to be the first node in the document. It can have no children.
+        ///        It is a child of the root node. It can have attributes that provide version
         ///        and encoding information.
         ///    </para>
         /// </devdoc>

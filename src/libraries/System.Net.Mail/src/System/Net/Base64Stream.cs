@@ -238,7 +238,7 @@ namespace System.Net
                 //how we actually encode: get three bytes in the
                 //buffer to be encoded.  Then, extract six bits at a time and encode each six bit chunk as a base-64 character.
                 //this means that three bytes of data will be encoded as four base64 characters.  It also means that to encode
-                //a character, we must have three bytes to encode so if the number of bytes is not divisible by three, we 
+                //a character, we must have three bytes to encode so if the number of bytes is not divisible by three, we
                 //must pad the buffer (this happens below)
                 WriteState.Append(s_base64EncodeMap[(buffer[cur] & 0xfc) >> 2]);
                 WriteState.Append(s_base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
@@ -254,7 +254,7 @@ namespace System.Net
                 WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
             }
 
-            //now pad this thing if we need to.  Since it must be a number of bytes that is evenly divisble by 3, 
+            //now pad this thing if we need to.  Since it must be a number of bytes that is evenly divisble by 3,
             //if there are extra bytes, pad with '=' until we have a number of bytes divisible by 3
             switch (count % 3)
             {
@@ -388,7 +388,7 @@ namespace System.Net
 
             int written = 0;
 
-            // do not append a space when writing from a stream since this means 
+            // do not append a space when writing from a stream since this means
             // it's writing the email body
             for (;;)
             {
@@ -512,7 +512,7 @@ namespace System.Net
             {
                 for (;;)
                 {
-                    // do not append a space when writing from a stream since this means 
+                    // do not append a space when writing from a stream since this means
                     // it's writing the email body
                     _written += _parent.EncodeBytes(_buffer, _offset + _written, _count - _written, false, false);
                     if (_written < _count)

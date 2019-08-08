@@ -15,7 +15,7 @@ namespace System.IO.Packaging
         protected XmlReader _reader;
         protected IXmlLineInfo _readerAsIXmlLineInfo;
         protected IXmlNamespaceResolver _readerAsResolver;
-        
+
         internal XmlWrappingReader(XmlReader baseReader)
         {
             Debug.Assert(baseReader != null);
@@ -168,7 +168,7 @@ namespace System.IO.Packaging
                 return (_readerAsIXmlLineInfo == null) ? 0 : _readerAsIXmlLineInfo.LinePosition;
             }
         }
-        
+
         protected XmlReader Reader
         {
             get

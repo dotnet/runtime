@@ -216,7 +216,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Stream stream = MakeResponseStream();
 
             TestControl.WinHttpQueryDataAvailable.ErrorWithApiCall = true;
-            
+
             Task t = stream.ReadAsync(new byte[1], 0, 1);
             AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
             Assert.IsType<IOException>(ex.InnerException);
@@ -228,7 +228,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Stream stream = MakeResponseStream();
 
             TestControl.WinHttpQueryDataAvailable.ErrorOnCompletion = true;
-            
+
             Task t = stream.ReadAsync(new byte[1], 0, 1);
             AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
             Assert.IsType<IOException>(ex.InnerException);
@@ -240,7 +240,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Stream stream = MakeResponseStream();
 
             TestControl.WinHttpReadData.ErrorWithApiCall = true;
-            
+
             Task t = stream.ReadAsync(new byte[1], 0, 1);
             AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
             Assert.IsType<IOException>(ex.InnerException);
@@ -252,7 +252,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Stream stream = MakeResponseStream();
 
             TestControl.WinHttpReadData.ErrorOnCompletion = true;
-            
+
             Task t = stream.ReadAsync(new byte[1], 0, 1);
             AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
             Assert.IsType<IOException>(ex.InnerException);
@@ -282,12 +282,12 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void ReadAsync_PriorReadInProgress_ThrowsInvalidOperationException()
         {
             Stream stream = MakeResponseStream();
-            
+
             TestControl.WinHttpReadData.Pause();
             Task t1 = stream.ReadAsync(new byte[1], 0, 1);
 
             Assert.Throws<InvalidOperationException>(() => { Task t2 = stream.ReadAsync(new byte[1], 0, 1); });
-            
+
             TestControl.WinHttpReadData.Resume();
             t1.Wait();
         }

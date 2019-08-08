@@ -100,7 +100,7 @@ namespace System.Net.Http
                 // Before actually configuring the handle based on the state of the request,
                 // do any necessary cleanup of the request object.
                 SanitizeRequestMessage();
-                
+
                 // Configure the handle
                 SetUrl();
                 SetNetworkingOptions();
@@ -290,7 +290,7 @@ namespace System.Net.Http
 
                 string idnHost = requestUri.IdnHost;
                 url = requestUri.Host == idnHost ?
-                         requestUri.AbsoluteUri : 
+                         requestUri.AbsoluteUri :
                          new UriBuilder(requestUri) { Host = idnHost }.Uri.AbsoluteUri;
 
                 SetCurlOption(CURLoption.CURLOPT_URL, url);
@@ -372,11 +372,11 @@ namespace System.Net.Http
                 Uri newUri;
                 if (Uri.TryCreate(_requestMessage.RequestUri, location.Trim(), out newUri))
                 {
-                    // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is 
-                    // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
+                    // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is
+                    // anything other than a CredentialCache. We allow credentials in a CredentialCache since they
                     // are specifically tied to URIs.
                     updatedCredentials = _handler._useDefaultCredentials ?
-                        GetDefaultCredentialAndAuth() : 
+                        GetDefaultCredentialAndAuth() :
                         GetCredentials(newUri, _handler.Credentials as CredentialCache, s_orderedAuthTypes);
 
                     // Reset proxy - it is possible that the proxy has different credentials for the new URI
@@ -394,11 +394,11 @@ namespace System.Net.Http
                     }
                 }
 
-                // Set up the new credentials, either for the new Uri if we were able to get it, 
+                // Set up the new credentials, either for the new Uri if we were able to get it,
                 // or to empty creds if we couldn't.
                 SetCredentialsOptions(updatedCredentials);
 
-                // Set the headers again. This is a workaround for libcurl's limitation in handling 
+                // Set the headers again. This is a workaround for libcurl's limitation in handling
                 // headers with empty values.
                 SetRequestHeaders(copyAuthHeaders:false);
             }
@@ -589,12 +589,12 @@ namespace System.Net.Http
 
                 if (_handler.Proxy == null)
                 {
-                    // UseProxy was true, but Proxy was null.  Let libcurl do its default handling, 
-                    // which includes checking the http_proxy environment variable.  
+                    // UseProxy was true, but Proxy was null.  Let libcurl do its default handling,
+                    // which includes checking the http_proxy environment variable.
                     EventSourceTrace("UseProxy true, Proxy null, using default proxy");
 
                     // Since that proxy set in an environment variable might require a username and password,
-                    // use the default proxy credentials if there are any.  Currently only NetworkCredentials 
+                    // use the default proxy credentials if there are any.  Currently only NetworkCredentials
                     // are used, as we can't query by the proxy Uri, since we don't know it.
                     SetProxyCredentials(_handler.DefaultProxyCredentials as NetworkCredential);
 
@@ -631,9 +631,9 @@ namespace System.Net.Http
 
                 // Configure libcurl with the gathered proxy information
 
-                // uri.AbsoluteUri/ToString() omit IPv6 scope IDs.  SerializationInfoString ensures these details 
-                // are included, but does not properly handle international hosts.  As a workaround we check whether 
-                // the host is a link-local IP address, and based on that either return the SerializationInfoString 
+                // uri.AbsoluteUri/ToString() omit IPv6 scope IDs.  SerializationInfoString ensures these details
+                // are included, but does not properly handle international hosts.  As a workaround we check whether
+                // the host is a link-local IP address, and based on that either return the SerializationInfoString
                 // or the AbsoluteUri. (When setting the request Uri itself, we instead use CURLOPT_ADDRESS_SCOPE to
                 // set the scope id and the url separately, avoiding these issues and supporting versions of libcurl
                 // prior to v7.37 that don't support parsing scope IDs out of the url's host.  As similar feature
@@ -666,7 +666,7 @@ namespace System.Net.Http
                         throw new ArgumentException(SR.net_http_argument_empty_string, "UserName");
                     }
 
-                    // Unlike normal credentials, proxy credentials are URL decoded by libcurl, so we URL encode 
+                    // Unlike normal credentials, proxy credentials are URL decoded by libcurl, so we URL encode
                     // them in order to allow, for example, a colon in the username.
                     string credentialText = string.IsNullOrEmpty(credentials.Domain) ?
                         WebUtility.UrlEncode(credentials.UserName) + ":" + WebUtility.UrlEncode(credentials.Password) :
@@ -847,7 +847,7 @@ namespace System.Net.Http
                 {
                     SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
                     CURLcode curlResult = Interop.Http.RegisterDebugCallback(
-                        _easyHandle, 
+                        _easyHandle,
                         debugCallback,
                         easyGCHandle,
                         ref _callbackHandle);

@@ -10,7 +10,7 @@ namespace System.DirectoryServices
 {
     /// <devdoc>
     /// Contains the children (child entries) of an entry in the Active Directory.
-    /// </devdoc>    
+    /// </devdoc>
     public class DirectoryEntries : IEnumerable
     {
         // the parent of the children in this collection
@@ -20,7 +20,7 @@ namespace System.DirectoryServices
         {
             _container = parent;
         }
-        
+
         /// <devdoc>
         /// Gets the schemas that specify which children are shown.
         /// </devdoc>
@@ -39,7 +39,7 @@ namespace System.DirectoryServices
             if (!_container.IsContainer)
                 throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , _container.Path));
         }
-        
+
         /// <devdoc>
         /// Creates a request to create a new entry in the container.
         /// </devdoc>
@@ -51,7 +51,7 @@ namespace System.DirectoryServices
             entry.JustCreated = true;       // suspend writing changes until CommitChanges() is called
             return entry;
         }
-        
+
         /// <devdoc>
         /// Returns the child with the given name.
         /// </devdoc>
@@ -79,7 +79,7 @@ namespace System.DirectoryServices
             }
             return new DirectoryEntry(o, _container.UsePropertyCache, _container.GetUsername(), _container.GetPassword(), _container.AuthenticationType);
         }
-        
+
         /// <devdoc>
         /// Deletes a child <see cref='System.DirectoryServices.DirectoryEntry'/> from this collection.
         /// </devdoc>
@@ -97,7 +97,7 @@ namespace System.DirectoryServices
         }
 
         public IEnumerator GetEnumerator() => new ChildEnumerator(_container);
-        
+
         /// <devdoc>
         /// Supports a simple ForEach-style iteration over a collection and defines
         /// enumerators, size, and synchronization methods.
@@ -116,7 +116,7 @@ namespace System.DirectoryServices
                     _enumVariant = new SafeNativeMethods.EnumVariant((SafeNativeMethods.IEnumVariant)container.ContainerObject._NewEnum);
                 }
             }
-            
+
             /// <devdoc>
             /// Gets the current element in the collection.
             /// </devdoc>
@@ -137,7 +137,7 @@ namespace System.DirectoryServices
             /// <devdoc>
             /// Advances the enumerator to the next element of the collection
             /// and returns a Boolean value indicating whether a valid element is available.
-            /// </devdoc>                        
+            /// </devdoc>
             public bool MoveNext()
             {
                 if (_enumVariant == null)

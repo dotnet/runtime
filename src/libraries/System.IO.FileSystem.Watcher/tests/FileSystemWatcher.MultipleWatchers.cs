@@ -123,7 +123,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_File_Create_WatchOwnPath()
         {
             ExecuteWithRetry(() =>
-            {            
+            {
                 using (var dir = new TempDirectory(GetTestFilePath()))
                 using (var dir1 = new TempDirectory(Path.Combine(dir.Path, "dir1")))
                 using (var dir2 = new TempDirectory(Path.Combine(dir.Path, "dir2")))
@@ -145,7 +145,7 @@ namespace System.IO.Tests
 
                     File.Create(fileName2).Dispose();
                     Assert.True(autoResetEvent2.WaitOne(WaitForExpectedEventTimeout_NoRetry));
-                    Assert.False(autoResetEvent1.WaitOne(WaitForUnexpectedEventTimeout));                
+                    Assert.False(autoResetEvent1.WaitOne(WaitForUnexpectedEventTimeout));
                 }
             });
         }
@@ -182,7 +182,7 @@ namespace System.IO.Tests
                         watchers[i].EnableRaisingEvents = false;
                     }
 
-                    File.Create(fileName).Dispose(); 
+                    File.Create(fileName).Dispose();
                     Assert.False(WaitHandle.WaitAll(autoResetEvents, WaitForUnexpectedEventTimeout));
 
                     File.Delete(fileName);
@@ -198,8 +198,8 @@ namespace System.IO.Tests
                         Assert.True(WaitHandle.WaitAll(autoResetEvents, WaitForExpectedEventTimeout_NoRetry));
                     }
                     else
-                    {                        
-                        AutoResetEvent[] autoResetEvents1 = new AutoResetEvent[64];                        
+                    {
+                        AutoResetEvent[] autoResetEvents1 = new AutoResetEvent[64];
                         for (var i = 0; i < watchers1.Length; i++)
                         {
                             watchers1[i] = new FileSystemWatcher(TestDirectory);
@@ -292,7 +292,7 @@ namespace System.IO.Tests
 
                     File.Delete(fileName);
                     Assert.True(WaitHandle.WaitAll(new[] { autoResetEvent1, autoResetEvent2, autoResetEvent3 }, WaitForExpectedEventTimeout_NoRetry));
-                    
+
                     File.Create(fileName).Dispose();
                     watcher1.EnableRaisingEvents = false;
 

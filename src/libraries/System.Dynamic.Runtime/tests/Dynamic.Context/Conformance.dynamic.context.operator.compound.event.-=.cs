@@ -40,7 +40,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             E += C.Foo2;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -172,7 +172,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             E += C.Foo2;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -302,7 +302,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             return i + 2;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -419,7 +419,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             return i + 2;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -542,7 +542,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
         public event Dele E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -666,7 +666,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
         public event Dele E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -814,7 +814,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             return i;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -990,7 +990,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             return i;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1259,7 +1259,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
         public event Dele E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1397,7 +1397,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
         public event Dele E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1535,7 +1535,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
         public event Dele E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

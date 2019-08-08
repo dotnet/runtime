@@ -38,7 +38,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <param name="allowedRanges">Set of characters that the encoder is allowed to not encode.</param>
         /// <returns>A new instance of the <see cref="HtmlEncoder"/></returns>
-        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks> 
+        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks>
         public static HtmlEncoder Create(params UnicodeRange[] allowedRanges)
         {
             return new DefaultHtmlEncoder(allowedRanges);

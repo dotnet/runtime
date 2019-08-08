@@ -32,8 +32,8 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="ImportEngine"/> class.
         /// </summary>
         /// <param name="sourceProvider">
-        ///     The <see cref="ExportProvider"/> which provides the 
-        ///     <see cref="ImportEngine"/> access to <see cref="Export"/>s. 
+        ///     The <see cref="ExportProvider"/> which provides the
+        ///     <see cref="ImportEngine"/> access to <see cref="Export"/>s.
         /// </param>
         public ImportEngine(ExportProvider sourceProvider)
             : this(sourceProvider, CompositionOptions.Default)
@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        ///     Previews all the required imports for the given <see cref="ComposablePart"/> to 
+        ///     Previews all the required imports for the given <see cref="ComposablePart"/> to
         ///     ensure they can all be satisified. The preview does not actually set the imports
         ///     only ensures that they exist in the source provider. If the preview succeeds then
         ///     the <see cref="ImportEngine"/> also enforces that changes to exports in the source
@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </param>
         /// <param name="atomicComposition"></param>
         /// <exception cref="CompositionException">
-        ///     An error occurred during previewing and <paramref name="atomicComposition"/> is null. 
+        ///     An error occurred during previewing and <paramref name="atomicComposition"/> is null.
         ///     <see cref="CompositionException.Errors"/> will contain a collection of errors that occurred.
         ///     The pre-existing composition is in an unknown state, depending on the errors that occured.
         /// </exception>
@@ -212,15 +212,15 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        ///     Removes any state stored in the <see cref="ImportEngine"/> for the associated 
-        ///     <see cref="ComposablePart"/> and releases all the <see cref="Export"/>s used to 
+        ///     Removes any state stored in the <see cref="ImportEngine"/> for the associated
+        ///     <see cref="ComposablePart"/> and releases all the <see cref="Export"/>s used to
         ///     satisfy the imports on the <see cref="ComposablePart"/>.
-        ///     
+        ///
         ///     Also removes the enforcement for changes that would break a required import on
         ///     <paramref name="part"/>.
         /// </summary>
         /// <param name="part">
-        ///     The <see cref="ComposablePart"/> to release the imports on. 
+        ///     The <see cref="ComposablePart"/> to release the imports on.
         /// </param>
         /// <param name="atomicComposition">
         ///     The <see cref="AtomicComposition"/> that the release imports is running under.
@@ -295,7 +295,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             if (partManager.State == ImportState.ImportsPreviewing)
             {
-                // We shouldn't nomally ever hit this case but if we do 
+                // We shouldn't nomally ever hit this case but if we do
                 // then we should just error with a cycle error.
                 return new CompositionResult(ErrorBuilder.CreatePartCycle(part));
             }
@@ -376,7 +376,7 @@ namespace System.ComponentModel.Composition.Hosting
                     // These state should always return, error or not, instead of breaking
                     case ImportState.ImportsPreviewing:
                         {
-                            // We shouldn't nomally ever hit this case but if we do 
+                            // We shouldn't nomally ever hit this case but if we do
                             // then we should just error with a cycle error.
                             return new CompositionResult(ErrorBuilder.CreatePartCycle(part));
                         }
@@ -397,7 +397,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                 }
 
-                // if an error occured while doing a state transition 
+                // if an error occured while doing a state transition
                 if (!result.Succeeded)
                 {
                     // revert to the previous state and return the error
@@ -502,7 +502,7 @@ namespace System.ComponentModel.Composition.Hosting
                 EngineContext engineContext;
                 if (atomicComposition.TryGetValue(this, out engineContext))
                 {
-                    // always added the new part managers to see if they will also be 
+                    // always added the new part managers to see if they will also be
                     // affected by these changes
                     affectedParts = affectedParts.ConcatAllowingNull(engineContext.GetAddedPartManagers())
                         .Except(engineContext.GetRemovedPartManagers());
@@ -533,7 +533,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 default:
                     {
-                        // All other states are invalid and for recomposition. 
+                        // All other states are invalid and for recomposition.
                         return new CompositionResult(ErrorBuilder.InvalidStateForRecompposition(partManager.Part));
                     }
             }

@@ -22,7 +22,7 @@ namespace System.Data.SqlClient
         private void WaitForSSLHandShakeToComplete(ref uint error)
         {
             // No - Op
-            
+
         }
 
         private SNIErrorDetails GetSniErrorDetails()
@@ -36,7 +36,7 @@ namespace System.Data.SqlClient
             details.lineNumber = sniError.lineNumber;
             details.function = sniError.function;
             details.exception = sniError.exception;
-            
+
             return details;
         }
 

@@ -572,8 +572,8 @@ namespace System.Xml
 
         //
         // Verification methods for single characters and surrogates
-        // 
-        // In cases where the direct call into XmlCharType would not get automatically inlined (because of the use of byte* field), 
+        //
+        // In cases where the direct call into XmlCharType would not get automatically inlined (because of the use of byte* field),
         // direct access to the XmlCharType.charProperties is used instead (= manual inlining).
         //
 
@@ -1187,7 +1187,7 @@ namespace System.Xml
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time 
+                    "HH:mm:ss.FFFFFFF",                  //time
                     "HH:mm:ss.FFFFFFFZ",
                     "HH:mm:ss.FFFFFFFzzzzzz",
                     "yyyy-MM-dd",                   // date

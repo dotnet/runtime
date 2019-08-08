@@ -61,13 +61,13 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("EventCounter: Log 1 event, explicit poll at end",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.   
+                        listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.
                         logger.Request(5);
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                            // There will be two events (request and error) for time 0 and 2 more at 1 second and 2 more when we shut it off.  
+                            // There will be two events (request and error) for time 0 and 2 more at 1 second and 2 more when we shut it off.
                             Assert.Equal(4, evts.Count);
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
@@ -78,10 +78,10 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("EventCounter: Log 2 events, explicit poll at end",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.   
+                        listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.
                         logger.Request(5);
                         logger.Request(10);
-                        listener.EnableTimer(logger, 0);        // poll 
+                        listener.EnableTimer(logger, 0);        // poll
                     },
                     delegate (List<Event> evts)
                     {
@@ -123,12 +123,12 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("EventCounter: Log multiple events in multiple periods",
                     delegate ()
                     {
-                        // We have had problems with timer ticks not being called back 100% reliably.  
+                        // We have had problems with timer ticks not being called back 100% reliably.
                         // However timers really don't have a strong guarentee (only that the happen eventually)
                         // So what we do is create a timer callback that simply counts the number of callbacks.
-                        // This acts as a marker to show whether the timer callbacks are happening promptly.  
+                        // This acts as a marker to show whether the timer callbacks are happening promptly.
                         // If we don't get enough of these tick callbacks then we don't require EventCounter to
-                        // be sending periodic callbacks either.   
+                        // be sending periodic callbacks either.
                         num100msecTimerTicks = 0;
                         using (var timer = new System.Threading.Timer(delegate(object state) { num100msecTimerTicks++; EventTestHarness.LogWriteLine("Tick"); }, null, 100, 100))
                         {
@@ -203,24 +203,24 @@ namespace BasicEventSourceTests
                         Assert.Equal(1, errorMin);
                         Assert.Equal(1, errorMax);
 
-                        Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec 
-                        Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  
+                        Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec
+                        Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.
 
-                            // Do all the things that depend on the count of events last so we know everything else is sane 
+                            // Do all the things that depend on the count of events last so we know everything else is sane
                             Assert.True(4 <= evts.Count, "We expect two metrics at the beginning trigger and two at the end trigger.  evts.Count = " + evts.Count);
                         Assert.True(evts.Count % 2 == 0, "We expect two metrics for every trigger.  evts.Count = " + evts.Count);
 
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
 
-                        // We shoudl always get the unconditional callback at the start and end of the trace.  
+                        // We shoudl always get the unconditional callback at the start and end of the trace.
                         Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
                         // We expect about 7 timer requests, but we don't get picky about the exact count
-                        // Putting in a generous buffer, we double 7 to say we don't expect more than 14 timer fires 
+                        // Putting in a generous buffer, we double 7 to say we don't expect more than 14 timer fires
                         // so that is (2 + 14) * 2 = 32
-                        if (num100msecTimerTicks > 3)       // We seem to have problems with timer events going off 100% reliably.  To avoid failures here we only check if in the 700 msec test we get at least 3 100 msec ticks.  
+                        if (num100msecTimerTicks > 3)       // We seem to have problems with timer events going off 100% reliably.  To avoid failures here we only check if in the 700 msec test we get at least 3 100 msec ticks.
                             Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
                         Assert.True(evts.Count <= 32, $"FAILURE: {evts.Count} <= 32");
                     }));
@@ -230,7 +230,7 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("EventCounter: Dispose()",
                     delegate ()
                     {
-                            // Creating and destroying 
+                            // Creating and destroying
                             var myCounter = new EventCounter("counter for a transient object", logger);
                         myCounter.WriteMetric(10);
                         listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
@@ -240,7 +240,7 @@ namespace BasicEventSourceTests
                     delegate (List<Event> evts)
                     {
                             // The static counters (Request and Error), should not log any counts and stay at zero.
-                            // The new counter will exist for the first poll but will not exist for the second.  
+                            // The new counter will exist for the first poll but will not exist for the second.
                             Assert.Equal(5, evts.Count);
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
@@ -254,8 +254,8 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        // Thread.Sleep has proven unreliable, sometime sleeping much shorter than it should. 
-        // This makes sure it at least sleeps 'msec' at a miniumum.  
+        // Thread.Sleep has proven unreliable, sometime sleeping much shorter than it should.
+        // This makes sure it at least sleeps 'msec' at a miniumum.
         private static void Sleep(int minMSec)
         {
             var startTime = DateTime.UtcNow;

@@ -451,9 +451,9 @@ namespace System.Xml
             return dtNode;
         }
 
-        // LoadNodeDirect does not use creator functions on XmlDocument. It is used loading nodes that are children of entity nodes, 
-        // because we do not want to let users extend these (if we would allow this, XmlDataDocument would have a problem, because 
-        // they do not know that those nodes should not be mapped). It can be also used for an optimized load path when if the 
+        // LoadNodeDirect does not use creator functions on XmlDocument. It is used loading nodes that are children of entity nodes,
+        // because we do not want to let users extend these (if we would allow this, XmlDataDocument would have a problem, because
+        // they do not know that those nodes should not be mapped). It can be also used for an optimized load path when if the
         // XmlDocument is not extended if XmlDocumentType and XmlDeclaration handling is added.
         private XmlNode LoadNodeDirect()
         {
@@ -960,7 +960,7 @@ namespace System.Xml
                     XmlTextReaderImpl.DtdParserProxy proxy = new XmlTextReaderImpl.DtdParserProxy(tr);
 
                     IDtdInfo dtdInfo = dtdParser.ParseFreeFloatingDtd(context.BaseURI, context.DocTypeName, context.PublicId, context.SystemId, context.InternalSubset, proxy);
-                    
+
                     dtdNode.DtdSchemaInfo = dtdInfo as SchemaInfo;
                     tr.SetDtdInfo(dtdInfo);
                 }

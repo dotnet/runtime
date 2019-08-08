@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -253,7 +253,7 @@ namespace System.Security.AccessControl.Tests
                 if (acl1StartAceIndex < 0 || acl1EndAceIndex < 0 || acl1StartAceIndex > acl1.Count - 1 || acl1EndAceIndex > acl1.Count - 1 ||
                     acl2StartAceIndex < 0 || acl2EndAceIndex < 0 || acl2StartAceIndex > acl2.Count - 1 || acl2EndAceIndex > acl2.Count - 1)
                 {
-                    //the caller has garenteeed the index calculation is correct so if any above condition hold, 
+                    //the caller has garenteeed the index calculation is correct so if any above condition hold,
                     //that means the range of the index is invalid
                     return true;
                 }

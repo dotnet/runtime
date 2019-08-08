@@ -59,7 +59,7 @@ namespace System.IO.Ports.Tests
 
         private void Initialize()
         {
-            // Get all the MS-DOS names on the local machine 
+            // Get all the MS-DOS names on the local machine
             //(sending null for lpctstrName gets all the names)
             int dataSize;
             char[] buffer = CallQueryDosDevice(null, out dataSize);
@@ -77,7 +77,7 @@ namespace System.IO.Ports.Tests
                 if (i != start)
                 {
                     // We now have an MS-DOS name (the common name). We call QueryDosDevice again with
-                    // this name to get the underlying system name mapped to the MS-DOS name. 
+                    // this name to get the underlying system name mapped to the MS-DOS name.
                     string currentName = TrimTrailingNull((new string(buffer, start, i - start)).Trim());
                     int nameSize;
                     char[] nameBuffer = CallQueryDosDevice(currentName, out nameSize);
@@ -88,7 +88,7 @@ namespace System.IO.Ports.Tests
                     {
                         // internalName will include the trailing null chars as well as any additional
                         // names that may get returned.  This is ok, since we are only interested in the
-                        // first name and we can use StartsWith. 
+                        // first name and we can use StartsWith.
                         string internalName = TrimTrailingNull((new string(nameBuffer, 0, nameSize)).Trim());
                         _dosDevices.Add(currentName, internalName);
                     }

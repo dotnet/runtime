@@ -44,11 +44,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 hmac.Key = key;
 
                 // make sure the getter returns different objects each time
-                Assert.NotSame(key, hmac.Key); 
+                Assert.NotSame(key, hmac.Key);
                 Assert.NotSame(hmac.Key, hmac.Key);
 
                 // make sure the setter didn't cache the exact object we passed in
-                key[0] = (byte)(key[0] + 1); 
+                key[0] = (byte)(key[0] + 1);
                 Assert.NotEqual<byte>(key, hmac.Key);
 
                 computedDigest = hmac.ComputeHash(_testData[testCaseId]);

@@ -17,4 +17,3 @@ namespace System.ServiceProcess
         Suspend             = Interop.Advapi32.PowerBroadcastStatus.PBT_APMSUSPEND,
     }
 }
-

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,16 +14,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientIdentifierAsn Rid;
         internal ReadOnlyMemory<byte> EncryptedKey;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             Rid.Encode(writer);
             writer.WriteOctetString(EncryptedKey.Span);
             writer.PopSequence(tag);
@@ -33,11 +33,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static RecipientEncryptedKeyAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-            
+
             Decode(reader, expectedTag, out RecipientEncryptedKeyAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+
             System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientIdentifierAsn.Decode(sequenceReader, out decoded.Rid);
 
             if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedKey))

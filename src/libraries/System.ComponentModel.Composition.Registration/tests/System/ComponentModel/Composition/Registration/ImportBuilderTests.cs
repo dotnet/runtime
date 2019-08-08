@@ -10,28 +10,28 @@ namespace System.ComponentModel.Composition.Registration.Tests
     public class ImportBuilderTests
     {
         interface IFoo { }
-        
+
         class FooImpl { }
-        
+
         [Fact]
         public void AsContractTypeOfT_SetsContractType()
         {
             var builder = new ImportBuilder();
             builder.AsContractType<IFoo>();
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.Equal(typeof(IFoo), importAtt.ContractType);
             Assert.Null(importAtt.ContractName);
             Assert.False(importAtt.AllowDefault);
             Assert.False(importAtt.AllowRecomposition);
         }
-        
+
         [Fact]
         public void AsContractType_SetsContractType()
         {
             var builder = new ImportBuilder();
             builder.AsContractType(typeof(IFoo));
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.Equal(typeof(IFoo), importAtt.ContractType);
             Assert.Null(importAtt.ContractName);
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var builder = new ImportBuilder();
             builder.AsContractName("hey");
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.Equal("hey", importAtt.ContractName);
             Assert.False(importAtt.AllowDefault);
@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var builder = new ImportBuilder();
             builder.RequiredCreationPolicy(CreationPolicy.NonShared);
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.Equal(CreationPolicy.NonShared, importAtt.RequiredCreationPolicy);
             Assert.False(importAtt.AllowDefault);
@@ -71,7 +71,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var builder = new ImportBuilder();
             builder.AllowDefault();
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.True(importAtt.AllowDefault);
             Assert.False(importAtt.AllowRecomposition);
@@ -84,7 +84,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var builder = new ImportBuilder();
             builder.AllowRecomposition();
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.True(importAtt.AllowRecomposition);
             Assert.Null(importAtt.ContractType);
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var builder = new ImportBuilder();
             builder.AsContractName("hey");
             builder.AsContractType(typeof(IFoo));
-            
+
             ImportAttribute importAtt = GetImportAttribute(builder);
             Assert.Equal("hey", importAtt.ContractName);
             Assert.Equal(typeof(IFoo), importAtt.ContractType);

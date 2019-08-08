@@ -146,7 +146,7 @@ namespace DPStressHarness
 
         private static bool MatchFilter(StressTestAttribute attr)
         {
-            // This change should not have impacts on any existing tests. 
+            // This change should not have impacts on any existing tests.
             //    1. If filter is not provided in command line, we do not apply filter and select all the tests.
             //    2. If current test attribute (such as StressTestAttribute) does not implement ITestAttriuteFilter, it is not affected and still selected.
 

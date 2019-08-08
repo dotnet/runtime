@@ -23,7 +23,7 @@ namespace System.Drawing {
     ///      class through the TypeDescriptor.
     /// </devdoc>
     public class SizeConverter : TypeConverter {
-    
+
         /// <include file='doc\SizeConverter.uex' path='docs/doc[@for="SizeConverter.CanConvertFrom"]/*' />
         /// <devdoc>
         ///      Determines if this converter can convert an object in the given source
@@ -56,16 +56,16 @@ namespace System.Drawing {
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
 
             string strValue = value as string;
-        
+
             if (strValue != null) {
-            
+
                 string text = strValue.Trim();
-            
+
                 if (text.Length == 0) {
                     return null;
                 }
                 else {
-                
+
                     // Parse 2 integer values.
                     //
                     if (culture == null) {
@@ -79,7 +79,7 @@ namespace System.Drawing {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
                         values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
                     }
-                    
+
                     if (values.Length == 2) {
                         return new Size(values[0], values[1]);
                     }
@@ -90,7 +90,7 @@ namespace System.Drawing {
                     }
                 }
             }
-            
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -118,11 +118,11 @@ namespace System.Drawing {
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     string[] args = new string[2];
                     int nArg = 0;
-                    
+
                     // Note: ConvertToString will raise exception if value cannot be converted.
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Width);
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Height);
-                    
+
                     return string.Join(sep, args);
                 }
                 if (destinationType == typeof(InstanceDescriptor)) {
@@ -134,7 +134,7 @@ namespace System.Drawing {
                     }
                 }
             }
-            
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
@@ -145,7 +145,7 @@ namespace System.Drawing {
         ///      want to provide changable properties.
         /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]        
+        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
             if( propertyValues == null ){
                 throw new ArgumentNullException( nameof(propertyValues) );
@@ -155,7 +155,7 @@ namespace System.Drawing {
             object width = propertyValues["Width"];
             object height = propertyValues["Height"];
 
-            if(width == null || height == null || 
+            if(width == null || height == null ||
                 !(width is int) || !(height is int)) {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
@@ -183,7 +183,7 @@ namespace System.Drawing {
             return props.Sort(new string[] {"Width", "Height"});
         }
 
-       
+
         /// <include file='doc\SizeConverter.uex' path='docs/doc[@for="SizeConverter.GetPropertiesSupported"]/*' />
         /// <devdoc>
         ///      Determines if this object supports properties.  By default, this
@@ -194,4 +194,3 @@ namespace System.Drawing {
         }
     }
 }
-

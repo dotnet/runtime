@@ -13,12 +13,12 @@ namespace System.ComponentModel.Design
     {
         /// <summary>
         /// Retrieves the requested assembly.
-        /// </summary>    
+        /// </summary>
         Assembly GetAssembly(AssemblyName name);
 
         /// <summary>
         /// Retrieves the requested assembly.
-        /// </summary>    
+        /// </summary>
         Assembly GetAssembly(AssemblyName name, bool throwOnError);
 
         /// <summary>

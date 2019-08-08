@@ -33,7 +33,7 @@ namespace System.Xml.Schema
     /// SymbolsDictionary is a map between names that ContextValidator recognizes and symbols - int symbol[XmlQualifiedName name].
     /// There are two types of name - full names and wildcards (namespace is specified, local name is anything).
     /// Wildcard excludes all full names that would match by the namespace part.
-    /// SymbolsDictionary always recognizes all the symbols - the last one is a true wildcard - 
+    /// SymbolsDictionary always recognizes all the symbols - the last one is a true wildcard -
     ///      both name and namespace can be anything that none of the other symbols matched.
     /// </summary>
     internal class SymbolsDictionary
@@ -278,8 +278,8 @@ namespace System.Xml.Schema
         /// <summary>
         /// From a regular expression to a DFA
         /// Compilers by Aho, Sethi, Ullman.
-        /// ISBN 0-201-10088-6, p135 
-        /// Construct firstpos, lastpos and calculate followpos 
+        /// ISBN 0-201-10088-6, p135
+        /// Construct firstpos, lastpos and calculate followpos
         /// </summary>
         public abstract void ConstructPos(BitSet firstpos, BitSet lastpos, BitSet[] followpos);
 
@@ -794,7 +794,7 @@ namespace System.Xml.Schema
     sealed class RangeNode : InteriorNode {
         int min;
         int max;
-        
+
         public RangeNode(int min, int max) {
             this.min = min;
             this.max = max;
@@ -879,7 +879,7 @@ namespace System.Xml.Schema
             qmark.LeftChild = leftChild;
             return qmark;
         }
-        
+
         public override void ConstructPos(BitSet firstpos, BitSet lastpos, BitSet[] followpos) {
             throw new InvalidOperationException();
         }
@@ -1054,7 +1054,7 @@ namespace System.Xml.Schema
             {
                 particles.Add(p);
             }
-            //Only then it can be head of substitutionGrp, if it is, add its members 
+            //Only then it can be head of substitutionGrp, if it is, add its members
             XmlSchemaElement elem = p as XmlSchemaElement;
             if (elem != null && (global || !elem.RefName.IsEmpty))
             {
@@ -1457,7 +1457,7 @@ namespace System.Xml.Schema
         {
             if (curpos.Intersects(posWithRangeTerminals))
             {
-                BitSet newSet = new BitSet(_positions.Count); //Doing work again 
+                BitSet newSet = new BitSet(_positions.Count); //Doing work again
                 newSet.Or(curpos);
                 newSet.And(posWithRangeTerminals);
                 curpos = curpos.Clone();
@@ -1505,7 +1505,7 @@ namespace System.Xml.Schema
         /// </summary>
         private int[][] BuildTransitionTable(BitSet firstpos, BitSet[] followpos, int endMarkerPos)
         {
-            const int TimeConstant = 8192; //(MaxStates * MaxPositions should be a constant) 
+            const int TimeConstant = 8192; //(MaxStates * MaxPositions should be a constant)
             int positionsCount = _positions.Count;
             int MaxStatesCount = TimeConstant / positionsCount;
             int symbolsCount = _symbols.Count;
@@ -1522,7 +1522,7 @@ namespace System.Xml.Schema
             // lists unmarked states
             Queue unmarked = new Queue();
 
-            // initially, the only unmarked state in Dstates is firstpo(root) 
+            // initially, the only unmarked state in Dstates is firstpo(root)
             int state = 0;
             unmarked.Enqueue(firstpos);
             stateTable.Add(firstpos, 0);
@@ -1531,7 +1531,7 @@ namespace System.Xml.Schema
             // while there is an umnarked state T in Dstates do begin
             while (unmarked.Count > 0)
             {
-                BitSet statePosSet = (BitSet)unmarked.Dequeue(); // all positions that constitute DFA state 
+                BitSet statePosSet = (BitSet)unmarked.Dequeue(); // all positions that constitute DFA state
                 Debug.Assert(state == (int)stateTable[statePosSet]); // just make sure that statePosSet is for correct state
                 int[] transition = (int[])transitionTable[state];
                 if (statePosSet[endMarkerPos])
@@ -1626,7 +1626,7 @@ namespace System.Xml.Schema
     /// <summary>
     /// Deterministic Finite Automata
     /// Compilers by Aho, Sethi, Ullman.
-    /// ISBN 0-201-10088-6, pp. 115, 116, 140 
+    /// ISBN 0-201-10088-6, pp. 115, 116, 140
     /// </summary>
     internal sealed class DfaContentValidator : ContentValidator
     {
@@ -1746,7 +1746,7 @@ namespace System.Xml.Schema
     /// <summary>
     /// Nondeterministic Finite Automata
     /// Compilers by Aho, Sethi, Ullman.
-    /// ISBN 0-201-10088-6, pp. 126,140 
+    /// ISBN 0-201-10088-6, pp. 126,140
     /// </summary>
     internal sealed class NfaContentValidator : ContentValidator
     {
@@ -1813,7 +1813,7 @@ namespace System.Xml.Schema
 
 #if FINDUPA_PARTICLE
         private bool FindUPAParticle(ref object originalParticle, object newParticle) {
-            if (originalParticle == null) { 
+            if (originalParticle == null) {
                 originalParticle = newParticle;
                 if (originalParticle is XmlSchemaElement) { //if the first particle is element, then break, otherwise try to find an element
                     return true;
@@ -2050,7 +2050,7 @@ namespace System.Xml.Schema
                     hasSeenFinalPosition = hasSeenFinalPosition || currentRunningPosition.Get(_endMarkerPos); //Accepting position reached if the current position BitSet contains the endPosition
                     while (matchCount < 10000 && currentRunningPosition.Intersects(_positionsWithRangeTerminals))
                     {
-                        //Now might add 2 more positions to followpos 
+                        //Now might add 2 more positions to followpos
                         //1. nextIteration of the rangeNode, which is firstpos of its parent's leftChild
                         //2. Followpos of the range node
 
@@ -2127,7 +2127,7 @@ namespace System.Xml.Schema
                 BitSet curpos = runningPositions[counter].curpos;
                 SequenceNode.WriteBitSet(curpos);
                 for(int rcnt = 0; rcnt < runningPositions[counter].rangeCounters.Length; rcnt++) {
-                    Debug.WriteIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "RangeCounter[" + rcnt + "]" + runningPositions[counter].rangeCounters[rcnt] + " ");                    
+                    Debug.WriteIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "RangeCounter[" + rcnt + "]" + runningPositions[counter].rangeCounters[rcnt] + " ");
                 }
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "");
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "");

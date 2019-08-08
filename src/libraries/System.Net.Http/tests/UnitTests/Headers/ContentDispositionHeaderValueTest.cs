@@ -188,7 +188,7 @@ namespace System.Net.Http.Tests
             contentDisposition.Parameters.Remove(fileNameStar);
             Assert.Null(contentDisposition.FileNameStar);
         }
-        
+
         [Theory]
         [InlineData("no_quotes")]
         [InlineData("one'quote")]
@@ -323,7 +323,7 @@ namespace System.Net.Http.Tests
 
             // Negatives not allowed
             Assert.Throws<ArgumentOutOfRangeException>(() => { contentDisposition.Size = -279172874240; });
-            
+
             Assert.Null(contentDisposition.Size);
             Assert.Equal(1, contentDisposition.Parameters.Count);
             Assert.Equal("SIZE", contentDisposition.Parameters.First().Name);
@@ -540,7 +540,7 @@ namespace System.Net.Http.Tests
             CheckValidParse("inline", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a 
+            // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // Content-Disposition parser.
             expected.Name = "myName";
             CheckValidParse("\r\n inline  ;  name =   myName ", expected);
@@ -576,7 +576,7 @@ namespace System.Net.Http.Tests
             CheckValidTryParse("inline", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a 
+            // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // Content-Disposition parser.
             expected.Name = "myName";
             CheckValidTryParse("\r\n inline  ;  name =   myName ", expected);

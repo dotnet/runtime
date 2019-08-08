@@ -44,7 +44,7 @@ namespace System.Net.Security
                     }
                     continue;
                 }
-                
+
                 if (IsValidClientCertificate(cert))
                 {
                     if (NetEventSource.IsEnabled)
@@ -96,7 +96,7 @@ namespace System.Net.Security
                     return true;
                 }
             }
-            
+
             return false;
         }
 

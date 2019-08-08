@@ -97,7 +97,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            // pick up the type arguments from an instantiated generic type but not an open one    
+            // pick up the type arguments from an instantiated generic type but not an open one
             if (type.IsGenericType && !type.ContainsGenericParameters)
             {
                 Type[] genericArgs = type.GetGenericArguments();
@@ -192,11 +192,11 @@ namespace System.Runtime.Serialization
                     {
                         //
                         // Type name can contain nested generic types. Following is an example:
-                        // System.Collections.Generic.Dictionary`2[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], 
-                        //          [System.Collections.Generic.List`1[[System.Int32, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]], 
+                        // System.Collections.Generic.Dictionary`2[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],
+                        //          [System.Collections.Generic.List`1[[System.Int32, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],
                         //           mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-                        // 
-                        // Spliltting by ',' won't work. We need to do first-level split by ','. 
+                        //
+                        // Spliltting by ',' won't work. We need to do first-level split by ','.
                         //
                         if (current + 1 < subTypeNameEndIndex)
                         {
@@ -216,7 +216,7 @@ namespace System.Runtime.Serialization
                         subTypeNames.Push(typeName.Substring(current + 1, subTypeNameEndIndex - current - 1));
                     }
 
-                    // we found matched brackets and the brackets contains some characters.                    
+                    // we found matched brackets and the brackets contains some characters.
                     while (subTypeNames.Count > 0)
                     {
                         string name = RipOffAssemblyInformationFromTypeName(subTypeNames.Pop());
@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization
                 _baseType = typeName;
             }
 
-            // Now see if we have some arity.  baseType could be null if this is an array type. 
+            // Now see if we have some arity.  baseType could be null if this is an array type.
             if (_baseType != null && _baseType.IndexOf('`') != -1) // string.Contains(char) is .NetCore2.1+ specific
             {
                 _needsFixup = false;
@@ -361,7 +361,7 @@ namespace System.Runtime.Serialization
         //
         // The string for generic type argument might contain assembly information and square bracket pair.
         // There might be leading spaces in front the type name.
-        // Following function will rip off assembly information and brackets 
+        // Following function will rip off assembly information and brackets
         // Following is an example:
         // " [System.Collections.Generic.List[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral,
         //   PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]"
@@ -384,7 +384,7 @@ namespace System.Runtime.Serialization
                     end--;
                 }
 
-                // if we still have a ] at the end, there's no assembly info. 
+                // if we still have a ] at the end, there's no assembly info.
                 if (typeName[end] != ']')
                 {
                     int commaCount = 0;

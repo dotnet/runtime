@@ -335,7 +335,7 @@ namespace System.Xml
             if (disposing)
             {
                 CheckAsync();
-                //since it is protected method, we can't call coreWriter.Dispose(disposing). 
+                //since it is protected method, we can't call coreWriter.Dispose(disposing).
                 //Internal, it is always called to Dispose(true). So call coreWriter.Dispose() is OK.
                 _coreWriter.Dispose();
             }

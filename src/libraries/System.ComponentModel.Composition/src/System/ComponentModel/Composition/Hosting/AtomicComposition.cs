@@ -17,18 +17,18 @@ namespace System.ComponentModel.Composition.Hosting
     /// rolled back when the atomicComposition is disposed, depending on the state of the
     /// CompleteOnDipose property which defaults to false.  The using(...) pattern in C# is a
     /// convenient mechanism for defining atomicComposition scopes.
-    /// 
+    ///
     /// The least obvious aspects of AtomicComposition deal with nesting.
-    /// 
+    ///
     /// Firstly, no complete actions are actually performed until the outermost atomicComposition is
     /// completed.  Completeting or rolling back nested atomicCompositions serves only to change which
     /// actions would be completed the outer atomicComposition.
-    /// 
+    ///
     /// Secondly, state is added in the form of queries associated with an object key.  The
     /// key represents a unique object the state is being held on behalf of.  The quieries are
     /// accessed throught the Query methods which provide automatic chaining to execute queries
     /// across the target atomicComposition and its inner atomicComposition as appropriate.
-    /// 
+    ///
     /// Lastly, when a nested atomicComposition is created for a given outer the outer atomicComposition is locked.
     /// It remains locked until the inner atomicComposition is disposed or completeed preventing the addition of
     /// state, actions or other inner atomicCompositions.
@@ -71,13 +71,13 @@ namespace System.ComponentModel.Composition.Hosting
             SetValueInternal(key, value);
         }
 
-        public bool TryGetValue<T>(object key, out T value) 
+        public bool TryGetValue<T>(object key, out T value)
         {
             return TryGetValue(key, false, out value);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters")]
-        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, out T value) 
+        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, out T value)
         {
             ThrowIfDisposed();
             ThrowIfCompleted();
@@ -279,7 +279,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, out T value) 
+        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, out T value)
         {
             for (var index = 0; index < _valueCount; index++)
             {

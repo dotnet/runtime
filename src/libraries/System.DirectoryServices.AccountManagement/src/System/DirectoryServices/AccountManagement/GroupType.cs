@@ -21,4 +21,3 @@ namespace System.DirectoryServices.AccountManagement
         internal const int Universal = 0x00000008;
     }
 }
-

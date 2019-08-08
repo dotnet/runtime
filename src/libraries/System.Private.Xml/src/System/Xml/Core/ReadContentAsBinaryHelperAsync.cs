@@ -10,7 +10,7 @@ namespace System.Xml
 {
     internal partial class ReadContentAsBinaryHelper
     {
-        // Internal methods 
+        // Internal methods
 
         internal async Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
         {

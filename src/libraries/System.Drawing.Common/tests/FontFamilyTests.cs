@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
@@ -111,7 +111,7 @@ namespace System.Drawing.Tests
                 FontFamily[] familiesWithGraphics = FontFamily.GetFamilies(graphics);
 
                 // FontFamily.Equals uses the native handle to determine equality. However, GDI+ does not always
-                // cache handles, so we cannot just Assert.Equal(families, familiesWithGraphics); 
+                // cache handles, so we cannot just Assert.Equal(families, familiesWithGraphics);
                 Assert.Equal(families.Length, familiesWithGraphics.Length);
 
                 for (int i = 0; i < families.Length; i++)

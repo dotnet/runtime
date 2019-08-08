@@ -31,7 +31,7 @@ namespace System.Data.Odbc
         }
 
         public static implicit operator SQLLEN(int value)
-        { // 
+        { //
             return new SQLLEN(value);
         }
 
@@ -41,7 +41,7 @@ namespace System.Data.Odbc
         }
 
         public static unsafe implicit operator int (SQLLEN value)
-        { // 
+        { //
 #if WIN32
             return (int)value._value.ToInt32();
 #else

@@ -95,8 +95,8 @@ namespace System.Reflection.Tests
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
                 Stream peStream = new MemoryStream(TestData.s_SimpleAssemblyImage);
-                peStream.Position = 1; 
-                
+                peStream.Position = 1;
+
                 // The MetadataLoadContext takes ownership of the peStream. It will reset its position back to 0.
                 Assembly a = lc.LoadFromStream(peStream);
                 Assert.NotNull(a);

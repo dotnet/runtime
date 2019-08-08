@@ -14,7 +14,7 @@ namespace System.Data.Common
         // instances of this class are intended to be immutable, i.e readonly
         // used by pooling classes so it is easier to verify correctness
         // without the risk of the objects of the class being modified during execution.
-        
+
 
         // differences between OleDb and Odbc
         // ODBC:

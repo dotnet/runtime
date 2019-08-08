@@ -927,4 +927,3 @@ namespace MonoTests.System.Configuration
         #endregion
     }
 }
-

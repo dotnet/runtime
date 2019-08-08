@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,12 +23,12 @@ namespace System.Net.Security.Tests
 
     public class NegotiateStreamKerberosTest
     {
-        public static bool IsServerAndDomainAvailable => 
+        public static bool IsServerAndDomainAvailable =>
             Capability.IsDomainAvailable() && Capability.IsNegotiateServerAvailable();
 
         public static bool IsClientAvailable =>
             Capability.IsNegotiateClientAvailable();
-        
+
         public static IEnumerable<object[]> GoodCredentialsData
         {
             get
@@ -43,8 +43,8 @@ namespace System.Net.Security.Tests
                     Configuration.Security.ActiveDirectoryUserName,
                     AsSecureString(Configuration.Security.ActiveDirectoryUserPassword),
                     Configuration.Security.ActiveDirectoryName) };
-                
-                
+
+
                 // Anonymous (with domain name).
                 yield return new object[] { new NetworkCredential(
                     Configuration.Security.ActiveDirectoryUserName,
@@ -55,7 +55,7 @@ namespace System.Net.Security.Tests
                     Configuration.Security.ActiveDirectoryUserName,
                     (SecureString)null,
                     Configuration.Security.ActiveDirectoryName) };
-                
+
                 // Anonymous (without domain).
                 yield return new object[] { new NetworkCredential(
                     Configuration.Security.ActiveDirectoryUserName,
@@ -80,18 +80,18 @@ namespace System.Net.Security.Tests
                 yield return new object[] { new NetworkCredential(null, (SecureString)null, null) };
 
                 yield return new object[] { new NetworkCredential(
-                    "baduser", 
-                    (string)null, 
+                    "baduser",
+                    (string)null,
                     Configuration.Security.ActiveDirectoryName) };
 
                 yield return new object[] { new NetworkCredential(
-                    "baduser", 
-                    (SecureString)null, 
+                    "baduser",
+                    (SecureString)null,
                     Configuration.Security.ActiveDirectoryName) };
 
                 yield return new object[] { new NetworkCredential(
-                    "baduser", 
-                    AsSecureString("badpassword"), 
+                    "baduser",
+                    AsSecureString("badpassword"),
                     Configuration.Security.ActiveDirectoryName) };
             }
         }
@@ -120,7 +120,7 @@ namespace System.Net.Security.Tests
             int port = Configuration.Security.NegotiateServer.Port;
             string serverSPN = "HOST/" + serverName;
             bool isLocalhost = await IsLocalHost(serverName);
-            
+
             string expectedAuthenticationType = "Kerberos";
             bool mutuallyAuthenticated = true;
 
@@ -128,7 +128,7 @@ namespace System.Net.Security.Tests
             {
                 expectedAuthenticationType = "NTLM";
             }
-            else if (credential != CredentialCache.DefaultNetworkCredentials && 
+            else if (credential != CredentialCache.DefaultNetworkCredentials &&
                 (string.IsNullOrEmpty(credential.UserName) || string.IsNullOrEmpty(credential.Password)))
             {
                 // Anonymous authentication.
@@ -169,7 +169,7 @@ namespace System.Net.Security.Tests
         public async Task NegotiateStream_ServerAuthenticationRemote_Success()
         {
             string expectedUser = Configuration.Security.NegotiateClientUser;
-            
+
             string expectedAuthenticationType = "Kerberos";
             bool mutuallyAuthenticated = true;
 

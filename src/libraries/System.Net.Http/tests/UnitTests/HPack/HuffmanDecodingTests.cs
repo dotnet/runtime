@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -351,7 +351,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         }
 
         // This input sequence will encode to 17 bits, thus offsetting the next character to encode
-        // by exactly one bit. We use this below to generate a prefix that encodes all of the possible starting 
+        // by exactly one bit. We use this below to generate a prefix that encodes all of the possible starting
         // bit offsets for a character, from 0 to 7.
         private static readonly byte[] s_offsetByOneBit = new byte[] { (byte)'c', (byte)'l', (byte)'r' };
 
@@ -363,7 +363,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 yield return new object[] { new byte[] { (byte)i } };
             }
 
-            // Ensure that decoding every possible value leaves the decoder in a correct state so that 
+            // Ensure that decoding every possible value leaves the decoder in a correct state so that
             // a subsequent value can be decoded (here, 'a')
             for (int i = 0; i < 256; i++)
             {

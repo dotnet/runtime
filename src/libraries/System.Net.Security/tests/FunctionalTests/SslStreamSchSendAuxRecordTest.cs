@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -40,14 +40,14 @@ namespace System.Net.Security.Tests
                 tasks[0] = server.AcceptHttpsClientAsync((requestString) =>
                 {
                     serverTotalBytesReceived += requestString.Length;
-                
+
                     if (serverTotalBytesReceived == 1 && serverChunks == 0)
                     {
                         serverAuxRecordDetected = true;
                     }
 
                     serverChunks++;
-                    
+
                     // Test is inconclusive if any non-CBC cipher is used:
                     if (server.Stream.CipherAlgorithm == CipherAlgorithmType.None ||
                         server.Stream.CipherAlgorithm == CipherAlgorithmType.Null ||
@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
                 var clientOptions = new HttpsTestClient.Options(new IPEndPoint(IPAddress.Loopback, server.Port));
                 clientOptions.AllowedProtocols = SslProtocols.Tls;
 
-                clientOptions.IgnoreSslPolicyErrors = 
+                clientOptions.IgnoreSslPolicyErrors =
                     SslPolicyErrors.RemoteCertificateNameMismatch | SslPolicyErrors.RemoteCertificateChainErrors;
 
                 var client = new HttpsTestClient(clientOptions);
@@ -85,7 +85,7 @@ namespace System.Net.Security.Tests
                     if (responseString == null)
                     {
                         string requestString = string.Format(
-                            HttpsTestClient.Options.DefaultRequestStringTemplate, 
+                            HttpsTestClient.Options.DefaultRequestStringTemplate,
                             clientOptions.ServerName);
 
                         return Task.FromResult(requestString);

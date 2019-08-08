@@ -19,12 +19,12 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private bool _assertUIEnabled; 
+        private bool _assertUIEnabled;
         private bool _settingsInitialized;
         private string _logFileName;
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with
         ///    Default as its <see cref='System.Diagnostics.TraceListener.Name'/>.</para>
         /// </devdoc>
         public DefaultTraceListener()
@@ -32,31 +32,31 @@ namespace System.Diagnostics
         {
         }
 
-        public bool AssertUiEnabled 
+        public bool AssertUiEnabled
         {
-            get 
-            { 
-                if (!_settingsInitialized) InitializeSettings();
-                return _assertUIEnabled; 
-            }
-            set 
+            get
             {
                 if (!_settingsInitialized) InitializeSettings();
-                _assertUIEnabled = value; 
+                return _assertUIEnabled;
+            }
+            set
+            {
+                if (!_settingsInitialized) InitializeSettings();
+                _assertUIEnabled = value;
             }
         }
 
-        public string LogFileName 
+        public string LogFileName
         {
-            get 
-            { 
+            get
+            {
                 if (!_settingsInitialized) InitializeSettings();
-                return _logFileName; 
+                return _logFileName;
             }
-            set 
-            { 
+            set
+            {
                 if (!_settingsInitialized) InitializeSettings();
-                _logFileName = value; 
+                _logFileName = value;
             }
         }
 
@@ -96,7 +96,7 @@ namespace System.Diagnostics
             }
         }
 
-        private void InitializeSettings() 
+        private void InitializeSettings()
         {
             // don't use the property setters here to avoid infinite recursion.
             _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
@@ -136,11 +136,11 @@ namespace System.Diagnostics
 
         private void WriteLine(string message, bool useLogFile)
         {
-            if (NeedIndent) 
+            if (NeedIndent)
                 WriteIndent();
 
             // The concat is done here to enable a single call to Write
-            Write(message + Environment.NewLine, useLogFile); 
+            Write(message + Environment.NewLine, useLogFile);
             NeedIndent = true;
         }
 

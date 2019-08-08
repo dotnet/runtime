@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -453,7 +453,7 @@ namespace System.Numerics.Tensors
             // the diagonal will be the length of the smaller axis
             // if offset it positive, the length will shift along the second axis
             // if the offsett is negative, the length will shift along the first axis
-            // In that way the length of the diagonal will be 
+            // In that way the length of the diagonal will be
             //   Min(offset < 0 ? axisLength0 + offset : axisLength0, offset > 0 ? axisLength1 - offset : axisLength1)
             // To illustrate, consider the following
             // { 1, 2, 4, 3, 7 }
@@ -1159,7 +1159,7 @@ namespace System.Numerics.Tensors
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
             int hashCode = 0;
-            // this ignores shape, which is fine  it just means we'll have hash collisions for things 
+            // this ignores shape, which is fine  it just means we'll have hash collisions for things
             // with the same content and different shape.
             for (int i = 0; i < Length; i++)
             {

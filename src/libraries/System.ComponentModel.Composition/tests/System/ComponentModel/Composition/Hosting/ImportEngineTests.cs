@@ -359,7 +359,7 @@ namespace System.ComponentModel.Composition
             importer.ResetImport(import1);
             importer.ResetImport(import2);
 
-            // Only change Value1 
+            // Only change Value1
             exportProvider.ReplaceExportValue("Value1", 42);
 
             Assert.Equal(42, importer.GetImport(import1));

@@ -106,7 +106,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            
+
             ReadItem(reader);
         }
 

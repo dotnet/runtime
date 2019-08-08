@@ -14,7 +14,7 @@ namespace System.Diagnostics
     {
         private Type _type;
         private string _name;
-        
+
         public SwitchAttribute(string switchName, Type switchType)
         {
             SwitchName = switchName;
@@ -89,4 +89,3 @@ namespace System.Diagnostics
         }
     }
 }
-

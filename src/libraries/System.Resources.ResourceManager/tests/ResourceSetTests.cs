@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace System.Resources.Tests
 {
-    public static class StaticResources 
+    public static class StaticResources
     {
         /// <summary>
         ///  An empty .resources file in base64 created with ResourceWriter on full .NET framework

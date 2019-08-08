@@ -20,7 +20,7 @@ namespace System.ComponentModel
         /// language - indicates which language service is calling the builder
         /// value - expression being edited
         /// newValue - return the new value
-        /// </summary> 
+        /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         bool Show(string language, string value, ref string newValue);
     }

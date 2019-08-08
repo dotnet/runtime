@@ -52,7 +52,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Remainder Method - One large BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
@@ -85,7 +85,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Check interesting cases for boundary conditions
             // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0
@@ -185,7 +185,7 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

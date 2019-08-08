@@ -39,7 +39,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Protected Constructor
-        
+
         #region Public Properties
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Properties
-        
+
         #region Public Methods
 
         #region OpenOnFileMethods
@@ -766,7 +766,7 @@ namespace System.IO.Packaging
         protected abstract void FlushCore();
 
         #endregion Protected Abstract Methods
-        
+
         #region Internal Properties
 
 
@@ -1186,7 +1186,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Private Methods
-        
+
         #region Private Members
 
         // Default values for the Package.Open method overloads

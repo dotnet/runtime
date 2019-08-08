@@ -48,4 +48,3 @@ namespace System.Data
         public override bool ShouldSerializeValue(object component) => false;
     }
 }
-

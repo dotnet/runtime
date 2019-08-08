@@ -16,10 +16,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionParameterImportDefinition(
             Lazy<ParameterInfo> importingLazyParameter,
-            string contractName, 
+            string contractName,
             string requiredTypeIdentity,
             IEnumerable<KeyValuePair<string,Type>> requiredMetadata,
-            ImportCardinality cardinality, 
+            ImportCardinality cardinality,
             CreationPolicy requiredCreationPolicy,
             IDictionary<string, object> metadata,
             ICompositionElement origin)
@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 CultureInfo.CurrentCulture,
                 "{0} (Parameter=\"{1}\", ContractName=\"{2}\")",  // NOLOC
                 parameter.Member.GetDisplayName(),
-                parameter.Name,                
+                parameter.Name,
                 ContractName);
         }
     }

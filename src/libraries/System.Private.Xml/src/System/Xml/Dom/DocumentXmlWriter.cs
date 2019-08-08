@@ -57,14 +57,14 @@ namespace System.Xml
 
         private DocumentXmlWriterType _type; // writer type
         private XmlNode _start; // context node
-        private XmlDocument _document; // context document 
+        private XmlDocument _document; // context document
         private XmlNamespaceManager _namespaceManager; // context namespace manager
         private State _state; // current state
-        private XmlNode _write; // current node 
+        private XmlNode _write; // current node
         private List<XmlNode> _fragment; // top level node cache
         private XmlWriterSettings _settings; // wrapping writer settings
-        private DocumentXPathNavigator _navigator; // context for replace 
-        private XmlNode _end; // context for replace 
+        private DocumentXPathNavigator _navigator; // context for replace
+        private XmlNode _end; // context for replace
 
         public DocumentXmlWriter(DocumentXmlWriterType type, XmlNode start, XmlDocument document)
         {
@@ -559,40 +559,40 @@ namespace System.Xml
         }
 
         private static State[] s_changeState = {
-//          State.Error,    State.Attribute,State.Prolog,   State.Fragment, State.Content,  
+//          State.Error,    State.Attribute,State.Prolog,   State.Fragment, State.Content,
 
 // Method.XmlDeclaration:
-            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Error,    
+            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Error,
 // Method.StartDocument:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Error,    
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Error,
 // Method.EndDocument:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Error,    
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Error,
 // Method.DocType:
-            State.Error,    State.Error,    State.Prolog,   State.Error,    State.Error,    
+            State.Error,    State.Error,    State.Prolog,   State.Error,    State.Error,
 // Method.StartElement:
-            State.Error,    State.Error,    State.Content,  State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Content,  State.Content,  State.Content,
 // Method.EndElement:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,
 // Method.FullEndElement:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,
 // Method.StartAttribute:
-            State.Error,    State.Content,  State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Content,  State.Error,    State.Error,    State.Content,
 // Method.EndAttribute:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,
 // Method.StartNamespaceDeclaration:
-            State.Error,    State.Content,  State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Content,  State.Error,    State.Error,    State.Content,
 // Method.EndNamespaceDeclaration:
-            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Error,    State.Content,
 // Method.CData:
-            State.Error,    State.Error,    State.Error,    State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Content,  State.Content,
 // Method.Comment:
-            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,
 // Method.ProcessingInstruction:
-            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,
 // Method.EntityRef:
-            State.Error,    State.Error,    State.Error,    State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Error,    State.Content,  State.Content,
 // Method.Whitespace:
-            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,  
+            State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,
 // Method.String:
             State.Error,    State.Error,    State.Error,    State.Content,  State.Content,
         };

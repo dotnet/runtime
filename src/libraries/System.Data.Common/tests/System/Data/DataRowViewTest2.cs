@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -111,7 +111,7 @@ namespace System.Data.Tests
             Assert.Equal(dvTmp2.Table, dvTmp1.Table);
 
             //the child dataview are different
-            // Child DataViews different 
+            // Child DataViews different
             Assert.False(dvTmp1.Equals(dvTmp2));
         }
 
@@ -143,7 +143,7 @@ namespace System.Data.Tests
             Assert.Equal(dvTmp2.Table, dvTmp1.Table);
 
             //the child dataview are different
-            // Child DataViews different 
+            // Child DataViews different
             Assert.False(dvTmp1.Equals(dvTmp2));
         }
 
@@ -156,10 +156,10 @@ namespace System.Data.Tests
             DataRowView drv1 = dv[0];
             DataRowView drv2 = dv[4];
 
-            // check DataRowView.DataView 
+            // check DataRowView.DataView
             Assert.Equal(dv, drv1.DataView);
 
-            // compare DataRowView.DataView 
+            // compare DataRowView.DataView
             Assert.Equal(drv2.DataView, drv1.DataView);
 
             //check that the DataRowView still has the same DataView even when the source table changed
@@ -259,7 +259,7 @@ namespace System.Data.Tests
             drv.BeginEdit();
             Assert.True(drv.IsEdit);
 
-            // after EndEdit 
+            // after EndEdit
             drv.EndEdit();
             Assert.False(drv.IsEdit);
         }

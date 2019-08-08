@@ -19,8 +19,8 @@ namespace BasicEventSourceTests
     public partial class FuzzyTests
     {
         /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
-        /// 
+        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
+        ///
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
         public void Test_Write_Fuzzy()

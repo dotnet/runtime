@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition
             set { data[index] = value; }
         }
     }
-    
+
     public class ImportAttributeTests
     {
         [Fact]

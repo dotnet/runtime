@@ -69,7 +69,7 @@ namespace System.Linq.Tests
                 new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }, // Distinct elements.
                 new[] { -10, 0, 5, 0, 9, 100, 9 }, // Some repeating elements.
             };
-            
+
             return integers
                 .Select(collection => new object[] { collection })
                 .Concat(

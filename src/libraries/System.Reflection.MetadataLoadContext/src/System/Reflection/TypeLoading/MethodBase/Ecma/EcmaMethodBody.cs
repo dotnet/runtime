@@ -86,7 +86,7 @@ namespace System.Reflection.TypeLoading.Ecma
         private MetadataReader Reader => GetEcmaModule().Reader;
         private MetadataLoadContext Loader => GetEcmaModule().Loader;
 
-        private ref readonly MethodBodyBlock Block { get { Loader.DisposeCheck(); return ref _neverAccessThisExceptThroughBlockProperty; } } 
+        private ref readonly MethodBodyBlock Block { get { Loader.DisposeCheck(); return ref _neverAccessThisExceptThroughBlockProperty; } }
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] // Block from debugger watch windows so they don't AV the debugged process.
         private readonly MethodBodyBlock _neverAccessThisExceptThroughBlockProperty;
     }

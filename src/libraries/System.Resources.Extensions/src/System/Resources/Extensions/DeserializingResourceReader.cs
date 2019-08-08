@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,7 +69,7 @@ namespace System.Resources.Extensions
                         {
                             throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, length));
                         }
-                        
+
                         long originalPosition = _store.BaseStream.Position;
 
                         value = ReadBinaryFormattedObject();
@@ -159,7 +159,7 @@ namespace System.Resources.Extensions
                     throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch);
             }
 
-            // Make sure we deserialized the type that we expected.  
+            // Make sure we deserialized the type that we expected.
             // This protects against bad typeconverters or bad binaryformatter payloads.
             if (value.GetType() != type)
                 throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResType_SerBlobMismatch, type.FullName, value.GetType().FullName));

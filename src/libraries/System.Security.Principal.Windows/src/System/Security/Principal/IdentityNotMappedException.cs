@@ -34,7 +34,7 @@ namespace System.Security.Principal
         }
 
         private IdentityNotMappedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {            
+        {
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)

@@ -234,7 +234,7 @@ namespace System.Drawing
             {
                 return true;
             }
-            
+
             if (!(obj is Font font))
             {
                 return false;

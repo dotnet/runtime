@@ -26,7 +26,7 @@ namespace System.Diagnostics
         private static int s_childrenUsingTerminalCount;
 
         /// <summary>
-        /// Puts a Process component in state to interact with operating system processes that run in a 
+        /// Puts a Process component in state to interact with operating system processes that run in a
         /// special mode by enabling the native property SeDebugPrivilege on the current thread.
         /// </summary>
         public static void EnterDebugMode()
@@ -35,7 +35,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Takes a Process component out of the state that lets it interact with operating system processes 
+        /// Takes a Process component out of the state that lets it interact with operating system processes
         /// that run in a special mode.
         /// </summary>
         public static void LeaveDebugMode()
@@ -362,7 +362,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Starts the process using the supplied start info. 
+        /// Starts the process using the supplied start info.
         /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
         /// </summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
@@ -779,7 +779,7 @@ namespace System.Diagnostics
         /// <param name="arguments">The argument string.</param>
         /// <param name="results">The list into which the component arguments should be stored.</param>
         /// <remarks>
-        /// This follows the rules outlined in "Parsing C++ Command-Line Arguments" at 
+        /// This follows the rules outlined in "Parsing C++ Command-Line Arguments" at
         /// https://msdn.microsoft.com/en-us/library/17w5ykft.aspx.
         /// </remarks>
         private static void ParseArgumentsIntoList(string arguments, List<string> results)
@@ -845,9 +845,9 @@ namespace System.Diagnostics
                 {
                     if (inQuotes && i < arguments.Length - 1 && arguments[i + 1] == '"')
                     {
-                        // Two consecutive double quotes inside an inQuotes region should result in a literal double quote 
+                        // Two consecutive double quotes inside an inQuotes region should result in a literal double quote
                         // (the parser is left in the inQuotes region).
-                        // This behavior is not part of the spec of code:ParseArgumentsIntoList, but is compatible with CRT 
+                        // This behavior is not part of the spec of code:ParseArgumentsIntoList, but is compatible with CRT
                         // and .NET Framework.
                         currentArgument.Append('"');
                         i++;
@@ -972,7 +972,7 @@ namespace System.Diagnostics
 
             var errorInfo = new Interop.ErrorInfo(error);
 
-            // If the call failed because the buffer was too small, return false to 
+            // If the call failed because the buffer was too small, return false to
             // indicate the caller should try again with a larger buffer.
             if (errorInfo.Error == Interop.Error.ERANGE)
             {

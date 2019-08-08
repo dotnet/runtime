@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             typeParams[0].SetInterfaceConstraints(typeof(EmptyNonGenericInterface1));
             Type resultType = type.CreateTypeInfo().AsType();
             Type[] genericTypeParams = resultType.GetGenericArguments();
@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             typeParams[0].SetInterfaceConstraints(null);
             Type resultType = type.CreateTypeInfo().AsType();
             Type[] genericTypeParams = resultType.GetGenericArguments();
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             typeParams[0].SetInterfaceConstraints(new Type[] { typeof(EmptyNonGenericInterface1), typeof(EmptyNonGenericInterface2) });
             Type resultType = type.CreateTypeInfo().AsType();
             Type[] genericTypeParams = resultType.GetGenericArguments();

@@ -487,7 +487,7 @@ namespace System.Json
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            
+
             return (DateTime)((JsonPrimitive)value).Value;
         }
 

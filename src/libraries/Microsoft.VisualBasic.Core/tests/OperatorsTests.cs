@@ -1947,7 +1947,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (decimal)44, (decimal)2, (long)22 };
             yield return new object[] { (decimal)48, "2", (long)24 };
             yield return new object[] { (decimal)52, true, (long)(-52) };
-            
+
             // string.
             yield return new object[] { "4", (byte)2, (long)2 };
             yield return new object[] { "8", (sbyte)2, (long)4 };
@@ -1962,7 +1962,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "44", (decimal)2, (long)22 };
             yield return new object[] { "48", "2", (long)24 };
             yield return new object[] { "52", true, (long)(-52) };
- 
+
             // bool.
             yield return new object[] { true, (byte)2, (short)0 };
             yield return new object[] { true, (sbyte)2, (sbyte)0 };
@@ -4769,7 +4769,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (decimal)14, true, (decimal)15 };
             yield return new object[] { (decimal)15, null, (decimal)15 };
             yield return new object[] { decimal.MinValue, decimal.MaxValue, double.Parse("-1.5845632502852868E+29", NumberStyles.Any, CultureInfo.InvariantCulture) };
-        
+
             // string.
             yield return new object[] { "2", (byte)2, (double)0 };
             yield return new object[] { "3", (sbyte)2, (double)1 };
@@ -5451,7 +5451,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             public static string operator ^(XorObject left, OperatorsTests right) => "customobject";
             public static string operator ^(OperatorsTests left, XorObject right) => "tcejbomotsuc";
         }
-    
+
         public enum ByteEnum : byte { Value = 1 }
         public enum ByteEnum2 : byte { Value = 1 }
 

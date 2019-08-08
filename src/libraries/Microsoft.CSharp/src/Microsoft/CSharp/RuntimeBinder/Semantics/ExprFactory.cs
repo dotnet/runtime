@@ -228,4 +228,3 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprClass CreateClass(CType type) => new ExprClass(type);
     }
 }
-

@@ -34,7 +34,7 @@ namespace System.Reflection.Internal
                     _pointer = Marshal.AllocHGlobal(size);
                 }
             }
-                        
+
             protected override void Release()
             {
                 // make sure the current thread isn't aborted in between zeroing the pointer and freeing the memory

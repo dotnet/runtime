@@ -336,7 +336,7 @@ namespace System.Xml.Schema
             Hashtable schemaLocations = _schemaSet.SchemaLocations;
             DictionaryEntry[] oldLocations = new DictionaryEntry[schemaLocations.Count];
             schemaLocations.CopyTo(oldLocations, 0);
-            
+
             Debug.Assert(_validatedNamespaces != null);
             if (_validatedNamespaces[tns] != null && _schemaSet.FindSchemaByNSAndUrl(schema.BaseUri, tns, oldLocations) == null)
             {

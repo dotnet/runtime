@@ -2429,7 +2429,7 @@ namespace System.Text.Json.Tests
   ""number"": 1.02e+4,
   ""bool"": false,
   ""n\u0075ll"": null,
-  ""multiLineArray"": 
+  ""multiLineArray"":
 
 [
 
@@ -2440,7 +2440,7 @@ namespace System.Text.Json.Tests
     3
 
 ],
-  ""string"": 
+  ""string"":
 
 ""Aren't string just the greatest?\r\nNot a terminating quote: \""     \r   \n   \t  \\   ""
 }";

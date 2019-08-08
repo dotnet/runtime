@@ -190,7 +190,7 @@ namespace System.Net.Sockets
         }
 
         // Indicates data is available on the stream to be read.
-        // This property checks to see if at least one byte of data is currently available            
+        // This property checks to see if at least one byte of data is currently available
         public virtual bool DataAvailable
         {
             get
@@ -244,18 +244,18 @@ namespace System.Net.Sockets
         }
 
         // Read - provide core Read functionality.
-        // 
+        //
         // Provide core read functionality. All we do is call through to the
         // socket Receive functionality.
-        // 
+        //
         // Input:
-        // 
+        //
         //     Buffer  - Buffer to read into.
         //     Offset  - Offset into the buffer where we're to read.
         //     Count   - Number of bytes to read.
-        // 
+        //
         // Returns:
-        // 
+        //
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int size)
         {
@@ -331,18 +331,18 @@ namespace System.Net.Sockets
         }
 
         // Write - provide core Write functionality.
-        // 
+        //
         // Provide core write functionality. All we do is call through to the
         // socket Send method..
-        // 
+        //
         // Input:
-        // 
+        //
         //     Buffer  - Buffer to write from.
         //     Offset  - Offset into the buffer from where we'll start writing.
         //     Count   - Number of bytes to write.
-        // 
+        //
         // Returns:
-        // 
+        //
         //     Number of bytes written. We'll throw an exception if we
         //     can't write everything. It's brutal, but there's no other
         //     way to indicate an error.
@@ -479,18 +479,18 @@ namespace System.Net.Sockets
         }
 
         // BeginRead - provide async read functionality.
-        // 
+        //
         // This method provides async read functionality. All we do is
         // call through to the underlying socket async read.
-        // 
+        //
         // Input:
-        // 
+        //
         //     buffer  - Buffer to read into.
         //     offset  - Offset into the buffer where we're to read.
         //     size   - Number of bytes to read.
-        // 
+        //
         // Returns:
-        // 
+        //
         //     An IASyncResult, representing the read.
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
@@ -544,12 +544,12 @@ namespace System.Net.Sockets
         }
 
         // EndRead - handle the end of an async read.
-        // 
+        //
         // This method is called when an async read is completed. All we
         // do is call through to the core socket EndReceive functionality.
-        // 
+        //
         // Returns:
-        // 
+        //
         //     The number of bytes read. May throw an exception.
         public override int EndRead(IAsyncResult asyncResult)
         {
@@ -584,18 +584,18 @@ namespace System.Net.Sockets
         }
 
         // BeginWrite - provide async write functionality.
-        // 
+        //
         // This method provides async write functionality. All we do is
         // call through to the underlying socket async send.
-        // 
+        //
         // Input:
-        // 
+        //
         //     buffer  - Buffer to write into.
         //     offset  - Offset into the buffer where we're to write.
         //     size   - Number of bytes to written.
-        // 
+        //
         // Returns:
-        // 
+        //
         //     An IASyncResult, representing the write.
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
@@ -686,19 +686,19 @@ namespace System.Net.Sockets
         }
 
         // ReadAsync - provide async read functionality.
-        // 
+        //
         // This method provides async read functionality. All we do is
         // call through to the Begin/EndRead methods.
-        // 
+        //
         // Input:
-        // 
+        //
         //     buffer            - Buffer to read into.
         //     offset            - Offset into the buffer where we're to read.
         //     size              - Number of bytes to read.
         //     cancellationToken - Token used to request cancellation of the operation
-        // 
+        //
         // Returns:
-        // 
+        //
         //     A Task<int> representing the read.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
@@ -771,19 +771,19 @@ namespace System.Net.Sockets
         }
 
         // WriteAsync - provide async write functionality.
-        // 
+        //
         // This method provides async write functionality. All we do is
         // call through to the Begin/EndWrite methods.
-        // 
+        //
         // Input:
-        // 
+        //
         //     buffer  - Buffer to write into.
         //     offset  - Offset into the buffer where we're to write.
         //     size    - Number of bytes to write.
         //     cancellationToken - Token used to request cancellation of the operation
-        // 
+        //
         // Returns:
-        // 
+        //
         //     A Task representing the write.
         public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {

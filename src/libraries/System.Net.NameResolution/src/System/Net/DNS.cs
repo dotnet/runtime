@@ -57,7 +57,7 @@ namespace System.Net
             IPHostEntry ipHostEntry = null;
 
             ValidateHostName(hostName);
-           
+
             int nativeErrorCode;
             SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, out ipHostEntry, out nativeErrorCode);
             if (errorCode != SocketError.Success)
@@ -102,7 +102,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // GetHostByAddress
-        
+
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
         private static IPHostEntry InternalGetHostByAddress(IPAddress address)
         {
@@ -141,7 +141,7 @@ namespace System.Net
             }
 
             throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
-            
+
         } // InternalGetHostByAddress
 
         /*****************************************************************************

@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition
 
         private static bool CheckComImportAvailable() => PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsUap;
     }
-    
+
     public class ComposablePartDefinitionTests
     {
         [Fact]
@@ -67,4 +67,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

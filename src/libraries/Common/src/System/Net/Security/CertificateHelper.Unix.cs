@@ -17,7 +17,7 @@ namespace System.Net.Security
                 myStore.Open(OpenFlags.ReadOnly);
                 candidateCerts = myStore.Certificates;
             }
-            
+
             return GetEligibleClientCertificate(candidateCerts);
         }
     }

@@ -17,7 +17,7 @@ namespace System.ComponentModel.Design.Serialization
     public interface IDesignerLoaderHost : IDesignerHost
     {
         /// <summary>
-        /// This is called by the designer loader to indicate that the load has 
+        /// This is called by the designer loader to indicate that the load has
         /// terminated. If there were errors, they should be passed in the errorCollection
         /// as a collection of exceptions (if they are not exceptions the designer
         /// loader host may just call ToString on them). If the load was successful then

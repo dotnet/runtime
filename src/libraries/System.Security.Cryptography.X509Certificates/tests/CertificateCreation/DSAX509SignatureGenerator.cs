@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     Concat(q).
                     Concat(g).
                     ToArray();
-          
+
             byte[] keyValue = EncodeUnsignedInteger(dsaParameters.Y);
 
             return new PublicKey(

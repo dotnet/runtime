@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.Kill(entireProcessTree: true));
         }
-        
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Currently, remote processes are only supported on Windows. If that changes, adjust accordingly.
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tests
             }
             catch (InvalidOperationException)
             {
-                // As we can't detect reliably if performance counters are enabled, 
+                // As we can't detect reliably if performance counters are enabled,
                 // we silently abort on InvalidOperationExceptions since this test
                 // can only run if the attempt to get the process succeeded.
                 return;

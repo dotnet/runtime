@@ -48,7 +48,7 @@ namespace System.Linq.Tests
             // yield 1, read in 4, yield 2, and so on.
             int index = 0;
             int limit = Math.Max(0, count * 2);
-            
+
             var source = new DelegateIterator<int>(
                 moveNext: () => index++ != limit, // Stop once we go past the limit.
                 current: () => index, // Yield from 1 up to the limit, inclusive.

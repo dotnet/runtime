@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Tests
         public SampleEnumUInt32 MyUInt32Enum { get; set; }
         public SampleEnumUInt64 MyUInt64Enum { get; set; }
         public SimpleStruct MySimpleStruct { get; set; }
-        public SimpleTestStruct MySimpleTestStruct { get; set; }      
+        public SimpleTestStruct MySimpleTestStruct { get; set; }
         public short[] MyInt16Array { get; set; }
         public int[] MyInt32Array { get; set; }
         public long[] MyInt64Array { get; set; }
@@ -446,7 +446,7 @@ namespace System.Text.Json.Serialization.Tests
                     IEnumerator jsonEnumerator = currentJsonElement.EnumerateObject();
                     jsonEnumerator.MoveNext();
 
-                    JsonProperty property = (JsonProperty)jsonEnumerator.Current; 
+                    JsonProperty property = (JsonProperty)jsonEnumerator.Current;
 
                     Assert.Equal("key", property.Name);
                     Assert.Equal("value", property.Value.GetString());

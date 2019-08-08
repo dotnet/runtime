@@ -14,4 +14,3 @@ namespace System.Data
         public int RecordCount { get; }
     }
 }
-

@@ -50,11 +50,11 @@ namespace System.Net.Mail
         }
 
         //
-        // This constructor validates and stores the components of an e-mail address.   
-        // 
+        // This constructor validates and stores the components of an e-mail address.
+        //
         // Preconditions:
         // - 'address' must not be null or empty.
-        // 
+        //
         // Postconditions:
         // - The e-mail address components from the given 'address' are parsed, which should be formatted as:
         // "EncodedDisplayname" <username@host>
@@ -227,7 +227,7 @@ namespace System.Net.Mail
             if (!string.IsNullOrEmpty(_displayName))
             {
                 //figure out the encoding type.  If it's all ASCII and contains no CRLF then
-                //it does not need to be encoded for parity with other email clients.  We will 
+                //it does not need to be encoded for parity with other email clients.  We will
                 //however fold at the end of the display name so that the email address itself can
                 //be appended.
                 if (MimeBasePart.IsAscii(_displayName, false) || allowUnicode)

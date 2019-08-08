@@ -35,7 +35,7 @@ namespace System.Net.Http
             length = _content.Length;
             return true;
         }
-        
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));
 

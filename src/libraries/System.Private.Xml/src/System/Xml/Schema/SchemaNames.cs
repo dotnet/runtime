@@ -244,7 +244,7 @@ namespace System.Xml.Schema
             QnItemType = new XmlQualifiedName(nameTable.Add("itemType"));
             QnXPath = new XmlQualifiedName(nameTable.Add("xpath"));
 
-            // XDR namespace 
+            // XDR namespace
             QnXdrSchema = new XmlQualifiedName(XdrSchema, NsXdr);
             QnXdrElementType = new XmlQualifiedName(nameTable.Add("ElementType"), NsXdr);
             QnXdrElement = new XmlQualifiedName(nameTable.Add("element"), NsXdr);

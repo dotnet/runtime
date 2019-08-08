@@ -26,4 +26,3 @@ namespace System.Diagnostics.Eventing.Reader
         internal string BookmarkText { get; }
     }
 }
-

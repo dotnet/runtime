@@ -8,7 +8,7 @@ namespace System.Collections.Generic
 {
     /// <summary>
     /// Generic collection that guarantees the uniqueness of its elements, as defined
-    /// by some comparer. It also supports basic set operations such as Union, Intersection, 
+    /// by some comparer. It also supports basic set operations such as Union, Intersection,
     /// Complement and Exclusive Complement.
     /// </summary>
     public interface ISet<T> : ICollection<T>

@@ -110,7 +110,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 }
             }
         }
-        
+
         [Fact]
         public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreEmpty_NullCertificateContextSet()
         {
@@ -127,7 +127,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 }
             }
         }
-        
+
         [Fact]
         public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasInvalidCerts_NullCertificateContextSet()
         {
@@ -146,7 +146,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 }
             }
         }
-        
+
         [Fact]
         public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasValidCerts_ValidCertificateContextSet()
         {
@@ -165,8 +165,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 }
             }
         }
-        
-        
+
+
         [Fact]
         public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasValidAndInvalidCerts_ValidCertificateContextSet()
         {
@@ -184,6 +184,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     Assert.NotEqual(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
                 }
             }
-        }        
+        }
     }
 }

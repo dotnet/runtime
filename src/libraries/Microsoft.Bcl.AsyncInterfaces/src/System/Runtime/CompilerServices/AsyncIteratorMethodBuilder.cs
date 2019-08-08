@@ -57,6 +57,6 @@ namespace System.Runtime.CompilerServices
         public void Complete() => _methodBuilder.SetResult();
 
         /// <summary>Gets an object that may be used to uniquely identify this builder to the debugger.</summary>
-        internal object ObjectIdForDebugger => _id ?? Interlocked.CompareExchange(ref _id, new object(), null) ?? _id; 
+        internal object ObjectIdForDebugger => _id ?? Interlocked.CompareExchange(ref _id, new object(), null) ?? _id;
     }
 }

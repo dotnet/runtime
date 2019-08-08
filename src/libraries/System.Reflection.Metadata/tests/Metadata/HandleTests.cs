@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(1, ((GuidHandle)new Handle((byte)HandleType.Guid, 1)).Index);
             Assert.Equal(0x1fffffff, ((GuidHandle)new Handle((byte)HandleType.Guid, 0x1fffffff)).Index);
-            
+
             Assert.Equal(1, ((NamespaceDefinitionHandle)new Handle((byte)HandleType.Namespace, 1)).GetHeapOffset());
             Assert.Equal(0x1fffffff, ((NamespaceDefinitionHandle)new Handle((byte)HandleType.Namespace, 0x1fffffff)).GetHeapOffset());
 
@@ -384,7 +384,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<InvalidCastException>(() => (MethodImplementationHandle)new EntityHandle(TokenTypeIds.VirtualBit | TokenTypeIds.MethodImpl | 1));
             var x1 = (AssemblyReferenceHandle)new EntityHandle(TokenTypeIds.VirtualBit | TokenTypeIds.AssemblyRef | 1);
         }
-        
+
         [Fact]
         public void IsNil()
         {
@@ -661,7 +661,7 @@ namespace System.Reflection.Metadata.Tests
         public void MethodDefToDebugInfo()
         {
             Assert.Equal(
-                MethodDefinitionHandle.FromRowId(123).ToDebugInformationHandle(), 
+                MethodDefinitionHandle.FromRowId(123).ToDebugInformationHandle(),
                 MethodDebugInformationHandle.FromRowId(123));
 
             Assert.Equal(

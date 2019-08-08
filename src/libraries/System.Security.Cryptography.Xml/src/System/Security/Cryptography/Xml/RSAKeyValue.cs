@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Xml
         /// Create an XML representation.
         /// </summary>
         /// <remarks>
-        /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue. 
+        /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue.
         /// </remarks>
         /// <returns>
         /// An <see cref="XmlElement"/> containing the XML representation.
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Xml
         /// Deserialize from the XML representation.
         /// </summary>
         /// <remarks>
-        /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue. 
+        /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue.
         /// </remarks>
         /// <param name="value">
         /// An <see cref="XmlElement"/> containing the XML representation. This cannot be null.

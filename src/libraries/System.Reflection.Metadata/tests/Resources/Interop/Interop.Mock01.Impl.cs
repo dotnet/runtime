@@ -30,10 +30,10 @@ namespace MockInterop01.Impl
     {
         public object DoSomething(params string[] ary)
         { return null; }
-        
+
         public object Register(ref object p)
-        { 
-            return p; 
+        {
+            return p;
         }
         public void UnRegister(object o)
         {
@@ -42,8 +42,8 @@ namespace MockInterop01.Impl
         public void LibFunc(decimal p1, DateTime p2)
         {
         }
-    }   
-      
+    }
+
     public class EventImpl : IEventEvent
     {
         public event EventDele01 OnEvent01;

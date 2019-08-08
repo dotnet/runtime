@@ -105,10 +105,10 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            // The stylesheet may be an embedded stylesheet. If this is the case the reader will be in Interactive state and should be 
-            // positioned on xsl:stylesheet element (or any preceding whitespace) but there also can be namespaces defined on one 
-            // of the ancestor nodes. These namespace definitions have to be copied to the xsl:stylesheet element scope. Otherwise it 
-            // will not be possible to resolve them later and loading the stylesheet will end up with throwing an exception. 
+            // The stylesheet may be an embedded stylesheet. If this is the case the reader will be in Interactive state and should be
+            // positioned on xsl:stylesheet element (or any preceding whitespace) but there also can be namespaces defined on one
+            // of the ancestor nodes. These namespace definitions have to be copied to the xsl:stylesheet element scope. Otherwise it
+            // will not be possible to resolve them later and loading the stylesheet will end up with throwing an exception.
             IDictionary<string, string> namespacesInScope = null;
             if (_reader.ReadState == ReadState.Interactive)
             {
@@ -122,10 +122,10 @@ namespace System.Xml.Xsl.Xslt
 
             while (MoveToNextSibling() && _nodeType == XmlNodeType.Whitespace) ;
 
-            // An Element node was reached. Potentially this is xsl:stylesheet instruction. 
+            // An Element node was reached. Potentially this is xsl:stylesheet instruction.
             if (_nodeType == XmlNodeType.Element)
             {
-                // If namespacesInScope is not null then the stylesheet being read is an embedded stylesheet that can have namespaces 
+                // If namespacesInScope is not null then the stylesheet being read is an embedded stylesheet that can have namespaces
                 // defined outside of xsl:stylesheet instruction. In this case the namespace definitions collected above have to be added
                 // to the element scope.
                 if (namespacesInScope != null)
@@ -133,7 +133,7 @@ namespace System.Xml.Xsl.Xslt
                     foreach (KeyValuePair<string, string> prefixNamespacePair in namespacesInScope)
                     {
                         // The namespace could be redefined on the element we just read. If this is the case scopeManager already has
-                        // namespace definition for this prefix and the old definition must not be added to the scope. 
+                        // namespace definition for this prefix and the old definition must not be added to the scope.
                         if (_scopeManager.LookupNamespace(prefixNamespacePair.Key) == null)
                         {
                             string nsAtomizedValue = _atoms.NameTable.Add(prefixNamespacePair.Value);
@@ -1070,11 +1070,11 @@ namespace System.Xml.Xsl.Xslt
                 return BuildLineInfo();
             }
 
-            // LocalName is checked against null since it is used to calculate QualifiedName used in turn to 
-            // calculate end position. 
-            // LocalName (and other cached properties) can be null only if nothing has been read from the reader. 
+            // LocalName is checked against null since it is used to calculate QualifiedName used in turn to
+            // calculate end position.
+            // LocalName (and other cached properties) can be null only if nothing has been read from the reader.
             // This happens for instance when a reader which has already been closed or a reader positioned
-            // on the very last node of the document is passed to the ctor. 
+            // on the very last node of the document is passed to the ctor.
             if (LocalName == null)
             {
                 // Fill up the current record to set all the properties used below.

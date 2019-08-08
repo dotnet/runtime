@@ -135,7 +135,7 @@ namespace System.Reflection.Emit.Tests
             // Try emit opcode which takes multiple args
             generator.Emit(OpCodes.Add, arg);
         }
-        
+
         [Fact]
         public void Emit_OpCodes_LocalBuilder_NullLocal_ThrowsArgumentNullException()
         {

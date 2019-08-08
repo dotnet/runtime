@@ -24,14 +24,14 @@ namespace System.Data.OleDb.Tests
                 if (PlatformDetection.IsFullFramework)
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue, 
+                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue,
                         $"The {nameof(UpdateRowSource)} enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(UpdateRowSource)}"
                     );
                 }
                 else
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue, 
+                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue,
                         $"The {nameof(UpdateRowSource)} enumeration value, {InvalidValue}, is invalid. (Parameter \'{nameof(UpdateRowSource)}\')"
                     );
                 }
@@ -47,14 +47,14 @@ namespace System.Data.OleDb.Tests
                 if (PlatformDetection.IsFullFramework)
                 {
                     AssertExtensions.Throws<ArgumentException>(
-                        () => cmd.CommandTimeout = InvalidValue, 
+                        () => cmd.CommandTimeout = InvalidValue,
                         $"Invalid CommandTimeout value {InvalidValue}; the value must be >= 0.\r\nParameter name: {nameof(cmd.CommandTimeout)}"
                     );
                 }
                 else
                 {
                     AssertExtensions.Throws<ArgumentException>(
-                        () => cmd.CommandTimeout = InvalidValue, 
+                        () => cmd.CommandTimeout = InvalidValue,
                         $"Invalid CommandTimeout value {InvalidValue}; the value must be >= 0. (Parameter \'{nameof(cmd.CommandTimeout)}\')"
                     );
                 }
@@ -84,14 +84,14 @@ namespace System.Data.OleDb.Tests
                 if (PlatformDetection.IsFullFramework)
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                        () => cmd.CommandType = (CommandType)InvalidValue, 
+                        () => cmd.CommandType = (CommandType)InvalidValue,
                         $"The CommandType enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(cmd.CommandType)}"
                     );
                 }
                 else
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                        () => cmd.CommandType = (CommandType)InvalidValue, 
+                        () => cmd.CommandType = (CommandType)InvalidValue,
                         $"The CommandType enumeration value, {InvalidValue}, is invalid. (Parameter \'{nameof(cmd.CommandType)}\')"
                     );
                 }
@@ -106,7 +106,7 @@ namespace System.Data.OleDb.Tests
                 command.CommandText = @"SELECT * FROM " + tableName;
                 connection.Close();
                 AssertExtensions.Throws<InvalidOperationException>(
-                    () => command.Prepare(), 
+                    () => command.Prepare(),
                     $"{nameof(command.Prepare)} requires an open and available Connection. The connection's current state is closed."
                 );
                 connection.Open(); // reopen when done
@@ -121,12 +121,12 @@ namespace System.Data.OleDb.Tests
                 Assert.Equal(ConnectionState.Open, connection.State);
                 command.CommandText = "INVALID_STATEMENT";
                 AssertExtensions.Throws<OleDbException>(
-                    () => command.Prepare(), 
+                    () => command.Prepare(),
                     "Invalid SQL statement; expected 'DELETE', 'INSERT', 'PROCEDURE', 'SELECT', or 'UPDATE'."
                 );
                 command.CommandText = @"UPDATE " + tableName + " SET NumPlants ? WHERE Firstname = ?";
                 AssertExtensions.Throws<OleDbException>(
-                    () => command.Prepare(), 
+                    () => command.Prepare(),
                     $"Syntax error in UPDATE statement."
                 );
             });
@@ -142,14 +142,14 @@ namespace System.Data.OleDb.Tests
 
                 command.Parameters.Add(command.CreateParameter());
                 command.Parameters.Add(command.CreateParameter());
-                
+
                 object[] newItems = new object[] {
                     new { Firstname = "John", NumPlants = 7 },
                     new { Firstname = "Mark", NumPlants = 12 },
                     new { Firstname = "Nick", NumPlants = 6 }
                 };
                 foreach (dynamic item in newItems)
-                {    
+                {
                     command.Parameters[0].Value = item.Firstname;
                     command.Parameters[1].Value = item.NumPlants;
                     command.ExecuteNonQuery();
@@ -182,14 +182,14 @@ namespace System.Data.OleDb.Tests
                 if (PlatformDetection.IsFullFramework)
                 {
                     AssertExtensions.Throws<ArgumentNullException>(
-                        () => command.Parameters.Add(null), 
+                        () => command.Parameters.Add(null),
                         $"The {nameof(OleDbParameterCollection)} only accepts non-null {nameof(OleDbParameter)} type objects.\r\nParameter name: value"
                     );
                 }
                 else
                 {
                     AssertExtensions.Throws<ArgumentNullException>(
-                        () => command.Parameters.Add(null), 
+                        () => command.Parameters.Add(null),
                         $"The {nameof(OleDbParameterCollection)} only accepts non-null {nameof(OleDbParameter)} type objects. (Parameter \'value\')"
                     );
                 }
@@ -214,7 +214,7 @@ namespace System.Data.OleDb.Tests
                 var currentConnection = command.Connection;
                 command.Connection = null;
                 AssertExtensions.Throws<InvalidOperationException>(
-                    () => command.ExecuteNonQuery(), 
+                    () => command.ExecuteNonQuery(),
                     $"{nameof(command.ExecuteNonQuery)}: {nameof(command.Connection)} property has not been initialized."
                 );
                 command.Connection = currentConnection;
@@ -238,10 +238,10 @@ namespace System.Data.OleDb.Tests
         public void ExecuteScalar_Select_ComputesSumAndCount()
         {
             RunTest((command, tableName) => {
-                command.CommandText = @"SELECT Count(*) FROM " + tableName;  
+                command.CommandText = @"SELECT Count(*) FROM " + tableName;
                 Assert.Equal(2, Convert.ToInt32(command.ExecuteScalar()));
-                
-                command.CommandText = @"SELECT Sum(NumPlants) FROM " + tableName;  
+
+                command.CommandText = @"SELECT Sum(NumPlants) FROM " + tableName;
                 Assert.Equal(13, Convert.ToInt32(command.ExecuteScalar()));
             });
         }
@@ -258,14 +258,14 @@ namespace System.Data.OleDb.Tests
             Assert.True(File.Exists(Path.Combine(TestDirectory, tableName)));
 
             command.CommandText =
-                @"INSERT INTO " + tableName + @" ( 
+                @"INSERT INTO " + tableName + @" (
                     Firstname,
                     NumPlants)
                 VALUES ( 'John', 7 );";
             command.ExecuteNonQuery();
 
             command.CommandText =
-                @"INSERT INTO " + tableName + @" ( 
+                @"INSERT INTO " + tableName + @" (
                     Firstname,
                     NumPlants)
                 VALUES ( 'Sam', 6 );";

@@ -114,7 +114,7 @@ namespace System.Buffers.Text.Tests
                 yield return new ParserTestData<int>("5faaccbbf", 0, 'x', expectedSuccess: false);
 
                 // This value will overflow a UInt32 accumulator upon assimilating the 0 in a way such that the wrapped-around value still looks like
-                // it's in the range of an Int32. Unless, of course, the implementation had the foresight to check before assimilating. 
+                // it's in the range of an Int32. Unless, of course, the implementation had the foresight to check before assimilating.
                 yield return new ParserTestData<int>("9999999990", 0, 'D', expectedSuccess: false);
             }
         }

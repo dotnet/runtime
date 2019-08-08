@@ -1620,4 +1620,3 @@ namespace System.Xml.XmlDiff
         public override void WriteContentTo(XmlWriter w) { }
     }
 }
-

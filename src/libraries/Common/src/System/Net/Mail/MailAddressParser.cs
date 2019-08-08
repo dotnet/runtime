@@ -13,15 +13,15 @@ namespace System.Net.Mail
     //
     // Ideally, addresses are formatted as ("Display name" <username@domain>), but we still try to read several
     // other formats, including common invalid formats like (Display name username@domain).
-    // 
-    // To make the detection of invalid address formats simpler, all address parsing is done in reverse order, 
-    // including lists.  This way we know that the domain must be first, then the local-part, and then whatever 
+    //
+    // To make the detection of invalid address formats simpler, all address parsing is done in reverse order,
+    // including lists.  This way we know that the domain must be first, then the local-part, and then whatever
     // remains must be the display-name.
     //
     internal static class MailAddressParser
     {
         // Parse a single MailAddress from the given string.
-        // 
+        //
         // Throws a FormatException if any part of the MailAddress is invalid.
         internal static MailAddress ParseAddress(string data)
         {
@@ -52,7 +52,7 @@ namespace System.Net.Mail
         //
         // Parse a single MailAddress, potentially from a list.
         //
-        // Preconditions: 
+        // Preconditions:
         //  - Index must be within the bounds of the data string.
         //  - The data string must not be null or empty
         //
@@ -141,7 +141,7 @@ namespace System.Net.Mail
             return index;
         }
 
-        // Parses the domain section of an address.  The domain may be in dot-atom format or surrounded by square 
+        // Parses the domain section of an address.  The domain may be in dot-atom format or surrounded by square
         // brackets in domain-literal format.
         // e.g. <user@domain.com> or <user@[whatever I want]>
         //
@@ -181,7 +181,7 @@ namespace System.Net.Mail
             return NormalizeOrThrow(domain);
         }
 
-        // Parses the local-part section of an address.  The local-part may be in dot-atom format or 
+        // Parses the local-part section of an address.  The local-part may be in dot-atom format or
         // quoted-string format. e.g. <user.name@domain> or <"user name"@domain>
         // We do not support the obsolete formats of user."name"@domain, "user".name@domain, or "user"."name"@domain.
         //
@@ -195,7 +195,7 @@ namespace System.Net.Mail
         //
         // Throws a FormatException:
         // - For invalid un-escaped chars, including Unicode
-        // - If the final value of data[index] is not a valid character to precede the local-part 
+        // - If the final value of data[index] is not a valid character to precede the local-part
         private static string ParseLocalPart(string data, ref int index, bool expectAngleBracket,
             bool expectMultipleAddresses)
         {
@@ -214,8 +214,8 @@ namespace System.Net.Mail
             {
                 index = DotAtomReader.ReadReverse(data, index);
 
-                // Check that the local-part is properly separated from the next component. It may be separated by a 
-                // comment, whitespace, an expected angle bracket, a quote for the display-name, or an expected comma 
+                // Check that the local-part is properly separated from the next component. It may be separated by a
+                // comment, whitespace, an expected angle bracket, a quote for the display-name, or an expected comma
                 // before the next address.
                 if (index >= 0 &&
                         !(
@@ -223,7 +223,7 @@ namespace System.Net.Mail
                             || data[index] == MailBnfHelper.EndComment // <(comment)local@domain>
                             || (expectAngleBracket && data[index] == MailBnfHelper.StartAngleBracket) // <local@domain>
                             || (expectMultipleAddresses && data[index] == MailBnfHelper.Comma) // local@dom,local@dom
-                                                                                               // Note: The following condition is more lax than the RFC.  This is done so we could support 
+                                                                                               // Note: The following condition is more lax than the RFC.  This is done so we could support
                                                                                                // a common invalid formats as shown below.
                             || data[index] == MailBnfHelper.Quote // "display"local@domain
                         )
@@ -240,7 +240,7 @@ namespace System.Net.Mail
             return NormalizeOrThrow(localPart);
         }
 
-        // Parses the display-name section of an address.  In departure from the RFC, we attempt to read data in the 
+        // Parses the display-name section of an address.  In departure from the RFC, we attempt to read data in the
         // quoted-string format even if the bounding quotes are omitted.  We also permit Unicode, which the RFC does
         // not allow for.
         // e.g. ("display name" <user@domain>) or (display name <user@domain>)
@@ -259,11 +259,11 @@ namespace System.Net.Mail
         {
             string displayName;
 
-            // Whatever is left over must be the display name. The display name should be a single word/atom or a 
-            // quoted string, but for robustness we allow the quotes to be omitted, so long as we can find the comma 
+            // Whatever is left over must be the display name. The display name should be a single word/atom or a
+            // quoted string, but for robustness we allow the quotes to be omitted, so long as we can find the comma
             // separator before the next address.
 
-            // Read the comment (if any).  If the display name is contained in quotes, the surrounding comments are 
+            // Read the comment (if any).  If the display name is contained in quotes, the surrounding comments are
             // omitted. Otherwise, mark this end of the comment so we can include it as part of the display name.
             int firstNonCommentIndex = WhitespaceReader.ReadCfwsReverse(data, index);
 
@@ -282,7 +282,7 @@ namespace System.Net.Mail
                 // Skip any CFWS after the display name
                 index = WhitespaceReader.ReadCfwsReverse(data, index);
 
-                // Check for completion. We are valid if we hit the end of the data string or if the rest of the data 
+                // Check for completion. We are valid if we hit the end of the data string or if the rest of the data
                 // belongs to another address.
                 if (index >= 0 && !(expectMultipleAddresses && data[index] == MailBnfHelper.Comma))
                 {
@@ -300,7 +300,7 @@ namespace System.Net.Mail
 
                 Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-aligned index: " + index);
 
-                // Do not include the Comma (if any), and because there were no bounding quotes, 
+                // Do not include the Comma (if any), and because there were no bounding quotes,
                 // trim extra whitespace.
                 displayName = data.SubstringTrim(index + 1, startingIndex - index);
             }

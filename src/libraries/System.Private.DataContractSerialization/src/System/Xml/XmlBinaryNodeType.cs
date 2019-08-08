@@ -207,7 +207,7 @@ namespace System.Xml
 
         // MinorVersion = MaxElement + 1, // Reserved (Not supported)
 
-        MinText = 0x80, // Must be even 
+        MinText = 0x80, // Must be even
         ZeroText = MinText,
         OneText = MinText + 1 * 2,
         FalseText = MinText + 2 * 2,

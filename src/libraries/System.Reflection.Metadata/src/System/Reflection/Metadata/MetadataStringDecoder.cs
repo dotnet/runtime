@@ -14,9 +14,9 @@ namespace System.Reflection.Metadata
     /// </summary>
     /// <remarks>
     /// This can be used for the following purposes:
-    /// 
+    ///
     /// 1) To customize the treatment of invalid input. When no decoder is provided,
-    ///    the <see cref="MetadataReader"/> uses the default fallback replacement 
+    ///    the <see cref="MetadataReader"/> uses the default fallback replacement
     ///    with \uFFFD)
     ///
     /// 2) To reuse existing strings instead of allocating a new one for each decoding
@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
     public class MetadataStringDecoder
     {
         /// <summary>
-        /// Gets the encoding used by this instance. 
+        /// Gets the encoding used by this instance.
         /// </summary>
         public Encoding Encoding { get; }
 
@@ -40,7 +40,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <param name="encoding">The encoding to use.</param>
         /// <remarks>
-        /// To cache and reuse existing strings. Create a derived class and override <see cref="GetString(byte*, int)"/> 
+        /// To cache and reuse existing strings. Create a derived class and override <see cref="GetString(byte*, int)"/>
         /// </remarks>
         public MetadataStringDecoder(Encoding encoding)
         {
@@ -51,12 +51,12 @@ namespace System.Reflection.Metadata
 
             // Non-enforcement of (encoding is UTF8Encoding) here is by design.
             //
-            // This type is not itself aware of any particular encoding. However, the constructor argument that accepts a 
+            // This type is not itself aware of any particular encoding. However, the constructor argument that accepts a
             // MetadataStringDecoder argument is validated however because it must be a UTF8 decoder.
             //
             // Above architectural purity, the fact that you can get our default implementation of Encoding.GetString
-            // is a hidden feature to use our light-up of unsafe Encoding.GetString outside this assembly on an arbitrary 
-            // encoding. I'm more comfortable sharing that hack than having the reflection over internal 
+            // is a hidden feature to use our light-up of unsafe Encoding.GetString outside this assembly on an arbitrary
+            // encoding. I'm more comfortable sharing that hack than having the reflection over internal
             // CreateStringFromEncoding spread.
 
             Encoding = encoding;

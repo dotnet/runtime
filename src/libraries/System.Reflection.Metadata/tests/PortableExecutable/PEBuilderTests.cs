@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -35,7 +35,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
                 if (machine == Machine.Unknown) // Unknown machine type translates into AnyCpu, which is marked as I386 in the PE file
                     Assert.Equal(Machine.I386, headers.CoffHeader.Machine);
-                else 
+                else
                     Assert.Equal(machine, headers.CoffHeader.Machine);
             }
         }
@@ -58,9 +58,9 @@ namespace System.Reflection.PortableExecutable.Tests
         private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
         private static void WritePEImage(
-            Stream peStream, 
-            MetadataBuilder metadataBuilder, 
-            BlobBuilder ilBuilder, 
+            Stream peStream,
+            MetadataBuilder metadataBuilder,
+            BlobBuilder ilBuilder,
             MethodDefinitionHandle entryPointHandle,
             Blob mvidFixup = default(Blob),
             byte[] privateKeyOpt = null,
@@ -144,7 +144,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
                 WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, privateKeyOpt: Misc.KeyPair);
 
-                // The expected checksum can be determined by saving the PE stream to a file, 
+                // The expected checksum can be determined by saving the PE stream to a file,
                 // running "sn -R test.dll KeyPair.snk" and inspecting the resulting binary.
                 // The re-signed binary should be the same as the original one.
                 // See https://github.com/dotnet/corefx/issues/25829.
@@ -152,7 +152,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
                 Assert.Equal(0x0000319cU, actualChecksum);
 
-                VerifyPE(peStream, Machine.Unknown, expectedSignature: new byte[] 
+                VerifyPE(peStream, Machine.Unknown, expectedSignature: new byte[]
                 {
                     0x58, 0xD4, 0xD7, 0x88, 0x3B, 0xF9, 0x19, 0x9F, 0x3A, 0x55, 0x8F, 0x1B, 0x88, 0xBE, 0xA8, 0x42,
                     0x09, 0x2B, 0xE3, 0xB4, 0xC7, 0x09, 0xD5, 0x96, 0x35, 0x50, 0x0F, 0x3C, 0x87, 0x95, 0x6A, 0x31,
@@ -169,10 +169,10 @@ namespace System.Reflection.PortableExecutable.Tests
         private static MethodDefinitionHandle BasicValidationEmit(MetadataBuilder metadata, BlobBuilder ilBuilder)
         {
             metadata.AddModule(
-                0, 
-                metadata.GetOrAddString("ConsoleApplication.exe"), 
+                0,
+                metadata.GetOrAddString("ConsoleApplication.exe"),
                 metadata.GetOrAddGuid(s_guid),
-                default(GuidHandle), 
+                default(GuidHandle),
                 default(GuidHandle));
 
             metadata.AddAssembly(
@@ -331,7 +331,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 systemObjectTypeRef,
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
                 methodList: mainMethodDef);
-           
+
             return mainMethodDef;
         }
 
@@ -440,7 +440,7 @@ namespace System.Reflection.PortableExecutable.Tests
             var derivedClassSumCacheFieldDef = metadata.AddFieldDefinition(
                 FieldAttributes.Assembly,
                 metadata.GetOrAddString("_sumCache"),
-                metadata.GetOrAddBlob(BuildSignature(e => 
+                metadata.GetOrAddBlob(BuildSignature(e =>
                 {
                     var inst = e.FieldSignature().GenericInstantiation(genericType: dictionaryTypeRef, genericArgumentCount: 2, isValueType: false);
                     inst.AddArgument().Int32();
@@ -507,18 +507,18 @@ namespace System.Reflection.PortableExecutable.Tests
             var peStream = new MemoryStream();
             var ilBuilder = new BlobBuilder();
             var metadataBuilder = new MetadataBuilder();
-            
+
             var peBuilder = new ManagedPEBuilder(
                 PEHeaderBuilder.CreateLibraryHeader(),
                 new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 nativeResources: new TestResourceSectionBuilder(),
                 deterministicIdProvider: content => s_contentId);
-            
+
             var peBlob = new BlobBuilder();
-            
+
             var contentId = peBuilder.Serialize(peBlob);
-            
+
             peBlob.WriteContentTo(peStream);
 
             peStream.Position = 0;
@@ -747,7 +747,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Same(buffer, b.Buffer);
             Assert.Equal(0, b.Start);
             Assert.Equal(2, b.Length);
-            
+
             // 0, [1, <2, 3>, 4], 5
             b = PEBuilder.GetPrefixBlob(new Blob(buffer, start: 1, length: 4), new Blob(buffer, start: 2, length: 2));
             Assert.Same(buffer, b.Buffer);

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -59,7 +59,7 @@ namespace System.Data.Tests
             drv = dv.AddNew();
             Assert.Equal(dv.Count, CountView + 1);
 
-            // AddNew - Table Row Count 
+            // AddNew - Table Row Count
             Assert.Equal(dt.Rows.Count, CountTable);
 
             // AddNew - new row in DataTable
@@ -261,7 +261,7 @@ namespace System.Data.Tests
             dv.Delete(0);
             Assert.Equal(dv.Count, CountView - 1);
 
-            // Delete - Table Row Count 
+            // Delete - Table Row Count
             Assert.Equal(dt.Rows.Count, CountTable);
 
             // Delete - check table
@@ -399,7 +399,7 @@ namespace System.Data.Tests
             Assert.Equal(-1, FindResult);
 
             dv.Sort = "ParentId";
-            // Find 
+            // Find
             FindResult = dv.Find("3");
             Assert.Equal(ExpectedResult, FindResult);
         }
@@ -438,7 +438,7 @@ namespace System.Data.Tests
             });
 
             dv.Sort = "ParentId,String1";
-            // Find 
+            // Find
             FindResult = dv.Find(new object[] { "3", "3-String1" });
             Assert.Equal(ExpectedResult, FindResult);
         }
@@ -546,9 +546,9 @@ namespace System.Data.Tests
 
             //ListChangedType - this was not checked
             //Move
-            //PropertyDescriptorAdded - A PropertyDescriptor was added, which changed the schema. 
-            //PropertyDescriptorChanged - A PropertyDescriptor was changed, which changed the schema. 
-            //PropertyDescriptorDeleted 
+            //PropertyDescriptorAdded - A PropertyDescriptor was added, which changed the schema.
+            //PropertyDescriptorChanged - A PropertyDescriptor was changed, which changed the schema.
+            //PropertyDescriptorDeleted
         }
 
         [Fact]
@@ -613,7 +613,7 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             //-------------------------------------------------------------
-            //Get excpected result 
+            //Get excpected result
             al.Clear();
             foreach (DataRow dr in dt.Rows)
             {
@@ -641,7 +641,7 @@ namespace System.Data.Tests
             //-------------------------------------------------------------
 
             //-------------------------------------------------------------
-            //Get excpected result 
+            //Get excpected result
             al.Clear();
             foreach (DataRow dr in dt.Rows)
                 if ((int)dr["ChildId"] == 1 && dr["String1"].ToString() == "1-String1")
@@ -690,14 +690,14 @@ namespace System.Data.Tests
         public void RowStateFilter()
         {
             /*
-                Added           A new row. 4 
-                CurrentRows     Current rows including unchanged, new, and modified rows. 22 
-                Deleted         A deleted row. 8 
-                ModifiedCurrent A current version, which is a modified version of original data (see ModifiedOriginal). 16 
-                ModifiedOriginal The original version (although it has since been modified and is available as ModifiedCurrent). 32 
-                None            None. 0 
-                OriginalRows    Original rows including unchanged and deleted rows. 42 
-                Unchanged       An unchanged row. 2 
+                Added           A new row. 4
+                CurrentRows     Current rows including unchanged, new, and modified rows. 22
+                Deleted         A deleted row. 8
+                ModifiedCurrent A current version, which is a modified version of original data (see ModifiedOriginal). 16
+                ModifiedOriginal The original version (although it has since been modified and is available as ModifiedCurrent). 32
+                None            None. 0
+                OriginalRows    Original rows including unchanged and deleted rows. 42
+                Unchanged       An unchanged row. 2
              */
 
             //DataRowView[] drvResult = null;
@@ -718,37 +718,37 @@ namespace System.Data.Tests
             dt.Rows.Add(new object[] { 1, "C", "D" });
             dt.Rows.Add(new object[] { 1, "E", "F" });
 
-            //---------- Added -------- 
+            //---------- Added --------
             dv.RowStateFilter = DataViewRowState.Added;
             drResult = GetResultRows(dt, DataRowState.Added);
             // Added
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
-            //---------- CurrentRows -------- 
+            //---------- CurrentRows --------
             dv.RowStateFilter = DataViewRowState.CurrentRows;
             drResult = GetResultRows(dt, DataRowState.Unchanged | DataRowState.Added | DataRowState.Modified);
             // CurrentRows
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
-            //---------- ModifiedCurrent -------- 
+            //---------- ModifiedCurrent --------
             dv.RowStateFilter = DataViewRowState.ModifiedCurrent;
             drResult = GetResultRows(dt, DataRowState.Modified);
             // ModifiedCurrent
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
-            //---------- ModifiedOriginal -------- 
+            //---------- ModifiedOriginal --------
             dv.RowStateFilter = DataViewRowState.ModifiedOriginal;
             drResult = GetResultRows(dt, DataRowState.Modified);
             // ModifiedOriginal
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
 
-            //---------- Deleted -------- 
+            //---------- Deleted --------
             dv.RowStateFilter = DataViewRowState.Deleted;
             drResult = GetResultRows(dt, DataRowState.Deleted);
             // Deleted
             Assert.True(CompareSortedRowsByParentId(dv, drResult));
             /*
-                    //---------- OriginalRows -------- 
+                    //---------- OriginalRows --------
                     dv.RowStateFilter = DataViewRowState.OriginalRows ;
                     drResult = GetResultRows(dt,DataRowState.Unchanged | DataRowState.Deleted );
                         // OriginalRows
@@ -763,8 +763,8 @@ namespace System.Data.Tests
             DataRowVersion drVer = DataRowVersion.Current;
 
             //From MSDN -    The row the default version for the current DataRowState.
-            //                For a DataRowState value of Added, Modified or Current, 
-            //                the default version is Current. 
+            //                For a DataRowState value of Added, Modified or Current,
+            //                the default version is Current.
             //                For a DataRowState of Deleted, the version is Original.
             //                For a DataRowState value of Detached, the version is Proposed.
 
@@ -779,7 +779,7 @@ namespace System.Data.Tests
             foreach (DataRow dr in dt.Rows)
             {
                 if (dr.HasVersion(drVer)
-                    //&& ((int)dr["ParentId", drVer] == 1) 
+                    //&& ((int)dr["ParentId", drVer] == 1)
                     && ((dr.RowState & State) > 0)
                     )
                     al.Add(dr);
@@ -976,7 +976,7 @@ namespace System.Data.Tests
             // ctor - Sort
             Assert.Equal("Age", dv.Sort);
 
-            // ctor - RowStateFilter 
+            // ctor - RowStateFilter
             Assert.Equal(DataViewRowState.Added, dv.RowStateFilter);
         }
 
@@ -991,7 +991,7 @@ namespace System.Data.Tests
 
             dv = dt.DefaultView;
 
-            //    public DataViewManager DataViewManager {get;} -    The DataViewManager that created this view. 
+            //    public DataViewManager DataViewManager {get;} -    The DataViewManager that created this view.
             //    If this is the default DataView for a DataTable, the DataViewManager property returns the default DataViewManager for the DataSet.
             //    Otherwise, if the DataView was created without a DataViewManager, this property is a null reference (Nothing in Visual Basic).
 
@@ -1203,7 +1203,7 @@ namespace System.Data.Tests
             catch (ArgumentNullException e)
             {
                 // Never premise English.
-                //Assert.Equal ("'columnNames' argument cannot be null." + Environment.NewLine + 
+                //Assert.Equal ("'columnNames' argument cannot be null." + Environment.NewLine +
                 //        "Parameter name: columnNames", e.Message, "#1");
             }
             DataTable newTable1 = view.ToTable(false, new string[] { });

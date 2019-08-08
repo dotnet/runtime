@@ -33,9 +33,9 @@ namespace System.Runtime.Serialization
             // Get all of the serializable members in the class to be serialized.
             FieldInfo[] typeMembers = GetSerializableFields(type);
 
-            // If this class doesn't extend directly from object, walk its hierarchy and 
+            // If this class doesn't extend directly from object, walk its hierarchy and
             // get all of the private and assembly-access fields (e.g. all fields that aren't
-            // virtual) and include them in the list of things to be serialized.  
+            // virtual) and include them in the list of things to be serialized.
             Type parentType = type.BaseType;
             if (parentType != null && parentType != typeof(object))
             {
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
             // If we've already gathered the members for this type, just return them.
             // Otherwise, get them and add them.
             return s_memberInfoTable.GetOrAdd(
-                new MemberHolder(type, context), 
+                new MemberHolder(type, context),
                 mh => InternalGetSerializableMembers(mh._memberType));
         }
 
@@ -322,7 +322,7 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(type));
             }
 
-            // Special case types like arrays            
+            // Special case types like arrays
             Type attributedType = type;
             while (attributedType.HasElementType)
             {

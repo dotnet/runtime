@@ -134,8 +134,8 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public unsafe void LightUpTrickFromDifferentAssemblyWorks()
         {
-            // This is a trick to use our portable light up outside the reader assembly (that 
-            // I will use in Roslyn). Check that it works with encoding other than UTF8 and that it 
+            // This is a trick to use our portable light up outside the reader assembly (that
+            // I will use in Roslyn). Check that it works with encoding other than UTF8 and that it
             // validates arguments like the real thing.
             var decoder = new MetadataStringDecoder(Encoding.Unicode);
             Assert.Throws<ArgumentNullException>(() => decoder.GetString(null, 0));

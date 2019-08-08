@@ -359,7 +359,7 @@ namespace System.Collections.Specialized
                 _current = null;
             }
         }
-        
+
         private class NodeKeyValueCollection : ICollection
         {
             private ListDictionary _list;

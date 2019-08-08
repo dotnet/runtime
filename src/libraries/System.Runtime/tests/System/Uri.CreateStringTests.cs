@@ -163,7 +163,7 @@ namespace System.Tests
             yield return new object[] { "http://0/", "http", "", "0.0.0.0", UriHostNameType.IPv4, 80, true, false };
             yield return new object[] { "http://0x100000000/", "http", "", "0x100000000", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://0x/", "http", "", "0x", UriHostNameType.Dns, 80, true, false };
-            
+
             // IPv4 host - octet
             yield return new object[] { "http://192.0123.0.10", "http", "", "192.83.0.10", UriHostNameType.IPv4, 80, true, false };
 
@@ -223,7 +223,7 @@ namespace System.Tests
             yield return new object[] { "ftp://[2001:0db8:0000:0000:0000:ff00:0042:8329]", "ftp", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, 21, true, false };
             yield return new object[] { "telnet://[2001:0db8:0000:0000:0000:ff00:0042:8329]", "telnet", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, 23, true, false };
             yield return new object[] { "unknown://[2001:0db8:0000:0000:0000:ff00:0042:8329]", "unknown", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
-            
+
             // File - empty path
             yield return new object[] { "file:///", "file", "", "", UriHostNameType.Basic, -1, true, true };
             yield return new object[] { @"file://\", "file", "", "", UriHostNameType.Basic, -1, true, true };
@@ -341,7 +341,7 @@ namespace System.Tests
 
             // File - with host
             yield return new object[] { @"file://host/", "file", "", "host", UriHostNameType.Dns, -1, true, false };
-            
+
             yield return new object[] { "unknown://h.a./", "unknown", "", "h.a.", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { "unknown://h.1./", "unknown", "", "h.1.", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { "unknown://h.-/", "unknown", "", "h.-", UriHostNameType.Basic, -1, true, false };
@@ -380,7 +380,7 @@ namespace System.Tests
             yield return new object[] { "unknown://../", "unknown", "", "..", UriHostNameType.Basic, -1, true, false };
             yield return new object[] { "unknown://////", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
             yield return new object[] { "unknown:///C:/", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
-            
+
             // Loopback - HTTP
             yield return new object[] { "http://localhost/", "http", "", "localhost", UriHostNameType.Dns, 80, true, true };
             yield return new object[] { "http://loopback/", "http", "", "localhost", UriHostNameType.Dns, 80, true, true };
@@ -449,7 +449,7 @@ namespace System.Tests
             yield return new object[] { "http://привет/", "http", "", "привет", "xn--b1agh1afp", "привет", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://привет.ascii/", "http", "", "привет.ascii", "xn--b1agh1afp.ascii", "привет.ascii", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://ascii.привет/", "http", "", "ascii.привет", "ascii.xn--b1agh1afp", "ascii.привет", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { "http://привет.βέλασμα/", "http", "", "привет.βέλασμα", "xn--b1agh1afp.xn--ixaiab0ch2c", "привет.βέλασμα", UriHostNameType.Dns, 80, true, false }; 
+            yield return new object[] { "http://привет.βέλασμα/", "http", "", "привет.βέλασμα", "xn--b1agh1afp.xn--ixaiab0ch2c", "привет.βέλασμα", UriHostNameType.Dns, 80, true, false };
 
             yield return new object[] { "http://[1111:2222:3333::431%16]:50/", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 50, false, false }; // Scope ID
             yield return new object[] { "http://[1111:2222:3333::431%16/20]", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 80, true, false }; // Scope ID and prefix
@@ -482,7 +482,7 @@ namespace System.Tests
                 Assert.False(uri.UserEscaped);
             });
         }
-        
+
         public static IEnumerable<object[]> Path_Query_Fragment_TestData()
         {
             // Http
@@ -845,7 +845,7 @@ namespace System.Tests
                 Assert.False(uri.UserEscaped);
             });
         }
-        
+
         public static IEnumerable<object[]> IsFile_IsUnc_TestData()
         { // Explicit file with windows drive with path
             yield return new object[] { "file://C:/path", true, false };
@@ -1108,7 +1108,7 @@ namespace System.Tests
             // Invalid host
             yield return new object[] { @"http://domain\", UriKind.Absolute };
             yield return new object[] { @"unknownscheme://domain\", UriKind.Absolute };
-            
+
             yield return new object[] { "unknown://h..9", UriKind.Absolute };
             yield return new object[] { "unknown://h..-", UriKind.Absolute };
             yield return new object[] { "unknown://h..", UriKind.Absolute };
@@ -1178,7 +1178,7 @@ namespace System.Tests
             // Explicit UNC with invalid windows drive
             yield return new object[] { @"file://\\1:/", UriKind.Absolute };
             yield return new object[] { @"file://\\ab:/", UriKind.Absolute };
-            
+
             // Unc host is invalid
             yield return new object[] { @"\\.", UriKind.Absolute };
             yield return new object[] { @"\\server..", UriKind.Absolute };

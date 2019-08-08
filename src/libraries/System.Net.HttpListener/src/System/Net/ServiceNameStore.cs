@@ -81,8 +81,8 @@ namespace System.Net
                 if (colonIndex >= 0)
                 {
                     // host:port
-                    host = hostAndPort.Substring(0, colonIndex); // Excludes colon 
-                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon 
+                    host = hostAndPort.Substring(0, colonIndex); // Excludes colon
+                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else
                     ushort portValue;
@@ -103,7 +103,7 @@ namespace System.Net
                 // UriHostNameType.IPv4, UriHostNameType.IPv6: Do not normalize IPv4/6 hosts.
                 // UriHostNameType.Basic: This is never returned by CheckHostName today
                 // UriHostNameType.Unknown: Nothing recognizable to normalize
-                // default Some new UriHostNameType?                       
+                // default Some new UriHostNameType?
                 return inputServiceName;
             }
 

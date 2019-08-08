@@ -25,7 +25,7 @@ namespace System.Xml
         private string _newLineChars;
 
         private XmlCharType _xmlCharType;
-        // 
+        //
         // Constructor
         //
         internal XmlCharCheckingWriter(XmlWriter baseWriter, bool checkValues, bool checkNames, bool replaceNewLines, string newLineChars)
@@ -514,9 +514,9 @@ namespace System.Xml
             }
         }
 
-        // Interleave 2 adjacent invalid chars with a space. This is used for fixing invalid values of comments and PIs. 
+        // Interleave 2 adjacent invalid chars with a space. This is used for fixing invalid values of comments and PIs.
         // Any "--" in comment must be replaced with "- -" and any "-" at the end must be appended with " ".
-        // Any "?>" in PI value must be replaced with "? >". 
+        // Any "?>" in PI value must be replaced with "? >".
         private string InterleaveInvalidChars(string text, char invChar1, char invChar2)
         {
             StringBuilder sb = null;
@@ -557,4 +557,3 @@ namespace System.Xml
         }
     }
 }
-

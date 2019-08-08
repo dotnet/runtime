@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     if (qname.Namespace == XmlReservedNs.NsXmlNs)
                     {
-                        // if NS wasn't specified we have to use prefix to find it and this is imposible for 'xmlns' 
+                        // if NS wasn't specified we have to use prefix to find it and this is imposible for 'xmlns'
                         throw XsltException.Create(SR.Xslt_InvalidPrefix, qname.Prefix);
                     }
                     else

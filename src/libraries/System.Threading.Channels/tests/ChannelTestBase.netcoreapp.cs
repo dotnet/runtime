@@ -144,7 +144,7 @@ namespace System.Threading.Channels.Tests
         public async Task ReadAllAsync_MultipleEnumerationsToEnd()
         {
             Channel<int> c = CreateChannel();
-            
+
             Assert.True(c.Writer.TryWrite(42));
             c.Writer.Complete();
 

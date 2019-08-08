@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             }
 
             protected override byte[] HashFinal() => BitConverter.GetBytes(_sum);
-            
+
             // Do not override HashCore(ReadOnlySpan) and TryHashFinal.  Consuming
             // test verifies that calling the base implementations invokes the array
             // implementations by verifying the right value is produced.

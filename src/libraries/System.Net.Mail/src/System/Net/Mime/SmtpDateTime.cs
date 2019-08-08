@@ -18,7 +18,7 @@ namespace System.Net.Mime
     // date            =       day month year
     // year            =       4*DIGIT / obs-year
     // month           =       (FWS month-name FWS) / obs-month
-    // month-name      =       "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" / "Jul" / "Aug" / 
+    // month-name      =       "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" / "Jul" / "Aug" /
     //                         "Sep" / "Oct" / "Nov" / "Dec"
     // day             =       ([FWS] 1*2DIGIT) / obs-day
     // time            =       time-of-day FWS zone
@@ -29,8 +29,8 @@ namespace System.Net.Mime
     // zone            =       (( "+" / "-" ) 4DIGIT) / obs-zone
     #endregion
 
-    // stores a Date and a Time Zone.  These are parsed and formatted according to the 
-    // rules in RFC 2822 section 3.3.  
+    // stores a Date and a Time Zone.  These are parsed and formatted according to the
+    // rules in RFC 2822 section 3.3.
     // This class is immutable
     internal class SmtpDateTime
     {
@@ -42,7 +42,7 @@ namespace System.Net.Mime
         internal const int OffsetLength = 5;
 
         // range for absolute value of minutes.  it is not necessary to include a max value for hours since
-        // the two-digit value that is parsed can't exceed the max value of hours, which is 99        
+        // the two-digit value that is parsed can't exceed the max value of hours, which is 99
         internal const int MaxMinuteValue = 59;
 
         // possible valid values for a date string
@@ -70,7 +70,7 @@ namespace System.Net.Mime
 
         internal static readonly Dictionary<string, TimeSpan> s_timeZoneOffsetLookup = InitializeShortHandLookups();
 
-        // a TimeSpan must be between these two values in order for it to be within the range allowed 
+        // a TimeSpan must be between these two values in order for it to be within the range allowed
         // by RFC 2822
         internal const long TimeSpanMaxTicks = TimeSpan.TicksPerHour * 99 + TimeSpan.TicksPerMinute * 59;
 
@@ -183,7 +183,7 @@ namespace System.Net.Mime
         public override string ToString() =>
             FormatDate(_date) + " " + (_unknownTimeZone ? UnknownTimeZoneDefaultOffset : TimeSpanToOffset(_timeZone));
 
-        // returns true if the offset is of the form [+|-]dddd and 
+        // returns true if the offset is of the form [+|-]dddd and
         // within the range 0000 to 9959
         internal void ValidateAndGetTimeZoneOffsetValues(string offset, out bool positive, out int hours, out int minutes)
         {
@@ -210,8 +210,8 @@ namespace System.Net.Mime
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            // we only explicitly validate the minutes.  they must be below 59 
-            // the hours are implicitly validated as a number formed from a string of length 
+            // we only explicitly validate the minutes.  they must be below 59
+            // the hours are implicitly validated as a number formed from a string of length
             // 2 can only be <= 99
             if (minutes > MaxMinuteValue)
             {
@@ -239,7 +239,7 @@ namespace System.Net.Mime
         internal string FormatDate(DateTime value) => value.ToString("ddd, dd MMM yyyy HH:mm:ss", CultureInfo.InvariantCulture);
 
         // parses the date and time zone
-        // postconditions: 
+        // postconditions:
         // return value is valid DateTime representation of the Date portion of data
         // timeZone is the portion of data which should contain the time zone data
         // timeZone is NOT evaluated by ParseValue
@@ -251,7 +251,7 @@ namespace System.Net.Mime
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            // find the first occurrence of ':' 
+            // find the first occurrence of ':'
             // this tells us where the separator between hour and minute are
             int indexOfHourSeparator = data.IndexOf(':');
 
@@ -261,7 +261,7 @@ namespace System.Net.Mime
                 throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data));
             }
 
-            // now we know where hours and minutes are separated.  The first whitespace after 
+            // now we know where hours and minutes are separated.  The first whitespace after
             // that MUST be the separator between the time portion and the timezone portion
             // timezone may have additional spaces, characters, or comments after it but
             // this is ok since we'll parse that whole section later
@@ -275,7 +275,7 @@ namespace System.Net.Mime
             // extract the time portion and remove all leading and trailing whitespace
             string date = data.Substring(0, indexOfTimeZoneSeparator).Trim();
 
-            // attempt to parse the DateTime component.  
+            // attempt to parse the DateTime component.
             DateTime dateValue;
             if (!DateTime.TryParseExact(date, s_validDateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out dateValue))
             {
@@ -289,7 +289,7 @@ namespace System.Net.Mime
             // Trim the string to remove these characters.
             string timeZoneString = data.Substring(indexOfTimeZoneSeparator).Trim();
 
-            // find, if any, the first whitespace character after the timezone. 
+            // find, if any, the first whitespace character after the timezone.
             // These will be CFWS and must be ignored. Remove them.
             int endOfTimeZoneOffset = timeZoneString.IndexOfAny(s_allowedWhiteSpaceChars);
 

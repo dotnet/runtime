@@ -49,7 +49,7 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(expected, methodBase.ContainsGenericParameters);
         }
-        
+
         [Theory]
         [InlineData(typeof(NonGenericClass), "TestMethod2", new Type[] { typeof(int), typeof(float), typeof(string) })]
         public void GetMethod_String_Type(Type type, string name, Type[] typeArguments)

@@ -263,7 +263,7 @@ namespace System.Security.Principal
 
                     if (Names[currentName].Buffer.Length * 2 + 2 > ushort.MaxValue)
                     {
-                        // this should never happen since we are already validating account name length in constructor and 
+                        // this should never happen since we are already validating account name length in constructor and
                         // it is less than this limit
                         Debug.Fail("NTAccount::TranslateToSids - source account name is too long.");
                         throw new InvalidOperationException();

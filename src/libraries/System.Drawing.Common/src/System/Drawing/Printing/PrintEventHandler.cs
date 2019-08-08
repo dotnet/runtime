@@ -11,4 +11,3 @@ namespace System.Drawing.Printing
     /// </summary>
     public delegate void PrintEventHandler(object sender, PrintEventArgs e);
 }
-

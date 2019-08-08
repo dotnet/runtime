@@ -340,4 +340,3 @@ namespace System.IO.Compression.Tests
         }
     }
 }
-

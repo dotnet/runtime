@@ -28,7 +28,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Specifies that a property cannot be used as an application setting. This
-        /// <see langword='static '/>field is read-only. 
+        /// <see langword='static '/>field is read-only.
         /// </summary>
         public static readonly RecommendedAsConfigurableAttribute No = new RecommendedAsConfigurableAttribute(false);
 

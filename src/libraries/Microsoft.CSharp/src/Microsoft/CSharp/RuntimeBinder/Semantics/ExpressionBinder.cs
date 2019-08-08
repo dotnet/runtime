@@ -146,101 +146,101 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal readonly partial struct ExpressionBinder
     {
         // ExpressionBinder - General Rules
-        // 
+        //
         // Express the Contract
-        // 
-        // Use assertions and naming guidelines to express the contract for methods. 
-        // The most common issue is whether an argument may be null or not. If an 
-        // argument may not be null, then the method must ASSERT that before any other 
-        // code. If an argument may be null then the name of the argument should 
-        // include 'Optional'. The exception to this rule is the input parse tree 
-        // parameter. If the parse tree may be null, then the method name should 
-        // include an 'Opt' suffix. For example bindArgumentList should really be 
-        // named bindArgumentListOpt. Abbreviations should be avoided, but the 'Opt' 
-        // suffix gets an exception because it is used consistently in the language 
+        //
+        // Use assertions and naming guidelines to express the contract for methods.
+        // The most common issue is whether an argument may be null or not. If an
+        // argument may not be null, then the method must ASSERT that before any other
+        // code. If an argument may be null then the name of the argument should
+        // include 'Optional'. The exception to this rule is the input parse tree
+        // parameter. If the parse tree may be null, then the method name should
+        // include an 'Opt' suffix. For example bindArgumentList should really be
+        // named bindArgumentListOpt. Abbreviations should be avoided, but the 'Opt'
+        // suffix gets an exception because it is used consistently in the language
         // spec.
-        // 
-        // 
+        //
+        //
         // Error Tolerant
-        // 
-        // Do not rely on the input parse tree being complete. Erroneous code may 
-        // result in parse trees with required children missing, or with unexpected 
-        // structure. Find out what the invariants are for the parse tree being 
+        //
+        // Do not rely on the input parse tree being complete. Erroneous code may
+        // result in parse trees with required children missing, or with unexpected
+        // structure. Find out what the invariants are for the parse tree being
         // consumed and code defensively.
-        // 
-        // Similarly, the result of binding children nodes may not be 'OK'. The child 
-        // node may have contained some semantic errors and the binding code in the 
-        // parent must cope gracefully with the result. For example, an EXPRMEMGRP may 
+        //
+        // Similarly, the result of binding children nodes may not be 'OK'. The child
+        // node may have contained some semantic errors and the binding code in the
+        // parent must cope gracefully with the result. For example, an EXPRMEMGRP may
         // contain no members.
-        // 
-        // 
+        //
+        //
         // Error Recovery
-        // 
-        // Always attempt to bind children nodes even if errors have already been 
-        // detected in other children. Always build a new node representing a 'best 
-        // guess' at the semantics of the parse tree. Never discard the results of 
-        // binding a child node even if the binding has errors. Since a new node is 
-        // always produced there should always be a place to add bindings with errors 
-        // to the result. 
-        // 
-        // This ensures that full semantic information for all nodes is produced - 
-        // that the expression binder always produces a 'best guess' for every 
+        //
+        // Always attempt to bind children nodes even if errors have already been
+        // detected in other children. Always build a new node representing a 'best
+        // guess' at the semantics of the parse tree. Never discard the results of
+        // binding a child node even if the binding has errors. Since a new node is
+        // always produced there should always be a place to add bindings with errors
+        // to the result.
+        //
+        // This ensures that full semantic information for all nodes is produced -
+        // that the expression binder always produces a 'best guess' for every
         // expression in source.
-        // 
-        // 
+        //
+        //
         // Error Reporting
-        // 
-        // If a child expression has an error, then no new error's for the parent 
-        // should be reported, unless there is no way that the new error was caused 
-        // by any child errors. If child nodes don't have any errors, and the new 
-        // node does have an error, then at least one error must be reported. These 
-        // rules ensure that an error is always reported for erroneous code, and that 
+        //
+        // If a child expression has an error, then no new error's for the parent
+        // should be reported, unless there is no way that the new error was caused
+        // by any child errors. If child nodes don't have any errors, and the new
+        // node does have an error, then at least one error must be reported. These
+        // rules ensure that an error is always reported for erroneous code, and that
         // only the most meaningful error is reported from a set of cascading errors.
-        // 
-        // 
+        //
+        //
         // Map Back To the Source
-        // 
-        // When constructing new expression nodes, attach the appropriate parse tree 
+        //
+        // When constructing new expression nodes, attach the appropriate parse tree
         // node. The attached parse tree is used for:
         //             - error location reporting
-        //             - debug sequence points 
+        //             - debug sequence points
         //                         - stepping
         //                         - local variable scopes
         //             - finding the most meaningful expression for a parse tree node
-        // 
-        // 
+        //
+        //
         // Meaning not Implementation
-        // 
-        // The expression trees resulting from the initial binding pass should 
-        // represent the semantics of the input source code. There should be a 
-        // direct mapping between the newly constructed expression and the input 
+        //
+        // The expression trees resulting from the initial binding pass should
+        // represent the semantics of the input source code. There should be a
+        // direct mapping between the newly constructed expression and the input
         // parse tree.
-        // 
-        // The Whidbey codebase had the habit of producing expressions in the initial 
-        // binding which were closer in representation to the generated IL than the 
-        // input source code. In Orcas all transformations which may lose semantic 
-        // information about the source must be done after the initial expression 
-        // binding phase. 
-        // 
+        //
+        // The Whidbey codebase had the habit of producing expressions in the initial
+        // binding which were closer in representation to the generated IL than the
+        // input source code. In Orcas all transformations which may lose semantic
+        // information about the source must be done after the initial expression
+        // binding phase.
+        //
         // Special Cases
-        // 
-        //     -   Constant folding - Constant folding is a semantic losing 
-        //         transformation which must be performed to complete expression 
-        //         analysis. When creating a folded constant, create an expression 
-        //         node representing the unfolded expression, then pass this as a 
+        //
+        //     -   Constant folding - Constant folding is a semantic losing
+        //         transformation which must be performed to complete expression
+        //         analysis. When creating a folded constant, create an expression
+        //         node representing the unfolded expression, then pass this as a
         //         child expression of a new constant expression.
-        //     -   Color Color - The new Type or Instance expression covers this case. 
+        //     -   Color Color - The new Type or Instance expression covers this case.
         //         It is produced from bindSimpleName.
-        //     -   Method Group - Method groups should be preserved in expression trees. 
-        //         This includes as children of Call expressions, and delegate construction 
+        //     -   Method Group - Method groups should be preserved in expression trees.
+        //         This includes as children of Call expressions, and delegate construction
         //         nodes.
-        //     -   Type Binding - This is a big one. Whenever a type is bound in an 
-        //         expression, the binding of the component parts of the type must be 
-        //         preserved. This includes every identifier in a dotted type or 
-        //         namespace name, as well as the type binding information for the 
-        //         type arguments of constructed types. The semantic information for 
-        //         intermediate type binding results is represented by an 
-        //         EXPRTYPEORNAMESPACE. Types can be bound in several places in 
+        //     -   Type Binding - This is a big one. Whenever a type is bound in an
+        //         expression, the binding of the component parts of the type must be
+        //         preserved. This includes every identifier in a dotted type or
+        //         namespace name, as well as the type binding information for the
+        //         type arguments of constructed types. The semantic information for
+        //         intermediate type binding results is represented by an
+        //         EXPRTYPEORNAMESPACE. Types can be bound in several places in
         //         expressions:
         //             - Sizeof
         //             - Typeof
@@ -251,10 +251,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //             - Left hand side of a dot operator.
         //             - Parameter types in anonymous methods and lambdas.
         //             - Local Variables
-        // 
-        // 
+        //
+        //
         // Want to eventually Have's
-        // 
+        //
         // Only build the new node once all children have been built.
         // Factory should require all children as arguments.
         // Factory method sets the "Do Children have Errors?" bit - not done manually.
@@ -325,7 +325,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Create a cast node with the given expression flags. 
+        // Create a cast node with the given expression flags.
         private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest) =>
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
 
@@ -496,7 +496,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pwt.Prop().getClass() == pwt.GetType().OwningAggregate);
             Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop() is IndexerSymbol);
 
-            // We keep track of the type of the pObject which we're doing the call through so that we can report 
+            // We keep track of the type of the pObject which we're doing the call through so that we can report
             // protection access errors later, either below when binding the get, or later when checking that
             // the setter is actually an lvalue.
             Expr pObjectThrough = pObject;
@@ -718,7 +718,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Given a method group or indexer group, bind it to the arguments for an 
+        // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
         private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, NamedArgumentsKind namedArgumentsKind)
         {
@@ -735,7 +735,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Given a method group or indexer group, bind it to the arguments for an 
+        // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
         internal ExprWithArgs BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
         {
@@ -1163,7 +1163,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // We have a param array, but we're not at the end yet. This will happen
                             // with named arguments when the user specifies a name for the param array,
                             // and its not an actual array.
-                            // 
+                            //
                             // For example:
                             // void Foo(int y, params int[] x);
                             // ...
@@ -1201,7 +1201,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         else
                         {
-                            // This is either the error case that the args are of the wrong type, 
+                            // This is either the error case that the args are of the wrong type,
                             // or that we have some optional arguments being used. Either way,
                             // we won't need to expand the param array.
                             return;
@@ -1364,7 +1364,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (count < @params.Count - 1)
             {
                 // The user has specified less arguments than our parameters, but we still
-                // need to return our set of types without the param array. This is in the 
+                // need to return our set of types without the param array. This is in the
                 // case that all the parameters are optional.
                 prgtype = new CType[@params.Count - 1];
                 @params.CopyItems(0, @params.Count - 1, prgtype);
@@ -1422,7 +1422,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Check to see if an integral constant is within range of a integral 
+        // Check to see if an integral constant is within range of a integral
         // destination type.
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest)
         {
@@ -1664,4 +1664,3 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 }
-

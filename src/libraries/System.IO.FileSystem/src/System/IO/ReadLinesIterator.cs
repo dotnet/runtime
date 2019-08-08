@@ -13,17 +13,17 @@ namespace System.IO
     //
     // Known issues which cannot be changed to remain compatible with 4.0:
     //
-    //  - The underlying StreamReader is allocated upfront for the IEnumerable<T> before 
-    //    GetEnumerator has even been called. While this is good in that exceptions such as 
-    //    DirectoryNotFoundException and FileNotFoundException are thrown directly by 
-    //    File.ReadLines (which the user probably expects), it also means that the reader 
-    //    will be leaked if the user never actually foreach's over the enumerable (and hence 
+    //  - The underlying StreamReader is allocated upfront for the IEnumerable<T> before
+    //    GetEnumerator has even been called. While this is good in that exceptions such as
+    //    DirectoryNotFoundException and FileNotFoundException are thrown directly by
+    //    File.ReadLines (which the user probably expects), it also means that the reader
+    //    will be leaked if the user never actually foreach's over the enumerable (and hence
     //    calls Dispose on at least one IEnumerator<T> instance).
     //
-    //  - Reading to the end of the IEnumerator<T> disposes it. This means that Dispose 
+    //  - Reading to the end of the IEnumerator<T> disposes it. This means that Dispose
     //    is called twice in a normal foreach construct.
     //
-    //  - IEnumerator<T> instances from the same IEnumerable<T> party on the same underlying 
+    //  - IEnumerator<T> instances from the same IEnumerable<T> party on the same underlying
     //    reader.
     //
     internal class ReadLinesIterator : Iterator<string>
@@ -52,7 +52,7 @@ namespace System.IO
                 if (this.current != null)
                     return true;
 
-                // To maintain 4.0 behavior we Dispose 
+                // To maintain 4.0 behavior we Dispose
                 // after reading to the end of the reader.
                 Dispose();
             }
@@ -63,10 +63,10 @@ namespace System.IO
         protected override Iterator<string> Clone()
         {
             // NOTE: To maintain the same behavior with the previous yield-based
-            // iterator in 4.0, we have all the IEnumerator<T> instances share the same 
-            // underlying reader. If we have already been disposed, _reader will be null, 
+            // iterator in 4.0, we have all the IEnumerator<T> instances share the same
+            // underlying reader. If we have already been disposed, _reader will be null,
             // which will cause CreateIterator to simply new up a new instance to start up
-            // a new iteration. We cannot change this behavior due to compatibility 
+            // a new iteration. We cannot change this behavior due to compatibility
             // concerns.
             return CreateIterator(_path, _encoding, _reader);
         }

@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeEvpMdCtxHandle : SafeHandle
     {
-        private SafeEvpMdCtxHandle() : 
+        private SafeEvpMdCtxHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

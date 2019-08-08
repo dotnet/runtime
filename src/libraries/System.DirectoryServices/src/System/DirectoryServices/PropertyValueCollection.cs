@@ -89,7 +89,7 @@ namespace System.DirectoryServices
                 {
                     if (e.ErrorCode != unchecked((int)0x80004005) || (value == null))
                         // WinNT provider throws E_FAIL when null value is specified though actually ADS_PROPERTY_CLEAR option is used, need to catch exception
-                        // here. But at the same time we don't want to catch the exception if user explicitly sets the value to null.                                                                                                                  
+                        // here. But at the same time we don't want to catch the exception if user explicitly sets the value to null.
                         throw;
                 }
 
@@ -181,9 +181,9 @@ namespace System.DirectoryServices
 
         private void PopulateList()
         {
-            //No need to fill the cache here, when GetEx is calles, an implicit 
-            //call to GetInfo will be called against an uninitialized property 
-            //cache. Which is exactly what FillCache does.            
+            //No need to fill the cache here, when GetEx is calles, an implicit
+            //call to GetInfo will be called against an uninitialized property
+            //cache. Which is exactly what FillCache does.
             //entry.FillCache(propertyName);
             object var;
             int unmanagedResult = _entry.AdsObject.GetEx(PropertyName, out var);
@@ -241,8 +241,8 @@ namespace System.DirectoryServices
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
-                // On ADSI 2.5 if property has not been assigned any value before, 
-                // then IAds::SetInfo() in CommitIfNotCaching returns bad HREsult 0x8007200A, which we ignore. 
+                // On ADSI 2.5 if property has not been assigned any value before,
+                // then IAds::SetInfo() in CommitIfNotCaching returns bad HREsult 0x8007200A, which we ignore.
                 if (e.ErrorCode != unchecked((int)0x8007200A))    //  ERROR_DS_NO_ATTRIBUTE_OR_VALUE
                     throw;
             }

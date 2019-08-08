@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -91,7 +91,7 @@ namespace Microsoft.SqlServer.TDS.Authentication
         public override bool Inflate(Stream source)
         {
             // Read the information data
-            // 
+            //
             if (_infoDataLength > 0)
             {
                 _spn = new byte[_infoDataLength];

@@ -89,7 +89,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(localEP));
             }
-            
+
             // IPv6 Changes: Set the AddressFamily of this object before
             //               creating the client socket.
             _family = localEP.AddressFamily;
@@ -507,7 +507,7 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
             }
 
-            // Ensure that this is an IPv6 client, otherwise throw WinSock 
+            // Ensure that this is an IPv6 client, otherwise throw WinSock
             // Operation not supported socked exception.
             if (_family != AddressFamily.InterNetworkV6)
             {
@@ -608,7 +608,7 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
             }
 
-            // Ensure that this is an IPv6 client, otherwise throw WinSock 
+            // Ensure that this is an IPv6 client, otherwise throw WinSock
             // Operation not supported socked exception.
             if (_family != AddressFamily.InterNetworkV6)
             {
@@ -698,7 +698,7 @@ namespace System.Net.Sockets
             }
 
             // NOTE: Need to create different kinds of sockets based on the addresses
-            //       returned from DNS. As a result, we defer the creation of the 
+            //       returned from DNS. As a result, we defer the creation of the
             //       socket until the Connect method.
 
             Connect(hostname, port);
@@ -724,8 +724,8 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            // We must now look for addresses that use a compatible address family to the client socket. However, in the 
-            // case of the <hostname,port> constructor we will have deferred creating the socket and will do that here 
+            // We must now look for addresses that use a compatible address family to the client socket. However, in the
+            // case of the <hostname,port> constructor we will have deferred creating the socket and will do that here
             // instead.
 
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
@@ -886,7 +886,7 @@ namespace System.Net.Sockets
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
 
-            // this is a fix due to the nature of the ReceiveFrom() call and the 
+            // this is a fix due to the nature of the ReceiveFrom() call and the
             // ref parameter convention, we need to cast an IPEndPoint to it's base
             // class EndPoint and cast it back down to IPEndPoint. ugly but it works.
             //

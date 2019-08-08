@@ -152,14 +152,14 @@ namespace System.Collections.Immutable.Tests
             Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance.
             Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance.
 
-            collection = collection.Clear(); // now start with an empty collection 
+            collection = collection.Clear(); // now start with an empty collection
             builder = collection.ToBuilder();
-            Assert.Same(collection, builder.ToImmutable()); // again, no changes at all. 
-            builder.ValueComparer = StringComparer.OrdinalIgnoreCase; // now, force the builder to clear its cache 
+            Assert.Same(collection, builder.ToImmutable()); // again, no changes at all.
+            builder.ValueComparer = StringComparer.OrdinalIgnoreCase; // now, force the builder to clear its cache
 
             newImmutable = builder.ToImmutable();
-            Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance. 
-            Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance. 
+            Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance.
+            Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance.
         }
 
         [Fact]

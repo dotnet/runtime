@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
                 // padded version:
                 (byte)'P', (byte)'D', (byte)'B', (byte)' ', (byte)'v', (byte)'1', (byte)'.', (byte)'0', 0x00, 0x00, 0x00, 0x00,
-                
+
                 // flags (0):
                 0x00, 0x00,
 
@@ -133,7 +133,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 // --------
                 // #~
                 // --------
-                
+
                 // Reserved (0)
                 0x00, 0x00, 0x00, 0x00,
 
@@ -160,7 +160,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
                 // Padding and alignment
                 0x00, 0x00, 0x00, 0x00,
-                
+
                 // --------
                 // #Strings
                 // --------

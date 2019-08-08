@@ -710,7 +710,7 @@ namespace System.Numerics.Tests
         /// Test cast to Double on Very Large BigInteger more than (1 &lt;&lt; Int.MaxValue)
         /// Tested BigInteger are: +/-pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
         /// Expected double is positive and negative infinity
-        /// Note: 
+        /// Note:
         /// ToString() can not operate such large values
         /// </summary>
         private static void DoubleExplicitCastFromLargeBigIntegerTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)

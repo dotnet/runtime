@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 namespace System.Reflection.Internal
 {
     /// <summary>
-    /// Replacements for System.Linq to avoid an unnecessary dependency. 
+    /// Replacements for System.Linq to avoid an unnecessary dependency.
     /// Parameter and return types strengthened to actual internal usage as an optimization.
     /// </summary>
     internal static class EnumerableExtensions
@@ -51,7 +51,7 @@ namespace System.Reflection.Internal
             for (int i = 0; i < map.Length; i++)
                 map[i] = i;
 
-            Array.Sort(map, (int left, int right) => 
+            Array.Sort(map, (int left, int right) =>
             {
                 if (left == right)
                     return 0;

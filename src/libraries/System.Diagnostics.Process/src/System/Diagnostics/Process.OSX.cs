@@ -10,7 +10,7 @@ namespace System.Diagnostics
     public partial class Process
     {
         private const int NanosecondsTo100NanosecondsFactor = 100;
-        
+
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>

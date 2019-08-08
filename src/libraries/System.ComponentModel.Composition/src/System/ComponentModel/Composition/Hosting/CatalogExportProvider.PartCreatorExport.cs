@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly CatalogExportProvider _catalogExportProvider;
 
-            public PartCreatorExport(CatalogExportProvider catalogExportProvider, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition) : 
+            public PartCreatorExport(CatalogExportProvider catalogExportProvider, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition) :
                 base(partDefinition, exportDefinition)
             {
                 _catalogExportProvider = catalogExportProvider;

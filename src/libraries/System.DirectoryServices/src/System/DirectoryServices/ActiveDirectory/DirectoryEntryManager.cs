@@ -119,7 +119,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // directory entry does not exist
                 // create a new one and cache it
                 DirectoryEntry de = GetNewDirectoryEntry(distinguishedName);
-                // add it to the cache 
+                // add it to the cache
                 _directoryEntries.Add(dn, de);
             }
             return (DirectoryEntry)_directoryEntries[dn];
@@ -131,8 +131,8 @@ namespace System.DirectoryServices.ActiveDirectory
             object dn = distinguishedName;
 
             //
-            // NOTE: Currently only comparing against "rootdse", but in the future if we are going to 
-            //           remove any other entries that are not in dn format (such as schema), we need to add the 
+            // NOTE: Currently only comparing against "rootdse", but in the future if we are going to
+            //           remove any other entries that are not in dn format (such as schema), we need to add the
             //           special casing here.
             //
 

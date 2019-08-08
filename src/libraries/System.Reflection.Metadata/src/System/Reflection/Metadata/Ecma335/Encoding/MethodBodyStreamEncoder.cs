@@ -93,7 +93,7 @@ namespace System.Reflection.Metadata.Ecma335
             int bodyOffset = SerializeHeader(codeSize, (ushort)maxStack, exceptionRegionCount, attributes, localVariablesSignature, hasDynamicStackAllocation);
             var instructions = Builder.ReserveBytes(codeSize);
 
-            var regionEncoder = (exceptionRegionCount > 0) ? 
+            var regionEncoder = (exceptionRegionCount > 0) ?
                 ExceptionRegionEncoder.SerializeTableHeader(Builder, exceptionRegionCount, hasSmallExceptionRegions) : default;
 
             return new MethodBody(bodyOffset, instructions, regionEncoder);
@@ -162,7 +162,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// or the distance between a branch instruction and the target label doesn't fit the size of the instruction operand.
         /// </exception>
         public int AddMethodBody(
-            InstructionEncoder instructionEncoder, 
+            InstructionEncoder instructionEncoder,
             int maxStack = 8,
             StandaloneSignatureHandle localVariablesSignature = default,
             MethodBodyAttributes attributes = MethodBodyAttributes.InitLocals,
@@ -174,7 +174,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             // The branch fixup code expects the operands of branch instructions in the code builder to be contiguous.
-            // That's true when we emit thru InstructionEncoder. Taking it as a parameter instead of separate 
+            // That's true when we emit thru InstructionEncoder. Taking it as a parameter instead of separate
             // code and flow builder parameters ensures they match each other.
             var codeBuilder = instructionEncoder.CodeBuilder;
             var flowBuilder = instructionEncoder.ControlFlowBuilder;
@@ -191,16 +191,16 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             // Note (see also https://github.com/dotnet/corefx/issues/26910)
-            // 
-            // We could potentially automatically determine whether a tiny method with no variables and InitLocals flag set 
+            //
+            // We could potentially automatically determine whether a tiny method with no variables and InitLocals flag set
             // has localloc instruction and thus needs a fat header. We could parse the IL stored in codeBuilder.
-            // However, it would unnecessarily slow down emit of virtually all tiny methods, which do not use localloc 
-            // and would only address uninitialized memory issues in very rare scenarios when the pointer returned by 
+            // However, it would unnecessarily slow down emit of virtually all tiny methods, which do not use localloc
+            // and would only address uninitialized memory issues in very rare scenarios when the pointer returned by
             // localloc is not stored in a local variable but passed to a method call or stored in a field.
-            // 
+            //
             // Since emitting code with localloc is already a pretty advanced scenario that emits unsafe code
-            // that can be potentially incorrect in many other ways we decide that it's not worth the complexity 
-            // and a perf regression to do so. Instead we rely on the caller to let us know if there is a localloc 
+            // that can be potentially incorrect in many other ways we decide that it's not worth the complexity
+            // and a perf regression to do so. Instead we rely on the caller to let us know if there is a localloc
             // in the code they emitted.
 
             int bodyOffset = SerializeHeader(codeBuilder.Count, (ushort)maxStack, exceptionRegionCount, attributes, localVariablesSignature, hasDynamicStackAllocation);
@@ -215,12 +215,12 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             flowBuilder?.SerializeExceptionTable(Builder);
-            
+
             return bodyOffset;
         }
 
         private int SerializeHeader(
-            int codeSize, 
+            int codeSize,
             ushort maxStack,
             int exceptionRegionCount,
             MethodBodyAttributes attributes,
@@ -235,8 +235,8 @@ namespace System.Reflection.Metadata.Ecma335
             bool initLocals = (attributes & MethodBodyAttributes.InitLocals) != 0;
 
             bool isTiny = codeSize < 64 &&
-                          maxStack <= 8 && 
-                          localVariablesSignature.IsNil && (!hasDynamicStackAllocation || !initLocals) && 
+                          maxStack <= 8 &&
+                          localVariablesSignature.IsNil && (!hasDynamicStackAllocation || !initLocals) &&
                           exceptionRegionCount == 0;
 
             int offset;

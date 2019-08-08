@@ -5,8 +5,8 @@
 namespace System.Diagnostics
 {
     /// <devdoc>
-    ///     Specifies the priority level of a thread.  The priority level is not an absolute 
-    ///     level, but instead contributes to the actual thread priority by considering the 
+    ///     Specifies the priority level of a thread.  The priority level is not an absolute
+    ///     level, but instead contributes to the actual thread priority by considering the
     ///     priority class of the process.
     /// </devdoc>
     public enum ThreadPriorityLevel

@@ -441,7 +441,7 @@ namespace System.Net.Http
         public IDictionary<string, object> Properties => _winHttpHandler != null ?
             _winHttpHandler.Properties :
             _socketsHttpHandler.Properties;
-        
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

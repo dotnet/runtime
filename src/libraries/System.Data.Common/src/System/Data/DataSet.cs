@@ -249,9 +249,9 @@ namespace System.Data
                 InitializeDerivedDataSet();
             }
 
-            // adding back this check will fix typed dataset XML remoting, but we have to fix case that 
+            // adding back this check will fix typed dataset XML remoting, but we have to fix case that
             // a class inherits from DataSet and just relies on DataSet to deserialize (see SQL BU DT 374717)
-            // to fix that case also, we need to add a flag and add it to below check so return (no-op) will be 
+            // to fix that case also, we need to add a flag and add it to below check so return (no-op) will be
             // conditional (flag needs to be set in TypedDataSet
             if (remotingFormat == SerializationFormat.Xml && !ConstructSchema)
             {
@@ -2244,7 +2244,7 @@ namespace System.Data
 
             XmlTextReader xr = new XmlTextReader(stream);
 
-            // Prevent Dtd entity in dataset 
+            // Prevent Dtd entity in dataset
             xr.XmlResolver = null;
 
             return ReadXml(xr, false);
@@ -2259,7 +2259,7 @@ namespace System.Data
 
             XmlTextReader xr = new XmlTextReader(reader);
 
-            // Prevent Dtd entity in dataset 
+            // Prevent Dtd entity in dataset
             xr.XmlResolver = null;
 
             return ReadXml(xr, false);
@@ -2269,7 +2269,7 @@ namespace System.Data
         {
             XmlTextReader xr = new XmlTextReader(fileName);
 
-            // Prevent Dtd entity in dataset 
+            // Prevent Dtd entity in dataset
             xr.XmlResolver = null;
 
             try
@@ -2723,7 +2723,7 @@ namespace System.Data
             }
 
             XmlTextReader reader = (mode == XmlReadMode.Fragment) ? new XmlTextReader(stream, XmlNodeType.Element, null) : new XmlTextReader(stream);
-            // Prevent Dtd entity in dataset 
+            // Prevent Dtd entity in dataset
             reader.XmlResolver = null;
             return ReadXml(reader, mode, false);
         }
@@ -2736,7 +2736,7 @@ namespace System.Data
             }
 
             XmlTextReader xmlreader = (mode == XmlReadMode.Fragment) ? new XmlTextReader(reader.ReadToEnd(), XmlNodeType.Element, null) : new XmlTextReader(reader);
-            // Prevent Dtd entity in dataset 
+            // Prevent Dtd entity in dataset
             xmlreader.XmlResolver = null;
             return ReadXml(xmlreader, mode, false);
         }
@@ -2754,7 +2754,7 @@ namespace System.Data
                 xr = new XmlTextReader(fileName);
             }
 
-            // Prevent Dtd entity in dataset             
+            // Prevent Dtd entity in dataset
             xr.XmlResolver = null;
 
             try
@@ -3346,7 +3346,7 @@ namespace System.Data
 
         public static XmlSchemaComplexType GetDataSetSchema(XmlSchemaSet schemaSet)
         {
-            // For performance resons we are exploiting the fact that config files content is constant 
+            // For performance resons we are exploiting the fact that config files content is constant
             // for a given appdomain so we can safely cache the prepared schema complex type and reuse it
             if (s_schemaTypeForWSDL == null)
             {

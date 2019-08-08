@@ -20,7 +20,7 @@ namespace System.Reflection.TypeLoading
         }
 
         [Flags]
-        private enum BaseTypeClassification 
+        private enum BaseTypeClassification
         {
             Computed = 0x00000001,    // Always set (to indicate that the lazy evaluation has occurred)
             IsValueType = 0x00000002,

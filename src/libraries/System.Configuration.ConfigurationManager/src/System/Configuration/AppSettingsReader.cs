@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -25,7 +25,7 @@ namespace System.Configuration
         /// <summary>
         /// Gets the value for specified key from ConfigurationManager.AppSettings, and returns
         /// an object of the specified type containing the value from the config file.  If the key
-        /// isn't in the config file, or if it is not a valid value for the given type, it will 
+        /// isn't in the config file, or if it is not a valid value for the given type, it will
         /// throw an exception with a descriptive message so the user can make the appropriate
         /// change
         /// </summary>

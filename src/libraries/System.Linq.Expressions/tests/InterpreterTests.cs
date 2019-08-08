@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// FEATURE_COMPILE is not directly required, 
+// FEATURE_COMPILE is not directly required,
 // but this functionality relies on private reflection and that would not work with AOT
 #if FEATURE_INTERPRET && FEATURE_COMPILE
 

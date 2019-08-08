@@ -45,7 +45,7 @@ namespace System.Data
             if (source == _dataSet) return;  //somebody is doing an 'automerge'
             bool fEnforce = _dataSet.EnforceConstraints;
             _dataSet.EnforceConstraints = false;
-            _IgnoreNSforTableLookup = (_dataSet._namespaceURI != source._namespaceURI); // if two DataSets have different 
+            _IgnoreNSforTableLookup = (_dataSet._namespaceURI != source._namespaceURI); // if two DataSets have different
             // Namespaces, ignore NS for table lookups as we won't be able to find the right tables which inherits its NS
 
             List<DataColumn> existingColumns = null;// need to cache existing columns

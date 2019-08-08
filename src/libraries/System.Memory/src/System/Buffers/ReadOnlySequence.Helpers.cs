@@ -530,7 +530,7 @@ namespace System.Buffers
                 endIndex = 0;
                 return false;
             }
-            
+
             Debug.Assert(_endObject != null);
 
             startSegment = (ReadOnlySequenceSegment<T>)startObject;
@@ -586,7 +586,7 @@ namespace System.Buffers
 
             // The case, value < start, is invalid.
             // In that case, (value - start) would underflow becoming larger than int.MaxValue.
-            // (end - start) can never underflow and hence must be within 0 and int.MaxValue. 
+            // (end - start) can never underflow and hence must be within 0 and int.MaxValue.
             // So, we will correctly return false.
 
             // The case, value > end, is invalid.
@@ -612,7 +612,7 @@ namespace System.Buffers
 
             // The case, value < start, is invalid.
             // In that case, (value - start) would underflow becoming larger than long.MaxValue.
-            // (end - start) can never underflow and hence must be within 0 and long.MaxValue. 
+            // (end - start) can never underflow and hence must be within 0 and long.MaxValue.
             // So, we will correctly return false.
 
             // The case, value > end, is invalid.

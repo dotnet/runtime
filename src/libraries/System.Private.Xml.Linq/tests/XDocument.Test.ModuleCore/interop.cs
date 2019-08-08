@@ -181,7 +181,7 @@ namespace Microsoft.Test.ModuleCore
         // Extensible Meta-data about the item
         ITestProperties Metadata { get; }
 
-        //Execution 
+        //Execution
         void Init();
         ITestItem CreateTest( string assembly, string test);
         void Terminate();

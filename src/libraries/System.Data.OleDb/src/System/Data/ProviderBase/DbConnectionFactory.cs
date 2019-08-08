@@ -21,7 +21,7 @@ namespace System.Data.ProviderBase
         private const int PruningDueTime = 4 * 60 * 1000;           // 4 minutes
         private const int PruningPeriod = 30 * 1000;           // thirty seconds
 
-        // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to 
+        // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to
         // a maximum of Environment.ProcessorCount at a time.
         static int s_pendingOpenNonPooledNext = 0;
         static Task<DbConnectionInternal>[] s_pendingOpenNonPooled = new Task<DbConnectionInternal>[Environment.ProcessorCount];
@@ -132,7 +132,7 @@ namespace System.Data.ProviderBase
             DbConnectionPool connectionPool;
             connection = null;
 
-            //  Work around race condition with clearing the pool between GetConnectionPool obtaining pool 
+            //  Work around race condition with clearing the pool between GetConnectionPool obtaining pool
             //  and GetConnection on the pool checking the pool state.  Clearing the pool in this window
             //  will switch the pool into the ShuttingDown state, and GetConnection will return null.
             //  There is probably a better solution involving locking the pool/group, but that entails a major
@@ -186,9 +186,9 @@ namespace System.Data.ProviderBase
 
                             // now that we have an antecedent task, schedule our work when it is completed.
                             // If it is a new slot or a compelted task, this continuation will start right away.
-                            // BUG? : If we have timed out task on top of running task, then new task could be started                             
+                            // BUG? : If we have timed out task on top of running task, then new task could be started
                             // on top of that, since we are only checking the top task. This will lead to starting more threads
-                            // than intended.                           
+                            // than intended.
                             newTask = s_pendingOpenNonPooled[idx].ContinueWith((_) =>
                             {
                                 Transactions.Transaction originalTransaction = ADP.GetCurrentTransaction();

@@ -36,7 +36,7 @@ namespace System.Linq.Tests
         {
             int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
             int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
-            
+
             Assert.Equal(expected, source.AsQueryable().Reverse());
         }
 

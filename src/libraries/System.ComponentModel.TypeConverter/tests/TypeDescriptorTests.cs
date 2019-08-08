@@ -283,7 +283,7 @@ namespace System.ComponentModel.Tests
             public virtual int Value { get; set; }
         }
 
-        class FooBarDerived : FooBarBase 
+        class FooBarDerived : FooBarBase
         {
             [Description("Derived")]
             public override int Value { get; set; }

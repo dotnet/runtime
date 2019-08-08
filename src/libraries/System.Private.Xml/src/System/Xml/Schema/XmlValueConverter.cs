@@ -52,7 +52,7 @@ namespace System.Xml.Schema
     //                      source type to primitive, full-     destination type.
     //                      fidelity Clr type.  Use Xsd rules
     //                      to convert to a string (use
-    //                      XmlConvert where possible).         
+    //                      XmlConvert where possible).
     // -----------------------------------------------------------------------------------------------------------
     //
     //
@@ -65,7 +65,7 @@ namespace System.Xml.Schema
     // Source/Destination   System.String                           Clr List Type
     // -----------------------------------------------------------------------------------------------------------
     // System.String        No-op conversion                        Tokenize the string by whitespace, create a
-    //                                                              String[] from tokens, and follow List => List 
+    //                                                              String[] from tokens, and follow List => List
     //                                                              rules.
     // -----------------------------------------------------------------------------------------------------------
     // Clr List Type        Follow List => String[] rules,          Create destination list having the same length
@@ -3122,7 +3122,7 @@ namespace System.Xml.Schema
 
         protected XmlUnionConverter(XmlSchemaType schemaType) : base(schemaType)
         {
-            // Skip restrictions. It is safe to do that because this is a union, so it's not a built-in type 
+            // Skip restrictions. It is safe to do that because this is a union, so it's not a built-in type
             while (schemaType.DerivedBy == XmlSchemaDerivationMethod.Restriction)
                 schemaType = schemaType.BaseXmlSchemaType;
 

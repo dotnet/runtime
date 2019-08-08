@@ -10,7 +10,7 @@ namespace System.Collections.Specialized
     // providing that they are declared in a particular way.
     // It requires the set of strings to be orderded into an array of arrays of strings.
     // The first indexer must the length of the string, so that each sub-array is of the
-    // same length. The contained array must be in alphabetical order. Furthermore, if the 
+    // same length. The contained array must be in alphabetical order. Furthermore, if the
     // table is to be searched case-insensitively, the strings must all be lower case.
     internal static class FixedStringLookup
     {

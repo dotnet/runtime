@@ -22,7 +22,7 @@ namespace System.IO
 
         /// <devdoc>
         ///   Include the current directory and all the sub-directories
-        ///   underneath it including reparse points in the search operation. 
+        ///   underneath it including reparse points in the search operation.
         ///   This will traverse reparse points (i.e, mounted points and symbolic links)
         ///   recursively. If the directory structure searched contains a loop
         ///   because of hard links, the search operation will go on for ever.

@@ -53,18 +53,18 @@ namespace System.IO.Pipes
         /// Full named pipe server constructor
         /// </summary>
         /// <param name="pipeName">Pipe name</param>
-        /// <param name="direction">Pipe direction: In, Out or InOut (duplex). 
+        /// <param name="direction">Pipe direction: In, Out or InOut (duplex).
         /// Win32 note: this gets OR'd into dwOpenMode to CreateNamedPipe
         /// </param>
-        /// <param name="maxNumberOfServerInstances">Maximum number of server instances. Specify a fixed value between 
-        /// 1 and 254 (Windows)/greater than 1 (Unix), or use NamedPipeServerStream.MaxAllowedServerInstances to use the 
+        /// <param name="maxNumberOfServerInstances">Maximum number of server instances. Specify a fixed value between
+        /// 1 and 254 (Windows)/greater than 1 (Unix), or use NamedPipeServerStream.MaxAllowedServerInstances to use the
         /// maximum amount allowed by system resources.</param>
         /// <param name="transmissionMode">Byte mode or message mode.
         /// Win32 note: this gets used for dwPipeMode. CreateNamedPipe allows you to specify PIPE_TYPE_BYTE/MESSAGE
         /// and PIPE_READMODE_BYTE/MESSAGE independently, but this sets type and readmode to match.
         /// </param>
         /// <param name="options">PipeOption enum: None, Asynchronous, or Write-through
-        /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to 
+        /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to
         /// FILE_FLAG_OVERLAPPED option. PipeOptions enum doesn't expose FIRST_PIPE_INSTANCE option because
         /// this sets that automatically based on the number of instances specified.
         /// </param>
@@ -201,7 +201,7 @@ namespace System.IO.Pipes
         }
     }
 
-    // Users will use this delegate to specify a method to call while impersonating the client 
+    // Users will use this delegate to specify a method to call while impersonating the client
     // (see NamedPipeServerStream.RunAsClient).
     public delegate void PipeStreamImpersonationWorker();
 }

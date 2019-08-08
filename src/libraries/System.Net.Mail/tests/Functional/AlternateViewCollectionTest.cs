@@ -37,7 +37,7 @@ namespace System.Net.Mail.Tests
             AlternateView av1 = AlternateView.CreateAlternateViewFromString("test", new ContentType("text/plain"));
             Assert.Throws<ObjectDisposedException>(() => avc.Add(av1));
             Assert.Throws<ObjectDisposedException>(() => avc.Clear());
-            
+
             // No throw on second dispose
             avc.Dispose();
         }

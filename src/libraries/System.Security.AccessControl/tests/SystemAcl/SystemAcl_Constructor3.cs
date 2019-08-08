@@ -259,13 +259,13 @@ namespace System.Security.AccessControl.Tests
             sAcl = new SystemAcl(isContainer, isDS, rawAcl);
             Assert.True(TestConstructor(sAcl, isContainer, isDS, true, rawAcl));
 
-            //case 9, Aces from case 1 to 7 
+            //case 9, Aces from case 1 to 7
             revision = 127;
             capacity = 5;
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(sid)).ToString();
             rawAcl = new RawAcl(revision, capacity);
             //an SystemAudit ACE with a zero access mask
-            //is meaningless, will be removed                    
+            //is meaningless, will be removed
             gAce = new CommonAce(AceFlags.AuditFlags,
                     AceQualifier.SystemAudit,
                     0,
@@ -284,7 +284,7 @@ namespace System.Security.AccessControl.Tests
                     null);
             rawAcl.InsertAce(rawAcl.Count, gAce);
             //a SystemAudit ACE without Success or Failure Flags
-            //is meaningless, will be removed                    
+            //is meaningless, will be removed
             gAce = new CommonAce(AceFlags.None,
         AceQualifier.SystemAudit,
         1,

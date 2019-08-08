@@ -17,4 +17,3 @@ internal sealed class TestException : Exception
         // put a BREAKPOINT to catch a test failure.
     }
 }
-

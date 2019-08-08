@@ -15,7 +15,7 @@ namespace System.Net.Http
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
 
-        // Track whether the message has been sent. 
+        // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
         private int _sendStatus = MessageNotYetSent;
 
@@ -205,7 +205,7 @@ namespace System.Net.Http
         protected virtual void Dispose(bool disposing)
         {
             // The reason for this type to implement IDisposable is that it contains instances of types that implement
-            // IDisposable (content). 
+            // IDisposable (content).
             if (disposing && !_disposed)
             {
                 _disposed = true;

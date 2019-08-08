@@ -494,43 +494,43 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SetSocketOption_Int_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 0)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 0));
         }
 
         [Fact]
         public void SetSocketOption_Buffer_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, s_buffer)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, s_buffer));
         }
 
         [Fact]
         public void SetSocketOption_Bool_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, true)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, true));
         }
 
         [Fact]
         public void SetSocketOption_Object_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 1))); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 1)));
         }
 
         [Fact]
         public void GetSocketOption_Int_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 4)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 4));
         }
 
         [Fact]
         public void GetSocketOption_Buffer_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, s_buffer)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, s_buffer));
         }
 
         [Fact]
         public void GetSocketOption_Object_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger)); 
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger));
         }
 
         [Fact]

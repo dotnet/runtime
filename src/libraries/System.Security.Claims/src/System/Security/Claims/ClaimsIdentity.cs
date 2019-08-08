@@ -42,8 +42,8 @@ namespace System.Security.Claims
         public const string DefaultRoleClaimType = ClaimTypes.Role;
 
         // NOTE about _externalClaims.
-        // GenericPrincpal and RolePrincipal set role claims here so that .IsInRole will be consistent with a 'role' claim found by querying the identity or principal. 
-        // _externalClaims are external to the identity and assumed to be dynamic, they not serialized or copied through Clone(). 
+        // GenericPrincpal and RolePrincipal set role claims here so that .IsInRole will be consistent with a 'role' claim found by querying the identity or principal.
+        // _externalClaims are external to the identity and assumed to be dynamic, they not serialized or copied through Clone().
         // Access through public method: ClaimProviders.
 
         /// <summary>
@@ -240,7 +240,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="ClaimsIdentity"/> from a serialized stream created via 
+        /// Initializes an instance of <see cref="ClaimsIdentity"/> from a serialized stream created via
         /// <see cref="ISerializable"/>.
         /// </summary>
         /// <param name="info">
@@ -299,7 +299,7 @@ namespace System.Security.Claims
 
         /// <summary>
         /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsIdentity"/>.
-        /// </summary>       
+        /// </summary>
         /// <remarks>May contain nulls.</remarks>
         public virtual IEnumerable<Claim> Claims
         {
@@ -345,9 +345,9 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Allow the association of claims with this instance of <see cref="ClaimsIdentity"/>. 
+        /// Allow the association of claims with this instance of <see cref="ClaimsIdentity"/>.
         /// The claims will not be serialized or added in Clone(). They will be included in searches, finds and returned from the call to <see cref="ClaimsIdentity.Claims"/>.
-        /// </summary>               
+        /// </summary>
         internal List<List<Claim>> ExternalClaims
         {
             get
@@ -371,7 +371,7 @@ namespace System.Security.Claims
 
         /// <summary>
         /// Gets the Name of this <see cref="ClaimsIdentity"/>.
-        /// </summary>        
+        /// </summary>
         /// <remarks>Calls <see cref="FindFirst(string)"/> where string == NameClaimType, if found, returns <see cref="Claim.Value"/> otherwise null.</remarks>
         public virtual string Name
         {
@@ -467,12 +467,12 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Attempts to remove a <see cref="Claim"/> the internal list. 
+        /// Attempts to remove a <see cref="Claim"/> the internal list.
         /// </summary>
         /// <param name="claim">the <see cref="Claim"/> to match.</param>
         /// <remarks> It is possible that a <see cref="Claim"/> returned from <see cref="Claims"/> cannot be removed. This would be the case for 'External' claims that are provided by reference.
         /// <para>object.ReferenceEquals is used to 'match'.</para>
-        /// </remarks>  
+        /// </remarks>
         public virtual bool TryRemoveClaim(Claim claim)
         {
             if (claim == null)
@@ -495,7 +495,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Removes a <see cref="Claim"/> from the internal list. 
+        /// Removes a <see cref="Claim"/> from the internal list.
         /// </summary>
         /// <param name="claim">the <see cref="Claim"/> to match.</param>
         /// <remarks> It is possible that a <see cref="Claim"/> returned from <see cref="Claims"/> cannot be removed. This would be the case for 'External' claims that are provided by reference.
@@ -578,7 +578,7 @@ namespace System.Security.Claims
         /// Retrieves a <see cref="IEnumerable{Claim}"/> where each Claim.Type equals <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
-        /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>   
+        /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)

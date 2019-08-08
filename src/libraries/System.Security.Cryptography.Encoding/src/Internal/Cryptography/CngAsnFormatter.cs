@@ -15,7 +15,7 @@ namespace Internal.Cryptography
     {
         protected override string FormatNative(Oid oid, byte[] rawData, bool multiLine)
         {
-            // If OID is not present, then we can force CryptFormatObject 
+            // If OID is not present, then we can force CryptFormatObject
             // to use hex formatting by providing an empty OID string.
             string oidValue = string.Empty;
             if (oid != null && oid.Value != null)

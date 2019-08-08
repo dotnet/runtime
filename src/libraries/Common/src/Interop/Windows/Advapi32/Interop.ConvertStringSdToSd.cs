@@ -13,7 +13,7 @@ internal static partial class Interop
             CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
         internal static extern bool ConvertStringSdToSd(
             string stringSd,
-            /* DWORD */ uint stringSdRevision, 
+            /* DWORD */ uint stringSdRevision,
             out IntPtr resultSd,
             ref uint resultSdLength);
     }

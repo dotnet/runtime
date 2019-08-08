@@ -5,13 +5,13 @@
 /*============================================================
 **
 ** Class:  ResourceWriter
-** 
 **
 **
-** Purpose: Default way to write strings to a CLR resource 
+**
+** Purpose: Default way to write strings to a CLR resource
 ** file.
 **
-** 
+**
 ===========================================================*/
 
 using System.IO;
@@ -24,17 +24,17 @@ namespace System.Resources
     .Extensions
 #endif
 {
-    // Generates a binary .resources file in the system default format 
+    // Generates a binary .resources file in the system default format
     // from name and value pairs.  Create one with a unique file name,
     // call AddResource() at least once, then call Generate() to write
     // the .resources file to disk, then call Dispose() to close the file.
-    // 
-    // The resources generally aren't written out in the same order 
+    //
+    // The resources generally aren't written out in the same order
     // they were added.
-    // 
-    // See the RuntimeResourceSet overview for details on the system 
+    //
+    // See the RuntimeResourceSet overview for details on the system
     // default file format.
-    // 
+    //
     public sealed partial class
 #if RESOURCES_EXTENSIONS
         PreserializedResourceWriter
@@ -88,7 +88,7 @@ namespace System.Resources
 
         // Adds a string resource to the list of resources to be written to a file.
         // They aren't written until Generate() is called.
-        // 
+        //
         public void AddResource(string name, string value)
         {
             if (name == null)
@@ -102,9 +102,9 @@ namespace System.Resources
             _resourceList.Add(name, value);
         }
 
-        // Adds a resource of type Object to the list of resources to be 
+        // Adds a resource of type Object to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
-        // 
+        //
         public void AddResource(string name, object value)
         {
             if (name == null)
@@ -112,7 +112,7 @@ namespace System.Resources
 
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
- 
+
             // needed for binary compat
             if (value != null && value is Stream)
             {
@@ -126,10 +126,10 @@ namespace System.Resources
             }
         }
 
-        // Adds a resource of type Stream to the list of resources to be 
+        // Adds a resource of type Stream to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         // closeAfterWrite parameter indicates whether to close the stream when done.
-        // 
+        //
         public void AddResource(string name, Stream value, bool closeAfterWrite = false)
         {
             if (name == null)
@@ -137,10 +137,10 @@ namespace System.Resources
 
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
- 
+
             AddResourceInternal(name, value, closeAfterWrite);
         }
- 
+
         private void AddResourceInternal(string name, Stream value, bool closeAfterWrite)
         {
             if (value == null)
@@ -154,16 +154,16 @@ namespace System.Resources
                 // make sure the Stream is seekable
                 if (!value.CanSeek)
                     throw new ArgumentException(SR.NotSupported_UnseekableStream);
- 
+
                 // Check for duplicate resources whose names vary only by case.
                 _caseInsensitiveDups.Add(name, null);
                 _resourceList.Add(name, new StreamWrapper(value, closeAfterWrite));
             }
         }
 
-        // Adds a named byte array as a resource to the list of resources to 
+        // Adds a named byte array as a resource to the list of resources to
         // be written to a file. They aren't written until Generate() is called.
-        // 
+        //
         public void AddResource(string name, byte[] value)
         {
             if (name == null)
@@ -190,14 +190,14 @@ namespace System.Resources
             _preserializedData.Add(name, new PrecannedResource(typeName, data));
         }
 
-        // For cases where users can't create an instance of the deserialized 
+        // For cases where users can't create an instance of the deserialized
         // type in memory, and need to pass us serialized blobs instead.
         // LocStudio's managed code parser will do this in some cases.
         private class PrecannedResource
         {
             internal readonly string TypeName;
             internal readonly object Data;
- 
+
             internal PrecannedResource(string typeName, object data)
             {
                 TypeName = typeName;
@@ -209,7 +209,7 @@ namespace System.Resources
         {
             internal readonly Stream Stream;
             internal readonly bool CloseAfterWrite;
- 
+
             internal StreamWrapper(Stream s, bool closeAfterWrite)
             {
                 Stream = s;
@@ -221,7 +221,7 @@ namespace System.Resources
         {
             Dispose(true);
         }
-        
+
         private void Dispose(bool disposing)
         {
             if (disposing)
@@ -245,7 +245,7 @@ namespace System.Resources
             Dispose(true);
         }
 
-        // After calling AddResource, Generate() writes out all resources to the 
+        // After calling AddResource, Generate() writes out all resources to the
         // output stream in the system default format.
         // If an exception occurs during object serialization or during IO,
         // the .resources file is closed and deleted, since it is most likely
@@ -268,13 +268,13 @@ namespace System.Resources
             MemoryStream resMgrHeaderBlob = new MemoryStream(240);
             BinaryWriter resMgrHeaderPart = new BinaryWriter(resMgrHeaderBlob);
 
-            // Write out class name of IResourceReader capable of handling 
+            // Write out class name of IResourceReader capable of handling
             // this file.
             resMgrHeaderPart.Write(ResourceReaderTypeName);
 
             // Write out class name of the ResourceSet class best suited to
             // handling this file.
-            // This needs to be the same even with multi-targeting. It's the 
+            // This needs to be the same even with multi-targeting. It's the
             // full name -- not the assembly qualified name.
             resMgrHeaderPart.Write(ResourceSetTypeName);
             resMgrHeaderPart.Flush();
@@ -348,8 +348,8 @@ namespace System.Resources
 
                 // At this point, the ResourceManager header has been written.
                 // Finish RuntimeResourceSet header
-                // The reader expects a list of user defined type names 
-                // following the size of the list, write 0 for this 
+                // The reader expects a list of user defined type names
+                // following the size of the list, write 0 for this
                 // writer implementation
                 bw.Write(typeNames.Count);
                 foreach (var typeName in typeNames)
@@ -364,7 +364,7 @@ namespace System.Resources
 
 
                 //  Prepare to write sorted name hashes (alignment fixup)
-                //   Note: For 64-bit machines, these MUST be aligned on 8 byte 
+                //   Note: For 64-bit machines, these MUST be aligned on 8 byte
                 //   boundaries!  Pointers on IA64 must be aligned!  And we'll
                 //   run faster on X86 machines too.
                 bw.Flush();
@@ -385,8 +385,8 @@ namespace System.Resources
                 }
 
                 //  Write relative positions of all the names in the file.
-                //   Note: this data is 4 byte aligned, occurring immediately 
-                //   after the 8 byte aligned name hashes (whose length may 
+                //   Note: this data is 4 byte aligned, occurring immediately
+                //   after the 8 byte aligned name hashes (whose length may
                 //   potentially be odd).
                 Debug.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");
 
@@ -445,7 +445,7 @@ namespace System.Resources
         {
             if (value == null)
                 return ResourceTypeCode.Null;
- 
+
             Type type = value.GetType();
             if (type == typeof(string))
                 return ResourceTypeCode.String;
@@ -485,7 +485,7 @@ namespace System.Resources
                 return ResourceTypeCode.Stream;
 
 
-            // This is a user type, or a precanned resource.  Find type 
+            // This is a user type, or a precanned resource.  Find type
             // table index.  If not there, add new element.
             string typeName;
             if (type == typeof(PrecannedResource)) {
@@ -496,18 +496,18 @@ namespace System.Resources
                     return typeCode;
                 }
             }
-            else 
+            else
             {
                 // not a preserialized resource
                 throw new PlatformNotSupportedException(SR.NotSupported_BinarySerializedResources);
             }
- 
+
             int typeIndex = types.IndexOf(typeName);
             if (typeIndex == -1) {
                 typeIndex = types.Count;
                 types.Add(typeName);
             }
- 
+
             return (ResourceTypeCode)(typeIndex + ResourceTypeCode.StartOfUserTypes);
         }
 
@@ -637,4 +637,3 @@ namespace System.Resources
         }
     }
 }
-

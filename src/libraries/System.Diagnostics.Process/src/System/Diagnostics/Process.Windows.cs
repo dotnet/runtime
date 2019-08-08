@@ -69,7 +69,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Puts a Process component in state to interact with operating system processes that run in a 
+        /// Puts a Process component in state to interact with operating system processes that run in a
         /// special mode by enabling the native property SeDebugPrivilege on the current thread.
         /// </summary>
         public static void EnterDebugMode()
@@ -78,7 +78,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Takes a Process component out of the state that lets it interact with operating system processes 
+        /// Takes a Process component out of the state that lets it interact with operating system processes
         /// that run in a special mode.
         /// </summary>
         public static void LeaveDebugMode()
@@ -225,8 +225,8 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // The best check for exit is that the kernel process object handle is invalid, 
-                        // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE 
+                        // The best check for exit is that the kernel process object handle is invalid,
+                        // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
                         // does not guarantee the process is closed,
                         // since some process could return an actual STILL_ACTIVE exit code (259).
                         if (!_signaled) // if we just came from WaitForExit, don't repeat
@@ -467,7 +467,7 @@ namespace System.Diagnostics
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
             SafeProcessHandle procSH = new SafeProcessHandle();
             SafeThreadHandle threadSH = new SafeThreadHandle();
-            
+
             // handles used in parent process
             SafeFileHandle parentInputPipeHandle = null;
             SafeFileHandle childInputPipeHandle = null;
@@ -666,7 +666,7 @@ namespace System.Diagnostics
         private static StringBuilder BuildCommandLine(string executableFileName, string arguments)
         {
             // Construct a StringBuilder with the appropriate command line
-            // to pass to CreateProcess.  If the filename isn't already 
+            // to pass to CreateProcess.  If the filename isn't already
             // in quotes, we quote it here.  This prevents some security
             // problems (it specifies exactly which part of the string
             // is the file to execute).
@@ -761,7 +761,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///     Gets a short-term handle to the process, with the given access.  
+        ///     Gets a short-term handle to the process, with the given access.
         ///     If a handle is stored in current process object, then use it.
         ///     Note that the handle we stored in current process object will have all access we need.
         /// </devdoc>
@@ -773,7 +773,7 @@ namespace System.Diagnostics
                 if (throwIfExited)
                 {
                     // Since haveProcessHandle is true, we know we have the process handle
-                    // open with at least SYNCHRONIZE access, so we can wait on it with 
+                    // open with at least SYNCHRONIZE access, so we can wait on it with
                     // zero timeout to see if the process has exited.
                     using (Interop.Kernel32.ProcessWaitHandle waitHandle = new Interop.Kernel32.ProcessWaitHandle(_processHandle))
                     {
@@ -827,10 +827,10 @@ namespace System.Diagnostics
             }
         }
 
-        // Using synchronous Anonymous pipes for process input/output redirection means we would end up 
-        // wasting a worker threadpool thread per pipe instance. Overlapped pipe IO is desirable, since 
-        // it will take advantage of the NT IO completion port infrastructure. But we can't really use 
-        // Overlapped I/O for process input/output as it would break Console apps (managed Console class 
+        // Using synchronous Anonymous pipes for process input/output redirection means we would end up
+        // wasting a worker threadpool thread per pipe instance. Overlapped pipe IO is desirable, since
+        // it will take advantage of the NT IO completion port infrastructure. But we can't really use
+        // Overlapped I/O for process input/output as it would break Console apps (managed Console class
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
@@ -853,11 +853,11 @@ namespace System.Diagnostics
                                                           ref securityAttributesParent,
                                                           0);
                 }
-                // Duplicate the parent handle to be non-inheritable so that the child process 
+                // Duplicate the parent handle to be non-inheritable so that the child process
                 // doesn't have access. This is done for correctness sake, exact reason is unclear.
-                // One potential theory is that child process can do something brain dead like 
+                // One potential theory is that child process can do something brain dead like
                 // closing the parent end of the pipe and there by getting into a blocking situation
-                // as parent will not be draining the pipe at the other end anymore. 
+                // as parent will not be draining the pipe at the other end anymore.
                 SafeProcessHandle currentProcHandle = Interop.Kernel32.GetCurrentProcess();
                 if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
                                                      hTmp,

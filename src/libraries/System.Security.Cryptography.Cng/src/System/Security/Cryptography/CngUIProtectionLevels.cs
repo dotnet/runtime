@@ -18,4 +18,3 @@ namespace System.Security.Cryptography
         ForceHighProtection = 0x00000002,   // NCRYPT_UI_FORCE_HIGH_PROTECTION_FLAG
     }
 }
-

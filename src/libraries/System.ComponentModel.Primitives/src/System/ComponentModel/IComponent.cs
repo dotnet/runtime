@@ -8,14 +8,14 @@ namespace System.ComponentModel
 {
     /// <summary>
     /// A "component" is an object that can be placed in a container.
-    /// 
+    ///
     /// In this context, "containment" refers to logical containment, not visual
     /// containment. Components and containers can be used in a variety of
     /// scenarios, including both visual and non-visual scenarios.
-    /// 
+    ///
     /// To be a component, a class implements the IComponent interface, and provides
     /// a parameter-less constructor.
-    /// 
+    ///
     /// A component interacts with its container primarily through a container-
     /// provided "site".
     /// Provides functionality required by all components.

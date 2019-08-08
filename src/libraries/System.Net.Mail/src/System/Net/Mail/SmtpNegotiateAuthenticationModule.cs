@@ -66,7 +66,7 @@ namespace System.Net.Mail
                     {
                         // If auth completed and still have a challenge then
                         // server may be doing "correct" form of GSSAPI SASL.
-                        // Validate incoming and produce outgoing SASL security 
+                        // Validate incoming and produce outgoing SASL security
                         // layer negotiate message.
 
                         resp = GetSecurityLayerOutgoingBlob(challenge, clientContext);
@@ -111,7 +111,7 @@ namespace System.Net.Mail
         }
 
         // Function for SASL security layer negotiation after
-        // authorization completes.   
+        // authorization completes.
         //
         // Returns null for failure, Base64 encoded string on
         // success.
@@ -139,13 +139,13 @@ namespace System.Net.Mail
             }
 
             // Per RFC 2222 Section 7.2.2:
-            //   the client should then expect the server to issue a 
+            //   the client should then expect the server to issue a
             //   token in a subsequent challenge.  The client passes
-            //   this token to GSS_Unwrap and interprets the first 
-            //   octet of cleartext as a bit-mask specifying the 
-            //   security layers supported by the server and the 
-            //   second through fourth octets as the maximum size 
-            //   output_message to send to the server.   
+            //   this token to GSS_Unwrap and interprets the first
+            //   octet of cleartext as a bit-mask specifying the
+            //   security layers supported by the server and the
+            //   second through fourth octets as the maximum size
+            //   output_message to send to the server.
             // Section 7.2.3
             //   The security layer and their corresponding bit-masks
             //   are as follows:
@@ -155,7 +155,7 @@ namespace System.Net.Mail
             //     4 Privacy protection
             //       Sender calls GSS_Wrap with conf_flag set to TRUE
             //
-            // Exchange 2007 and our client only support 
+            // Exchange 2007 and our client only support
             // "No security layer". Therefore verify first byte is value 1
             // and the 2nd-4th bytes are value zero since token size is not
             // applicable when there is no security layer.
@@ -170,15 +170,15 @@ namespace System.Net.Mail
             }
 
             // Continuing with RFC 2222 section 7.2.2:
-            //   The client then constructs data, with the first octet 
+            //   The client then constructs data, with the first octet
             //   containing the bit-mask specifying the selected security
-            //   layer, the second through fourth octets containing in 
+            //   layer, the second through fourth octets containing in
             //   network byte order the maximum size output_message the client
             //   is able to receive, and the remaining octets containing the
-            //   authorization identity.  
-            // 
+            //   authorization identity.
+            //
             // So now this contructs the "wrapped" response.  The response is
-            // payload is identical to the received server payload and the 
+            // payload is identical to the received server payload and the
             // "authorization identity" is not supplied as it is unnecessary.
 
             // let MakeSignature figure out length of output

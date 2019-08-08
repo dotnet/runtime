@@ -12,7 +12,7 @@ namespace System.Memory.Tests
 {
     public class ReadOnlySequenceTestsCommonChar: ReadOnlySequenceTestsCommon<char>
     {
-        #region Constructor 
+        #region Constructor
 
         [Fact]
         public void Ctor_Array_Offset()
@@ -56,7 +56,7 @@ namespace System.Memory.Tests
             string items = "Hello World";
             string firstItems = new string('a', blockSize - 5) + items.Substring(0, 5);
             string secondItems = items.Substring(5) + new string('a', blockSize - (items.Length - 5));
-            
+
             var firstSegment = new BufferSegment<char>(firstItems.AsMemory());
             BufferSegment<char> secondSegment = firstSegment.Append(secondItems.AsMemory());
 

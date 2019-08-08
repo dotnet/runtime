@@ -7,7 +7,7 @@ namespace System.Drawing {
     using System.Runtime.InteropServices;
 
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;    
+    using System.Diagnostics.CodeAnalysis;
 
     using Microsoft.Win32;
     using System.Collections;
@@ -23,7 +23,7 @@ namespace System.Drawing {
     ///      class through the TypeDescriptor.
     /// </devdoc>
     public class RectangleConverter : TypeConverter {
-    
+
         /// <include file='doc\RectangleConverter.uex' path='docs/doc[@for="RectangleConverter.CanConvertFrom"]/*' />
         /// <devdoc>
         ///      Determines if this converter can convert an object in the given source
@@ -51,26 +51,26 @@ namespace System.Drawing {
         /// <include file='doc\RectangleConverter.uex' path='docs/doc[@for="RectangleConverter.ConvertFrom"]/*' />
         /// <devdoc>
         ///      Converts the given object to the converter's native type.
-        /// </devdoc>        
+        /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
 
             string strValue = value as string;
-        
+
             if (strValue != null) {
-            
+
                 string text = strValue.Trim();
-            
+
                 if (text.Length == 0) {
                     return null;
                 }
                 else {
-                
+
                     // Parse 4 integer values.
                     //
                     if (culture == null) {
                         culture = CultureInfo.CurrentCulture;
-                    }                                        
+                    }
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(new char[] {sep});
                     int[] values = new int[tokens.Length];
@@ -79,7 +79,7 @@ namespace System.Drawing {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
                         values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
                     }
-                    
+
                     if (values.Length == 4) {
                         return new Rectangle(values[0], values[1], values[2], values[3]);
                     }
@@ -91,7 +91,7 @@ namespace System.Drawing {
                     }
                 }
             }
-            
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -111,35 +111,35 @@ namespace System.Drawing {
             if( value is Rectangle ){
                 if (destinationType == typeof(string)) {
                     Rectangle rect = (Rectangle)value;
-                    
+
                     if (culture == null) {
                         culture = CultureInfo.CurrentCulture;
-                    }                                        
+                    }
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     string[] args = new string[4];
                     int nArg = 0;
-                    
+
                     // Note: ConvertToString will raise exception if value cannot be converted.
                     args[nArg++] = intConverter.ConvertToString(context, culture, rect.X);
                     args[nArg++] = intConverter.ConvertToString(context, culture, rect.Y);
                     args[nArg++] = intConverter.ConvertToString(context, culture, rect.Width);
                     args[nArg++] = intConverter.ConvertToString(context, culture, rect.Height);
-                    
+
                     return string.Join(sep, args);
                 }
                 if (destinationType == typeof(InstanceDescriptor)) {
                     Rectangle rect = (Rectangle)value;
                     ConstructorInfo ctor = typeof(Rectangle).GetConstructor(new Type[] {
                         typeof(int), typeof(int), typeof(int), typeof(int)});
-                        
+
                     if (ctor != null) {
                         return new InstanceDescriptor(ctor, new object[] {
                             rect.X, rect.Y, rect.Width, rect.Height});
                     }
                 }
             }
-            
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
@@ -148,7 +148,7 @@ namespace System.Drawing {
         ///      Creates an instance of this type given a set of property values
         ///      for the object.  This is useful for objects that are immutable, but still
         ///      want to provide changable properties.
-        /// </devdoc>        
+        /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
@@ -159,7 +159,7 @@ namespace System.Drawing {
             object x = propertyValues["X"];
             object y = propertyValues["Y"];
             object width =  propertyValues["Width"];
-            object height =  propertyValues["Height"];            
+            object height =  propertyValues["Height"];
 
             if(x == null || y == null || width == null || height == null ||
                 !(x is int) || !(y is int) || !(width is int) || !(height is int) ) {
@@ -179,7 +179,7 @@ namespace System.Drawing {
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) {
             return true;
         }
-        
+
         /// <include file='doc\RectangleConverter.uex' path='docs/doc[@for="RectangleConverter.GetProperties"]/*' />
         /// <devdoc>
         ///      Retrieves the set of properties for this type.  By default, a type has
@@ -190,7 +190,7 @@ namespace System.Drawing {
                 PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Rectangle), attributes);
                 return props.Sort(new string[] {"X", "Y", "Width", "Height"});
         }
-       
+
         /// <include file='doc\RectangleConverter.uex' path='docs/doc[@for="RectangleConverter.GetPropertiesSupported"]/*' />
         /// <devdoc>
         ///      Determines if this object supports properties.  By default, this
@@ -199,7 +199,6 @@ namespace System.Drawing {
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) {
             return true;
         }
-        
+
     }
 }
-

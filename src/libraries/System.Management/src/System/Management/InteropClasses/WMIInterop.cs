@@ -26,7 +26,7 @@ namespace System.Management
         // By forcing the DLL to be loaded as a COM DLL, mscoree will go to the registry and get
         // the correct path and succeed in loading the DLL. Once the DllImport occurs, the DLL will
         // already be in the cache.
-        // 
+        //
         static readonly string name = typeof(IWbemClassObjectFreeThreaded).FullName;
         public static Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
 
@@ -138,7 +138,7 @@ namespace System.Management
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
-            GC.KeepAlive ( this ) ;            
+            GC.KeepAlive ( this ) ;
             return hResult;
         }
         public int Get_(string wszName, int lFlags, ref object pVal, ref int pType, ref int plFlavor)
@@ -186,7 +186,7 @@ namespace System.Management
             int res = WmiNetUtilsHelper.GetNames_f(7, pWbemClassObject, wszQualifierName, lFlags, ref pQualifierVal, out pNames);
             GC.KeepAlive ( this ) ;
             return res ;
-           
+
         }
         public int BeginEnumeration_(int lEnumFlags)
         {
@@ -398,7 +398,7 @@ namespace System.Management
             return res ;
         }
 
-        enum STATFLAG 
+        enum STATFLAG
         {
             STATFLAG_DEFAULT    = 0,
             STATFLAG_NONAME     = 1
@@ -409,10 +409,10 @@ namespace System.Management
             MSHCTX_LOCAL               = 0,
             MSHCTX_NOSHAREDMEM         = 1,
             MSHCTX_DIFFERENTMACHINE    = 2,
-            MSHCTX_INPROC              = 3 
+            MSHCTX_INPROC              = 3
         }
 
-        enum MSHLFLAGS 
+        enum MSHLFLAGS
         {
             MSHLFLAGS_NORMAL         = 0,
             MSHLFLAGS_TABLESTRONG    = 1,
@@ -517,7 +517,7 @@ namespace System.Management
         }
     }
 
-    class MarshalWbemObject : ICustomMarshaler 
+    class MarshalWbemObject : ICustomMarshaler
     {
         public static ICustomMarshaler GetInstance(string cookie)
         {
@@ -530,25 +530,25 @@ namespace System.Management
             this.cookie = cookie;
         }
 
-        public void CleanUpManagedData(object obj) 
+        public void CleanUpManagedData(object obj)
         {
         }
 
-        public void CleanUpNativeData(IntPtr pObj) 
+        public void CleanUpNativeData(IntPtr pObj)
         {
         }
 
-        public int GetNativeDataSize() 
+        public int GetNativeDataSize()
         {
             return -1; // not a value type, so use -1
         }
 
-        public IntPtr MarshalManagedToNative(object obj) 
+        public IntPtr MarshalManagedToNative(object obj)
         {
             return (IntPtr)obj;
         }
 
-        public object MarshalNativeToManaged(IntPtr pObj) 
+        public object MarshalNativeToManaged(IntPtr pObj)
         {
             return new IWbemClassObjectFreeThreaded(pObj);
         }
@@ -609,7 +609,7 @@ namespace System.Management
     [ComImport]
     interface IWbemLocator
     {
-        [PreserveSig] int ConnectServer_([In][MarshalAs(UnmanagedType.BStr)]  string   strNetworkResource, [In][MarshalAs(UnmanagedType.BStr)]  string   strUser, [In]IntPtr   strPassword, [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale, [In] int lSecurityFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppNamespace); 
+        [PreserveSig] int ConnectServer_([In][MarshalAs(UnmanagedType.BStr)]  string   strNetworkResource, [In][MarshalAs(UnmanagedType.BStr)]  string   strUser, [In]IntPtr   strPassword, [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale, [In] int lSecurityFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppNamespace);
     }
 
     [GuidAttribute("44ACA674-E8FC-11D0-A07C-00C04FB68820")]
@@ -1337,7 +1337,7 @@ namespace System.Management
     [GuidAttribute("4590F811-1D3A-11D0-891F-00AA004B2E24")]
     //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
-    class WbemLocator 
+    class WbemLocator
     {
     }
 
@@ -1345,7 +1345,7 @@ namespace System.Management
     [GuidAttribute("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
     //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
-    class WbemContext 
+    class WbemContext
     {
     }
 
@@ -1353,7 +1353,7 @@ namespace System.Management
     [GuidAttribute("49BD2028-1523-11D1-AD79-00C04FD8FDFF")]
     //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
-    class UnsecuredApartment 
+    class UnsecuredApartment
     {
     }
 
@@ -1361,7 +1361,7 @@ namespace System.Management
     [ClassInterfaceAttribute((short)0x0000)]
     //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
-    class WbemClassObject 
+    class WbemClassObject
     {
     }
 
@@ -1369,7 +1369,7 @@ namespace System.Management
     [GuidAttribute("6DAF9757-2E37-11D2-AEC9-00C04FB68820")]
     //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
-    class MofCompiler 
+    class MofCompiler
     {
     }
 
@@ -1377,7 +1377,7 @@ namespace System.Management
     //[TypeLibTypeAttribute(0x0002)]
     [GuidAttribute("EB87E1BD-3233-11D2-AEC9-00C04FB68820")]
     [ComImport]
-    class WbemStatusCodeText 
+    class WbemStatusCodeText
     {
     }
 
@@ -1385,7 +1385,7 @@ namespace System.Management
     [ClassInterfaceAttribute((short)0x0000)]
     //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
-    class WbemBackupRestore 
+    class WbemBackupRestore
     {
     }
 
@@ -1393,7 +1393,7 @@ namespace System.Management
     //[TypeLibTypeAttribute(0x0202)]
     [GuidAttribute("8D1C559D-84F0-4BB3-A7D5-56A7435A9BA6")]
     [ComImport]
-    class WbemObjectTextSrc 
+    class WbemObjectTextSrc
     {
     }
 
@@ -1401,7 +1401,7 @@ namespace System.Management
     //[TypeLibTypeAttribute(0x0002)]
     [ClassInterfaceAttribute((short)0x0000)]
     [ComImport]
-    class WbemDecoupledRegistrar 
+    class WbemDecoupledRegistrar
     {
     }
 
@@ -1409,7 +1409,7 @@ namespace System.Management
     //[TypeLibTypeAttribute(0x0002)]
     [ClassInterfaceAttribute((short)0x0000)]
     [ComImport]
-    class WbemDecoupledBasicEventProvider 
+    class WbemDecoupledBasicEventProvider
     {
     }
 
@@ -1417,7 +1417,7 @@ namespace System.Management
     [GuidAttribute("CF4CC405-E2C5-4DDD-B3CE-5E7582D8C9FA")]
     //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
-    class WbemDefPath 
+    class WbemDefPath
     {
     }
 
@@ -1425,7 +1425,7 @@ namespace System.Management
     [ClassInterfaceAttribute((short)0x0000)]
     //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
-    class WbemQuery 
+    class WbemQuery
     {
     }
     #endregion
@@ -1630,25 +1630,25 @@ namespace System.Management
     /// The ThreadDispatch class allows clients to very easily spawn a thread, specify a worker delegate to be called from the
     /// spawned thread and wait until thread finishes work. This is important in cases where a new thread needs to be spawned but
     /// the main thread has to wait until the spawned thread finishes. As an example of this, in WMI we spawn MTA threads and create
-    /// various objects in these threads to make sure we avoid marshaling cost. 
+    /// various objects in these threads to make sure we avoid marshaling cost.
     /// If the worker thread returns a value it is stored in the ThreadDispatch object and accessible to clients via the Result property.
     /// Also, any exception thrown is propagated from worker thread to main thread (by rethrowing orinal exception):
-    /// 
+    ///
     ///     ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethod  ( Class1.Func ) ) ;
     ///     disp.Start ( ) ;
-    /// 
+    ///
     /// Four different delegate types are supported:
-    /// 
+    ///
     ///     1. Delegate with no parameter and no return value.
     ///     2. Delegate with no parameter and return value.
     ///     3. Delegate with parameter and no return value.
     ///     4. Delegate with parameter and return value.
-    /// 
+    ///
     /// </summary>
-    internal class ThreadDispatch 
+    internal class ThreadDispatch
     {
         #region Private fields
-        private     Thread                                  thread ;                    
+        private     Thread                                  thread ;
         private     Exception                               exception ;                                 // Exception thrown from worker method (if any). Exposed as property.
         private     ThreadWorkerMethodWithReturn            threadWorkerMethodWithReturn ;              // Delegate to be called for worker method with return value
         private     ThreadWorkerMethodWithReturnAndParam    threadWorkerMethodWithReturnAndParam ;      // Delegate to be called for worker method with return value and parameter
@@ -1720,7 +1720,7 @@ namespace System.Management
         /// </summary>
         public ApartmentState ApartmentType
         {
-            get 
+            get
             {
                 return this.apartmentType ;
             }
@@ -1736,7 +1736,7 @@ namespace System.Management
         /// Delegate declaration representing signature of worker method with return value.
         /// </summary>
         public delegate object  ThreadWorkerMethodWithReturn (  ) ;
-        
+
         /// <summary>
         /// Delegate declaration representing signature of worker method with return value and parameter.
         /// </summary>
@@ -1831,10 +1831,10 @@ namespace System.Management
             this.thread                                 = null ;
             this.exception                              = null ;
             this.threadParams                           = null ;
-            this.threadWorkerMethodWithReturn           = null ;        
+            this.threadWorkerMethodWithReturn           = null ;
             this.threadWorkerMethodWithReturnAndParam   = null ;
-            this.threadWorkerMethod                     = null ;                
-            this.threadWorkerMethodWithParam            = null;     
+            this.threadWorkerMethod                     = null ;
+            this.threadWorkerMethodWithParam            = null;
             this.threadReturn                           = null ;
             this.backgroundThread                       = false ;
             this.apartmentType                          = ApartmentState.MTA ;
@@ -1913,10 +1913,10 @@ namespace System.Management
             this.thread.Start ( ) ;
             this.thread.Join ( ) ;
         }
-        
+
         /// <summary>
         /// Entry point for the newly created thread. This method is wrapped in a try/catch block and captures any
-        /// exceptions thrown from the worker method and re-throws the exception. 
+        /// exceptions thrown from the worker method and re-throws the exception.
         /// The worker method for this thread entry point has no parameter and no return value.
         /// </summary>
         private void ThreadEntryPoint ( )
@@ -1933,7 +1933,7 @@ namespace System.Management
 
         /// <summary>
         /// Entry point for the newly created thread. This method is wrapped in a try/catch block and captures any
-        /// exceptions thrown from the worker method and re-throws the exception. 
+        /// exceptions thrown from the worker method and re-throws the exception.
         /// The worker method for this thread entry point takes a parameter and no return value.
         /// </summary>
 
@@ -1951,7 +1951,7 @@ namespace System.Management
 
         /// <summary>
         /// Entry point for the newly created thread. This method is wrapped in a try/catch block and captures any
-        /// exceptions thrown from the worker method and re-throws the exception. 
+        /// exceptions thrown from the worker method and re-throws the exception.
         /// The worker method for this thread entry point has no parameter but does return a value.
         /// </summary>
 
@@ -1969,7 +1969,7 @@ namespace System.Management
 
         /// <summary>
         /// Entry point for the newly created thread. This method is wrapped in a try/catch block and captures any
-        /// exceptions thrown from the worker method and re-throws the exception. 
+        /// exceptions thrown from the worker method and re-throws the exception.
         /// The worker method for this thread entry point has a parameter and return value.
         /// </summary>
 
@@ -1987,4 +1987,3 @@ namespace System.Management
         #endregion
     }
 }
-

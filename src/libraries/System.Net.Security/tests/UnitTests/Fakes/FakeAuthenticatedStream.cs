@@ -37,6 +37,3 @@ namespace System.Net.Security
         public new abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
     }
 }
-
-
-

@@ -84,7 +84,7 @@ namespace System.Reflection.TypeLoading.Ecma
         //   System.Configuration.Assemblies.AssemblyHashAlgorithm is an identical enum defined
         //     by System.Runtime.dll.
         //
-        // The values line up exactly so it's safe to cast from one to the other but we'll encapsulate that 
+        // The values line up exactly so it's safe to cast from one to the other but we'll encapsulate that
         // observation here rather stick casts (and this painfully awkward pair of colliding type names) around.
         //
         public static System.Configuration.Assemblies.AssemblyHashAlgorithm ToConfigurationAssemblyHashAlgorithm(this System.Reflection.AssemblyHashAlgorithm srmHash)

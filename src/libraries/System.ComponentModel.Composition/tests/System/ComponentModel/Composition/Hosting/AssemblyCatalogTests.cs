@@ -1090,7 +1090,7 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        [Fact]                       
+        [Fact]
         public void NonStaticallyReferencedAssembly()
         {
             string testAssembly = "System.ComponentModel.Composition.Noop.Assembly.dll";

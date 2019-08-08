@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -70,7 +70,7 @@ namespace System.Reflection.Context.Custom
                 {
                     IEnumerable<PropertyInfo> newProperties = baseType.NewProperties;
 
-                    // We shouldn't add a base type property directly on a subtype. 
+                    // We shouldn't add a base type property directly on a subtype.
                     // A new property with a different ReflectedType should be used.
                     foreach (PropertyInfo prop in newProperties)
                         results.Add(new InheritedPropertyInfo(prop, this));
@@ -167,7 +167,7 @@ namespace System.Reflection.Context.Custom
                 CustomType baseType = BaseType as CustomType;
                 while (baseType != null)
                 {
-                    // We shouldn't add a base type method directly on a subtype. 
+                    // We shouldn't add a base type method directly on a subtype.
                     // A new method with a different ReflectedType should be used.
                     foreach (PropertyInfo prop in baseType.NewProperties)
                     {
@@ -217,7 +217,7 @@ namespace System.Reflection.Context.Custom
 
             // get the target property name by removing "get_" or "set_"
             string targetPropertyName = name.Substring(4);
-                                     
+
             List<MethodInfo> matchingMethods = new List<MethodInfo>();
             if (method != null)
                 matchingMethods.Add(method);
@@ -240,7 +240,7 @@ namespace System.Reflection.Context.Custom
 
                 while (baseType != null)
                 {
-                    // We shouldn't add a base type method directly on a subtype. 
+                    // We shouldn't add a base type method directly on a subtype.
                     // A new method with a different ReflectedType should be used.
                     foreach (PropertyInfo newBaseProperty in baseType.NewProperties)
                     {

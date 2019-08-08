@@ -128,10 +128,10 @@ namespace System.Memory.Tests
             {
                 int length = input.Length;
                 int dataOffset = length / 2;
-                
+
                 Memory<T> memory = new Memory<T>(new T[length * 2], dataOffset, length);
                 input.CopyTo(memory);
-                
+
                 if (first == null)
                 {
                     first = new BufferSegment<T>(memory);

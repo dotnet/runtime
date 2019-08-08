@@ -22,7 +22,7 @@ namespace System.Data
 
         /// <remarks>
         /// Checks for same reference instead of equivalent <see cref="DataView"/> or <see cref="Row"/>.
-        /// 
+        ///
         /// Necessary for ListChanged event handlers to use data structures that use the default to
         /// <see cref="object.Equals(object)"/> instead of <see cref="object.ReferenceEquals"/>
         /// to understand if they need to add a <see cref="PropertyChanged"/> event handler.

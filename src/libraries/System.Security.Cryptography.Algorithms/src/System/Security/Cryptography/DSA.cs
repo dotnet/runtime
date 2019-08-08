@@ -379,7 +379,7 @@ namespace System.Security.Cryptography
                     CryptographicOperations.ZeroMemory(ret.X);
                 }
             }
-            
+
             bytesRead = localRead;
         }
 

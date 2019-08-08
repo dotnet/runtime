@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Xml
                         // SelectSingleNode throws an exception for xmldecl PI for example, so we will just ignore those exceptions
                         try
                         {
-                            // Find the nearest signature ancestor tag 
+                            // Find the nearest signature ancestor tag
                             XmlNode result = node.SelectSingleNode("ancestor-or-self::dsig:Signature[1]", _nsm);
                             int position = 0;
                             foreach (XmlNode node1 in signatureList)

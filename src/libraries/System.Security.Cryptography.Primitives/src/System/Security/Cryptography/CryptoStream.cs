@@ -161,7 +161,7 @@ namespace System.Security.Cryptography
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
+            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(CryptoStream))
@@ -196,9 +196,9 @@ namespace System.Security.Cryptography
 
         private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            // To avoid a race with a stream's position pointer & generating race 
-            // conditions with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // To avoid a race with a stream's position pointer & generating race
+            // conditions with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography
                 return b;
             }
 
-            // Otherwise, fall back to the more robust but expensive path of using the base 
+            // Otherwise, fall back to the more robust but expensive path of using the base
             // Stream.ReadByte to call Read.
             return base.ReadByte();
         }
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            // Otherwise, the logic is complicated, so we simply fall back to the base 
+            // Otherwise, the logic is complicated, so we simply fall back to the base
             // implementation that'll use Write.
             base.WriteByte(value);
         }
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography
         {
             // read <= count bytes from the input stream, transforming as we go.
             // Basic idea: first we deliver any bytes we already have in the
-            // _OutputBuffer, because we know they're good.  Then, if asked to deliver 
+            // _OutputBuffer, because we know they're good.  Then, if asked to deliver
             // more bytes, we read & transform a block at a time until either there are
             // no bytes ready or we've delivered enough.
             int bytesToDeliver = count;
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
                         CryptographicOperations.ZeroMemory(new Span<byte>(_inputBuffer, 0, _inputBufferIndex));
                         amountRead += _inputBufferIndex;
                         _inputBufferIndex = 0;
-                        
+
                         // Make amountRead an integral multiple of _InputBlockSize
                         int numWholeReadBlocks = amountRead / _inputBlockSize;
                         int numWholeReadBlocksInBytes = numWholeReadBlocks * _inputBlockSize;
@@ -475,9 +475,9 @@ namespace System.Security.Cryptography
 
         private async Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            // To avoid a race with a stream's position pointer & generating race 
-            // conditions with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // To avoid a race with a stream's position pointer & generating race
+            // conditions with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
@@ -569,7 +569,7 @@ namespace System.Security.Cryptography
                     if (_transform.CanTransformMultipleBlocks && numWholeBlocks > 1)
                     {
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
-                        
+
                         // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
                         byte[] tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocks * _outputBlockSize);
                         numOutputBytes = 0;
@@ -617,7 +617,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    // In this case, we don't have an entire block's worth left, so store it up in the 
+                    // In this case, we don't have an entire block's worth left, so store it up in the
                     // input buffer, which by now must be empty.
                     Buffer.BlockCopy(buffer, currentInputIndex, _inputBuffer, 0, bytesToWrite);
                     _inputBufferIndex += bytesToWrite;
@@ -630,7 +630,7 @@ namespace System.Security.Cryptography
         public void Clear()
         {
             Close();
-        }        
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -719,7 +719,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        // Private methods 
+        // Private methods
 
         private void InitializeBuffer()
         {

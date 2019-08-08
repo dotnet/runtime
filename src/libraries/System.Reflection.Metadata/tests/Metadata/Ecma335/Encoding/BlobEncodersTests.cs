@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -426,7 +426,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             e.TaggedVector(
-                at => Assert.Same(b, at.Builder), 
+                at => Assert.Same(b, at.Builder),
                 v => Assert.Same(b, v.Builder));
 
             Assert.Throws<ArgumentNullException>(() => e.TaggedVector(null, v => { }));
@@ -1287,7 +1287,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             e.Shape(3, ImmutableArray.Create(0x0A), ImmutableArray<int>.Empty);
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0x03,
                 0x01, 0x0A,

@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositionBatch"/> class.
         /// </summary>
-        public CompositionBatch() : 
+        public CompositionBatch() :
             this(null, null)
         {
         }

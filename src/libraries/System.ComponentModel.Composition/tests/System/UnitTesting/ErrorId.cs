@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition
         InvalidExportMetadata = CompositionErrorId.InvalidExportMetadata,
         ImportNotSetOnPart = CompositionErrorId.ImportNotSetOnPart,
         ImportEngine_ComposeTookTooManyIterations = CompositionErrorId.ImportEngine_ComposeTookTooManyIterations,
-        ImportEngine_ImportCardinalityMismatch = CompositionErrorId.ImportEngine_ImportCardinalityMismatch,        
+        ImportEngine_ImportCardinalityMismatch = CompositionErrorId.ImportEngine_ImportCardinalityMismatch,
         ImportEngine_PartCycle = CompositionErrorId.ImportEngine_PartCycle,
         ImportEngine_PartCannotSetImport = CompositionErrorId.ImportEngine_PartCannotSetImport,
         ImportEngine_PartCannotGetExportedValue = CompositionErrorId.ImportEngine_PartCannotGetExportedValue,

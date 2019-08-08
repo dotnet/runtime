@@ -134,7 +134,7 @@ namespace System.Net.Http
                     return "STATUS_REQUEST_SENT";
 
                 case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RECEIVING_RESPONSE:
-                    return "STATUS_RECEIVING_RESPONSE"; 
+                    return "STATUS_RECEIVING_RESPONSE";
 
                 case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RESPONSE_RECEIVED:
                     return "STATUS_RESPONSE_RECEIVED";

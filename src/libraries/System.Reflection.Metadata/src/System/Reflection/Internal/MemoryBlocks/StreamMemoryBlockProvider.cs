@@ -16,7 +16,7 @@ namespace System.Reflection.Internal
     /// </remarks>
     internal sealed class StreamMemoryBlockProvider : MemoryBlockProvider
     {
-        // We're trying to balance total VM usage (which is a minimum of 64KB for a memory mapped file) 
+        // We're trying to balance total VM usage (which is a minimum of 64KB for a memory mapped file)
         // with private working set (since heap memory will be backed by the paging file and non-sharable).
         // Internal for testing.
         internal const int MemoryMapThreshold = 16 * 1024;

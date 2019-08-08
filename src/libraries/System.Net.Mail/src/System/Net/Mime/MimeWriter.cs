@@ -76,7 +76,7 @@ namespace System.Net.Mime
         }
 
         /// <summary>
-        /// Called when the current stream is closed.  Allows us to 
+        /// Called when the current stream is closed.  Allows us to
         /// prepare for the next message part.
         /// </summary>
         /// <param name="sender">Sender of the close event</param>

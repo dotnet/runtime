@@ -30,12 +30,12 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns the <see cref="XAttribute"/>s that have a matching <see cref="XName"/>.  Each
-        /// <see cref="XElement"/>'s <see cref="XAttribute"/>s in the target <see cref="IEnumerable"/> 
+        /// <see cref="XElement"/>'s <see cref="XAttribute"/>s in the target <see cref="IEnumerable"/>
         /// of <see cref="XElement"/> are scanned for a matching <see cref="XName"/>.
         /// </summary>
         /// <returns>
         /// An <see cref="IEnumerable"/> of <see cref="XAttribute"/> containing the XML
-        /// Attributes with a matching <see cref="XName"/> for every <see cref="XElement"/> in 
+        /// Attributes with a matching <see cref="XName"/> for every <see cref="XElement"/> in
         /// the target <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XAttribute> Attributes(this IEnumerable<XElement> source, XName name)
@@ -46,12 +46,12 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
-        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this 
+        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this
         /// <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
         /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
-        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this 
+        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this
         /// <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T> source) where T : XNode
@@ -62,12 +62,12 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
-        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each 
+        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
         /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
-        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each 
+        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T> source, XName name) where T : XNode
@@ -77,15 +77,15 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root).
-        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of 
+        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of
         /// <see cref="XElement"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root).
-        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of 
+        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of
         /// <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement> source)
@@ -95,15 +95,15 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root)
-        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// that match the passed in <see cref="XName"/>.  This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root)
-        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// that match the passed in <see cref="XName"/>.  This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement> source, XName name)
@@ -142,7 +142,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="IEnumerable"/> of <see cref="XNode"/> over the descendants of a set of nodes
-        /// </summary>     
+        /// </summary>
         public static IEnumerable<XNode> DescendantNodes<T>(this IEnumerable<T> source) where T : XContainer
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -151,12 +151,12 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
-        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in  
+        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in
         /// this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
         /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
-        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in  
+        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in
         /// this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T> source) where T : XContainer
@@ -167,12 +167,12 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
-        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done 
+        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done
         /// for each <see cref="XElement"/> in the target <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
         /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
-        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done 
+        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done
         /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T> source, XName name) where T : XContainer
@@ -182,17 +182,17 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and it's descendants
-        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// that match the passed in <see cref="XName"/>.  This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
         /// <see cref="XElement"/> and descendants.
-        /// This is done for each 
+        /// This is done for each
         /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
-        /// </returns>      
+        /// </returns>
         public static IEnumerable<XNode> DescendantNodesAndSelf(this IEnumerable<XElement> source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -200,15 +200,15 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
-        /// <see cref="XElement"/> and it's descendants (children and children's children down 
-        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> 
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
+        /// <see cref="XElement"/> and it's descendants (children and children's children down
+        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/>
         /// of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
-        /// <see cref="XElement"/> and it's descendants (children and children's children down 
-        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> 
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
+        /// <see cref="XElement"/> and it's descendants (children and children's children down
+        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/>
         /// of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement> source)
@@ -218,15 +218,15 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
-        /// <see cref="XElement"/> and it's descendants (children and children's children down 
-        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for 
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
+        /// <see cref="XElement"/> and it's descendants (children and children's children down
+        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for
         /// each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
-        /// <see cref="XElement"/> and it's descendants (children and children's children down 
-        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for 
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the
+        /// <see cref="XElement"/> and it's descendants (children and children's children down
+        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for
         /// each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// </returns>
         public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement> source, XName name)

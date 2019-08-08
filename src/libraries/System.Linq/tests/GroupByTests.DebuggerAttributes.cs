@@ -16,16 +16,16 @@ namespace System.Linq.Tests
         public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString)
         {
             Assert.Equal($"Key = {keyString}", DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
-            
+
             object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
-            
+
             // Validate proxy fields
             Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject.GetType()));
 
             // Validate proxy properties
             IEnumerable<PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject.GetType());
             Assert.Equal(2, properties.Count());
-            
+
             // Key
             TKey key = (TKey)properties.Single(property => property.Name == "Key").GetValue(proxyObject);
             Assert.Equal(grouping.Key, key);

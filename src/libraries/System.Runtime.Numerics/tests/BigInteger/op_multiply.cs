@@ -68,7 +68,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Multiply Method - One large BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
@@ -263,7 +263,7 @@ namespace System.Numerics.Tests
                 string randBigInt2 = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(randBigInt1 + randBigInt2 + "b*", randBigInt2 + randBigInt1 + "b*");
             }
-            
+
             // Check interesting cases for boundary conditions
             // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0

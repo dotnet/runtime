@@ -14,7 +14,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const int CONCURRENT_COMMANDS = 5;
 
         private const string _COMMAND_RPC = "sp_who";
-        private const string _COMMAND_SQL = 
+        private const string _COMMAND_SQL =
             "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
             "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
             "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             "select * from sys.databases; print 'THIS IS THE END!'";
 
         private static readonly string _testConnString =
-            (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+            (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr)
             {
                 PacketSize = 512,
                 MaxPoolSize = 1,

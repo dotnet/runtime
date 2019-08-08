@@ -1245,4 +1245,3 @@ namespace System.Net
         }
     } // class FtpControlStream
 } // namespace System.Net
-

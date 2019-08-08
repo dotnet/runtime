@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -87,7 +87,7 @@ namespace Microsoft.SqlServer.TDS.Servers
                 // Delegate to instance name query
                 responseMessage = _PrepareInstanceNameResponse(session);
             }
-            else if (lowerBatchText.Contains("serverproperty('ishadrenabled')"))  // SELECT convert(bit, ServerProperty('IsHADREnabled')) 
+            else if (lowerBatchText.Contains("serverproperty('ishadrenabled')"))  // SELECT convert(bit, ServerProperty('IsHADREnabled'))
             {
                 // Delegate to HADRon query
                 responseMessage = _PrepareIsHADRResponse(session);
@@ -97,17 +97,17 @@ namespace Microsoft.SqlServer.TDS.Servers
                 // Delegate to Azure query
                 responseMessage = _PrepareIsAzure(session);
             }
-            else if (lowerBatchText.Contains("serverproperty('islocaldb')"))  // SELECT convert(bit, ServerProperty('IsLocalDB')) 
+            else if (lowerBatchText.Contains("serverproperty('islocaldb')"))  // SELECT convert(bit, ServerProperty('IsLocalDB'))
             {
                 // Delegate to Local DB query
                 responseMessage = _PrepareIsLocalDB(session);
             }
-            else if (lowerBatchText.Contains("serverproperty('istestsqlserver')"))  // SELECT convert(bit, ServerProperty('IsTestSQLServer')) 
+            else if (lowerBatchText.Contains("serverproperty('istestsqlserver')"))  // SELECT convert(bit, ServerProperty('IsTestSQLServer'))
             {
                 // Delegate to test SQL Server query response
                 responseMessage = _PrepareIsTestSQLServerResponse(session);
             }
-            else if (lowerBatchText.Contains("serverproperty('testsqlserverclass')"))  // SELECT convert(nvarchar(256), ServerProperty('TestSQLServerClass')) 
+            else if (lowerBatchText.Contains("serverproperty('testsqlserverclass')"))  // SELECT convert(nvarchar(256), ServerProperty('TestSQLServerClass'))
             {
                 // Delegate to test SQL Server class response
                 responseMessage = _PrepareTestSQLServerClassResponse(session);
@@ -321,7 +321,7 @@ namespace Microsoft.SqlServer.TDS.Servers
                 responseMessage = _PrepareOptionsResponse(session);
             }
             else if (lowerBatchText.Contains("select")
-                && lowerBatchText.Contains("context_info()"))  // SELECT CONTEXT_INFO() 
+                && lowerBatchText.Contains("context_info()"))  // SELECT CONTEXT_INFO()
             {
                 // Delegate session property query
                 responseMessage = _PrepareContextInfoResponse(session);
@@ -1178,7 +1178,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Prepare result data
             TDSRowToken rowToken = new TDSRowToken(metadataToken);
 
-            // Add row data            
+            // Add row data
             rowToken.Data.Add(session.ConnectionResetRequestCount);
 
             // Log response

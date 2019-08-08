@@ -29,4 +29,3 @@ namespace Microsoft.Win32
         Suspend = 3,
     }
 }
-

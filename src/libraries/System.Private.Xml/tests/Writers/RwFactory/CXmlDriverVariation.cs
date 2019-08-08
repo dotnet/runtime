@@ -58,7 +58,7 @@ namespace System.Xml.Tests
                 res = (tagVARIATION_STATUS)HandleException(e);
             }
             catch (Exception e)
-            {                
+            {
                 res = (tagVARIATION_STATUS)HandleException(e);
             }
 
@@ -68,4 +68,3 @@ namespace System.Xml.Tests
         public CXmlDriverParam XmlDriverParam { get { return _xmlDriverParams; } set { _xmlDriverParams = value; } }
     }
 }
-

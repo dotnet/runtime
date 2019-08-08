@@ -15,11 +15,11 @@ namespace System.Reflection.Internal
         internal static IDisposable CreateMemoryMap(Stream stream)
         {
             return MemoryMappedFile.CreateFromFile(
-                (FileStream)stream, 
+                (FileStream)stream,
                 mapName: null,
-                capacity: 0, 
-                access: MemoryMappedFileAccess.Read, 
-                inheritability: HandleInheritability.None, 
+                capacity: 0,
+                access: MemoryMappedFileAccess.Read,
+                inheritability: HandleInheritability.None,
                 leaveOpen: true);
         }
 

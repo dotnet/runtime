@@ -24,7 +24,7 @@ internal partial class Interop
                 // we'll use a simple list. To avoid locking, we'll recreate the entire list each time an entry is added and replace it atomically.
                 //
                 // This does mean that on occasion, racing threads may create two handles of the same type, but this is ok.
-    
+
                 // Latch the _cache value into a local so we aren't disrupted by concurrent changes to it.
                 Entry[] cache = _cache;
                 foreach (Entry entry in cache)
@@ -32,25 +32,25 @@ internal partial class Interop
                     if (entry.HashAlgorithmId == hashAlgorithmId && entry.Flags == flags)
                         return entry.Handle;
                 }
-    
+
                 SafeBCryptAlgorithmHandle safeBCryptAlgorithmHandle;
                 NTSTATUS ntStatus = Interop.BCrypt.BCryptOpenAlgorithmProvider(out safeBCryptAlgorithmHandle, hashAlgorithmId, null, flags);
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-    
+
                 Entry[] newCache = new Entry[cache.Length + 1];
                 Entry newEntry = new Entry(hashAlgorithmId, flags, safeBCryptAlgorithmHandle);
                 Array.Copy(cache, 0, newCache, 0, cache.Length);
                 newCache[newCache.Length - 1] = newEntry;
-    
+
                 // Atomically overwrite the cache with our new cache. It's possible some other thread raced to add a new entry with us - if so, one of the new entries
                 // will be lost and the next guy that requests it will have to allocate it again. That's considered acceptable collateral damage.
                 _cache = newCache;
                 return newEntry.Handle;
             }
-    
+
             private static volatile Entry[] _cache = Array.Empty<Entry>();
-    
+
             private struct Entry
             {
                 public Entry(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags, SafeBCryptAlgorithmHandle handle)
@@ -60,7 +60,7 @@ internal partial class Interop
                     Flags = flags;
                     Handle = handle;
                 }
-    
+
                 public string HashAlgorithmId { get; private set; }
                 public BCryptOpenAlgorithmProviderFlags Flags { get; private set; }
                 public SafeBCryptAlgorithmHandle Handle { get; private set; }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2005-2006 Novell, Inc (http://www.novell.com)
@@ -95,10 +95,10 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_InvalidWrapMode_ThrowsInvalidEnumArgumentException()
         {
-            Assert.ThrowsAny<ArgumentException>(() => 
+            Assert.ThrowsAny<ArgumentException>(() =>
                 new PathGradientBrush(_defaultIntPoints, (WrapMode)int.MaxValue));
 
-            Assert.ThrowsAny<ArgumentException>(() => 
+            Assert.ThrowsAny<ArgumentException>(() =>
                 new PathGradientBrush(_defaultFloatPoints, (WrapMode)int.MaxValue));
         }
 
@@ -376,7 +376,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () => 
+                AssertExtensions.Throws<ArgumentNullException>("source", () =>
                     brush.Blend = new Blend() { Factors = new float[0], Positions = null });
             }
         }
@@ -502,7 +502,7 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                brush.SetBlendTriangularShape(focus);                
+                brush.SetBlendTriangularShape(focus);
                 Assert.True(brush.Transform.IsIdentity);
                 if (focus == 0f)
                 {
@@ -649,10 +649,10 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                Assert.Throws<NullReferenceException>(() => 
+                Assert.Throws<NullReferenceException>(() =>
                     brush.InterpolationColors = new ColorBlend() { Colors = null, Positions = null });
 
-                Assert.Throws<NullReferenceException>(() => 
+                Assert.Throws<NullReferenceException>(() =>
                     brush.InterpolationColors = new ColorBlend() { Colors = null, Positions = new float[2] });
             }
         }
@@ -662,7 +662,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () => 
+                AssertExtensions.Throws<ArgumentNullException>("source", () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = null });
             }
         }
@@ -681,7 +681,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => 
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[0], Positions = new float[0] });
             }
         }
@@ -691,7 +691,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => 
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = new float[2] });
             }
         }
@@ -701,7 +701,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => 
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[2], Positions = new float[1] });
             }
         }
@@ -863,7 +863,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             using (Matrix nonInvertible = new Matrix(123, 24, 82, 16, 47, 30))
-            {                
+            {
                 AssertExtensions.Throws<ArgumentException>(null, () => brush.MultiplyTransform(nonInvertible));
                 AssertExtensions.Throws<ArgumentException>(null, () => brush.MultiplyTransform(nonInvertible, MatrixOrder.Append));
             }
@@ -933,7 +933,7 @@ namespace System.Drawing.Drawing2D.Tests
 
                 matrix.Scale(float.MinValue, float.MaxValue, MatrixOrder.Prepend);
                 brush.ScaleTransform(float.MinValue, float.MaxValue);
-                Assert.Equal(matrix, brush.Transform);                
+                Assert.Equal(matrix, brush.Transform);
             }
         }
 
@@ -994,7 +994,7 @@ namespace System.Drawing.Drawing2D.Tests
             {
                 matrix.Rotate(45, matrixOrder);
                 brush.RotateTransform(45, matrixOrder);
-                Assert.Equal(matrix, brush.Transform);                
+                Assert.Equal(matrix, brush.Transform);
             }
         }
 

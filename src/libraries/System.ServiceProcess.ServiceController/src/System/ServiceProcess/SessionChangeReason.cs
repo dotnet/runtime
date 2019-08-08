@@ -44,4 +44,3 @@ namespace System.ServiceProcess
         SessionRemoteControl    = Interop.Advapi32.SessionStateChange.WTS_SESSION_REMOTE_CONTROL
     }
 }
-

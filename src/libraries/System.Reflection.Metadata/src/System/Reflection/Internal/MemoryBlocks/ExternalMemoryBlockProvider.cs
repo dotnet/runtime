@@ -8,7 +8,7 @@ using System.IO;
 namespace System.Reflection.Internal
 {
     /// <summary>
-    /// Represents raw memory owned by an external object. 
+    /// Represents raw memory owned by an external object.
     /// </summary>
     internal unsafe sealed class ExternalMemoryBlockProvider : MemoryBlockProvider
     {

@@ -60,7 +60,7 @@ namespace MS.Internal.Xml.XPath
             if (e.Value.Length == 0)
             {
                 Debug.Assert(e.LocalName.Length == 0, "Only xmlns='' can have empty string as a value");
-                // Namespace axes never returns xmlns='', 
+                // Namespace axes never returns xmlns='',
                 // because it's not a NS declaration but rather undeclaration.
                 return false;
             }

@@ -233,7 +233,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
             {
                 const int Messages = 100;
-                var bb = new BufferBlock<int>(new DataflowBlockOptions 
+                var bb = new BufferBlock<int>(new DataflowBlockOptions
                 {
                     BoundedCapacity = boundedCapacity,
                     MaxMessagesPerTask = maxMessagesPerTask,
@@ -267,7 +267,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
 
                 var sendAsync = new Task<bool>[boundedCapacity + Excess];
-                for (int i = 0; i < boundedCapacity + Excess; i++) 
+                for (int i = 0; i < boundedCapacity + Excess; i++)
                     sendAsync[i] = b.SendAsync(i);
                 b.Complete();
 
@@ -309,7 +309,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             ((ISourceBlock<int>)block).ReleaseReservation(messageHeader, target);
 
             ((ISourceBlock<int>)block).ConsumeMessage(messageHeader, DataflowBlock.NullTarget<int>(), out consumed);
-            
+
             Assert.True(consumed);
             Assert.Equal(expected: 0, actual: block.Count);
         }
@@ -477,7 +477,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestFaultyScheduler()
         {
-            var bb = new BufferBlock<int>(new DataflowBlockOptions 
+            var bb = new BufferBlock<int>(new DataflowBlockOptions
             {
                 TaskScheduler = new DelegateTaskScheduler
                 {

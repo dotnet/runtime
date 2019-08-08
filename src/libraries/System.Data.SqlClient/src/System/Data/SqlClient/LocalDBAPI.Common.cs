@@ -45,7 +45,7 @@ namespace System.Data
                 return s_localDBFormatMessage;
             }
         }
-        
+
         //This is copy of handle that SNI maintains, so we are responsible for freeing it - therefore there we are not using SafeHandle
         private static IntPtr s_userInstanceDLLHandle = IntPtr.Zero;
 
@@ -65,14 +65,14 @@ namespace System.Data
                 uint len = (uint)buffer.Capacity;
 
 
-                // First try for current culture                
+                // First try for current culture
                 int hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: (uint)CultureInfo.CurrentCulture.LCID,
                                                  buffer: buffer, buflen: ref len);
                 if (hResult >= 0)
                     return buffer.ToString();
                 else
                 {
-                    // Message is not available for current culture, try default 
+                    // Message is not available for current culture, try default
                     buffer = new StringBuilder((int)const_ErrorMessageBufferSize);
                     len = (uint)buffer.Capacity;
                     hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: 0 /* thread locale with fallback to English */,

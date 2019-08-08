@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -47,7 +47,7 @@ namespace System.Configuration
             var response = testCallBackValidatorAttribute.ValidatorInstance;
             Assert.IsType<CallbackValidator>(response);
         }
-    
+
         //Calls twice to test both branches of the _callbackmethod == null if statement
         [Fact]
         public void SuccessfulCallback_CallTwice()
@@ -103,4 +103,3 @@ namespace System.Configuration
 #pragma warning restore xUnit1013
     }
 }
-

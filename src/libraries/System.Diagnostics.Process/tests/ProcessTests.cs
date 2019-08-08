@@ -762,7 +762,7 @@ namespace System.Diagnostics.Tests
 
             DateTime startTime = DateTime.UtcNow;
             TimeSpan processorTimeBeforeSpin = Process.GetCurrentProcess().TotalProcessorTime;
-           
+
             // Perform loop to occupy cpu, takes less than a second.
             int i = int.MaxValue / 16;
             while (i > 0)
@@ -949,7 +949,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            // Process.ProcessName drops the extension when it's exe. 
+            // Process.ProcessName drops the extension when it's exe.
             string processName = RemoteExecutor.HostRunner.EndsWith(".exe") ?_process.ProcessName : Path.GetFileNameWithoutExtension(_process.ProcessName);
             Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), processName, StringComparer.OrdinalIgnoreCase);
         }
@@ -1150,7 +1150,7 @@ namespace System.Diagnostics.Tests
                     }
                     builder.AppendLine();
                 }
-                
+
                 builder.AppendFormat("Current process id: {0} Process name: '{1}'", currentProcess.Id, currentProcess.ProcessName);
                 return builder.ToString();
             }

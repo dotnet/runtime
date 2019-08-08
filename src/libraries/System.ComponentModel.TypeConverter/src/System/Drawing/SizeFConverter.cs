@@ -53,7 +53,7 @@ namespace System.Drawing
                 {
                     throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text, "Width,Height"));
                 }
-                
+
                 return new SizeF(values[0], values[1]);
             }
 

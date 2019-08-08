@@ -42,7 +42,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // This routine escapes values used in DNs, per RFC 2253 and ADSI escaping rules.
         // It treats its input as a unescaped literal and produces a LDAP string that represents that literal
-        // and that is escaped according to RFC 2253 and ADSI rules for DN components.        
+        // and that is escaped according to RFC 2253 and ADSI rules for DN components.
         internal static string EscapeDNComponent(string dnComponent)
         {
             //
@@ -56,11 +56,11 @@ namespace System.DirectoryServices.AccountManagement
             //          string
             //
             //      o   a space character occurring at the end of the string
-            // 
+            //
             //      o   one of the characters ",", "+", """, "\", "<", ">" or ";"
-            // 
+            //
             //      Implementations MAY escape other characters.
-            // 
+            //
             //      If a character to be escaped is one of the list shown above, then it
             //      is prefixed by a backslash ('\' ASCII 92).
             //
@@ -209,7 +209,7 @@ namespace System.DirectoryServices.AccountManagement
             //   \( --> \28
             //   \) --> \29
             //   x  --> x       (where x is anything else)
-            //   \x --> x       (where x is anything else)        
+            //   \x --> x       (where x is anything else)
 
             StringBuilder sb = new StringBuilder(papiString.Length);
 
@@ -366,17 +366,17 @@ namespace System.DirectoryServices.AccountManagement
             return (string.Equals(p1DnsForestName, p2DnsForestName, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// 
+        ///
         /// <summary>
         /// Returns true if the specified SIDs are from the same domain.
         /// Otherwise return false.
         /// </summary>
         /// <param name="sid1"></param>
         /// <param name="sid2"></param>
-        /// <returns>Returns true if the specified SIDs are from the same domain. 
+        /// <returns>Returns true if the specified SIDs are from the same domain.
         /// Otherwise return false
         /// </returns>
-        /// 
+        ///
         internal static bool AreSidsInSameDomain(SecurityIdentifier sid1, SecurityIdentifier sid2)
         {
             if (sid1.IsAccountSid() && sid2.IsAccountSid())
@@ -425,7 +425,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // This function is used to check if we will be able to lookup a SID from the 
+        // This function is used to check if we will be able to lookup a SID from the
         // target domain by targeting the local computer.  This is done by checking for either
         // a outbound or bidirectional trust between the computers domain and the target
         // domain or the current forest and the target domain's forest.

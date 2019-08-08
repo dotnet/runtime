@@ -82,11 +82,11 @@ namespace System.Drawing.Printing
 
             // Create a Metafile which accepts only GDI+ commands since we are the ones creating
             // and using this ...
-            // Framework creates a dual-mode EMF for each page in the preview. 
-            // When these images are displayed in preview, 
-            // they are added to the dual-mode EMF. However, 
-            // GDI+ breaks during this process if the image 
-            // is sufficiently large and has more than 254 colors. 
+            // Framework creates a dual-mode EMF for each page in the preview.
+            // When these images are displayed in preview,
+            // they are added to the dual-mode EMF. However,
+            // GDI+ breaks during this process if the image
+            // is sufficiently large and has more than 254 colors.
             // This code path can easily be avoided by requesting
             // an EmfPlusOnly EMF..
             Metafile metafile = new Metafile(_dc.Hdc, new Rectangle(0, 0, metafileSize.Width, metafileSize.Height), MetafileFrameUnit.GdiCompatible, EmfType.EmfPlusOnly);

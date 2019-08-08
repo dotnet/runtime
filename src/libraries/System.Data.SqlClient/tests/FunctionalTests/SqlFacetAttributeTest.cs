@@ -28,4 +28,3 @@ namespace System.Data.SqlClient.Tests
         }
     }
 }
- 

@@ -44,9 +44,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        /// 
+        ///
         /// The type of node.
-        /// 
+        ///
         /// <remarks>
         /// The exact mechanism by which NetBIOS names are resolved to IP addresses
         /// depends on the node's configured NetBIOS Node Type. Broadcast - uses broadcast
@@ -112,7 +112,7 @@ namespace System.Net.NetworkInformation
             return list.ToArray();
         }
 
-        /// 
+        ///
         /// Gets the active TCP connections. Uses the native GetTcpTable API.
         private List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {

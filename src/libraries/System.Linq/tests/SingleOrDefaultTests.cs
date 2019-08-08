@@ -94,7 +94,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 4 };
             int expected = 4;
-            
+
             Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 

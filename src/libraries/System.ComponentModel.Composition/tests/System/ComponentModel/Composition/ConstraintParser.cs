@@ -42,7 +42,7 @@ namespace System.ComponentModel.Composition
                     requiredMetadataList.Add(new KeyValuePair<string, Type>(requiredMetadataItemName, requiredMetadataItemType));
                 }
 
-                // Just skip the expressions we don't understand  
+                // Just skip the expressions we don't understand
             }
 
             // ContractName should have been set already, just need to set metadata
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Composition
             Assert.NotNull(expression);
 
             // The expression we know about should be a set of nested AndAlso's, we
-            // need to flatten them into one list. we do this iteratively, as 
+            // need to flatten them into one list. we do this iteratively, as
             // recursion will create too much of a memory churn.
             Stack<Expression> expressions = new Stack<Expression>();
             expressions.Push(expression);
@@ -186,7 +186,7 @@ namespace System.ComponentModel.Composition
                 return false;
             }
 
-            // Make sure the method is being called on the right object            
+            // Make sure the method is being called on the right object
             MemberExpression targetMember = methodCall.Object as MemberExpression;
             if (targetMember == null)
             {
@@ -198,7 +198,7 @@ namespace System.ComponentModel.Composition
                 return false;
             }
 
-            // There should only ever be one argument; otherwise, 
+            // There should only ever be one argument; otherwise,
             // we've got the wrong IDictionary.get_Item method.
             if(methodCall.Arguments.Count != 1)
             {

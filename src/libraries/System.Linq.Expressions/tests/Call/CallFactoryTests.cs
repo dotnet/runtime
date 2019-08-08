@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Tests
             ConstantExpression[] args = Enumerable.Range(0, N).Select(i => Expression.Constant(i)).ToArray();
 
             MethodCallExpression expr = Expression.Call(obj, typeof(MS).GetMethod("I" + N), args);
-            
+
             Assert.Equal("InstanceMethodCallExpressionN", expr.GetType().Name);
             Assert.Same(obj, expr.Object);
 

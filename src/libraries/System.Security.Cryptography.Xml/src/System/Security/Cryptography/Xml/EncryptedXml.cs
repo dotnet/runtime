@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.Xml
                 else if (cipherData.CipherReference.Uri[0] == '#')
                 {
                     string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri);
-                    // Serialize 
+                    // Serialize
                     XmlElement idElem = GetIdElement(_document, idref);
                     if (idElem == null || idElem.OuterXml == null)
                     {
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Xml
             // if we have an EncryptedKey, decrypt to get the symmetric key
             if (ek != null)
             {
-                // now process the EncryptedKey, loop recursively 
+                // now process the EncryptedKey, loop recursively
                 // If the Uri is not provided by the application, try to get it from the EncryptionMethod
                 if (symmetricAlgorithmUri == null)
                 {
@@ -460,7 +460,7 @@ namespace System.Security.Cryptography.Xml
                         _xmlDsigSearchDepthCounter++;
                         if (IsOverXmlDsigRecursionLimit())
                         {
-                            //Throw exception once recursion limit is hit. 
+                            //Throw exception once recursion limit is hit.
                             throw new CryptoSignedXmlRecursionException();
                         }
                         else
@@ -560,7 +560,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        // Encrypts the given element with the key name specified. A corresponding key name mapping 
+        // Encrypts the given element with the key name specified. A corresponding key name mapping
         // has to be defined before calling this method. The key name is added as
         // a KeyNameInfo KeyInfo to an EncryptedKey (AES session key) generated randomly.
         public EncryptedData Encrypt(XmlElement inputElement, string keyName)
@@ -880,7 +880,7 @@ namespace System.Security.Cryptography.Xml
         }
 
 
-        // encrypts the supplied input key data using an RSA key and specifies whether we want to use OAEP 
+        // encrypts the supplied input key data using an RSA key and specifies whether we want to use OAEP
         // padding or PKCS#1 v1.5 padding as described in the PKCS specification
         public static byte[] EncryptKey(byte[] keyData, RSA rsa, bool useOAEP)
         {
@@ -923,7 +923,7 @@ namespace System.Security.Cryptography.Xml
             throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
         }
 
-        // decrypts the supplied data using an RSA key and specifies whether we want to use OAEP 
+        // decrypts the supplied data using an RSA key and specifies whether we want to use OAEP
         // padding or PKCS#1 v1.5 padding as described in the PKCS specification
         public static byte[] DecryptKey(byte[] keyData, RSA rsa, bool useOAEP)
         {

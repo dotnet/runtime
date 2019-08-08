@@ -12,4 +12,3 @@ internal static partial class Interop
         internal const string NCRYPT_AES_ALGORITHM = "AES";
     }
 }
-

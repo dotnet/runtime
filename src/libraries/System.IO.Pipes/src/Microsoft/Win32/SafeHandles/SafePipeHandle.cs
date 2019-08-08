@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafePipeHandle()
-            : this(new IntPtr(DefaultInvalidHandle), true) 
+            : this(new IntPtr(DefaultInvalidHandle), true)
         {
         }
 

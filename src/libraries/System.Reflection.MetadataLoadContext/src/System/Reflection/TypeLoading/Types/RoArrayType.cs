@@ -49,7 +49,7 @@ namespace System.Reflection.TypeLoading
                 if (ifc != null)
                 {
                     // All of our types are from a fixed list so we know they're supposed be generic interfaces taking one type parameter.
-                    // But since we're loading them from a core assembly that the user supplied us, we should verify and skip if 
+                    // But since we're loading them from a core assembly that the user supplied us, we should verify and skip if
                     // this is not the case.
                     if (ifc is RoDefinitionType roDefinitionType && roDefinitionType.GetGenericParameterCount() == 1)
                     {

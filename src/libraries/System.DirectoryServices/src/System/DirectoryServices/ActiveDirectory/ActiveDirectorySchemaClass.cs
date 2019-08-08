@@ -80,7 +80,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             _context = new DirectoryContext(context);
 
-            // validate the context 
+            // validate the context
             _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.SchemaNamingContext);
             _schemaEntry.Bind(true);
 
@@ -260,7 +260,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //  work with copy of the context
             context = new DirectoryContext(context);
 
-            // create a schema class 
+            // create a schema class
             schemaClass = new ActiveDirectorySchemaClass(context, ldapDisplayName, (DirectoryEntry)null, null);
 
             return schemaClass;
@@ -272,7 +272,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             ArrayList properties = new ArrayList();
 
-            // get the mandatory properties 
+            // get the mandatory properties
             properties.AddRange(MandatoryProperties);
             // get the optional properties
             properties.AddRange(OptionalProperties);
@@ -477,7 +477,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_commonName == null)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _commonName = (string)GetValueFromCache(PropertyManager.Cn, true);
                     }
                 }
@@ -550,7 +550,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_descriptionInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _description = (string)GetValueFromCache(PropertyManager.Description, false);
                         _descriptionInitialized = true;
                     }
@@ -937,7 +937,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_subClassOf == null)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _subClassOf = new ActiveDirectorySchemaClass(_context, (string)GetValueFromCache(PropertyManager.SubClassOf, true), (DirectoryEntry)null, _schemaEntry);
                     }
                 }
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_typeInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _type = (SchemaClassType)((int)GetValueFromCache(PropertyManager.ObjectClassCategory, true));
                         _typeInitialized = true;
                     }
@@ -1004,7 +1004,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_schemaGuidBinaryForm == null)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true);
                     }
                 }
@@ -1037,7 +1037,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_defaultSDSddlFormInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _defaultSDSddlForm = (string)GetValueFromCache(PropertyManager.DefaultSecurityDescriptor, false);
                         _defaultSDSddlFormInitialized = true;
                     }
@@ -1080,7 +1080,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         // This method retrieves the value of a property (single valued) from the values
         // that were retrieved from the server. The "mustExist" parameter controls whether or
-        // not an exception should be thrown if a value does not exist. If mustExist is true, this 
+        // not an exception should be thrown if a value does not exist. If mustExist is true, this
         // will throw an exception is value does not exist.
         //
         private object GetValueFromCache(string propertyName, bool mustExist)
@@ -1108,7 +1108,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         //
         // This method retrieves all the values of a property (single valued) from the values
-        // that were retrieved from the server. 
+        // that were retrieved from the server.
         //
         private ICollection GetValuesFromCache(string propertyName)
         {
@@ -1141,9 +1141,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         //
         // This method retrieves properties for this schema class from the schema container
-        // on the server. For non-defunct classes only properties that are not available in the abstract 
+        // on the server. For non-defunct classes only properties that are not available in the abstract
         // schema are retrieved.  For defunct classes, all the properties are retrieved.
-        // The retrieved values are stored in a class variable "propertyValuesFromServer" which is a 
+        // The retrieved values are stored in a class variable "propertyValuesFromServer" which is a
         // hashtable indexed on the property name.
         //
         internal static Hashtable GetPropertiesFromSchemaContainer(DirectoryContext context, DirectoryEntry schemaEntry, string name, bool isDefunctOnServer)
@@ -1271,7 +1271,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void SetProperty(string propertyName, object value)
         {
-            // get the distinguished name to construct the directory entry 
+            // get the distinguished name to construct the directory entry
             GetSchemaClassDirectoryEntry();
             Debug.Assert(_classEntry != null);
 
@@ -1296,7 +1296,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         //
-        // This method searches in the schema container for all non-defunct classes of the 
+        // This method searches in the schema container for all non-defunct classes of the
         // specified name (ldapDisplayName).
         //
         private ArrayList GetClasses(ICollection ldapDisplayNames)
@@ -1374,7 +1374,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         //
-        // This method searches in the schema container for all non-defunct properties of the 
+        // This method searches in the schema container for all non-defunct properties of the
         // specified name (ldapDisplayName).
         //
         private ArrayList GetProperties(ICollection ldapDisplayNames)

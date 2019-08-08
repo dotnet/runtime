@@ -17,7 +17,7 @@ namespace System.Net.Mime
         private MimeBasePart _part = null;
 
         // default constructor
-        // intentionally override the default comparer in the derived base class 
+        // intentionally override the default comparer in the derived base class
         internal HeaderCollection() : base(StringComparer.OrdinalIgnoreCase)
         {
         }

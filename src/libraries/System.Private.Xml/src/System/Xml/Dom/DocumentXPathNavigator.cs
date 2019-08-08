@@ -15,8 +15,8 @@ namespace System.Xml
     internal sealed class DocumentXPathNavigator : XPathNavigator, IHasXmlNode
     {
         private XmlDocument _document; // owner document
-        private XmlNode _source; // navigator position 
-        private int _attributeIndex; // index in attribute collection for attribute 
+        private XmlNode _source; // navigator position
+        private int _attributeIndex; // index in attribute collection for attribute
         private XmlElement _namespaceParent; // parent for namespace
 
         public DocumentXPathNavigator(XmlDocument document, XmlNode node)
@@ -143,7 +143,7 @@ namespace System.Xml
                             }
                             return localName; // xmlns:name declaration
                         }
-                        return _source.Name; // attribute  
+                        return _source.Name; // attribute
                     default:
                         return string.Empty;
                 }
@@ -1316,7 +1316,7 @@ namespace System.Xml
         }
 
         //Assuming that node1 and node2 are in the same level; Except when they are namespace nodes, they should have the same parent node
-        //the returned value is node2's position corresponding to node1 
+        //the returned value is node2's position corresponding to node1
         private XmlNodeOrder Compare(XmlNode node1, XmlNode node2)
         {
             Debug.Assert(node1 != null);

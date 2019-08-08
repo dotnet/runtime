@@ -14,7 +14,7 @@ namespace System.Tests
         {
             Assert.InRange(Environment.ProcessorCount, 1, int.MaxValue);
         }
-        
+
         [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to get processor information
         [Fact]
         public void ProcessorCount_Windows_MatchesGetSystemInfo()

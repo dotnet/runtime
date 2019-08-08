@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System.Data
 {
     /// <summary>
-    /// Represents a collection of properties that can be added to <see cref='System.Data.DataColumn'/>, 
+    /// Represents a collection of properties that can be added to <see cref='System.Data.DataColumn'/>,
     /// <see cref='System.Data.DataSet'/>, or <see cref='System.Data.DataTable'/>.
     /// </summary>
     [Serializable]

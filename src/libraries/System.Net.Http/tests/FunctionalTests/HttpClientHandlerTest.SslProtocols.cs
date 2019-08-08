@@ -266,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsWinHttpHandler && 
+            if (IsWinHttpHandler &&
                 allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
                 acceptedServerProtocols == SslProtocols.Tls)
             {

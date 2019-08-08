@@ -98,7 +98,7 @@ namespace System.Xml.Linq
         /// Save the contents of an <see cref="XStreamingElement"/> to a <see cref="Stream"/>
         /// with formatting.
         /// </summary>
-        /// <param name="stream"><see cref="Stream"/> to write to </param>      
+        /// <param name="stream"><see cref="Stream"/> to write to </param>
         public void Save(Stream stream)
         {
             Save(stream, SaveOptions.None);
@@ -126,7 +126,7 @@ namespace System.Xml.Linq
         /// Save the contents of an <see cref="XStreamingElement"/> to a text writer
         /// with formatting.
         /// </summary>
-        /// <param name="textWriter"><see cref="TextWriter"/> to write to </param>      
+        /// <param name="textWriter"><see cref="TextWriter"/> to write to </param>
         public void Save(TextWriter textWriter)
         {
             Save(textWriter, SaveOptions.None);
@@ -153,7 +153,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitespace
         /// </summary>
-        /// <param name="writer"><see cref="XmlWriter"/> to write to </param>    
+        /// <param name="writer"><see cref="XmlWriter"/> to write to </param>
         public void Save(XmlWriter writer)
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
@@ -172,7 +172,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Save an <see cref="XStreamingElement"/> to a file, optionally formatting. 
+        /// Save an <see cref="XStreamingElement"/> to a file, optionally formatting.
         /// </summary>
         /// <param name="fileName">Name of file to write content to</param>
         /// <param name="options">
@@ -189,7 +189,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Get the XML content of an <see cref="XStreamingElement"/> as a 
+        /// Get the XML content of an <see cref="XStreamingElement"/> as a
         /// formatted string.
         /// </summary>
         /// <returns>The XML text as a formatted string</returns>

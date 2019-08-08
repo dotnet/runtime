@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (rawData == null || rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
- 
+
             ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -591,7 +591,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         /// <summary>
         ///     Convert a date to a string.
-        /// 
+        ///
         ///     Some cultures, specifically using the Um-AlQura calendar cannot convert dates far into
         ///     the future into strings.  If the expiration date of an X.509 certificate is beyond the range
         ///     of one of these cases, we need to fall back to a calendar which can express the dates

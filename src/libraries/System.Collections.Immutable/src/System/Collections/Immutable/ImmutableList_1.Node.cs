@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
             /// The number of elements contained by this subtree starting at this node.
             /// </summary>
             /// <remarks>
-            /// If this node would benefit from saving 4 bytes, we could have only a few nodes 
+            /// If this node would benefit from saving 4 bytes, we could have only a few nodes
             /// scattered throughout the graph actually record the count of nodes beneath them.
             /// Those without the count could query their descendants, which would often short-circuit
             /// when they hit a node that *does* include a count field.
@@ -384,7 +384,7 @@ namespace System.Collections.Immutable
                 Node result = this;
                 if (index == _left._count)
                 {
-                    // We have a match. If this is a leaf, just remove it 
+                    // We have a match. If this is a leaf, just remove it
                     // by returning Empty.  If we have only one child,
                     // replace the node with the child.
                     if (_right.IsEmpty && _left.IsEmpty)
@@ -484,7 +484,7 @@ namespace System.Collections.Immutable
                 Node result = this;
                 if (index == _left._count)
                 {
-                    // We have a match. 
+                    // We have a match.
                     result = this.MutateKey(value);
                 }
                 else if (index < _left._count)
@@ -511,7 +511,7 @@ namespace System.Collections.Immutable
             /// Reverses the order of the elements in the specified range.
             /// </summary>
             /// <param name="index">The zero-based starting index of the range to reverse.</param>
-            /// <param name="count">The number of elements in the range to reverse.</param> 
+            /// <param name="count">The number of elements in the range to reverse.</param>
             /// <returns>The reversed list.</returns>
             internal Node Reverse(int index, int count)
             {
@@ -658,7 +658,7 @@ namespace System.Collections.Immutable
                     return result < 0 ? result - offset : result + offset;
                 }
 
-                // We're definitely in the caller's designated range now. 
+                // We're definitely in the caller's designated range now.
                 // Any possible match will be a descendant of this node (or this immediate one).
                 // Some descendants may not be in range, but if we hit any it means no match was found,
                 // and a negative response would come back from the above code to the below code.

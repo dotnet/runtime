@@ -199,7 +199,7 @@ namespace System.Net.Security
             {
                 // Protecting from X509Certificate2 derived classes.
                 X509Certificate2 certEx = MakeEx(certificate);
-                
+
                 if (certEx != null)
                 {
                     if (certEx.HasPrivateKey)
@@ -633,7 +633,7 @@ namespace System.Net.Security
             X509Certificate localCertificate = null;
             bool cachedCred = false;
 
-            // There are three options for selecting the server certificate. When 
+            // There are three options for selecting the server certificate. When
             // selecting which to use, we prioritize the new ServerCertSelectionDelegate
             // API. If the new API isn't used we call LocalCertSelectionCallback (for compat
             // with .NET Framework), and if neither is set we fall back to using ServerCertificate.
@@ -1324,4 +1324,3 @@ namespace System.Net.Security
 #endif
     }
 }
-

@@ -172,7 +172,7 @@ namespace SerializationTestTypes
             return t;
         }
     }
-        
+
     public class UserTypeToPrimitiveTypeResolver : DataContractResolver
     {
         public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
@@ -182,22 +182,22 @@ namespace SerializationTestTypes
             switch (dcType.Name)
             {
                 case "UnknownEmployee":
-                    resolvedTypeName = "int";                                          
+                    resolvedTypeName = "int";
                     resolvedNamespace = "http://www.w3.org/2001/XMLSchema";
                     break;
-                case "UserTypeContainer":                    
-                    resolvedTypeName = "UserType";                    
+                case "UserTypeContainer":
+                    resolvedTypeName = "UserType";
                     break;
-                default:                    
+                default:
                     return KTResolver.TryResolveType(dcType, declaredType, null, out typeName, out typeNamespace);
             }
-            
+
             XmlDictionary dic = new XmlDictionary();
             typeName = dic.Add(resolvedTypeName);
             typeNamespace = dic.Add(resolvedNamespace);
             return true;
         }
-        
+
         public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
         {
             if (typeNamespace.Equals("http://www.default.com"))
@@ -260,7 +260,7 @@ namespace SerializationTestTypes
                 if (typeName.Equals(typeof(SimpleDC).FullName))
                 {
                     return typeof(SimpleDC);
-                }           
+                }
             }
 
             return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
@@ -307,7 +307,7 @@ namespace SerializationTestTypes
             string resolvedNamespace = string.Empty;
             resolvedNamespace = s_defaultNs;
             XmlDictionary dictionary = new XmlDictionary();
-            typeName = dictionary.Add(dcType.FullName);            
+            typeName = dictionary.Add(dcType.FullName);
             typeNamespace = dictionary.Add(resolvedNamespace);
             return true;
         }
@@ -396,8 +396,8 @@ namespace SerializationTestTypes
                 }
                 catch (System.IO.FileLoadException)
                 {
-                    //Type.GetType throws exception on netfx if it cannot find a type while it just returns null on NetCore. 
-                    //The behavior difference of Type.GetType is a known issue. 
+                    //Type.GetType throws exception on netfx if it cannot find a type while it just returns null on NetCore.
+                    //The behavior difference of Type.GetType is a known issue.
                     //Catch the exception so that test case can pass on netfx.
                     return null;
                 }

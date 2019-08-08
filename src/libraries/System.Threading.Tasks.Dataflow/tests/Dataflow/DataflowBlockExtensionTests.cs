@@ -421,7 +421,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestAsObservableAndAsObserver_BroadcastFaultyTarget()
         {
-            var targets = new ITargetBlock<int>[] 
+            var targets = new ITargetBlock<int>[]
             {
                 new BufferBlock<int>(),
                 new DelegatePropagator<int, int>() { OfferMessageDelegate = delegate { throw new InvalidOperationException(); } },
@@ -1828,7 +1828,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         public async Task TestEncapsulate_CompleteAndFaultPassthrough()
         {
             var source = new BufferBlock<int>();
-            
+
             var target = new ActionBlock<int>(i => { });
             var encapsulated = DataflowBlock.Encapsulate(target, source);
             encapsulated.Complete();

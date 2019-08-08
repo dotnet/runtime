@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
             Label label3 = ilGenerator.DefineLabel();
             Label label4 = ilGenerator.DefineLabel();
 
-            // emit the locals and check that we get correct values stored 
+            // emit the locals and check that we get correct values stored
             ilGenerator.Emit(OpCodes.Ldc_I4, 5);
             ilGenerator.Emit(OpCodes.Stloc, lb0);
             ilGenerator.Emit(OpCodes.Ldloc, lb0);
@@ -152,7 +152,7 @@ namespace System.Reflection.Emit.Tests
             Label label3 = ilGenerator.DefineLabel();
             Label label4 = ilGenerator.DefineLabel();
 
-            // Emit the locals using Stloc_0, Stloc_1, Stloc_2, Stloc_3, Stloc_S, 
+            // Emit the locals using Stloc_0, Stloc_1, Stloc_2, Stloc_3, Stloc_S,
             // Ldloc_0, Ldloc_1, Ldloc_2, Ldloc_3, Ldloc_S,
 
             ilGenerator.Emit(OpCodes.Ldc_I4, 5);

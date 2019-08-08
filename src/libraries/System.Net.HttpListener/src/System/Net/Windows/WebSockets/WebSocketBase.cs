@@ -26,7 +26,7 @@ namespace System.Net.WebSockets
         private readonly IWebSocketStream _innerStreamAsWebSocketStream;
         private readonly string _subProtocol;
 
-        // We are not calling Dispose method on this object in Cleanup method to avoid a race condition while one thread is calling disposing on 
+        // We are not calling Dispose method on this object in Cleanup method to avoid a race condition while one thread is calling disposing on
         // this object and another one is still using WaitAsync. According to Dev11 358715, this should be fine as long as we are not accessing the
         // AvailableWaitHandle on this SemaphoreSlim object.
         private readonly SemaphoreSlim _sendFrameThrottle;
@@ -311,7 +311,7 @@ namespace System.Net.WebSockets
                             {
                                 // Check whether there is still another outstanding send operation
                                 // Potentially the keepAlive operation has completed before this thread
-                                // was able to enter the SessionHandle-lock. 
+                                // was able to enter the SessionHandle-lock.
                                 _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
                                 if (ownsCancellationTokenSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken))
                                 {
@@ -629,11 +629,11 @@ namespace System.Net.WebSockets
 
         // MultiThreading: This method has to be called under a _ThisLock-lock
         // ReturnValue: This method returns true only if CompleteOnCloseCompleted needs to be called
-        // If this method returns true all locks were released before starting the IO operation 
+        // If this method returns true all locks were released before starting the IO operation
         // and they have to be retaken by the caller before calling CompleteOnCloseCompleted
         // Exception handling: If an exception is thrown from await StartOnCloseCompleted
         // it always means the locks have been released already - so the caller has to retake the
-        // locks in the catch-block. 
+        // locks in the catch-block.
         // This is ensured by enforcing a Task.Yield for IWebSocketStream.CloseNetowrkConnectionAsync
         private async Task<bool> StartOnCloseCompleted(bool thisLockTakenSnapshot,
             bool sessionHandleLockTakenSnapshot,
@@ -786,8 +786,8 @@ namespace System.Net.WebSockets
                             }
                         }
 
-                        // When closeOutputTask != null  and an exception thrown from await closeOutputTask is handled, 
-                        // the lock will be taken in the catch-block. So the logic here avoids taking the lock twice. 
+                        // When closeOutputTask != null  and an exception thrown from await closeOutputTask is handled,
+                        // the lock will be taken in the catch-block. So the logic here avoids taking the lock twice.
                         if (!lockTaken)
                         {
                             Monitor.Enter(_thisLock, ref lockTaken);
@@ -857,9 +857,9 @@ namespace System.Net.WebSockets
                             }
                         }
 
-                        // receiveResult is NEVER NULL if WebSocketBase.ReceiveOperation.Process completes successfully 
-                        // - but in the close code path we handle some exception if another thread was able to tranistion 
-                        // the state into Closed successfully. In this case receiveResult can be NULL and it is safe to 
+                        // receiveResult is NEVER NULL if WebSocketBase.ReceiveOperation.Process completes successfully
+                        // - but in the close code path we handle some exception if another thread was able to tranistion
+                        // the state into Closed successfully. In this case receiveResult can be NULL and it is safe to
                         // skip the statements in the if-block.
                         if (receiveResult != null)
                         {
@@ -886,7 +886,7 @@ namespace System.Net.WebSockets
                     }
 
                     // When ownsReceiveCancellationTokenSource is true and an exception is thrown, the lock will be taken.
-                    // So this logic here is to avoid taking the lock twice. 
+                    // So this logic here is to avoid taking the lock twice.
                     if (!lockTaken)
                     {
                         Monitor.Enter(_thisLock, ref lockTaken);
@@ -1541,7 +1541,7 @@ namespace System.Net.WebSockets
             protected abstract void Initialize(Nullable<ArraySegment<byte>> buffer, CancellationToken cancellationToken);
             protected abstract bool ShouldContinue(CancellationToken cancellationToken);
 
-            // Multi-Threading: This method has to be called under a SessionHandle-lock. It returns true if a 
+            // Multi-Threading: This method has to be called under a SessionHandle-lock. It returns true if a
             // close frame was received. Handling the received close frame might involve IO - to make the locking
             // strategy easier and reduce one level in the await-hierarchy the IO is kicked off by the caller.
             protected abstract bool ProcessAction_NoAction();
@@ -1779,7 +1779,7 @@ namespace System.Net.WebSockets
                         // ends up having to begin sending out a PONG response (due to it receiving a PING) and the
                         // current SEND thread has posted a WebSocketSend but it can't be processed yet until the
                         // RECEIVE thread has finished sending out the PONG response.
-                        // 
+                        //
                         // So, we need to release the lock briefly to give the other thread a chance to finish
                         // processing.  We won't actually exit this outter loop and return from this async method
                         // until the caller's async operation has been fully completed.
@@ -1906,7 +1906,7 @@ namespace System.Net.WebSockets
 
                     if (bufferType == WebSocketProtocolComponent.BufferType.PingPong)
                     {
-                        // ignoring received pong frame 
+                        // ignoring received pong frame
                         _pongReceived = true;
                         WebSocketProtocolComponent.WebSocketCompleteAction(_webSocket,
                             actionContext,
@@ -2094,7 +2094,7 @@ namespace System.Net.WebSockets
 
         private abstract class KeepAliveTracker : IDisposable
         {
-            // Multi-Threading: only one thread at a time is allowed to call OnDataReceived or OnDataSent 
+            // Multi-Threading: only one thread at a time is allowed to call OnDataReceived or OnDataSent
             // - but both methods can be called from different threads at the same time.
             public abstract void OnDataReceived();
             public abstract void OnDataSent();
@@ -2180,8 +2180,8 @@ namespace System.Net.WebSockets
                     Debug.Assert(keepAliveIntervalMilliseconds > 0, "'keepAliveIntervalMilliseconds' MUST be POSITIVE.");
 
                     // The correct pattern is to first initialize the Timer object, assign it to the member variable
-                    // and only afterwards enable the Timer. This is required because the constructor, together with 
-                    // the assignment are not guaranteed to be an atomic operation, which creates a race between the 
+                    // and only afterwards enable the Timer. This is required because the constructor, together with
+                    // the assignment are not guaranteed to be an atomic operation, which creates a race between the
                     // assignment and the Timer callback.
                     _keepAliveTimer = new Timer(s_KeepAliveTimerElapsedCallback, webSocket, Timeout.Infinite,
                         Timeout.Infinite);
@@ -2388,7 +2388,7 @@ namespace System.Net.WebSockets
 
             // Any implementation has to guarantee that no exception is thrown synchronously
             // for example by enforcing a Task.Yield at the beginning of the method
-            // This is necessary to enforce an API contract (for WebSocketBase.StartOnCloseCompleted) that ensures 
+            // This is necessary to enforce an API contract (for WebSocketBase.StartOnCloseCompleted) that ensures
             // that all locks have been released whenever an exception is thrown from it.
             Task CloseNetworkConnectionAsync(CancellationToken cancellationToken);
         }

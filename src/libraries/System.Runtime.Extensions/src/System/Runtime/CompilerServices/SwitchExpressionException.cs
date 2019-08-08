@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                if (UnmatchedValue is null) 
+                if (UnmatchedValue is null)
                 {
                     return base.Message;
                 }

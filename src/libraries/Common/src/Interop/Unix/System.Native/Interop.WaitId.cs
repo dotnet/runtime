@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 internal static partial class Interop
 {
     internal static partial class Sys
-    {        
+    {
         /// <summary>
         /// Returns the pid of a terminated child without reaping it.
         /// </summary>

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         public static void MinimalPrimitiveLength(int tagValue, int length, string inputHex)
         {
             byte[] inputBytes = inputHex.HexToByteArray();
-            
+
             foreach (PublicEncodingRules rules in Enum.GetValues(typeof(PublicEncodingRules)))
             {
                 AsnReader reader = new AsnReader(inputBytes, (AsnEncodingRules)rules);

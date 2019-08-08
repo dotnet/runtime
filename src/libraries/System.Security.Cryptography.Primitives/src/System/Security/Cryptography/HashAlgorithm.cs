@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
             GC.SuppressFinalize(this);
         }
 
-        public void Clear() 
+        public void Clear()
         {
             (this as IDisposable).Dispose();
         }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -852,7 +852,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 SyndicationItem item = formatter.Item;
                 Assert.Empty(item.AttributeExtensions);
-                
+
                 Assert.Equal(3, item.Authors.Count);
 
                 SyndicationPerson firstAuthor = item.Authors[0];
@@ -983,7 +983,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal(DateTimeOffset.MinValue, item.PublishDate);
 
                 Assert.Null(item.SourceFeed);
-                
+
                 if (preserveAttributeExtensions)
                 {
                     Assert.Equal(4, item.Summary.AttributeExtensions.Count);
@@ -998,7 +998,7 @@ namespace System.ServiceModel.Syndication.Tests
                 }
                 Assert.Equal("summary_title", item.Summary.Text);
                 Assert.Equal("html", item.Summary.Type);
-    
+
                 if (preserveAttributeExtensions)
                 {
                     Assert.Equal(4, item.Title.AttributeExtensions.Count);

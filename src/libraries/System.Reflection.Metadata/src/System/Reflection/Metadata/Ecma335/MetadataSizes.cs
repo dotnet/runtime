@@ -66,12 +66,12 @@ namespace System.Reflection.Metadata.Ecma335
         public ImmutableArray<int> HeapSizes { get; }
 
         /// <summary>
-        /// Table row counts. 
+        /// Table row counts.
         /// </summary>
         public ImmutableArray<int> RowCounts { get; }
 
         /// <summary>
-        /// External table row counts. 
+        /// External table row counts.
         /// </summary>
         public ImmutableArray<int> ExternalRowCounts { get; }
 
@@ -363,7 +363,7 @@ namespace System.Reflection.Metadata.Ecma335
                     MetadataVersionPaddedLength +  // metadata version
                     sizeof(ushort) +               // storage header: reserved
                     sizeof(ushort) +               // stream count
-                    (IsStandaloneDebugMetadata ? StandalonePdbStreamHeaderSize : 0) + 
+                    (IsStandaloneDebugMetadata ? StandalonePdbStreamHeaderSize : 0) +
                     RegularStreamHeaderSizes +
                     (IsEncDelta ? EncDeltaMarkerStreamHeaderSize : 0);
             }
@@ -399,7 +399,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal int CalculateTableStreamHeaderSize()
         {
             int result = sizeof(int) +        // Reserved
-                         sizeof(short) +      // Version (major, minor)      
+                         sizeof(short) +      // Version (major, minor)
                          sizeof(byte) +       // Heap index sizes
                          sizeof(byte) +       // Bit width of RowId
                          sizeof(long) +       // Valid table mask
@@ -421,7 +421,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal int CalculateStandalonePdbStreamSize()
         {
-            int result = 
+            int result =
                 PdbIdSize +                                                         // PDB ID
                 sizeof(int) +                                                       // EntryPoint
                 sizeof(long) +                                                      // ReferencedTypeSystemTables

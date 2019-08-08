@@ -41,4 +41,3 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
     }
 }
-

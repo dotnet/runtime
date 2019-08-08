@@ -84,7 +84,7 @@ namespace System.Xml.Tests
             return newArr;
         }
 
-        // determines test cases, gets spec file from test cases attribute or from command line and 
+        // determines test cases, gets spec file from test cases attribute or from command line and
         // starts parsing of the spec file.
         // SpecFile passed as a parameter in the command line overrides local spec file defined in the attribute
         protected virtual void DetermineTestCases()
@@ -622,7 +622,7 @@ namespace System.Xml.Tests
             // process includes
             ProcessIncludes(filters, defaultSection, testModuleNode, masterList, xmlDriverParams);
 
-            // filter xPath 
+            // filter xPath
             string filterXPath = CombineXPath(filters);
 
             // loop through all test cases
@@ -655,7 +655,7 @@ namespace System.Xml.Tests
                     if (!CheckFilter(varParam, filterXPath))
                         continue;
 
-                    // create a new variation and add it to the current testCase 
+                    // create a new variation and add it to the current testCase
                     actVarCount++;
                     string varDescription = SelectDescription(varNode);
                     CXmlDriverVariation var = new CXmlDriverVariation((CXmlDriverScenario)testCase,

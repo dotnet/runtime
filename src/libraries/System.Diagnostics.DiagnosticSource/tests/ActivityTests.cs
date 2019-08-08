@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -215,7 +215,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests activity start and stop 
+        /// Tests activity start and stop
         /// Checks Activity.Current correctness, Id generation
         /// </summary>
         [Fact]
@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tests
             Span<byte> idBytes1 = stackalloc byte[16];
             Span<byte> idBytes2 = stackalloc byte[16];
 
-            // Empty Constructor 
+            // Empty Constructor
             string zeros = "00000000000000000000000000000000";
             ActivityTraceId emptyId = new ActivityTraceId();
             Assert.Equal(zeros, emptyId.ToHexString());
@@ -394,7 +394,7 @@ namespace System.Diagnostics.Tests
             Assert.True(!(newId3.Equals((object)emptyId)));
             Assert.NotEqual(newId3.GetHashCode(), emptyId.GetHashCode());
 
-            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).  
+            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).
             var dict = new Dictionary<ActivityTraceId, string>();
             for (int i = 0; i < 100; i++)
             {
@@ -409,9 +409,9 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(value, valueInDict);
                 ctr++;
             }
-            Assert.Equal(100, ctr);     // We got out what we put in.  
+            Assert.Equal(100, ctr);     // We got out what we put in.
 
-            // AsBytes and Byte constructor.  
+            // AsBytes and Byte constructor.
             newId2.CopyTo(idBytes2);
             ActivityTraceId newId2Clone = ActivityTraceId.CreateFromBytes(idBytes2);
             Assert.Equal(newId2.ToHexString(), newId2Clone.ToHexString());
@@ -423,12 +423,12 @@ namespace System.Diagnostics.Tests
             Assert.True(newId2.Equals((object)newId2Clone));
             Assert.Equal(newId2.GetHashCode(), newId2Clone.GetHashCode());
 
-            // String constructor and ToHexString().  
+            // String constructor and ToHexString().
             string idStr = "0123456789abcdef0123456789abcdef";
             ActivityTraceId id = ActivityTraceId.CreateFromString(idStr.AsSpan());
             Assert.Equal(idStr, id.ToHexString());
 
-            // Utf8 Constructor. 
+            // Utf8 Constructor.
             byte[] idUtf8 = Encoding.UTF8.GetBytes(idStr);
             ActivityTraceId id1 = ActivityTraceId.CreateFromUtf8String(idUtf8);
             Assert.Equal(idStr, id1.ToHexString());
@@ -444,7 +444,7 @@ namespace System.Diagnostics.Tests
             Span<byte> idBytes1 = stackalloc byte[8];
             Span<byte> idBytes2 = stackalloc byte[8];
 
-            // Empty Constructor 
+            // Empty Constructor
             string zeros = "0000000000000000";
             ActivitySpanId emptyId = new ActivitySpanId();
             Assert.Equal(zeros, emptyId.ToHexString());
@@ -480,7 +480,7 @@ namespace System.Diagnostics.Tests
             Assert.True(!(newId3.Equals((object)emptyId)));
             Assert.NotEqual(newId3.GetHashCode(), emptyId.GetHashCode());
 
-            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).  
+            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).
             var dict = new Dictionary<ActivitySpanId, string>();
             for (int i = 0; i < 100; i++)
             {
@@ -495,9 +495,9 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(value, valueInDict);
                 ctr++;
             }
-            Assert.Equal(100, ctr);     // We got out what we put in.  
+            Assert.Equal(100, ctr);     // We got out what we put in.
 
-            // AsBytes and Byte constructor.  
+            // AsBytes and Byte constructor.
             newId2.CopyTo(idBytes2);
             ActivitySpanId newId2Clone = ActivitySpanId.CreateFromBytes(idBytes2);
             Assert.Equal(newId2.ToHexString(), newId2Clone.ToHexString());
@@ -509,12 +509,12 @@ namespace System.Diagnostics.Tests
             Assert.True(newId2.Equals((object)newId2Clone));
             Assert.Equal(newId2.GetHashCode(), newId2Clone.GetHashCode());
 
-            // String constructor and ToHexString().  
+            // String constructor and ToHexString().
             string idStr = "0123456789abcdef";
             ActivitySpanId id = ActivitySpanId.CreateFromString(idStr.AsSpan());
             Assert.Equal(idStr, id.ToHexString());
 
-            // Utf8 Constructor. 
+            // Utf8 Constructor.
             byte[] idUtf8 = Encoding.UTF8.GetBytes(idStr);
             ActivitySpanId id1 = ActivitySpanId.CreateFromUtf8String(idUtf8);
             Assert.Equal(idStr, id1.ToHexString());
@@ -632,7 +632,7 @@ namespace System.Diagnostics.Tests
             Assert.True(IdIsW3CFormat(activity.Id));
             Assert.Equal(testString, activity.TraceStateString);
 
-            // Update child 
+            // Update child
             string childTestString = "ChildTestString";
             activity.TraceStateString = childTestString;
 
@@ -644,7 +644,7 @@ namespace System.Diagnostics.Tests
             string parentTestString = "newTestString";
             parent.TraceStateString = parentTestString;
 
-            // Confirm that parent sees update but child does not.  
+            // Confirm that parent sees update but child does not.
             Assert.Equal(childTestString, activity.TraceStateString);
             Assert.Equal(parentTestString, parent.TraceStateString);
         }
@@ -881,7 +881,7 @@ namespace System.Diagnostics.Tests
         {
             Activity activity;
 
-            // Set the 'Recorded' bit by using SetParentId with a -01 flags.  
+            // Set the 'Recorded' bit by using SetParentId with a -01 flags.
             activity = new Activity("activity1");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
             activity.Start();
@@ -894,7 +894,7 @@ namespace System.Diagnostics.Tests
             Assert.True(activity.Recorded);
             activity.Stop();
 
-            // Set the 'Recorded' bit by using SetParentId by using the TraceId, SpanId, ActivityTraceFlags overload 
+            // Set the 'Recorded' bit by using SetParentId by using the TraceId, SpanId, ActivityTraceFlags overload
             activity = new Activity("activity2");
             ActivityTraceId activityTraceId = ActivityTraceId.CreateRandom();
             activity.SetParentId(activityTraceId, ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
@@ -908,7 +908,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
 
             /****************************************************/
-            // Set the 'Recorded' bit explicitly after the fact.   
+            // Set the 'Recorded' bit explicitly after the fact.
             activity = new Activity("activity3");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity.Start();
@@ -926,7 +926,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
 
             /****************************************************/
-            // Confirm that that flags are propagated to children.  
+            // Confirm that that flags are propagated to children.
             activity = new Activity("activity4");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
             activity.Start();
@@ -967,16 +967,16 @@ namespace System.Diagnostics.Tests
             activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
             Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
-            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.  
+            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.
             activity.SetStartTime(startTime);
 
             activity.Start();
-            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.  
+            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.
             Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             Thread.Sleep(35);
 
-            activity.SetEndTime(DateTime.Now);      // Error does nothing because it is not UTC    
+            activity.SetEndTime(DateTime.Now);      // Error does nothing because it is not UTC
             Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             var stopTime = DateTime.UtcNow;
@@ -1004,14 +1004,14 @@ namespace System.Diagnostics.Tests
             //
             // Let's check that duration is 1sec - 2 * maximum DateTime.UtcNow error or bigger.
             // As both start and stop timestamps may have error.
-            // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
+            // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration)
             // that checks duration precision on netfx.
             Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - 2 * MaxClockErrorMSec, double.MaxValue);
         }
 
         /// <summary>
         /// Tests Activity stack: creates a parent activity and child activity
-        /// Verifies 
+        /// Verifies
         ///  - Activity.Parent and ParentId correctness
         ///  - Baggage propagated from parent
         ///  - Tags are not propagated
@@ -1072,7 +1072,7 @@ namespace System.Diagnostics.Tests
             activity.Start();
             var id = activity.Id;
 
-            activity.Start();       // Error already started.  Does nothing.  
+            activity.Start();       // Error already started.  Does nothing.
             Assert.Equal(id, activity.Id);
         }
 
@@ -1144,7 +1144,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
 
-                    // Confirm that duration is set. 
+                    // Confirm that duration is set.
                     Assert.NotNull(observer.Activity);
                     Assert.InRange(observer.Activity.Duration, TimeSpan.FromTicks(1), TimeSpan.MaxValue);
 

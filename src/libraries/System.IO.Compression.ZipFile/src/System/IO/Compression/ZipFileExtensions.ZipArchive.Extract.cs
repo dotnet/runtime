@@ -16,7 +16,7 @@ namespace System.IO.Compression
         /// entry has to the root of the archive. If a file to be archived has an invalid last modified time, the first datetime
         /// representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">destinationDirectoryName is null.</exception>
@@ -31,11 +31,11 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">destinationDirectoryName is in an invalid format. </exception>
         /// <exception cref="InvalidDataException">An archive entry was not found or was corrupt.
         /// -or- An archive entry has been compressed using a compression method that is not supported.</exception>
-        /// 
+        ///
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName) => 
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName) =>
             ExtractToDirectory(source, destinationDirectoryName, overwriteFiles: false);
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.IO.Compression
         /// entry has to the root of the archive. If a file to be archived has an invalid last modified time, the first datetime
         /// representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">destinationDirectoryName is null.</exception>
@@ -61,7 +61,7 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">destinationDirectoryName is in an invalid format. </exception>
         /// <exception cref="InvalidDataException">An archive entry was not found or was corrupt.
         /// -or- An archive entry has been compressed using a compression method that is not supported.</exception>
-        /// 
+        ///
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>

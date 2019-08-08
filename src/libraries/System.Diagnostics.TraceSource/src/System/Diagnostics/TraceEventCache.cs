@@ -52,9 +52,9 @@ namespace System.Diagnostics
             }
         }
 
-        public string Callstack 
+        public string Callstack
         {
-            get 
+            get
             {
                 if (_stackTrace == null)
                 {
@@ -65,13 +65,12 @@ namespace System.Diagnostics
             }
         }
 
-        public Stack LogicalOperationStack 
+        public Stack LogicalOperationStack
         {
-            get 
+            get
             {
                 return Trace.CorrelationManager.LogicalOperationStack;
             }
         }
     }
 }
-

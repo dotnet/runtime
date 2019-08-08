@@ -297,7 +297,7 @@ namespace System.Dynamic.Utils
             // examine possible conversions of element or type parameters it applies stricter rules.
 
             for(;;)
-            { 
+            {
                 if (!skipNonArray) // Skip if we just came from HasReferenceConversionTo and have just tested these
                 {
                     if (source.IsValueType | dest.IsValueType)

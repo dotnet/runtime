@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices.Tests
                 ptr[i] = (byte)(0x11 * (i + 1));
 
             HasFixedBuffer* original = (HasFixedBuffer*)ptr;
-            
+
             // Marshal the parent struct.
             var parentStructIntPtr = Marshal.AllocHGlobal(Marshal.SizeOf<NonBlittableContainingBuffer>());
             Marshal.StructureToPtr(str, parentStructIntPtr, false);
@@ -304,7 +304,7 @@ namespace System.Runtime.InteropServices.Tests
             public fixed int f[100];
             public string s;
         }
-        
+
         [StructLayout(LayoutKind.Explicit, Size = 1)]
         public struct OpaqueStruct
         {

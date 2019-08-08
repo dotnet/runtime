@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -140,7 +140,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 Assert.Equal(typeof(string), firstNameProperty.PropertyType);
                 Assert.True(firstNameProperty.IsReadOnly);
                 Assert.False(firstNameProperty.SupportsChangeEvents);
-                
+
                 Assert.Equal("LastName", lastNameProperty.DisplayName);
                 Assert.Equal(typeof(ClassWithMetadata), lastNameProperty.ComponentType);
                 Assert.Equal(typeof(string), lastNameProperty.PropertyType);
@@ -195,7 +195,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 Assert.Equal(typeof(string), firstNameProperty.PropertyType);
                 Assert.True(firstNameProperty.IsReadOnly);
                 Assert.False(firstNameProperty.SupportsChangeEvents);
-                
+
                 Assert.Equal("Last name", lastNameProperty.DisplayName);
                 Assert.Equal(typeof(ClassWithMetadataOnAnotherClass), lastNameProperty.ComponentType);
                 Assert.Equal(typeof(string), lastNameProperty.PropertyType);

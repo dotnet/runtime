@@ -12,7 +12,7 @@ namespace System.Net.Http
     internal static class WinHttpCertificateHelper
     {
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
-        
+
         // TODO: Issue #2165. Merge with similar code used in System.Net.Security move to Common/src//System/Net.
         public static void BuildChain(
             X509Certificate2 certificate,
@@ -61,16 +61,16 @@ namespace System.Net.Http
                 var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA();
                 eppStruct.cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA);
                 eppStruct.dwAuthType = Interop.Crypt32.AuthType.AUTHTYPE_SERVER;
-                
+
                 cppStruct.pvExtraPolicyPara = &eppStruct;
 
                 fixed (char* namePtr = hostName)
                 {
                     eppStruct.pwszServerName = namePtr;
-                    cppStruct.dwFlags = 
+                    cppStruct.dwFlags =
                         Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                         ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG;
-                        
+
                     var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
                     status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
                     if (Interop.Crypt32.CertVerifyCertificateChainPolicy(

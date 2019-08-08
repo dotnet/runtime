@@ -109,9 +109,9 @@ namespace System
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
         public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
-        
+
         // OpenSSL 1.1.1 and above.
-        public static bool SupportsTls13 => !IsWindows && !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);    
+        public static bool SupportsTls13 => !IsWindows && !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -139,7 +139,7 @@ namespace System
             {
                 return "OSX Version=" + m_osxProductVersion.Value.ToString();
             }
-            else 
+            else
             {
                 DistroInfo v = GetDistroInfo();
 

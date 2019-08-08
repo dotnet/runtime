@@ -27,7 +27,7 @@ namespace CoreXml.Test.XLinq
         private long _eCount = 0;    //element indexer
         private long _aCount = 0;    //attribute indexer
         private long _cCount = 0;    //Cdata indexer
-        private long _tCount = 0;    //Text indexer 
+        private long _tCount = 0;    //Text indexer
         private long _pCount = 0;    //PI Indexer
         private long _mCount = 0;    //Comment Indexer
 
@@ -248,7 +248,7 @@ namespace CoreXml.Test.XLinq
 
         /// <summary>
         /// This method is a convenience method and a shortcut to create an XML string. Each character in the pattern
-        /// maps to a particular Put/Open function and calls it for you. For e.g. XEAA/ will call PutDecl, OpenElement, 
+        /// maps to a particular Put/Open function and calls it for you. For e.g. XEAA/ will call PutDecl, OpenElement,
         /// PutAttribute, PutAttribute and CloseElement for you.
         /// The following is the list of all allowed characters and their function mappings :
         ///

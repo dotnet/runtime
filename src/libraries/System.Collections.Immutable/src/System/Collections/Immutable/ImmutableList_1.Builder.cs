@@ -782,7 +782,7 @@ namespace System.Collections.Immutable
             /// Reverses the order of the elements in the specified range.
             /// </summary>
             /// <param name="index">The zero-based starting index of the range to reverse.</param>
-            /// <param name="count">The number of elements in the range to reverse.</param> 
+            /// <param name="count">The number of elements in the range to reverse.</param>
             public void Reverse(int index, int count)
             {
                 Requires.Range(index >= 0, nameof(index));
@@ -1125,7 +1125,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private T[] _cachedContents;
 
-        /// <summary>   
+        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The list to display in the debugger</param>

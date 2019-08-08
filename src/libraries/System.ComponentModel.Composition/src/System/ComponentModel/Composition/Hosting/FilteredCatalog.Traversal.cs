@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependencies that 
+        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependencies that
         /// can be reached via imports that match the specified filter.
         /// </summary>
         /// <param name="importFilter">The import filter.</param>
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependents that 
+        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependents that
         /// can be reached via imports that match the specified filter.
         /// </summary>
         /// <param name="importFilter">The import filter.</param>
@@ -65,8 +65,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // we make sure that the underlyiong catalog cannot change while we are doing the trasversal
-            // After thaty traversal is done, the freeze is lifted, and the catalog is free to change, but the changes 
-            // cannot affect partitioning 
+            // After thaty traversal is done, the freeze is lifted, and the catalog is free to change, but the changes
+            // cannot affect partitioning
             FreezeInnerCatalog();
 
             try

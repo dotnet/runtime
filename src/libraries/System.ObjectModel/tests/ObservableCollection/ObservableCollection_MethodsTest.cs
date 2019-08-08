@@ -153,7 +153,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         /// <summary>
-        /// Tests that items can be moved throughout a collection whether from 
+        /// Tests that items can be moved throughout a collection whether from
         /// beginning to end, etc.
         /// </summary>
         [Fact]
@@ -191,7 +191,7 @@ namespace System.Collections.ObjectModel.Tests
 
         /// <summary>
         /// Tests that:
-        /// ArgumentOutOfRangeException is thrown when the source or destination 
+        /// ArgumentOutOfRangeException is thrown when the source or destination
         /// Index is >= collection.Count or Index < 0.
         /// </summary>
         /// <remarks>
@@ -484,7 +484,7 @@ namespace System.Collections.ObjectModel.Tests
         #region Helper Methods
 
         /// <summary>
-        /// Will perform an Add or Insert on the given Collection depending on whether the 
+        /// Will perform an Add or Insert on the given Collection depending on whether the
         /// insertIndex is null or not. If it is null, will Add, otherwise, will Insert.
         /// </summary>
         public void AddOrInsertItemTest(ObservableCollection<string> collection, string itemToAdd, int? insertIndex = null)

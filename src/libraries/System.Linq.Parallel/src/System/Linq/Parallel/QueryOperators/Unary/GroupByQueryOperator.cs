@@ -169,7 +169,7 @@ namespace System.Linq.Parallel
         }
 
         //-----------------------------------------------------------------------------------
-        // Override of the query operator base class's Open method. 
+        // Override of the query operator base class's Open method.
         //
         internal override QueryResults<IGrouping<TGroupKey, TElement>> Open(QuerySettings settings, bool preferStriping)
         {
@@ -703,7 +703,7 @@ namespace System.Linq.Parallel
         }
 
         //---------------------------------------------------------------------------------------
-        // Access to value enumerators. 
+        // Access to value enumerators.
         //
 
         IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator()

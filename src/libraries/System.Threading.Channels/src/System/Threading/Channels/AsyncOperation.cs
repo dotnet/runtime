@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ namespace System.Threading.Channels
         /// <summary>Sentinel object used in a field to indicate the operation is available for use.</summary>
         protected static readonly Action<object> s_availableSentinel = AvailableSentinel; // named method to help with debugging
         private static void AvailableSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(AvailableSentinel)} invoked with {s}");
-        
+
         /// <summary>Sentinel object used in a field to indicate the operation has completed.</summary>
         protected static readonly Action<object> s_completedSentinel = CompletedSentinel; // named method to help with debugging
         private static void CompletedSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(CompletedSentinel)} invoked with {s}");
@@ -133,7 +133,7 @@ namespace System.Threading.Channels
         /// a racing awaiter could see the continuation set before the state has transitioned
         /// to completed and could end up calling GetResult in an incomplete state.  And if we
         /// only considered the continuation, then we have issues if OnCompleted is used before
-        /// the operation completes, as the continuation will be 
+        /// the operation completes, as the continuation will be
         /// </remarks>
         internal bool IsCompleted => ReferenceEquals(_continuation, s_completedSentinel);
 
@@ -305,7 +305,7 @@ namespace System.Threading.Channels
         /// 1. To avoid leaking a registration into a token, so it must be done prior to completing the operation.
         /// 2. To avoid having to worry about concurrent completion; once invoked, the caller can be guaranteed
         /// that no one else will try to complete the operation (assuming the caller is properly constructed
-        /// and themselves guarantees only a single completer other than through cancellation). 
+        /// and themselves guarantees only a single completer other than through cancellation).
         /// </remarks>
         public void UnregisterCancellation() => _registration.Dispose();
 

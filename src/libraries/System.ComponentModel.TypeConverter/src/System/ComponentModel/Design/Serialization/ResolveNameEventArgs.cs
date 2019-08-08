@@ -31,4 +31,3 @@ namespace System.ComponentModel.Design.Serialization
         public object Value { get; set; }
     }
 }
-

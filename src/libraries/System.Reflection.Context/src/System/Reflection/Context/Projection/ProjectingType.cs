@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -107,7 +107,7 @@ namespace System.Reflection.Context.Projection
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            StringComparison comparisonType = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase 
+            StringComparison comparisonType = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase
                 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
             List<MemberInfo> matchingMembers = new List<MemberInfo>();
@@ -131,7 +131,7 @@ namespace System.Reflection.Context.Projection
                 matchingMembers.AddRange(GetProperties(bindingAttr));
 
             matchingMembers.RemoveAll(member => !string.Equals(member.Name, name, comparisonType));
-            
+
             return matchingMembers.ToArray();
         }
 

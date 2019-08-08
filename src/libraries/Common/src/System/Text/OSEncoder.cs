@@ -36,10 +36,10 @@ namespace System.Text
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
-            
+
             if (chars.Length == 0 && (_charLeftOver == NULL_CHAR || !flush))
                 return 0;
-            
+
             fixed (char* pChar = chars)
             {
                 char dummyChar;
@@ -66,9 +66,9 @@ namespace System.Text
 
             if (count - index > 0)
                 result += OSEncoding.WideCharToMultiByte(
-                                        _encoding.CodePage, chars + index, 
+                                        _encoding.CodePage, chars + index,
                                         count - index,
-                                        bytes == null ? null : bytes + result, 
+                                        bytes == null ? null : bytes + result,
                                         bytes == null ? 0 : byteCount - result);
 
             return result;
@@ -81,7 +81,7 @@ namespace System.Text
 
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            
+
             bool excludeLastChar = count > 0 && !flush && char.IsHighSurrogate(chars[count - 1]);
 
             if (excludeLastChar)
@@ -116,13 +116,13 @@ namespace System.Text
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
-            
+
             if (bytes.Length == 0)
                 return 0;
 
             if (charCount == 0 && (_charLeftOver == NULL_CHAR || !flush))
                 return 0;
-            
+
             fixed (char* pChars = chars)
             fixed (byte* pBytes = &bytes[0])
             {
@@ -189,7 +189,7 @@ namespace System.Text
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
-            
+
             if (bytes.Length == 0 || (chars.Length == 0 && (_charLeftOver == NULL_CHAR || !flush)))
             {
                 bytesUsed = 0;
@@ -203,7 +203,7 @@ namespace System.Text
             {
                 char dummyChar;
                 char* pBuffer = pChars == null ? &dummyChar : pChars + charIndex;
-                
+
                 Convert(pBuffer, charCount, pBytes + byteIndex, byteCount, flush, out charsUsed, out bytesUsed, out completed);
             }
         }
@@ -216,14 +216,14 @@ namespace System.Text
                 throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            
+
             int count = charCount;
             while (count > 0)
             {
                 int returnedByteCount = GetByteCount(chars, count, flush);
                 if (returnedByteCount <= byteCount)
                     break;
-                
+
                 count /= 2;
             }
 

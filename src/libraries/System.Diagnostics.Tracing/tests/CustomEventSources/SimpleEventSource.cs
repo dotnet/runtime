@@ -12,7 +12,7 @@ using System.Diagnostics.Tracing;
 #endif
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
-// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind 
+// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind
 
 namespace SdtEventSources
 {

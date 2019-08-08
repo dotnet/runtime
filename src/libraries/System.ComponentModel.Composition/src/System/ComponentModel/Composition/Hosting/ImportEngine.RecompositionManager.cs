@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
                         return true;
                     }
                 }
-               
+
                 return false;
             }
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -162,7 +162,7 @@ namespace System.IO.Tests.Enumeration
         public void TrimmedPathsCopyTo_Windows()
         {
             // Trailing spaces and periods are eaten when normalizing in Windows, making them impossible
-            // to access without using the \\?\ device syntax. We should, however, be able to copy them 
+            // to access without using the \\?\ device syntax. We should, however, be able to copy them
             // without the special syntax from the info class when enumerating.
 
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
@@ -231,7 +231,7 @@ namespace System.IO.Tests.Enumeration
         public void TrimmedPathsMoveTo_Windows()
         {
             // Trailing spaces and periods are eaten when normalizing in Windows, making them impossible
-            // to access without using the \\?\ device syntax. We should, however, be able to move them 
+            // to access without using the \\?\ device syntax. We should, however, be able to move them
             // without the special syntax from the info class when enumerating.
 
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());

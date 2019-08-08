@@ -39,10 +39,10 @@ namespace System.Reflection.Metadata
 
             // No table can have more than 2^24 rows.
             // User String heap is also limited by 2^24 since user strings have tokens in IL.
-            // We limit the size of #Blob, #String and #GUID heaps to 2^29 (max compressed integer) in order 
-            // to keep the sizes of corresponding handles to 32 bit. As a result we don't support reading metadata 
+            // We limit the size of #Blob, #String and #GUID heaps to 2^29 (max compressed integer) in order
+            // to keep the sizes of corresponding handles to 32 bit. As a result we don't support reading metadata
             // files with heaps larger than 0.5GB.
-            Debug.Assert(IsHeapHandle && value <= HeapHandleType.OffsetMask || 
+            Debug.Assert(IsHeapHandle && value <= HeapHandleType.OffsetMask ||
                          !IsHeapHandle && value <= TokenTypeIds.RIDMask);
         }
 
@@ -188,7 +188,7 @@ namespace System.Reflection.Metadata
         internal static int Compare(Handle left, Handle right)
         {
             // All virtual tokens will be sorted after non-virtual tokens.
-            // The order of handles that differ in kind is undefined, 
+            // The order of handles that differ in kind is undefined,
             // but we include it so that we ensure consistency with == and != operators.
             return ((long)(uint)left._value | (long)left._vType << 32).CompareTo((long)(uint)right._value | (long)right._vType << 32);
         }

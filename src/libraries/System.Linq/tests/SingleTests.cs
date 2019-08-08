@@ -41,7 +41,7 @@ namespace System.Linq.Tests
         public void EmptyIList()
         {
             int[] source = { };
-            
+
             Assert.Throws<InvalidOperationException>(() => source.Single());
         }
 
@@ -100,7 +100,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 4 };
             int expected = 4;
-            
+
             Assert.Equal(expected, source.Single(i => i % 2 == 0));
         }
 
@@ -108,7 +108,7 @@ namespace System.Linq.Tests
         public void SingleElementPredicateFalse()
         {
             int[] source = { 3 };
-            
+
             Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
         }
 

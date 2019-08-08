@@ -28,7 +28,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2, 3, PartitionerType.IListBalancedOOB, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.None)]
         [InlineData(2, 97, PartitionerType.IListBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.Stop)]
         [InlineData(97, 1, PartitionerType.IListBalancedOOB, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.Stop)]
-        
+
         [InlineData(10, 3, PartitionerType.RangePartitioner, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.None)]
         [InlineData(10, 97, PartitionerType.RangePartitioner, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.Stop)]
         [InlineData(1, -1, PartitionerType.RangePartitioner, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.Stop)]

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -298,7 +298,7 @@ namespace HttpStress
                     Console.ResetColor();
                     Console.WriteLine(_failures[i].ToString("N0"));
                 }
-                
+
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write("\t    TOTAL".PadRight(31));
                 Console.ResetColor();

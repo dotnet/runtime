@@ -228,7 +228,7 @@ namespace System.Data.Odbc.Tests
                             dataType = OdbcType.VarChar;
                             break;
                     }
-                    
+
                     command.Parameters.Add("@v1", dataType, procDataSize);
                     command.Parameters.Add("@v2", dataType, procDataSize);
                     command.Parameters.Add("@v3", OdbcType.Int);

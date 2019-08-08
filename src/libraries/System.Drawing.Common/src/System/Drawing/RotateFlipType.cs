@@ -27,4 +27,3 @@ namespace System.Drawing
         Rotate270FlipXY = Rotate90FlipNone
     }
 }
-

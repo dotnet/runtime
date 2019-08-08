@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
-        private static object GetProperty(SimpleTestClass testClass, string propertyName) 
+        private static object GetProperty(SimpleTestClass testClass, string propertyName)
             => testClass.GetType().GetProperty(propertyName).GetValue(testClass, null);
 
         [Theory]
@@ -305,7 +305,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             get
             {
-                // The rationale for setting macCapacity: 
+                // The rationale for setting macCapacity:
                 // e.g. for byte, including 0, we have byte.MaxValue + 1 numbers that can be represented by byte
                 yield return new object[] { 1, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };
                 yield return new object[] { 2, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };

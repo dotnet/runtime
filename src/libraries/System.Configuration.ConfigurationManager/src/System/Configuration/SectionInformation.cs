@@ -288,7 +288,7 @@ namespace System.Configuration
         }
 
         // Is the Definition Allowed at this point.  This is all depending
-        // on the Definition that is allowed, and what context we are 
+        // on the Definition that is allowed, and what context we are
         // writing the file
         private bool IsDefinitionAllowed
             => (_configRecord == null) || _configRecord.IsDefinitionAllowed(_allowDefinition, _allowExeDefinition);
@@ -388,7 +388,7 @@ namespace System.Configuration
 
         internal string RawXml { get; set; }
 
-        // True if the section will be serialized to the current hierarchy level, regardless of 
+        // True if the section will be serialized to the current hierarchy level, regardless of
         // ConfigurationSaveMode.
         public bool ForceSave
         {
@@ -496,9 +496,9 @@ namespace System.Configuration
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsection_when_not_attached);
         }
 
-        // VerifyIsEditable 
+        // VerifyIsEditable
         //
-        // Verify the section is Editable.  
+        // Verify the section is Editable.
         // It may not be editable for the following reasons:
         //   - We are in Runtime mode, not Design time
         //   - The section is not attached to a _configRecord.

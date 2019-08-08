@@ -1633,4 +1633,3 @@ namespace System.Data.Common
         protected abstract void SetRowUpdatingHandler(DbDataAdapter adapter);
     }
 }
-

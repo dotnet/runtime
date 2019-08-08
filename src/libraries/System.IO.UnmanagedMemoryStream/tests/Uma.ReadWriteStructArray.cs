@@ -33,7 +33,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(capacity, structArr, 0, 1));
             }
         }
-        
+
         [Fact]
         public static void UmaReadWriteStructArray_Closed()
         {

@@ -122,9 +122,9 @@ namespace System.Diagnostics
             }
         }
 
-        public StringDictionary Attributes 
+        public StringDictionary Attributes
         {
-            get 
+            get
             {
                 Initialize();
                 if (_attributes == null)

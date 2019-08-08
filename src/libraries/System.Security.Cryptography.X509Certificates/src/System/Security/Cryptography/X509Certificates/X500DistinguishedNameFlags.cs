@@ -24,4 +24,3 @@ namespace System.Security.Cryptography.X509Certificates
         ForceUTF8Encoding = 0x4000,
     }
 }
-

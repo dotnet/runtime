@@ -86,7 +86,7 @@ namespace Microsoft.SqlServer.Server
         // "By reference" accessors
         //    May hook to buffer.
         //    Semantics guarantee is that as long as the object exposing the accessor is not logically
-        //    moved to a new set of values and the overall state (open/closed) isn't changed, it will not 
+        //    moved to a new set of values and the overall state (open/closed) isn't changed, it will not
         //    change the underlying value returned and continue to allow access to it.
         //
         //    Example: GetSqlCharsRef called on an event stream value.  The back-end optimizes by re-using

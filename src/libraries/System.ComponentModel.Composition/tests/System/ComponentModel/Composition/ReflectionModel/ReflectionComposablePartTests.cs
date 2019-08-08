@@ -145,8 +145,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             var part = CreatePart(new MySharedPartExport());
 
-            // Dev10:484204 - This used to cause a failure but after we made 
-            // ReflectionComposablePart internal we needed to back remove this 
+            // Dev10:484204 - This used to cause a failure but after we made
+            // ReflectionComposablePart internal we needed to back remove this
             // validation for post imports to make declarative composition work.
             //part.Activate().VerifyFailure(CompositionIssueId.ImportNotSetOnPart);
             part.Activate();
@@ -393,8 +393,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             var definition = part.ExportDefinitions.First();
 
-            // Dev10:484204 - This used to cause a failure but after we made 
-            // ReflectionComposablePart internal we needed to back remove this 
+            // Dev10:484204 - This used to cause a failure but after we made
+            // ReflectionComposablePart internal we needed to back remove this
             // validation for post imports to make declarative composition work.
             CompositionAssert.ThrowsError(ErrorId.ImportNotSetOnPart, () =>
             {

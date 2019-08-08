@@ -32,13 +32,13 @@ namespace System.Tests
         public void BaseDirectory_Same_As_AppContext()
         {
             Assert.Equal(AppDomain.CurrentDomain.BaseDirectory, AppContext.BaseDirectory);
-        } 
+        }
 
         [Fact]
         public void RelativeSearchPath_Is_Null()
         {
             Assert.Null(AppDomain.CurrentDomain.RelativeSearchPath);
-        } 
+        }
 
         [Fact]
         public void TargetFrameworkTest()
@@ -48,7 +48,7 @@ namespace System.Tests
             {
                 targetFrameworkName = ".NETCore,Version=v5.0";
             }
-            
+
             RemoteExecutor.Invoke((_targetFrameworkName) => {
                 Assert.Contains(_targetFrameworkName, AppContext.TargetFrameworkName);
             }, targetFrameworkName).Dispose();
@@ -101,12 +101,12 @@ namespace System.Tests
             Assert.True(System.IO.File.Exists("success.txt"));
         }
 
-        static void NotExpectedToBeCalledHandler(object sender, UnhandledExceptionEventArgs args) 
+        static void NotExpectedToBeCalledHandler(object sender, UnhandledExceptionEventArgs args)
         {
             Assert.True(false, "UnhandledException handler not expected to be called");
         }
 
-        static void MyHandler(object sender, UnhandledExceptionEventArgs args) 
+        static void MyHandler(object sender, UnhandledExceptionEventArgs args)
         {
             File.Create("success.txt");
         }
@@ -139,19 +139,19 @@ namespace System.Tests
                 Assert.Equal(1, AppDomain.CurrentDomain.Id);
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
-        }        
+        }
 
         [Fact]
         public void IsFullyTrusted()
         {
             Assert.True(AppDomain.CurrentDomain.IsFullyTrusted);
-        }        
+        }
 
         [Fact]
         public void IsHomogenous()
         {
             Assert.True(AppDomain.CurrentDomain.IsHomogenous);
-        }        
+        }
 
         [Fact]
         public void FirstChanceException_Add_Remove()
@@ -195,7 +195,7 @@ namespace System.Tests
 
         class FirstChanceTestException : Exception
         {
-            public FirstChanceTestException(string message) : base(message) 
+            public FirstChanceTestException(string message) : base(message)
             { }
         }
 
@@ -279,7 +279,7 @@ namespace System.Tests
 
             Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
             Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }));
-        }        
+        }
 
         [Fact]
         public void GetData_SetData()
@@ -370,7 +370,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.Load(byte[])")] 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.Load(byte[])")]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -731,7 +731,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]       
+        [Fact]
         public void SetThreadPrincipal()
         {
             RemoteExecutor.Invoke(() => {
@@ -758,7 +758,7 @@ namespace System.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
                 File.Copy("TestAppOutsideOfTPA.exe", destTestAssemblyPath, false);
             }
-        }        
+        }
     }
 }
 

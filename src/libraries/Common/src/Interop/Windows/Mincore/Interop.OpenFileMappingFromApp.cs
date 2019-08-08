@@ -12,8 +12,8 @@ internal partial class Interop
     {
         [DllImport(Libraries.Memory_L1_3, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeMemoryMappedFileHandle OpenFileMappingFromApp(
-            int DesiredAccess, 
-            [MarshalAs(UnmanagedType.Bool)] bool InheritHandle, 
+            int DesiredAccess,
+            [MarshalAs(UnmanagedType.Bool)] bool InheritHandle,
             string Name);
     }
 }

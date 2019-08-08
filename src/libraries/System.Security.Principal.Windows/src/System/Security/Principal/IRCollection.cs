@@ -108,7 +108,7 @@ namespace System.Security.Principal
         }
 
         #endregion
-        
+
         #region IEnumerable<IdentityReference> implementation
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -207,9 +207,9 @@ namespace System.Security.Principal
                 else
                 {
                     //
-                    // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
+                    // Rare case that we have defined a type of identity reference and not included it in the code logic above.
                     // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
-                    // 
+                    //
                     Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                     throw new NotSupportedException();
                 }
@@ -269,9 +269,9 @@ namespace System.Security.Principal
                     else
                     {
                         //
-                        // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
+                        // Rare case that we have defined a type of identity reference and not included it in the code logic above.
                         // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
-                        // 
+                        //
                         Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                         throw new NotSupportedException();
                     }
@@ -304,7 +304,7 @@ namespace System.Security.Principal
             if (forceSuccess && someFailed)
             {
                 //
-                // Need to throw an exception here and provide information regarding 
+                // Need to throw an exception here and provide information regarding
                 // which identity references could not be translated to the target type
                 //
 
@@ -362,9 +362,9 @@ namespace System.Security.Principal
                     else
                     {
                         //
-                        // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
+                        // Rare case that we have defined a type of identity reference and not included it in the code logic above.
                         // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
-                        // 
+                        //
                         Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                         throw new NotSupportedException();
                     }

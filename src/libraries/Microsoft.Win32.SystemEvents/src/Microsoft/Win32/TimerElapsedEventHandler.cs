@@ -9,4 +9,3 @@ namespace Microsoft.Win32
     /// </devdoc>
     public delegate void TimerElapsedEventHandler(object sender, TimerElapsedEventArgs e);
 }
-

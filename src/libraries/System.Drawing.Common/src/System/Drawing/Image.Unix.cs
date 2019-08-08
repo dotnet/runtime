@@ -21,10 +21,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -71,7 +71,7 @@ namespace System.Drawing
             return CreateFromHandle(imagePtr);
         }
 
-        // See http://support.microsoft.com/default.aspx?scid=kb;en-us;831419 for performance discussion    
+        // See http://support.microsoft.com/default.aspx?scid=kb;en-us;831419 for performance discussion
         public static Image FromStream(Stream stream, bool useEmbeddedColorManagement, bool validateImageData)
         {
             return LoadFromStream(stream, false);
@@ -192,7 +192,7 @@ namespace System.Drawing
             return imagePtr;
         }
 
-        // non-static    
+        // non-static
         public RectangleF GetBounds(ref GraphicsUnit pageUnit)
         {
             RectangleF source;

@@ -33,7 +33,7 @@ namespace System.Data.OleDb.Tests
                 {
                     providerNames.Add((string)row[providersRegistered]);
                 }
-                // skip if x86 or if the expected driver not available 
+                // skip if x86 or if the expected driver not available
                 IsAvailable = !PlatformDetection.Is32BitProcess && providerNames.Contains(ExpectedProviderName);
                 if (!CultureInfo.CurrentCulture.Name.Equals("en-US", StringComparison.OrdinalIgnoreCase))
                 {

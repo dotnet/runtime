@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Equal(type.CreateTypeInfo(), createdType.GetTypeInfo());
         }
-        
+
         [Fact]
         public void CreateType_NestedType()
         {

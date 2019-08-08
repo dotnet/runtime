@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -92,11 +92,11 @@ namespace System.Net.Http.Tests
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
             string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
             if (match != null)
-            { 
+            {
                 Assert.Matches(match, parameter);
             }
             if (doesNotMatch != null)
-            { 
+            {
                 Assert.DoesNotMatch(doesNotMatch, parameter);
             }
             Assert.Equal(fieldCount, parameter.Split(',').Length);

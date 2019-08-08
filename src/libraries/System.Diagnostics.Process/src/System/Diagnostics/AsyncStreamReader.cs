@@ -6,7 +6,7 @@
 **
 ** Class:  AsyncStreamReader
 **
-** Purpose: For reading text from streams using a particular 
+** Purpose: For reading text from streams using a particular
 ** encoding in an asynchronous manner used by the process class
 **
 **
@@ -151,7 +151,7 @@ namespace System.Diagnostics
             int lineStart = 0;
             int len = _sb.Length;
 
-            // skip a beginning '\n' character of new block if last block ended 
+            // skip a beginning '\n' character of new block if last block ended
             // with '\r'
             if (_bLastCarriageReturn && (len > 0) && _sb[0] == '\n')
             {
@@ -219,7 +219,7 @@ namespace System.Diagnostics
                 // Keep going until we're out of data to process.
                 while (true)
                 {
-                    // Get the next line (if there isn't one, we're done) and 
+                    // Get the next line (if there isn't one, we're done) and
                     // invoke the user's callback with it.
                     string line;
                     lock (_messageQueue)

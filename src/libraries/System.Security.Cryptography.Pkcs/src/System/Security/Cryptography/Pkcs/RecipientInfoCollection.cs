@@ -100,5 +100,3 @@ namespace System.Security.Cryptography.Pkcs
         private readonly RecipientInfo[] _recipientInfos;
     }
 }
-
-

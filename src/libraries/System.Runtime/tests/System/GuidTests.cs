@@ -133,9 +133,9 @@ namespace System.Tests
                 Array.Copy(bytes, 0, random, i * GuidSize, GuidSize);
             }
 
-            // Verify the randomness of the data in the array. Guid has some small bias in it 
+            // Verify the randomness of the data in the array. Guid has some small bias in it
             // due to several bits fixed based on the format, but that bias is small enough and
-            // the variability allowed by VerifyRandomDistribution large enough that we don't do 
+            // the variability allowed by VerifyRandomDistribution large enough that we don't do
             // anything special for it.
             RandomDataGenerator.VerifyRandomDistribution(random);
         }
@@ -473,9 +473,9 @@ namespace System.Tests
 
             yield return new object[] { "(dddddddd-dddd-dddd-dddd-dddddddd}", typeof(FormatException) }; // 8-4-4-4-8 with leading parenthesis and trailing brace
             yield return new object[] { "{dddddddd-dddd-dddd-dddd-dddddddd)", typeof(FormatException) }; // 8-4-4-4-8 with trailing parenthesis and leading brace
-            
+
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} - missing group
-            
+
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without a trailing brace
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without a trailing brace
 
@@ -485,12 +485,12 @@ namespace System.Tests
 
             yield return new object[] { "(0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd))", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} with parentheses
             yield return new object[] { "(0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd})", typeof(FormatException) };// 8-4-4-{2-2-2-2-2-2-2-2} with parentheses
-            
+
             yield return new object[] { "{0xdddddddd 0xdddd 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(OverflowException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
             yield return new object[] { "{0xdddddddd, 0xdddd 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
             yield return new object[] { "{0xdddddddd, 0xdddd 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-            
+
             yield return new object[] { "{dddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without 0x prefix
             yield return new object[] { "{0xdddddddd, dddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without 0x prefix
             yield return new object[] { "{0xdddddddd, 0xdddd, dddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without 0x prefix

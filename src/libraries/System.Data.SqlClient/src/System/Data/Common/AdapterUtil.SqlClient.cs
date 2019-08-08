@@ -321,7 +321,7 @@ namespace System.Data.Common
         {
             return Argument(SR.GetString(SR.MDF_InvalidXmlInvalidValue, collectionName, columnName));
         }
-        
+
         internal static Exception CollectionNameIsNotUnique(string collectionName)
         {
             return Argument(SR.GetString(SR.MDF_CollectionNameISNotUnique, collectionName));

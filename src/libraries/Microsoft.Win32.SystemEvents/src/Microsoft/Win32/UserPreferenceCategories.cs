@@ -46,7 +46,7 @@ namespace Microsoft.Win32
         Icon = 5,
 
         /// <devdoc>
-        ///    <para> 
+        ///    <para>
         ///       Specifies user preferences for keyboard settings,
         ///       such as the keyboard repeat rate.</para>
         /// </devdoc>
@@ -107,4 +107,3 @@ namespace Microsoft.Win32
         VisualStyle = 14,
     }
 }
-

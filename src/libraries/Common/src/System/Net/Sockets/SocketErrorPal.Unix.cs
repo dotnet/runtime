@@ -131,8 +131,8 @@ namespace System.Net.Sockets
         internal static SocketError GetSocketErrorForNativeError(Interop.Error errno)
         {
             SocketError result;
-            return s_nativeErrorToSocketError.TryGetValue(errno, out result) ? 
-                result : 
+            return s_nativeErrorToSocketError.TryGetValue(errno, out result) ?
+                result :
                 SocketError.SocketError; // unknown native error, just treat it as a generic SocketError
         }
 

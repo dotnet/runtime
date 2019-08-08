@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.Tests
             GCHandle handle = GCHandle.Alloc(value);
             ValidateGCHandle(handle, GCHandleType.Normal, value);
         }
-        
+
         public static IEnumerable<object[]> Alloc_Type_TestData()
         {
             foreach (object[] data in Alloc_TestData())

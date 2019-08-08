@@ -35,7 +35,7 @@ internal static partial class Interop
         // Returns shared pointers, should not be tracked as a SafeHandle.
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjNid2Obj")]
         internal static extern IntPtr ObjNid2Obj(int nid);
-        
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1ObjectFree")]
         internal static extern void Asn1ObjectFree(IntPtr o);
 

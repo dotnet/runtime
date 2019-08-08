@@ -18,10 +18,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -297,7 +297,7 @@ namespace MonoTests.System.Drawing
             FormatTest(PixelFormat.Format32bppArgb);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]     
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884)]
         public void Format32bppRgb()
         {
@@ -900,7 +900,7 @@ namespace MonoTests.System.Drawing
             return new BinaryFormatter().Deserialize(s);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]        
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844)]
         public void Serialize_Icon()
         {
@@ -1550,4 +1550,3 @@ namespace MonoTests.System.Drawing
         }
     }
 }
-

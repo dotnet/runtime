@@ -131,7 +131,7 @@ namespace System.Xml.Tests
     }
 
     ////////////////////////////////////////////////////////////////
-    // Common interface for creating different readers in derived 
+    // Common interface for creating different readers in derived
     // modules
     ////////////////////////////////////////////////////////////////
     public abstract class ReaderFactory

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -225,7 +225,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.Null(request.ServiceName);
         }
-        
+
         [Fact]
         public async Task RequestTraceIdentifier_GetWindows_ReturnsExpected()
         {
@@ -319,7 +319,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await GetRequest("POST", null, null);
             IAsyncResult beginGetClientCertificateResult = request.BeginGetClientCertificate(null, null);
             request.EndGetClientCertificate(beginGetClientCertificateResult);
-                
+
             Assert.Throws<InvalidOperationException>(() => request.EndGetClientCertificate(beginGetClientCertificateResult));
         }
 

@@ -48,11 +48,11 @@ namespace System.Transactions
 
         /// <summary>
         /// This is the PromoterType value that indicates that the transaction is promoting to MSDTC.
-        /// 
+        ///
         /// If using the variation of Transaction.EnlistPromotableSinglePhase that takes a PromoterType and the
-        /// ITransactionPromoter being used promotes to MSDTC, then this is the value that should be 
+        /// ITransactionPromoter being used promotes to MSDTC, then this is the value that should be
         /// specified for the PromoterType parameter to EnlistPromotableSinglePhase.
-        /// 
+        ///
         /// If using the variation of Transaction.EnlistPromotableSinglePhase that assumes promotion to MSDTC and
         /// it that returns false, the caller can compare this value with Transaction.PromoterType to
         /// verify that the transaction promoted, or will promote, to MSDTC. If the Transaction.PromoterType
@@ -217,7 +217,7 @@ namespace System.Transactions
             }
 
             DistributedTransaction dTx = GetDistributedTransactionFromTransmitterPropagationToken(propagationToken);
-            
+
             // If a transaction is found then FindOrCreate will Dispose the distributed transaction created.
             Transaction returnValue = TransactionManager.FindOrCreatePromotedTransaction(txId, dTx);
 

@@ -683,7 +683,7 @@ namespace System.Data
             }
             else
             {
-                iDest = destination.Tables.IndexOf(Table.TableName, Table.Namespace, false); // pass false for last param 
+                iDest = destination.Tables.IndexOf(Table.TableName, Table.Namespace, false); // pass false for last param
                 // to be backward compatable, otherwise meay cause new exception
             }
 
@@ -699,7 +699,7 @@ namespace System.Data
             }
             else
             {
-                iDest = destination.Tables.IndexOf(RelatedTable.TableName, RelatedTable.Namespace, false);// pass false for last param 
+                iDest = destination.Tables.IndexOf(RelatedTable.TableName, RelatedTable.Namespace, false);// pass false for last param
             }
             if (iDest < 0)
             {

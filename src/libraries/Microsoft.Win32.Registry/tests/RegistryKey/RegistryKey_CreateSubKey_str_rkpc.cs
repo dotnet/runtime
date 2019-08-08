@@ -30,7 +30,7 @@ namespace Microsoft.Win32.RegistryTests
 
                 rk.SetValue(testStringValueName, testStringValue);
                 Assert.Equal(2, rk.ValueCount);
-                
+
                 Assert.Equal(testValue, rk.GetValue(testValueName));
                 Assert.Equal(testStringValue, rk.GetValue(testStringValueName).ToString());
             }

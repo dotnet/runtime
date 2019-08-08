@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -30,7 +30,7 @@ namespace System.Text.Json
         ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
         ///     the start of the value.
         ///   </para>
-        /// 
+        ///
         ///   <para>
         ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown the reader is reset to
@@ -41,7 +41,7 @@ namespace System.Text.Json
         ///     This method makes a copy of the data the reader acted on, so there is no caller
         ///     requirement to maintain data integrity beyond the return of this method.
         ///   </para>
-        ///   
+        ///
         ///   <para>
         ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
@@ -77,7 +77,7 @@ namespace System.Text.Json
         ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
         ///     the start of the value.
         ///   </para>
-        /// 
+        ///
         ///   <para>
         ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown the reader is reset to

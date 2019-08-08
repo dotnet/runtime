@@ -55,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // free the buffer
-                    // what to do with error code?? 
+                    // what to do with error code??
                     if (pDomainControllerInfo != IntPtr.Zero)
                     {
                         result = NativeMethods.NetApiBufferFree(pDomainControllerInfo);
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ArrayList dcs = new ArrayList();
 
             //
-            // this api obtains the list of DCs/GCs based on dns records. The DCs/GCs that have registered 
+            // this api obtains the list of DCs/GCs based on dns records. The DCs/GCs that have registered
             // non site specific records for the domain/forest are returned. Additonally DCs/GCs that have registered site specific records
             // (site is either specified or defaulted to the site of the local machine) are also returned in this list.
             //
@@ -104,7 +104,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
                 }
             }
-        
+
             // this will get both the non site specific and the site specific records
             allDCs = DnsGetDcWrapper(domainName, siteName, dcFlags);
 
@@ -207,7 +207,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // construct the record name
             if ((siteName != null) && (!(siteName.Length == 0)))
             {
-                // only looking for domain controllers / global catalogs within a 
+                // only looking for domain controllers / global catalogs within a
                 // particular site
                 recordName = recordName + siteName + "._sites.";
             }

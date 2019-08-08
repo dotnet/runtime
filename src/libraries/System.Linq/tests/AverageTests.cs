@@ -68,7 +68,7 @@ namespace System.Linq.Tests
             Func<float?, float?> selector = null;
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().Average(selector));
         }
-        
+
         [Fact]
         public void NullableFloat_WithSelector()
         {
@@ -87,7 +87,7 @@ namespace System.Linq.Tests
         public void Int_EmptySource_ThrowsInvalidOperationException()
         {
             int[] source = new int[0];
-            
+
             Assert.Throws<InvalidOperationException>(() => source.Average());
             Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
         }
@@ -159,7 +159,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
         }
-        
+
         [Fact]
         public void NullableInt_NullSource_ThrowsArgumentNullException()
         {
@@ -173,7 +173,7 @@ namespace System.Linq.Tests
             Func<int?, int?> selector = null;
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().Average(selector));
         }
-        
+
         [Fact]
         public void NullableInt_WithSelector()
         {
@@ -217,7 +217,7 @@ namespace System.Linq.Tests
             yield return new object[] { new long[] { 0, 0, 0, 0, 0 }, 0 };
             yield return new object[] { new long[] { 5, -10, 15, 40, 28 }, 15.6 };
         }
-        
+
         [Theory]
         [MemberData(nameof(Long_TestData))]
         public void Long(long[] source, double expected)
@@ -265,7 +265,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
         }
-        
+
         [Fact]
         public void NullableLong_NullSource_ThrowsArgumentNullException()
         {
@@ -279,7 +279,7 @@ namespace System.Linq.Tests
             Func<long?, long?> selector = null;
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().Average(selector));
         }
-        
+
         [Fact]
         public void NullableLong_WithSelector()
         {
@@ -365,7 +365,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
         }
-        
+
         [Fact]
         public void NullableDouble_NullSource_ThrowsArgumentNullException()
         {
@@ -379,7 +379,7 @@ namespace System.Linq.Tests
             Func<double?, double?> selector = null;
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().Average(selector));
         }
-        
+
         [Fact]
         public void NullableDouble_WithSelector()
         {

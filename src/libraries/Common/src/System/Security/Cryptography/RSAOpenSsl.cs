@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
             SafeRsaHandle key = GetKey();
-            
+
             byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
 
             bool encrypted = TryEncrypt(
@@ -384,7 +384,7 @@ namespace System.Security.Cryptography
 
             return rsaParameters;
         }
-        
+
         public override void ImportParameters(RSAParameters parameters)
         {
             ValidateParameters(ref parameters);
@@ -407,11 +407,11 @@ namespace System.Security.Cryptography
                     parameters.D != null ? parameters.D.Length : 0,
                     parameters.P,
                     parameters.P != null ? parameters.P.Length : 0,
-                    parameters.DP, 
+                    parameters.DP,
                     parameters.DP != null ? parameters.DP.Length : 0,
                     parameters.Q,
                     parameters.Q != null ? parameters.Q.Length : 0,
-                    parameters.DQ, 
+                    parameters.DQ,
                     parameters.DQ != null ? parameters.DQ.Length : 0,
                     parameters.InverseQ,
                     parameters.InverseQ != null ? parameters.InverseQ.Length : 0))
@@ -555,7 +555,7 @@ namespace System.Security.Cryptography
 
         private SafeRsaHandle GetKey()
         {
-            ThrowIfDisposed();    
+            ThrowIfDisposed();
 
             SafeRsaHandle key = _key.Value;
 

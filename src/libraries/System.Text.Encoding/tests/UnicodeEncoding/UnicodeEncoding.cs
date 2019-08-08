@@ -22,7 +22,7 @@ namespace System.Text.Encodings.Tests
             Encoding encoding = Encoding.Unicode;
             string s = "some string encoded in Unicode-16 \uD800\uDC00";
             byte [] bytes = encoding.GetBytes(s);
-            
+
             byte [] outputBytes = new byte [100];
             char [] outputChars = new char [100];
 
@@ -36,7 +36,7 @@ namespace System.Text.Encodings.Tests
                 Assert.Equal(bytes.Length, encoding.GetByteCount(pChars, s.Length));
                 for (int i=0; i<count; i++) { Assert.Equal(bytes[i], pBytes[i]); }
 
-                count = encoding.GetChars(pFilledBytes, bytes.Length, pOutputChars, outputChars.Length); 
+                count = encoding.GetChars(pFilledBytes, bytes.Length, pOutputChars, outputChars.Length);
                 Assert.Equal(s.Length, count);
                 Assert.Equal(s.Length, encoding.GetCharCount(pFilledBytes, bytes.Length));
                 for (int i=0; i<count; i++) { Assert.Equal(s[i], pOutputChars[i]); }
@@ -65,7 +65,7 @@ namespace System.Text.Encodings.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () => enc.GetBytes(pChars, 1, pBytes, -1));
 
                 AssertExtensions.Throws<ArgumentException>("bytes", () => enc.GetBytes(pChars, 4, pBytes, 1));
-                
+
                 Assert.Throws<EncoderFallbackException>(() => enc.GetBytes(pInvalidSurrogate, 2, pBytes, 10));
                 Assert.Throws<EncoderFallbackException>(() => enc.GetByteCount(pInvalidSurrogate, 2));
             }

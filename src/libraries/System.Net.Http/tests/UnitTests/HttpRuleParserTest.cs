@@ -256,7 +256,7 @@ namespace System.Net.Http.Tests
             AssertGetCommentLength("(x(((((((((x ", 0, 0, HttpParseResult.InvalidFormat);
 
             // To prevent attacker from sending comments resulting in stack overflow exceptions, we limit the depth
-            // of nested comments. I.e. the following comment is considered invalid since it is considered a 
+            // of nested comments. I.e. the following comment is considered invalid since it is considered a
             // "malicious" comment.
             AssertGetCommentLength("((((((((((x))))))))))", 0, 0, HttpParseResult.InvalidFormat);
             AssertGetCommentLength("(x(x)", 0, 0, HttpParseResult.InvalidFormat);

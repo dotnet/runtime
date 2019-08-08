@@ -23,7 +23,7 @@ namespace System.IO.Tests
             // The purpose of this method is to try and ensure that a task does a particular
             // piece of work (like return a result or throw) synchronously.
 
-            // We cannot use Task's IAsyncResult implementation since it doesn't set 
+            // We cannot use Task's IAsyncResult implementation since it doesn't set
             // CompletedSynchronously to anything but false.
 
             TaskStatus status = task.Status;

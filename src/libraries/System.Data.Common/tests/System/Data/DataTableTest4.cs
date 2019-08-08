@@ -58,7 +58,7 @@ namespace System.Data.Tests
             DataColumn column;
             DataRow row;
 
-            // Create new DataColumn, set DataType, 
+            // Create new DataColumn, set DataType,
             // ColumnName and add to Table.
             column = new DataColumn();
             column.DataType = typeof(int);
@@ -112,7 +112,7 @@ namespace System.Data.Tests
             DataColumn column;
             DataRow row;
 
-            // Create new DataColumn, set DataType, 
+            // Create new DataColumn, set DataType,
             // ColumnName and add to Table.
             column = new DataColumn();
             column.DataType = typeof(int);
@@ -132,7 +132,7 @@ namespace System.Data.Tests
             _dummyTable.Columns.Add(column);
             _dataSet.Tables.Add(_dummyTable);
 
-            // Create three new DataRow objects and add 
+            // Create three new DataRow objects and add
             // them to the DataTable
             for (int i = 0; i <= 2; i++)
             {
@@ -320,7 +320,7 @@ namespace System.Data.Tests
         //Test properties of a table which does not belongs to a DataSet
         private void VerifyTableSchema(DataTable table, string tableName, DataSet ds)
         {
-            //Test Schema 
+            //Test Schema
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
             Assert.Equal(ds, table.DataSet);
@@ -418,7 +418,7 @@ namespace System.Data.Tests
 
         private void VerifyTable_WithChildren(DataTable table, string tableName, DataSet ds)
         {
-            //Test Schema 
+            //Test Schema
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
             Assert.Equal(ds.DataSetName, table.DataSet.DataSetName);
@@ -638,7 +638,7 @@ namespace System.Data.Tests
             _dataSet.Tables.Add(table);
 
             //Read the Xml and the Schema into a table which already belongs to a DataSet
-            //and the table name does not match with the table ion the source XML 
+            //and the table name does not match with the table ion the source XML
             try
             {
                 table.ReadXml(_tempFile);
@@ -675,7 +675,7 @@ namespace System.Data.Tests
 
             DataTable table = new DataTable("ParentTable");
             //Read the Xml and the Schema into a table which already belongs to a DataSet
-            //and the table name matches with the table in the source XML 
+            //and the table name matches with the table in the source XML
             table.ReadXml(_tempFile);
             VerifyTableSchema(table, _parentTable1.TableName, null);
         }
@@ -781,7 +781,7 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
             table.ReadXml(_tempFile);
 
-            //Test Schema 
+            //Test Schema
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
             Assert.Null(table.DataSet);

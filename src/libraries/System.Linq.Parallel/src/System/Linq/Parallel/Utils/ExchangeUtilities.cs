@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
 {
     /// <summary>
     /// ExchangeUtilities is a static class that contains helper functions to partition and merge
-    /// streams. 
+    /// streams.
     /// </summary>
     internal static class ExchangeUtilities
     {
@@ -80,8 +80,8 @@ namespace System.Linq.Parallel
         // partitioning, all elements with the same hash code are guaranteed to be in the same partition.
         //
         // Arguments:
-        //    source                      - the data to be hash-partitioned. If it is a partitioned stream, it 
-        //                                  must have partitionCount partitions 
+        //    source                      - the data to be hash-partitioned. If it is a partitioned stream, it
+        //                                  must have partitionCount partitions
         //    partitionCount              - the desired number of partitions
         //    useOrdinalOrderPreservation - whether ordinal order preservation is required
         //    keySelector                 - function to obtain the key given an element

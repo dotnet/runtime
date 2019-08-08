@@ -301,10 +301,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_AlgorithmTypesMustBeVisible, nameof(algorithm));
             if (names == null)
                 throw new ArgumentNullException(nameof(names));
- 
+
             string[] algorithmNames = new string[names.Length];
             Array.Copy(names, 0, algorithmNames, 0, algorithmNames.Length);
- 
+
             // Pre-check the algorithm names for validity so that we don't add a few of the names and then
             // throw an exception if we find an invalid name partway through the list.
             foreach (string name in algorithmNames)
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentException(SR.Cryptography_AddNullOrEmptyName);
                 }
             }
- 
+
             // Everything looks valid, so we're safe to take the table lock and add the name mappings.
             lock (s_InternalSyncObject)
             {
@@ -331,7 +331,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(name));
 
             Type retvalType = null;
-            
+
             // Check to see if we have an application defined mapping
             lock (s_InternalSyncObject)
             {
@@ -459,12 +459,12 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(oid));
             if (names == null)
                 throw new ArgumentNullException(nameof(names));
- 
+
             string[] oidNames = new string[names.Length];
             Array.Copy(names, 0, oidNames, 0, oidNames.Length);
- 
+
             // Pre-check the input names for validity, so that we don't add a few of the names and throw an
-            // exception if an invalid name is found further down the array. 
+            // exception if an invalid name is found further down the array.
             foreach (string name in oidNames)
             {
                 if (string.IsNullOrEmpty(name))
@@ -472,7 +472,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentException(SR.Cryptography_AddNullOrEmptyName);
                 }
             }
- 
+
             // Everything is valid, so we're good to lock the hash table and add the application mappings
             lock (s_InternalSyncObject)
             {
@@ -489,7 +489,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(name));
 
             string oidName;
-            
+
             // Check to see if we have an application defined mapping
             lock (s_InternalSyncObject)
             {

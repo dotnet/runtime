@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -164,7 +164,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     HttpRequestData requestData = await server.HandleRequestAsync();
 
-                    // Multiple Cookie header values are treated as any other header values and are 
+                    // Multiple Cookie header values are treated as any other header values and are
                     // concatenated using ", " as the separator.
 
                     string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
@@ -459,7 +459,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsNetfxHandler)
             {
-                // NetfxHandler incorrectly only processes one valid cookie 
+                // NetfxHandler incorrectly only processes one valid cookie
                 return;
             }
 
@@ -603,7 +603,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        // 
+        //
         // MemberData stuff
         //
 

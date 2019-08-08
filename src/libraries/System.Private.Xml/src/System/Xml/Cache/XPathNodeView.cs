@@ -60,7 +60,7 @@ namespace System.Xml.XPath.DataBinding
 
         //
         // IXPathNavigable Implementation
-        
+
         public XPathNavigator CreateNavigator() {
             XPathNode nd = this.rowNd;
             if (null != nd)
@@ -70,15 +70,15 @@ namespace System.Xml.XPath.DataBinding
 
         //
         // ICustomTypeDescriptor Implementation
-        
+
         public AttributeCollection GetAttributes() {
             return new AttributeCollection((Attribute[])null);
         }
-        
+
         public String GetClassName() {
             return collection.RowShape.Name;
         }
-        
+
         public String GetComponentName() {
             return null;
         }

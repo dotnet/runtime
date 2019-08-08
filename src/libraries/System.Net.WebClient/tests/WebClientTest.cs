@@ -173,7 +173,7 @@ namespace System.Net.Tests
         public static void UploadString_InvalidArguments_ThrowExceptions()
         {
             var wc = new WebClient();
-            
+
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((Uri)null, null); });
@@ -207,7 +207,7 @@ namespace System.Net.Tests
         public static void UploadValues_InvalidArguments_ThrowExceptions()
         {
             var wc = new WebClient();
-            
+
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((Uri)null, null); });
@@ -487,9 +487,9 @@ namespace System.Net.Tests
             "The Slings and Arrows of outrageous Fortune," +
             "Or to take Arms against a Sea of troubles," +
             "And by opposing end them:";
-        
-        const string ExpectedTextAfterUrlEncode = 
-            "To+be%2c+or+not+to+be%2c+that+is+the+question%3a" + 
+
+        const string ExpectedTextAfterUrlEncode =
+            "To+be%2c+or+not+to+be%2c+that+is+the+question%3a" +
             "Whether+'tis+Nobler+in+the+mind+to+suffer" +
             "The+Slings+and+Arrows+of+outrageous+Fortune%2c" +
             "Or+to+take+Arms+against+a+Sea+of+troubles%2c" +

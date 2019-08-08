@@ -31,21 +31,21 @@ namespace Microsoft.SqlServer.Server
 
         // Constants
         private const int constBinBufferSize = 4096;  // Size of the buffer used to read input parameter of type Stream
-        private const int constTextBufferSize = 4096; // Size of the buffer (in chars) user to read input parameter of type TextReader       
+        private const int constTextBufferSize = 4096; // Size of the buffer (in chars) user to read input parameter of type TextReader
 
         //
         //  User-visible semantics-laden Getter/Setter support methods
         //      These methods implement common semantics for getters & setters
         //      All access to underlying Smi getters/setters must validate parameters
         //      in these methods
-        //  
+        //
 
         //  The idea for the getters is that there are two types associated with the field/column,
-        //  the one the user asks for (implicitly via a strongly-typed getter) and the one the data 
+        //  the one the user asks for (implicitly via a strongly-typed getter) and the one the data
         //  is stored in (SmiMetaData).
         //  When a strong getter is invoked, we try one of two ways to get the value
         //      1) go directly to the source for the requested type if possible
-        //      2) instantiate the value based on the stored type (GetValue), then ask the Clr 
+        //      2) instantiate the value based on the stored type (GetValue), then ask the Clr
         //          to convert.
         internal static bool IsDBNull(SmiEventSink_Default sink, ITypedGettersV3 getters, int ordinal)
         {
@@ -1593,7 +1593,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         //  Implements SqlClient 2.0-compatible SetValue() semantics + Orcas extensions
-        //      Assumes caller already validated basic type against the metadata, other than trimming lengths and 
+        //      Assumes caller already validated basic type against the metadata, other than trimming lengths and
         //      checking individual field values (TVPs)
         internal static void SetCompatibleValueV200(
             SmiEventSink_Default sink,
@@ -1672,7 +1672,7 @@ namespace Microsoft.SqlServer.Server
                     {
                         object cellValue = row[i];
 
-                        // Only determine cell types for first row, to save expensive 
+                        // Only determine cell types for first row, to save expensive
                         if (ExtendedClrTypeCode.Invalid == cellTypes[i])
                         {
                             cellTypes[i] = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(
@@ -1803,9 +1803,9 @@ namespace Microsoft.SqlServer.Server
                             break;
 
                         default:
-                            // In order for us to get here we would have to have an 
-                            // invalid instance of SqlDbType, or one would have to add 
-                            // new member to SqlDbType without adding a case in this 
+                            // In order for us to get here we would have to have an
+                            // invalid instance of SqlDbType, or one would have to add
+                            // new member to SqlDbType without adding a case in this
                             // switch, hence the assert.
                             Debug.Fail("unsupported DbType:" + metaData[i].SqlDbType.ToString());
                             throw ADP.NotSupported();
@@ -2011,9 +2011,9 @@ namespace Microsoft.SqlServer.Server
                             break;
 
                         default:
-                            // In order for us to get here we would have to have an 
-                            // invalid instance of SqlDbType, or one would have to add 
-                            // new member to SqlDbType without adding a case in this 
+                            // In order for us to get here we would have to have an
+                            // invalid instance of SqlDbType, or one would have to add
+                            // new member to SqlDbType without adding a case in this
                             // switch, hence the assert.
                             Debug.Fail("unsupported DbType:" + metaData[i].SqlDbType.ToString());
                             throw ADP.NotSupported();
@@ -2362,7 +2362,7 @@ namespace Microsoft.SqlServer.Server
         {
             int length = 0;
 
-            // Deal with large values by sending bufferLength of NoLengthLimit (== assume 
+            // Deal with large values by sending bufferLength of NoLengthLimit (== assume
             //  CheckXetParameters will ignore requested-length checks in this case
             long bufferLength = record.GetBytes(ordinal, 0, null, 0, 0);
             if (bufferLength > int.MaxValue)
@@ -2406,7 +2406,7 @@ namespace Microsoft.SqlServer.Server
         {
             int length = 0;
 
-            // Deal with large values by sending bufferLength of NoLengthLimit (== assume 
+            // Deal with large values by sending bufferLength of NoLengthLimit (== assume
             //  CheckXetParameters will ignore requested-length checks in this case)
             length = CheckXetParameters(metaData.SqlDbType, metaData.MaxLength, NoLengthLimit /* actual */, 0, NoLengthLimit /* buffer length */, offset, NoLengthLimit /* requested length */ );
 
@@ -2439,7 +2439,7 @@ namespace Microsoft.SqlServer.Server
             int length = 0;
             if (!value.IsNull)
             {
-                // Deal with large values by sending bufferLength of NoLengthLimit (== assume 
+                // Deal with large values by sending bufferLength of NoLengthLimit (== assume
                 //  CheckXetParameters will ignore requested-length checks in this case
                 long bufferLength = value.Length;
                 if (bufferLength > int.MaxValue)
@@ -2532,7 +2532,7 @@ namespace Microsoft.SqlServer.Server
         {
             int length = 0;
 
-            // Deal with large values by sending bufferLength of NoLengthLimit (== assume 
+            // Deal with large values by sending bufferLength of NoLengthLimit (== assume
             //  CheckXetParameters will ignore requested-length checks in this case)
             length = CheckXetParameters(metaData.SqlDbType, metaData.MaxLength, NoLengthLimit /* actual */, 0, NoLengthLimit /* buffer length */, offset, NoLengthLimit /* requested length */ );
 
@@ -3222,9 +3222,9 @@ namespace Microsoft.SqlServer.Server
         {
             Debug.Assert(!IsDBNull_Unchecked(sink, getters, ordinal));
 
-            // Note: depending on different getters, the result string maybe truncated, e.g. for 
+            // Note: depending on different getters, the result string maybe truncated, e.g. for
             // Inproc process, the getter is InProcRecordBuffer (implemented in SqlAcess), string will be
-            // truncated to 4000 (if length is more than 4000). If MemoryRecordBuffer getter is used, data 
+            // truncated to 4000 (if length is more than 4000). If MemoryRecordBuffer getter is used, data
             // is not truncated. Please refer VSDD 479655 for more detailed information regarding the string length.
             string result = getters.GetString(sink, ordinal);
             sink.ProcessMessagesAndThrow();
@@ -3861,4 +3861,3 @@ namespace Microsoft.SqlServer.Server
         }
     }
 }
-

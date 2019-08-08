@@ -9,63 +9,63 @@ namespace System.Reflection.Tests
 {
     public class TypeInfoDeclaredImplementedInterfacesTests
     {
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces1()
         {
             VerifyInterfaces(typeof(I21).Project(), new Type[] { typeof(ImI1).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces2()
         {
             VerifyInterfaces(typeof(S1).Project(), new Type[] { typeof(ImI1).Project(), typeof(I21).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces3()
         {
             VerifyInterfaces(typeof(C1).Project(), new Type[] { typeof(I0).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces4()
         {
             VerifyInterfaces(typeof(D1).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces5()
         {
             VerifyInterfaces(typeof(D2<>).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces6()
         {
             VerifyInterfaces(typeof(D2<int>).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces7()
         {
             VerifyInterfaces(typeof(D3<I21>).Project(), new Type[] { typeof(I3<I21>).Project(), typeof(I0).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces8()
         {
             VerifyInterfaces(typeof(D4<>).Project(), new Type[] { typeof(I3<string>).Project(), typeof(I0).Project() });
         }
 
-        // Verify implemented interfaces 
+        // Verify implemented interfaces
         [Fact]
         public static void TestInterFaces9()
         {

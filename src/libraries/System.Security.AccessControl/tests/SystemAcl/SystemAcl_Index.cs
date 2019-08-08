@@ -38,7 +38,7 @@ namespace System.Security.AccessControl.Tests
             //208 has SuccessfulAccess, FailedAccess and Inherited
             gAce = new CommonAce((AceFlags)208, AceQualifier.SystemAudit, 1, new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(owner1)), false, null);
             rawAcl.InsertAce(0, gAce);
-            //gAce = new CommonAce(AceFlags.FailedAccess, AceQualifier.SystemAudit, 1, new SecurityIdentifier(owner2), false, null);                    
+            //gAce = new CommonAce(AceFlags.FailedAccess, AceQualifier.SystemAudit, 1, new SecurityIdentifier(owner2), false, null);
             gAce = new CommonAce(AceFlags.FailedAccess, AceQualifier.SystemAudit, 1, new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(owner1)), false, null);
             rawAcl.InsertAce(1, gAce);
             systemAcl = new SystemAcl(false, false, rawAcl);
@@ -50,7 +50,7 @@ namespace System.Security.AccessControl.Tests
 
             //case 3, only three ACEs, index at Count/2
             rawAcl = new RawAcl(1, 3);
-            //215 has all AceFlags except InheritOnly                    
+            //215 has all AceFlags except InheritOnly
             gAce = new CommonAce((AceFlags)(FlagsForAce.AuditFlags | FlagsForAce.OI | FlagsForAce.CI | FlagsForAce.NP | FlagsForAce.IH), AceQualifier.SystemAudit, 1, new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(owner2)), false, null);
             rawAcl.InsertAce(0, gAce);
             //208 has SuccessfulAccess, FailedAccess and Inherited

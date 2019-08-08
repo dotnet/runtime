@@ -403,7 +403,7 @@ namespace System.Collections.Tests
         [Fact]
         public void ComparerSerialization()
         {
-            // Strings switch between randomized and non-randomized comparers, 
+            // Strings switch between randomized and non-randomized comparers,
             // however this should never be observable externally.
             TestComparerSerialization(EqualityComparer<string>.Default);
             // OrdinalCaseSensitiveComparer is internal and (de)serializes as OrdinalComparer

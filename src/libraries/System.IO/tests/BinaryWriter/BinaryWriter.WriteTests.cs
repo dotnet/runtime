@@ -44,8 +44,8 @@ namespace System.IO.Tests
         public void BinaryWriter_WriteSingleTest()
         {
             float[] sglArr = new float[] {
-                float.MinValue, float.MaxValue, float.Epsilon, float.PositiveInfinity, float.NegativeInfinity, new float(), 
-                0, (float)(-1E20), (float)(-3.5E-20), (float)(1.4E-10), (float)10000.2, (float)2.3E30 
+                float.MinValue, float.MaxValue, float.Epsilon, float.PositiveInfinity, float.NegativeInfinity, new float(),
+                0, (float)(-1E20), (float)(-3.5E-20), (float)(1.4E-10), (float)10000.2, (float)2.3E30
             };
 
             WriteTest(sglArr, (bw, s) => bw.Write(s), (br) => br.ReadSingle());
@@ -55,9 +55,9 @@ namespace System.IO.Tests
         public void BinaryWriter_WriteDecimalTest()
         {
             decimal[] decArr = new decimal[] {
-                decimal.One, decimal.Zero, decimal.MinusOne, decimal.MinValue, decimal.MaxValue, 
-                new decimal(-1000.5), new decimal(-10.0E-40), new decimal(3.4E-40898), new decimal(3.4E-28), 
-                new decimal(3.4E+28), new decimal(0.45), new decimal(5.55), new decimal(3.4899E23) 
+                decimal.One, decimal.Zero, decimal.MinusOne, decimal.MinValue, decimal.MaxValue,
+                new decimal(-1000.5), new decimal(-10.0E-40), new decimal(3.4E-40898), new decimal(3.4E-28),
+                new decimal(3.4E+28), new decimal(0.45), new decimal(5.55), new decimal(3.4899E23)
             };
 
             WriteTest(decArr, (bw, s) => bw.Write(s), (br) => br.ReadDecimal());
@@ -67,8 +67,8 @@ namespace System.IO.Tests
         public void BinaryWriter_WriteDoubleTest()
         {
             double[] dblArr = new double[] {
-                double.NegativeInfinity, double.PositiveInfinity, double.Epsilon, double.MinValue, double.MaxValue, 
-                -3E59, -1000.5, -1E-40, 3.4E-37, 0.45, 5.55, 3.4899E233 
+                double.NegativeInfinity, double.PositiveInfinity, double.Epsilon, double.MinValue, double.MaxValue,
+                -3E59, -1000.5, -1E-40, 3.4E-37, 0.45, 5.55, 3.4899E233
             };
 
             WriteTest(dblArr, (bw, s) => bw.Write(s), (br) => br.ReadDouble());
@@ -131,9 +131,9 @@ namespace System.IO.Tests
                 sb.Append("abc");
             str1 = sb.ToString();
 
-            string[] strArr = new string[] { 
-                "ABC", "\t\t\n\n\n\0\r\r\v\v\t\0\rHello", "This is a normal string", "12345667789!@#$%^&&())_+_)@#", 
-                "ABSDAFJPIRUETROPEWTGRUOGHJDOLJHLDHWEROTYIETYWsdifhsiudyoweurscnkjhdfusiyugjlskdjfoiwueriye", "     ", 
+            string[] strArr = new string[] {
+                "ABC", "\t\t\n\n\n\0\r\r\v\v\t\0\rHello", "This is a normal string", "12345667789!@#$%^&&())_+_)@#",
+                "ABSDAFJPIRUETROPEWTGRUOGHJDOLJHLDHWEROTYIETYWsdifhsiudyoweurscnkjhdfusiyugjlskdjfoiwueriye", "     ",
                 "\0\0\0\t\t\tHey\"\"", "\u0022\u0011", str1, string.Empty };
 
             WriteTest(strArr, (bw, s) => bw.Write(s), (br) => br.ReadString());

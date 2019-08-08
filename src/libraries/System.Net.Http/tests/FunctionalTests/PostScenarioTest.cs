@@ -187,7 +187,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
-            await Assert.ThrowsAsync<HttpRequestException>(() => 
+            await Assert.ThrowsAsync<HttpRequestException>(() =>
                 PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
@@ -256,7 +256,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
-            }          
+            }
         }
 
         private async Task PostUsingAuthHelper(

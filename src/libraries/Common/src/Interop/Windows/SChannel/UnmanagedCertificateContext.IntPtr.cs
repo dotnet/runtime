@@ -49,6 +49,6 @@ namespace System.Net
             }
 
             return result;
-        }        
+        }
     }
 }

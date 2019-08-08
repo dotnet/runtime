@@ -532,12 +532,12 @@ namespace System.Net.Tests
         private const string Cookie2 = "uuid=123abc; path=/; expires=Fri, 05 Oct 2018 06:28:57 -0000; secure; HttpOnly";
         private const string Cookie3 = "country=US; path=/; expires=Fri, 05 Oct 2018 06:28:57 -0000";
         private const string Cookie4 = "m_session=session1; path=/; expires=Sun, 08 Oct 2017 00:28:57 -0000; secure; HttpOnly";
-        
+
         private const string Cookie1NoAttribute = "locale=en";
         private const string Cookie2NoAttribute = "uuid=123abc";
         private const string Cookie3NoAttribute = "country=US";
         private const string Cookie4NoAttribute = "m_session=session1";
-        
+
         private const string CookieInvalid = "helloWorld";
 
         [Fact]
@@ -572,7 +572,7 @@ namespace System.Net.Tests
             Assert.Equal(Cookie3, values[2]);
             Assert.Equal(Cookie4, values[3]);
         }
-        
+
         [Fact]
         public void GetValues_MultipleSetCookieHeadersWithNoAttribute_Success()
         {
@@ -603,7 +603,7 @@ namespace System.Net.Tests
             Assert.Equal(Cookie3NoAttribute, values[2]);
             Assert.Equal(Cookie4NoAttribute, values[3]);
         }
-        
+
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
         public void GetValues_InvalidSetCookieHeader_Success()
@@ -614,7 +614,7 @@ namespace System.Net.Tests
             string[] values = w.GetValues(HeaderType);
             Assert.Equal(0, values.Length);
         }
-        
+
         [Fact]
         public void GetValues_MultipleValuesHeader_Success()
         {
@@ -755,6 +755,6 @@ namespace System.Net.Tests
             Assert.NotEmpty(w.AllKeys);
             Assert.Equal(new[] { "firstName" }, w.AllKeys);
             Assert.Equal("first", w["firstName"]);
-        }        
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace System.Net.Tests
             initialDefaultWebProxy = WebRequest.DefaultWebProxy;
             initialDefaultWebProxyCredentials = initialDefaultWebProxy.Credentials;
         }
-        
+
         private readonly NetworkCredential _explicitCredentials = new NetworkCredential("user", "password", "domain");
         private static IWebProxy initialDefaultWebProxy;
         private static ICredentials initialDefaultWebProxyCredentials;
@@ -30,7 +30,7 @@ namespace System.Net.Tests
 
             Assert.Null(initialDefaultWebProxyCredentials);
         }
-        
+
         [Fact]
         public void DefaultWebProxy_SetThenGet_ValuesMatch()
         {
@@ -73,7 +73,7 @@ namespace System.Net.Tests
             }
             finally
             {
-                // Reset the credentials so as not to interfere with any subsequent tests, 
+                // Reset the credentials so as not to interfere with any subsequent tests,
                 // e.g. DefaultWebProxy_VerifyDefaults_Success
                 proxy.Credentials = oldCreds;
             }
@@ -198,7 +198,7 @@ namespace System.Net.Tests
             public FakeRequest(Uri uri = null)
             {
                 _uri = uri;
-            }            
+            }
         }
 
         private class FakeRequestFactory : IWebRequestCreate

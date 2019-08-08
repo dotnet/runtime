@@ -35,4 +35,3 @@ namespace System.Composition
         public void Dispose() => _disposeAction?.Invoke();
     }
 }
-

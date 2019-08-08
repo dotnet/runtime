@@ -69,7 +69,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     // No real precedent for what to do here - CLR will never get as far as giving you an Assembly object
                     // if the PE file specifies an unsupported machine. Since this Reflection implementation is a metadata inspection
                     // layer, and the library will never make any decisions based on this value, throwing isn't really the best response here.
-                    data.ProcessorArchitecture = ProcessorArchitecture.None;  
+                    data.ProcessorArchitecture = ProcessorArchitecture.None;
                     break;
             }
             return data;

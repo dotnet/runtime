@@ -148,7 +148,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Yet another related computation: it takes a RegexTree and computes 
+        /// Yet another related computation: it takes a RegexTree and computes
         /// the leading anchors that it encounters.
         /// </summary>
         public static int Anchors(RegexTree tree)

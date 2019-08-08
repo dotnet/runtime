@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
 
                 // None of the other Core types will match that behavior, so the ECDiffieHellman.Create() on
                 // Windows on .NET Core won't, either.
-                
+
                 // The default behavior for ECDiffieHellmanCng / ECDiffieHellman.Create() on .NET Framework was
                 // to derive from hash, no prepend, no append, SHA-2-256.
                 return DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256);

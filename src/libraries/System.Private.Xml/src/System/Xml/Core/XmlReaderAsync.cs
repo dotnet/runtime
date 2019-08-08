@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    // Represents a reader that provides fast, non-cached forward only stream access to XML data. 
+    // Represents a reader that provides fast, non-cached forward only stream access to XML data.
     [DebuggerDisplay("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : IDisposable
     {
@@ -24,7 +24,7 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and returns the content as the most appropriate type (by default as string). Stops at start tags and end tags.
         public virtual async Task<object> ReadContentAsObjectAsync()
         {
@@ -35,7 +35,7 @@ namespace System.Xml
             return await InternalReadContentAsStringAsync().ConfigureAwait(false);
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and returns the content as a string. Stops at start tags and end tags.
         public virtual Task<string> ReadContentAsStringAsync()
         {
@@ -46,7 +46,7 @@ namespace System.Xml
             return InternalReadContentAsStringAsync();
         }
 
-        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references, 
+        // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to the requested type. Stops at start tags and end tags.
         public virtual async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
         {
@@ -155,7 +155,7 @@ namespace System.Xml
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
         }
 
-        // Returns a chunk of the value of the current node. Call this method in a loop to get all the data. 
+        // Returns a chunk of the value of the current node. Call this method in a loop to get all the data.
         // Use this method to get a streaming access to the value of the current node.
         public virtual Task<int> ReadValueChunkAsync(char[] buffer, int index, int count)
         {
@@ -163,7 +163,7 @@ namespace System.Xml
         }
 
         // Checks whether the current node is a content (non-whitespace text, CDATA, Element, EndElement, EntityReference
-        // or EndEntity) node. If the node is not a content node, then the method skips ahead to the next content node or 
+        // or EndEntity) node. If the node is not a content node, then the method skips ahead to the next content node or
         // end of file. Skips over nodes of type ProcessingInstruction, DocumentType, Comment, Whitespace and SignificantWhitespace.
         public virtual async Task<XmlNodeType> MoveToContentAsync()
         {
@@ -428,4 +428,3 @@ namespace System.Xml
         }
     }
 }
-

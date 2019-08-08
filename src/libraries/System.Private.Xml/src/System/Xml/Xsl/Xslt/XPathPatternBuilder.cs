@@ -245,8 +245,8 @@ namespace System.Xml.Xsl.Xslt
             QilLoop nodeFilter = (QilLoop)nodeset;
             QilIterator current = nodeFilter.Variable;
 
-            //If no last() and position() in predicates, use nodeFilter.Variable to fixup current 
-            //because all the predicates only based on the input variable, no matter what other predicates are.           
+            //If no last() and position() in predicates, use nodeFilter.Variable to fixup current
+            //because all the predicates only based on the input variable, no matter what other predicates are.
             if (_predicateEnvironment.numFixupLast == 0 && _predicateEnvironment.numFixupPosition == 0)
             {
                 foreach (var predicate in convertedPredicates)
@@ -267,7 +267,7 @@ namespace System.Xml.Xsl.Xslt
                 siblingFilter.Variable.Binding = sibling;
                 siblingFilter = (QilLoop)_f.Loop(parentIter, siblingFilter);
 
-                //build predicates from left to right to get all the matching nodes 
+                //build predicates from left to right to get all the matching nodes
                 QilNode matchingSet = siblingFilter;
                 foreach (var predicate in convertedPredicates)
                 {

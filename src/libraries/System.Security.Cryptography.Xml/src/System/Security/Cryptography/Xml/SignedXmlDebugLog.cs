@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Xml
         //
         // In order to enable XML digital signature debug loggging, applications should setup their config
         // file to be similar to the following:
-        //     
+        //
         // <configuration>
         //   <system.diagnostics>
         //     <sources>

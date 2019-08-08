@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 EncryptedXml encryptor = new EncryptedXml(document);
                 EncryptedData encryptedElement = encryptor.Encrypt(toEncrypt, cert);
                 EncryptedXml.ReplaceElement(toEncrypt, encryptedElement, false);
-                
+
                 XmlDocument document2 = new XmlDocument();
                 document2.LoadXml(document.OuterXml);
 

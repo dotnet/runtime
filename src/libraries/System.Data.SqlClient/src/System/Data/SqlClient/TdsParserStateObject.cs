@@ -32,7 +32,7 @@ namespace System.Data.SqlClient
         private const long CheckConnectionWindow = 50000;
 
 
-        protected readonly TdsParser _parser;                            // TdsParser pointer  
+        protected readonly TdsParser _parser;                            // TdsParser pointer
         private readonly WeakReference _owner = new WeakReference(null);   // the owner of this session, used to track when it's been orphaned
         internal SqlDataReader.SharedState _readerState;                    // susbset of SqlDataReader state (if it is the owner) necessary for parsing abandoned results in TDS
         private int _activateCount;                     // 0 when we're in the pool, 1 when we're not, all others are an error
@@ -76,7 +76,7 @@ namespace System.Data.SqlClient
         internal bool _bulkCopyWriteTimeout = false;                // Set to trun when _bulkCopyOpeperationInProgress is trun and write timeout happens
 
         // SNI variables                                                     // multiple resultsets in one batch.
-        
+
         protected readonly object _writePacketLockObject = new object();        // Used to synchronize access to _writePacketCache and _pendingWritePackets
 
         // Async variables
@@ -208,8 +208,8 @@ namespace System.Data.SqlClient
         // instead of blocking it will fail.
         internal static bool _failAsyncPends = false;
 
-        // If this is set and an async read is made, then 
-        // we will switch to syncOverAsync mode for the 
+        // If this is set and an async read is made, then
+        // we will switch to syncOverAsync mode for the
         // remainder of the async operation.
         internal static bool _forceSyncOverAsyncAfterFirstPend = false;
 
@@ -546,7 +546,7 @@ namespace System.Data.SqlClient
             }
 
             /// <summary>
-            /// If this method returns true, the value is guaranteed to be null. This is not true vice versa: 
+            /// If this method returns true, the value is guaranteed to be null. This is not true vice versa:
             /// if the bitmap value is false (if this method returns false), the value can be either null or non-null - no guarantee in this case.
             /// To determine whether it is null or not, read it from the TDS (per NBCROW design spec, for IMAGE/TEXT/NTEXT columns server might send
             /// bitmap = 0, when the actual value is null).
@@ -656,12 +656,12 @@ namespace System.Data.SqlClient
         internal void CancelRequest()
         {
             ResetBuffer();    // clear out unsent buffer
-            // If the first sqlbulkcopy timeout, _outputPacketNumber may not be 1, 
-            // the next sqlbulkcopy (same connection string) requires this to be 1, hence reset 
+            // If the first sqlbulkcopy timeout, _outputPacketNumber may not be 1,
+            // the next sqlbulkcopy (same connection string) requires this to be 1, hence reset
             // it here when exception happens in the first sqlbulkcopy
             ResetPacketCounters();
 
-            // VSDD#907507, if bulkcopy write timeout happens, it already sent the attention, 
+            // VSDD#907507, if bulkcopy write timeout happens, it already sent the attention,
             // so no need to send it again
             if (!_bulkCopyWriteTimeout)
             {
@@ -846,7 +846,7 @@ namespace System.Data.SqlClient
             }
             _hasOpenResult = false;
         }
-        
+
         internal int DecrementPendingCallbacks(bool release)
         {
             int remaining = Interlocked.Decrement(ref _pendingCallbacks);
@@ -977,7 +977,7 @@ namespace System.Data.SqlClient
             // if the header splits buffer reads - special case!
             if ((_partialHeaderBytesRead > 0) || (_inBytesUsed + _inputHeaderLen > _inBytesRead))
             {
-                // VSTS 219884: when some kind of MITM (man-in-the-middle) tool splits the network packets, the message header can be split over 
+                // VSTS 219884: when some kind of MITM (man-in-the-middle) tool splits the network packets, the message header can be split over
                 // several network packets.
                 // Note: cannot use ReadByteArray here since it uses _inBytesPacket which is not set yet.
                 do
@@ -2106,7 +2106,7 @@ namespace System.Data.SqlClient
                 { // Failure!
 
                     Debug.Assert(!IsValidPacket(readPacket), "unexpected readPacket without corresponding SNIPacketRelease");
-                    
+
                     ReadSniError(this, error);
                 }
             }
@@ -2129,7 +2129,7 @@ namespace System.Data.SqlClient
         internal void OnConnectionClosed()
         {
             // the stateObj is not null, so the async invocation that registered this callback
-            // via the SqlReferenceCollection has not yet completed.  We will look for a 
+            // via the SqlReferenceCollection has not yet completed.  We will look for a
             // _networkPacketTaskSource and mark it faulted.  If we don't find it, then
             // TdsParserStateObject.ReadSni will abort when it does look to see if the parser
             // is open.  If we do, then when the call that created it completes and a continuation
@@ -2143,7 +2143,7 @@ namespace System.Data.SqlClient
             Parser.State = TdsParserState.Broken;
             Parser.Connection.BreakConnection();
 
-            // Ensure that changing state occurs before checking _networkPacketTaskSource 
+            // Ensure that changing state occurs before checking _networkPacketTaskSource
             Interlocked.MemoryBarrier();
 
             // then check for networkPacketTaskSource
@@ -2240,7 +2240,7 @@ namespace System.Data.SqlClient
                                                 }
                                             }
 
-                                            // Ensure that the connection is no longer usable 
+                                            // Ensure that the connection is no longer usable
                                             // This is needed since the timeout error added above is non-fatal (and so throwing it won't break the connection)
                                             _parser.State = TdsParserState.Broken;
                                             _parser.Connection.BreakConnection();
@@ -2438,7 +2438,7 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// Checks to see if the underlying connection is still valid (used by idle connection resiliency - for active connections) 
+        /// Checks to see if the underlying connection is still valid (used by idle connection resiliency - for active connections)
         /// NOTE: This is not safe to do on a connection that is currently in use
         /// NOTE: This will mark the connection as broken if it is found to be dead
         /// </summary>
@@ -2783,7 +2783,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(_parser.State == TdsParserState.Broken || _parser.State == TdsParserState.Closed || _parser.Connection.IsConnectionDoomed, "Failed to capture exception while the connection was still healthy");
 
                 // The safest thing to do is to ensure that the connection is broken and attempt to cancel the task
-                // This must be done from another thread to not block the callback thread                
+                // This must be done from another thread to not block the callback thread
                 Task.Run(() =>
                 {
                     _parser.State = TdsParserState.Broken;
@@ -2985,7 +2985,7 @@ namespace System.Data.SqlClient
         // Takes a span or a byte array and writes it to the buffer
         // If you pass in a span and a null array then the span wil be used.
         // If you pass in a non-null array then the array will be used and the span is ignored.
-        // if the span cannot be written into the current packet then the remaining contents of the span are copied to a 
+        // if the span cannot be written into the current packet then the remaining contents of the span are copied to a
         //  new heap allocated array that will used to callback into the method to continue the write operation.
         private Task WriteBytes(ReadOnlySpan<byte> b, int len, int offsetBuffer, bool canAccumulate = true, TaskCompletionSource<object> completion = null, byte[] array = null)
         {
@@ -3280,7 +3280,7 @@ namespace System.Data.SqlClient
 #if DEBUG
             else if (!sync && !canAccumulate && SqlCommand.DebugForceAsyncWriteDelay > 0)
             {
-                // Executed synchronously - callback will not be called 
+                // Executed synchronously - callback will not be called
                 TaskCompletionSource<object> completion = new TaskCompletionSource<object>();
                 uint error = sniError;
                 new Timer(obj =>
@@ -3383,7 +3383,7 @@ namespace System.Data.SqlClient
                             }
 
                             uint sniError;
-                            _parser._asyncWrite = false; // stop async write 
+                            _parser._asyncWrite = false; // stop async write
                             SNIWritePacket(attnPacket, out sniError, canAccumulate: false, callerHasConnectionLock: false);
                         }
                         finally

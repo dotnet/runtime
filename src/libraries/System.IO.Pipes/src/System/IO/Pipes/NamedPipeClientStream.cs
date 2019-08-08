@@ -12,7 +12,7 @@ using System.Diagnostics;
 namespace System.IO.Pipes
 {
     /// <summary>
-    /// Named pipe client. Use this to open the client end of a named pipes created with 
+    /// Named pipe client. Use this to open the client end of a named pipes created with
     /// NamedPipeServerStream.
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
@@ -26,10 +26,10 @@ namespace System.IO.Pipes
         private readonly HandleInheritability _inheritability;
         private readonly PipeDirection _direction;
 
-        // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut 
+        // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut
         public NamedPipeClientStream(string pipeName)
             : this(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
-        { 
+        {
         }
 
         public NamedPipeClientStream(string serverName, string pipeName)
@@ -142,7 +142,7 @@ namespace System.IO.Pipes
 
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
-            // This is the main connection loop. It will loop until the timeout expires.  
+            // This is the main connection loop. It will loop until the timeout expires.
             int elapsed = 0;
             var sw = new SpinWait();
             do
@@ -162,7 +162,7 @@ namespace System.IO.Pipes
                     return;
                 }
 
-                // Some platforms may return immediately from TryConnect if the connection could not be made, 
+                // Some platforms may return immediately from TryConnect if the connection could not be made,
                 // e.g. WaitNamedPipe on Win32 will return immediately if the pipe hasn't yet been created,
                 // and open on Unix will fail if the file isn't yet available.  Rather than just immediately
                 // looping around again, do slightly smarter busy waiting.

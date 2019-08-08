@@ -287,7 +287,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 upper = (byte)(size >> 8);
                 contents.AddSecret(s_zeroOid, bigBuf.AsMemory(0, 4 + size));
             }
-           
+
             builder.AddSafeContentsUnencrypted(contents);
             builder.SealWithMac("hi", HashAlgorithmName.SHA1, 120);
             byte[] output = builder.Encode();

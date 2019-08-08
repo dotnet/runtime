@@ -196,7 +196,7 @@ namespace System.Xml.Linq
 
         public override void WriteValue(DateTimeOffset value)
         {
-            // For compatibility with custom writers, XmlWriter writes DateTimeOffset as DateTime. 
+            // For compatibility with custom writers, XmlWriter writes DateTimeOffset as DateTime.
             // Our internal writers should use the DateTimeOffset-String conversion from XmlConvert.
             WriteString(XmlConvert.ToString(value));
         }

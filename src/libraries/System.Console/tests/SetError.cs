@@ -11,7 +11,7 @@ public class SetError
     [Fact]
     public static void SetErrorThrowsOnNull()
     {
-        TextWriter savedError = Console.Error;        
+        TextWriter savedError = Console.Error;
         try
         {
             Assert.Throws<ArgumentNullException>(() => Console.SetError(null));

@@ -15,7 +15,7 @@ namespace System.ComponentModel
         Static = 0,
 
         /// <summary>
-        /// This tab will be added to the properties window and can only be explicitly removed by a 
+        /// This tab will be added to the properties window and can only be explicitly removed by a
         /// component outside the properties window.
         /// </summary>
         Global = 1,

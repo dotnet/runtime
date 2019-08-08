@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,7 +28,7 @@ namespace System.Text.Json
     ///     an <see cref="InvalidOperationException"/> with a context specific error message.
     ///   </para>
     ///   <para>
-    ///     To be able to format the output with indentation and whitespace OR to skip validation, create an instance of 
+    ///     To be able to format the output with indentation and whitespace OR to skip validation, create an instance of
     ///     <see cref="JsonWriterOptions"/> and pass that in to the writer.
     ///   </para>
     /// </remarks>
@@ -436,7 +436,7 @@ namespace System.Text.Json
         /// Writes the beginning of a JSON array.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray()
@@ -449,7 +449,7 @@ namespace System.Text.Json
         /// Writes the beginning of a JSON object.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject()
@@ -574,7 +574,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(JsonEncodedText propertyName)
@@ -588,7 +588,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(JsonEncodedText propertyName)
@@ -620,7 +620,7 @@ namespace System.Text.Json
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName)
@@ -645,7 +645,7 @@ namespace System.Text.Json
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName)
@@ -726,7 +726,7 @@ namespace System.Text.Json
         /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(string propertyName)
@@ -746,7 +746,7 @@ namespace System.Text.Json
         /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(string propertyName)
@@ -763,7 +763,7 @@ namespace System.Text.Json
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<char> propertyName)
@@ -788,7 +788,7 @@ namespace System.Text.Json
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<char> propertyName)

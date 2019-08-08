@@ -177,7 +177,7 @@ namespace System.Threading.Tests
                 base.Dispose(explicitDisposing);
             }
         }
-        
+
 #pragma warning disable 0618 // 'WaitHandle.Handle' is obsolete: 'Use the SafeWaitHandle property instead.'
         [Fact]
         public static void Handle()

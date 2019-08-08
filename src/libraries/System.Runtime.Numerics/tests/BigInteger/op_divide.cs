@@ -10,7 +10,7 @@ namespace System.Numerics.Tests
     {
         private static int s_samples = 10;
         private static Random s_random = new Random(100);
-        
+
         [Fact]
         public static void RunDividePositivenonZero()
         {
@@ -51,7 +51,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Divide Method - One large BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
@@ -84,7 +84,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Axiom: X/1 = X
             VerifyIdentityString(BigInteger.One + " " + int.MaxValue + " b/", Int32.MaxValue.ToString());
             VerifyIdentityString(BigInteger.One + " " + long.MaxValue + " b/", Int64.MaxValue.ToString());
@@ -102,7 +102,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Axiom: 0/X = 0
             VerifyIdentityString(int.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
             VerifyIdentityString(long.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
@@ -119,7 +119,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Check interesting cases for boundary conditions
             // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0
@@ -178,7 +178,7 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

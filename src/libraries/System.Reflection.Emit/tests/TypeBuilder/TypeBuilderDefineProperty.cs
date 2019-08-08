@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(DateTime), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
             yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(EmptyGenericStruct<int>), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
             yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(EmptyGenericStruct<int>).GetGenericArguments()[0], new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
-        
+
             // Invalid unicode
             yield return new object[] { "\uDC00", (PropertyAttributes)0x8000, typeof(EmptyGenericStruct<string>), new Type[] { typeof(EmptyGenericClass<string>) }, "\uFFFD", PropertyAttributes.None };
             yield return new object[] { "\uD800", PropertyAttributes.None, typeof(int).MakeByRefType(), new Type[] { typeof(int).MakeByRefType() }, "\uFFFD", PropertyAttributes.None };
@@ -232,7 +232,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             Assert.Throws<NotSupportedException>(() => type.AsType().GetProperties());
         }
-        
+
         public class DefinePropertyClass
         {
             public int Property { get { return 10; } }

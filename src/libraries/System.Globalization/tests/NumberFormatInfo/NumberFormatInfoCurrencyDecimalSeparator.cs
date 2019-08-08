@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
             var format = new NumberFormatInfo();
             AssertExtensions.Throws<ArgumentException>("value", null, () => format.CurrencyDecimalSeparator = "");
         }
-        
+
         [Fact]
         public void CurrencyDecimalSeparator_SetReadOnly_ThrowsInvalidOperationException()
         {

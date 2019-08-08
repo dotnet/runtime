@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Net.NetworkInformation
 {
     /// <summary>
-    /// IPInterfaceStatistics provider for Linux. 
+    /// IPInterfaceStatistics provider for Linux.
     /// Reads information out of /proc/net/dev and other locations.
     /// </summary>
     internal class LinuxIPInterfaceStatistics : IPInterfaceStatistics

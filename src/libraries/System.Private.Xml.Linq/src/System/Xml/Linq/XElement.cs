@@ -173,7 +173,7 @@ namespace System.Xml.Linq
         ///<overloads>
         /// Outputs this <see cref="XElement"/>'s underlying XML tree.  The output can
         /// be saved to a file, a <see cref="Stream"/>, a <see cref="TextWriter"/>,
-        /// or an <see cref="XmlWriter"/>.  Optionally whitespace can be preserved.  
+        /// or an <see cref="XmlWriter"/>.  Optionally whitespace can be preserved.
         /// </overloads>
         /// <summary>
         /// Output this <see cref="XElement"/> to a file.
@@ -181,9 +181,9 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The format will be indented by default.  If you want
         /// no indenting then use the SaveOptions version of Save (see
-        /// <see cref="XElement.Save(string, SaveOptions)"/>) enabling 
-        /// SaveOptions.DisableFormatting. 
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// <see cref="XElement.Save(string, SaveOptions)"/>) enabling
+        /// SaveOptions.DisableFormatting.
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="fileName">
@@ -198,7 +198,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XElement"/> to a file.
         /// </summary>
         /// <param name="fileName">
-        /// The name of the file to output the XML to.  
+        /// The name of the file to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -330,7 +330,7 @@ namespace System.Xml.Linq
         /// <seealso cref="XNode.Ancestors()"/>
         /// </overloads>
         /// <summary>
-        /// Returns this <see cref="XElement"/> and all of it's ancestors up to 
+        /// Returns this <see cref="XElement"/> and all of it's ancestors up to
         /// the root node.
         /// <seealso cref="XNode.Ancestors()"/>
         /// </summary>
@@ -347,7 +347,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Returns the ancestor(s) of this <see cref="XElement"/> with the matching
         /// <see cref="XName"/>. If this <see cref="XElement"/>'s <see cref="XName"/>
-        /// matches the <see cref="XName"/> passed in then it will be included in the 
+        /// matches the <see cref="XName"/> passed in then it will be included in the
         /// resulting <see cref="IEnumerable"/> or <see cref="XElement"/>.
         /// <seealso cref="XNode.Ancestors()"/>
         /// </summary>
@@ -364,7 +364,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns the <see cref="XAttribute"/> associated with this <see cref="XElement"/> that has this 
+        /// Returns the <see cref="XAttribute"/> associated with this <see cref="XElement"/> that has this
         /// <see cref="XName"/>.
         /// </summary>
         /// <param name="name">
@@ -414,7 +414,7 @@ namespace System.Xml.Linq
         /// The <see cref="XName"/> of the targeted <see cref="XAttribute"/>.
         /// </param>
         /// <returns>
-        /// The <see cref="XAttribute"/>(s) with the matching 
+        /// The <see cref="XAttribute"/>(s) with the matching
         /// </returns>
         public IEnumerable<XAttribute> Attributes(XName name)
         {
@@ -467,7 +467,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns the default <see cref="XNamespace"/> of an <see cref="XElement"/> 
+        /// Returns the default <see cref="XNamespace"/> of an <see cref="XElement"/>
         /// </summary>
         public XNamespace GetDefaultNamespace()
         {
@@ -476,8 +476,8 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Get the namespace associated with a particular prefix for this <see cref="XElement"/> 
-        /// in its document context. 
+        /// Get the namespace associated with a particular prefix for this <see cref="XElement"/>
+        /// in its document context.
         /// </summary>
         /// <param name="prefix">The namespace prefix to look up</param>
         /// <returns>An <see cref="XNamespace"/> for the namespace bound to the prefix</returns>
@@ -544,7 +544,7 @@ namespace System.Xml.Linq
         }
 
         /// <overloads>
-        /// The Load method provides multiple strategies for creating a new 
+        /// The Load method provides multiple strategies for creating a new
         /// <see cref="XElement"/> and initializing it from a data source containing
         /// raw XML.  Load from a file (passing in a URI to the file), an
         /// <see cref="Stream"/>, a <see cref="TextReader"/>, or an
@@ -554,8 +554,8 @@ namespace System.Xml.Linq
         /// <seealso cref="XElement.Parse(string)"/>
         /// </overloads>
         /// <summary>
-        /// Create a new <see cref="XElement"/> based on the contents of the file 
-        /// referenced by the URI parameter passed in.  Note: Use 
+        /// Create a new <see cref="XElement"/> based on the contents of the file
+        /// referenced by the URI parameter passed in.  Note: Use
         /// <see cref="XElement.Parse(string)"/> to create an <see cref="XElement"/> from
         /// a string containing XML.
         /// <seealso cref="XmlReader.Create(string)"/>
@@ -581,10 +581,10 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Create a new <see cref="XElement"/> based on the contents of the file 
-        /// referenced by the URI parameter passed in.  Optionally, whitespace can be preserved.  
+        /// Create a new <see cref="XElement"/> based on the contents of the file
+        /// referenced by the URI parameter passed in.  Optionally, whitespace can be preserved.
         /// <see cref="XmlReader.Create(string)"/>
-        /// <seealso cref="XDocument.Load(string, LoadOptions)"/> 
+        /// <seealso cref="XDocument.Load(string, LoadOptions)"/>
         /// </summary>
         /// <remarks>
         /// This method uses the <see cref="XmlReader.Create(string)"/> method to create
@@ -616,7 +616,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Create a new <see cref="XElement"/> and initialize its underlying XML tree using
-        /// the passed <see cref="Stream"/> parameter.  
+        /// the passed <see cref="Stream"/> parameter.
         /// </summary>
         /// <param name="stream">
         /// A <see cref="Stream"/> containing the raw XML to read into the newly
@@ -698,7 +698,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Create a new <see cref="XElement"/> and initialize its underlying XML tree using
-        /// the passed <see cref="TextReader"/> parameter.  
+        /// the passed <see cref="TextReader"/> parameter.
         /// </summary>
         /// <param name="textReader">
         /// A <see cref="TextReader"/> containing the raw XML to read into the newly
@@ -865,7 +865,7 @@ namespace System.Xml.Linq
         /// whitespace can be preserved.
         /// </overloads>
         /// <summary>
-        /// Parses a string containing XML into an <see cref="XElement"/>.  
+        /// Parses a string containing XML into an <see cref="XElement"/>.
         /// </summary>
         /// <remarks>
         /// The XML must contain only one root node.
@@ -889,7 +889,7 @@ namespace System.Xml.Linq
         /// <list>
         /// <item>The XML must contain only one root node.</item>
         /// <item>
-        /// If LoadOptions.PreserveWhitespace is enabled the underlying 
+        /// If LoadOptions.PreserveWhitespace is enabled the underlying
         /// <see cref="XmlReaderSettings"/>'
         /// property <see cref="XmlReaderSettings.IgnoreWhitespace"/> will be set to false.
         /// </item>
@@ -1039,9 +1039,9 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The format will be indented by default.  If you want
         /// no indenting then use the SaveOptions version of Save (see
-        /// <see cref="XElement.Save(Stream, SaveOptions)"/>) enabling 
+        /// <see cref="XElement.Save(Stream, SaveOptions)"/>) enabling
         /// SaveOptions.DisableFormatting.
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="stream">
@@ -1056,7 +1056,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XElement"/> to a <see cref="Stream"/>.
         /// </summary>
         /// <param name="stream">
-        /// The <see cref="Stream"/> to output the XML to.  
+        /// The <see cref="Stream"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -1075,7 +1075,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XElement"/> to a <see cref="Stream"/>.
         /// </summary>
         /// <param name="stream">
-        /// The <see cref="Stream"/> to output the XML to.  
+        /// The <see cref="Stream"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -1100,9 +1100,9 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The format will be indented by default.  If you want
         /// no indenting then use the SaveOptions version of Save (see
-        /// <see cref="XElement.Save(TextWriter, SaveOptions)"/>) enabling 
+        /// <see cref="XElement.Save(TextWriter, SaveOptions)"/>) enabling
         /// SaveOptions.DisableFormatting.
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="textWriter">
@@ -1117,7 +1117,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XElement"/> to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="textWriter">
-        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// The <see cref="TextWriter"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -1136,7 +1136,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XElement"/> to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="textWriter">
-        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// The <see cref="TextWriter"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -1659,7 +1659,7 @@ namespace System.Xml.Linq
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the specified element is null.
-        /// </exception>        
+        /// </exception>
         [CLSCompliant(false)]
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator decimal (XElement element)
@@ -1702,7 +1702,7 @@ namespace System.Xml.Linq
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the specified element is null.
-        /// </exception>        
+        /// </exception>
         [CLSCompliant(false)]
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTime(XElement element)
@@ -1745,7 +1745,7 @@ namespace System.Xml.Linq
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the specified element is null.
-        /// </exception>        
+        /// </exception>
         [CLSCompliant(false)]
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTimeOffset(XElement element)

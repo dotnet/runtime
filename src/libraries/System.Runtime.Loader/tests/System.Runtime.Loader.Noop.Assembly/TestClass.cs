@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System.Reflection;
@@ -17,12 +17,12 @@ namespace System.Runtime.Loader.Tests
         public static Assembly GetRefEmitAssembly(string assemblyNameStr, AssemblyBuilderAccess builderType)
         {
             var assemblyName = new AssemblyName(assemblyNameStr);
-            
+
             AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, builderType);
             ModuleBuilder moduleBuilder = builder.DefineDynamicModule("RefEmitModule");
 
             TypeBuilder typeBuilder = moduleBuilder.DefineType("RefEmitTestType", TypeAttributes.Public);
-            
+
             // Define "Assembly LoadStaticAssembly(string)" method that will load a static assembly
             MethodBuilder methodBuilder = typeBuilder.DefineMethod("LoadStaticAssembly", MethodAttributes.Public|MethodAttributes.Static, typeof(Assembly), new Type[]{typeof(string)});
             ILGenerator ilGenerator = methodBuilder.GetILGenerator();
@@ -40,7 +40,7 @@ namespace System.Runtime.Loader.Tests
             ConstructorInfo ctorAssemblyName = TypeExtensions.GetConstructor(typeof(System.Reflection.AssemblyName), new Type[] {typeof(string)});
 
             // Load incoming assemblyname string
-            ilGenerator.Emit(OpCodes.Ldarg_0);  
+            ilGenerator.Emit(OpCodes.Ldarg_0);
 
             // Create new object of the type AssemblyName
             ilGenerator.Emit(OpCodes.Newobj, ctorAssemblyName);

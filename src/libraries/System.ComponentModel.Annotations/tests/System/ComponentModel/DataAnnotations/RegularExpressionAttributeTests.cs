@@ -88,7 +88,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("foo(?<1bar)");
             Assert.ThrowsAny<ArgumentException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
-        
+
         public class ClassWithValidToString
         {
             public override string ToString() => "abc";

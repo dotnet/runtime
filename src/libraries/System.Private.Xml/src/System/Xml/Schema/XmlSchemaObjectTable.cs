@@ -209,7 +209,7 @@ namespace System.Xml.Schema
             }
         }
 
-        //ICollection for Values 
+        //ICollection for Values
         internal class ValuesCollection : ICollection
         {
             private List<XmlSchemaObjectEntry> _entries;

@@ -193,7 +193,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                //Set the object data 
+                //Set the object data
                 Debug.Assert(holder.ObjectValue is ISerializable, "holder.m_object is ISerializable");
                 CompleteISerializableObject(holder.ObjectValue, holder.SerializationInfo, _context);
             }
@@ -224,7 +224,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(holder.IsIncompleteObjectReference, "holder.IsIncompleteObjectReference");
 
             //In the pathological case, an Object implementing IObjectReference could return a reference
-            //to a different object which implements IObjectReference.  This makes us vulnerable to a 
+            //to a different object which implements IObjectReference.  This makes us vulnerable to a
             //denial of service attack and stack overflow.  If the depthCount becomes greater than
             //MaxReferenceDepth, we'll throw a SerializationException.
             int depthCount = 0;
@@ -284,7 +284,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(holder != null, "[TypedReferenceBuilder.ctor]holder!=null");
             Debug.Assert(holder.RequiresValueTypeFixup, "[TypedReferenceBuilder.ctor]holder.RequiresValueTypeFixup");
 
-            //In order to get a TypedReference, we need to get a list of all of the FieldInfos to 
+            //In order to get a TypedReference, we need to get a list of all of the FieldInfos to
             //create the path from our outermost containing object down to the actual field which
             //we'd like to set.  This loop is used to build up that list.
             while (holder.RequiresValueTypeFixup)
@@ -299,12 +299,12 @@ namespace System.Runtime.Serialization
                 }
 
                 //Get the fixup information.  If we have data for our parent field, add it to our list
-                //and continue the walk up to find the next outermost containing object.  We cache the 
+                //and continue the walk up to find the next outermost containing object.  We cache the
                 //object that we have.  In most cases, we could have just grabbed it after this loop finished.
                 //However, if the outermost containing object is an array, we need the object one further
                 //down the chain, so we have to do a lot of caching.
                 currFixup = holder.ValueFixup;
-                fixupObj = holder.ObjectValue;  //Save the most derived 
+                fixupObj = holder.ObjectValue;  //Save the most derived
                 if (currFixup.ParentField != null)
                 {
                     FieldInfo parentField = currFixup.ParentField;
@@ -477,7 +477,7 @@ namespace System.Runtime.Serialization
                             tempObjectHolder.Reachable = true;
                         }
 
-                        //There are two types of fixups that we could be doing: array or member.  
+                        //There are two types of fixups that we could be doing: array or member.
                         //Delayed Fixups should be handled by the above branch.
                         switch (currentFixup._fixupType)
                         {
@@ -583,8 +583,8 @@ namespace System.Runtime.Serialization
                 temp.DecrementFixupsRemaining(this);
                 if (((temp.DirectlyDependentObjects)) == 0)
                 {
-                    // If this is null, we have the case where a fixup was registered for a child, the object 
-                    // required by the fixup was provided, and the object to be fixed hasn't yet been seen.  
+                    // If this is null, we have the case where a fixup was registered for a child, the object
+                    // required by the fixup was provided, and the object to be fixed hasn't yet been seen.
                     if (temp.ObjectValue != null)
                     {
                         CompleteObject(temp, true);
@@ -710,11 +710,11 @@ namespace System.Runtime.Serialization
 
             // The following case will only be true when somebody has registered a fixup on an object before
             // registering the object itself.  I don't believe that most well-behaved formatters will do this,
-            // but we need to allow it anyway.  We will walk the list of fixups which have been recorded on 
+            // but we need to allow it anyway.  We will walk the list of fixups which have been recorded on
             // the new object and fix those that we can.  Because the user could still register later fixups
             // on this object, we won't call any implementations of ISerializable now.  If that's required,
             // it will have to be handled by the code in DoFixups.
-            // README README: We have to do the UpdateData before 
+            // README README: We have to do the UpdateData before
             if (temp.DirectlyDependentObjects > 0)
             {
                 CompleteObject(temp, false);
@@ -727,7 +727,7 @@ namespace System.Runtime.Serialization
 
             if (temp.CompletelyFixed)
             {
-                //Here's where things get tricky.  If this isn't an instance of IObjectReference, we need to walk it's fixup 
+                //Here's where things get tricky.  If this isn't an instance of IObjectReference, we need to walk it's fixup
                 //chain and decrement the counters on anything that has reached 0.  Once we've notified all of the dependencies,
                 //we can simply clear the list of dependent objects.
                 DoNewlyRegisteredObjectFixups(temp);
@@ -800,7 +800,7 @@ namespace System.Runtime.Serialization
             int fixupCount = -1;
 
             //The first thing that we need to do is fixup all of the objects which implement
-            //IObjectReference.  This is complicated by the fact that we need to deal with IReferenceObjects 
+            //IObjectReference.  This is complicated by the fact that we need to deal with IReferenceObjects
             //objects that have a reference to an object implementing IObjectReference.  We continually
             //walk over the list of objects until we've completed all of the object references or until
             //we can't resolve any more (which may happen if we have two objects implementing IObjectReference
@@ -1120,7 +1120,7 @@ namespace System.Runtime.Serialization
 
         /// <summary>
         /// Note a fixup that has to be done before this object can be completed.
-        /// Fixups are things that need to happen when other objects in the graph 
+        /// Fixups are things that need to happen when other objects in the graph
         /// are added.  Dependencies are things that need to happen when this object
         /// is added.
         /// </summary>
@@ -1143,7 +1143,7 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Updates the total list of dependencies to account for a fixup being added
         /// or completed in a child value class.  This will update all value classes
-        /// containing that child and the object which contains all of them.  
+        /// containing that child and the object which contains all of them.
         /// </summary>
         /// <param name="amount">the amount by which to increment (or decrement) the dependency chain.</param>
         /// <param name="manager">The ObjectManager used to lookup other objects up the chain.</param>
@@ -1178,7 +1178,7 @@ namespace System.Runtime.Serialization
 
         /// <summary>
         /// Update the data in the object holder.  This should be called when the object
-        /// is finally registered.  Presumably the ObjectHolder was created to track 
+        /// is finally registered.  Presumably the ObjectHolder was created to track
         /// some dependencies or preregistered fixups and we now need to actually record the
         /// object and other associated data.  We take this opportunity to set the flags
         /// so that we can do some faster processing in the future.
@@ -1189,7 +1189,7 @@ namespace System.Runtime.Serialization
         /// <param name="surrogate">The surrogate handling this object.  May be null.</param>
         /// <param name="idOfContainer">The id of the object containing this one if this is a valuetype.</param>
         internal void UpdateData(
-            object obj, SerializationInfo info, ISerializationSurrogate surrogate, long idOfContainer, 
+            object obj, SerializationInfo info, ISerializationSurrogate surrogate, long idOfContainer,
             FieldInfo field, int[] arrayIndex, ObjectManager manager)
         {
             Debug.Assert(obj != null, "obj!=null");
@@ -1220,7 +1220,7 @@ namespace System.Runtime.Serialization
         internal void MarkForCompletionWhenAvailable() => _markForFixupWhenAvailable = true;
 
         /// <summary>
-        /// An internal-only routine to set the flags based upon the data contained in 
+        /// An internal-only routine to set the flags based upon the data contained in
         /// the ObjectHolder
         /// </summary>
         internal void SetFlags()
@@ -1271,7 +1271,7 @@ namespace System.Runtime.Serialization
         // on them like we would any other object.  As soon as they're pushed into their
         // containing object we set ValueTypeFixupPerformed to true and have to go through
         // a more complicated path to set fixed up valuetype objects.
-        // We check whether or not there are any dependent objects. 
+        // We check whether or not there are any dependent objects.
         internal bool ValueTypeFixupPerformed
         {
             get
@@ -1292,7 +1292,7 @@ namespace System.Runtime.Serialization
 
         internal bool HasSurrogate => (_flags & HAS_SURROGATE) != 0;
 
-        internal bool CanSurrogatedObjectValueChange => 
+        internal bool CanSurrogatedObjectValueChange =>
             (_surrogate == null || _surrogate.GetType() != typeof(SurrogateForCyclicalReference));
 
         internal bool CanObjectValueChange =>
@@ -1376,7 +1376,7 @@ namespace System.Runtime.Serialization
         internal long _id;
         internal object _fixupInfo; //This is either an array index, a String, or a MemberInfo
         internal readonly int _fixupType;
-        
+
         internal FixupHolder(long id, object fixupInfo, int fixupType)
         {
             Debug.Assert(id > 0, "id>0");

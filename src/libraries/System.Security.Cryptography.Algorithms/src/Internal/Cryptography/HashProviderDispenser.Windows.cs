@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     //
-    // Provides hash services via the native provider (CNG). 
+    // Provides hash services via the native provider (CNG).
     //
     internal static partial class HashProviderDispenser
     {
@@ -24,5 +24,3 @@ namespace Internal.Cryptography
         }
     }
 }
-
-

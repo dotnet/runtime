@@ -240,7 +240,7 @@ namespace System.Linq.Expressions.Tests
 @".method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
 {
   .maxstack 0
-  IL_0000: ret        
+  IL_0000: ret
 }",
 @"object lambda_method(object[])
 {

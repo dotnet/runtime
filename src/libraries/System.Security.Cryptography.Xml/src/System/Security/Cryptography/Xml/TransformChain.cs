@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This file contains the classes necessary to represent the Transform processing model used in 
+// This file contains the classes necessary to represent the Transform processing model used in
 // XMLDSIG. The basic idea is as follows. A Reference object contains within it a TransformChain, which
 // is an ordered set of XMLDSIG transforms (represented by <Transform>...</Transform> clauses in the XML).
 // A transform in XMLDSIG operates on an input of either an octet stream or a node set and produces
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Xml
                 }
                 else
                 {
-                    // We need translation 
+                    // We need translation
                     // For now, we just know about Stream->{XmlNodeList,XmlDocument} and {XmlNodeList,XmlDocument}->Stream
                     if (currentInput is Stream)
                     {

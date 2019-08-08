@@ -19,7 +19,7 @@ namespace System.Text.Tests
             Assert.Equal(expected, new UnicodeEncoding(false, false, false).GetMaxByteCount(charCount));
             Assert.Equal(expected, new UnicodeEncoding(true, true, false).GetMaxByteCount(charCount));
             Assert.Equal(expected, new UnicodeEncoding(true, false, false).GetMaxByteCount(charCount));
-            
+
             Assert.Equal(expected, new UnicodeEncoding(false, true, true).GetMaxByteCount(charCount));
             Assert.Equal(expected, new UnicodeEncoding(false, false, true).GetMaxByteCount(charCount));
             Assert.Equal(expected, new UnicodeEncoding(true, true, true).GetMaxByteCount(charCount));

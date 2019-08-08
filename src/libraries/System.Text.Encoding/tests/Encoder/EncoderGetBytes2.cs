@@ -21,28 +21,28 @@ namespace System.Text.Tests
             yield return new object[] { Encoding.UTF8.GetEncoder(), 3 };
             yield return new object[] { Encoding.Unicode.GetEncoder(), 2 };
         }
-      
+
         public static IEnumerable<object[]> Encoders_ASCIIInput()
         {
             yield return new object[] { Encoding.ASCII.GetEncoder(), 1, new int[] { 1, 0 } };
             yield return new object[] { Encoding.UTF8.GetEncoder(), 1, new int[] { 1, 0 } };
             yield return new object[] { Encoding.Unicode.GetEncoder(), 2, new int[] { 0, 1 } };
         }
-        
+
         public static IEnumerable<object[]> Encoders_UnicodeInput()
         {
             yield return new object[] { Encoding.ASCII.GetEncoder(), new byte[9], "\u8FD9\u4E2A\u4E00\u4E2AABC\u6D4B\u8BD5".ToCharArray(), 8, 1 };
             yield return new object[] { Encoding.UTF8.GetEncoder(), new byte[21], "\u8FD9\u4E2A\u4E00\u4E2AABC\u6D4B\u8BD5".ToCharArray(), 18, 3 };
             yield return new object[] { Encoding.Unicode.GetEncoder(), new byte[27], "\u8FD9\u4E2A\u4E00\u4E2AABC\u6D4B\u8BD5".ToCharArray(), 16, 2 };
         }
-        
+
         public static IEnumerable<object[]> Encoders_MixedInput()
         {
             yield return new object[] { Encoding.ASCII.GetEncoder(), 1, 1, 1 };
             yield return new object[] { Encoding.UTF8.GetEncoder(), 1, 3, 1 };
             yield return new object[] { Encoding.Unicode.GetEncoder(), 2, 2, 2 };
         }
-        
+
         // Call GetBytes to convert an arbitrary character array by using different encoders
         [Theory]
         [MemberData(nameof(Encoders_RandomInput))]
@@ -58,10 +58,10 @@ namespace System.Text.Tests
             int ret1 = encoder.GetBytes(chars, 0, chars.Length, bytes, 0, flush: true);
             int ret2 = encoder.GetBytes(chars, 0, chars.Length, bytes, 0, flush: false);
 
-            // If the last character is a surrogate and the encoder is flushing its state, it will return a fallback character. 
+            // If the last character is a surrogate and the encoder is flushing its state, it will return a fallback character.
             // When the encoder isn't flushing its state then it holds on to the remnant bytes between calls so that if the next
             // bytes passed in form a valid character you'd get that char as a result.
-            // The difference in length of a low surrogate flushed vs non-flushed is 1 
+            // The difference in length of a low surrogate flushed vs non-flushed is 1
             if (IsHighSurrogate(chars[chars.Length - 1]))
             {
                 ret2 += step;
@@ -81,7 +81,7 @@ namespace System.Text.Tests
         public void EncoderGetBytesASCIIInput(Encoder encoder, int size, int[] partialStart)
         {
             Assert.Equal(2, partialStart.Length);
-            
+
             char[] chars = "abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+-=\\|/?<>  ,.`~".ToCharArray();
             byte[] bytes = new byte[chars.Length * size];
             VerificationHelper(encoder, chars, 0, chars.Length, bytes, 0, flush: true, expectedRetVal: chars.Length * size);
@@ -104,7 +104,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 1, chars.Length - 1, bytes, 1, flush: true, expectedRetVal: expectedPartial);
             VerificationHelper(encoder, chars, 1, 1, bytes, 1, flush: false, expectedRetVal: expectedComplete);
         }
-        
+
         // Call GetBytes to convert an ASCIIUnicode character array by different encoders
         [Theory]
         [MemberData(nameof(Encoders_MixedInput))]
@@ -113,7 +113,7 @@ namespace System.Text.Tests
             // Bytes does not have enough capacity to accomodate result
             string s = "T\uD83D\uDE01est";
             char[] c = s.ToCharArray();
-            
+
             EncoderGetBytesMixedInput(encoder, c, 2, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInput(encoder, c, 3, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInput(encoder, c, 4, asciiSize, unicodeSize0, unicodeSize1);
@@ -127,8 +127,8 @@ namespace System.Text.Tests
         {
             // Bytes does not have enough capacity to accomodate result
             string s = "T\uD83D\uDE01est";
-            char[] c = s.ToCharArray();           
-            
+            char[] c = s.ToCharArray();
+
             EncoderGetBytesMixedInputThrows(encoder, c, 2, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInputThrows(encoder, c, 3, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInputThrows(encoder, c, 4, asciiSize, unicodeSize0, unicodeSize1);
@@ -137,13 +137,13 @@ namespace System.Text.Tests
 
         private void EncoderGetBytesMixedInput(Encoder encoder, char[] chars, int length, int asciiSize, int unicodeSize0, int unicodeSize1)
         {
-            int byteLength = asciiSize 
-                + Clamp(length - 1, 0, 1) * unicodeSize0 
-                + Clamp(length - 2, 0, 1) * unicodeSize1 
+            int byteLength = asciiSize
+                + Clamp(length - 1, 0, 1) * unicodeSize0
+                + Clamp(length - 2, 0, 1) * unicodeSize1
                 + Math.Max(length - 3, 0) * asciiSize;
             byte[] b = new byte[byteLength];
             Assert.Equal(byteLength, encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
-            
+
             // Fixed buffer so make larger
             b = new byte[20];
             VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength);
@@ -151,21 +151,21 @@ namespace System.Text.Tests
 
         private void EncoderGetBytesMixedInputThrows(Encoder encoder, char[] chars, int length, int asciiSize, int unicodeSize0, int unicodeSize1)
         {
-            int byteLength = asciiSize 
-                + Clamp(length - 1, 0, 1) * unicodeSize0 
-                + Clamp(length - 2, 0, 1) * unicodeSize1 
+            int byteLength = asciiSize
+                + Clamp(length - 1, 0, 1) * unicodeSize0
+                + Clamp(length - 2, 0, 1) * unicodeSize1
                 + Math.Max(length - 3, 0) * asciiSize;
             byteLength -= 1;
-            
+
             byte[] b = new byte[byteLength];
-            
+
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
-            
+
             // Fixed buffer so make larger
             b = new byte[20];
             AssertExtensions.Throws<ArgumentException>("bytes", () => VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength));
         }
-        
+
         private static unsafe void VerificationFixedEncodingHelper(Encoder encoder, char[] c, int charCount, byte[] b, int byteCount)
         {
             fixed (char* pChar = c)
@@ -174,7 +174,7 @@ namespace System.Text.Tests
                 Assert.Equal(byteCount, encoder.GetBytes(pChar, charCount, pByte, byteCount, flush: true));
             }
         }
-        
+
         private void VerificationHelper(Encoder encoder, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex,
             bool flush, int expectedRetVal)
         {
@@ -186,10 +186,10 @@ namespace System.Text.Tests
         {
             return ((c >= HIGH_SURROGATE_START) && (c <= HIGH_SURROGATE_END));
         }
-        
-        private static int Clamp(int value, int min, int max)  
-        {  
-            return (value < min) ? min : (value > max) ? max : value;  
+
+        private static int Clamp(int value, int min, int max)
+        {
+            return (value < min) ? min : (value > max) ? max : value;
         }
     }
 }

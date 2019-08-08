@@ -281,7 +281,7 @@ namespace System.Xml
         }
 
         //
-        // XmlValidatingReader 
+        // XmlValidatingReader
         //
         public event ValidationEventHandler ValidationEventHandler
         {

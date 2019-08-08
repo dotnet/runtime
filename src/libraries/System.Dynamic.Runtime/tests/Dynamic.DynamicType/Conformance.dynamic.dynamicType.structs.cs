@@ -49,13 +49,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
             d = new C();
             d.s = default(S);
             d.s.Field = 4;
-            // 
+            //
             if (d.s.Field != 0)
                 rez += 1;
             //Struct as a property
             d.prop = default(S);
             d.prop.Field = 5;
-            // 
+            //
             if (d.prop.Field != 0)
                 rez += 1;
             return rez == 0 ? 0 : 1;
@@ -107,13 +107,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
             dynamic d = new C<S>();
             d.s = default(S);
             d.s.Field = 4;
-            // 
+            //
             if (d.s.Field != 0)
                 rez += 1;
             //Struct as a property
             d.prop = default(S);
             d.prop.Field = 5;
-            // 
+            //
             if (d.prop.Field != 0)
                 rez += 1;
             return rez == 0 ? 0 : 1;
@@ -160,7 +160,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
             dynamic d = new S();
             d.Field2 = default(S.S2);
             d.Field2.Foo = 4;
-            // 
+            //
             if (d.Field2.Foo != 0)
                 rez++;
             return rez == 0 ? 0 : 1;
@@ -191,7 +191,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

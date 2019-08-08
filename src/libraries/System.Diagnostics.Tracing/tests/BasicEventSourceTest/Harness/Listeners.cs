@@ -23,10 +23,10 @@ namespace BasicEventSourceTests
     /// </summary>
     public abstract class Listener : IDisposable
     {
-        public Action<Event> OnEvent;           // Called when you get events.  
+        public Action<Event> OnEvent;           // Called when you get events.
         public abstract void Dispose();
         /// <summary>
-        /// Send a command to an eventSource.   Be careful this is async.  You may wish to do a WaitForEnable 
+        /// Send a command to an eventSource.   Be careful this is async.  You may wish to do a WaitForEnable
         /// </summary>
         public abstract void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null);
 
@@ -53,8 +53,8 @@ namespace BasicEventSourceTests
     }
 
     /// <summary>
-    /// Used to control what options the harness sends to the EventSource when turning it on.   If not given 
-    /// it turns on all keywords, Verbose level, and no args.   
+    /// Used to control what options the harness sends to the EventSource when turning it on.   If not given
+    /// it turns on all keywords, Verbose level, and no args.
     /// </summary>
     public class FilteringOptions
     {
@@ -73,7 +73,7 @@ namespace BasicEventSourceTests
     /// <summary>
     /// Because events can be written to a EventListener as well as to ETW, we abstract what the result
     /// of an event coming out of the pipe.   Basically there are properties that fetch the name
-    /// and the payload values, and we subclass this for the ETW case and for the EventListener case. 
+    /// and the payload values, and we subclass this for the ETW case and for the EventListener case.
     /// </summary>
     public abstract class Event
     {
@@ -111,7 +111,7 @@ namespace BasicEventSourceTests
 
 #if DEBUG
         /// <summary>
-        /// This is a convenience function for the debugger.   It is not used typically 
+        /// This is a convenience function for the debugger.   It is not used typically
         /// </summary>
         public List<object> PayloadValues
         {
@@ -231,7 +231,7 @@ namespace BasicEventSourceTests
                 if (eventSourceName != null && eventSourceName == sourceBeingCreated.Name)
                 {
                     DoCommand(sourceBeingCreated, command, options);
-                    eventSourceName = null;         // so we only do it once.  
+                    eventSourceName = null;         // so we only do it once.
                 }
             };
         }
@@ -266,7 +266,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// EtwEvent implements the 'Event' abstraction for TraceListene events (it has a EventWrittenEventArgs in it) 
+        /// EtwEvent implements the 'Event' abstraction for TraceListene events (it has a EventWrittenEventArgs in it)
         /// </summary>
         internal class EventListenerEvent : Event
         {

@@ -10,11 +10,11 @@ namespace System.Configuration
     /// <summary>
     /// Simple dictionary config factory
     /// config is a dictionary mapping key-&gt;value
-    /// 
-    ///     &lt;add key="name" value="text"&gt;  sets key=text 
+    ///
+    ///     &lt;add key="name" value="text"&gt;  sets key=text
     ///     &lt;remove key="name"&gt;            removes the definition of key
     ///     &lt;clear&gt;                        removes all definitions
-    /// 
+    ///
     /// </summary>
     public class DictionarySectionHandler : IConfigurationSectionHandler
     {

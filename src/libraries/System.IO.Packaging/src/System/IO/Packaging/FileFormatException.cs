@@ -126,7 +126,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Sets the SerializationInfo object with the file name and additional exception information. 
+        /// Sets the SerializationInfo object with the file name and additional exception information.
         /// </summary>
         /// <param name="info">The object that holds the serialized object data.</param>
         /// <param name="context">The contextual information about the source or destination.</param>

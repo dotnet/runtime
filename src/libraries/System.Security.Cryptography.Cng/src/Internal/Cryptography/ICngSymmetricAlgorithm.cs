@@ -7,7 +7,7 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    // 
+    //
     // Internal interface that allows CngSymmetricAlgorithmCore to communicate back with the SymmetricAlgorithm it's embedded in.
     // Any class that implements interface also derives from SymmetricAlgorithm so they'll implement most of these methods already.
     // In addition to exposing a way to call the Key property non-virtually, this interface limits access to the outer object's
@@ -33,4 +33,3 @@ namespace Internal.Cryptography
         byte[] PreprocessKey(byte[] key);
     }
 }
-

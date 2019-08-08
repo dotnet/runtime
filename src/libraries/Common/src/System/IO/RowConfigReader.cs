@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.IO
 {
-    /// <summary> 
+    /// <summary>
     /// Helper for reading config files where each row is a key-value data pair.
     /// The input key-values must not have any whitespace within them.
     /// Keys are only matched if they begin a line, with no preceding whitespace.

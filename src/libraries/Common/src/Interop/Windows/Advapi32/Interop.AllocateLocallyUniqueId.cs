@@ -13,4 +13,3 @@ internal partial class Interop
         internal static extern bool AllocateLocallyUniqueId(out LUID Luid);
     }
 }
-

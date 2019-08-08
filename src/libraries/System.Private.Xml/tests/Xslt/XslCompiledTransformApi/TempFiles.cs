@@ -71,7 +71,7 @@ namespace System.Xml.Tests
             {
                 // initialize XslCompiledTransform instance
                 _xsl = new XslCompiledTransform();
-    
+
                 // Now let's load the parent xsl file
                 _xsl.Load("parent.xsl", new XsltSettings(false, true), new XmlUrlResolver());
             }

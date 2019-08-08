@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata.Ecma335
           | EnCMap,
 
         TypeSystemTables =
-            PtrTables 
+            PtrTables
           | EncTables
           | Module
           | TypeRef
@@ -130,7 +130,7 @@ namespace System.Reflection.Metadata.Ecma335
           | StateMachineMethod
           | CustomDebugInformation,
 
-        AllTables = 
+        AllTables =
             TypeSystemTables |
             DebugTables,
 
@@ -243,10 +243,10 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal const uint UserString = 0x70;     // #UserString heap
 
-        // The following values never appear in a token stored in metadata, 
+        // The following values never appear in a token stored in metadata,
         // they are just helper values to identify the type of a handle.
         // Note, however, that even though they do not come from the spec,
-        // they are surfaced as public constants via HandleKind enum and 
+        // they are surfaced as public constants via HandleKind enum and
         // therefore cannot change!
 
         internal const uint Blob = 0x71;        // #Blob heap
@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata.Ecma335
         //
         // Multiple values are reserved for string handles so that we can encode special
         // handling with more than just the virtual bit. See StringHandleType for how
-        // the two extra bits are actually interpreted. The extra String1,2,3 values here are 
+        // the two extra bits are actually interpreted. The extra String1,2,3 values here are
         // not used directly, but serve as a reminder that they are not available for use
         // by another handle type.
         internal const uint String  = 0x78;
@@ -274,12 +274,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Use the highest bit to mark tokens that are virtual (synthesized).
-        /// We create virtual tokens to represent projected WinMD entities. 
+        /// We create virtual tokens to represent projected WinMD entities.
         /// </summary>
         internal const uint VirtualBit = 0x80;
 
         /// <summary>
-        /// In the case of string handles, the two lower bits that (in addition to the 
+        /// In the case of string handles, the two lower bits that (in addition to the
         /// virtual bit not included in this mask) encode how to obtain the string value.
         /// </summary>
         internal const uint NonVirtualStringTypeMask = 0x03;
@@ -335,19 +335,19 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Use the highest bit to mark tokens that are virtual (synthesized).
-        /// We create virtual tokens to represent projected WinMD entities. 
+        /// We create virtual tokens to represent projected WinMD entities.
         /// </summary>
         internal const uint VirtualBit = 0x80000000;
 
         /// <summary>
         /// Returns true if the token value can escape the metadata reader.
-        /// We don't allow virtual tokens and heap tokens other than UserString to escape 
+        /// We don't allow virtual tokens and heap tokens other than UserString to escape
         /// since the token type ids are internal to the reader and not specified by ECMA spec.
-        /// 
+        ///
         /// Spec (Partition III, 1.9 Metadata tokens):
         /// Many CIL instructions are followed by a "metadata token". This is a 4-byte value, that specifies a row in a
-        /// metadata table, or a starting byte offset in the User String heap. 
-        /// 
+        /// metadata table, or a starting byte offset in the User String heap.
+        ///
         /// For example, a value of 0x02 specifies the TypeDef table; a value of 0x70 specifies the User
         /// String heap.The value corresponds to the number assigned to that metadata table (see Partition II for the full
         /// list of tables) or to 0x70 for the User String heap.The least-significant 3 bytes specify the target row within that

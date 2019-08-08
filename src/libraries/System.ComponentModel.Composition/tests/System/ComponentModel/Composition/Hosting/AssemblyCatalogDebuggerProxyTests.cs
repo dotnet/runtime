@@ -31,7 +31,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var catalog = CreateAssemblyCatalog(e);
 
                 var proxy = new AssemblyCatalogDebuggerProxy(catalog);
-                
+
                 EqualityExtensions.CheckSequenceEquals(catalog.Parts, proxy.Parts);
             }
         }

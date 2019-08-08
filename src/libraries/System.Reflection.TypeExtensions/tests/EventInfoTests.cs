@@ -52,7 +52,7 @@ namespace System.Reflection.Tests
             // Event does not have a public add accessor
             yield return new object[] { typeof(EI_Class).GetEvent("PrivateEvent", BindingFlags.NonPublic | BindingFlags.Instance), new DummyClass(), new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(InvalidOperationException) };
         }
-        
+
         [Theory]
         [MemberData(nameof(AddEventHandler_Invalid_TestData))]
         public void AddEventHandler_Invalid(EventInfo eventInfo, object target, Delegate handler, Type exceptionType)
@@ -179,7 +179,7 @@ namespace System.Reflection.Tests
     public class EI_Class
     {
         public static int AddEventHandler_RemoveEventHandler_Test_TrackingVariable = 0;
-        
+
         public event VoidDelegate PublicEvent;
         public event VoidDelegate Public_Event;
         public static event VoidDelegate PublicStaticEvent;

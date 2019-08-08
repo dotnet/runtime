@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.IO.Pipes
 {
     /// <summary>
-    /// Named pipe client. Use this to open the client end of a named pipes created with 
+    /// Named pipe client. Use this to open the client end of a named pipes created with
     /// NamedPipeServerStream.
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
@@ -19,7 +19,7 @@ namespace System.IO.Pipes
         // Waits for a pipe instance to become available. This method may return before WaitForConnection is called
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
-        // to the server after it calls WaitForConnection. 
+        // to the server after it calls WaitForConnection.
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
@@ -49,7 +49,7 @@ namespace System.IO.Pipes
                                         access,           // read and write access
                                         0,                  // sharing: none
                                         ref secAttrs,           // security attributes
-                                        FileMode.Open,      // open existing 
+                                        FileMode.Open,      // open existing
                                         _pipeFlags,         // impersonation flags
                                         IntPtr.Zero);  // template file: null
 
@@ -82,7 +82,7 @@ namespace System.IO.Pipes
                                             access,           // read and write access
                                             0,                  // sharing: none
                                             ref secAttrs,           // security attributes
-                                            FileMode.Open,      // open existing 
+                                            FileMode.Open,      // open existing
                                             _pipeFlags,         // impersonation flags
                                             IntPtr.Zero);  // template file: null
 
@@ -90,7 +90,7 @@ namespace System.IO.Pipes
                 {
                     errorCode = Marshal.GetLastWin32Error();
 
-                    // Handle the possible race condition of someone else connecting to the server 
+                    // Handle the possible race condition of someone else connecting to the server
                     // between our calls to WaitNamedPipe & CreateFile.
                     if (errorCode == Interop.Errors.ERROR_PIPE_BUSY)
                     {
@@ -115,11 +115,11 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
 
-                // NOTE: MSDN says that GetNamedPipeHandleState requires that the pipe handle has 
+                // NOTE: MSDN says that GetNamedPipeHandleState requires that the pipe handle has
                 // GENERIC_READ access, but we don't check for that because sometimes it works without
-                // GERERIC_READ access. [Edit: Seems like CreateFile slaps on a READ_ATTRIBUTES 
+                // GERERIC_READ access. [Edit: Seems like CreateFile slaps on a READ_ATTRIBUTES
                 // access request before calling NTCreateFile, so all NamedPipeClientStreams can read
-                // this if they are created (on WinXP SP2 at least)] 
+                // this if they are created (on WinXP SP2 at least)]
                 uint numInstances;
                 if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, &numInstances, null, null, null, 0))
                 {

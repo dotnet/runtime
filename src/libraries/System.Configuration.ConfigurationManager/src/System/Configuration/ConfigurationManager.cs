@@ -38,7 +38,7 @@ namespace System.Configuration
                 object section = GetSection("appSettings");
                 if (!(section is NameValueCollection))
                 {
-                    // If config is null or not the type we expect, the declaration was changed. 
+                    // If config is null or not the type we expect, the declaration was changed.
                     // Treat it as a configuration error.
                     throw new ConfigurationErrorsException(SR.Config_appsettings_declaration_invalid);
                 }
@@ -53,10 +53,10 @@ namespace System.Configuration
             {
                 object section = GetSection("connectionStrings");
 
-                // Verify type, and return the collection 
+                // Verify type, and return the collection
                 if ((section == null) || (section.GetType() != typeof(ConnectionStringsSection)))
                 {
-                    // If config is null or not the type we expect, the declaration was changed. 
+                    // If config is null or not the type we expect, the declaration was changed.
                     // Treat it as a configuration error.
                     throw new ConfigurationErrorsException(SR.Config_connectionstrings_declaration_invalid);
                 }
@@ -82,7 +82,7 @@ namespace System.Configuration
 
         private static void EnsureConfigurationSystem()
         {
-            // If a configuration system has not yet been set, 
+            // If a configuration system has not yet been set,
             // create the DefaultConfigurationSystem for exe's.
             lock (s_initLock)
             {

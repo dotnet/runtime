@@ -32,4 +32,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

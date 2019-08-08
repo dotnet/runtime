@@ -482,7 +482,7 @@ namespace System.Data.SqlClient
 
         private SqlUnicodeEncoding() : base(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false)
         { }
-        
+
         public override Decoder GetDecoder()
         {
             return new SqlUnicodeDecoder();

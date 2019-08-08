@@ -102,4 +102,3 @@ namespace System.Net
         public void Clear() => _httpListener.RemoveAll(true);
     }
 }
-

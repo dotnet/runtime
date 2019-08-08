@@ -46,7 +46,7 @@ namespace System.Diagnostics
         {
             Type proxyType = GetProxyType(type, genericTypeArguments);
 
-            // Create an instance of the proxy type, and make sure we can access all of the instance properties 
+            // Create an instance of the proxy type, and make sure we can access all of the instance properties
             // on the type without exception
             object proxyInstance = Activator.CreateInstance(proxyType, obj);
             IEnumerable<PropertyInfo> properties = GetDebuggerVisibleProperties(proxyType);
@@ -141,7 +141,7 @@ namespace System.Diagnostics
             }
 
             var sb = new StringBuilder();
-            
+
             for (int i = 0; i < segments.Length; i += 2)
             {
                 string literal = segments[i];
@@ -162,7 +162,7 @@ namespace System.Diagnostics
                     }
 
                     string memberString = GetDebuggerMemberString(member, noQuotes);
-                    
+
                     sb.Append(memberString);
                 }
             }

@@ -167,4 +167,3 @@ namespace System.Security.Cryptography
         private readonly string _format;
     }
 }
-

@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             Type returnType = typeParameters[0].AsType();
             method.SetReturnType(returnType);

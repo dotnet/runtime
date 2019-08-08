@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> SizeOf_InvalidType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType(), null };
-            
+
             yield return new object[] { typeof(GenericClass<>), "t" };
             yield return new object[] { typeof(GenericClass<string>), "t" };
             yield return new object[] { typeof(GenericStruct<>), "t" };

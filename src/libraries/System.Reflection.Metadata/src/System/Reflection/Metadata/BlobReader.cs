@@ -114,7 +114,7 @@ namespace System.Reflection.Metadata
         /// Bytes remaining from current position to end of underlying memory block.
         /// </summary>
         public int RemainingBytes => (int)(_endPointer - _currentPointer);
-       
+
         /// <summary>
         /// Repositions the reader to the start of the underlying memory block.
         /// </summary>
@@ -217,14 +217,14 @@ namespace System.Reflection.Metadata
 
         public bool ReadBoolean()
         {
-            // It's not clear from the ECMA spec what exactly is the encoding of Boolean. 
+            // It's not clear from the ECMA spec what exactly is the encoding of Boolean.
             // Some metadata writers encode "true" as 0xff, others as 1. So we treat all non-zero values as "true".
             //
             // We propose to clarify and relax the current wording in the spec as follows:
             //
             // Chapter II.16.2 "Field init metadata"
             //   ... bool '(' true | false ')' Boolean value stored in a single byte, 0 represents false, any non-zero value represents true ...
-            // 
+            //
             // Chapter 23.3 "Custom attributes"
             //   ... A bool is a single byte with value 0 representing false and any non-zero value representing true ...
             return ReadByte() != 0;
@@ -346,7 +346,7 @@ namespace System.Reflection.Metadata
         public decimal ReadDecimal()
         {
             byte* ptr = GetCurrentPointerAndAdvance(13);
-            
+
             byte scale = (byte)(*ptr & 0x7f);
             if (scale > 28)
             {
@@ -391,7 +391,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads UTF8 encoded string starting at the current position. 
+        /// Reads UTF8 encoded string starting at the current position.
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
         /// <returns>The string.</returns>
@@ -404,7 +404,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads UTF16 (little-endian) encoded string starting at the current position. 
+        /// Reads UTF16 (little-endian) encoded string starting at the current position.
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
         /// <returns>The string.</returns>
@@ -417,7 +417,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads bytes starting at the current position. 
+        /// Reads bytes starting at the current position.
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
         /// <returns>The byte array.</returns>
@@ -458,7 +458,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads an unsigned compressed integer value. 
+        /// Reads an unsigned compressed integer value.
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <param name="value">The value of the compressed integer that was read.</param>
@@ -470,7 +470,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads an unsigned compressed integer value. 
+        /// Reads an unsigned compressed integer value.
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <returns>The value of the compressed integer that was read.</returns>
@@ -486,7 +486,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads a signed compressed integer value. 
+        /// Reads a signed compressed integer value.
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <param name="value">The value of the compressed integer that was read.</param>
@@ -526,7 +526,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads a signed compressed integer value. 
+        /// Reads a signed compressed integer value.
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <returns>The value of the compressed integer that was read.</returns>
@@ -542,7 +542,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads type code encoded in a serialized custom attribute value. 
+        /// Reads type code encoded in a serialized custom attribute value.
         /// </summary>
         /// <returns><see cref="SerializationTypeCode.Invalid"/> if the encoding is invalid.</returns>
         public SerializationTypeCode ReadSerializationTypeCode()
@@ -557,7 +557,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads type code encoded in a signature. 
+        /// Reads type code encoded in a signature.
         /// </summary>
         /// <returns><see cref="SignatureTypeCode.Invalid"/> if the encoding is invalid.</returns>
         public SignatureTypeCode ReadSignatureTypeCode()
@@ -648,9 +648,9 @@ namespace System.Reflection.Metadata
         {
             // Partition II section 22.9:
             //
-            // Type shall be exactly one of: ELEMENT_TYPE_BOOLEAN, ELEMENT_TYPE_CHAR, ELEMENT_TYPE_I1, 
-            // ELEMENT_TYPE_U1, ELEMENT_TYPE_I2, ELEMENT_TYPE_U2, ELEMENT_TYPE_I4, ELEMENT_TYPE_U4, 
-            // ELEMENT_TYPE_I8, ELEMENT_TYPE_U8, ELEMENT_TYPE_R4, ELEMENT_TYPE_R8, or ELEMENT_TYPE_STRING; 
+            // Type shall be exactly one of: ELEMENT_TYPE_BOOLEAN, ELEMENT_TYPE_CHAR, ELEMENT_TYPE_I1,
+            // ELEMENT_TYPE_U1, ELEMENT_TYPE_I2, ELEMENT_TYPE_U2, ELEMENT_TYPE_I4, ELEMENT_TYPE_U4,
+            // ELEMENT_TYPE_I8, ELEMENT_TYPE_U8, ELEMENT_TYPE_R4, ELEMENT_TYPE_R8, or ELEMENT_TYPE_STRING;
             // or ELEMENT_TYPE_CLASS with a Value of zero  (23.1.16)
 
             switch (typeCode)

@@ -125,11 +125,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 target = generator();
                 Assert.Equal(
-                    expected: DataflowMessageStatus.Accepted, 
+                    expected: DataflowMessageStatus.Accepted,
                     actual: ((ITargetBlock<int>)target).OfferMessage(new DataflowMessageHeader(1), 1, null, false));
                 Assert.Equal(
                     expected: DataflowMessageStatus.DecliningPermanently,
-                    actual: ((ITargetBlock<int>)target).OfferMessage(new DataflowMessageHeader(1), 1, null, false)); 
+                    actual: ((ITargetBlock<int>)target).OfferMessage(new DataflowMessageHeader(1), 1, null, false));
                 await target.Completion;
             }
         }

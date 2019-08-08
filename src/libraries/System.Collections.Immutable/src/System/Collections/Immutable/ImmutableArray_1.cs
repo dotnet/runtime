@@ -322,7 +322,7 @@ namespace System.Collections.Immutable
             {
                 Array.Copy(self.array, index, tmp, index + 1, self.Length - index);
             }
-            
+
             return new ImmutableArray<T>(tmp);
         }
 
@@ -352,7 +352,7 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length + count];
-            
+
             if (index != 0)
             {
                 Array.Copy(self.array, 0, tmp, 0, index);
@@ -404,7 +404,7 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length + items.Length];
-            
+
             if (index != 0)
             {
                 Array.Copy(self.array, 0, tmp, 0, index);

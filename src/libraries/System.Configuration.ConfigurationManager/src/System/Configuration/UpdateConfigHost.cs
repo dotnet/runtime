@@ -51,7 +51,7 @@ namespace System.Configuration
         }
 
         // Get the StreamUpdate for a stream.
-        // If alwaysIntercept is true, then the StreamUpdate is 
+        // If alwaysIntercept is true, then the StreamUpdate is
         // always returned if it exists.
         // If alwaysIntercept is false, then only return the StreamUpdate
         // if the new stream has been successfully written to.
@@ -101,7 +101,7 @@ namespace System.Configuration
             {
                 InternalConfigHost.StaticWriteCompleted(streamUpdate.NewStreamname, success, writeContext);
 
-                // Mark the write as having successfully completed, so that subsequent calls 
+                // Mark the write as having successfully completed, so that subsequent calls
                 // to Read() will use the new stream name.
                 if (success) streamUpdate.WriteCompleted = true;
             }

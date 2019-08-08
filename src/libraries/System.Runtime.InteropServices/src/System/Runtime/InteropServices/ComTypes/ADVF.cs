@@ -5,7 +5,7 @@
 namespace System.Runtime.InteropServices.ComTypes
 {
     /// <remarks>
-    /// Note: ADVF_ONLYONCE and ADVF_PRIMEFIRST values conform with objidl.dll but are backwards from 
+    /// Note: ADVF_ONLYONCE and ADVF_PRIMEFIRST values conform with objidl.dll but are backwards from
     /// the Platform SDK documentation as of 07/21/2003.
     /// https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-tagadvf.
     /// </remarks>

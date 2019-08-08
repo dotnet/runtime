@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -134,13 +134,13 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this tensor as a DenseTensor&lt;T&gt;.  
+        /// Creates a copy of this tensor as a DenseTensor&lt;T&gt;.
         /// </summary>
         /// <returns>A copy of this tensor as a DenseTensor&lt;T&gt;</returns>
         public override DenseTensor<T> ToDenseTensor()
         {
             var denseTensor = new DenseTensor<T>(Dimensions, reverseStride: IsReversedStride);
-            
+
             // only set non-zero values
             foreach (var pair in values)
             {

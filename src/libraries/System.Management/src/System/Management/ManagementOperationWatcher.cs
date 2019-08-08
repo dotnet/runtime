@@ -32,44 +32,44 @@ namespace System.Management
     ///    <para>Used to manage asynchronous operations and handle management information and events received asynchronously.</para>
     /// </summary>
     /// <example>
-    ///    <code lang='C#'>using System; 
-    /// using System.Management; 
-    /// 
-    /// // This sample demonstrates how to read a ManagementObject asychronously 
-    /// // using the ManagementOperationObserver object. 
-    /// 
+    ///    <code lang='C#'>using System;
+    /// using System.Management;
+    ///
+    /// // This sample demonstrates how to read a ManagementObject asychronously
+    /// // using the ManagementOperationObserver object.
+    ///
     /// class Sample_ManagementOperationObserver {
     ///     public static int Main(string[] args) {
-    /// 
+    ///
     ///         //Set up a handler for the asynchronous callback
-    ///         ManagementOperationObserver observer = new ManagementOperationObserver(); 
-    ///         MyHandler completionHandler = new MyHandler(); 
-    ///         observer.Completed += new CompletedEventHandler(completionHandler.Done); 
-    /// 
+    ///         ManagementOperationObserver observer = new ManagementOperationObserver();
+    ///         MyHandler completionHandler = new MyHandler();
+    ///         observer.Completed += new CompletedEventHandler(completionHandler.Done);
+    ///
     ///         //Invoke the asynchronous read of the object
-    ///         ManagementObject disk = new ManagementObject("Win32_logicaldisk='C:'"); 
-    ///         disk.Get(observer); 
-    /// 
-    ///         //For the purpose of this sample, we keep the main 
-    ///         // thread alive until the asynchronous operation is completed. 
-    /// 
-    ///         while (!completionHandler.IsComplete) { 
-    ///             System.Threading.Thread.Sleep(500); 
-    ///         } 
-    /// 
-    ///         Console.WriteLine("Size= " + disk["Size"] + " bytes."); 
-    /// 
-    ///         return 0; 
-    ///     } 
-    /// 
-    ///     public class MyHandler 
+    ///         ManagementObject disk = new ManagementObject("Win32_logicaldisk='C:'");
+    ///         disk.Get(observer);
+    ///
+    ///         //For the purpose of this sample, we keep the main
+    ///         // thread alive until the asynchronous operation is completed.
+    ///
+    ///         while (!completionHandler.IsComplete) {
+    ///             System.Threading.Thread.Sleep(500);
+    ///         }
+    ///
+    ///         Console.WriteLine("Size= " + disk["Size"] + " bytes.");
+    ///
+    ///         return 0;
+    ///     }
+    ///
+    ///     public class MyHandler
     ///     {
     ///         private bool isComplete = false;
-    ///  
-    ///         public void Done(object sender, CompletedEventArgs e) { 
+    ///
+    ///         public void Done(object sender, CompletedEventArgs e) {
     ///             isComplete = true;
     ///         }
-    /// 
+    ///
     ///         public bool IsComplete {
     ///             get {
     ///                 return isComplete;
@@ -80,40 +80,40 @@ namespace System.Management
     ///    </code>
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
-    /// 
+    ///
     /// ' This sample demonstrates how to read a ManagementObject asychronously
     /// ' using the ManagementOperationObserver object.
-    /// 
+    ///
     /// Class Sample_ManagementOperationObserver
     ///     Overloads Public Shared Function Main(args() As String) As Integer
-    /// 
+    ///
     ///         'Set up a handler for the asynchronous callback
     ///         Dim observer As New ManagementOperationObserver()
     ///         Dim completionHandler As New MyHandler()
     ///         AddHandler observer.Completed, AddressOf completionHandler.Done
-    ///       
+    ///
     ///         ' Invoke the object read asynchronously
     ///         Dim disk As New ManagementObject("Win32_logicaldisk='C:'")
     ///         disk.Get(observer)
-    /// 
+    ///
     ///         ' For the purpose of this sample, we keep the main
     ///         ' thread alive until the asynchronous operation is finished.
     ///         While Not completionHandler.IsComplete Then
     ///             System.Threading.Thread.Sleep(500)
     ///         End While
-    ///        
+    ///
     ///         Console.WriteLine("Size = " + disk("Size").ToString() &amp; " bytes")
-    ///       
+    ///
     ///         Return 0
     ///     End Function
-    /// 
+    ///
     ///     Public Class MyHandler
     ///         Private _isComplete As Boolean = False
-    ///    
+    ///
     ///         Public Sub Done(sender As Object, e As CompletedEventArgs)
     ///             _isComplete = True
     ///         End Sub 'Done
-    /// 
+    ///
     ///         Public ReadOnly Property IsComplete() As Boolean
     ///             Get
     ///                 Return _isComplete
@@ -123,11 +123,11 @@ namespace System.Management
     /// End Class
     ///    </code>
     /// </example>
-    public class ManagementOperationObserver 
+    public class ManagementOperationObserver
     {
         private Hashtable m_sinkCollection;
         private WmiDelegateInvoker delegateInvoker;
-        
+
         /// <summary>
         ///    <para> Occurs when a new object is available.</para>
         /// </summary>
@@ -151,7 +151,7 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementOperationObserver'/> class. This is the default constructor.</para>
         /// </summary>
-        public ManagementOperationObserver () 
+        public ManagementOperationObserver ()
         {
             // We make our sink collection synchronized
             m_sinkCollection = new Hashtable ();
@@ -161,33 +161,33 @@ namespace System.Management
         /// <summary>
         ///    <para> Cancels all outstanding operations.</para>
         /// </summary>
-        public void Cancel () 
+        public void Cancel ()
         {
             // Cancel all the sinks we have - make a copy to avoid things
             // changing under our feet
             Hashtable copiedSinkTable =  new Hashtable ();
 
-            lock (m_sinkCollection) 
+            lock (m_sinkCollection)
             {
                 IDictionaryEnumerator sinkEnum = m_sinkCollection.GetEnumerator();
 
-                try 
+                try
                 {
                     sinkEnum.Reset ();
-                    
-                    while (sinkEnum.MoveNext ()) 
+
+                    while (sinkEnum.MoveNext ())
                     {
                         DictionaryEntry entry = (DictionaryEntry) sinkEnum.Current;
                         copiedSinkTable.Add (entry.Key, entry.Value);
                     }
-                } 
+                }
                 catch
                 {
                 }
             }
 
             // Now step through the copy and cancel everything
-            try 
+            try
             {
                 IDictionaryEnumerator copiedSinkEnum = copiedSinkTable.GetEnumerator();
                 copiedSinkEnum.Reset ();
@@ -197,54 +197,54 @@ namespace System.Management
                     DictionaryEntry entry = (DictionaryEntry) copiedSinkEnum.Current;
                     WmiEventSink eventSink = (WmiEventSink) entry.Value;
 
-                    try 
+                    try
                     {
                         eventSink.Cancel ();
-                    } 
+                    }
                     catch
                     {
                     }
                 }
-            } 
+            }
             catch
             {
             }
         }
 
         internal WmiEventSink GetNewSink (
-            ManagementScope scope, 
-            object context) 
+            ManagementScope scope,
+            object context)
         {
-            try 
+            try
             {
                 WmiEventSink eventSink = WmiEventSink.GetWmiEventSink(this, context, scope, null, null);
-        
+
                 // Add it to our collection
-                lock (m_sinkCollection) 
+                lock (m_sinkCollection)
                 {
                     m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
-            } 
-            catch 
+            }
+            catch
             {
                 return null;
             }
         }
 
-        internal bool HaveListenersForProgress 
+        internal bool HaveListenersForProgress
         {
-            get 
+            get
             {
                 bool result = false;
 
-                try 
+                try
                 {
                     if (Progress != null)
                         result = ((Progress.GetInvocationList ()).Length > 0);
-                } 
-                catch 
+                }
+                catch
                 {
                 }
 
@@ -252,24 +252,24 @@ namespace System.Management
             }
         }
         internal WmiEventSink GetNewPutSink (
-            ManagementScope scope, 
+            ManagementScope scope,
             object context,
             string path,
-            string className) 
+            string className)
         {
-            try 
+            try
             {
                 WmiEventSink eventSink = WmiEventSink.GetWmiEventSink(this, context, scope, path, className);
-        
+
                 // Add it to our collection
-                lock (m_sinkCollection) 
+                lock (m_sinkCollection)
                 {
                     m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
-            } 
-            catch 
+            }
+            catch
             {
                 return null;
             }
@@ -280,20 +280,20 @@ namespace System.Management
             object context,
             ManagementObject managementObject)
         {
-            try 
+            try
             {
-                WmiGetEventSink eventSink = WmiGetEventSink.GetWmiGetEventSink(this, 
+                WmiGetEventSink eventSink = WmiGetEventSink.GetWmiGetEventSink(this,
                     context, scope, managementObject);
-        
+
                 // Add it to our collection
-                lock (m_sinkCollection) 
+                lock (m_sinkCollection)
                 {
                     m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
-            } 
-            catch 
+            }
+            catch
             {
                 return null;
             }
@@ -301,16 +301,16 @@ namespace System.Management
 
         internal void RemoveSink (WmiEventSink eventSink)
         {
-            try 
+            try
             {
-                lock (m_sinkCollection) 
+                lock (m_sinkCollection)
                 {
                     m_sinkCollection.Remove (eventSink.GetHashCode ());
                 }
 
                 // Release the stub as we are now disconnected
                 eventSink.ReleaseStub ();
-            } 
+            }
             catch
             {
             }
@@ -322,10 +322,10 @@ namespace System.Management
         /// <param name="args"> </param>
         internal void FireObjectReady (ObjectReadyEventArgs args)
         {
-            try 
+            try
             {
                 delegateInvoker.FireEventToDelegates (ObjectReady, args);
-            } 
+            }
             catch
             {
             }
@@ -333,10 +333,10 @@ namespace System.Management
 
         internal void FireCompleted (CompletedEventArgs args)
         {
-            try 
+            try
             {
                 delegateInvoker.FireEventToDelegates (Completed, args);
-            } 
+            }
             catch
             {
             }
@@ -344,10 +344,10 @@ namespace System.Management
 
         internal void FireProgress (ProgressEventArgs args)
         {
-            try 
+            try
             {
                 delegateInvoker.FireEventToDelegates (Progress, args);
-            } 
+            }
             catch
             {
             }
@@ -355,17 +355,17 @@ namespace System.Management
 
         internal void FireObjectPut (ObjectPutEventArgs args)
         {
-            try 
+            try
             {
                 delegateInvoker.FireEventToDelegates (ObjectPut, args);
-            } 
-            catch 
+            }
+            catch
             {
             }
         }
     }
 
-    internal class WmiEventState 
+    internal class WmiEventState
     {
         private Delegate d;
         private ManagementEventArgs args;
@@ -378,17 +378,17 @@ namespace System.Management
             this.h = h;
         }
 
-        public Delegate Delegate 
+        public Delegate Delegate
         {
             get { return d; }
         }
 
-        public ManagementEventArgs Args 
+        public ManagementEventArgs Args
         {
             get { return args; }
         }
 
-        public AutoResetEvent AutoResetEvent 
+        public AutoResetEvent AutoResetEvent
         {
             get { return h; }
         }
@@ -421,16 +421,16 @@ namespace System.Management
         /// <param name="args">The accompanying event arguments</param>
         internal void FireEventToDelegates (MulticastDelegate md, ManagementEventArgs args)
         {
-            try 
+            try
             {
                 if (null != md)
                 {
                     foreach (Delegate d in md.GetInvocationList())
                     {
-                        try 
+                        try
                         {
-                            d.DynamicInvoke (new object [] {this.sender, args});    
-                        } 
+                            d.DynamicInvoke (new object [] {this.sender, args});
+                        }
                         catch
                         {
                         }

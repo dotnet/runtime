@@ -68,7 +68,7 @@ namespace System.Reflection.Internal
 
         private static bool TryLoadMembers()
         {
-            // .NET Core, .NET 4.6+ 
+            // .NET Core, .NET 4.6+
             s_lazyCreateFromFile = LightUpHelper.GetMethod(
                 s_lazyMemoryMappedFileType,
                 "CreateFromFile",

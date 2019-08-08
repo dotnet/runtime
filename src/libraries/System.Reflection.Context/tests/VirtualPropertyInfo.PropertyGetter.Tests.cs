@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -50,7 +50,7 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void GetCustomAttributesDataTest()
         {
-            // This will never return any results as virtual properties never have custom attributes 
+            // This will never return any results as virtual properties never have custom attributes
             // defined in code as they are instantiated during runtime. But as the method is overriden
             // we call it for code coverage.
             IList<CustomAttributeData> customAttributesData = _virtualPropertyGetter.GetCustomAttributesData();

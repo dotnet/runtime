@@ -14,7 +14,7 @@ using System.Diagnostics;
 namespace Stress.Data
 {
     /// <summary>
-    /// Base class to generate utility objects required for stress tests to run. For example: connection strings, command texts, 
+    /// Base class to generate utility objects required for stress tests to run. For example: connection strings, command texts,
     /// data tables and views, and other information
     /// </summary>
     public abstract class DataStressFactory : IDisposable
@@ -86,7 +86,7 @@ namespace Stress.Data
 
         /// <summary>
         /// Creates a new connection and initializes it with random connection string generated from the factory's source
-        /// Note: if rnd is null, create a connection with minimal string required to connect to the target database        
+        /// Note: if rnd is null, create a connection with minimal string required to connect to the target database
         /// </summary>
         /// <param name="rnd">Randomizes Connection Pool enablement, the application Name to randomize connection pool</param>
         /// <param name="options"></param>
@@ -102,7 +102,7 @@ namespace Stress.Data
                 // Connection string and/or identity are randomized
 
                 // We implement this using the Application Name field in the connection string since this field
-                // should not affect behaviour other than connection pooling, since all connections in a pool 
+                // should not affect behaviour other than connection pooling, since all connections in a pool
                 // must have the exact same connection string (including Application Name)
 
                 if (rnd.NextBool(.1))
@@ -112,7 +112,7 @@ namespace Stress.Data
                 }
                 else if (rnd.NextBool(0.001))
                 {
-                    // Use a unique Application Name to get a new connection from a new pool. We do this in order to 
+                    // Use a unique Application Name to get a new connection from a new pool. We do this in order to
                     // stress the code that creates/deletes pools.
                     connectionString = string.Format("{0}; Pooling=true; Application Name=\"{1}\";", connectionString, GetRandomApplicationName());
 
@@ -281,7 +281,7 @@ namespace Stress.Data
             cmdText.Append("\" WITH(NOLOCK) WHERE PrimaryKey ");
 
             // We randomly pick an operator from '>' or '=' to allow for randomization
-            // of possible rows returned by this query. This approach *may* help 
+            // of possible rows returned by this query. This approach *may* help
             // in reducing the likelihood of multiple threads accessing same rows.
             // If multiple threads access same rows, there may be locking issues
             // which may be avoided because of this randomization.
@@ -370,7 +370,7 @@ namespace Stress.Data
 
         /// <summary>
         /// Returns a random UPDATE command
-        /// </summary>  
+        /// </summary>
         public DbCommand GetUpdateCommand(Random rnd, TableMetadata table, DataStressConnection conn)
         {
             DbCommand com = CreateCommand(rnd, conn);
@@ -424,7 +424,7 @@ namespace Stress.Data
 
         /// <summary>
         /// Returns a random INSERT command
-        /// </summary> 
+        /// </summary>
         public DbCommand GetInsertCommand(Random rnd, TableMetadata table, DataStressConnection conn)
         {
             DbCommand com = CreateCommand(rnd, conn);
@@ -495,7 +495,7 @@ namespace Stress.Data
 
         /// <summary>
         /// Returns a random DELETE command
-        /// </summary>    
+        /// </summary>
         public DbCommand GetDeleteCommand(Random rnd, TableMetadata table, DataStressConnection conn)
         {
             DbCommand com = CreateCommand(rnd, conn);
@@ -539,7 +539,7 @@ namespace Stress.Data
             switch (select)
             {
                 case 0:
-                    // Create a SET CONTEXT_INFO statement using a hex string of random data 
+                    // Create a SET CONTEXT_INFO statement using a hex string of random data
                     StringBuilder sb = new StringBuilder("0x");
                     int count = rnd.Next(1, 129);
                     for (int i = 0; i < count; i++)
@@ -556,7 +556,7 @@ namespace Stress.Data
                     break;
 
                 default:
-                    // Create a SET LANGUAGE statement 
+                    // Create a SET LANGUAGE statement
                     sessionStmt = string.Format("SET LANGUAGE N'{0}'", s_languages[rnd.Next(s_languages.Length)]);
                     break;
             }
@@ -674,7 +674,7 @@ namespace Stress.Data
 
                         // The data is just a repeat of one character because to the managed provider
                         // it is only really the length that matters, not the content of the data
-                        char characterToUse = (char)rnd.Next((int)'@', (int)'~');  // Choosing random characters in this range to avoid special 
+                        char characterToUse = (char)rnd.Next((int)'@', (int)'~');  // Choosing random characters in this range to avoid special
                                                                                    // xml chars like '<' or '&'
                         int numRepeats = rnd.Next(0, maxLength - tagLength); // Case (2): tagLength == maxTargetLength
                                                                              // Case (3): tagLength < maxTargetLength <-- most common

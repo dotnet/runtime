@@ -239,7 +239,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Given a handle of an entity in an aggregate metadata calculates 
+        /// Given a handle of an entity in an aggregate metadata calculates
         /// a handle of the entity within the metadata generation it is defined in.
         /// </summary>
         /// <param name="handle">Handle of an entity in an aggregate metadata.</param>
@@ -249,7 +249,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (handle.IsVirtual)
             {
-                // TODO: if a virtual handle is connected to real handle then translate the rid, 
+                // TODO: if a virtual handle is connected to real handle then translate the rid,
                 // otherwise return vhandle and base.
                 throw new NotSupportedException();
             }

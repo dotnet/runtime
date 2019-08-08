@@ -10,19 +10,19 @@ namespace System.Net.Mail
     //
     // RFC 2822 Section 3.2.4 - Atom, Dot-Atom
     //
-    // A Dot-Atom is a string of ASCII characters separated by dots.  Dots would normally not be allowed at the start 
-    // or end, but we do allow dots at the end for compatibility with other mail clients.  We also allow 
+    // A Dot-Atom is a string of ASCII characters separated by dots.  Dots would normally not be allowed at the start
+    // or end, but we do allow dots at the end for compatibility with other mail clients.  We also allow
     // multiple consecutive dots, which would normally be invalid.
     //
     internal static class DotAtomReader
     {
         // Reads a Dot Atom in reverse.
         //
-        // Preconditions:  
+        // Preconditions:
         //  - Index must be within the bounds of the data string.
         //
-        // Return value: 
-        // - The first index of a character not valid in a dot-atom.  It is then up to the caller to 
+        // Return value:
+        // - The first index of a character not valid in a dot-atom.  It is then up to the caller to
         //   determine if the next character is a valid delimiter.
         //   e.g. "user.name@domain.com", starting at index 19 (m) returns 9 (@).
         //   e.g. "user.name@dom in.com", starting at index 19 (m) returns 13 (space).

@@ -195,7 +195,7 @@ namespace CoreXml.Test.XLinq
                 {
                     // Element "D" should use the default namespace defined in ancestor element "A" but it does not
                     // since the auto generated default name space in parent element "C".  So a new default namespace is added for
-                    // "D". 
+                    // "D".
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "a", "a"),
                                                                                 new XElement("{a}B", new XAttribute("xmlns", "a"),
                                                                                         new XElement("{ii}C", new XAttribute(XNamespace.Xmlns + "b", "a"),   // This one auto generates xmlns='ii'"

@@ -37,7 +37,7 @@ namespace System
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
         // negative Decimal value.
-        // 
+        //
         // Look at OleAut's DECIMAL_NEG constant to check for negative values
         // in native code.
         private const uint SignMask = 0x80000000;

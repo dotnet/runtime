@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("structureType", () => Marshal.DestroyStructure((IntPtr)1, null));
         }
-        
+
         public static IEnumerable<object[]> DestroyStructure_InvalidType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType() };

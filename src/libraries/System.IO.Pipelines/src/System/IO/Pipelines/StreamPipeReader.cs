@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -120,7 +120,7 @@ namespace System.IO.Pipelines
             }
 
             // Two cases here:
-            // 1. All data is consumed. If so, we empty clear everything so we don't hold onto any 
+            // 1. All data is consumed. If so, we empty clear everything so we don't hold onto any
             // excess memory.
             // 2. A segment is entirely consumed but there is still more data in nextSegments
             //  We are allowed to remove an extra segment. by setting returnEnd to be the next block.

@@ -31,7 +31,7 @@ namespace System.IO.Packaging.Tests
         {
             return new FileInfo($"{GetTestFilePath(null, memberName, lineNumber)}.{extension}");
         }
-        
+
         [Fact]
         public void WriteRelationsTwice()
         {
@@ -1292,7 +1292,7 @@ namespace System.IO.Packaging.Tests
                                    Mime_MediaTypeNames_Image_Jpeg,
                                    CompressionOption.Normal);
 
-                // Copy the data to the Resource Part 
+                // Copy the data to the Resource Part
                 using (Stream partStream = packagePartResource.GetStream())
                 using (StreamWriter sw = new StreamWriter(partStream))
                 {
@@ -2218,7 +2218,7 @@ namespace System.IO.Packaging.Tests
                                    Mime_MediaTypeNames_Image_Jpeg,
                                    CompressionOption.Normal);
 
-                // Copy the data to the Resource Part 
+                // Copy the data to the Resource Part
                 using (Stream partStream = packagePartResource.GetStream())
                 using (StreamWriter sw = new StreamWriter(partStream))
                 {
@@ -2278,7 +2278,7 @@ namespace System.IO.Packaging.Tests
                                    Mime_MediaTypeNames_Image_Jpeg,
                                    CompressionOption.Normal);
 
-                // Copy the data to the Resource Part 
+                // Copy the data to the Resource Part
                 fiDocumentPath = GetTempFileInfoWithExtension(".xml");
                 File.WriteAllText(fiDocumentPath.FullName, s_DocumentXml);
                 using (FileStream fileStream = new FileStream(fiDocumentPath.FullName, FileMode.Open, FileAccess.Read))
@@ -3684,7 +3684,7 @@ namespace System.IO.Packaging.Tests
                             Assert.Equal(fileName.Length, partStream.Length);
                             Assert.Equal(fileName, reader.ReadToEnd());
                         }
-                        
+
                         PackageRelationshipCollection partRelationships = part.GetRelationshipsByType(PartRelationshipType);
                         Assert.Single(partRelationships);
                         Assert.All(partRelationships, relationship => Assert.Equal(PartRelationshipType, relationship.RelationshipType));
@@ -3700,10 +3700,10 @@ namespace System.IO.Packaging.Tests
         [OuterLoop]
         public void VeryLargePart()
         {
-            // FileAccess.Write is important, this tells ZipPackage to open the underlying ZipArchive in 
+            // FileAccess.Write is important, this tells ZipPackage to open the underlying ZipArchive in
             // ZipArchiveMode.Create mode as opposed to ZipArchiveMode.Update
             // When ZipArchive is opened in Create it will write entries directly to the zip stream
-            // When ZipArchive is opened in Update it will write uncompressed data to memory until 
+            // When ZipArchive is opened in Update it will write uncompressed data to memory until
             // the archive is closed.
             using (Stream stream = new MemoryStream())
             {
@@ -3715,7 +3715,7 @@ namespace System.IO.Packaging.Tests
                 {
                     buffer[i] = (byte)(i % 2);
                 }
-                
+
                 const long SizeInMb = 6 * 1024; // 6GB
                 long totalLength = SizeInMb * buffer.Length;
 
@@ -3776,7 +3776,7 @@ namespace System.IO.Packaging.Tests
             // Validate we get the same object back if we call GetPart again
             Assert.Same(part, mockPackage.GetPart(partUri));
         }
-        
+
         [Fact]
         public void ComparePackUriSamePackSamePart()
         {

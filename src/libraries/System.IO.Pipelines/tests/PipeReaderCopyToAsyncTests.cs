@@ -54,7 +54,7 @@ namespace System.IO.Pipelines.Tests
             }
             pipe.Writer.Complete();
             await task;
-            
+
             Assert.Equal(messages.SelectMany(msg => msg).ToArray(), stream.ToArray());
         }
 
@@ -129,7 +129,7 @@ namespace System.IO.Pipelines.Tests
                 }
                 catch(InvalidOperationException)
                 {
-                    
+
                 }
 
                 Assert.Equal(2, stream.Writes);

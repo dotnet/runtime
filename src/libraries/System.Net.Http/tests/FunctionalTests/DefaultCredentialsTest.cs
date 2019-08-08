@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
         private static bool DomainProxyTestsEnabled => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedProxyHost);
 
         // Enable this to test against local HttpListener over loopback
-        // Note this doesn't work as expected with WinHttpHandler, because WinHttpHandler will always authenticate the 
+        // Note this doesn't work as expected with WinHttpHandler, because WinHttpHandler will always authenticate the
         // current user against a loopback server using NTLM or Negotiate.
         private static bool LocalHttpListenerTestsEnabled = false;
 
@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         private static string s_specificDomain = Configuration.Security.ActiveDirectoryName;
         private readonly NetworkCredential _specificCredential =
             new NetworkCredential(s_specificUserName, s_specificPassword, s_specificDomain);
-        private static Uri s_authenticatedServer = DomainJoinedTestsEnabled ? 
+        private static Uri s_authenticatedServer = DomainJoinedTestsEnabled ?
             new Uri($"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/negotiate/showidentity.ashx") : null;
 
         public DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
@@ -146,7 +146,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                
+
                 string responseBody = await response.Content.ReadAsStringAsync();
                 VerifyAuthentication(responseBody, true, s_specificDomain + "\\" + s_specificUserName);
             }
@@ -181,7 +181,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
-        
+
         [OuterLoop("Uses external server")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
@@ -250,7 +250,7 @@ namespace System.Net.Http.Functional.Tests
         {
             public ICredentials InnerCredentials { get; set; }
 
-            public NetworkCredential GetCredential(Uri uri, string authType) => 
+            public NetworkCredential GetCredential(Uri uri, string authType) =>
                 InnerCredentials?.GetCredential(uri, authType);
         }
 

@@ -588,7 +588,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             // field
             private static DynClassDrived.InternalDel s_interDel;
 
-            
+
             public static void DynamicCSharpRunTest()
             {
                 Assert.Equal(0, MainMethod());
@@ -963,7 +963,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
         public class start
         {
-            
+
             public static void DynamicCSharpRunTest()
             {
                 Assert.Equal(0, MainMethod());
@@ -1054,12 +1054,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 bool ret = true;
                 Bar bar = new Bar();
                 Del[] ary01 =
-                { 
+                {
                 new Del(Foo.SMinStruct), new Del(bar.MinClass), new Del(Bar.SMinClass)}
 
                 ;
                 Del[] ary02 =
-                { 
+                {
                 new Del(Foo.SMinStruct), new Del(bar.MinClass), new Del(Bar.SMinClass)}
 
                 ;

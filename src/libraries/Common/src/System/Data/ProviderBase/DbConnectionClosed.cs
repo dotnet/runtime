@@ -91,7 +91,7 @@ namespace System.Data.ProviderBase
             {
                 // retry is null if this is a synchronous call
 
-                // if someone calls Open or OpenAsync while in this state, 
+                // if someone calls Open or OpenAsync while in this state,
                 // then the retry task will not be completed
 
                 throw ADP.ConnectionAlreadyOpen(State);

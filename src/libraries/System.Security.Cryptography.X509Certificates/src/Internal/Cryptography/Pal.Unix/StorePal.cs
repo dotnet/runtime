@@ -110,14 +110,14 @@ namespace Internal.Cryptography.Pal
 
             // Since we aren't going to finish reading, leaving the buffer where it was when we got
             // it seems better than leaving it in some arbitrary other position.
-            // 
+            //
             // Use BioSeek directly for the last seek attempt, because any failure here should instead
             // report the already created (but not yet thrown) exception.
             if (Interop.Crypto.BioSeek(bio, bioPosition) < 0)
             {
                 Interop.Crypto.ErrClearError();
             }
-            
+
             Debug.Assert(openSslException != null);
             throw openSslException;
         }
@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal
             }
 
             Debug.Assert(storeLocation == StoreLocation.LocalMachine);
-            
+
             if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
             {
                 throw new CryptographicException(

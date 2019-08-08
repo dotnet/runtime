@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
                             _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetMethod);
                             _ilg.ConvertValue(Globals.TypeOfDateTimeOffset, _ilg.CurrentMethod.ReturnType);
                         }
-                        //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>. 
+                        //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>.
                         else if (classContract.IsKeyValuePairAdapter)
                         {
                             _ilg.Call(classContract.GetKeyValuePairMethodInfo);
@@ -414,7 +414,7 @@ namespace System.Runtime.Serialization
                     }
 
 #if FEATURE_LEGACYNETCF
-                    // The DataContractSerializer in the full framework doesn't support unordered elements: 
+                    // The DataContractSerializer in the full framework doesn't support unordered elements:
                     // deserialization will fail if the data members in the XML are not sorted alphabetically.
                     // But the NetCF DataContractSerializer does support unordered element. To maintain compatibility
                     // with Mango we always search for the member from the beginning of the member list.
@@ -942,8 +942,8 @@ namespace System.Runtime.Serialization
 
         /// <SecurityNote>
         /// Critical - Elevates by calling GetUninitializedObject which has a LinkDemand
-        /// Safe - marked as such so that it's callable from transparent generated IL. Takes id as parameter which 
-        ///        is guaranteed to be in internal serialization cache. 
+        /// Safe - marked as such so that it's callable from transparent generated IL. Takes id as parameter which
+        ///        is guaranteed to be in internal serialization cache.
         /// </SecurityNote>
 #if USE_REFEMIT
         public static object UnsafeGetUninitializedObject(int id)

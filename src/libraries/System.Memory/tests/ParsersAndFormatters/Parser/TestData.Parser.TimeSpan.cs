@@ -33,7 +33,7 @@ namespace System.Buffers.Text.Tests
         }
 
         //
-        // Generate sequences of numbers separated by various combinations of periods and colons. 
+        // Generate sequences of numbers separated by various combinations of periods and colons.
         //
         private static IEnumerable<string> TimeSpanCombinatorialData
         {
@@ -171,7 +171,7 @@ namespace System.Buffers.Text.Tests
                 yield return "1:2:3:4:5"; // illegal - too many components
                 yield return "1:2:3:4:5.9999999"; // illegal - too many components
                 yield return "1:2:3:4.9999999:"; // intentionally flagged as error
-                yield return "1:2:3:4.9999999."; // intentionally flagged as error 
+                yield return "1:2:3:4.9999999."; // intentionally flagged as error
             }
         }
 

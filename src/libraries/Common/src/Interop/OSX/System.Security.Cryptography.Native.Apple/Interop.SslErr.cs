@@ -27,7 +27,7 @@ internal static partial class Interop
         internal static Exception CreateExceptionForOSStatus(int osStatus)
         {
             string msg = GetSecErrorString(osStatus);
-            
+
             // msg might be null, but that's OK
             return new SslException(osStatus, msg);
         }

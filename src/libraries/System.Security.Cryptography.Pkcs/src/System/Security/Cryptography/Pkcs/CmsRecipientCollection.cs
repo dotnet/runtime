@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs
         public CmsRecipientCollection(SubjectIdentifierType recipientIdentifierType, X509Certificate2Collection certificates)
         {
             if (certificates == null)
-                throw new NullReferenceException(); //Desktop compat: this is the wrong exception to throw but it is the compatible one. 
+                throw new NullReferenceException(); //Desktop compat: this is the wrong exception to throw but it is the compatible one.
 
             _recipients = new List<CmsRecipient>(certificates.Count);
             for (int index = 0; index < certificates.Count; index++)
@@ -131,5 +131,3 @@ namespace System.Security.Cryptography.Pkcs
         private readonly List<CmsRecipient> _recipients;
     }
 }
-
-

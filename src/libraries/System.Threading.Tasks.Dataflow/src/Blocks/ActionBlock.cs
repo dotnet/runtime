@@ -210,7 +210,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             // Regardless of faults, note that we're done processing.  There are
-            // no outputs to keep track of for action block, so we always decrement 
+            // no outputs to keep track of for action block, so we always decrement
             // the bounding count here (the callee will handle checking whether
             // we're actually in a bounded mode).
             _defaultTarget.SignalOneAsyncMessageCompleted(boundingCountChange: -1);
@@ -258,10 +258,10 @@ namespace System.Threading.Tasks.Dataflow
         /// but unless otherwise dictated by special semantics of the target block, it does not wait
         /// for the item to actually be processed (for example, <see cref="System.Threading.Tasks.Dataflow.ActionBlock{T}"/>
         /// will return from Post as soon as it has stored the posted item into its input queue).  From the perspective
-        /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages, 
+        /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages,
         /// or for blocks that may do more processing in their Post implementation, consider using
-        /// <see cref="System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync{TInput}(ITargetBlock{TInput}, TInput)">SendAsync</see>, 
-        /// which will return immediately and will enable the target to postpone the posted message and later consume it 
+        /// <see cref="System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync{TInput}(ITargetBlock{TInput}, TInput)">SendAsync</see>,
+        /// which will return immediately and will enable the target to postpone the posted message and later consume it
         /// after SendAsync returns.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -269,7 +269,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Even though this method is available with the exact same functionality as an extension method
             // on ITargetBlock, using that extension method goes through an interface call on ITargetBlock,
-            // which for very high-throughput scenarios shows up as noticeable overhead on certain architectures.  
+            // which for very high-throughput scenarios shows up as noticeable overhead on certain architectures.
             // We can eliminate that call for direct ActionBlock usage by providing the same method as an instance method.
 
             return _defaultTarget != null ?

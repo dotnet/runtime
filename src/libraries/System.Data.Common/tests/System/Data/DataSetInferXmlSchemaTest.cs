@@ -11,10 +11,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -311,7 +311,7 @@ namespace System.Data.Tests
         [Fact]
         public void SignificantWhitespaceIgnored()
         {
-            // Note that 1) significant whitespace is ignored, and 
+            // Note that 1) significant whitespace is ignored, and
             // 2) xml:space is treated as column (and also note namespaces).
             DataSet ds = GetDataSet(_xml11, null);
             DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
@@ -427,7 +427,7 @@ namespace System.Data.Tests
             Assert.Throws<DataException>(() =>
            {
                // attribute "data" becomes DataTable, and when column "data"
-               // appears, it cannot be DataColumn, since the name is 
+               // appears, it cannot be DataColumn, since the name is
                // already allocated for DataTable.
                DataSet ds = GetDataSet(_xml21, null);
            });

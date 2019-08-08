@@ -18,7 +18,7 @@ namespace System.Tests
 
             Assert.Equal(input.ToUpperInvariant().GetHashCode(), input.GetHashCode(StringComparison.OrdinalIgnoreCase));
         }
-        
+
         public static IEnumerable<object[]> GetHashCodeOrdinalIgnoreCase_TestData()
         {
             // 0 through 8 char lowercase & uppercase ASCII strings

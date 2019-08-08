@@ -39,7 +39,7 @@ namespace System.Drawing.Text
                     Gdip.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
 #if DEBUG
                     Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
                 {

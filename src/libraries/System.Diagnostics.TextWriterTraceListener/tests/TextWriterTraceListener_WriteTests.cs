@@ -8,10 +8,10 @@ using Xunit;
 namespace System.Diagnostics.TextWriterTraceListenerTests
 {
     public class TextWriterTraceListener_WriteTestsCtorFileName : TextWriterTraceListener_WriteTestsBase
-    {        
+    {
         public TextWriterTraceListener_WriteTestsCtorFileName()
         {
-            CommonUtilities.DeleteFile(_fileName);            
+            CommonUtilities.DeleteFile(_fileName);
         }
 
         public override TextWriterTraceListener GetListener()
@@ -20,7 +20,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         protected override void Dispose(bool disposing)
-        {            
+        {
             base.Dispose(disposing);
         }
     }

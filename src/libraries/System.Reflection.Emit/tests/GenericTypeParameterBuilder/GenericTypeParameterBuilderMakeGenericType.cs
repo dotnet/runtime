@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(null));
         }
 
@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(Type) }));
         }
 
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(int), typeof(string) }));
         }
     }

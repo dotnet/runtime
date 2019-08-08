@@ -163,7 +163,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             // WARNING:
             // A key value of SecureString is in keeping string data off of the GC heap, such that it can
             // be reliably cleared when no longer needed.  Creating a SecureString from a string or converting
-            // a SecureString to a string diminishes that value. These conversion functions are for testing that 
+            // a SecureString to a string diminishes that value. These conversion functions are for testing that
             // SecureString works, and does not represent a pattern to follow in any non-test situation.
             foreach (char c in PfxDataPassword.ToCharArray())
             {
@@ -174,9 +174,9 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
         }
 
         public static readonly byte[] PfxSha1Empty_ExpectedSig = (
-            "44b15120b8c7de19b4968d761600ffb8c54e5d0c1bcaba0880a20ab48912c8fd" + 
+            "44b15120b8c7de19b4968d761600ffb8c54e5d0c1bcaba0880a20ab48912c8fd" +
             "fa81b28134eabf58f3211a0d1eefdaae115e7872d5a67045c3b62a5da4393940" +
-            "e5a496413a6d55ea6309d0013e90657c83c6e40aa8fafeee66acbb6661c14190" + 
+            "e5a496413a6d55ea6309d0013e90657c83c6e40aa8fafeee66acbb6661c14190" +
             "11e1fde6f4fcc328bd7e537e4aa2dbe216d8f1f3aa7e5ec60eb9cfdca7a41d74").HexToByteArray();
 
         public static readonly byte[] PfxData = (
@@ -1370,14 +1370,14 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
 5siYmHkAExoCFFaaS2r7/kdkXsauyr37q6ewD6s+
 -----END CERTIFICATE-----");
 
-        internal static readonly ECDsaCngKeyValues ECDsaCng256PublicKey = 
+        internal static readonly ECDsaCngKeyValues ECDsaCng256PublicKey =
             new ECDsaCngKeyValues()
             {
                 QX = "448d98ee08aeba0d8b40f3c6dbd500e8b69f07c70c661771655228ea5a178a91".HexToByteArray(),
                 QY = "0ef5cb1759f6f2e062021d4f973f5bb62031be87ae915cff121586809e3219af".HexToByteArray(),
                 D = "692837e9cf613c0e290462a6f08faadcc7002398f75598d5554698a0cb51cf47".HexToByteArray(),
             };
-    
+
         internal static readonly byte[] ECDsa256Certificate =
              ("308201223081c9a00302010202106a3c9e85ba6af1ac4f08111d8bdda340300906072a8648ce3d0401301431123010060355"
             + "04031309456332353655736572301e170d3135303931303231333533305a170d3136303931303033333533305a3014311230"

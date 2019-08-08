@@ -473,7 +473,7 @@ namespace System.Data.Common
                     string synonym;
                     string realkeyname = null != synonyms ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) : keyname;
- 
+
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -514,7 +514,7 @@ namespace System.Data.Common
                     bool isEquivalent = (msg1 == msg2);
                     if (!isEquivalent)
                     {
-                        // We also accept cases were Regex parser (debug only) reports "wrong format" and 
+                        // We also accept cases were Regex parser (debug only) reports "wrong format" and
                         // retail parsing code reports format exception in different location or "keyword not supported"
                         if (msg2.StartsWith(WrongFormatMessagePrefix, StringComparison.Ordinal))
                         {

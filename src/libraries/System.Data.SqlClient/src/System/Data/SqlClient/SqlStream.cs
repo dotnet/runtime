@@ -129,7 +129,7 @@ namespace System.Data.SqlClient
                 throw ADP.ArgumentOutOfRange(nameof(count));
             }
 
-            // Need to find out if we should add byte order mark or not. 
+            // Need to find out if we should add byte order mark or not.
             // We need to add this if we are getting ntext xml, not if we are getting binary xml
             // Binary Xml always begins with the bytes 0xDF and 0xFF
             // If we aren't getting these, then we are getting unicode xml
@@ -312,7 +312,7 @@ namespace System.Data.SqlClient
 
     // XmlTextReader does not read all the bytes off the network buffers, so we have to cache it here in the random access
     // case. This causes double buffering and is a perf hit, but this is not the high perf way for accessing this type of data.
-    // In the case of sequential access, we do not have to do any buffering since the XmlTextReader we return can become 
+    // In the case of sequential access, we do not have to do any buffering since the XmlTextReader we return can become
     // invalid as soon as we move off the current column.
     internal sealed class SqlCachedStream : Stream
     {
@@ -660,7 +660,7 @@ namespace System.Data.SqlClient
             return (long)cnt;
         }
 
-        // This method duplicates the work of XmlWriter.WriteNode except that it reads one element at a time 
+        // This method duplicates the work of XmlWriter.WriteNode except that it reads one element at a time
         // instead of reading the entire node like XmlWriter.
         private void WriteXmlElement()
         {

@@ -10,7 +10,7 @@ namespace System.ComponentModel.Design.Serialization
     /// This interface may be optionally implemented by the designer loader to provide
     /// load services to outside components. It provides support for asynchronous loading
     /// of the designer and allows other objects to initiate a reload of othe
-    /// design surface. Designer loaders do not need to implement this but it is 
+    /// design surface. Designer loaders do not need to implement this but it is
     /// recommended. We do not directly put this on DesignerLoader so we can prevent
     /// outside objects from interacting with the main methods of a designer loader.
     /// These should only be called by the designer host.
@@ -46,4 +46,3 @@ namespace System.ComponentModel.Design.Serialization
         bool Reload();
     }
 }
-

@@ -242,12 +242,12 @@ namespace System.Xml.Tests
 
 
         /// <summary>
-        /// This method calls the Create Method on the XmlReader and puts the state in CreateSuccess or TestPass. 
+        /// This method calls the Create Method on the XmlReader and puts the state in CreateSuccess or TestPass.
         /// It goes in PASS also if the reader threw an expected error. In all other cases it should throw
         /// TestFailedException.
         /// </summary>
-        /// <param name="readThru">This param determines which overload to call. 
-        /// In future on multiple overloads we can make this param 
+        /// <param name="readThru">This param determines which overload to call.
+        /// In future on multiple overloads we can make this param
         /// an enum which can be set using the spec file data</param>
         protected void CreateReader(ReadThru readThru)
         {

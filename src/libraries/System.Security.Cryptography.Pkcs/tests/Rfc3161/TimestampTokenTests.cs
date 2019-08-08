@@ -816,7 +816,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 Assert.Equal(0, bytesRead);
             }
         }
-        
+
         private static byte[] BuildCustomToken(
             CertLoader cert,
             DateTimeOffset timestamp,

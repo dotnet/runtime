@@ -48,4 +48,3 @@ namespace System.Data.ProviderBase
         }
     }
 }
-

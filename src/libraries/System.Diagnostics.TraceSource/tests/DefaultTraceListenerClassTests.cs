@@ -77,7 +77,7 @@ namespace System.Diagnostics.TraceSourceTests
             listener.LogFileName = pathToLogFile;
             listener.ShouldOverrideWriteLine = false;
             listener.Fail("FAIL");
-            
+
             Assert.True(File.Exists(pathToLogFile));
             Assert.Contains("FAIL", File.ReadAllText(pathToLogFile));
         }
@@ -133,7 +133,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void LogFileNamePropertyTest(string expectedLogFileName)
         {
             var listener = new DefaultTraceListener();
-            
+
             //it should be initialized with the default
             Assert.Equal(string.Empty, listener.LogFileName);
             listener.LogFileName = expectedLogFileName;

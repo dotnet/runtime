@@ -221,7 +221,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     cmd.ExecuteNonQuery();
 
-                    // Verify if the data was updated 
+                    // Verify if the data was updated
                     cmd.CommandText = "select * from dbo.PointTable";
                     cmd.CommandType = CommandType.Text;
                     using (SqlDataReader reader = cmd.ExecuteReader())

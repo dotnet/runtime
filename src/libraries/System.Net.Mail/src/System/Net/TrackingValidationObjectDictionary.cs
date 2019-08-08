@@ -11,8 +11,8 @@ namespace System.Net
     // TrackingValidationObjectDictionary uses an internal collection of objects to store
     // only those objects which are not strings.  It still places a copy of the string
     // value of these objects into the base StringDictionary so that the public methods
-    // of StringDictionary still function correctly.  
-    // NOTE:  all keys are converted to lowercase prior to adding to ensure consistency of 
+    // of StringDictionary still function correctly.
+    // NOTE:  all keys are converted to lowercase prior to adding to ensure consistency of
     // values between  keys in the StringDictionary and internalObjects because StringDictionary
     // automatically does this internally
     internal sealed class TrackingValidationObjectDictionary : StringDictionary
@@ -50,8 +50,8 @@ namespace System.Net
             // be consistent
             key = key.ToLowerInvariant();
 
-            // StringDictionary allows keys with null values however null values for parameters in 
-            // ContentDisposition have no meaning so they must be ignored on add. StringDictionary 
+            // StringDictionary allows keys with null values however null values for parameters in
+            // ContentDisposition have no meaning so they must be ignored on add. StringDictionary
             // would not throw on null so this can't either since it would be a breaking change.
             // in addition, a key with an empty value is not valid so we do not persist those either
             if (!string.IsNullOrEmpty(value))
@@ -62,7 +62,7 @@ namespace System.Net
                     // run the validator for this key; it will throw if the value is invalid
                     object valueToAdd = foundEntry(value);
 
-                    // now that the value is valid, ensure that internalObjects exists since we have to 
+                    // now that the value is valid, ensure that internalObjects exists since we have to
                     // add to it
                     if (_internalObjects == null)
                     {
@@ -114,7 +114,7 @@ namespace System.Net
 
         #region Internal Methods
 
-        // public interface only allows strings so this provides a means 
+        // public interface only allows strings so this provides a means
         // to get the objects when they are not strings
         internal object InternalGet(string key)
         {
@@ -132,7 +132,7 @@ namespace System.Net
         }
 
         // this method bypasses validation
-        // preconditions: value MUST have been validated and must not be null        
+        // preconditions: value MUST have been validated and must not be null
         internal void InternalSet(string key, object value)
         {
             // InternalSet is only used with objects that belong in internalObjects so we must always
@@ -156,7 +156,7 @@ namespace System.Net
         {
             get
             {
-                // no need to check internalObjects since the string equivalent in base will 
+                // no need to check internalObjects since the string equivalent in base will
                 // already have been set correctly when the value was originally passed in
                 return base[key];
             }

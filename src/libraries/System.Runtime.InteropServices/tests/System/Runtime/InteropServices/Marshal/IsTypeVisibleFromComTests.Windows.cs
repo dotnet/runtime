@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ComImportObject), true };
             yield return new object[] { typeof(InterfaceAndComImportObject), true };
             yield return new object[] { typeof(InterfaceComImportObject), true };
-            
+
             yield return new object[] { typeof(IsTypeVisibleFromComTests), true };
             yield return new object[] { typeof(PrivateType), false };
             yield return new object[] { typeof(ProtectedType), false };

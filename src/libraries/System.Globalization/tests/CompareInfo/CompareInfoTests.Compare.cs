@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        
+
         // On Windows, hiragana characters sort after katakana.
         // On ICU, it is the opposite
         private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
@@ -22,9 +22,9 @@ namespace System.Globalization.Tests
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
         private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
-        
+
         private const string SoftHyphen = "\u00AD";
-        
+
         public static IEnumerable<object[]> Compare_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
@@ -222,10 +222,10 @@ namespace System.Globalization.Tests
 
             // Spanish
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
-            
+
             // Misc differences between platforms
             bool isWindows = PlatformDetection.IsWindows;
-             
+
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1: 0 };
             yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1 : -1 };
             yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, isWindows ? 1 : -1 };
@@ -233,10 +233,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
             yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", CompareOptions.None, isWindows ? 1 : -1 };
             yield return new object[] { s_invariantCompare, "\u30BF", "\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, isWindows ? -1 : 1 };            
+            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, isWindows ? -1 : 1 };
             yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.None, isWindows ? 1 : -1 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, isWindows ? 0 : -1 };
-            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, isWindows ? 0 : -1 };          
+            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, isWindows ? 0 : -1 };
             yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, isWindows ? 1 : -1 };
             yield return new object[] { new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1 };
             yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, isWindows ? 0 : -1 };
@@ -304,7 +304,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "-aaaaaaaaaaaaa", 1, 10, "++++aaaaaaaaaa", 4, 10, CompareOptions.Ordinal, 0 }; // Different long alignment, equal compare
             yield return new object[] { s_invariantCompare, "aaaaaaaaaaaaaa", 1, 10, "aaaaaaaaaaaaax", 4, 10, CompareOptions.Ordinal, -1 }; // Different long alignment
         }
-        
+
         [Theory]
         [MemberData(nameof(Compare_Advanced_TestData))]
         public void Compare(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)

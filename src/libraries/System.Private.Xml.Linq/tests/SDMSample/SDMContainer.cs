@@ -324,7 +324,7 @@ namespace XDocumentTests.SDMSample
             Assert.Same(obj5, element1.Annotation(typeof(long)));
             Assert.Same(obj6, element1.Annotation(typeof(decimal)));
 
-            // Ensure that duplicates are allowed.           
+            // Ensure that duplicates are allowed.
             element1.AddAnnotation(40m);
             Assert.Null(element1.Annotation(typeof(sbyte)));
 

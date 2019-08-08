@@ -12,40 +12,40 @@ namespace System.ComponentModel
     public sealed class InheritanceAttribute : Attribute
     {
         /// <summary>
-        /// 
+        ///
         /// Specifies that the component is inherited. This field is
         /// read-only.
-        /// 
+        ///
         /// </summary>
         public static readonly InheritanceAttribute Inherited = new InheritanceAttribute(InheritanceLevel.Inherited);
 
         /// <summary>
-        /// 
+        ///
         /// Specifies that
         /// the component is inherited and is read-only. This field is
         /// read-only.
-        /// 
+        ///
         /// </summary>
         public static readonly InheritanceAttribute InheritedReadOnly = new InheritanceAttribute(InheritanceLevel.InheritedReadOnly);
 
         /// <summary>
-        /// 
+        ///
         /// Specifies that the component is not inherited. This field is
         /// read-only.
-        /// 
+        ///
         /// </summary>
         public static readonly InheritanceAttribute NotInherited = new InheritanceAttribute(InheritanceLevel.NotInherited);
 
         /// <summary>
-        /// 
+        ///
         /// Specifies the default value for
         /// the InheritanceAttribute as NotInherited.
-        /// 
+        ///
         /// </summary>
         public static readonly InheritanceAttribute Default = NotInherited;
 
         /// <summary>
-        /// Initializes a new instance of the System.ComponentModel.Design.InheritanceAttribute 
+        /// Initializes a new instance of the System.ComponentModel.Design.InheritanceAttribute
         /// class.
         /// </summary>
         public InheritanceAttribute()
@@ -54,7 +54,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the System.ComponentModel.Design.InheritanceAttribute class 
+        /// Initializes a new instance of the System.ComponentModel.Design.InheritanceAttribute class
         /// with the specified inheritance
         /// level.
         /// </summary>
@@ -64,17 +64,17 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// 
+        ///
         /// Gets or sets
         /// the current inheritance level stored in this attribute.
-        /// 
+        ///
         /// </summary>
         public InheritanceLevel InheritanceLevel { get; }
 
         /// <summary>
-        /// 
+        ///
         /// Override to test for equality.
-        /// 
+        ///
         /// </summary>
         public override bool Equals(object value)
         {

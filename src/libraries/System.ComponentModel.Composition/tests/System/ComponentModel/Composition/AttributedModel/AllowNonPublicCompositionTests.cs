@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void PublicFromPublic()
         {
-            var container = ContainerFactory.Create(); 
+            var container = ContainerFactory.Create();
             CompositionBatch batch = new CompositionBatch();
             var importer = new AllPublicImportOnly();
             batch.AddPart(importer);

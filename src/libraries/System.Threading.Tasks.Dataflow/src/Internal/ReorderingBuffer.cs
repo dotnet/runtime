@@ -8,7 +8,7 @@
 //
 //
 // An intermediate buffer that ensures messages are output in the right order.
-// Used by blocks (e.g. TransformBlock, TransformManyBlock) when operating in 
+// Used by blocks (e.g. TransformBlock, TransformManyBlock) when operating in
 // parallel modes that could result in messages being processed out of order.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

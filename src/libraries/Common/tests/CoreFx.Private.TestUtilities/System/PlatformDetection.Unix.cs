@@ -35,7 +35,7 @@ namespace System
         public static bool IsUbuntu1810OrHigher => IsDistroAndVersionOrHigher("ubuntu", 18, 10);
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
-        
+
         // OSX family
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
@@ -175,7 +175,7 @@ namespace System
                 catch
                 {
                 }
-            }            
+            }
 
             // In case of exception, couldn't get the version or non osx
             return new Version(0, 0, 0);

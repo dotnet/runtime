@@ -9,10 +9,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -689,7 +689,7 @@ namespace System.Data.Tests
 
             Assert.Equal("col_decimal", schemaTable.Rows[3]["ColumnName"]);
             Assert.Equal(typeof(decimal), schemaTable.Rows[3]["DataType"]);
-            // When are the Precision and Scale Values set ? 
+            // When are the Precision and Scale Values set ?
             Assert.Equal(DBNull.Value, schemaTable.Rows[3]["NumericPrecision"]);
             Assert.Equal(DBNull.Value, schemaTable.Rows[3]["NumericScale"]);
             Assert.Equal(-1, schemaTable.Rows[3]["ColumnSize"]);
@@ -761,7 +761,7 @@ namespace System.Data.Tests
             catch (InvalidOperationException)
             {
                 // Never premise English.
-                //Assert.Equal ("Schema of current DataTable '" + table.TableName + 
+                //Assert.Equal ("Schema of current DataTable '" + table.TableName +
                 //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
             }
 
@@ -776,7 +776,7 @@ namespace System.Data.Tests
             catch (InvalidOperationException)
             {
                 // Never premise English.
-                //Assert.Equal ("Schema of current DataTable '" + table.TableName + 
+                //Assert.Equal ("Schema of current DataTable '" + table.TableName +
                 //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
             }
         }
@@ -876,4 +876,3 @@ namespace System.Data.Tests
         }
     }
 }
-

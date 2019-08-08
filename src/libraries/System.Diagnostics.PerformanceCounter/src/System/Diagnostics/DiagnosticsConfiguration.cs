@@ -74,10 +74,10 @@ namespace System.Diagnostics
         internal static void Initialize()
         {
             // Initialize() is also called by other components outside of Trace (such as PerformanceCounter)
-            // as a result using one lock for this critical section and another for Trace API critical sections  
-            // (such as Trace.WriteLine) could potentially lead to deadlock between 2 threads that are 
-            // executing these critical sections (and consequently obtaining the 2 locks) in the reverse order. 
-            // Using the same lock for DiagnosticsConfiguration as well as TraceInternal avoids this issue. 
+            // as a result using one lock for this critical section and another for Trace API critical sections
+            // (such as Trace.WriteLine) could potentially lead to deadlock between 2 threads that are
+            // executing these critical sections (and consequently obtaining the 2 locks) in the reverse order.
+            // Using the same lock for DiagnosticsConfiguration as well as TraceInternal avoids this issue.
             // Sequential locks on TraceInternal.critSec by the same thread is a non issue for this critical section.
             lock (TraceInternal.critSec)
             {

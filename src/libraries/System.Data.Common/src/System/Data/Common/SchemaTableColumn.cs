@@ -30,4 +30,3 @@ namespace System.Data.Common
         public static readonly string BaseColumnName = "BaseColumnName";
     }
 }
-

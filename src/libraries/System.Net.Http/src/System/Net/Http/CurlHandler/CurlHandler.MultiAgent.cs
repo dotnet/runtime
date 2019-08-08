@@ -63,7 +63,7 @@ namespace System.Net.Http
             /// This is only valid while the worker is executing.
             /// </summary>
             private SafeFileHandle _requestWakeupPipeFd;
-            
+
             /// <summary>
             /// Task for the currently running worker, or null if there is no current worker.
             /// Protected by a lock on <see cref="_incomingRequests"/>.
@@ -159,7 +159,7 @@ namespace System.Net.Http
                     // code happens to create attached tasks, and it's LongRunning because this thread
                     // is likely going to sit around for a while in a wait loop (and the more requests
                     // are concurrently issued to the same agent, the longer the thread will be around).
-                    _runningWorker = new Task(s => ((MultiAgent)s).WorkerBody(), this, 
+                    _runningWorker = new Task(s => ((MultiAgent)s).WorkerBody(), this,
                         CancellationToken.None, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning);
 
                     // We want to avoid situations where a Dispose occurs while we're in the middle
@@ -204,8 +204,8 @@ namespace System.Net.Http
             /// </remarks>
             private unsafe void ReadFromWakeupPipeWhenKnownToContainData()
             {
-                // It's possible but unlikely that there will be tons of extra data in the pipe, 
-                // more than we end up reading out here (it's unlikely because we only write a byte to the pipe when 
+                // It's possible but unlikely that there will be tons of extra data in the pipe,
+                // more than we end up reading out here (it's unlikely because we only write a byte to the pipe when
                 // transitioning from 0 to 1 incoming request).  In that unlikely event, the worst
                 // case will be that the next one or more waits will wake up immediately, with each one
                 // subsequently clearing out more of the pipe.
@@ -240,7 +240,7 @@ namespace System.Net.Http
 
                 // In support of HTTP/2, enable HTTP/2 connections to be multiplexed if possible.
                 // We must only do this if the version of libcurl being used supports HTTP/2 multiplexing.
-                // Due to a change in a libcurl signature, if we try to make this call on an older libcurl, 
+                // Due to a change in a libcurl signature, if we try to make this call on an older libcurl,
                 // we'll end up accidentally and unconditionally enabling HTTP 1.1 pipelining.
                 if (s_supportsHttp2Multiplexing)
                 {
@@ -368,11 +368,11 @@ namespace System.Net.Http
                     // Continue processing as long as there are any active operations
                     while (true)
                     {
-                        // First handle any requests in the incoming requests queue. 
-                        // (This method is factored out mostly to keep this loop concise, but also partly 
-                        // to avoid keeping any references to EasyRequests rooted by the stack and thus 
+                        // First handle any requests in the incoming requests queue.
+                        // (This method is factored out mostly to keep this loop concise, but also partly
+                        // to avoid keeping any references to EasyRequests rooted by the stack and thus
                         // preventing them from being GC'd and the response stream finalized.  That's mainly
-                        // a concern for debug builds, where the JIT may extend a local's lifetime.  The same 
+                        // a concern for debug builds, where the JIT may extend a local's lifetime.  The same
                         // logic applies to some of the other helpers used later in this loop.)
                         HandleIncomingRequests();
 
@@ -380,10 +380,10 @@ namespace System.Net.Http
                         if (_activeOperations.Count == 0)
                         {
                             // Setting up a MultiAgent processing loop involves creating a new MultiAgent, creating a task
-                            // and a thread to process it, creating a new pipe, etc., which has non-trivial cost associated 
-                            // with it.  Thus, to avoid repeatedly spinning up and down these workers, we can keep this worker 
-                            // alive for a little while longer in case another request comes in within some reasonably small 
-                            // amount of time.  This helps with the case where a sequence of requests is made serially rather 
+                            // and a thread to process it, creating a new pipe, etc., which has non-trivial cost associated
+                            // with it.  Thus, to avoid repeatedly spinning up and down these workers, we can keep this worker
+                            // alive for a little while longer in case another request comes in within some reasonably small
+                            // amount of time.  This helps with the case where a sequence of requests is made serially rather
                             // than in parallel, avoiding the likely case of spinning up a new multiagent for each.
                             Interop.Sys.PollEvents triggered;
                             Interop.Error pollRv = Interop.Sys.Poll(_wakeupRequestedPipeFd, Interop.Sys.PollEvents.POLLIN, KeepAliveMilliseconds, out triggered);
@@ -493,7 +493,7 @@ namespace System.Net.Http
                             // their response message published.  Other operations may continue.
                             Debug.Assert(easy == null, "Expected null easy for a Shutdown request");
                             CleanUpRemainingActiveOperations(
-                                new OperationCanceledException(SR.net_http_unix_handler_disposed), 
+                                new OperationCanceledException(SR.net_http_unix_handler_disposed),
                                 onlyIfResponseMessageNotPublished: true);
                             break;
 
@@ -528,7 +528,7 @@ namespace System.Net.Http
 
                 if (isWakeupRequestedPipeActive)
                 {
-                    // We woke up (at least in part) because a wake-up was requested.  
+                    // We woke up (at least in part) because a wake-up was requested.
                     // Read the data out of the pipe to clear it.
                     Debug.Assert(!isTimeout, $"Should not have timed out when {nameof(isWakeupRequestedPipeActive)} is true");
                     EventSourceTrace("Wait wake-up");
@@ -540,9 +540,9 @@ namespace System.Net.Http
                     EventSourceTrace("Wait timeout");
                 }
 
-                // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
-                // being waited on. If this ends up being a scalability bottleneck, we can look into using the curl_multi_socket_* 
-                // APIs, which would let us switch to using epoll by being notified when sockets file descriptors are added or 
+                // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds
+                // being waited on. If this ends up being a scalability bottleneck, we can look into using the curl_multi_socket_*
+                // APIs, which would let us switch to using epoll by being notified when sockets file descriptors are added or
                 // removed and configuring the epoll context with EPOLL_CTL_ADD/DEL, which at the expense of a lot of additional
                 // complexity would let us turn the O(N) operation into an O(1) operation.  The additional complexity would come
                 // not only in the form of additional callbacks and managing the socket collection, but also in the form of timer
@@ -1000,7 +1000,7 @@ namespace System.Net.Http
                                     // it implies a redirect.  As such, if we got a 3xx status code and we support automatically redirecting,
                                     // reconfigure the easy handle under the assumption that libcurl will redirect.  If it does redirect, we'll
                                     // be prepared; if it doesn't (e.g. it doesn't treat some particular 3xx as a redirect, if we've reached
-                                    // our redirect limit, etc.), this will have been unnecessary work in reconfiguring the easy handle, but 
+                                    // our redirect limit, etc.), this will have been unnecessary work in reconfiguring the easy handle, but
                                     // nothing incorrect, as we'll tear down the handle once the request finishes, anyway, and all of the configuration
                                     // we're doing is about initiating a new request.
                                     if ((int)response.StatusCode >= 301 && (int)response.StatusCode <= 303)
@@ -1133,7 +1133,7 @@ namespace System.Net.Http
                             // being sent as the server starts to send a response.  Since we still have the outstanding
                             // read, we simply re-pause.  When the task completes (which could have happened immediately
                             // after the check). the continuation we previously created will fire and queue an unpause.
-                            // Since all of this processing is single-threaded on the current thread, that unpause request 
+                            // Since all of this processing is single-threaded on the current thread, that unpause request
                             // is guaranteed to happen after this re-pause.
                             multi.EventSourceTrace("Re-pausing reading after a spurious un-pause", easy: easy);
                             return Interop.Http.CURL_READFUNC_PAUSE;
@@ -1167,7 +1167,7 @@ namespace System.Net.Http
                         Marshal.Copy(sts.Buffer, sts.Offset, buffer, bytesToCopy);
                         multi.EventSourceTrace("Copied {0} bytes from request stream", bytesToCopy, easy: easy);
 
-                        // Update the offset.  If we've gone through all of the data, reset the state 
+                        // Update the offset.  If we've gone through all of the data, reset the state
                         // so that the next time we're called back we'll do a new read.
                         sts.Offset += bytesToCopy;
                         Debug.Assert(sts.Offset <= sts.Count, "Offset should never exceed count");
@@ -1228,7 +1228,7 @@ namespace System.Net.Http
                        new Memory<byte>(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length)), easy._cancellationToken);
                 }
 
-                // Even though it's "Async", it's possible this read could complete synchronously or extremely quickly.  
+                // Even though it's "Async", it's possible this read could complete synchronously or extremely quickly.
                 // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
                 if (asyncRead.IsCompleted)
                 {
@@ -1259,7 +1259,7 @@ namespace System.Net.Http
                     return (ulong)bytesToCopy;
                 }
 
-                // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
+                // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation
                 // such that the connection will be unpaused once the task completes.
                 sts.SetTaskOffsetCount(asyncRead.AsTask(), 0, 0);
                 sts.Task.ContinueWith((t, s) =>
@@ -1364,7 +1364,7 @@ namespace System.Net.Http
                         // the StreamContent type, for which we know this will be an issue.  It won't help with other
                         // corner -case contents like this, but for such contents, we would still end up failing the
                         // request, just sooner.
-                        if (offset == 0 && origin == (int)SeekOrigin.Begin && 
+                        if (offset == 0 && origin == (int)SeekOrigin.Begin &&
                             !(easy._requestMessage.Content is StreamContent)) // avoid known problematic case
                         {
                             CurlHandler.EventSourceTrace("Removing the existing request stream, to be replaced on subsequent read", easy: easy);

@@ -7,14 +7,14 @@ using System.Runtime.InteropServices;
 
 namespace System.Management
 {
-    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC// 
+    //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
     ///    <para> Represents the set of methods available in the collection.</para>
     /// </summary>
     /// <example>
     ///    <code lang='C#'>using System;
     /// using System.Management;
-    /// 
+    ///
     /// // This sample demonstrates enumerate all methods in a ManagementClass object.
     /// class Sample_MethodDataCollection
     /// {
@@ -30,7 +30,7 @@ namespace System.Management
     ///    </code>
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
-    /// 
+    ///
     /// ' This sample demonstrates enumerate all methods in a ManagementClass object.
     /// Class Sample_MethodDataCollection
     ///     Overloads Public Shared Function Main(args() As String) As Integer
@@ -46,11 +46,11 @@ namespace System.Management
     ///    </code>
     /// </example>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
-    public class MethodDataCollection : ICollection, IEnumerable 
+    public class MethodDataCollection : ICollection, IEnumerable
     {
         private ManagementObject parent;
 
-        private class enumLock 
+        private class enumLock
         {
         } //used to lock usage of BeginMethodEnum/NextMethod
 
@@ -69,9 +69,9 @@ namespace System.Management
         /// <value>
         /// <para> The number of objects in the <see cref='System.Management.MethodDataCollection'/>. </para>
         /// </value>
-        public int Count 
+        public int Count
         {
-            get 
+            get
             {
                 int i = 0;
                 IWbemClassObjectFreeThreaded inParameters = null, outParameters = null;
@@ -82,7 +82,7 @@ namespace System.Management
                 lock(typeof(enumLock))
 #pragma warning restore CA2002
                 {
-                    try 
+                    try
                     {
                         status = parent.wbemObject.BeginMethodEnumeration_(0);
 
@@ -98,8 +98,8 @@ namespace System.Management
                             }
                             parent.wbemObject.EndMethodEnumeration_();  // Ignore status.
                         }
-                    } 
-                    catch (COMException e) 
+                    }
+                    catch (COMException e)
                     {
                         ManagementException.ThrowWithExtendedInfo(e);
                     }
@@ -122,10 +122,10 @@ namespace System.Management
         ///    <para>Indicates whether the object is synchronized.</para>
         /// </summary>
         /// <value>
-        /// <para><see langword='true'/> if the object is synchronized; 
+        /// <para><see langword='true'/> if the object is synchronized;
         ///    otherwise, <see langword='false'/>.</para>
         /// </value>
-        public bool IsSynchronized { get { return false; } 
+        public bool IsSynchronized { get { return false; }
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace System.Management
         /// <value>
         ///    <para>The object to be used for synchronization.</para>
         /// </value>
-        public object SyncRoot { get { return this; } 
+        public object SyncRoot { get { return this; }
         }
 
         /// <overload>
@@ -153,7 +153,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// <para>Copies the <see cref='System.Management.MethodDataCollection'/> to a specialized <see cref='System.Management.MethodData'/> 
+        /// <para>Copies the <see cref='System.Management.MethodDataCollection'/> to a specialized <see cref='System.Management.MethodData'/>
         /// array.</para>
         /// </summary>
         /// <param name='methodArray'>The destination array to which to copy the <see cref='System.Management.MethodData'/> objects.</param>
@@ -189,38 +189,38 @@ namespace System.Management
 
         //Enumerator class
         /// <summary>
-        /// <para>Represents the enumerator for <see cref='System.Management.MethodData'/> 
+        /// <para>Represents the enumerator for <see cref='System.Management.MethodData'/>
         /// objects in the <see cref='System.Management.MethodDataCollection'/>.</para>
         /// </summary>
         /// <example>
         ///    <code lang='C#'>using System;
         /// using System.Management;
-        /// 
+        ///
         /// // This sample demonstrates how to enumerate all methods in
         /// // Win32_LogicalDisk class using MethodDataEnumerator object.
-        /// 
-        /// class Sample_MethodDataEnumerator 
+        ///
+        /// class Sample_MethodDataEnumerator
         /// {
-        ///  public static int Main(string[] args) 
+        ///  public static int Main(string[] args)
         ///  {
         ///   ManagementClass diskClass = new ManagementClass("win32_logicaldisk");
-        ///   MethodDataCollection.MethodDataEnumerator diskEnumerator = 
+        ///   MethodDataCollection.MethodDataEnumerator diskEnumerator =
         ///    diskClass.Methods.GetEnumerator();
-        ///   while(diskEnumerator.MoveNext()) 
+        ///   while(diskEnumerator.MoveNext())
         ///   {
         ///    MethodData method = diskEnumerator.Current;
         ///    Console.WriteLine("Method = " + method.Name);
-        ///   }   
+        ///   }
         ///   return 0;
         ///  }
         /// }
         ///    </code>
         ///    <code lang='VB'>Imports System
         /// Imports System.Management
-        /// 
+        ///
         /// ' This sample demonstrates how to enumerate all methods in
         /// ' Win32_LogicalDisk class using MethodDataEnumerator object.
-        /// 
+        ///
         /// Class Sample_MethodDataEnumerator
         ///  Overloads Public Shared Function Main(args() As String) As Integer
         ///   Dim diskClass As New ManagementClass("win32_logicaldisk")
@@ -232,7 +232,7 @@ namespace System.Management
         ///    Console.WriteLine("Method = " &amp; method.Name)
         ///   End While
         ///   Return 0
-        ///  End Function 
+        ///  End Function
         /// End Class
         ///    </code>
         /// </example>
@@ -249,7 +249,7 @@ namespace System.Management
             internal MethodDataEnumerator(ManagementObject parent)
             {
                 this.parent = parent;
-                methodNames = new ArrayList(); 
+                methodNames = new ArrayList();
                 IWbemClassObjectFreeThreaded inP = null, outP = null;
                 string tempMethodName;
                 int status = (int)ManagementStatus.Failed;
@@ -258,7 +258,7 @@ namespace System.Management
                 lock(typeof(enumLock))
 #pragma warning restore CA2002
                 {
-                    try 
+                    try
                     {
                         status = parent.wbemObject.BeginMethodEnumeration_(0);
 
@@ -274,14 +274,14 @@ namespace System.Management
                             }
                             parent.wbemObject.EndMethodEnumeration_();  // Ignore status.
                         }
-                    } 
-                    catch (COMException e) 
+                    }
+                    catch (COMException e)
                     {
                         ManagementException.ThrowWithExtendedInfo(e);
                     }
                     en = methodNames.GetEnumerator();
                 }
-                
+
                 if ((status & 0xfffff000) == 0x80041000)
                 {
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
@@ -291,18 +291,18 @@ namespace System.Management
                     Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
-        
+
             /// <internalonly/>
             object IEnumerator.Current { get { return (object)this.Current; } }
 
             /// <summary>
-            /// <para>Returns the current <see cref='System.Management.MethodData'/> in the <see cref='System.Management.MethodDataCollection'/> 
+            /// <para>Returns the current <see cref='System.Management.MethodData'/> in the <see cref='System.Management.MethodDataCollection'/>
             /// enumeration.</para>
             /// </summary>
             /// <value>The current <see cref='System.Management.MethodData'/> item in the collection.</value>
-            public MethodData Current 
+            public MethodData Current
             {
-                get 
+                get
                 {
                         return new MethodData(parent, (string)en.Current);
                 }
@@ -314,7 +314,7 @@ namespace System.Management
             /// <returns><see langword='true'/> if the enumerator was successfully advanced to the next method; <see langword='false'/> if the enumerator has passed the end of the collection.</returns>
             public bool MoveNext ()
             {
-                return en.MoveNext();           
+                return en.MoveNext();
             }
 
             /// <summary>
@@ -324,7 +324,7 @@ namespace System.Management
             {
                 en.Reset();
             }
-            
+
         }//MethodDataEnumerator
 
 
@@ -337,24 +337,24 @@ namespace System.Management
         /// </summary>
         /// <param name='methodName'>The name of the method requested.</param>
         /// <value>A <see cref='System.Management.MethodData'/> instance containing all information about the specified method.</value>
-        public virtual MethodData this[string methodName] 
+        public virtual MethodData this[string methodName]
         {
-            get 
-            { 
+            get
+            {
                 if (null == methodName)
                     throw new ArgumentNullException (nameof(methodName));
 
                 return new MethodData(parent, methodName);
             }
         }
-        
+
 
         /// <summary>
         /// <para>Removes a <see cref='System.Management.MethodData'/> from the <see cref='System.Management.MethodDataCollection'/>.</para>
         /// </summary>
         /// <param name='methodName'>The name of the method to remove from the collection.</param>
         /// <remarks>
-        ///    <para> 
+        ///    <para>
         ///       Removing <see cref='System.Management.MethodData'/> objects from the <see cref='System.Management.MethodDataCollection'/>
         ///       can only be done when the class has no
         ///       instances. Any other case will result in an exception.</para>
@@ -366,11 +366,11 @@ namespace System.Management
 
             int status = (int)ManagementStatus.Failed;
 
-            try 
+            try
             {
                 status = parent.wbemObject.DeleteMethod_(methodName);
-            } 
-            catch (COMException e) 
+            }
+            catch (COMException e)
             {
                 ManagementException.ThrowWithExtendedInfo(e);
             }
@@ -395,7 +395,7 @@ namespace System.Management
         /// </summary>
         /// <param name='methodName'>The name of the method to add.</param>
         /// <remarks>
-        /// <para> Adding <see cref='System.Management.MethodData'/> objects to the <see cref='System.Management.MethodDataCollection'/> can only 
+        /// <para> Adding <see cref='System.Management.MethodData'/> objects to the <see cref='System.Management.MethodDataCollection'/> can only
         ///    be done when the class has no instances. Any other case will result in an
         ///    exception.</para>
         /// </remarks>
@@ -408,14 +408,14 @@ namespace System.Management
 
         //This variant takes the full information, i.e. the method name and in & out param objects
         /// <summary>
-        /// <para>Adds a <see cref='System.Management.MethodData'/> to the <see cref='System.Management.MethodDataCollection'/>. This overload will add a new method with the 
+        /// <para>Adds a <see cref='System.Management.MethodData'/> to the <see cref='System.Management.MethodDataCollection'/>. This overload will add a new method with the
         ///    specified parameter objects to the collection.</para>
         /// </summary>
         /// <param name='methodName'>The name of the method to add.</param>
         /// <param name=' inParameters'>The <see cref='System.Management.ManagementBaseObject'/> holding the input parameters to the method.</param>
         /// <param name=' outParameters'>The <see cref='System.Management.ManagementBaseObject'/> holding the output parameters to the method.</param>
         /// <remarks>
-        /// <para> Adding <see cref='System.Management.MethodData'/> objects to the <see cref='System.Management.MethodDataCollection'/> can only be 
+        /// <para> Adding <see cref='System.Management.MethodData'/> objects to the <see cref='System.Management.MethodDataCollection'/> can only be
         ///    done when the class has no instances. Any other case will result in an
         ///    exception.</para>
         /// </remarks>
@@ -433,11 +433,11 @@ namespace System.Management
 
             int status = (int)ManagementStatus.Failed;
 
-            try 
+            try
             {
                 status = parent.wbemObject.PutMethod_(methodName, 0, wbemIn, wbemOut);
-            } 
-            catch (COMException e) 
+            }
+            catch (COMException e)
             {
                 ManagementException.ThrowWithExtendedInfo(e);
             }

@@ -96,7 +96,7 @@ namespace System.Xml.Serialization
             _currentScope = new LocalScope();
             _freeLocals = new Dictionary<Tuple<Type, string>, Queue<LocalBuilder>>();
             _argList = new Dictionary<string, ArgBuilder>();
-            // this ptr is arg 0 for non static, assuming ref type (not value type) 
+            // this ptr is arg 0 for non static, assuming ref type (not value type)
             if (!isStatic)
                 _argList.Add("this", new ArgBuilder("this", 0, _typeBuilder.BaseType));
             for (int i = 0; i < argTypes.Length; i++)
@@ -1614,7 +1614,7 @@ namespace System.Xml.Serialization
                 Queue<LocalBuilder> freeLocalQueue;
                 if (freeLocals.TryGetValue(key, out freeLocalQueue))
                 {
-                    // Add to end of the queue so that it will be re-used in 
+                    // Add to end of the queue so that it will be re-used in
                     // FIFO manner
                     freeLocalQueue.Enqueue(item.Value);
                 }

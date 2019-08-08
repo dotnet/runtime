@@ -9,11 +9,11 @@ namespace System.Diagnostics
     partial class Activity
     {
         /// <summary>
-        /// Returns high resolution (1 DateTime tick) current UTC DateTime. 
+        /// Returns high resolution (1 DateTime tick) current UTC DateTime.
         /// </summary>
         internal static DateTime GetUtcNow()
         {
-            // DateTime.UtcNow accuracy on .NET Framework is ~16ms, this method 
+            // DateTime.UtcNow accuracy on .NET Framework is ~16ms, this method
             // uses combination of Stopwatch and DateTime to calculate accurate UtcNow.
 
             var tmp = timeSync;

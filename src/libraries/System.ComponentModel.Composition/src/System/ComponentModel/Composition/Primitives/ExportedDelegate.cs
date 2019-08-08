@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Primitives
             _method = method;
         }
 
-        public virtual Delegate CreateDelegate(Type delegateType) 
+        public virtual Delegate CreateDelegate(Type delegateType)
         {
             Requires.NotNull(delegateType, nameof(delegateType));
 
@@ -34,7 +34,7 @@ namespace System.ComponentModel.Composition.Primitives
                 delegateType = CreateStandardDelegateType();
             }
             try
-            { 
+            {
                 return _method.CreateDelegate(delegateType, _instance);
             }
             catch(ArgumentException)

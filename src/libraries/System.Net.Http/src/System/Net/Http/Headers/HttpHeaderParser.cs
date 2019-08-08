@@ -77,8 +77,8 @@ namespace System.Net.Http.Headers
         }
 
         // If ValueType is a custom header value type (e.g. NameValueHeaderValue) it already implements ToString() correctly.
-        // However for existing types like int, byte[], DateTimeOffset we can't override ToString(). Therefore the 
-        // parser provides a ToString() virtual method that can be overridden by derived types to correctly serialize 
+        // However for existing types like int, byte[], DateTimeOffset we can't override ToString(). Therefore the
+        // parser provides a ToString() virtual method that can be overridden by derived types to correctly serialize
         // values (e.g. byte[] to Base64 encoded string).
         public virtual string ToString(object value)
         {

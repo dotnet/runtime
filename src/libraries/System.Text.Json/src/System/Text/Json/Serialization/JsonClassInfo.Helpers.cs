@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -310,7 +310,7 @@ namespace System.Text.Json
             // - If multiple different generic instantiations exists, we want the most derived one.
             // - If that doesn't break the tie, then we sort alphabetically so that it's deterministic.
             //
-            // We do this by looking at interfaces on the type, and recursing to the base type 
+            // We do this by looking at interfaces on the type, and recursing to the base type
             // if we don't find any matches.
             return GetGenericInstantiation(queryType, interfaceType);
         }

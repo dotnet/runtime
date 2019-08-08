@@ -45,7 +45,7 @@ namespace System.Management
     [ComImport]
     [Guid("1CF2B120-547D-101B-8E65-08002B2BD119")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        internal interface IErrorInfo 
+        internal interface IErrorInfo
     {
         Guid GetGUID();
 

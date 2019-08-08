@@ -70,7 +70,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify IsAssignableFrom 
+        // Verify IsAssignableFrom
         // a T[] is assignable to IList<U> iff T[] is assignable to U[]
         [Fact]
         public static void TestIsAssignable6()
@@ -146,7 +146,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestIsAssignable9()
         {
-            // Why a generic parameter as the element type? .NETNative runtime doesn't support rank 1 mdarrays, but the reflection layer does as long as 
+            // Why a generic parameter as the element type? .NETNative runtime doesn't support rank 1 mdarrays, but the reflection layer does as long as
             // the element type is an open type.
             Type theT = typeof(Gen3<>).Project().Gp(0).AsType();
             TypeInfo szArrayT = theT.MakeArrayType().GetTypeInfo();
@@ -175,15 +175,15 @@ namespace System.Reflection.Tests
             // Asking whether a generic type definition is assignable to another generic type definition is an odd question
             // since generic type definitions cannot be derived or implemented (only their instantiations can.)
             //
-            // Nevertheless, this returns "true" under the "X is always assignable to X" rule. 
-            // 
+            // Nevertheless, this returns "true" under the "X is always assignable to X" rule.
+            //
             VerifyIsAssignableFrom("GBase<> GBase<>", typeof(GBase<>).Project().GetTypeInfo(), typeof(GBase<>).Project().GetTypeInfo(), true);
 
             //
             // The fact that this returns "false" often surprises people. But it is the correct result under both .NET Native and the desktop. But they get there
             // through different reasoning.
             //
-            // The .NET Native implements returns false because one cannot derive from a generic type definition (only an instantiation of 
+            // The .NET Native implements returns false because one cannot derive from a generic type definition (only an instantiation of
             // a generic type definition.)
             //
             // The desktop, however, converts generic type definitions to instantiations closed over the generic type definition's formal type parameter

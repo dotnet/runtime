@@ -143,7 +143,7 @@ namespace System.Drawing
 
             if (nameIndex < font.Length - 1)
             {
-                // Get the style index (if any). The size is a bit problematic because it can be formatted differently 
+                // Get the style index (if any). The size is a bit problematic because it can be formatted differently
                 // depending on the culture, we'll parse it last.
                 int styleIndex = culture.CompareInfo.IndexOf(font, StylePrefix, CompareOptions.IgnoreCase);
 
@@ -185,7 +185,7 @@ namespace System.Drawing
 
                 if (style != null)
                 {
-                    // Parse FontStyle                        
+                    // Parse FontStyle
                     style = style.Substring(6); // style string always starts with style=
                     string[] styleTokens = style.Split(separator);
 
@@ -221,7 +221,7 @@ namespace System.Drawing
 
             if (length > 0)
             {
-                // text is expected to have a format like " 8,25pt, ". Leading and trailing spaces (trimmed above), 
+                // text is expected to have a format like " 8,25pt, ". Leading and trailing spaces (trimmed above),
                 // last comma, unit and decimal value may not appear.  We need to make it ####.##CC
                 for (splitPoint = 0; splitPoint < length; splitPoint++)
                 {

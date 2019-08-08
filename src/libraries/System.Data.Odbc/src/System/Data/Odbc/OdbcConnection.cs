@@ -588,7 +588,7 @@ namespace System.Data.Odbc
                 }
                 catch (Exception e)
                 {
-                    // 
+                    //
                     if (!ADP.IsCatchableOrSecurityExceptionType(e))
                     {
                         throw;
@@ -887,7 +887,7 @@ namespace System.Data.Odbc
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
 
-            // VSTFDEVDIV# 560355 - InnerConnection doesn't maintain a ref on the outer connection (this) and 
+            // VSTFDEVDIV# 560355 - InnerConnection doesn't maintain a ref on the outer connection (this) and
             //   subsequently leaves open the possibility that the outer connection could be GC'ed before the DbTransaction
             //   is fully hooked up (leaving a DbTransaction with a null connection property). Ensure that this is reachable
             //   until the completion of BeginTransaction with KeepAlive
@@ -967,5 +967,3 @@ namespace System.Data.Odbc
         }
     }
 }
-
-

@@ -1,11 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 namespace System.Configuration
 {
     /// <summary>
-    /// Components should implement this interface if they want to persist custom settings 
+    /// Components should implement this interface if they want to persist custom settings
     /// in a hosting application. This interface allows the application author to tell a control
     /// whether to persist, when to load, save etc.
     /// </summary>

@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
     /// <summary>
     /// Class to read data obtained from http://www.unicode.org/Public/idna.  For more information read the information
     /// contained in Data\9.0\IdnaTest.txt
-    /// 
+    ///
     /// The structure of the data set is a semicolon delimited list with the following columns:
     ///
     /// Column 1: type - T for transitional, N for nontransitional, B for both
@@ -57,7 +57,7 @@ namespace System.Globalization.Tests
         /// <summary>
         /// This will convert strings with escaped sequences to literal characters.  The input string is
         /// expected to have escaped sequences in the form of '\uXXXX'.
-        /// 
+        ///
         /// Example: "a\u0020b" will be converted to 'a b'.
         /// </summary>
         private static string EscapedToLiteralString(string escaped, int lineNumber)

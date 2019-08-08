@@ -31,7 +31,7 @@ internal static partial class Interop
             public int InterfaceIndex;
             private int _padding;
         }
-       
+
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4MulticastOption")]
         internal static extern unsafe Error GetIPv4MulticastOption(SafeHandle socket, MulticastOption multicastOption, IPv4MulticastOption* option);
 

@@ -141,7 +141,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 // we've never heard of would set the "Value" property which is kinda hard to do when you can't Invoke().
                 // Even the CLR doesn't return consistent values for this between the raw and non-raw versions.
                 // Even doing the subclass check would open the door to resolving types and dependency assemblies and their
-                // resulting FileNotFoundExceptions. Which is exactly what we're trying to avoid with this name-based lookup approach. 
+                // resulting FileNotFoundExceptions. Which is exactly what we're trying to avoid with this name-based lookup approach.
             }
 
             return false;

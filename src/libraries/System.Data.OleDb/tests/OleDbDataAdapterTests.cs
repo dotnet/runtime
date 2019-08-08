@@ -16,7 +16,7 @@ namespace System.Data.OleDb.Tests
         {
             using (var adapter = (OleDbDataAdapter)OleDbFactory.Instance.CreateDataAdapter())
             {
-                Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, new object()));                
+                Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, new object()));
             }
         }
 
@@ -46,7 +46,7 @@ namespace System.Data.OleDb.Tests
                     Assert.Null(adapter.DeleteCommand);
                     Assert.NotNull(adapter.SelectCommand);
                     Assert.Equal(commandText, adapter.SelectCommand.CommandText);
-                    
+
                     adapter.SelectCommand.Dispose(); // bug? OleDbDataAdapter is not disposing of SelectCommand
                 }
             });
@@ -131,7 +131,7 @@ namespace System.Data.OleDb.Tests
         public void Fill_OpenDataReader_Throws()
         {
             RunTest((command, tableName) => {
-                command.CommandText = @"SELECT * FROM " + tableName;  
+                command.CommandText = @"SELECT * FROM " + tableName;
                 Action<bool> FillShouldThrow = (shouldFail) => {
                     DataSet ds = new DataSet();
                     using(var adapter = new OleDbDataAdapter(command))
@@ -139,7 +139,7 @@ namespace System.Data.OleDb.Tests
                         if (shouldFail)
                         {
                             AssertExtensions.Throws<InvalidOperationException>(
-                                () => adapter.Fill(ds, tableName), 
+                                () => adapter.Fill(ds, tableName),
                                 "There is already an open DataReader associated with this Command which must be closed first.");
                         }
                         else
@@ -164,13 +164,13 @@ namespace System.Data.OleDb.Tests
             command.CommandText =
                 @"CREATE TABLE " + tableName + @" (
                     Firstname NVARCHAR(5),
-                    Lastname NVARCHAR(40), 
+                    Lastname NVARCHAR(40),
                     Nickname NVARCHAR(30))";
             command.ExecuteNonQuery();
             Assert.True(File.Exists(Path.Combine(TestDirectory, tableName)));
 
             command.CommandText =
-                @"INSERT INTO " + tableName + @" ( 
+                @"INSERT INTO " + tableName + @" (
                     Firstname,
                     Lastname,
                     Nickname)

@@ -114,7 +114,7 @@ namespace System.Collections.Tests
         {
             Assert.Equal(expected, Math.Sign(Comparer.Default.Compare(a, b)));
         }
-        
+
         [Fact]
         public void Default_Compare_Invalid()
         {

@@ -155,8 +155,8 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(1, XNode.DocumentOrderComparer.Compare(new XElement("A"), null));
         }
 
-        // Copied from the XLinq sources 
-        // This method will return the nodes in the doc order 
+        // Copied from the XLinq sources
+        // This method will return the nodes in the doc order
         private IEnumerable<XNode> GetDescendantNodes(XContainer source, bool self)
         {
             if (self) yield return source;

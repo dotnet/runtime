@@ -68,7 +68,7 @@ namespace System.Reflection.Emit.Tests
                 new string[] { nameof(TestAttribute.TestInt), nameof(TestAttribute.TestStringField) }, new object[] { intValue1, stringValue1 },
                 new object[] { intValue1, stringValue1, null, 0 }
             };
-            
+
             // 2 ctor, 0 properties, 2 fields
             yield return new object[]
             {
@@ -230,7 +230,7 @@ namespace System.Reflection.Emit.Tests
             CustomAttributeBuilder attribute4 = new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues);
             Verify(attribute4);
         }
-        
+
         private static void VerifyCustomAttributeBuilder(CustomAttributeBuilder builder,
                                                         PropertyInfo[] propertyNames, object[] propertyValues,
                                                         FieldInfo[] fieldNames, object[] fieldValues)
@@ -478,7 +478,7 @@ namespace System.Reflection.Emit.Tests
 
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             assembly.SetCustomAttribute(attribute);
-            
+
             object customAttribute = assembly.GetCustomAttributes().First();
             Assert.Equal(fieldValues[0], namedFields[0].GetValue(namedFields[0].IsStatic ? null : customAttribute));
         }
@@ -493,7 +493,7 @@ namespace System.Reflection.Emit.Tests
 
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             assembly.SetCustomAttribute(attribute);
-            
+
             object customAttribute = assembly.GetCustomAttributes().First();
             Assert.Equal(propertyValues[0], TestAttribute.StaticProperty);
         }
@@ -531,7 +531,7 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new object[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
         }
-        
+
         [Fact]
         public static void PrivateConstructor_ThrowsArgumentException()
         {
@@ -731,7 +731,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = new FieldInfo[] { field };
             object[] fieldValues = new object[] { value };
-            
+
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], namedFields, fieldValues));
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new PropertyInfo[0], new object[0], namedFields, fieldValues));
         }

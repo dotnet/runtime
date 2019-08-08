@@ -20,7 +20,7 @@ namespace System.Diagnostics
     //   process can retrieve completion information about that process.
     // - There is no good Unix equivalent to asynchronously be notified of a non-child process' exit, which means such
     //   support needs to be layered on top of kill.
-    // 
+    //
     // As a result, we have the following scheme:
     // - We maintain a static/shared table that maps process ID to ProcessWaitState objects.
     //   Access to this table requires taking a global lock, so we try to minimize the number of
@@ -62,7 +62,7 @@ namespace System.Diagnostics
 
             ~Holder()
             {
-                // Don't try to Dispose resources (like ManualResetEvents) if 
+                // Don't try to Dispose resources (like ManualResetEvents) if
                 // the process is shutting down.
                 if (_state != null && !Environment.HasShutdownStarted)
                 {
@@ -635,7 +635,7 @@ namespace System.Diagnostics
 
                 if (checkAll)
                 {
-                    // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates. 
+                    // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState firstToRemove = null;
                     List<ProcessWaitState> additionalToRemove = null;
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)

@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Assert.False(safeBag.TryEncode(buf.AsSpan(0, encoded.Length - 1), out int bytesWritten));
             Assert.Equal(0, bytesWritten);
             Assert.True(buf.All(b => b == 0xCA));
-            
+
             Assert.True(safeBag.TryEncode(buf.AsSpan(1), out bytesWritten));
             Assert.Equal(encoded.Length, bytesWritten);
             Assert.Equal(0xCA, buf[0]);

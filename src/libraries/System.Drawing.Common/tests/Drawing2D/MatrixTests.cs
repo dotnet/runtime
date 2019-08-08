@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2005-2006 Novell, Inc (http://www.novell.com)
@@ -584,7 +584,7 @@ namespace System.Drawing.Drawing2D.Tests
         public void Scale_Matrix_Succss(Matrix matrix, float scaleX, float scaleY, MatrixOrder order, float[] expectedElements)
         {
             using (matrix)
-            { 
+            {
                 if (PlatformDetection.IsArmOrArm64Process)
                 {
                     //ActiveIssue: 35744

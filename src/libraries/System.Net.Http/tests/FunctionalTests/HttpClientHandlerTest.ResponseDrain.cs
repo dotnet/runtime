@@ -102,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
                     handler.MaxConnectionsPerServer = 1;
 
                     using (HttpClient client = CreateHttpClient(handler))
-                    { 
+                    {
                         HttpResponseMessage response1 = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                         ValidateResponseHeaders(response1, totalSize, mode);
 

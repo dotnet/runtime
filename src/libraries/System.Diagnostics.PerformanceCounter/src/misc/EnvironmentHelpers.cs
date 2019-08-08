@@ -28,10 +28,10 @@ namespace System
                    {
                        s_isAppContainerProcess = HasAppContainerToken();
                    }
- 
+
                     s_isAppContainerProcessInitalized = true;
                 }
- 
+
                 return s_isAppContainerProcess;
             }
         }

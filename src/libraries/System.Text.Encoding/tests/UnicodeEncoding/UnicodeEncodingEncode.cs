@@ -27,7 +27,7 @@ namespace System.Text.Tests
             // Surrogate pairs
             yield return new object[] { "\uD800\uDC00", 0, 2, new byte[] { 0, 216, 0, 220 } };
             yield return new object[] { "a\uD800\uDC00b", 0, 4, new byte[] { 97, 0, 0, 216, 0, 220, 98, 0 } };
-            
+
             yield return new object[] { "\uD800\uDC00\uFFFD\uFEB7", 0, 4, new byte[] { 0x00, 0xD8, 0x00, 0xDC, 0xFD, 0xFF, 0xB7, 0xFE } };
 
             // Mixture of ASCII and Unicode
@@ -97,7 +97,7 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Encode_InvalidChars_TestData))]        
+        [MemberData(nameof(Encode_InvalidChars_TestData))]
         public void Encode_InvalidChars(string source, int index, int count, byte[] expectedLittleEndian)
         {
             byte[] expectedBigEndian = GetBigEndianBytes(expectedLittleEndian);

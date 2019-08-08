@@ -329,7 +329,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.statements.
                     System.Console.WriteLine("Test {0} failed", tests);
             }
 
-            // -= on ushort and ushort     
+            // -= on ushort and ushort
             tests++;
             exception = false;
             d = ushort.MaxValue;
@@ -774,7 +774,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.statements.
         protected internal ulong Q = ulong.MaxValue;
         protected long C = long.MinValue;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

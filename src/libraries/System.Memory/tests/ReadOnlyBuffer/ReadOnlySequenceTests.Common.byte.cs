@@ -12,7 +12,7 @@ namespace System.Memory.Tests
 {
     public class ReadOnlySequenceTestsCommonByte: ReadOnlySequenceTestsCommon<byte>
     {
-        #region Constructor 
+        #region Constructor
 
         [Fact]
         public void Ctor_Array_Offset()

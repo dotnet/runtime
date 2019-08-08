@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -406,7 +406,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 string writerOutput = w == null ? null : Encoding.UTF8.GetString(w);
                 string dicWriterOutput = dw == null ? null : Encoding.UTF8.GetString(dw);
                 string clrOutput = Encoding.UTF8.GetString(c);
-                
+
                 Assert.Equal(input.Arguments[4].Value.ToLower() == "true", dicReaderOutput == writerOutput);
                 Assert.Equal(input.Arguments[5].Value.ToLower() == "true", dicWriterOutput == writerOutput);
                 Assert.Equal(input.Arguments[6].Value.ToLower() == "true", clrOutput == writerOutput);

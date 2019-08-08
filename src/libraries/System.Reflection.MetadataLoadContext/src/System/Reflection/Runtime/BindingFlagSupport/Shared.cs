@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     // Legacy behavior is to ignore ExactBinding when InvokeMember is specified.
                     // Why filter by InvokeMember? If the answer is we leave this to the binder then why not leave
                     // all the rest of this  to the binder too? Further, what other semanitc would the binder
-                    // use for BindingFlags.ExactBinding besides this one? Further, why not include CreateInstance 
+                    // use for BindingFlags.ExactBinding besides this one? Further, why not include CreateInstance
                     // in this if statement? That's just InvokeMethod with a constructor, right?
                     if ((bindingFlags & (BindingFlags.InvokeMethod)) == 0)
                     {
@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Otherwise, return null.
         //
         // - MethodImpls ignored. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
-        // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the desktop api we're porting behaves.) 
+        // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
         //
         public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
         {

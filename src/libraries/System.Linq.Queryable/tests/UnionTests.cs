@@ -8,14 +8,14 @@ using Xunit;
 namespace System.Linq.Tests
 {
     public class UnionTests : EnumerableBasedTests
-    {        
+    {
         [Fact]
         public void CustomComparer()
         {
             string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
             string[] second = { "ttaM", "Charlie", "Bbo" };
             string[] expected = { "Bob", "Robert", "Tim", "Matt", "Charlie" };
-            
+
             var comparer = new AnagramEqualityComparer();
 
             Assert.Equal(expected, first.AsQueryable().Union(second.AsQueryable(), comparer), comparer);
@@ -26,7 +26,7 @@ namespace System.Linq.Tests
         {
             IQueryable<string> first = null;
             string[] second = { "ttaM", "Charlie", "Bbo" };
-            
+
             var ane = AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Union(second.AsQueryable(), new AnagramEqualityComparer()));
         }
 

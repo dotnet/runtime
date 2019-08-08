@@ -79,7 +79,7 @@ namespace System.Net.Cache
         }
 
         public new HttpRequestCacheLevel Level { get; }
-        
+
         public DateTime CacheSyncDate =>
             _lastSyncDateUtc == DateTime.MinValue || _lastSyncDateUtc == DateTime.MaxValue ?
                 _lastSyncDateUtc :

@@ -12,7 +12,7 @@ namespace System.Net
             return actual >= fromAllowed && actual <= toAllowed;
         }
 
-        // There are threading tricks a malicious app can use to create an ArraySegment with mismatched 
+        // There are threading tricks a malicious app can use to create an ArraySegment with mismatched
         // array/offset/count.  Copy locally and make sure they're valid before using them.
         public static void ValidateSegment(ArraySegment<byte> segment)
         {

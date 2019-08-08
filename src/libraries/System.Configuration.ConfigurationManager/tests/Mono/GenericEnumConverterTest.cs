@@ -205,4 +205,3 @@ namespace MonoTests.System.Configuration
         }
     }
 }
-

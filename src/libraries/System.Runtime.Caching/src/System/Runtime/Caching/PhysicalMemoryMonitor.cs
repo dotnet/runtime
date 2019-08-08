@@ -18,7 +18,7 @@ namespace System.Runtime.Caching
         private const int MinTotalMemoryTrimPercent = 10;
         private const long TargetTotalMemoryTrimIntervalTicks = 5 * TimeSpan.TicksPerMinute;
 
-        // Returns the percentage of physical machine memory that can be consumed by an 
+        // Returns the percentage of physical machine memory that can be consumed by an
         // application before the cache starts forcibly removing items.
         internal long MemoryLimit
         {
@@ -81,7 +81,7 @@ namespace System.Runtime.Caching
             int percent = 0;
             if (IsAboveHighPressure())
             {
-                // choose percent such that we don't repeat this for ~5 (TARGET_TOTAL_MEMORY_TRIM_INTERVAL) minutes, 
+                // choose percent such that we don't repeat this for ~5 (TARGET_TOTAL_MEMORY_TRIM_INTERVAL) minutes,
                 // but keep the percentage between 10 and 50.
                 DateTime utcNow = DateTime.UtcNow;
                 long ticksSinceTrim = utcNow.Subtract(lastTrimTime).Ticks;

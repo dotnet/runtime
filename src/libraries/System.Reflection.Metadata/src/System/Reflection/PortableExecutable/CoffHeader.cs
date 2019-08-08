@@ -22,25 +22,25 @@ namespace System.Reflection.PortableExecutable
         public int TimeDateStamp { get; }
 
         /// <summary>
-        /// The file pointer to the COFF symbol table, or zero if no COFF symbol table is present. 
+        /// The file pointer to the COFF symbol table, or zero if no COFF symbol table is present.
         /// This value should be zero for a PE image.
         /// </summary>
         public int PointerToSymbolTable { get; }
 
         /// <summary>
-        /// The number of entries in the symbol table. This data can be used to locate the string table, 
+        /// The number of entries in the symbol table. This data can be used to locate the string table,
         /// which immediately follows the symbol table. This value should be zero for a PE image.
         /// </summary>
         public int NumberOfSymbols { get; }
 
         /// <summary>
-        /// The size of the optional header, which is required for executable files but not for object files. 
-        /// This value should be zero for an object file. 
+        /// The size of the optional header, which is required for executable files but not for object files.
+        /// This value should be zero for an object file.
         /// </summary>
         public short SizeOfOptionalHeader { get; }
 
         /// <summary>
-        /// The flags that indicate the attributes of the file. 
+        /// The flags that indicate the attributes of the file.
         /// </summary>
         public Characteristics Characteristics { get; }
 

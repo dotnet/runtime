@@ -263,7 +263,7 @@ internal partial class Interop
             FILE_OPEN_REQUIRING_OPLOCK = 0x00010000,
 
             /// <summary>
-            /// CreateFile2 uses this flag to prevent opening a file that you don't have access to without specifying 
+            /// CreateFile2 uses this flag to prevent opening a file that you don't have access to without specifying
             /// FILE_SHARE_READ. (Preventing users that can only read a file from denying access to other readers.)
             /// </summary>
             /// <remarks>

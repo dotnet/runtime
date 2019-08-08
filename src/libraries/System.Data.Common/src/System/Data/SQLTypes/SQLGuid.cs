@@ -250,8 +250,8 @@ namespace System.Data.SqlTypes
 
         // IComparable
         // Compares this object to another object, returning an integer that
-        // indicates the relationship. 
-        // Returns a value less than zero if this < object, zero if this = object, 
+        // indicates the relationship.
+        // Returns a value less than zero if this < object, zero if this = object,
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
@@ -339,4 +339,3 @@ namespace System.Data.SqlTypes
         public static readonly SqlGuid Null = new SqlGuid(true);
     } // SqlGuid
 } // namespace System.Data.SqlTypes
-

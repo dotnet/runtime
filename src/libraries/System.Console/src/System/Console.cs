@@ -54,7 +54,7 @@ namespace System
                     Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
 
                     // We need to reinitialize 'Console.In' in the next call to s_in
-                    // This will discard the current StreamReader, potentially 
+                    // This will discard the current StreamReader, potentially
                     // losing buffered data.
                     Volatile.Write(ref s_in, null);
                 }
@@ -76,8 +76,8 @@ namespace System
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleOutputEncoding(value);
 
-                    // Before changing the code page we need to flush the data 
-                    // if Out hasn't been redirected. Also, have the next call to  
+                    // Before changing the code page we need to flush the data
+                    // if Out hasn't been redirected. Also, have the next call to
                     // s_out reinitialize the console code page.
                     if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
                     {
@@ -445,10 +445,10 @@ namespace System
         }
 
         //
-        // Give a hint to the code generator to not inline the common console methods. The console methods are 
+        // Give a hint to the code generator to not inline the common console methods. The console methods are
         // not performance critical. It is unnecessary code bloat to have them inlined.
         //
-        // Moreover, simple repros for codegen bugs are often console-based. It is tedious to manually filter out 
+        // Moreover, simple repros for codegen bugs are often console-based. It is tedious to manually filter out
         // the inlined console writelines from them.
         //
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

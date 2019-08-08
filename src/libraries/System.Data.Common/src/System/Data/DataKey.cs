@@ -148,7 +148,7 @@ namespace System.Data
             Debug.Fail("don't put DataKey into a Hashtable");
             return base.GetHashCode();
         }
-        
+
         public override bool Equals(object value)
         {
             Debug.Fail("need to directly call Equals(DataKey)");

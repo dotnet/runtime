@@ -55,7 +55,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 yield return new TestCase(new PhoneAttribute(), ")425555-1212");
             }
         }
-        
+
         [Fact]
         public static void DataType_CustomDataType_ReturnsExpected()
         {

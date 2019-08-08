@@ -209,7 +209,7 @@ namespace System.Diagnostics
                     string currentMachineName = _machineName;
 
                     // This is the same thing that NextSample does, except that it doesn't try to get the actual counter
-                    // value.  If we wanted the counter value, we would need to have an instance name. 
+                    // value.  If we wanted the counter value, we would need to have an instance name.
                     Initialize();
                     using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName))
                     {

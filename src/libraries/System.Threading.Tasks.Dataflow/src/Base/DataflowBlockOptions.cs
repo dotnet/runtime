@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Dataflow
     /// Provides options used to configure the processing performed by dataflow blocks.
     /// </summary>
     /// <remarks>
-    /// <see cref="DataflowBlockOptions"/> is mutable and can be configured through its properties.  
+    /// <see cref="DataflowBlockOptions"/> is mutable and can be configured through its properties.
     /// When specific configuration options are not set, the following defaults are used:
     /// <list type="table">
     ///     <listheader>
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks.Dataflow
     public class DataflowBlockOptions
     {
         /// <summary>
-        /// A constant used to specify an unlimited quantity for <see cref="DataflowBlockOptions"/> members 
+        /// A constant used to specify an unlimited quantity for <see cref="DataflowBlockOptions"/> members
         /// that provide an upper bound. This field is constant.
         /// </summary>
         public const int Unbounded = -1;
@@ -164,8 +164,8 @@ namespace System.Threading.Tasks.Dataflow
         /// Gets or sets the format string to use when a block is queried for its name.
         /// </summary>
         /// <remarks>
-        /// The name format may contain up to two format items. {0} will be substituted 
-        /// with the block's name. {1} will be substituted with the block's Id, as is 
+        /// The name format may contain up to two format items. {0} will be substituted
+        /// with the block's name. {1} will be substituted with the block's Id, as is
         /// returned from the block's Completion.Id property.
         /// </remarks>
         public string NameFormat
@@ -183,7 +183,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// By default, dataflow blocks enforce ordering on the processing of messages. This means that a
         /// block like <see cref="TransformBlock{TInput, TOutput}"/> will ensure that messages are output in the same
-        /// order they were input, even if parallelism is employed by the block and the processing of a message N finishes 
+        /// order they were input, even if parallelism is employed by the block and the processing of a message N finishes
         /// after the processing of a subsequent message N+1 (the block will reorder the results to maintain the input
         /// ordering prior to making those results available to a consumer).  Some blocks may allow this to be relaxed,
         /// however.  Setting <see cref="EnsureOrdered"/> to false tells a block that it may relax this ordering if
@@ -203,7 +203,7 @@ namespace System.Threading.Tasks.Dataflow
     /// as <see cref="ActionBlock{T}"/> and <see cref="TransformBlock{TInput,TOutput}"/>.
     /// </summary>
     /// <remarks>
-    /// <see cref="ExecutionDataflowBlockOptions"/> is mutable and can be configured through its properties.  
+    /// <see cref="ExecutionDataflowBlockOptions"/> is mutable and can be configured through its properties.
     /// When specific configuration options are not set, the following defaults are used:
     /// <list type="table">
     ///     <listheader>
@@ -302,8 +302,8 @@ namespace System.Threading.Tasks.Dataflow
         /// This property defaults to false, such that the block may be used by multiple
         /// producers concurrently.  This property should only be set to true if the code
         /// using the block can guarantee that it will only ever be used by one producer
-        /// (e.g. a source linked to the block) at a time, meaning that methods like Post, 
-        /// Complete, Fault, and OfferMessage will never be called concurrently.  Some blocks 
+        /// (e.g. a source linked to the block) at a time, meaning that methods like Post,
+        /// Complete, Fault, and OfferMessage will never be called concurrently.  Some blocks
         /// may choose to capitalize on the knowledge that there will only be one producer at a time
         /// in order to provide better performance.
         /// </remarks>
@@ -331,11 +331,11 @@ namespace System.Threading.Tasks.Dataflow
 
     /// <summary>
     /// Provides options used to configure the processing performed by dataflow blocks that
-    /// group together multiple messages, blocks such as <see cref="JoinBlock{T1,T2}"/> and 
+    /// group together multiple messages, blocks such as <see cref="JoinBlock{T1,T2}"/> and
     /// <see cref="BatchBlock{T}"/>.
     /// </summary>
     /// <remarks>
-    /// <see cref="GroupingDataflowBlockOptions"/> is mutable and can be configured through its properties.  
+    /// <see cref="GroupingDataflowBlockOptions"/> is mutable and can be configured through its properties.
     /// When specific configuration options are not set, the following defaults are used:
     /// <list type="table">
     ///     <listheader>

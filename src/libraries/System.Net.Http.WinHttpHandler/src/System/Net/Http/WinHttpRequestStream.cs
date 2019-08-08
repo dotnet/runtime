@@ -122,7 +122,7 @@ namespace System.Net.Http
 
             CheckDisposed();
 
-            if (_state.TcsInternalWriteDataToRequestStream != null && 
+            if (_state.TcsInternalWriteDataToRequestStream != null &&
                 !_state.TcsInternalWriteDataToRequestStream.Task.IsCompleted)
             {
                 throw new InvalidOperationException(SR.net_http_no_concurrent_io_allowed);
@@ -167,7 +167,7 @@ namespace System.Net.Http
                 await InternalWriteDataAsync(s_endChunk, 0, s_endChunk.Length, token).ConfigureAwait(false);
             }
         }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -202,7 +202,7 @@ namespace System.Net.Http
 
             return _chunkedMode ?
                 InternalWriteChunkedModeAsync(buffer, offset, count, token) :
-                InternalWriteDataAsync(buffer, offset, count, token);            
+                InternalWriteDataAsync(buffer, offset, count, token);
         }
 
         private async Task InternalWriteChunkedModeAsync(byte[] buffer, int offset, int count, CancellationToken token)
@@ -237,9 +237,9 @@ namespace System.Net.Http
                 _cachedSendPinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
 
-            _state.TcsInternalWriteDataToRequestStream = 
+            _state.TcsInternalWriteDataToRequestStream =
                 new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            
+
             lock (_state.Lock)
             {
                 if (!Interop.WinHttp.WinHttpWriteData(

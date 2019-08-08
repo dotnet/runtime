@@ -59,7 +59,7 @@ namespace Internal.Cryptography.Pal
             _storeCtx?.Dispose();
             _untrustedLookup?.Dispose();
             _store?.Dispose();
-            
+
             // We don't own this one.
             _leafHandle = null;
         }
@@ -218,7 +218,7 @@ namespace Internal.Cryptography.Pal
 
                     AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
                     downloadedCerts.Add(downloaded);
-                    
+
                     Interop.Crypto.X509StoreCtxRebuildChain(storeCtx);
                     statusCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
                 }
@@ -437,7 +437,7 @@ namespace Internal.Cryptography.Pal
             {
                 return status;
             }
-            
+
             using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
@@ -726,7 +726,7 @@ namespace Internal.Cryptography.Pal
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
         }
-        
+
         private static void AddUniqueStatus(IList<X509ChainStatus> list, ref X509ChainStatus status)
         {
             X509ChainStatusFlags statusCode = status.Status;
@@ -997,7 +997,7 @@ namespace Internal.Cryptography.Pal
                                 ErrorCollection[] toReturn = _errors;
                                 _errors = ArrayPool<ErrorCollection>.Shared.Rent(errorDepth + 1);
                                 toReturn.AsSpan().CopyTo(_errors);
-                                
+
                                 // We only do spares writes, clear the remainder.
                                 _errors.AsSpan(toReturn.Length).Clear();
                                 ArrayPool<ErrorCollection>.Shared.Return(toReturn);

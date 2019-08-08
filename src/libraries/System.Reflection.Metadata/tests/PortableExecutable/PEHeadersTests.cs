@@ -88,7 +88,7 @@ namespace System.Reflection.PortableExecutable.Tests
         {
             var peHeaders = new PEReader(SynthesizedPeImages.Image1).PEHeaders;
             var dir = peHeaders.PEHeader.CopyrightTableDirectory;
-            
+
             Assert.Equal(0x400 + 5, dir.RelativeVirtualAddress);
             Assert.Equal(10, dir.Size);
 

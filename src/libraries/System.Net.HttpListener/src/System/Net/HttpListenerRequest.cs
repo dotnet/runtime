@@ -229,7 +229,7 @@ namespace System.Net
         public Uri Url => RequestUri;
 
         public Version ProtocolVersion => _version;
-        
+
         public X509Certificate2 GetClientCertificate()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);

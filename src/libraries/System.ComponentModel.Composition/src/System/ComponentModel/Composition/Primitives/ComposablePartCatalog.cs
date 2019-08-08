@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the part definitions of the catalog.
         /// </summary>
         /// <value>
-        ///     A <see cref="IQueryable{T}"/> of <see cref="ComposablePartDefinition"/> objects of the 
+        ///     A <see cref="IQueryable{T}"/> of <see cref="ComposablePartDefinition"/> objects of the
         ///     <see cref="ComposablePartCatalog"/>.
         /// </value>
         /// <exception cref="ObjectDisposedException">
@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     </note>
         /// </remarks>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public virtual IQueryable<ComposablePartDefinition> Parts 
+        public virtual IQueryable<ComposablePartDefinition> Parts
         {
             get
             {
@@ -73,13 +73,13 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Returns the export definitions that match the constraint defined by the specified definition.
         /// </summary>
         /// <param name="definition">
-        ///     The <see cref="ImportDefinition"/> that defines the conditions of the 
+        ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="ExportDefinition"/> objects to return.
         /// </param>
         /// <returns>
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the 
-        ///     <see cref="ExportDefinition"/> objects and their associated 
-        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the
+        ///     <see cref="ExportDefinition"/> objects and their associated
+        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined
         ///     by <paramref name="definition"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -90,8 +90,8 @@ namespace System.ComponentModel.Composition.Primitives
         /// </exception>
         /// <remarks>
         ///     <note type="inheritinfo">
-        ///         Overriders of this property should never return <see langword="null"/>, if no 
-        ///         <see cref="ExportDefinition"/> match the conditions defined by 
+        ///         Overriders of this property should never return <see langword="null"/>, if no
+        ///         <see cref="ExportDefinition"/> match the conditions defined by
         ///         <paramref name="definition"/>, return an empty <see cref="IEnumerable{T}"/>.
         ///     </note>
         /// </remarks>
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         /// <summary>
-        ///     Releases the unmanaged and managed resources used by the <see cref="ComposablePartCatalog"/>. 
+        ///     Releases the unmanaged and managed resources used by the <see cref="ComposablePartCatalog"/>.
         /// </summary>
         public void Dispose()
         {
@@ -136,7 +136,7 @@ namespace System.ComponentModel.Composition.Primitives
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing) 
+        protected virtual void Dispose(bool disposing)
         {
             _isDisposed = true;
         }

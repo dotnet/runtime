@@ -4,9 +4,9 @@
 
 namespace System.Xml.Resolvers
 {
-    // 
+    //
     // XmlPreloadedResolver is an XmlResolver that which can be pre-loaded with data.
-    // By default it contains well-known DTDs for XHTML 1.0 and RSS 0.91. 
+    // By default it contains well-known DTDs for XHTML 1.0 and RSS 0.91.
     // Custom mappings of URIs to data can be added with the Add method.
     //
     [Flags]

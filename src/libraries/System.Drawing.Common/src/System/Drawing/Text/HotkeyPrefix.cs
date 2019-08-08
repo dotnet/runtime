@@ -18,7 +18,7 @@ namespace System.Drawing.Text
         /// Display the hotkey prefix.
         /// </summary>
         Show = 1,
-        
+
         /// <summary>
         /// Do not display the hotkey prefix.
         /// </summary>

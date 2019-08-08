@@ -482,7 +482,7 @@ namespace System.Data
                 {
                     _table._recordManager.VerifyRecord(a, row);
                 }
-#endif      
+#endif
             }
             return index;
         }
@@ -620,7 +620,7 @@ namespace System.Data
             }
             return x;
         }
-        
+
         internal delegate int ComparisonBySelector<TKey,TRow>(TKey key, TRow row) where TRow:DataRow;
 
         /// <summary>This method exists for LinqDataView to keep a level of abstraction away from the RBTree</summary>

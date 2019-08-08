@@ -168,7 +168,7 @@ namespace System.DirectoryServices.AccountManagement
                                     out pDomains,
                                     out pNames);
 
-                // ignore error STATUS_SOME_NOT_MAPPED = 0x00000107 and 
+                // ignore error STATUS_SOME_NOT_MAPPED = 0x00000107 and
                 // STATUS_NONE_MAPPED = 0xC0000073
                 if (err != 0 &&
                      err != 263 &&
@@ -199,7 +199,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Get the domain names in managed form
                 //
 
-                // Extract LSA_REFERENCED_DOMAIN_LIST.Entries            
+                // Extract LSA_REFERENCED_DOMAIN_LIST.Entries
 
                 UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST referencedDomains = (UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST)Marshal.PtrToStructure(pDomains, typeof(UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST));
 
@@ -324,4 +324,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-

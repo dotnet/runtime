@@ -55,7 +55,7 @@ namespace System.Buffers.Text.Tests
             HashSet<ReversedFormatTestDataKey> seen = new HashSet<ReversedFormatTestDataKey>();
             foreach (FormatterTestData<T> testData in formatterTestData.Where(f => f.Format.IsParsingImplemented<T>() && f.Format.ParseSynonymFor == default))
             {
-                // Formatters take precisions, Parsers do not. For many individual test cases, changing the precision doesn't change the formatted text output - 
+                // Formatters take precisions, Parsers do not. For many individual test cases, changing the precision doesn't change the formatted text output -
                 // if that's the case, there's no reason to test the same parse case twice.
                 if (seen.Add(new ReversedFormatTestDataKey(testData.FormatSymbol, testData.ExpectedOutput)))
                     yield return testData.ToParserTestData();

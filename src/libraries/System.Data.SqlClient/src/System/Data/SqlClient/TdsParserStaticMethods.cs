@@ -15,12 +15,12 @@ namespace System.Data.SqlClient
     {
         // Obfuscate password to be sent to SQL Server
         // Blurb from the TDS spec at https://msdn.microsoft.com/en-us/library/dd304523.aspx
-        // "Before submitting a password from the client to the server, for every byte in the password buffer 
-        // starting with the position pointed to by IbPassword, the client SHOULD first swap the four high bits 
-        // with the four low bits and then do a bit-XOR with 0xA5 (10100101). After reading a submitted password, 
-        // for every byte in the password buffer starting with the position pointed to by IbPassword, the server SHOULD 
+        // "Before submitting a password from the client to the server, for every byte in the password buffer
+        // starting with the position pointed to by IbPassword, the client SHOULD first swap the four high bits
+        // with the four low bits and then do a bit-XOR with 0xA5 (10100101). After reading a submitted password,
+        // for every byte in the password buffer starting with the position pointed to by IbPassword, the server SHOULD
         // first do a bit-XOR with 0xA5 (10100101) and then swap the four high bits with the four low bits."
-        // The password exchange during Login phase happens over a secure channel i.e. SSL/TLS 
+        // The password exchange during Login phase happens over a secure channel i.e. SSL/TLS
         // Note: The same logic is used in SNIPacketSetData (SniManagedWrapper) to encrypt passwords stored in SecureString
         //       If this logic changed, SNIPacketSetData needs to be changed as well
         internal static byte[] ObfuscatePassword(string password)

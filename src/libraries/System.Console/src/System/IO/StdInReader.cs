@@ -92,9 +92,9 @@ namespace System.IO
             try
             {
                 // Read key-by-key until we've read a line.
-                while (true) 
+                while (true)
                 {
-                    // Read the next key.  This may come from previously read keys, from previously read but 
+                    // Read the next key.  This may come from previously read keys, from previously read but
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
                     ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
@@ -233,8 +233,8 @@ namespace System.IO
 
         private static bool IsEol(char c)
         {
-            return 
-                c != ConsolePal.s_posixDisableValue && 
+            return
+                c != ConsolePal.s_posixDisableValue &&
                 (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
 
@@ -359,7 +359,7 @@ namespace System.IO
 
         /// <summary>
         /// Try to intercept the key pressed.
-        /// 
+        ///
         /// Unlike Windows, Unix has no concept of virtual key codes.
         /// Hence, in case we do not recognize a key, we can't really
         /// get the ConsoleKey key code associated with it.
@@ -406,7 +406,7 @@ namespace System.IO
                             (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
                              ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
                              ConsolePal.s_veofCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veofCharacter :
-                             0), 
+                             0),
                             default(ConsoleKey), false, false, false);
                     }
                 }

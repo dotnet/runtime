@@ -438,7 +438,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.Throws<InvalidOperationException>(() => GetSocket().ReceiveMessageFrom(s_buffer, 0, 0, ref flags, ref remote, out packetInfo));
         }
-        
+
         [Fact]
         public void SetSocketOption_Object_ObjectNull_Throws_ArgumentNull()
         {
@@ -482,7 +482,7 @@ namespace System.Net.Sockets.Tests
         public void Select_NullOrEmptyLists_Throws_ArgumentNull()
         {
             var emptyList = new List<Socket>();
-            
+
             Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, -1));
             Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, null, -1));
             Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, null, -1));

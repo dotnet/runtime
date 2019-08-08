@@ -94,7 +94,7 @@ namespace System.DirectoryServices
 
         public string GetCurrentServerName()
         {
-            // underneath it uses the same handle and binds to the same object, so no permission is required as it has been done in Bind call            
+            // underneath it uses the same handle and binds to the same object, so no permission is required as it has been done in Bind call
             return (string)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_SERVERNAME);
         }
 

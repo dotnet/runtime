@@ -1236,4 +1236,3 @@ public class BufferWriter : TextWriter
         _nBufferUsed = 0;
     }
 }
-

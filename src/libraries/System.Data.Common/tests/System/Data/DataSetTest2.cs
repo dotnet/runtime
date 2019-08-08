@@ -277,7 +277,7 @@ namespace System.Data.Tests
             catch (ConstraintException e)
             {
                 // Never premise English.
-                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " + 
+                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " +
                 //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
             }
         }
@@ -300,7 +300,7 @@ namespace System.Data.Tests
             catch (ConstraintException e)
             {
                 // Never premise English.
-                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " + 
+                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " +
                 //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
             }
         }
@@ -370,7 +370,7 @@ namespace System.Data.Tests
             object[] tmp = new object[] { dr[0, DataRowVersion.Original], dr[1, DataRowVersion.Original], dr[2, DataRowVersion.Original], dr[3, DataRowVersion.Original], dr[4, DataRowVersion.Original], dr[5, DataRowVersion.Original] };
             Assert.Equal(arrDeleted, tmp);
 
-            //    can't check it    
+            //    can't check it
             //        // GetChanges Detached
             //        dr = ds.GetChanges(DataRowState.Detached).Tables[0].Rows[0];
             //        object[] tmp = new object[] {dr[0,DataRowVersion.Original],dr[1,DataRowVersion.Original],dr[2,DataRowVersion.Original]};
@@ -424,7 +424,7 @@ namespace System.Data.Tests
             Assert.Equal(1, ds.Tables[0].Constraints.Count);
             Assert.Equal(1, ds.Tables[1].Constraints.Count);
 
-            // Table shud still be in BeginInit .. 
+            // Table shud still be in BeginInit ..
             DataColumn col3 = new DataColumn("col2");
             UniqueConstraint uc = new UniqueConstraint("uc", new string[] { "col2" }, false);
 
@@ -1758,7 +1758,7 @@ namespace System.Data.Tests
             // check dataset relation - Parent column
             Assert.Equal(dsTarget.Relations[0].ParentColumns[0].ColumnName, ds.Relations[0].ParentColumns[0].ColumnName);
 
-            // check dataset relation - Child column 
+            // check dataset relation - Child column
             Assert.Equal(dsTarget.Relations[0].ChildColumns[0].ColumnName, ds.Relations[0].ChildColumns[0].ColumnName);
 
             // check allow null constraint
@@ -1809,7 +1809,7 @@ namespace System.Data.Tests
             // check dataset relation - Parent column
             Assert.Equal(dsTarget.Relations[0].ParentColumns[0].ColumnName, ds.Relations[0].ParentColumns[0].ColumnName);
 
-            // check dataset relation - Child column 
+            // check dataset relation - Child column
             Assert.Equal(dsTarget.Relations[0].ChildColumns[0].ColumnName, ds.Relations[0].ChildColumns[0].ColumnName);
 
             // check allow null constraint
@@ -3034,7 +3034,7 @@ namespace System.Data.Tests
             }
             catch (InvalidOperationException e)
             {
-                //ok     
+                //ok
             }
         }
 
@@ -3227,7 +3227,7 @@ namespace System.Data.Tests
             DataSet ds1 = new DataSet();
             ds1.ReadXmlSchema(new MemoryStream(ms.GetBuffer()));
 
-            // no new relation, and <table>_Id columns, should get created when 
+            // no new relation, and <table>_Id columns, should get created when
             // Relation.Nested = true
             Assert.Equal(1, ds1.Relations.Count);
             Assert.Equal(1, ds1.Tables[0].Columns.Count);

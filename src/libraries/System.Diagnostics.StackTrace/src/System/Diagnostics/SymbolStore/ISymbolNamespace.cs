@@ -8,10 +8,10 @@ namespace System.Diagnostics.SymbolStore
     {
         // Get the name of this namespace
         string Name { get; }
-    
+
         // Get the children of this namespace
         ISymbolNamespace[] GetNamespaces();
-    
+
         // Get the variables in this namespace
         ISymbolVariable[] GetVariables();
     }

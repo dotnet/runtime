@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,8 +16,8 @@ namespace System.Linq.Expressions.Compiler
         /// Rewrites child expressions, spilling them into temps if needed. The
         /// stack starts in the initial state, and after the first subexpression
         /// is added it is changed to non-empty.
-        /// 
-        /// When all children have been added, the caller should rewrite the 
+        ///
+        /// When all children have been added, the caller should rewrite the
         /// node if Rewrite is true. Then, it should call Finish with either
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Block if necessary and return a new Result.
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Compiler
 
             /// <summary>
             /// Gets the rewritten child expressions between the specified <paramref name="first"/>
-            /// and <paramref name="last"/> (inclusive) indexes, used to rewrite the parent 
+            /// and <paramref name="last"/> (inclusive) indexes, used to rewrite the parent
             /// expression. In case stack spilling has taken place, the returned expressions will
             /// contain temporary variables.
             /// </summary>

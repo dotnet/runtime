@@ -67,7 +67,7 @@ namespace Microsoft.Test.ModuleCore
         public TestCase CurTestCase
         {
             //Return the current testcase:
-            //Note: We do this so that within global functions (ie: at the module level) the user can 
+            //Note: We do this so that within global functions (ie: at the module level) the user can
             //have know which testcase/variation were in, without having to pass this state from
             //execute arround
             get { return (TestCase)pcurrentchild; }
@@ -171,7 +171,7 @@ namespace Microsoft.Test.ModuleCore
         protected virtual string FilterScope(string xpath)
         {
             //Basically we want to allow either simply filtering at the variation node (ie: no scope),
-            //in which case we'll just add the 'assumed' scope, or allow filtering at any level.  
+            //in which case we'll just add the 'assumed' scope, or allow filtering at any level.
             //We also want to be consitent with the XmlDriver in which all filters are predicates only.
             string varfilter = "//TestVariation[{0}]";
             if (xpath != null)

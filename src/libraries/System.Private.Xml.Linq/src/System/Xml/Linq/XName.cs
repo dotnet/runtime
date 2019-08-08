@@ -101,7 +101,7 @@ namespace System.Xml.Linq
         /// Converts a string formatted as an expanded XML name ({namespace}localname) to an XName object.
         /// </summary>
         /// <param name="expandedName">A string containing an expanded XML name in the format: {namespace}localname.</param>
-        /// <returns>An XName object constructed from the expanded name.</returns>        
+        /// <returns>An XName object constructed from the expanded name.</returns>
         [CLSCompliant(false)]
         public static implicit operator XName(string expandedName)
         {
@@ -124,8 +124,8 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Serves as a hash function for <see cref="XName"/>. GetHashCode is suitable 
-        /// for use in hashing algorithms and data structures like a hash table.  
+        /// Serves as a hash function for <see cref="XName"/>. GetHashCode is suitable
+        /// for use in hashing algorithms and data structures like a hash table.
         /// </summary>
         public override int GetHashCode()
         {
@@ -169,14 +169,14 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Indicates whether the current <see cref="XName"/> is equal to 
+        /// Indicates whether the current <see cref="XName"/> is equal to
         /// the specified <see cref="XName"/>
         /// </summary>
         /// <param name="other">The <see cref="XName"/> to compare with the
-        /// current <see cref="XName"/></param> 
+        /// current <see cref="XName"/></param>
         /// <returns>
         /// Returns true if the current <see cref="XName"/> is equal to
-        /// the specified <see cref="XName"/>. Returns false otherwise. 
+        /// the specified <see cref="XName"/>. Returns false otherwise.
         /// </returns>
         bool IEquatable<XName>.Equals(XName other)
         {

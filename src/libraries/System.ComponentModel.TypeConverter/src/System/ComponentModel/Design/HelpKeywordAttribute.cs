@@ -13,19 +13,19 @@ namespace System.ComponentModel.Design
     /// For example, consider System.Windows.Forms.Button and it's Text property:
     ///
     /// The class keyword is "System.Windows.Forms.Button", but the Text property keyword is "System.Windows.Forms.Control.Text", because the Text
-    /// property is declared on the System.Windows.Forms.Control class rather than the Button class itself; the Button class inherits the property. 
+    /// property is declared on the System.Windows.Forms.Control class rather than the Button class itself; the Button class inherits the property.
     /// By contrast, the DialogResult property is declared on the Button so its keyword would be "System.Windows.Forms.Button.DialogResult".
     ///
-    /// When the help system gets the keywords, it will first look at this attribute. At the class level, it will return the string specified by the 
+    /// When the help system gets the keywords, it will first look at this attribute. At the class level, it will return the string specified by the
     /// HelpContextAttribute. Note this will not be used for members of the Type in question. They will still reflect the declaring Type's actual
     /// full name, plus the member name. To override this, place the attribute on the member itself.
     ///
     /// Example:
     ///
-    /// [HelpKeywordAttribute(typeof(Component))] 
+    /// [HelpKeywordAttribute(typeof(Component))]
     /// public class MyComponent : Component {
-    /// 
-    /// 
+    ///
+    ///
     /// public string Property1 { get{return "";};
     ///
     /// [HelpKeywordAttribute("SomeNamespace.SomeOtherClass.Property2")]
@@ -45,7 +45,7 @@ namespace System.ComponentModel.Design
     public sealed class HelpKeywordAttribute : Attribute
     {
         /// <summary>
-        /// Default value for HelpKeywordAttribute, which is null. 
+        /// Default value for HelpKeywordAttribute, which is null.
         /// </summary>
         public static readonly HelpKeywordAttribute Default = new HelpKeywordAttribute();
 

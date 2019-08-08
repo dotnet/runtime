@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // An upper bound on the size of binder cache.
         // We do not need to cache all the binders, 4K should be enough for most cases.
         //
-        // For the perspective: the dynamic testsuite has a lot of dynamic operations, 
+        // For the perspective: the dynamic testsuite has a lot of dynamic operations,
         // but ends up needing only ~500 binders once caching is enabled.
         //
         // NOTE:
@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // it is unlikely to see a lot of contention on the binder cache.
         // creating binders is not a very frequent operation.
         // typically a dynamic operation in the source will create just one binder lazily when first executed.
-        private static readonly ConcurrentDictionary<ICSharpBinder, ICSharpBinder> binderEquivalenceCache = 
+        private static readonly ConcurrentDictionary<ICSharpBinder, ICSharpBinder> binderEquivalenceCache =
             new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel:2, capacity: 32, new BinderEqualityComparer());
 
         internal static T TryGetExisting<T>(this T binder)

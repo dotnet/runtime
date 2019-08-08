@@ -42,7 +42,7 @@ namespace System.Text.Tests
             public int CodePage { set; get; }
         }
 
-        private static CodePageMapping[] s_mapping = new CodePageMapping[] 
+        private static CodePageMapping[] s_mapping = new CodePageMapping[]
         {
             new CodePageMapping("ANSI_X3.4-1968", 20127 ),
             new CodePageMapping("ANSI_X3.4-1986", 20127 ),

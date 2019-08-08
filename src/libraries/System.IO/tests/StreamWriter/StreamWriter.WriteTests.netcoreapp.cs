@@ -206,8 +206,8 @@ namespace System.IO.Tests
         public void StreamWriter_WithOptionalArguments_NoExceptions()
         {
             Encoding UTF8NoBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-  
-            // check enabled leaveOpen and default encoding 
+
+            // check enabled leaveOpen and default encoding
             using (var tempStream = new MemoryStream())
             {
                 using (var sw = new StreamWriter(tempStream, leaveOpen: true))

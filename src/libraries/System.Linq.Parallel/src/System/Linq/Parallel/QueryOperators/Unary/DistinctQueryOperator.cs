@@ -17,7 +17,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// This operator yields all of the distinct elements in a single data set. It works quite
     /// like the above set operations, with the obvious difference being that it only accepts
-    /// a single data source as input. 
+    /// a single data source as input.
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     internal sealed class DistinctQueryOperator<TInputOutput> : UnaryQueryOperator<TInputOutput, TInputOutput>
@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
 
         internal override QueryResults<TInputOutput> Open(QuerySettings settings, bool preferStriping)
         {
-            // We just open our child operator.  Do not propagate the preferStriping value, but 
+            // We just open our child operator.  Do not propagate the preferStriping value, but
             // instead explicitly set it to false. Regardless of whether the parent prefers striping or range
             // partitioning, the output will be hash-partitioned.
             QueryResults<TInputOutput> childResults = Child.Open(settings, false);

@@ -23,7 +23,7 @@ namespace BasicEventSourceTests
     /* Concrete implementation of the Listener abstraction */
 
     /// <summary>
-    /// Implementation of the Listener abstraction for ETW.  
+    /// Implementation of the Listener abstraction for ETW.
     /// </summary>
     public class EtwListener : Listener
     {
@@ -37,7 +37,7 @@ namespace BasicEventSourceTests
         {
             _dataFileName = dataFileName;
 
-            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
+            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
             if (TraceEventSession.IsElevated() != true)
             {
                 throw new Exception("Need to be elevated to run. ");
@@ -52,16 +52,16 @@ namespace BasicEventSourceTests
                     var session = new TraceEventSession(sessionName, dataFileName);
                     session.Source.AllEvents += OnEventHelper;
                     Debug.WriteLine("Listening for real time events");
-                    _session = session;    // Indicate that we are alive.  
+                    _session = session;    // Indicate that we are alive.
                     _session.Source.Process();
                     Debug.WriteLine("Real time listening stopping.");
                 });
 
-                SpinWait.SpinUntil(() => _session != null); // Wait for real time thread to wake up. 
+                SpinWait.SpinUntil(() => _session != null); // Wait for real time thread to wake up.
             }
             else
             {
-                // Normalize to a full path name.  
+                // Normalize to a full path name.
                 dataFileName = Path.GetFullPath(dataFileName);
                 Debug.WriteLine("Creating ETW data file " + Path.GetFullPath(dataFileName));
                 _session = new TraceEventSession(sessionName, dataFileName);
@@ -84,7 +84,7 @@ namespace BasicEventSourceTests
             }
             else
                 throw new NotImplementedException();
-            Thread.Sleep(200);          // Calls are async, give them time to work.  
+            Thread.Sleep(200);          // Calls are async, give them time to work.
         }
 
         public override void Dispose()
@@ -97,7 +97,7 @@ namespace BasicEventSourceTests
             _disposed = true;
             _session.Flush();
             Thread.Sleep(1010);      // Let it drain.
-            _session.Dispose();     // This also will kill the real time thread 
+            _session.Dispose();     // This also will kill the real time thread
 
             if (_dataFileName != null)
             {
@@ -105,10 +105,10 @@ namespace BasicEventSourceTests
                 {
                     Debug.WriteLine("Processing data file " + Path.GetFullPath(_dataFileName));
 
-                    // Parse all the events as best we can, and also send unhandled events there as well.  
+                    // Parse all the events as best we can, and also send unhandled events there as well.
                     traceEventSource.Dynamic.All += OnEventHelper;
                     traceEventSource.UnhandledEvents += OnEventHelper;
-                    // Process all the events in the file.  
+                    // Process all the events in the file.
                     traceEventSource.Process();
                     Debug.WriteLine("Done processing data file " + Path.GetFullPath(_dataFileName));
                 }
@@ -126,7 +126,7 @@ namespace BasicEventSourceTests
             if (data.ProviderGuid == KernelProviderID)
                 return;
 
-            // Ignore manifest events. 
+            // Ignore manifest events.
             if ((int)data.ID == 0xFFFE)
                 return;
             this.OnEvent(new EtwEvent(data));
@@ -136,7 +136,7 @@ namespace BasicEventSourceTests
         private static readonly Guid KernelProviderID = new Guid("9e814aad-3204-11d2-9a82-006008a86939");
 
         /// <summary>
-        /// EtwEvent implements the 'Event' abstraction for ETW events (it has a TraceEvent in it) 
+        /// EtwEvent implements the 'Event' abstraction for ETW events (it has a TraceEvent in it)
         /// </summary>
         internal class EtwEvent : Event
         {

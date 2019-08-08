@@ -40,7 +40,7 @@ namespace System.Drawing.Drawing2D
                     Gdip.GdipDeletePathIter(new HandleRef(this, nativeIter));
 #if DEBUG
                     Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
                 }
                 catch (Exception ex)
                 {

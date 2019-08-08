@@ -174,16 +174,16 @@ namespace System.Runtime.Serialization.Json
         private void WriteDateTimeInDefaultFormat(DateTime value)
         {
             // ToUniversalTime() truncates dates to DateTime.MaxValue or DateTime.MinValue instead of throwing
-            // This will break round-tripping of these dates (see 
+            // This will break round-tripping of these dates (see
             if (value.Kind != DateTimeKind.Utc)
             {
                 // Fetching the UtcOffset is expensive so we need to avoid it if possible. We can do a fast
-                // bounds check to decide if the more expensive bounds check is needed. The result from 
-                // TimeZoneInfo.Local.GetUtcOffset(value) is bounded to +/- 24 hours. If 
+                // bounds check to decide if the more expensive bounds check is needed. The result from
+                // TimeZoneInfo.Local.GetUtcOffset(value) is bounded to +/- 24 hours. If
                 // (DateTime.MinValue + 24 hours) < value < (DateTime.MaxValue - 24 hours), then we don't need
                 // to check using the real UtcOffset as it doesn't matter what the offset is, it can't cause
                 // an overflow/underflow condition.
-                
+
                 // Pre-calculated value of DateTime.MinValue.AddDays(1.0).Ticks;
                 long lowBound = 0xC92A69C000;
                 // Pre-calculated value of DateTime.MaxValue.AddDays(-1.0).Ticks;

@@ -26,6 +26,6 @@ namespace System.Runtime.InteropServices
 
         void DisconnectObject(uint dwReserved);
     }  // interface IMarshal
-}  // namespace 
+}  // namespace
 
 // IMarshal.cs

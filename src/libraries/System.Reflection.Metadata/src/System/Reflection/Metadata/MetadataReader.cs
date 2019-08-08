@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata
 
         private readonly MetadataReaderOptions _options;
         private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
-        
+
         #region Constructors
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <remarks>
         /// The memory is owned by the caller and it must be kept memory alive and unmodified throughout the lifetime of the <see cref="MetadataReader"/>.
-        /// Use <see cref="PEReaderExtensions.GetMetadataReader(PortableExecutable.PEReader, MetadataReaderOptions)"/> to obtain 
+        /// Use <see cref="PEReaderExtensions.GetMetadataReader(PortableExecutable.PEReader, MetadataReaderOptions)"/> to obtain
         /// metadata from a PE image.
         /// </remarks>
         public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options)
@@ -59,7 +59,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <remarks>
         /// The memory is owned by the caller and it must be kept memory alive and unmodified throughout the lifetime of the <see cref="MetadataReader"/>.
-        /// Use <see cref="PEReaderExtensions.GetMetadataReader(PortableExecutable.PEReader, MetadataReaderOptions, MetadataStringDecoder)"/> to obtain 
+        /// Use <see cref="PEReaderExtensions.GetMetadataReader(PortableExecutable.PEReader, MetadataReaderOptions, MetadataStringDecoder)"/> to obtain
         /// metadata from a PE image.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is not positive.</exception>
@@ -74,7 +74,7 @@ namespace System.Reflection.Metadata
 
         internal unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder, object memoryOwner)
         {
-            // Do not throw here when length is 0. We'll throw BadImageFormatException later on, so that the caller doesn't need to 
+            // Do not throw here when length is 0. We'll throw BadImageFormatException later on, so that the caller doesn't need to
             // worry about the image (stream) being empty and can handle all image errors by catching BadImageFormatException.
             if (length < 0)
             {
@@ -127,7 +127,7 @@ namespace System.Reflection.Metadata
 
             InitializeTableReaders(tableReader.GetMemoryBlockAt(0, tableReader.RemainingBytes), heapSizes, metadataTableRowCounts, externalTableRowCountsOpt);
 
-            // This previously could occur in obfuscated assemblies but a check was added to prevent 
+            // This previously could occur in obfuscated assemblies but a check was added to prevent
             // it getting to this point
             Debug.Assert(AssemblyTable.NumberOfRows <= 1);
 
@@ -139,7 +139,7 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(SR.Format(SR.ModuleTableInvalidNumberOfRows, this.ModuleTable.NumberOfRows));
             }
 
-            //  read 
+            //  read
             NamespaceCache = new NamespaceCache(this);
 
             if (_metadataKind != MetadataKind.Ecma335)
@@ -168,8 +168,8 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// The metadata stream has minimal delta format if "#JTD" stream is present.
         /// Minimal delta format uses large size (4B) when encoding table/heap references.
-        /// The heaps in minimal delta only contain data of the delta, 
-        /// there is no padding at the beginning of the heaps that would align them 
+        /// The heaps in minimal delta only contain data of the delta,
+        /// there is no padding at the beginning of the heaps that would align them
         /// with the original full metadata heaps.
         /// </remarks>
         internal bool IsMinimalDelta;
@@ -265,8 +265,8 @@ namespace System.Reflection.Metadata
         }
 
         private void InitializeStreamReaders(
-            in MemoryBlock metadataRoot, 
-            StreamHeader[] streamHeaders, 
+            in MemoryBlock metadataRoot,
+            StreamHeader[] streamHeaders,
             out MetadataStreamKind metadataStreamKind,
             out MemoryBlock metadataTableStream,
             out MemoryBlock standalonePdbStream)
@@ -458,10 +458,10 @@ namespace System.Reflection.Metadata
             ulong presentTables = reader.ReadUInt64();
             sortedTables = (TableMask)reader.ReadUInt64();
 
-            // According to ECMA-335, MajorVersion and MinorVersion have fixed values and, 
-            // based on recommendation in 24.1 Fixed fields: When writing these fields it 
+            // According to ECMA-335, MajorVersion and MinorVersion have fixed values and,
+            // based on recommendation in 24.1 Fixed fields: When writing these fields it
             // is best that they be set to the value indicated, on reading they should be ignored.
-            // We will not be checking version values. We will continue checking that the set of 
+            // We will not be checking version values. We will continue checking that the set of
             // present tables is within the set we understand.
 
             ulong validTables = (ulong)(TableMask.TypeSystemTables | TableMask.DebugTables);
@@ -474,7 +474,7 @@ namespace System.Reflection.Metadata
             if (_metadataStreamKind == MetadataStreamKind.Compressed)
             {
                 // In general Ptr tables and EnC tables are not allowed in a compressed stream.
-                // However when asked for a snapshot of the current metadata after an EnC change has been applied 
+                // However when asked for a snapshot of the current metadata after an EnC change has been applied
                 // the CLR includes the EnCLog table into the snapshot. We need to be able to read the image,
                 // so we'll allow the table here but pretend it's empty later.
                 if ((presentTables & (ulong)(TableMask.PtrTables | TableMask.EnCMap)) != 0)
@@ -532,9 +532,9 @@ namespace System.Reflection.Metadata
 
             // ECMA-335 15.4.1.2:
             // The entry point to an application shall be static.
-            // This entry point method can be a global method or it can appear inside a type. 
+            // This entry point method can be a global method or it can appear inside a type.
             // The entry point method shall either accept no arguments or a vector of strings.
-            // The return type of the entry point method shall be void, int32, or unsigned int32. 
+            // The return type of the entry point method shall be void, int32, or unsigned int32.
             // The entry point method cannot be defined in a generic class.
             uint entryPointToken = reader.ReadUInt32();
             int entryPointRowId = (int)(entryPointToken & TokenTypeIds.RIDMask);
@@ -574,7 +574,7 @@ namespace System.Reflection.Metadata
             // Size of reference tags in each table.
             this.TableRowCounts = rowCounts;
 
-            // TODO (https://github.com/dotnet/corefx/issues/2061): 
+            // TODO (https://github.com/dotnet/corefx/issues/2061):
             // Shouldn't XxxPtr table be always the same size or smaller than the corresponding Xxx table?
 
             // Compute ref sizes for tables that can have pointer tables

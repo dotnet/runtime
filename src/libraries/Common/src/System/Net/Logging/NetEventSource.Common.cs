@@ -47,7 +47,7 @@ namespace System.Net
     //   method that takes an object and optionally provides a string representation of it, in case a particular library wants to customize further.
 
     /// <summary>Provides logging facilities for System.Net libraries.</summary>
-#if NET46    
+#if NET46
     [SecuritySafeCritical]
 #endif
     internal sealed partial class NetEventSource : EventSource
@@ -301,7 +301,7 @@ namespace System.Net
         {
             DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
-                
+
         /// <summary>Logs the contents of a buffer.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="buffer">The buffer to be logged.</param>

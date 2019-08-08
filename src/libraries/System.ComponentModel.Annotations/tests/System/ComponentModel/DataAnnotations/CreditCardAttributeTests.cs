@@ -20,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new CreditCardAttribute(), "1234-5678-9012-3452");
             yield return new TestCase(new CreditCardAttribute(), "1234 5678 9012 3452");
         }
-        
+
         protected override IEnumerable<TestCase> InvalidValues()
         {
             yield return new TestCase(new CreditCardAttribute(), "0000000000000001");

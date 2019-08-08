@@ -36,7 +36,7 @@ namespace System
                 if (ipv4Embedded && i == (NumberOfLabels - 2))
                 {
                     stackSpace[pos++] = ':';
-                    
+
                     // Write the remaining digits as an IPv4 address
                     success = (numbers[i] >> 8).TryFormat(stackSpace.Slice(pos), out charsWritten);
                     Debug.Assert(success);

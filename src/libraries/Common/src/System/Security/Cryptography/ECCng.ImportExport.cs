@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -46,8 +46,8 @@ namespace System.Security.Cryptography
                 {
                     // Build the header
                     BCRYPT_ECCKEY_BLOB* pBcryptBlob = (BCRYPT_ECCKEY_BLOB*)pBlob;
-                    pBcryptBlob->Magic = ecdh ? 
-                        EcdhCurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters) : 
+                    pBcryptBlob->Magic = ecdh ?
+                        EcdhCurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters) :
                         EcdsaCurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters);
                     pBcryptBlob->cbKey = parameters.Q.X.Length;
 
@@ -383,7 +383,7 @@ namespace System.Security.Cryptography
 
         /// <summary>
         /// Map a curve name to magic number. Maps the names of the curves that worked pre-Win10
-        /// to the pre-Win10 magic numbers to support import on pre-Win10 environments 
+        /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
         private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string name, bool includePrivateParameters)
@@ -415,7 +415,7 @@ namespace System.Security.Cryptography
 
         /// <summary>
         /// Map a curve name to magic number. Maps the names of the curves that worked pre-Win10
-        /// to the pre-Win10 magic numbers to support import on pre-Win10 environments 
+        /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
         private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string name, bool includePrivateParameters)

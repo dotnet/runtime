@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetSignature_Length_ReturnsOne()
         {
-            ModuleBuilder module = Helpers.DynamicModule(); 
+            ModuleBuilder module = Helpers.DynamicModule();
             SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
             Assert.Equal(1, helper.GetSignature().Length);

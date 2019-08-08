@@ -76,7 +76,7 @@ namespace System.IO.Tests
 
             Stream memstr2 = CreateStream();
             StreamWriter sw2 = new StreamWriter(memstr2);
-            
+
             sw2.Dispose();
             Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
         }

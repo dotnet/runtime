@@ -20,4 +20,3 @@ namespace System.Security.Cryptography
         AllowPlaintextArchiving = 0x00000008,   // NCRYPT_ALLOW_PLAINTEXT_ARCHIVING_FLAG
     }
 }
-

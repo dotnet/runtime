@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal
             Array.Resize(ref keyBlob, numBytesNeeded);
             return keyBlob;
         }
-        
+
         private static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
         {
             // We now have a buffer laid out as follows:
@@ -350,4 +350,3 @@ namespace Internal.Cryptography.Pal
         }
     }
 }
-

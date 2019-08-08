@@ -45,7 +45,7 @@ namespace System.Collections.Immutable
         public static ImmutableQueue<T> CreateRange<T>(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
-            
+
             var array = items as T[];
             if (array != null)
             {
@@ -61,7 +61,7 @@ namespace System.Collections.Immutable
 
                 var forwards = ImmutableStack.Create(e.Current);
                 var backwards = ImmutableStack<T>.Empty;
-                
+
                 while (e.MoveNext())
                 {
                     backwards = backwards.Push(e.Current);

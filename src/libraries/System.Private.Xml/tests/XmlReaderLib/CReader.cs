@@ -60,7 +60,7 @@ namespace System.Xml.Tests
 
         public override XmlReaderSettings Settings { get { this.IsCalled = true; return _wrappedreader.Settings; } }
 
-        //  Node Properties 
+        //  Node Properties
 
 
         public override XmlNodeType NodeType { get { this.IsCalled = true; return _wrappedreader.NodeType; } }
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
         public override XmlSpace XmlSpace { get { this.IsCalled = true; return _wrappedreader.XmlSpace; } }
         public override string XmlLang { get { this.IsCalled = true; return _wrappedreader.XmlLang; } }
 
-        //  Reading Typed Content Methods 
+        //  Reading Typed Content Methods
         public override System.Type ValueType { get { this.IsCalled = true; return _wrappedreader.ValueType; } }
         public override object ReadContentAsObject() { this.IsCalled = true; return _wrappedreader.ReadContentAsObject(); }
         public override bool ReadContentAsBoolean() { this.IsCalled = true; return _wrappedreader.ReadContentAsBoolean(); }
@@ -143,7 +143,7 @@ namespace System.Xml.Tests
         public override int ReadElementContentAsBinHex(byte[] buffer, int startIndex, int count)
         { this.IsCalled = true; return _wrappedreader.ReadElementContentAsBinHex(buffer, startIndex, count); }
 
-        //  Attribute Accessors 
+        //  Attribute Accessors
         public override int AttributeCount { get { this.IsCalled = true; return _wrappedreader.AttributeCount; } }
         public override bool HasAttributes { get { this.IsCalled = true; return _wrappedreader.HasAttributes; } }
         public override string GetAttribute(string name)
@@ -165,7 +165,7 @@ namespace System.Xml.Tests
         public override bool MoveToElement()
         { this.IsCalled = true; return _wrappedreader.MoveToElement(); }
 
-        //  Moving through the Stream 
+        //  Moving through the Stream
         public override bool Read()
         { this.IsCalled = true; return _wrappedreader.Read(); }
         public override bool EOF { get { this.IsCalled = true; return _wrappedreader.EOF; } }
@@ -178,7 +178,7 @@ namespace System.Xml.Tests
         public override string ReadOuterXml()
         { this.IsCalled = true; return _wrappedreader.ReadOuterXml(); }
 
-        //  Helper Methods 
+        //  Helper Methods
         public override XmlReader ReadSubtree()
         { this.IsCalled = true; return _wrappedreader.ReadSubtree(); }
         public override XmlNodeType MoveToContent()
@@ -210,12 +210,12 @@ namespace System.Xml.Tests
         public override bool ReadToNextSibling(string localName, string namespaceURI)
         { this.IsCalled = true; return _wrappedreader.ReadToNextSibling(localName, namespaceURI); }
 
-        //  Nametable and Namespace Helpers 
+        //  Nametable and Namespace Helpers
         public override XmlNameTable NameTable { get { this.IsCalled = true; return _wrappedreader.NameTable; } }
         public override string LookupNamespace(string prefix)
         { this.IsCalled = true; return _wrappedreader.LookupNamespace(prefix); }
 
-        //  Entity Handling 
+        //  Entity Handling
         public override bool ReadAttributeValue()
         { this.IsCalled = true; return _wrappedreader.ReadAttributeValue(); }
         public override void ResolveEntity()

@@ -55,7 +55,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             // this test uses a specifically crafted sql record enumerator and data to put the TdsParserStateObject.WritePacket(byte,bool)
             // into a state where it can't differentiate between a packet in the middle of a large packet-set after a byte counter wraparound
-            // and the first packet of the connection and in doing so trips over a check for packet length from the input which has been 
+            // and the first packet of the connection and in doing so trips over a check for packet length from the input which has been
             // forced to tell it that there is no output buffer space left, this causes an uncancellable infinite loop
 
             // if the enumerator is completely read to the end then the bug is no longer present and the packet creation task returns,
@@ -1110,7 +1110,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 SqlCommand cmd = new SqlCommand(tsql.ToString(), conn);
                 cmd.ExecuteNonQuery();
 
-                // and create the proc that uses the type            
+                // and create the proc that uses the type
                 cmd.CommandText = string.Format("CREATE PROC {0}(@tvp {1} READONLY) AS SELECT * FROM @tvp order by {2}",
                         GetProcName(tvpPerm), GetTypeName(tvpPerm), colOrdinal - 1);
                 cmd.ExecuteNonQuery();
@@ -1185,7 +1185,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Console.WriteLine("ArgumentException: {0}", ae.Message);
                 }
 
-                // And clean up. If an error is thrown, the connection being recycled 
+                // And clean up. If an error is thrown, the connection being recycled
                 //  will roll back the transaction
                 if (null != cmd.Transaction)
                 {

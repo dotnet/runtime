@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tests
 
         [DllImport("kernel32.dll")]
         public static extern bool GetProcessWorkingSetSizeEx(SafeProcessHandle hProcess, out IntPtr lpMinimumWorkingSetSize, out IntPtr lpMaximumWorkingSetSize, out uint flags);
-        
+
         [DllImport("kernel32.dll")]
         internal static extern int GetCurrentProcessId();
 
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tests
 
             if (result != 0) // NERR_Success
             {
-                // most likely result == ERROR_ACCESS_DENIED 
+                // most likely result == ERROR_ACCESS_DENIED
                 // due to running without elevated privileges
                 throw new Win32Exception((int)result);
             }

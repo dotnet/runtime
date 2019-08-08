@@ -56,7 +56,7 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// Initializes a new instance of the Exception class with a specified error message and a 
+        /// Initializes a new instance of the Exception class with a specified error message and a
         /// reference to the inner exception that is the cause of this exception.
         /// FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
         /// </summary>

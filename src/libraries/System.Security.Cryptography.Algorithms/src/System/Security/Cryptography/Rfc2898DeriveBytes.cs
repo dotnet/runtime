@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
     public class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;
-        
+
         private readonly byte[] _password;
         private byte[] _salt;
         private uint _iterations;
@@ -254,7 +254,7 @@ namespace System.Security.Cryptography
         }
 
         // This function is defined as follows:
-        // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i) 
+        // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i)
         // where i is the block number.
         private void Func()
         {
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.
             // Since we have a closed set of supported hash algorithms (OpenHmac())
             // we can know this always fits.
-            // 
+            //
             Span<byte> uiSpan = stackalloc byte[64];
             uiSpan = uiSpan.Slice(0, _blockSize);
 

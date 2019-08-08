@@ -2427,7 +2427,7 @@ namespace System.Xml.Tests
                     catch (ArgumentException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
-                        utils.CheckElementState(w.WriteState);//by design 396962 
+                        utils.CheckElementState(w.WriteState);//by design 396962
                         return;
                     }
                 }
@@ -3982,7 +3982,7 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(1, "TimeSpan", "TimeSpan", true, null )]
             [XmlWriterInlineData(1, "XmlQualifiedName", "XmlQualifiedName", true, null )]
 
-            //////////attr         
+            //////////attr
             [XmlWriterInlineData(2, "Int16", "string", true, null )]
             [XmlWriterInlineData(2, "Byte", "string", true, null )]
             [XmlWriterInlineData(2, "SByte", "string", true, null )]

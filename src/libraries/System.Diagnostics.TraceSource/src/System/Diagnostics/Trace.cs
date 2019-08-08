@@ -20,15 +20,15 @@ namespace System.Diagnostics
         }
 
         private static CorrelationManager s_correlationManager = null;
-        public static CorrelationManager CorrelationManager 
+        public static CorrelationManager CorrelationManager
         {
-            get 
-            { 
+            get
+            {
                 if (s_correlationManager == null)
                 {
                     s_correlationManager = new CorrelationManager();
                 }
-                
+
                 return s_correlationManager;
             }
         }

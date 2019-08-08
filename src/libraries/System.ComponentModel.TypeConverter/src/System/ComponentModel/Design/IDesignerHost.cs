@@ -96,7 +96,7 @@ namespace System.ComponentModel.Design
         /// may cause other side-effects, such as flicker or performance degradation. When operating
         /// on multiple components at one time, or setting multiple properties on a single component,
         /// you should encompass these changes inside a transaction. Transactions are used
-        /// to improve performance and reduce flicker. Slow operations can listen to 
+        /// to improve performance and reduce flicker. Slow operations can listen to
         /// transaction events and only do work when the transaction completes.
         /// </summary>
         DesignerTransaction CreateTransaction();
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Design
         /// may cause other side-effects, such as flicker or performance degradation. When operating
         /// on multiple components at one time, or setting multiple properties on a single component,
         /// you should encompass these changes inside a transaction. Transactions are used
-        /// to improve performance and reduce flicker. Slow operations can listen to 
+        /// to improve performance and reduce flicker. Slow operations can listen to
         /// transaction events and only do work when the transaction completes.
         /// </summary>
         DesignerTransaction CreateTransaction(string description);

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -30,7 +30,7 @@ namespace System.Xml.Tests
             Assert.Equal("val", nodeReader.GetAttribute("attr"));
             Assert.Equal("val", nodeReader.GetAttribute("attr", string.Empty));
             Assert.Equal("val", nodeReader.GetAttribute("attr", null));
-            Assert.Equal("val", nodeReader.GetAttribute(0));            
+            Assert.Equal("val", nodeReader.GetAttribute(0));
         }
     }
 }

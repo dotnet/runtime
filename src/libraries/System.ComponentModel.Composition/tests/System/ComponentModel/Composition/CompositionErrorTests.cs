@@ -104,7 +104,7 @@ namespace System.ComponentModel.Composition
         public void Constructor5_ValueAsMessageArgument_ShouldSetMessageProperty()
         {
             var expectations = Expectations.GetExceptionMessages();
-            
+
             Assert.All(expectations, e =>
             {
                 var exception = new CompositionError(CompositionErrorId.Unknown, e, ElementFactory.Create(), new Exception());
@@ -156,7 +156,7 @@ namespace System.ComponentModel.Composition
         public void Constructor3_ValueAsExceptionArgument_ShouldSetExceptionProperty()
         {
             var expectations = Expectations.GetInnerExceptions();
-            
+
             Assert.All(expectations, e =>
             {
                 var error = new CompositionError("Description", e);
@@ -383,7 +383,7 @@ namespace System.ComponentModel.Composition
                 Assert.Equal(error.Description, error.ToString());
             });
         }
-        
+
         private static CompositionError CreateCompositionError()
         {
             return CreateCompositionError(CompositionErrorId.Unknown, (string)null, (ICompositionElement)null, (Exception)null);

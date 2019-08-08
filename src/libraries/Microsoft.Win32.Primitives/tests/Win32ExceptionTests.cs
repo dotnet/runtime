@@ -95,7 +95,7 @@ namespace System.ComponentModel.Tests
             // 2. If true, we validate that Win32Exception class can retrieve the complete resource string.
             // 3. If not we skip testing.
             int errorCode = 0x268;
-            if (IsExceptionMessageLong(errorCode)) // Localized error string for 0x268 is not guaranteed to be >256 chars. 
+            if (IsExceptionMessageLong(errorCode)) // Localized error string for 0x268 is not guaranteed to be >256 chars.
             {
                 Win32Exception ex = new Win32Exception(errorCode);
                 Assert.NotEqual("Unknown error (0x268)", ex.Message);

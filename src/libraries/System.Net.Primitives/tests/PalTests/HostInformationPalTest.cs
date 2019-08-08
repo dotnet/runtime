@@ -23,4 +23,3 @@ namespace System.Net.Primitives.PalTests
         }
     }
 }
-

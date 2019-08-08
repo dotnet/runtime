@@ -152,7 +152,7 @@ namespace System.Net
 
                 // There wasn't a service point in the table.  Create a new one, and then store
                 // it back into the table.  We create a new weak reference object even if we were
-                // able to get one above so that when we scavenge the table, we can rely on 
+                // able to get one above so that when we scavenge the table, we can rely on
                 // weak reference reference equality to know whether we're removing the same
                 // weak reference we saw when we enumerated.
                 sp = new ServicePoint(address)

@@ -77,7 +77,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
         }
 
         /// <summary>
-        /// Given an encrypted ticket, calls RPS Authenticate and returns the decrypted ticket 
+        /// Given an encrypted ticket, calls RPS Authenticate and returns the decrypted ticket
         /// </summary>
         public object Authenticate(byte[] encryptedTicket, string siteName)
         {

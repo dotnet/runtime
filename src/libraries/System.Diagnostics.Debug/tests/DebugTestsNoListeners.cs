@@ -41,12 +41,12 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         public void Debug_WriteLine_WontIndentAfterWrite()
-        {            
+        {
             Debug.Indent();
             int expectedIndentation = Debug.IndentLevel * Debug.IndentSize;
-            
+
             VerifyLogged(() => Debug.Write("pizza"),        new string(' ', expectedIndentation) +  "pizza");
-            
+
             // WriteLine wont indent after Write:
             VerifyLogged(() => Debug.WriteLine("pizza"),    "pizza" + Environment.NewLine);
 
@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => Debug.Write("pizza"),        new string(' ', expectedIndentation) +  "pizza");
 
             // WriteLine wont indent after Write:
-            VerifyLogged(() => Debug.WriteLine("pizza"),    "pizza" + Environment.NewLine); 
+            VerifyLogged(() => Debug.WriteLine("pizza"),    "pizza" + Environment.NewLine);
             VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine);
             Debug.Unindent();
         }
@@ -90,14 +90,14 @@ namespace System.Diagnostics.Tests
             VerifyAssert(() => Debug.Assert(false), "");
             VerifyAssert(() => Debug.Assert(false, "assert passed"), "assert passed");
             VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong"), "assert passed", "nothing is wrong");
-            VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "assert passed", "nothing is wrong a b");      
+            VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "assert passed", "nothing is wrong a b");
         }
 
         [Fact]
         public void Fail()
         {
             VerifyAssert(() => Debug.Fail("something bad happened"), "something bad happened");
-            VerifyAssert(() => Debug.Fail("something bad happened", "really really bad"), "something bad happened", "really really bad");        
+            VerifyAssert(() => Debug.Fail("something bad happened", "really really bad"), "something bad happened", "really really bad");
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => Debug.WriteLineIf(false, "logged"), "");
 
             VerifyLogged(() => Debug.WriteLineIf(true, "logged", "category"), "category: logged" + Environment.NewLine);
-            VerifyLogged(() => Debug.WriteLineIf(false, "logged", "category"), "");     
+            VerifyLogged(() => Debug.WriteLineIf(false, "logged", "category"), "");
         }
 
         [Theory]

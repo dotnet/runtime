@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,23 +16,23 @@ namespace System.Data
     {
         /**
          *  This class ensures multiple orderby/thenbys are handled correctly. Its semantics is as follows:
-         *  
+         *
          * Query 1:
          * orderby a
          * thenby  b
          * orderby c
          * orderby d
          * thenby  e
-         * 
+         *
          * is equivalent to:
-         * 
+         *
          * Query 2:
          * orderby d
          * thenby  e
          * thenby  c
          * thenby  a
          * thenby  b
-         * 
+         *
          **/
 
         // Selectors and comparers are mapped using the index in the list.
@@ -122,7 +122,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Clones the SortexpressionBuilder and returns a new object 
+        /// Clones the SortexpressionBuilder and returns a new object
         /// that points to same comparer and selectors (in the same order).
         /// </summary>
         internal SortExpressionBuilder<T> Clone()

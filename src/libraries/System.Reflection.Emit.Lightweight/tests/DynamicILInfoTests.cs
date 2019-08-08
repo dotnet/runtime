@@ -41,7 +41,7 @@ namespace System.Reflection.Emit.Tests
                 return value;
             return Fib(value - 1) + Fib(value - 2);
         }
-        
+
         [Fact]
         public void GetTokenFor_DynamicMethod_Success()
         {
@@ -555,7 +555,7 @@ namespace System.Reflection.Emit.Tests
                 return typeof(T).ToString() + typeof(K).ToString();
             }
         }
-        
+
         private static string CallGM()
         {
             string s = null;
@@ -644,7 +644,7 @@ namespace System.Reflection.Emit.Tests
             array[startPos++] = (byte)(value >> 16);
             array[startPos++] = (byte)(value >> 24);
         }
-        
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -679,15 +679,15 @@ namespace System.Reflection.Emit.Tests
         {
             DynamicMethod method = GetDynamicMethod(skipVisibility);
             DynamicILInfo dynamicILInfo = method.GetDynamicILInfo();
-            
+
             Assert.NotNull(dynamicILInfo);
             Assert.Equal(dynamicILInfo, method.GetDynamicILInfo());
             Assert.Equal(method, dynamicILInfo.DynamicMethod);
         }
-        
+
         private DynamicMethod GetDynamicMethod(bool skipVisibility)
         {
-            return new DynamicMethod(nameof(DynamicMethod), typeof(void), 
+            return new DynamicMethod(nameof(DynamicMethod), typeof(void),
                 new Type[] { typeof(object), typeof(int), typeof(string) },
                 typeof(Object),
                 skipVisibility);

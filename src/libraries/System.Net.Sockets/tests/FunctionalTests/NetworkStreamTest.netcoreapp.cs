@@ -353,7 +353,7 @@ namespace System.Net.Sockets.Tests
         public async Task DisposeAsync_ClosesStream()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            { 
+            {
                 Assert.True(client.DisposeAsync().IsCompletedSuccessfully);
                 Assert.True(server.DisposeAsync().IsCompletedSuccessfully);
 

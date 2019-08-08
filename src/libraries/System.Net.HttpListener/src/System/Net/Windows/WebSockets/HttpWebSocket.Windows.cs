@@ -74,7 +74,7 @@ namespace System.Net.WebSockets
                 response.Headers.Add(HttpKnownHeaderNames.Upgrade, WebSocketUpgradeToken);
                 response.Headers.Add(HttpKnownHeaderNames.SecWebSocketAccept, secWebSocketAccept);
 
-                response.StatusCode = (int)HttpStatusCode.SwitchingProtocols; // HTTP 101                
+                response.StatusCode = (int)HttpStatusCode.SwitchingProtocols; // HTTP 101
                 response.ComputeCoreHeaders();
                 ulong hresult = SendWebSocketHeaders(response);
                 if (hresult != 0)

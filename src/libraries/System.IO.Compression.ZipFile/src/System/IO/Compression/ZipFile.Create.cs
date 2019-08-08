@@ -14,7 +14,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace, or contains one
         ///                                     or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">archiveFileName is null.</exception>
@@ -28,7 +28,7 @@ namespace System.IO.Compression
         /// <exception cref="FileNotFoundException">The file specified in archiveFileName was not found.</exception>
         /// <exception cref="NotSupportedException">archiveFileName is in an invalid format. </exception>
         /// <exception cref="InvalidDataException">The specified file could not be interpreted as a Zip file.</exception>
-        /// 
+        ///
         /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on. The path is permitted
         /// to specify relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         public static ZipArchive OpenRead(string archiveFileName) => Open(archiveFileName, ZipArchiveMode.Read);
@@ -36,7 +36,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
         ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">path is null.</exception>
@@ -54,7 +54,7 @@ namespace System.IO.Compression
         ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is missing from the archive or
         ///                                        is corrupt and cannot be read.
         ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is too large to fit into memory.</exception>
-        ///                                        
+        ///
         /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
@@ -74,7 +74,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
         ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">path is null.</exception>
@@ -92,7 +92,7 @@ namespace System.IO.Compression
         ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is missing from the archive or
         ///                                        is corrupt and cannot be read.
         ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is too large to fit into memory.</exception>
-        ///                                        
+        ///
         /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
@@ -111,7 +111,7 @@ namespace System.IO.Compression
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
         ///         UTF-8 encoding for entry names.<br />
         ///         This value is used as follows:</para>
-        ///     <para><strong>Reading (opening) ZIP archive files:</strong></para>       
+        ///     <para><strong>Reading (opening) ZIP archive files:</strong></para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
@@ -179,7 +179,7 @@ namespace System.IO.Compression
             }
 
             // Suppress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
-            // The stream will then be owned by the archive and be disposed when the archive is disposed.        
+            // The stream will then be owned by the archive and be disposed when the archive is disposed.
             // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
             // If the ctor throws, we need to close it here.
 
@@ -207,14 +207,14 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
         /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
         /// last modified time.</p>
-        /// 
+        ///
         /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        /// 
+        ///
         /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
         /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
         /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
         ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
@@ -232,7 +232,7 @@ namespace System.IO.Compression
         ///                                               -OR- The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is
         ///                                         in an invalid format.</exception>
-        ///                                         
+        ///
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived. </param>
         /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName) =>
@@ -249,14 +249,14 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
         /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
         /// last modified time.</p>
-        /// 
+        ///
         /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        /// 
+        ///
         /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
         /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
         /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
         ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
@@ -274,7 +274,7 @@ namespace System.IO.Compression
         ///                                               -OR- The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>
         ///                                         is in an invalid format.</exception>
-        ///                                         
+        ///
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
         /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
@@ -295,14 +295,14 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
         /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
         /// last modified time.</p>
-        /// 
+        ///
         /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        /// 
+        ///
         /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
         /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
         /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
         ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
@@ -320,7 +320,7 @@ namespace System.IO.Compression
         ///                                               -OR- The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>
         ///                                         is in an invalid format.</exception>
-        ///                                         
+        ///
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
         /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
@@ -331,7 +331,7 @@ namespace System.IO.Compression
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
         ///         UTF-8 encoding for entry names.<br />
-        ///         This value is used as follows while creating the archive:</para>    
+        ///         This value is used as follows while creating the archive:</para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
         ///         <item>For file names that contain characters outside the ASCII range:<br />

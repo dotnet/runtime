@@ -41,7 +41,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override bool IsResource() => false;
         public sealed override int MDStreamVersion => throw new NotSupportedException(SR.NotSupported_MDStreamVersion);
-        public sealed override int MetadataToken => 0x00000001; // The Module Table is exactly 1 record long so the token is always mdtModule | 0x000001 
+        public sealed override int MetadataToken => 0x00000001; // The Module Table is exactly 1 record long so the token is always mdtModule | 0x000001
         public sealed override Guid ModuleVersionId => ModuleDefinition.Mvid.GetGuid(Reader);
         public sealed override string ScopeName => ModuleDefinition.Name.GetString(Reader);
 

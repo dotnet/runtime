@@ -181,7 +181,7 @@ namespace System.ComponentModel.Composition
                 var value = invalidLazy.Value.Value;
             });
         }
-        
+
         [ConditionalFact(Helpers.ComImportAvailable)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue(25498)]
@@ -584,11 +584,11 @@ namespace System.ComponentModel.Composition
         {
             string Quack();
         }
-        
+
         [ComImport]
         [Guid("148BD52A-A2AB-11CE-B11F-00AA00530503")]
         private class CTaskScheduler
-        {   // This interface doesn't implement 
+        {   // This interface doesn't implement
             // ITaskScheduler deliberately
         }
 
@@ -618,7 +618,7 @@ namespace System.ComponentModel.Composition
                 set;
             }
         }
-        
+
         public class Importer
         {
             public Importer()

@@ -13,4 +13,3 @@ namespace System.IO.Ports
         Space = 4
     };
 }
-

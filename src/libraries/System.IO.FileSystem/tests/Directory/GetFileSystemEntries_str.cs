@@ -281,11 +281,11 @@ namespace System.IO.Tests
             if (TestDirectories)
             {
                 DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-                
+
                 testDir.CreateSubdirectory(valid);
 
                 string[] results = GetEntries(testDir.FullName);
-                 
+
                 Assert.Contains(Path.Combine(testDir.FullName, valid), results);
             }
         }

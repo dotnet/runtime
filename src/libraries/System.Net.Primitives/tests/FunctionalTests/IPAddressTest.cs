@@ -160,10 +160,10 @@ namespace System.Net.Primitives.Functional.Tests
             int i2 = (int)0x50130000;
             int i3 = (int)0x01234567;
             int i4 = (int)0x67452301;
-            
+
             short s1 = (short)0x1350;
             short s2 = (short)0x5013;
-            
+
             Assert.Equal(l2, IPAddress.HostToNetworkOrder(l1));
             Assert.Equal(l4, IPAddress.HostToNetworkOrder(l3));
             Assert.Equal(i2, IPAddress.HostToNetworkOrder(i1));

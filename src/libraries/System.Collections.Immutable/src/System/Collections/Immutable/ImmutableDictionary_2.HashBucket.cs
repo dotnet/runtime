@@ -26,7 +26,7 @@ namespace System.Collections.Immutable
             /// Any other elements that hash to the same value.
             /// </summary>
             /// <value>
-            /// This is null if and only if the entire bucket is empty (including <see cref="_firstValue"/>).  
+            /// This is null if and only if the entire bucket is empty (including <see cref="_firstValue"/>).
             /// It's empty if <see cref="_firstValue"/> has an element but no additional elements.
             /// </value>
             private readonly ImmutableList<KeyValuePair<TKey, TValue>>.Node _additionalElements;
@@ -473,7 +473,7 @@ namespace System.Collections.Immutable
                 public void Reset()
                 {
                     // We can safely dispose of the additional enumerator because if the client reuses this enumerator
-                    // we'll acquire a new one anyway (and so for that matter we should be sure to dispose of this).  
+                    // we'll acquire a new one anyway (and so for that matter we should be sure to dispose of this).
                     _additionalEnumerator.Dispose();
                     _currentPosition = Position.BeforeFirst;
                 }

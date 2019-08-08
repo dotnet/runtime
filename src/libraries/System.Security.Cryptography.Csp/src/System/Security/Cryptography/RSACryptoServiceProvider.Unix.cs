@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             padding == null ? throw new ArgumentNullException(nameof(padding)) :
-            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() : 
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignHash(hash, hashAlgorithm, padding);
 
         public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>

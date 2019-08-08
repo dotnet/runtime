@@ -17,14 +17,14 @@ public static partial class DataContractSerializerTests
         // There was a bug with ObjectToIdCache.RemoveAt() method which might cause
         // one item be added into the cache more than once.
         // The issue could happen in the following scenario,
-        // 1) ObjectToIdCache is used. ObjectToIdCache is used for DataContract types 
+        // 1) ObjectToIdCache is used. ObjectToIdCache is used for DataContract types
         //    marked with [DataContract(IsReference = true)].
         // 2) ObjectToIdCache.RemoveAt() is called. The method is called only when one uses
         //    DataContract Surrogate.
         // 3) There's hash-key collision in the cache and elements are deletes at certain position.
         //
         // The reason that I used multi-iterations here is because the issue does not always repro.
-        // It was a matter of odds. The more iterations we run here the more likely we repro the issue. 
+        // It was a matter of odds. The more iterations we run here the more likely we repro the issue.
         for (int iterations = 0; iterations < 5; iterations++)
         {
             int length = 2000;

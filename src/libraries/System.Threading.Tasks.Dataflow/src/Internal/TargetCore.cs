@@ -195,10 +195,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
 
                 // We can directly accept the message if:
-                //      1) we are not bounding, OR 
+                //      1) we are not bounding, OR
                 //      2) we are bounding AND there is room available AND there are no postponed messages AND no messages are currently being transfered to the input queue.
                 // (If there were any postponed messages, we would need to postpone so that ordering would be maintained.)
-                // (Unlike all other blocks, TargetCore can accept messages while processing, because 
+                // (Unlike all other blocks, TargetCore can accept messages while processing, because
                 // input message IDs are properly assigned and the correct order is preserved.)
                 if (_boundingState == null ||
                     (_boundingState.OutstandingTransfers == 0 && _boundingState.CountIsLessThanBound && _boundingState.PostponedMessages.Count == 0))
@@ -298,7 +298,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Debug.Assert(_numberOfOutstandingOperations >= _numberOfOutstandingServiceTasks, "Number of outstanding service tasks should never exceed the number of outstanding operations.");
                 Common.ContractAssertMonitorStatus(IncomingLock, held: true);
 
-                // In async mode, we increment _numberOfOutstandingOperations before we start 
+                // In async mode, we increment _numberOfOutstandingOperations before we start
                 // our own processing loop which should not count towards the MaxDOP.
                 return (_numberOfOutstandingOperations - _numberOfOutstandingServiceTasks) < _dataflowBlockOptions.ActualMaxDegreeOfParallelism;
             }
@@ -316,7 +316,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 if (!UsesAsyncCompletion)
                 {
-                    // Sync mode: 
+                    // Sync mode:
                     // We don't count service tasks, because our tasks are counted as operations.
                     // Therefore, return HasRoomForMoreOperations.
                     return HasRoomForMoreOperations;
@@ -325,8 +325,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     // Async mode:
                     // We allow up to MaxDOP true service tasks.
-                    // Checking whether there is room for more processing operations is not necessary, 
-                    // but doing so will help us avoid spinning up a task that will go away without 
+                    // Checking whether there is room for more processing operations is not necessary,
+                    // but doing so will help us avoid spinning up a task that will go away without
                     // launching any processing operation.
                     return HasRoomForMoreOperations &&
                            _numberOfOutstandingServiceTasks < _dataflowBlockOptions.ActualMaxDegreeOfParallelism;
@@ -347,7 +347,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Slow path for ProcessAsyncIfNecessary. 
+        /// Slow path for ProcessAsyncIfNecessary.
         /// Separating out the slow path into its own method makes it more likely that the fast path method will get inlined.
         /// </summary>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
@@ -364,9 +364,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If all conditions are met, launch away
             if (messagesAvailableOrPostponed && !CanceledOrFaulted)
             {
-                // Any book keeping related to the processing task like incrementing the 
+                // Any book keeping related to the processing task like incrementing the
                 // DOP counter or eventually recording the tasks reference must be done
-                // before the task starts. That is because the task itself will do the 
+                // before the task starts. That is because the task itself will do the
                 // reverse operation upon its completion.
                 _numberOfOutstandingOperations++;
                 if (UsesAsyncCompletion) _numberOfOutstandingServiceTasks++;
@@ -444,13 +444,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     }
                     else
                     {
-                        // Try to get a message for sequential execution, i.e. without checking DOP availability 
+                        // Try to get a message for sequential execution, i.e. without checking DOP availability
                         if (!TryGetNextAvailableOrPostponedMessage(out messageWithId))
                         {
                             // Try to keep the task alive only if MaxDOP=1
                             if (_dataflowBlockOptions.MaxDegreeOfParallelism != 1) break;
 
-                            // If this task has processed enough messages without being kept alive, 
+                            // If this task has processed enough messages without being kept alive,
                             // it has served its purpose. Don't keep it alive.
                             if (numberOfMessagesProcessedSinceTheLastKeepAlive > Common.KEEP_ALIVE_NUMBER_OF_MESSAGES_THRESHOLD) break;
 
@@ -467,7 +467,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             // Try to keep the task alive briefly until a new message arrives
                             if (!Common.TryKeepAliveUntil(_keepAlivePredicate, this, out messageWithId))
                             {
-                                // Keep alive was unsuccessful. 
+                                // Keep alive was unsuccessful.
                                 // Therefore ban further attempts temporarily.
                                 _keepAliveBanCounter = Common.KEEP_ALIVE_BAN_COUNT;
                                 break;
@@ -495,7 +495,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     // We incremented _numberOfOutstandingOperations before we launched this task.
                     // So we must decremented it before exiting.
-                    // Note that each async task additionally incremented it before starting and 
+                    // Note that each async task additionally incremented it before starting and
                     // is responsible for decrementing it prior to exiting.
                     Debug.Assert(_numberOfOutstandingOperations > 0, "Expected a positive number of outstanding operations, since we're completing one here.");
                     _numberOfOutstandingOperations--;
@@ -573,7 +573,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Either takes the next available message from the input queue or retrieves a postponed 
+        /// Either takes the next available message from the input queue or retrieves a postponed
         /// message from a source, based on whether we're in greedy or non-greedy mode.
         /// </summary>
         /// <param name="messageWithId">The retrieved item with its Id.</param>
@@ -718,7 +718,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Slow path for CompleteBlockIfPossible. 
+        /// Slow path for CompleteBlockIfPossible.
         /// Separating out the slow path into its own method makes it more likely that the fast path method will get inlined.
         /// </summary>
         private void CompleteBlockIfPossible_Slow()
@@ -761,7 +761,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Common.ReleaseAllPostponedMessages(_owningTarget, _boundingState.PostponedMessages, ref _exceptions);
             }
 
-            // For good measure and help in preventing leaks, clear out the incoming message queue, 
+            // For good measure and help in preventing leaks, clear out the incoming message queue,
             // which may still contain orphaned data if we were canceled or faulted.  However,
             // we don't reset the bounding count here, as the block as a whole may still be active.
             KeyValuePair<TInput, long> ignored;

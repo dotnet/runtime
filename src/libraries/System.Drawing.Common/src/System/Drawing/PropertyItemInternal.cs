@@ -118,4 +118,3 @@ namespace System.Drawing.Imaging
         }
     }
 }
-

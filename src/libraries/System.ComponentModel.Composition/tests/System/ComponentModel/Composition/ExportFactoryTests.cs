@@ -229,7 +229,7 @@ namespace Tests.Integration
 
             container.SatisfyImportsOnce(part);
 
-            // specifying the required creation policy explicit on the import 
+            // specifying the required creation policy explicit on the import
             // of a ExportFactory will be ignored because the ExportFactory requires
             // the part it wraps to be either Any or NonShared to work properly.
             Assert.NotNull(part.FooCreatorAny);

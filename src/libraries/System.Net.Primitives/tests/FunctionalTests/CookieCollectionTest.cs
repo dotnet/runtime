@@ -28,7 +28,7 @@ namespace System.Net.Primitives.Functional.Tests
             cc.Add(c5);
 
             return cc;
-        } 
+        }
 
         private static CookieCollection CreateCookieCollection2()
         {
@@ -50,7 +50,7 @@ namespace System.Net.Primitives.Functional.Tests
         public static void Add_ExistingCookie_NameUpdatesCookie()
         {
             CookieCollection cc = CreateCookieCollection1();
-            
+
             c4.Name = "new-name";
             cc.Add(c4);
 
@@ -76,7 +76,7 @@ namespace System.Net.Primitives.Functional.Tests
         public static void Add_ExistingCookie_DomainUpdatesCookie()
         {
             CookieCollection cc = CreateCookieCollection1();
-            
+
             c4.Domain = "new-domain";
             cc.Add(c4);
 
@@ -121,7 +121,7 @@ namespace System.Net.Primitives.Functional.Tests
             ICollection cc = new CookieCollection();
             Assert.Equal(cc, cc.SyncRoot);
         }
-        
+
         [Fact]
         public static void CopyTo_Success()
         {
@@ -160,7 +160,7 @@ namespace System.Net.Primitives.Functional.Tests
             object current = null;
             var exception = Record.Exception(() => current = enumerator.Current);
 
-            // On full framework, enumerator.Current throws an exception because the collection has been modified after 
+            // On full framework, enumerator.Current throws an exception because the collection has been modified after
             // creating the enumerator.
             if (exception == null)
             {

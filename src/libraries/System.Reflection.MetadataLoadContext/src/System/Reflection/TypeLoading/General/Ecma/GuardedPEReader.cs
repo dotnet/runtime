@@ -13,8 +13,8 @@ namespace System.Reflection.TypeLoading.Ecma
     // (as in accessing native memory after free.) This also crashes debugged processes if Reflection objects
     // created by MetadataLoadContext objects are sitting in the watch window after disposal.
     //
-    // To avoid this unfortunate scenario, we'll gate all access to PEReaders and MetadataReaders 
-    // through this dispose guard. This does not make the api entirely safe (if a Reflection api is in flight 
+    // To avoid this unfortunate scenario, we'll gate all access to PEReaders and MetadataReaders
+    // through this dispose guard. This does not make the api entirely safe (if a Reflection api is in flight
     // during a Dispose(), all bets are off) but it does make the overall experience less evil.
     //
     internal readonly struct GuardedPEReader

@@ -62,5 +62,3 @@ namespace System.Security.Cryptography.Pkcs
         private volatile byte[] _lazyMessageDigest = null;
     }
 }
-
-

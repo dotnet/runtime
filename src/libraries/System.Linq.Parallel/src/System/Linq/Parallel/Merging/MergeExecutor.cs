@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
     /// structures and scheduling parallel work as appropriate. The algorithms used
     /// internally are parameterized based on the type of data in the partitions; e.g.
     /// if an order preserved stream is found, the merge will automatically use an
-    /// order preserving merge, and so forth. 
+    /// order preserving merge, and so forth.
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     internal class MergeExecutor<TInputOutput> : IEnumerable<TInputOutput>

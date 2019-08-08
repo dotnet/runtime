@@ -1360,7 +1360,7 @@ namespace System.Text.Json
         ///   <para>
         ///     For <see cref="JsonValueKind.False"/>, <see cref="bool.FalseString"/> is returned.
         ///   </para>
-        /// 
+        ///
         ///   <para>
         ///     For <see cref="JsonValueKind.String"/>, the value of <see cref="GetString"/>() is returned.
         ///   </para>

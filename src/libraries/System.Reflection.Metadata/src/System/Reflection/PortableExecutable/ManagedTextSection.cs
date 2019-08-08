@@ -105,7 +105,7 @@ namespace System.Reflection.PortableExecutable
         // (_is32bit ? 66 : 70);
         private int SizeOfImportTable =>
             sizeof(uint) + // RVA
-            sizeof(uint) + // 0           
+            sizeof(uint) + // 0
             sizeof(uint) + // 0
             sizeof(uint) + // name RVA
             sizeof(uint) + // import address table RVA
@@ -303,7 +303,7 @@ namespace System.Reflection.PortableExecutable
         private void WriteImportAddressTable(BlobBuilder builder, int importTableRva)
         {
             int start = builder.Count;
-            
+
             int ilRva = importTableRva + 40;
             int hintRva = ilRva + (Is32Bit ? 12 : 16);
 
@@ -353,7 +353,7 @@ namespace System.Reflection.PortableExecutable
 
             // Hint table
             builder.WriteUInt16(0); // Hint 54|58
-            
+
             foreach (char ch in CorEntryPointName)
             {
                 builder.WriteByte((byte)ch); // 65|69

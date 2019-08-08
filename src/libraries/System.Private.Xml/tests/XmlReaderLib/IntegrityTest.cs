@@ -413,7 +413,7 @@ namespace System.Xml.Tests
                 iState = ReadState.EndOfFile;
             }
 
-            // Closed State 
+            // Closed State
             if ((IntegrityVer == EINTEGRITY.AFTER_CLOSE) || (IntegrityVer == EINTEGRITY.CLOSE_IN_THE_MIDDLE))
             {
                 iState = ReadState.Closed;

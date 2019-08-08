@@ -15,10 +15,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -313,7 +313,7 @@ namespace System.Data.Tests
             }
             catch (SyntaxErrorException e)
             {
-                // missing operand after 'human' operand 
+                // missing operand after 'human' operand
                 Assert.Equal(typeof(SyntaxErrorException), e.GetType());
             }
 
@@ -1903,7 +1903,7 @@ Assert.False(true);
         [Fact]
         public void Serialize()
         {
-            // Create an array with multiple elements refering to 
+            // Create an array with multiple elements refering to
             // the one Singleton object.
             DataTable dt = new DataTable();
 
@@ -2493,7 +2493,7 @@ Assert.False(true);
             tbl.Rows.Add(new object[] { 2, "RowState 2" });
             tbl.Rows.Add(new object[] { 3, "RowState 3" });
             tbl.AcceptChanges();
-            // Update Table with following changes: Row0 unmodified, 
+            // Update Table with following changes: Row0 unmodified,
             // Row1 modified, Row2 deleted, Row3 added, Row4 not-present.
             tbl.Rows[1]["name"] = "Modify 2";
             tbl.Rows[2].Delete();
@@ -2718,7 +2718,7 @@ Assert.False(true);
             _dt.AcceptChanges();
             DataTableReader dtr = _dt.CreateDataReader();
             DataTable dtLoad = setupRowState();
-            // Notice rowChange-Actions only occur 5 times, as number 
+            // Notice rowChange-Actions only occur 5 times, as number
             // of actual rows, ignoring row duplication of the deleted row.
             DataRowAction[] dra = new DataRowAction[] {
                 DataRowAction.Change,
@@ -2938,10 +2938,10 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             DataRowAction[] dra = new DataRowAction[] {
                 DataRowAction.Nothing,// REAL action
-                DataRowAction.Nothing,// dummy  
-                DataRowAction.Nothing,// dummy  
-                DataRowAction.Nothing,// dummy  
-                DataRowAction.Nothing};// dummy  
+                DataRowAction.Nothing,// dummy
+                DataRowAction.Nothing,// dummy
+                DataRowAction.Nothing,// dummy
+                DataRowAction.Nothing};// dummy
             rowActionInit(dra);
             dtLoad.Load(dtr, LoadOption.Upsert);
             rowActionEnd();

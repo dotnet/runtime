@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public void TestDecryptSimpleAes256_RsaSha256()
         {
-            // Message encrypted on framework for a recipient using the certificate returned by 
+            // Message encrypted on framework for a recipient using the certificate returned by
             // Certificates.RSASha256KeyTransfer1.GetCertificate() and of type IssuerAndSerialNumber. The symmetric algorithm used is Aes256
             byte[] encryptedMessage =
                 ("3082012506092A864886F70D010703A0820116308201120201003181CE3081CB02010030343020311E301C0"

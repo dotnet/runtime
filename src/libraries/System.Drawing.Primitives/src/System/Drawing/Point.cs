@@ -87,7 +87,7 @@ namespace System.Drawing
         /// <summary>
         ///    <para>
         ///       Creates a <see cref='System.Drawing.PointF'/> with the coordinates of the specified
-        ///    <see cref='System.Drawing.Point'/> 
+        ///    <see cref='System.Drawing.Point'/>
         /// </para>
         /// </summary>
         public static implicit operator PointF(Point p) => new PointF(p.X, p.Y);
@@ -103,14 +103,14 @@ namespace System.Drawing
         ///    <para>
         ///       Translates a <see cref='System.Drawing.Point'/> by a given <see cref='System.Drawing.Size'/> .
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static Point operator +(Point pt, Size sz) => Add(pt, sz);
 
         /// <summary>
         ///    <para>
         ///       Translates a <see cref='System.Drawing.Point'/> by the negative of a given <see cref='System.Drawing.Size'/> .
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static Point operator -(Point pt, Size sz) => Subtract(pt, sz);
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace System.Drawing
         ///    <para>
         ///       Compares two <see cref='System.Drawing.Point'/> objects. The result specifies whether the values
         ///       of the <see cref='System.Drawing.Point.X'/> or <see cref='System.Drawing.Point.Y'/> properties of the two
-        ///    <see cref='System.Drawing.Point'/> 
+        ///    <see cref='System.Drawing.Point'/>
         ///    objects are unequal.
         /// </para>
         /// </summary>
@@ -136,14 +136,14 @@ namespace System.Drawing
         ///    <para>
         ///       Translates a <see cref='System.Drawing.Point'/> by a given <see cref='System.Drawing.Size'/> .
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static Point Add(Point pt, Size sz) => new Point(unchecked(pt.X + sz.Width), unchecked(pt.Y + sz.Height));
 
         /// <summary>
         ///    <para>
         ///       Translates a <see cref='System.Drawing.Point'/> by the negative of a given <see cref='System.Drawing.Size'/> .
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static Point Subtract(Point pt, Size sz) => new Point(unchecked(pt.X - sz.Width), unchecked(pt.Y - sz.Height));
 
         /// <summary>

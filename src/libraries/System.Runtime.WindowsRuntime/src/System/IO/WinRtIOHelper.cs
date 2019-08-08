@@ -53,4 +53,3 @@ namespace System.IO
         }
     }  // class WinRtIOHelper
 }  // namespace
-

@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, handler.SendAsyncCount);
             }
         }
-        
+
         [Fact]
         public void Dispose_DisposeHandler_HandlerDisposed()
         {
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
             public MockHandler()
             {
             }
-                        
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
                 CancellationToken cancellationToken)
             {

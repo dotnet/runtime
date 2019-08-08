@@ -30,7 +30,7 @@ namespace System.Net.NetworkInformation
 
         public Ping()
         {
-            // This class once inherited a finalizer. For backward compatibility it has one so that 
+            // This class once inherited a finalizer. For backward compatibility it has one so that
             // any derived class that depends on it will see the behaviour expected. Since it is
             // not used by this class itself, suppress it immediately if this is not an instance
             // of a derived class it doesn't suffer the GC burden of finalization.

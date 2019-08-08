@@ -9,7 +9,7 @@ using System.Diagnostics.Contracts;
 namespace System.Collections.Immutable
 {
     /// <summary>
-    /// An immutable key-value dictionary. 
+    /// An immutable key-value dictionary.
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>

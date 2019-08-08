@@ -187,7 +187,7 @@ namespace System.Security.Cryptography.Asn1
                 ReadOnlySpan<byte> valueSpan = stackSpan.Slice(0, bytesWritten);
 
                 // Now that the 0-bounds check is out of the way:
-                // 
+                //
                 // T-REC-X.690-201508 sec 11.2.2
                 if (RuleSet == AsnEncodingRules.DER ||
                     RuleSet == AsnEncodingRules.CER)

@@ -12,7 +12,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Empty()
         {
-            int[] source = { };            
+            int[] source = { };
             Assert.Throws<InvalidOperationException>(() => source.AsQueryable().Single());
         }
 
@@ -58,7 +58,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(target, Enumerable.Range(0, range).AsQueryable().Single(i => i == target));
         }
-        
+
         [Fact]
         public void ThrowsOnNullSource()
         {

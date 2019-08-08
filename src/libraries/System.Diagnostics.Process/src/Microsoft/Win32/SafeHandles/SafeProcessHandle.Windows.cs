@@ -4,11 +4,11 @@
 
 /*============================================================
 **
-** Class:  SafeProcessHandle 
+** Class:  SafeProcessHandle
 **
 ** A wrapper for a process handle
 **
-** 
+**
 ===========================================================*/
 
 using System;

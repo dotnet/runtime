@@ -8,7 +8,7 @@ using System.Linq;
 using Xunit;
 
 namespace System.UnitTesting
-{    
+{
     public static class EnumerableAssert
     {
         public static void AreEqual<T>(IEnumerable<T> actual, params T[] expected)
@@ -48,7 +48,7 @@ namespace System.UnitTesting
 
             Assert.Equal(0, actualList.Count);
         }
-        
+
         public static void AreEqual<TKey, TValue>(IDictionary<TKey, TValue> expected, IDictionary<TKey, TValue> actual)
         {
             Assert.Equal(expected.Count, actual.Count);

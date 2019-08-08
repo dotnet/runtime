@@ -104,8 +104,8 @@ namespace System.IO.Tests
         public void WriteToStreamWriter()
         {
             char[] chArr = TestDataProvider.CharData;
-            // [] Just construct a streamwriter and write to it    
-            //-------------------------------------------------             
+            // [] Just construct a streamwriter and write to it
+            //-------------------------------------------------
             Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
@@ -137,7 +137,7 @@ namespace System.IO.Tests
         public void VerifyWrittenString()
         {
             char[] chArr = TestDataProvider.CharData;
-            // [] Write string with wide selection of characters and read it back        
+            // [] Write string with wide selection of characters and read it back
 
             StringBuilder sb = new StringBuilder(40);
             Stream ms = CreateStream();

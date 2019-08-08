@@ -534,7 +534,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-GB" , 0x0809, "en-GB", "eng", "ENG", "en-GB"      , "en-GB" };
             yield return new object[] { "tr-TR" , 0x041f, "tr-TR", "tur", "TRK", "tr-TR"      , "tr-TR" };
         }
-        
+
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
         public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
@@ -548,13 +548,13 @@ namespace System.Globalization.Tests
             Assert.False(ci.IsReadOnly, "IsReadOnly for lcid created culture expected to be false");
             Assert.Equal(threeLetterISOLanguageName, ci.ThreeLetterISOLanguageName);
             Assert.Equal(threeLetterWindowsLanguageName, ci.ThreeLetterWindowsLanguageName);
-            
+
             ci = new CultureInfo(cultureName);
             Assert.Equal(cultureName, ci.Name);
             Assert.Equal(lcid, ci.LCID);
             Assert.True(ci.UseUserOverride, "UseUserOverride for named created culture expected to be true");
             Assert.False(ci.IsReadOnly, "IsReadOnly for named created culture expected to be false");
-            
+
             ci = new CultureInfo(lcid, false);
             Assert.Equal(cultureName, ci.Name);
             Assert.Equal(lcid, ci.LCID);
@@ -566,7 +566,7 @@ namespace System.Globalization.Tests
             Assert.Equal(lcid, ci.LCID);
             Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and lcid expected to be false");
             Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and lcid expected to be true");
-            
+
             ci = CultureInfo.GetCultureInfo(cultureName);
             Assert.Equal(cultureName, ci.Name);
             Assert.Equal(lcid, ci.LCID);
@@ -584,11 +584,11 @@ namespace System.Globalization.Tests
             ci = CultureInfo.CreateSpecificCulture(cultureName);
             Assert.Equal(specificCultureName, ci.Name);
 
-            ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureName);            
+            ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureName);
             Assert.Equal(cultureName, ci.Name);
             Assert.Equal(ci.Name, ci.IetfLanguageTag);
             Assert.Equal(lcid, ci.KeyboardLayoutId);
-            
+
             Assert.Equal(consoleUICultureName, ci.GetConsoleFallbackUICulture().Name);
         }
 
@@ -602,7 +602,7 @@ namespace System.Globalization.Tests
             // instead we test ensuring the value doesn't change if we requested it multiple times.
             Assert.Equal(c1.Name, c2.Name);
         }
-        
+
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
         public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
@@ -614,17 +614,17 @@ namespace System.Globalization.Tests
             _ = consoleUICultureName;
 
             bool found = false;
-            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), 
+            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures),
                        c => Assert.True( (c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.NeutralCultures) != 0)) || c.Equals(CultureInfo.InvariantCulture)));
-            found = CultureInfo.GetCultures(CultureTypes.NeutralCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+            found = CultureInfo.GetCultures(CultureTypes.NeutralCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) ||
                                                                                    c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
             Assert.All(CultureInfo.GetCultures(CultureTypes.SpecificCultures), c => Assert.True(!c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.SpecificCultures) != 0)));
             if (!found)
             {
-                found = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+                found = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) ||
                                                                                        c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
             }
-            
+
             Assert.True(found, $"Expected to find the culture {cultureName} in the enumerated list");
         }
 

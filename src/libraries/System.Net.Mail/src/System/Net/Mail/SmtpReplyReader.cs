@@ -53,5 +53,3 @@ namespace System.Net.Mail
         }
     }
 }
-
-

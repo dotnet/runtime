@@ -128,7 +128,7 @@ namespace System.Numerics.Tests
             // Check some identities
             // (x+y)+z = (y+z)+x
 
-            VerifyIdentityString( 
+            VerifyIdentityString(
                 Int64.MaxValue.ToString() + " " + Int32.MaxValue.ToString() + " bGCD " + Int16.MaxValue.ToString() + " bGCD",
                 Int32.MaxValue.ToString() + " " + Int16.MaxValue.ToString() + " bGCD " + Int64.MaxValue.ToString() + " bGCD"
             );

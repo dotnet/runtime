@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 dt = new DateTime(1950, 1, 2);
                 st = new Pkcs9SigningTime(dt);
                 dt = new DateTime(2049, 12, 30);
-                st = new Pkcs9SigningTime(dt); 
+                st = new Pkcs9SigningTime(dt);
 
                 dt = new DateTime(1950, 1, 2, 00, 00, 00, DateTimeKind.Local);
                 st = new Pkcs9SigningTime(dt);
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Fact]
         public static void Pkcs9AttributeCopyFromAsnNotAPkcs9Attribute()
         {
-            // Pkcs9AttributeObject.CopyFrom(AsnEncodedData) refuses to accept any AsnEncodedData that isn't a Pkcs9AttributeObject-derived class. 
+            // Pkcs9AttributeObject.CopyFrom(AsnEncodedData) refuses to accept any AsnEncodedData that isn't a Pkcs9AttributeObject-derived class.
             Pkcs9AttributeObject p = new Pkcs9AttributeObject();
             byte[] rawData = "041e4d00790020004400650073006300720069007000740069006f006e000000".HexToByteArray();
             AsnEncodedData a = new AsnEncodedData(Oids.DocumentName, rawData);
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             Pkcs9SigningTime p = new Pkcs9SigningTime();
 
-            // the default constructor initializes with DateTime.Now. 
+            // the default constructor initializes with DateTime.Now.
             Assert.NotNull(p.RawData);
             Assert.Equal(DateTimeKind.Local, p.SigningTime.Kind);
             string oid = p.Oid.Value;
@@ -404,4 +404,3 @@ namespace System.Security.Cryptography.Pkcs.Tests
         private const string s_OidMessageDigest = "1.2.840.113549.1.9.4";
     }
 }
-

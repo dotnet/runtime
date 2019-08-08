@@ -1450,7 +1450,7 @@ namespace System.Runtime.Serialization
 
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
         {
-            // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset. 
+            // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset.
             context.IsGetOnlyCollection = false;
             XmlFormatWriterDelegate(xmlWriter, obj, context, this);
         }
@@ -1461,7 +1461,7 @@ namespace System.Runtime.Serialization
             object o = null;
             if (context.IsGetOnlyCollection)
             {
-                // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset. 
+                // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset.
                 context.IsGetOnlyCollection = false;
                 XmlFormatGetOnlyCollectionReaderDelegate(xmlReader, context, CollectionItemName, Namespace, this);
             }

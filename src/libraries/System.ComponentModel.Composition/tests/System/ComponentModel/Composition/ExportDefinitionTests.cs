@@ -143,7 +143,7 @@ namespace System.ComponentModel.Composition
         public void ToString_ShouldReturnOverriddenContractNameProperty()
         {
             var expectations = Expectations.GetContractNamesWithEmpty();
-            
+
             foreach (var e in expectations)
             {
                 var definition = new DerivedExportDefinition(() => e);
@@ -167,7 +167,7 @@ namespace System.ComponentModel.Composition
 
             public override string ContractName
             {
-                get 
+                get
                 {
                     if (_contractNameGetter != null)
                     {
@@ -180,4 +180,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

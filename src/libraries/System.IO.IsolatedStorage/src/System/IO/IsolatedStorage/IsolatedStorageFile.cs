@@ -604,7 +604,7 @@ namespace System.IO.IsolatedStorage
         //  - if not a "known type" the type hash is from a BinaryFormatter serialized object.GetType()
         //  - if the identity object is INomalizeForIsolatedStorage, use .Normalize() result for hashing identity, otherwise the object itself
         //  - again, use BinaryFormatter to serialize the selected identity object for getting the instance hash
-        // 
+        //
         // Hashing for the streams created is done in Helper.GetStrongHashSuitableForObjectName()
         //
         // "Known" types are Publisher, StrongName, Url, Site, and Zone.

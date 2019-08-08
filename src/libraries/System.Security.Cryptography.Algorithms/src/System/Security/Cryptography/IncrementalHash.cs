@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             _algorithmName = new HashAlgorithmName("HMAC" + name.Name);
             _hmac = hmac;
         }
-        
+
         /// <summary>
         /// Get the name of the algorithm being performed.
         /// </summary>

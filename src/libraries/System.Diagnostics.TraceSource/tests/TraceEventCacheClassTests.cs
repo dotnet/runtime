@@ -66,7 +66,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void LogicalOperationStack()
         {
             var cache = new TraceEventCache();
-            var logicalOperationStack = cache.LogicalOperationStack; 
+            var logicalOperationStack = cache.LogicalOperationStack;
             Assert.Equal(0, logicalOperationStack.Count);
             Trace.CorrelationManager.StartLogicalOperation("SecondaryThread");
             Trace.CorrelationManager.StartLogicalOperation("MainThread");

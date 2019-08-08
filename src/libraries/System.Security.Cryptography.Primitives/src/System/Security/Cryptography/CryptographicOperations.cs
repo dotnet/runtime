@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         ///   leak timing information, making it ideal for use within cryptographic routines.
         ///   This method will short-circuit and return <c>false</c> only if <paramref name="left"/>
         ///   and <paramref name="right"/> have different lengths.
-        /// 
+        ///
         ///   Fixed-time behavior is guaranteed in all other cases, including if <paramref name="left"/>
         ///   and <paramref name="right"/> reference the same address.
         /// </remarks>

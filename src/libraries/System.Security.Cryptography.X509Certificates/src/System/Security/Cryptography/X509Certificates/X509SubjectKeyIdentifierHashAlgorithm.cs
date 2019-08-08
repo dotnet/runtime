@@ -14,4 +14,3 @@ namespace System.Security.Cryptography.X509Certificates
         CapiSha1 = 2,
     }
 }
-

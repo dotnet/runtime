@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 internal static partial class Interop
 {
     internal partial class PerfCounter
-    {        
+    {
         [DllImport(Libraries.Advapi32, ExactSpelling = true)]
         internal static extern unsafe uint PerfStopProvider(
             IntPtr hProvider

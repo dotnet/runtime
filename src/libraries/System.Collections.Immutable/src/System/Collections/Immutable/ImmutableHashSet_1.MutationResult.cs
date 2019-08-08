@@ -37,7 +37,7 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Either the number of elements added or removed from the collection as a result of the operation (a negative number represents removed elements),
-            /// or the total number of elements in the collection after the mutation.  The appropriate interpretation of this value is indicated by the 
+            /// or the total number of elements in the collection after the mutation.  The appropriate interpretation of this value is indicated by the
             /// <see cref="_countType"/> field.
             /// </summary>
             private readonly int _count;
@@ -71,7 +71,7 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Gets either the number of elements added or removed from the collection as a result of the operation (a negative number represents removed elements),
-            /// or the total number of elements in the collection after the mutation.  The appropriate interpretation of this value is indicated by the 
+            /// or the total number of elements in the collection after the mutation.  The appropriate interpretation of this value is indicated by the
             /// <see cref="CountType"/> property.
             /// </summary>
             internal int Count

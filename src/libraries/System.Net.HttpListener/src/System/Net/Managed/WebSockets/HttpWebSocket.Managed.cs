@@ -54,7 +54,7 @@ namespace System.Net.WebSockets
             response.StatusDescription = HttpStatusDescription.Get(HttpStatusCode.SwitchingProtocols);
 
             HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
-            
+
             // Send websocket handshake headers
             await responseStream.WriteWebSocketHandshakeHeadersAsync().ConfigureAwait(false);
 
@@ -80,4 +80,3 @@ namespace System.Net.WebSockets
         private const bool WebSocketsSupported = true;
     }
 }
-

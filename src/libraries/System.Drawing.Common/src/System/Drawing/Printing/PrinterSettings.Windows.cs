@@ -84,10 +84,10 @@ namespace System.Drawing.Printing
                                                              nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 /*
-                    We shouldnt allow copies to be set since the copies can be a large number 
+                    We shouldnt allow copies to be set since the copies can be a large number
                     and can be reflected in PrintDialog. So for the Copies property,
-                    we prefer that for SafePrinting, copied cannot be set programmatically 
-                    but through the print dialog. 
+                    we prefer that for SafePrinting, copied cannot be set programmatically
+                    but through the print dialog.
                     Any lower security could set copies to anything.
                 */
                 _copies = value;
@@ -425,7 +425,7 @@ namespace System.Drawing.Printing
                 _cachedDevmode = null;
                 _extrainfo = null;
                 _printerName = value;
-                // PrinterName can be set through a fulltrusted assembly without using  the PrintDialog. 
+                // PrinterName can be set through a fulltrusted assembly without using  the PrintDialog.
                 // So dont set this variable here.
                 //PrintDialogDisplayed = true;
             }
@@ -1700,7 +1700,7 @@ namespace System.Drawing.Printing
 
             public void Reset()
             {
-                // Position enumerator before first item 
+                // Position enumerator before first item
 
                 _index = _startIndex;
                 _item = null;

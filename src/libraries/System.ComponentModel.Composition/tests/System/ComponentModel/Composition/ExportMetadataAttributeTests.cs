@@ -28,12 +28,12 @@ namespace System.ComponentModel.Composition
         public void Constructor_ValueAsNameArgument_ShouldSetNameProperty()
         {
             var expectations = Expectations.GetMetadataNames();
-            
+
             foreach (var e in expectations)
             {
                 var attribute = new ExportMetadataAttribute(e, "Value");
 
-                Assert.Equal(e, attribute.Name);                
+                Assert.Equal(e, attribute.Name);
             }
         }
 
@@ -41,7 +41,7 @@ namespace System.ComponentModel.Composition
         public void Constructor_ValueAsValueArgument_ShouldSetValueProperty()
         {
             var expectations = Expectations.GetMetadataValues();
-            
+
             foreach (var e in expectations)
             {
                 var attribute = new ExportMetadataAttribute("Name", e);

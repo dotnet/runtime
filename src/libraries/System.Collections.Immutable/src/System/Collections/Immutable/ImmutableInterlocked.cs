@@ -22,12 +22,12 @@ namespace System.Collections.Immutable
         /// The variable or field to be changed, which may be accessed by multiple threads.
         /// </param>
         /// <param name="transformer">
-        /// A function that mutates the value. This function should be side-effect free, 
+        /// A function that mutates the value. This function should be side-effect free,
         /// as it may run multiple times when races occur with other threads.</param>
         /// <returns>
-        /// <c>true</c> if the location's value is changed by applying the result of the 
+        /// <c>true</c> if the location's value is changed by applying the result of the
         /// <paramref name="transformer"/> function;
-        /// <c>false</c> if the location's value remained the same because the last 
+        /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T>(ref T location, Func<T, T> transformer) where T : class
@@ -65,13 +65,13 @@ namespace System.Collections.Immutable
         /// The variable or field to be changed, which may be accessed by multiple threads.
         /// </param>
         /// <param name="transformer">
-        /// A function that mutates the value. This function should be side-effect free, 
+        /// A function that mutates the value. This function should be side-effect free,
         /// as it may run multiple times when races occur with other threads.</param>
         /// <param name="transformerArgument">The argument to pass to <paramref name="transformer"/>.</param>
         /// <returns>
-        /// <c>true</c> if the location's value is changed by applying the result of the 
+        /// <c>true</c> if the location's value is changed by applying the result of the
         /// <paramref name="transformer"/> function;
-        /// <c>false</c> if the location's value remained the same because the last 
+        /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class

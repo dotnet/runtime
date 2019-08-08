@@ -20,11 +20,11 @@ namespace System.Net.Mail
         //
         // This skips all folding and whitespace characters
         //
-        // Preconditions: 
-        // - The data string must not be null or empty. 
+        // Preconditions:
+        // - The data string must not be null or empty.
         // - The index must be within the upper bounds of the data string.
         //
-        // Return value: 
+        // Return value:
         // - The index of the next character that is NOT a whitespace character.
         // - -1 if the beginning of the data string is reached.
         //
@@ -73,19 +73,19 @@ namespace System.Net.Mail
             return index;
         }
 
-        // This method functions similarly to ReadFwsReverse but will also skip any comments.  
+        // This method functions similarly to ReadFwsReverse but will also skip any comments.
         //
-        // Comments are text within '(' and ')' and may be nested. There may also be consecutive comments.  Unicode is 
+        // Comments are text within '(' and ')' and may be nested. There may also be consecutive comments.  Unicode is
         // allowed, as the comments are not transmitted.
-        // 
-        // This method was explicitly written in a non-recursive fashion to avoid malicious or accidental 
+        //
+        // This method was explicitly written in a non-recursive fashion to avoid malicious or accidental
         // stack-overflows from user input.
-        // 
-        // Preconditions: 
+        //
+        // Preconditions:
         // - The data string must not be null or empty
         // - The index must be within the upper bounds of the data string.
-        // 
-        // Return value: 
+        //
+        // Return value:
         // - The given index if it data[index] was not a ')' or whitespace
         // - The index of the next non comment or whitespace character
         //   e.g. " d ( ( c o mment) )" returns index 1

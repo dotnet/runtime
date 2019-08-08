@@ -20,7 +20,7 @@ namespace System.Linq.Parallel
     /// inlined operators ensure that real MSIL instructions are used to perform elementary
     /// operations versus general purpose delegate-based binary operators.  For obvious reasons
     /// this is a quite bit more efficient, although it does lead to a fair bit of unfortunate
-    /// code duplication. 
+    /// code duplication.
     /// </summary>
     /// <typeparam name="TSource"></typeparam>
     /// <typeparam name="TIntermediate"></typeparam>

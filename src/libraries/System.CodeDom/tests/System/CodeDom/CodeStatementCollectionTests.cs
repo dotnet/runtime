@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.CodeDom.Tests
 
         protected override CodeStatement GetItem(CodeStatementCollection collection, int index) => collection[index];
         protected override void SetItem(CodeStatementCollection collection, int index, CodeStatement value) => collection[index] = value;
-        
+
         protected override void AddRange(CodeStatementCollection collection, CodeStatement[] array) => collection.AddRange(array);
         protected override void AddRange(CodeStatementCollection collection, CodeStatementCollection value) => collection.AddRange(value);
 

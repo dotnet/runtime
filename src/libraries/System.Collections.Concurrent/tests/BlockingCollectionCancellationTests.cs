@@ -116,7 +116,7 @@ namespace System.Collections.Concurrent.Tests
                 // This may or may not cancel before {Try}AddToAny executes, but either way the test should pass.
                 // A delay could be used to attempt to force the right timing, but not for an inner loop test.
                 CancellationTokenSource cs = new CancellationTokenSource();
-                Task.Run(() => cs.Cancel()); 
+                Task.Run(() => cs.Cancel());
                 Assert.Throws<OperationCanceledException>(() =>
                 {
                     switch (test)

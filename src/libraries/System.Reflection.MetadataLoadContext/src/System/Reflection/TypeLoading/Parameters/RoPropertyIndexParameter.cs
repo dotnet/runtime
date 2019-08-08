@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
     {
         private readonly RoParameter _backingParameter;
 
-        internal RoPropertyIndexParameter(RoProperty member, RoParameter backingParameter) 
+        internal RoPropertyIndexParameter(RoProperty member, RoParameter backingParameter)
             : base(member, backingParameter.Position)
         {
             Debug.Assert(member != null);

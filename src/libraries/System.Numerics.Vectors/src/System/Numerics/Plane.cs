@@ -50,7 +50,7 @@ namespace System.Numerics
         /// <summary>
         /// Constructs a Plane from the given Vector4.
         /// </summary>
-        /// <param name="value">A vector whose first 3 elements describe the normal vector, 
+        /// <param name="value">A vector whose first 3 elements describe the normal vector,
         /// and whose W component defines the distance along that normal from the origin.</param>
         public Plane(Vector4 value)
         {
@@ -155,7 +155,7 @@ namespace System.Numerics
         /// <summary>
         /// Transforms a normalized Plane by a Matrix.
         /// </summary>
-        /// <param name="plane"> The normalized Plane to transform. 
+        /// <param name="plane"> The normalized Plane to transform.
         /// This Plane must already be normalized, so that its Normal vector is of unit length, before this method is called.</param>
         /// <param name="matrix">The transformation matrix to apply to the Plane.</param>
         /// <returns>The transformed Plane.</returns>

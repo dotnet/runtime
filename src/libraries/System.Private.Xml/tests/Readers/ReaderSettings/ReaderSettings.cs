@@ -93,12 +93,12 @@ namespace System.Xml.Tests
     //[TestCase("CloseInput.WrappedReader", Param = "WrappedReader")]
     //[TestCase("CloseInput.SubtreeReader", Param = "SubtreeReader")]
     //[TestCase("CloseInput.CoreValidatingReader", Param = "CoreValidatingReader")]
-    //[TestCase("CloseInput.XsdValidatingReader", Param = "XsdValidatingReader")]  
+    //[TestCase("CloseInput.XsdValidatingReader", Param = "XsdValidatingReader")]
     //[TestCase("CloseInput.XmlTextReader", Param = "XmlTextReader")]
     //[TestCase("CloseInput.XPathNavigatorReader", Param = "XPathNavigatorReader")]
     //[TestCase("CloseInput.XsltReader", Param = "XsltReader")]
     //[TestCase("CloseInput.XmlNodeReader", Param = "XmlNodeReader")]
-    //[TestCase("CloseInput.XmlBinaryReader", Param = "XmlBinaryReader")] 
+    //[TestCase("CloseInput.XmlBinaryReader", Param = "XmlBinaryReader")]
     public partial class TCCloseInput : TCXMLReaderBaseGeneral
     {
         [Variation("Default Values", Priority = 0)]
@@ -114,7 +114,7 @@ namespace System.Xml.Tests
     //[TestCase("ReaderSettings Generic Tests.WrappedReader", Param = "WrappedReader")]
     //[TestCase("ReaderSettings Generic Tests.SubtreeReader", Param = "SubtreeReader")]
     //[TestCase("ReaderSettings Generic Tests.CoreValidatingReader", Param = "CoreValidatingReader")]
-    //[TestCase("ReaderSettings Generic Tests.XsdValidatingReader", Param = "XsdValidatingReader")]   
+    //[TestCase("ReaderSettings Generic Tests.XsdValidatingReader", Param = "XsdValidatingReader")]
     public partial class TCRSGeneric : TCXMLReaderBaseGeneral
     {
         [Variation("ReaderSettings not null", Priority = 0)]
@@ -219,7 +219,7 @@ namespace System.Xml.Tests
     //[TestCase("TCDtdProcessingCoreReader.WrappedReader", Param = "WrappedReader")]
     //[TestCase("TCDtdProcessingCoreReader.SubtreeReader", Param = "SubtreeReader")]
     //[TestCase("TCDtdProcessingCoreReader.CoreValidatingReader", Param = "CoreValidatingReader")]
-    //[TestCase("TCDtdProcessingCoreReader.XsdValidatingReader", Param = "XsdValidatingReader")]    
+    //[TestCase("TCDtdProcessingCoreReader.XsdValidatingReader", Param = "XsdValidatingReader")]
     public partial class TCDtdProcessingCoreReader : TCXMLReaderBaseGeneral
     {
         //[Variation("Read xml without DTD.Parse", Param = DtdProcessing.Parse)]

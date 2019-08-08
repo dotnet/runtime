@@ -395,7 +395,7 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(new IntPtr(6), Unsafe.ByteOffset(ref a[0], ref a[6]));
             Assert.Equal(new IntPtr(7), Unsafe.ByteOffset(ref a[0], ref a[7]));
         }
-        
+
         [Fact]
         public static void ByteOffsetStackByte4()
         {
@@ -534,7 +534,7 @@ namespace System.Runtime.CompilerServices
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
         }
-        
+
         [Fact]
         public static unsafe void VoidPointerSubtract()
         {

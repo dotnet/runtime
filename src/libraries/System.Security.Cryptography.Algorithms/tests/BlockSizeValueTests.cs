@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 new object[] { new HMACSHA512Test().GetBlockSizeValue(), 128 },
             };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetBlockSizeValue))]
         public static void BlockSizeValueTest(int hmacBlockSizeValue, int expectedBlockSizeValue)

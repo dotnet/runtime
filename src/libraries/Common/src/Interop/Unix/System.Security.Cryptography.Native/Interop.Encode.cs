@@ -42,7 +42,7 @@ internal static partial class Interop
             }
 
             Debug.Assert(size == size2);
-            
+
             return data;
         }
 

@@ -558,7 +558,7 @@ namespace Internal.Cryptography.Pal
                 {
                     writer.WriteCharacterString(UniversalTagNumber.UTF8String, charValue);
                 }
-                
+
                 writer.PopSequence();
                 writer.PopSetOf();
                 return writer.Encode();

@@ -270,7 +270,7 @@ namespace Microsoft.Test.ModuleCore
         public TestItem CurrentChild
         {
             //Currently executing child
-            //Note: We do this so that within global functions can know which 
+            //Note: We do this so that within global functions can know which
             //testcase/variation were in, without having to pass this state from execute arround
             get { return pcurrentchild; }
             set { pcurrentchild = value; }
@@ -356,7 +356,7 @@ namespace Microsoft.Test.ModuleCore
 
         public virtual void Init()
         {
-            //Note: This version is the only override-able Init, since the other one 
+            //Note: This version is the only override-able Init, since the other one
             //automatically handles the exception you might throw from this function
             //Note: If you override this function, (as with most overrides) make sure you call the base.
         }
@@ -378,7 +378,7 @@ namespace Microsoft.Test.ModuleCore
                     //Clear any previous existing info (in the static class).
                     //Note: We actually have to clear these "statics" since they are not cleaned up
                     //until the process exits.  Which means that if you run again, in an apartment model
-                    //thread it will try to release these when setting them which is not allowed to 
+                    //thread it will try to release these when setting them which is not allowed to
                     //call a method on an object created in another apartment
                     if (TestLog.Internal == null)
                     {
@@ -393,11 +393,11 @@ namespace Microsoft.Test.ModuleCore
             }
 
             //NOTE: Since exceptions are a way-of-life in COOL, and the fact that they are just
-            //caught by the runtime before passed back to LTM, we lose the entire stack and just 
+            //caught by the runtime before passed back to LTM, we lose the entire stack and just
             //an unknown error code is returned.
 
             //To help solve this we will wrap the call in a try catch and actually
-            //log the exception to the LTM output window... 
+            //log the exception to the LTM output window...
             try
             {
                 //Skipped
@@ -424,14 +424,14 @@ namespace Microsoft.Test.ModuleCore
                 result = TestResult.Skipped;
 
             return result;
-            //Note: This version is the only override-able version, since the other one 
+            //Note: This version is the only override-able version, since the other one
             //automatically handles the exception you might throw from this function
             //Note: If you override this function, (as with most overrides) make sure you call the base.
         }
 
         public virtual void Terminate()
         {
-            //Note: This version is the only override-able Terminate, since the other one 
+            //Note: This version is the only override-able Terminate, since the other one
             //automatically handles the exception you might throw from this function
             //Note: If you override this function, (as with most overrides) make sure you call the base.
         }
@@ -450,7 +450,7 @@ namespace Microsoft.Test.ModuleCore
                 else
                     this.Terminate();
 
-                //Before exiting make sure we reset our CurChild to null, to prevent incorrect uses 
+                //Before exiting make sure we reset our CurChild to null, to prevent incorrect uses
                 if (Parent != null)
                     Parent.CurrentChild = null;
             }
@@ -466,7 +466,7 @@ namespace Microsoft.Test.ModuleCore
                 {
                     //Note: We actually have to clear these "statics" since they are not cleaned up
                     //until the process exits.  Which means that if you run again, in an apartment model
-                    //thread it will try to release these when setting them which is not allowed to 
+                    //thread it will try to release these when setting them which is not allowed to
                     //call a method on an object created in another apartment
                     TestInput.Dispose();
                     TestLog.Dispose();

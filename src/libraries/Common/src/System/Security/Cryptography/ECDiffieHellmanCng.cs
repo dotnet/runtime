@@ -70,7 +70,7 @@ namespace System.Security.Cryptography
                     };
                 }
             }
-        
+
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,

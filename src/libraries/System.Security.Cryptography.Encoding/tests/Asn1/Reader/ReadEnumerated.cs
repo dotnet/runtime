@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Zero = 0,
             Fluff = 0xFACEF00DCAFEBEEF,
         }
-        
+
         private static void GetExpectedValue<TEnum>(
             PublicEncodingRules ruleSet,
             TEnum expectedValue,
@@ -526,7 +526,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.Throws<CryptographicException>(() => reader.ReadEnumeratedValue<UIntBacked>());
         }
-        
+
         [Theory]
         [InlineData(PublicEncodingRules.BER, "")]
         [InlineData(PublicEncodingRules.CER, "")]
@@ -643,7 +643,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(0x10, contents.Length);
             Assert.Equal(Payload, contents.ByteArrayToHex());
         }
-        
+
         [Theory]
         [InlineData(PublicEncodingRules.BER, "")]
         [InlineData(PublicEncodingRules.CER, "")]

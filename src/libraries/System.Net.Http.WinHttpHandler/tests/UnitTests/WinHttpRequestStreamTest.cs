@@ -294,12 +294,12 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void WriteAsync_PriorWriteInProgress_ThrowsInvalidOperationException()
         {
             Stream stream = MakeRequestStream();
-            
+
             TestControl.WinHttpWriteData.Pause();
             Task t1 = stream.WriteAsync(new byte[1], 0, 1);
 
             Assert.Throws<InvalidOperationException>(() => { Task t2 = stream.WriteAsync(new byte[1], 0, 1); });
-            
+
             TestControl.WinHttpWriteData.Resume();
             t1.Wait();
         }

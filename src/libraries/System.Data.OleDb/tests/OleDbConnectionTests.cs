@@ -39,14 +39,14 @@ namespace System.Data.OleDb.Tests
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void Ctor_AsynchronousNotSupported_Throws()
         {
-            Assert.Throws<ArgumentException>(() => 
+            Assert.Throws<ArgumentException>(() =>
                 new OleDbConnection(ConnectionString + ";asynchronous processing=true"));
         }
 
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void Ctor_InvalidConnectTimeout_Throws()
         {
-            Assert.Throws<ArgumentException>(() => 
+            Assert.Throws<ArgumentException>(() =>
                 new OleDbConnection(ConnectionString + ";connect timeout=-2"));
         }
 
@@ -67,7 +67,7 @@ namespace System.Data.OleDb.Tests
             transaction = connection.BeginTransaction(IsolationLevel.Unspecified);
             Assert.Equal(IsolationLevel.ReadCommitted, transaction.IsolationLevel);
         }
-        
+
         [ConditionalTheory(Helpers.IsDriverAvailable)]
         [MemberData(nameof(IsolationLevelsExceptUnspecified))]
         public void BeginTransaction_SpecificIsolationLevel_Success(IsolationLevel isolationLevel)
@@ -76,7 +76,7 @@ namespace System.Data.OleDb.Tests
             transaction = connection.BeginTransaction(isolationLevel);
             Assert.Equal(isolationLevel, transaction.IsolationLevel);
         }
-        
+
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void StateChange_ChangeState_TriggersEvent()
         {
@@ -84,12 +84,12 @@ namespace System.Data.OleDb.Tests
             Action<object, StateChangeEventArgs> OnStateChange = (sender, args) => {
                 timesCalled++;
             };
-            connection.StateChange += new StateChangeEventHandler(OnStateChange);  
+            connection.StateChange += new StateChangeEventHandler(OnStateChange);
             connection.Close();
             connection.Open();
             Assert.Equal(2, timesCalled);
         }
-        
+
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void BeginTransaction_InvalidIsolationLevel_Throws()
         {
@@ -106,7 +106,7 @@ namespace System.Data.OleDb.Tests
                 $"{nameof(OleDbConnection)} does not support parallel transactions."
             );
         }
-        
+
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void GetDefaults_AnyGivenState_DoesNotThrow()
         {
@@ -120,7 +120,7 @@ namespace System.Data.OleDb.Tests
             connection.Close();
             VerifyDefaults();
         }
-        
+
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void CreateCommand_AsDbConnection_IsOleDb()
         {
@@ -168,12 +168,12 @@ namespace System.Data.OleDb.Tests
             Assert.Null(exception);
 
             AssertExtensions.Throws<ArgumentException>(
-                () => connection.GetSchema(tableName, new string[] { null }), 
+                () => connection.GetSchema(tableName, new string[] { null }),
                 $"More restrictions were provided than the requested schema ('{tableName}') supports."
             );
             const string MissingColumn = "MissingColumn";
             AssertExtensions.Throws<ArgumentException>(
-                () => schema.Rows[0].Field<IEnumerable<char>>(MissingColumn), 
+                () => schema.Rows[0].Field<IEnumerable<char>>(MissingColumn),
                 $"Column '{MissingColumn}' does not belong to table {tableName}.");
         }
 
@@ -207,10 +207,10 @@ namespace System.Data.OleDb.Tests
             Assert.Throws<ArgumentException>(() => connection.ChangeDatabase(" "));
             Assert.Throws<ArgumentException>(() => connection.ChangeDatabase(string.Empty));
             AssertExtensions.Throws<InvalidOperationException>(
-                () => connection.ChangeDatabase("ReadOnlyShouldThrow"), 
-                "The 'current catalog' property was read-only, or the consumer attempted to set values of properties " + 
-                "in the Initialization property group after the data source object was initialized. " + 
-                "Consumers can set the value of a read-only property to its current value. " + 
+                () => connection.ChangeDatabase("ReadOnlyShouldThrow"),
+                "The 'current catalog' property was read-only, or the consumer attempted to set values of properties " +
+                "in the Initialization property group after the data source object was initialized. " +
+                "Consumers can set the value of a read-only property to its current value. " +
                 "This status is also returned if a settable column property could not be set for the particular column."
             );
         }
@@ -267,14 +267,14 @@ namespace System.Data.OleDb.Tests
         public void Ctor_InvalidUdlFile_Throws(int start, int length)
         {
             string udlFile = GetTestFilePath() + ".udl";
-            Span<string> lines = new string[] { 
-                "[oledb]", 
-                "; Everything after this line is an OLE DB initstring", 
+            Span<string> lines = new string[] {
+                "[oledb]",
+                "; Everything after this line is an OLE DB initstring",
                 ConnectionString }.AsSpan();
             File.WriteAllLines(udlFile, lines.Slice(start, length).ToArray());
 
             AssertExtensions.Throws<ArgumentException>(
-                () => new OleDbConnection(@"file name = " + udlFile), 
+                () => new OleDbConnection(@"file name = " + udlFile),
                 "Invalid UDL file.");
         }
 
@@ -282,7 +282,7 @@ namespace System.Data.OleDb.Tests
         public void Ctor_ValidUdlFile_Success()
         {
             string udlFile = GetTestFilePath() + ".udl";
-            File.WriteAllLines(udlFile, new string[] { 
+            File.WriteAllLines(udlFile, new string[] {
                 "[oledb]",
                 "; Everything after this line is an OLE DB initstring",
                 ConnectionString

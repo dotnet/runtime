@@ -22,9 +22,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             IDictionary<string, object> metadata,
             ICompositionElement origin)
         {
-            return (ReflectionComposablePartDefinition)ReflectionModelServices.CreatePartDefinition(partType, requiresDisposal, 
-                new Lazy<IEnumerable<ImportDefinition>>(imports, false), 
-                new Lazy<IEnumerable<ExportDefinition>>(exports, false), 
+            return (ReflectionComposablePartDefinition)ReflectionModelServices.CreatePartDefinition(partType, requiresDisposal,
+                new Lazy<IEnumerable<ImportDefinition>>(imports, false),
+                new Lazy<IEnumerable<ExportDefinition>>(exports, false),
                 metadata.AsLazy(), origin);
         }
 
@@ -291,7 +291,7 @@ IEnumerable<ImportDefinition> imports;
         private class TypeOrigin : ICompositionElement
         {
             private readonly Type _type;
-            private readonly ICompositionElement _orgin; 
+            private readonly ICompositionElement _orgin;
 
             public TypeOrigin(Type type)
                 : this(type, null)

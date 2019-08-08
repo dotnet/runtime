@@ -22,10 +22,10 @@ namespace System.Drawing
         /// </summary>
         public static readonly RectangleF Empty = new RectangleF();
 
-        private float x; // Do not rename (binary serialization) 
-        private float y; // Do not rename (binary serialization) 
-        private float width; // Do not rename (binary serialization) 
-        private float height; // Do not rename (binary serialization) 
+        private float x; // Do not rename (binary serialization)
+        private float y; // Do not rename (binary serialization)
+        private float width; // Do not rename (binary serialization)
+        private float height; // Do not rename (binary serialization)
 
         /// <summary>
         ///    <para>
@@ -236,7 +236,7 @@ namespace System.Drawing
         /// <summary>
         ///    <para>
         ///       Determines if the rectangular region represented by
-        ///    <paramref name="rect"/> is entirely contained within the rectangular region represented by 
+        ///    <paramref name="rect"/> is entirely contained within the rectangular region represented by
         ///       this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>

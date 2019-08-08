@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 //
@@ -16,10 +16,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -285,7 +285,7 @@ namespace System.Web.Tests
 
         #endregion HtmlEncode
 
-        #region JavaScriptStringEncode 
+        #region JavaScriptStringEncode
 
         public static IEnumerable<object[]> JavaScriptStringEncodeData
         {
@@ -707,14 +707,14 @@ namespace System.Web.Tests
         public static IEnumerable<object[]> UrlEncodeUnicodeData =>
             new[]
             {
-                new object[] {null, null}, 
-                new object[] {"", ""}, 
-                new object[] {" ", "+"}, 
-                new object[] {"a", "a"}, 
-                new object[] {"_", "_"}, 
-                new object[] {"?", "%3f"}, 
-                new object[] {"\u00A0", "%u00a0"}, 
-                new object[] {"\u202E", "%u202e"}, 
+                new object[] {null, null},
+                new object[] {"", ""},
+                new object[] {" ", "+"},
+                new object[] {"a", "a"},
+                new object[] {"_", "_"},
+                new object[] {"?", "%3f"},
+                new object[] {"\u00A0", "%u00a0"},
+                new object[] {"\u202E", "%u202e"},
             };
 
         [Theory]

@@ -977,7 +977,7 @@ namespace System.Text.Json
             {
                 JsonTokenType tokenType = reader.TokenType;
 
-                // Since the input payload is contained within a Span, 
+                // Since the input payload is contained within a Span,
                 // token start index can never be larger than int.MaxValue (i.e. utf8JsonSpan.Length).
                 Debug.Assert(reader.TokenStartIndex <= int.MaxValue);
                 int tokenStart = (int)reader.TokenStartIndex;

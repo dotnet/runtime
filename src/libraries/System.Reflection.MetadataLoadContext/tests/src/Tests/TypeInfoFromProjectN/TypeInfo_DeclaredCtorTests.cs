@@ -17,21 +17,21 @@ namespace System.Reflection.Tests
             VerifyConstructors(typeof(TypeInfoBaseClass).Project(), 2);
         }
 
-        // Verify Declared Ctors for a Derived Class 
+        // Verify Declared Ctors for a Derived Class
         [Fact]
         public static void TestDerivedClassCtor()
         {
             VerifyConstructors(typeof(TypeInfoSubClass).Project(), 2);
         }
 
-        // Verify Declared Ctors for a Static Class 
+        // Verify Declared Ctors for a Static Class
         [Fact]
         public static void TestStaticClassCtor()
         {
             VerifyConstructors(typeof(StaticClass).Project(), 0);
         }
 
-        // Verify Declared Ctors for a Class with multiple Ctors 
+        // Verify Declared Ctors for a Class with multiple Ctors
         [Fact]
         public static void TestClassWithMultipleCtor()
         {

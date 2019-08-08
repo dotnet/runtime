@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo actualMethod = property.GetSetMethod(true);
             Assert.Equal(method.Name, actualMethod.Name);
         }
-        
+
         [Fact]
         public void SetSetMethod_NullMethodBuilder_ThrowsArgumentNullException()
         {

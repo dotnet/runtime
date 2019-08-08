@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
             {
                 // DO NOT "IMPROVE" THIS CODE BY USING ASSERT.EQUALS() OR ASSERT.NOTEQUALS() HERE OR ANYWHERE ELSE IN THIS FILE.
                 // We want to exercise the actual Equals() method and all of its branches in both directions. We don't want test middleware
-                // "helpfully" shortcutting that with reference equality prechecks or anything else. 
+                // "helpfully" shortcutting that with reference equality prechecks or anything else.
                 Assert.False(fromBase[i].Equals(fromDerived[i]));
                 Assert.False(fromDerived[i].Equals(fromBase[i]));
             }

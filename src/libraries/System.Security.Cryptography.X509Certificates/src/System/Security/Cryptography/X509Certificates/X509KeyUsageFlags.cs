@@ -26,4 +26,3 @@ namespace System.Security.Cryptography.X509Certificates
         DecipherOnly = 0x8000,
     }
 }
-

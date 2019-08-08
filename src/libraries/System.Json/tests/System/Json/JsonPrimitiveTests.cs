@@ -85,7 +85,7 @@ namespace System.Json.Tests
         {
             ToString(new JsonPrimitive(TimeSpan.Zero), TimeSpan.Zero.ToString("G", CultureInfo.InvariantCulture));
         }
-        
+
         private void ToString(JsonValue primitive, string expected)
         {
             Assert.Equal(expected, primitive.ToString());

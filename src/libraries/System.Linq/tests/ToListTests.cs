@@ -183,7 +183,7 @@ namespace System.Linq.Tests
 
             Assert.Equal(q.ToList(), q.ToList());
         }
-        
+
         [Fact]
         public void SameResultsRepeatCallsFromWhereOnStringQuery()
         {
@@ -242,7 +242,7 @@ namespace System.Linq.Tests
             int?[] expected = { null, null, null, null, null };
 
             Assert.Null(source as ICollection<int>);
-    
+
             Assert.Equal(expected, source.ToList());
         }
 

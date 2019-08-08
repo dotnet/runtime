@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
         public static void Test_GetCurrentMethod_GenericMethodDefinition()
         {
             MethodBase m = MyFakeGenericMethod<byte>();
-            
+
             Assert.Equal("MyFakeGenericMethod", m.Name);
             Assert.Equal("MethodBaseTests", m.ReflectedType.Name);
             Assert.True(m.IsGenericMethod);
@@ -91,7 +91,7 @@ namespace System.Reflection.Tests
 #endif
         }
 
-        public static MethodBase MyFakeGenericMethod<T>() 
+        public static MethodBase MyFakeGenericMethod<T>()
         {
             MethodBase m = MethodBase.GetCurrentMethod();
             return m;
@@ -112,7 +112,7 @@ namespace System.Reflection.Tests
         {
             int var1 = 2;
             string var2 = "I am a string";
-            
+
             if(arg == null)
             {
                 throw new ArgumentNullException("Input arg cannot be null.");

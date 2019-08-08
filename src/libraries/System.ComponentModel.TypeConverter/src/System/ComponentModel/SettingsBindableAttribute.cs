@@ -5,19 +5,19 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Use this attribute to specify typical properties on components that can be bound 
+    /// Use this attribute to specify typical properties on components that can be bound
     /// to application settings.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class SettingsBindableAttribute : Attribute
     {
         /// <summary>
-        /// Specifies that a property is appropriate to bind settings to. 
+        /// Specifies that a property is appropriate to bind settings to.
         /// </summary>
         public static readonly SettingsBindableAttribute Yes = new SettingsBindableAttribute(true);
 
         /// <summary>
-        /// Specifies that a property is not appropriate to bind settings to. 
+        /// Specifies that a property is not appropriate to bind settings to.
         /// </summary>
         public static readonly SettingsBindableAttribute No = new SettingsBindableAttribute(false);
 

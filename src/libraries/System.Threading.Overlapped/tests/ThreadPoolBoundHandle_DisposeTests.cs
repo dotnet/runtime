@@ -24,7 +24,7 @@ public partial class ThreadPoolBoundHandleTests
         ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle();
 
         Assert.False(boundHandle.Handle.IsClosed);
-        
+
         boundHandle.Dispose();
 
         Assert.False(boundHandle.Handle.IsClosed);

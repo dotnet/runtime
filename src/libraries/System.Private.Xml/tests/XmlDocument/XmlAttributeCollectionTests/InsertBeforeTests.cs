@@ -87,7 +87,7 @@ namespace System.Xml.Tests
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
             XmlAttribute attr = element.Attributes.Append(doc.CreateAttribute(attributeName));
-            // assert on implicitly set preconditions 
+            // assert on implicitly set preconditions
             Assert.Same(element, attr.OwnerElement);
             Assert.True(element.HasAttribute(attributeName));
 

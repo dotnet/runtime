@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,12 +10,12 @@ using Xunit;
 namespace BasicEventSourceTests
 {
     /// <summary>
-    /// Tests the user experience for common user errors.  
+    /// Tests the user experience for common user errors.
     /// </summary>
     public partial class TestsUserErrors
     {
         /// <summary>
-        /// Test the 
+        /// Test the
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
         public void Test_BadEventSource_MismatchedIds_WithEtwListener()
@@ -39,7 +39,7 @@ namespace BasicEventSourceTests
 
             var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
 
-            // For every interesting combination, run the test and see that we get a nice failure message.  
+            // For every interesting combination, run the test and see that we get a nice failure message.
             foreach (bool onStartup in onStartups)
             {
                 foreach (Func<Listener> listenerGenerator in listenerGenerators)

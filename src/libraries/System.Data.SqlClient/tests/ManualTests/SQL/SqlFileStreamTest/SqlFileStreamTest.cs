@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,8 +38,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         // Get the pointer for the file.
                         string path = reader.GetString(0);
                         byte[] transactionContext = reader.GetSqlBytes(1).Buffer;
-                        
-                        // Create the SqlFileStream  
+
+                        // Create the SqlFileStream
                         using (Stream fileStream = new SqlFileStream(path, transactionContext, FileAccess.Read, FileOptions.SequentialScan, allocationSize: 0))
                         {
                             // Read the contents as bytes.
@@ -55,7 +55,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         }
                         nRow++;
                     }
-                    
+
                 }
                 transaction.Commit();
 
@@ -87,11 +87,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     while (reader.Read())
                     {
-                        // Get the pointer for file   
+                        // Get the pointer for file
                         string path = reader.GetString(0);
                         byte[] transactionContext = reader.GetSqlBytes(1).Buffer;
 
-                        // Create the SqlFileStream  
+                        // Create the SqlFileStream
                         using (Stream fileStream = new SqlFileStream(path, transactionContext, FileAccess.Write, FileOptions.SequentialScan, allocationSize: 0))
                         {
                             // Overwrite the first row in the table
@@ -104,7 +104,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 // Compare inserted and retrieved value
                 byte[] retrievedValue = RetrieveData(tempTable, connection, insertedValue.Length);
                 Assert.Equal(insertedValue, retrievedValue);
-                
+
                 // Drop Table
                 ExecuteNonQueryCommand($"DROP TABLE {tempTable}", connection);
             }
@@ -136,16 +136,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     while (reader.Read())
                     {
-                        // Get the pointer for file  
+                        // Get the pointer for file
                         string path = reader.GetString(0);
                         byte[] transactionContext = reader.GetSqlBytes(1).Buffer;
 
                         using (Stream fileStream = new SqlFileStream(path, transactionContext, FileAccess.ReadWrite, FileOptions.SequentialScan, allocationSize: 0))
                         {
-                            // Seek to the end of the file  
+                            // Seek to the end of the file
                             fileStream.Seek(0, SeekOrigin.End);
 
-                            // Append a single byte   
+                            // Append a single byte
                             fileStream.WriteByte(appendedByte);
                         }
                     }

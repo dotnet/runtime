@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get;
         }
-        
+
         public Type DeclaringType
         {
             get { return UnderlyingMember.DeclaringType; }

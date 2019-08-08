@@ -49,7 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private Name _pInvalidSpecifiedName;
             private Name _pNameUsedInPositionalArgument;
             private Name _pDuplicateSpecifiedName;
-            // When we find a type with an interface, then we want to mark all other interfaces that it 
+            // When we find a type with an interface, then we want to mark all other interfaces that it
             // implements as being hidden. We also want to mark object as being hidden. So stick them
             // all in this list, and then for subsequent types, if they're in this list, then we
             // ignore them.
@@ -115,7 +115,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bool lookedAtCandidates = false;
 
                 // Calculate the mask based on the type of the sym we've found so far.  This
-                // is to ensure that if we found a propsym (or methsym, or whatever) the 
+                // is to ensure that if we found a propsym (or methsym, or whatever) the
                 // iterator will only return propsyms (or methsyms, or whatever)
                 symbmask_t mask = (symbmask_t)(1 << (int)_pGroup.SymKind);
 
@@ -358,7 +358,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             /////////////////////////////////////////////////////////////////////////////////
             // This method returns true if we're able to match arguments to their names.
             // If we either have too many arguments, or we cannot match their names, then
-            // we return false. 
+            // we return false.
             //
             // Note that if we have not enough arguments, we still return true as long as
             // we can find matching parameters for each named arguments, and all parameters
@@ -366,7 +366,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private bool ReOrderArgsForNamedArguments()
             {
-                // First we need to find the method that we're actually trying to call. 
+                // First we need to find the method that we're actually trying to call.
                 MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                 if (methprop == null)
                 {
@@ -395,7 +395,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             internal static bool ReOrderArgsForNamedArguments(
                 MethodOrPropertySymbol methprop, TypeArray pCurrentParameters, AggregateType pCurrentType, ExprMemberGroup pGroup, ArgInfos pArguments)
             {
-                // We use the param count from pCurrentParameters because they may have been resized 
+                // We use the param count from pCurrentParameters because they may have been resized
                 // for param arrays.
                 int numParameters = pCurrentParameters.Count;
 
@@ -636,9 +636,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                // If we get here, it means we can have two cases: one is that we have 
-                // a delegate. This is because the delegate invoke method is virtual and is 
-                // an override, but we won't have the slots set up correctly, and will 
+                // If we get here, it means we can have two cases: one is that we have
+                // a delegate. This is because the delegate invoke method is virtual and is
+                // an override, but we won't have the slots set up correctly, and will
                 // not find the base type in the inheritance hierarchy. The second is that
                 // we're calling off of the base itself.
                 Debug.Assert(method.parent is AggregateSymbol);
@@ -655,7 +655,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             /////////////////////////////////////////////////////////////////////////////////
-            // Returns true if we can either add enough optional parameters to make the 
+            // Returns true if we can either add enough optional parameters to make the
             // argument list match, or if we don't need to at all.
 
             private bool AddArgumentsForOptionalParameters()
@@ -666,7 +666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                // First we need to find the method that we're actually trying to call. 
+                // First we need to find the method that we're actually trying to call.
                 MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                 if (methprop == null)
                 {
@@ -732,7 +732,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodOrPropertySymbol methprop)
             {
                 // Keep track of the current position in the parameter list so that we can check
-                // containment from this point onwards as well as complete containment. This is 
+                // containment from this point onwards as well as complete containment. This is
                 // for error reporting. The user cannot specify a named argument for a parameter
                 // that has a fixed argument value.
                 List<Name> currentPosition = methprop.ParameterNames;
@@ -957,7 +957,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             else if (ivar == _nArgBest && _pArguments.types[ivar] != var)
                             {
-                                // this is to eliminate the paranoid case of types that are equal but can't convert 
+                                // this is to eliminate the paranoid case of types that are equal but can't convert
                                 // (think ErrorType != ErrorType)
                                 // See if they just differ in out / ref.
                                 CType argStripped = _pArguments.types[ivar] is ParameterModifierType modArg ?
@@ -996,7 +996,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private void UpdateArguments()
             {
                 // Parameter types might have changed as a result of
-                // method type inference. 
+                // method type inference.
 
                 _pCurrentParameters = TypeManager.SubstTypeArray(
                         _pCurrentParameters, _pCurrentType, _pCurrentTypeArgs);
@@ -1005,7 +1005,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // as a result of method type inference. For example, when inferring
                 // from Foo(10) to Foo<T>(T t1, T t2 = default(T)), the fabricated
                 // argument list starts off as being (10, default(T)). After type
-                // inference has successfully inferred T as int, it needs to be 
+                // inference has successfully inferred T as int, it needs to be
                 // transformed into (10, default(int)) before applicability checking
                 // notices that default(T) is not assignable to int.
 

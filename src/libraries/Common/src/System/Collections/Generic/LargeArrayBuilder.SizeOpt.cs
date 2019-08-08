@@ -26,7 +26,7 @@ namespace System.Collections.Generic
         public int Count => _builder.Count;
 
         public void Add(T item) => _builder.Add(item);
-        
+
         public void AddRange(IEnumerable<T> items)
         {
             Debug.Assert(items != null);

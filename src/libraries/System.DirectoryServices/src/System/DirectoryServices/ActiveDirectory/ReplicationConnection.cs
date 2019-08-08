@@ -149,7 +149,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // set all the properties
 
-                // sourceserver property               
+                // sourceserver property
                 DirectoryContext sourceServerContext = sourceServer.Context;
                 de = DirectoryEntryManager.GetDirectoryEntry(sourceServerContext, WellKnownDN.RootDSE);
                 string serverName = (string)PropertyManager.GetPropertyValue(sourceServerContext, de, PropertyManager.ServerName);
@@ -348,7 +348,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 // for exisint connection, we need to check its property, for newly created and not committed one, we just return
-                // the member variable value directly                
+                // the member variable value directly
                 if (existingConnection)
                 {
                     PropertyValueCollection propValue = null;
@@ -627,7 +627,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 //NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION    (1 << 4)
                 //  0 - Compression of replication data enabled
-                //  1 - Compression of replication data disabled                
+                //  1 - Compression of replication data disabled
                 if ((_options & 0x10) == 0)
                     return true;
                 else
@@ -652,7 +652,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     //NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION    (1 << 4)
                     //  0 - Compression of replication data enabled
-                    //  1 - Compression of replication data disabled 
+                    //  1 - Compression of replication data disabled
                     if (value == false)
                     {
                         _options |= 0x10;

@@ -35,13 +35,13 @@ namespace System.Linq.Tests
             public string name;
             public int?[] orderID;
             public int?[] total;
-            
+
             public override int GetHashCode()
             {
                 // Not great, but it'll serve.
                 return name.GetHashCode() ^ orderID.Length ^ (total.Length * 31);
             }
-            
+
             public bool Equals(JoinRec other)
             {
                 if (!string.Equals(name, other.name)) return false;
@@ -69,7 +69,7 @@ namespace System.Linq.Tests
                 }
                 return true;
             }
-            
+
             public override bool Equals(object obj)
             {
                 return obj is JoinRec && Equals((JoinRec)obj);
@@ -121,7 +121,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
                 new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
             };
-            
+
             AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.GroupJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, arIE) => new JoinRec { name = cr.name, orderID = arIE.Select(o => o.orderID).ToArray(), total = arIE.Select(o => o.total).ToArray() }, new AnagramEqualityComparer()));
         }
 
@@ -135,7 +135,7 @@ namespace System.Linq.Tests
                 new CustomerRec{ name = "Robert", custID = 9895 }
             };
             IQueryable<AnagramRec> inner = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().GroupJoin(inner, e => e.name, e => e.name, (cr, arIE) => new JoinRec { name = cr.name, orderID = arIE.Select(o => o.orderID).ToArray(), total = arIE.Select(o => o.total).ToArray() }, new AnagramEqualityComparer()));
         }
 
@@ -153,7 +153,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
                 new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
             };
-            
+
             AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().GroupJoin(inner.AsQueryable(), null, e => e.name, (cr, arIE) => new JoinRec { name = cr.name, orderID = arIE.Select(o => o.orderID).ToArray(), total = arIE.Select(o => o.total).ToArray() }, new AnagramEqualityComparer()));
         }
 
@@ -171,7 +171,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
                 new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
             };
-            
+
             AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().GroupJoin(inner.AsQueryable(), e => e.name, null, (cr, arIE) => new JoinRec { name = cr.name, orderID = arIE.Select(o => o.orderID).ToArray(), total = arIE.Select(o => o.total).ToArray() }, new AnagramEqualityComparer()));
         }
 
@@ -189,7 +189,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
                 new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
             };
-            
+
             AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => outer.AsQueryable().GroupJoin(inner.AsQueryable(), e => e.name, e => e.name, (Expression<Func<CustomerRec, IEnumerable<AnagramRec>, JoinRec>>)null, new AnagramEqualityComparer()));
         }
 

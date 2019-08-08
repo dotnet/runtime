@@ -125,7 +125,7 @@ namespace System.Numerics.Tests
             float t = 1.0f;
 
             Quaternion actual = Quaternion.Lerp(a, b, t);
-            // Note that in quaternion world, Q == -Q. In the case of quaternions dot product is zero, 
+            // Note that in quaternion world, Q == -Q. In the case of quaternions dot product is zero,
             // one of the quaternion will be flipped to compute the shortest distance. When t = 1, we
             // expect the result to be the same as quaternion b but flipped.
             Assert.True(actual == a, $"Quaternion.Lerp did not return the expected value: expected {a} actual {actual}");
@@ -456,7 +456,7 @@ namespace System.Numerics.Tests
 
             Quaternion expected = a;
             Quaternion actual = Quaternion.Slerp(a, b, t);
-            // Note that in quaternion world, Q == -Q. In the case of quaternions dot product is zero, 
+            // Note that in quaternion world, Q == -Q. In the case of quaternions dot product is zero,
             // one of the quaternion will be flipped to compute the shortest distance. When t = 1, we
             // expect the result to be the same as quaternion b but flipped.
             Assert.True(actual == expected, $"Quaternion.Slerp did not return the expected value: expected {expected} actual {actual}");
@@ -706,12 +706,12 @@ namespace System.Numerics.Tests
 
             Quaternion expected = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
             Quaternion actual = Quaternion.CreateFromRotationMatrix(matrix);
-            Assert.True(MathHelper.Equal(expected, actual), 
+            Assert.True(MathHelper.Equal(expected, actual),
                 $"Quaternion.CreateFromRotationMatrix did not return the expected value: expected {expected} actual {actual}");
 
             // make sure convert back to matrix is same as we passed matrix.
             Matrix4x4 m2 = Matrix4x4.CreateFromQuaternion(actual);
-            Assert.True(MathHelper.Equal(matrix, m2), 
+            Assert.True(MathHelper.Equal(matrix, m2),
                 $"Quaternion.CreateFromQuaternion did not return the expected value: matrix {matrix} m2 {m2}");
         }
 

@@ -109,7 +109,7 @@ namespace System.Diagnostics.Tests
         [OuterLoop]
         public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
                 s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program)) == null)
             {
                 return;

@@ -65,7 +65,7 @@ namespace System.Net.NetworkInformation
         public abstract long PacketReassemblyFailures { get; }
 
         /// <summary>
-        /// Gets the maximum amount of time within which all fragments of an Internet Protocol (IP) packet must arrive. 
+        /// Gets the maximum amount of time within which all fragments of an Internet Protocol (IP) packet must arrive.
         /// </summary>
         public abstract long PacketReassemblyTimeout { get; }
 

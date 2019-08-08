@@ -123,7 +123,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (IsOfCorrectType(this.ctxBase) && this.matcher.Matches(this.ctxBase))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "MoveNext: found a match on root {0}", this.ctxBase);
-                
+
                     this.current = this.ctxBase;
                     this.resultsReturned++;
                     f = true;
@@ -560,7 +560,7 @@ namespace System.DirectoryServices.AccountManagement
                 case AuthPrincEnabledFilter.PropertyNameStatic:
                     // UF_ACCOUNTDISABLE
                     // Note that the logic is inverted on this one.  We expose "Enabled",
-                    // but SAM stores it as "Disabled".                    
+                    // but SAM stores it as "Disabled".
                     return (((value & 0x0002) != 0) ^ valueToMatch);
 
                 case SmartcardLogonRequiredFilter.PropertyNameStatic:

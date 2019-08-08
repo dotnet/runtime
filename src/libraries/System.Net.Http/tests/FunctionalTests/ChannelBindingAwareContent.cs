@@ -17,9 +17,9 @@ namespace System.Net.Http.Functional.Tests
         {
             _content = Encoding.UTF8.GetBytes(content);
         }
-        
+
         public ChannelBinding ChannelBinding { get ; private set; }
-        
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             ChannelBinding = context.GetChannelBinding(ChannelBindingKind.Endpoint);

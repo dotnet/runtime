@@ -188,7 +188,7 @@ namespace System.CodeDom.Compiler.Tests
                 new CodeVariableReferenceExpression("b"))));
             cd.Members.Add(cmm);
 
-            // call method with no parameters, call a method with multiple parameters, 
+            // call method with no parameters, call a method with multiple parameters,
             // and call a method from a method call
             cmm = new CodeMemberMethod();
             cmm.Name = "CallParamsMethods";
@@ -218,7 +218,7 @@ namespace System.CodeDom.Compiler.Tests
                 methodinvoke2, CodeBinaryOperatorType.Subtract, methodinvoke)));
             cd.Members.Add(cmm);
 
-            // first declare a class with a virtual method in it 
+            // first declare a class with a virtual method in it
             cd = new CodeTypeDeclaration("ClassWVirtualMethod");
             cd.IsClass = true;
             ns.Types.Add(cd);

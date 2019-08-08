@@ -19,4 +19,3 @@ namespace System.Composition.Diagnostics
         public abstract void WriteError(CompositionTraceId traceId, string format, params object[] arguments);
     }
 }
-

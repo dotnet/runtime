@@ -98,7 +98,7 @@ namespace Stress.Data
         }
 
         /// <summary>
-        /// Executes the action while holding the CloseAsync Semaphore. 
+        /// Executes the action while holding the CloseAsync Semaphore.
         /// This MUST be used for reader.Close() and all methods that are not safe to call at the same time as reader.Close(), i.e. all sync methods.
         /// Otherwise we will see AV's.
         /// </summary>
@@ -116,7 +116,7 @@ namespace Stress.Data
         }
 
         /// <summary>
-        /// Executes the action while holding the CloseAsync Semaphore. 
+        /// Executes the action while holding the CloseAsync Semaphore.
         /// This MUST be used for reader.Close() and all methods that are not safe to call at the same time as reader.Close(), i.e. all sync methods.
         /// Otherwise we will see AV's.
         /// </summary>

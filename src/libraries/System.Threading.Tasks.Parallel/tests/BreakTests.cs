@@ -27,7 +27,7 @@ namespace System.Threading.Tasks.Tests
                 //Thread.Sleep(2);
             });
 
-            // Should not be any omissions prior 
+            // Should not be any omissions prior
             // to break, and there should be some after.
             for (int i = 0; i <= breakpoint; i++)
             {
@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Tests
         {
             var complete = new bool[loopsize];
 
-            // Throw a curveball here and loop from just-under-Int32.MaxValue to 
+            // Throw a curveball here and loop from just-under-Int32.MaxValue to
             // just-over-Int32.MaxValue.  Make sure that 64-bit indices are being
             // handled correctly.
             long loopbase = (long)int.MaxValue - 10;
@@ -67,7 +67,7 @@ namespace System.Threading.Tasks.Tests
                 //Thread.Sleep(2);
             });
 
-            // Should not be any omissions prior 
+            // Should not be any omissions prior
             // to break, and there should be some after.
             for (long i = 0; i <= breakpoint; i++)
             {
@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Tests
                     break;
                 }
             }
-            
+
             Assert.True(result, "TestFor64Break:  Failed: Could not detect any interruption of For-loop.");
         }
 
@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Tests
                 //Thread.Sleep(2);
             });
 
-            // Same rules as For-loop.  Should not be any omissions prior 
+            // Same rules as For-loop.  Should not be any omissions prior
             // to break, and there should be some after.
             for (int i = 0; i <= breakpoint; i++)
             {
@@ -125,10 +125,10 @@ namespace System.Threading.Tasks.Tests
                     break;
                 }
             }
-            
+
             Assert.True(result, string.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
 
-            // 
+            //
             // Now try it for OrderablePartitioner
             //
             var ilist = new List<int>();
@@ -141,7 +141,7 @@ namespace System.Threading.Tasks.Tests
             Parallel.ForEach(mop, delegate(int item, ParallelLoopState ps, long index)
             {
                 //break does not imply that the other iterations will not be run
-                //https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.parallelloopstate.break#System_Threading_Tasks_ParallelLoopState_Break 
+                //https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.parallelloopstate.break#System_Threading_Tasks_ParallelLoopState_Break
                 //execute the test with high loop size and low break index
                 complete[index] = true;
                 if (index >= breakpoint) ps.Break();
@@ -162,7 +162,7 @@ namespace System.Threading.Tasks.Tests
                     break;
                 }
             }
-            
+
             Assert.True(result, string.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
         }
     }

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -318,7 +318,7 @@ namespace System.Data.Tests
             dtParent = DataProvider.CreateParentDataTable();
 
             consColl = dtParent.Constraints;
-            // Checking Constraints  != null 
+            // Checking Constraints  != null
             Assert.NotNull(consColl);
 
             // Checking Constraints Count
@@ -747,10 +747,10 @@ namespace System.Data.Tests
             DataTable dtParent;
             dtParent = DataProvider.CreateParentDataTable();
 
-            // Checking HasErrors default 
+            // Checking HasErrors default
             Assert.False(dtParent.HasErrors);
 
-            // Checking HasErrors Get 
+            // Checking HasErrors Get
             dtParent.Rows[0].RowError = "Error on row 0";
             dtParent.Rows[2].RowError = "Error on row 2";
             Assert.True(dtParent.HasErrors);
@@ -861,13 +861,13 @@ namespace System.Data.Tests
         [Fact]
         public void MinimumCapacity()
         {
-            //                i get default=50, according to MSDN the value should be 25 
-            //                // Checking MinimumCapacity default = 25 
+            //                i get default=50, according to MSDN the value should be 25
+            //                // Checking MinimumCapacity default = 25
             //                Assert.Equal(25, dtParent.MinimumCapacity);
             //                EndCase(null);
             DataTable dt = new DataTable();
 
-            // Checking MinimumCapacity get/set int.MaxValue 
+            // Checking MinimumCapacity get/set int.MaxValue
             dt.MinimumCapacity = int.MaxValue;
             Assert.Equal(int.MaxValue, dt.MinimumCapacity);
 
@@ -875,7 +875,7 @@ namespace System.Data.Tests
             dt.MinimumCapacity = 0;
             Assert.Equal(0, dt.MinimumCapacity);
 
-            //                // Checking MinimumCapacity get/set int.MinValue 
+            //                // Checking MinimumCapacity get/set int.MinValue
             //                dtParent.MinimumCapacity = int.MinValue;
             //                Assert.Equal(int.MinValue, dtParent.MinimumCapacity);
             //                EndCase(null);
@@ -1348,7 +1348,7 @@ namespace System.Data.Tests
             foreach (DataRow dr in dt.Rows)
                 if ((int)dr["Column#"] <= 0)
                     al.Add(dr);
-            // Select_S - [Column#] <= 0 
+            // Select_S - [Column#] <= 0
             drSelect = dt.Select("[Column#] <= 0 ");
             CompareUnSorted(drSelect, al.ToArray());
             //-------------------------------------------------------------
@@ -1365,7 +1365,7 @@ namespace System.Data.Tests
             foreach (DataRow dr in dt.Rows)
                 if (((DateTime)dr["ChildDateTime"]).CompareTo(new DateTime(2000, 12, 12)) > 0)
                     al.Add(dr);
-            // Select_S - ChildDateTime > #12/12/2000# 
+            // Select_S - ChildDateTime > #12/12/2000#
             drSelect = dt.Select("ChildDateTime > #12/12/2000# ");
             CompareUnSorted(drSelect, al.ToArray());
 
@@ -1375,7 +1375,7 @@ namespace System.Data.Tests
             foreach (DataRow dr in dt.Rows)
                 if (((DateTime)dr["ChildDateTime"]).CompareTo(new DateTime(1999, 1, 12, 12, 06, 30)) > 0)
                     al.Add(dr);
-            // Select_S - ChildDateTime > #1/12/1999 12:06:30 PM#  
+            // Select_S - ChildDateTime > #1/12/1999 12:06:30 PM#
             drSelect = dt.Select("ChildDateTime > #1/12/1999 12:06:30 PM#  ");
             CompareUnSorted(drSelect, al.ToArray());
 
@@ -1385,7 +1385,7 @@ namespace System.Data.Tests
             foreach (DataRow dr in dt.Rows)
                 if (((DateTime)dr["ChildDateTime"]).CompareTo(new DateTime(2005, 12, 03, 17, 06, 30)) >= 0 || ((DateTime)dr["ChildDateTime"]).CompareTo(new DateTime(1980, 11, 03)) <= 0)
                     al.Add(dr);
-            // Select_S - ChildDateTime >= #12/3/2005 5:06:30 PM# or ChildDateTime <= #11/3/1980#  
+            // Select_S - ChildDateTime >= #12/3/2005 5:06:30 PM# or ChildDateTime <= #11/3/1980#
             drSelect = dt.Select("ChildDateTime >= #12/3/2005 5:06:30 PM# or ChildDateTime <= #11/3/1980#  ");
             CompareUnSorted(drSelect, al.ToArray());
 
@@ -1500,8 +1500,8 @@ namespace System.Data.Tests
             DataRowVersion drVer = DataRowVersion.Current;
 
             //From MSDN -    The row the default version for the current DataRowState.
-            //                For a DataRowState value of Added, Modified or Current, 
-            //                the default version is Current. 
+            //                For a DataRowState value of Added, Modified or Current,
+            //                the default version is Current.
             //                For a DataRowState of Deleted, the version is Original.
             //                For a DataRowState value of Detached, the version is Proposed.
 
@@ -1583,10 +1583,10 @@ namespace System.Data.Tests
             DataTable dtParent;
             dtParent = DataProvider.CreateParentDataTable();
 
-            // Checking DisplayExpression default 
+            // Checking DisplayExpression default
             Assert.Equal(string.Empty, dtParent.DisplayExpression);
 
-            // Checking DisplayExpression Set/Get 
+            // Checking DisplayExpression Set/Get
             dtParent.DisplayExpression = dtParent.Columns[0].ColumnName;
             Assert.Equal(dtParent.Columns[0].ColumnName, dtParent.DisplayExpression);
         }
@@ -1851,7 +1851,7 @@ namespace System.Data.Tests
             table.PrimaryKey = new DataColumn[] { col };
             table.AcceptChanges();
 
-            // ms.net behavior.    
+            // ms.net behavior.
             table.BeginInit();
             DataColumn col1 = new DataColumn("col1", typeof(int));
             table.Columns.AddRange(new DataColumn[] { col1 });
@@ -2106,7 +2106,7 @@ namespace System.Data.Tests
             DataRow[] row = table.Select("col1*10");
             Assert.Equal(0, row.Length);
 
-            // No exception shud be thrown 
+            // No exception shud be thrown
             // The filter created earlier (if cached), will raise an EvaluateException
             // and so shouldn't be cached
             for (int i = 0; i < 5; ++i)
@@ -2221,8 +2221,8 @@ namespace System.Data.Tests
             table3.Merge(table2, false, MissingSchemaAction.Ignore);
             Assert.Equal(0, table3.Constraints.Count);
 
-            //FIXME : If both source and target have PK, then 
-            // shud be the exception raised when schema is merged? 
+            //FIXME : If both source and target have PK, then
+            // shud be the exception raised when schema is merged?
             // ms.net throws a nullreference exception.
             // If any data is merged, exception is anyways raised.
             /*

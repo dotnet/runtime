@@ -125,7 +125,7 @@ namespace System.ComponentModel
         }
 
         protected virtual object GetService(Type service) => service == typeof(IContainer) ? this : null;
-        
+
         /// <summary>
         /// Gets all the components in the <see cref='System.ComponentModel.Container'/>.
         /// </summary>

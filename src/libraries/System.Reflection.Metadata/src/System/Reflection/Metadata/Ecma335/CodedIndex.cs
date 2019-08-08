@@ -89,10 +89,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// Calculates a MemberRefParent coded index for the specified handle.
         /// </summary>
         /// <param name="handle">
-        /// <see cref="TypeDefinitionHandle"/>, 
-        /// <see cref="TypeReferenceHandle"/>, 
+        /// <see cref="TypeDefinitionHandle"/>,
+        /// <see cref="TypeReferenceHandle"/>,
         /// <see cref="ModuleReferenceHandle"/>,
-        /// <see cref="MethodDefinitionHandle"/>, or 
+        /// <see cref="MethodDefinitionHandle"/>, or
         /// <see cref="TypeSpecificationHandle"/>.
         /// </param>
         /// <exception cref="ArgumentException">Unexpected handle kind.</exception>

@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     //
-    // A cross-platform ICryptoTransform implementation for decryption. 
+    // A cross-platform ICryptoTransform implementation for decryption.
     //
     //  - Implements the various padding algorithms (as we support padding algorithms that the underlying native apis don't.)
     //

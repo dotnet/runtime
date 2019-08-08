@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -155,8 +155,8 @@ namespace System.Text.RegularExpressions
         {
             if (s_cacheCount >= CacheDictionarySwitchLimit)
             {
-                SysDebug.Assert((s_cacheFirst != null && s_cacheLast != null && s_cache.Count > 0) || 
-                                (s_cacheFirst == null && s_cacheLast == null && s_cache.Count == 0), 
+                SysDebug.Assert((s_cacheFirst != null && s_cacheLast != null && s_cache.Count > 0) ||
+                                (s_cacheFirst == null && s_cacheLast == null && s_cache.Count == 0),
                                 "Linked list and Dict should be synchronized");
                 return s_cache.TryGetValue(key, out entry);
             }
@@ -182,7 +182,7 @@ namespace System.Text.RegularExpressions
             SysDebug.Assert(Monitor.IsEntered(s_cache));
             if (s_cacheFirst?.Key == key) // again check this as could have been promoted by other thread
                 return s_cacheFirst;
-            
+
             if (TryGetCacheValue(key, out CachedCodeEntry entry))
             {
                 // promote:
@@ -278,7 +278,7 @@ namespace System.Text.RegularExpressions
             public readonly ExclusiveReference Runnerref;
             public readonly WeakReference<RegexReplacement> ReplRef;
 
-            public CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code, 
+            public CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code,
                 Hashtable caps, int capsize, ExclusiveReference runner, WeakReference<RegexReplacement> replref)
             {
                 Key = key;

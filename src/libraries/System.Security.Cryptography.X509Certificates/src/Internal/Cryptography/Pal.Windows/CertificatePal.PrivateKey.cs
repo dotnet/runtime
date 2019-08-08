@@ -181,7 +181,7 @@ namespace Internal.Cryptography.Pal
                 CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
                 return createCng(cngKey);
             }
- 
+
             CspParameters cspParameters = GetPrivateKeyCsp();
             if (cspParameters == null)
                 return null;
@@ -286,13 +286,13 @@ namespace Internal.Cryptography.Pal
         //
         // Returns the private key referenced by a store certificate. Note that despite the return type being declared "CspParameters",
         // the key can actually be a CNG key. To distinguish, examine the ProviderType property. If it is 0, this key is a CNG key with
-        // the various properties of CspParameters being "repurposed" into storing CNG info. 
-        // 
+        // the various properties of CspParameters being "repurposed" into storing CNG info.
+        //
         // This is a behavior this method inherits directly from the Crypt32 CRYPT_KEY_PROV_INFO semantics.
         //
-        // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this 
+        // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this
         // method too so we cannot just change it without breaking its output.
-        // 
+        //
         private CspParameters GetPrivateKeyCsp()
         {
             int cbData = 0;

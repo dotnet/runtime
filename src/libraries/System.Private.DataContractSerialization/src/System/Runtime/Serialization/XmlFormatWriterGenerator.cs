@@ -164,7 +164,7 @@ namespace System.Runtime.Serialization
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfDateTimeOffset);
                     _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetAdapterMethod);
                 }
-                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>. 
+                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>.
                 else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
                 {
                     ClassDataContract dc = (ClassDataContract)DataContract.GetDataContract(objType);
@@ -285,8 +285,8 @@ namespace System.Runtime.Serialization
                     LocalBuilder memberValue = null;
 
                     _ilg.Load(_contextArg);
-                    _ilg.Call(methodInfo: member.IsGetOnlyCollection ? 
-                        XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod : 
+                    _ilg.Call(methodInfo: member.IsGetOnlyCollection ?
+                        XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod :
                         XmlFormatGeneratorStatics.ResetIsGetOnlyCollectionMethod);
 
                     if (!member.EmitDefaultValue)
@@ -522,7 +522,7 @@ namespace System.Runtime.Serialization
                     _ilg.Load(_contextArg);
                     _ilg.Load(_xmlWriterArg);
                 }
-                // load primitive value 
+                // load primitive value
                 if (value != null)
                 {
                     _ilg.Load(value);
@@ -670,7 +670,7 @@ namespace System.Runtime.Serialization
                 _ilg.Load(memberValue);
                 _ilg.ConvertValue(memberValue.LocalType, Globals.TypeOfObject);
                 //In SL GetTypeHandle throws MethodAccessException as its internal and extern.
-                //So as a workaround, call XmlObjectSerializerWriteContext.IsMemberTypeSameAsMemberValue that 
+                //So as a workaround, call XmlObjectSerializerWriteContext.IsMemberTypeSameAsMemberValue that
                 //does the actual comparison and returns the bool value we care.
                 _ilg.Call(null, XmlFormatGeneratorStatics.IsMemberTypeSameAsMemberValue, memberValue, memberType);
                 _ilg.Load(writeXsiType);

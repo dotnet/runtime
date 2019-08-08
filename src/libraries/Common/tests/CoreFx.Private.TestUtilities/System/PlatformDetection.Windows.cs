@@ -44,15 +44,15 @@ namespace System
         // >= Windows 10 Anniversary Update
         public static bool IsWindows10Version1607OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
-        
+
          // >= Windows 10 Creators Update
         public static bool IsWindows10Version1703OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 15063;
-        
+
         // >= Windows 10 Fall Creators Update
         public static bool IsWindows10Version1709OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16299;
-        
+
         // >= Windows 10 April 2018 Update
         public static bool IsWindows10Version1803OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17134;
@@ -134,7 +134,7 @@ namespace System
 
             return false;
         }
-        
+
         private static string GetWindowsInstallationType()
         {
             string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
@@ -199,7 +199,7 @@ namespace System
         private static int s_isInAppContainer = -1;
         public static bool IsInAppContainer
         {
-            // This actually checks whether code is running in a modern app. 
+            // This actually checks whether code is running in a modern app.
             // Currently this is the only situation where we run in app container.
             // If we want to distinguish the two cases in future,
             // EnvironmentHelpers.IsAppContainerProcess in desktop code shows how to check for the AC token.

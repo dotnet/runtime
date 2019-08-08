@@ -18,4 +18,3 @@ namespace System.Security.Cryptography
         OverwriteExistingKey = 0x00000080,  // NCRYPT_OVERWRITE_KEY_FLAG
     }
 }
-

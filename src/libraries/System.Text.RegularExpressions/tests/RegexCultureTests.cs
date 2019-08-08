@@ -11,7 +11,7 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexCultureTests
     {
         /// <summary>
-        /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I 
+        /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I
         /// </summary>
         [ActiveIssue(38195, TargetFrameworkMonikers.Uap)]
         [Fact]
@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.All(cultInvariantRegex, rex => Assert.True(rex.IsMatch(input)));
 
                 // when the Regex was created with a turkish locale the lower cased turkish version will
-                // no longer match the input string which contains upper and lower case iiiis hence even the input string 
+                // no longer match the input string which contains upper and lower case iiiis hence even the input string
                 // will no longer match
                 Assert.All(turkishRegex, rex => Assert.False(rex.IsMatch(input)));
 

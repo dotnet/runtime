@@ -20,5 +20,3 @@ namespace MS.Internal.Xml.XPath
         public AstNode GroupNode { get { return _groupNode; } }
     }
 }
-
-

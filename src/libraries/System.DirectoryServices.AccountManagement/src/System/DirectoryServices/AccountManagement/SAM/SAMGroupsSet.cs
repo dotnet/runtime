@@ -59,7 +59,7 @@ namespace System.DirectoryServices.AccountManagement
                 // We do this, rather than using the DirectoryEntry constructor that takes a native IADs object,
                 // is so the credentials get transferred to the new DirectoryEntry.  If we just use the native
                 // object constructor, the native object will have the right credentials, but the DirectoryEntry
-                // will have default (null) credentials, which it'll use anytime it needs to use credentials.                
+                // will have default (null) credentials, which it'll use anytime it needs to use credentials.
                 DirectoryEntry de = SDSUtils.BuildDirectoryEntry(
                                                 nativeMember.ADsPath,
                                                 _storeCtx.Credentials,

@@ -102,7 +102,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 8, 3, 12, 4, 6, 10 };
             int[] expected = { 3, 12, 4, 6, 10 };
-            
+
             Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
         }
 
@@ -146,7 +146,7 @@ namespace System.Linq.Tests
         public void IndexSkipWhileOverflowBeyondIntMaxValueElements()
         {
             var skipped = new FastInfiniteEnumerator<int>().SkipWhile((e, i) => true);
-            
+
             using(var en = skipped.GetEnumerator())
                 Assert.Throws<OverflowException>(() =>
                 {

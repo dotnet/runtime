@@ -25,9 +25,9 @@ namespace System.Runtime.Serialization
             _objs = new object[_currentSize * NumBins];
         }
 
-        // Determines where element obj lives, or should live, 
+        // Determines where element obj lives, or should live,
         // within the table. It calculates the hashcode and searches all of the
-        // bins where the given object could live.  If it's not found within the bin, 
+        // bins where the given object could live.  If it's not found within the bin,
         // we rehash and go look for it in another bin.  If we find the object, we
         // set found to true and return it's position.  If we can't find the object,
         // we set found to false and return the position where the object should be inserted.

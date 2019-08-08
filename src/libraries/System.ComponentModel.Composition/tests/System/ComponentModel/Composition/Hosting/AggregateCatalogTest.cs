@@ -344,7 +344,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Assert.True(changedNotification == 0);
 
-            //Ensure that the other catalogs are 
+            //Ensure that the other catalogs are
             ExceptionAssert.ThrowsDisposed(typePartCatalog1, () =>
             {
                 var iEnum = typePartCatalog1.Parts.GetEnumerator();
@@ -360,7 +360,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var iEnum = typePartCatalog3.Parts.GetEnumerator();
             });
 
-            //Ensure that the other catalogs are 
+            //Ensure that the other catalogs are
             ExceptionAssert.ThrowsDisposed(assemblyPartCatalog1, () =>
             {
                 var iEnum = assemblyPartCatalog1.Parts.GetEnumerator();
@@ -376,7 +376,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var iEnum = assemblyPartCatalog3.Parts.GetEnumerator();
             });
 
-            //Ensure that the other catalogs are 
+            //Ensure that the other catalogs are
             ExceptionAssert.ThrowsDisposed(dirPartCatalog1, () =>
             {
                 var iEnum = dirPartCatalog1.Parts.GetEnumerator();

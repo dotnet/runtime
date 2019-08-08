@@ -8,7 +8,7 @@ namespace System.Net.Sockets
     public enum SocketInformationOptions
     {
         NonBlocking = 0x1,
-        //Even though getpeername can give a hint that we're connected, this needs to be passed because 
+        //Even though getpeername can give a hint that we're connected, this needs to be passed because
         //disconnect doesn't update getpeername to return a failure.
         Connected = 0x2,
         Listening = 0x4,

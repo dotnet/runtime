@@ -90,7 +90,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         LastFrame,
         /// <summary>
-        /// Specifies that the encoder object is to be closed. 
+        /// Specifies that the encoder object is to be closed.
         /// </summary>
         Flush,
         /// <summary>

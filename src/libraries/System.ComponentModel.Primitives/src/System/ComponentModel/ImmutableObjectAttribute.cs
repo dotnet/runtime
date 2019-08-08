@@ -54,7 +54,7 @@ namespace System.ComponentModel
         }
 
         public override int GetHashCode() => base.GetHashCode();
-        
+
         public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

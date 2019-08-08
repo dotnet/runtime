@@ -12,7 +12,7 @@ namespace System.Reflection
 
         public static IEnumerable<FieldInfo> GetRuntimeFields(this Type type)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -21,7 +21,7 @@ namespace System.Reflection
 
         public static IEnumerable<MethodInfo> GetRuntimeMethods(this Type type)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -30,7 +30,7 @@ namespace System.Reflection
 
         public static IEnumerable<PropertyInfo> GetRuntimeProperties(this Type type)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -39,7 +39,7 @@ namespace System.Reflection
 
         public static IEnumerable<EventInfo> GetRuntimeEvents(this Type type)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -48,7 +48,7 @@ namespace System.Reflection
 
         public static FieldInfo? GetRuntimeField(this Type type, string name)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -57,7 +57,7 @@ namespace System.Reflection
 
         public static MethodInfo? GetRuntimeMethod(this Type type, string name, Type[] parameters)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -66,7 +66,7 @@ namespace System.Reflection
 
         public static PropertyInfo? GetRuntimeProperty(this Type type, string name)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -75,7 +75,7 @@ namespace System.Reflection
 
         public static EventInfo? GetRuntimeEvent(this Type type, string name)
         {
-            if (type == null) 
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -84,7 +84,7 @@ namespace System.Reflection
 
         public static MethodInfo? GetRuntimeBaseDefinition(this MethodInfo method)
         {
-            if (method == null) 
+            if (method == null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
@@ -102,7 +102,7 @@ namespace System.Reflection
 
         public static MethodInfo? GetMethodInfo(this Delegate del)
         {
-            if (del == null) 
+            if (del == null)
             {
                 throw new ArgumentNullException(nameof(del));
             }
@@ -110,4 +110,3 @@ namespace System.Reflection
         }
     }
 }
-

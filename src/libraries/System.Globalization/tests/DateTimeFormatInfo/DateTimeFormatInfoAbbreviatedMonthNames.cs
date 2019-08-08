@@ -76,7 +76,7 @@ namespace System.Globalization.Tests
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthNames = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "" });
         }
-        
+
         [Fact]
         public void AbbreviatedMonthNames_Format_ReturnsExpected()
         {

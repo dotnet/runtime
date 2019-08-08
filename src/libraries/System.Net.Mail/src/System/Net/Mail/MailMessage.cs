@@ -444,7 +444,7 @@ namespace System.Net.Mail
                     }
                     part.Parts.Add(attachmentsPart);
                     _message.Content = part;
-                } 
+                }
                 // If there is no Attachement, AND only "1" Alternate View AND !!no body!!
                 // then in fact, this is NOT a multipart region.
                 else if (viewsPart.Parts.Count == 1 && string.IsNullOrEmpty(_body))

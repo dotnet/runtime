@@ -41,9 +41,9 @@ namespace System.Text
 
         // Returns the number of bytes required to encode a range of characters in
         // a character array.
-        // 
+        //
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others. 
+        // So if you fix this, fix the others.
         // parent method is safe
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
@@ -67,7 +67,7 @@ namespace System.Text
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others. 
+        // So if you fix this, fix the others.
         // parent method is safe
         public override unsafe int GetByteCount(string s)
         {
@@ -133,9 +133,9 @@ namespace System.Text
         // Alternatively, the GetMaxByteCount method can be used to
         // determine the maximum number of bytes that will be produced for a given
         // number of characters, regardless of the actual character values.
-        // 
+        //
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others.  
+        // So if you fix this, fix the others.
         // parent method is safe
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
@@ -172,7 +172,7 @@ namespace System.Text
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others. 
+        // So if you fix this, fix the others.
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             // Validate Parameters
@@ -187,9 +187,9 @@ namespace System.Text
 
         // Returns the number of characters produced by decoding a range of bytes
         // in a byte array.
-        // 
+        //
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others.  
+        // So if you fix this, fix the others.
         // parent method is safe
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
@@ -213,7 +213,7 @@ namespace System.Text
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others.  
+        // So if you fix this, fix the others.
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             // Validate Parameters
@@ -227,7 +227,7 @@ namespace System.Text
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others.  
+        // So if you fix this, fix the others.
         // parent method is safe
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
@@ -264,7 +264,7 @@ namespace System.Text
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
-        // So if you fix this, fix the others.  
+        // So if you fix this, fix the others.
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             // Validate Parameters
@@ -279,7 +279,7 @@ namespace System.Text
 
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
-        // 
+        //
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe

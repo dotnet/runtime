@@ -22,7 +22,7 @@ namespace System.Transactions
                 {
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
- 
+
                 try
                 {
                     return _internalTransaction.TransactionTraceId.TransactionIdentifier;
@@ -96,4 +96,3 @@ namespace System.Transactions
         }
     }
 }
-

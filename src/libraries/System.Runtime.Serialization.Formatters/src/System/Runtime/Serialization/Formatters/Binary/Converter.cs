@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static readonly Type s_typeofSystemVoid = typeof(void);
 
         // In netfx the default assembly is mscorlib.dll --> typeof(string).Assembly.
-        // In Core type string lives in System.Private.Corelib.dll which doesn't 
+        // In Core type string lives in System.Private.Corelib.dll which doesn't
         // contain all the types which are living in mscorlib in netfx. Therefore we
         // use our mscorlib facade which also contains manual type forwards for deserialization.
         internal static readonly Assembly s_urtAssembly = Assembly.Load("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             typeATemp[(int)InternalPrimitiveTypeE.UInt64] = s_typeofUInt64;
             s_typeA = typeATemp;
         }
-        
+
         private static void InitArrayTypeA()
         {
             var arrayTypeATemp = new Type[PrimitiveTypeEnumLength];

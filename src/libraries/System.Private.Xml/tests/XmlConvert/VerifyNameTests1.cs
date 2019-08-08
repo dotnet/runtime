@@ -262,7 +262,7 @@ namespace System.Xml.Tests
                         break;
                     case 7:
                         bIsValid = false;
-                        break; //always false - other characters are not whitespace      
+                        break; //always false - other characters are not whitespace
                 }
                 if (bIsValid)
                 {

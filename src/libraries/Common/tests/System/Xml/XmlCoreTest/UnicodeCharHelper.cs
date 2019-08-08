@@ -72,13 +72,13 @@ namespace XmlCoreTest.Common
             {
                 addCharRange(new char[] { '\udc00', '\udfff' });
             }
-            //[3]    S    ::=    (#x20 | #x9 | #xD | #xA)+ 
+            //[3]    S    ::=    (#x20 | #x9 | #xD | #xA)+
             CurrentCharType = CharType.WhiteSpace;// ranges
             {
                 addCharRange(new char[] { '\u0009', '\u000a' }); addCharRange(new char[] { '\u000d', '\u000d' }); addCharRange(new char[] { '\u0020', '\u0020' });
             }
             //[5]    Name    ::=    (Letter | '_' | ':') ...
-            //[84]   Letter  ::=    BaseChar | Ideographic 
+            //[84]   Letter  ::=    BaseChar | Ideographic
             CurrentCharType = CharType.NameStartChar;// ranges
             {
                 addCharRange(new char[] { ':', ':' }); addCharRange(new char[] { '_', '_' });
@@ -109,11 +109,11 @@ namespace XmlCoreTest.Common
                 addCharRange(new char[] { '\u1F80', '\u1FB4' }); addCharRange(new char[] { '\u1FB6', '\u1FBC' }); addCharRange(new char[] { '\u1FBE', '\u1FBE' }); addCharRange(new char[] { '\u1FC2', '\u1FC4' }); addCharRange(new char[] { '\u1FC6', '\u1FCC' }); addCharRange(new char[] { '\u1FD0', '\u1FD3' }); addCharRange(new char[] { '\u1FD6', '\u1FDB' }); addCharRange(new char[] { '\u1FE0', '\u1FEC' });
                 addCharRange(new char[] { '\u1FF2', '\u1FF4' }); addCharRange(new char[] { '\u1FF6', '\u1FFC' }); addCharRange(new char[] { '\u2126', '\u2126' }); addCharRange(new char[] { '\u212A', '\u212B' }); addCharRange(new char[] { '\u212E', '\u212E' }); addCharRange(new char[] { '\u2180', '\u2182' }); addCharRange(new char[] { '\u3041', '\u3094' }); addCharRange(new char[] { '\u30A1', '\u30FA' });
                 addCharRange(new char[] { '\u3105', '\u312C' }); addCharRange(new char[] { '\uAC00', '\uD7A3' });
-                //Ideographic 
+                //Ideographic
                 addCharRange(new char[] { '\u3007', '\u3007' }); addCharRange(new char[] { '\u3021', '\u3029' }); addCharRange(new char[] { '\u4E00', '\u9FA5' });
             }
-            //[4]    NameChar  ::=    Letter | Digit | '.' | '-' | '_' | ':' | CombiningChar | Extender 
-            //[84]   Letter    ::=    BaseChar | Ideographic 
+            //[4]    NameChar  ::=    Letter | Digit | '.' | '-' | '_' | ':' | CombiningChar | Extender
+            //[84]   Letter    ::=    BaseChar | Ideographic
             CurrentCharType = CharType.NameChar;// ranges
             {
                 addCharRange(new char[] { ':', ':' }); addCharRange(new char[] { '_', '_' }); addCharRange(new char[] { '-', '-' }); addCharRange(new char[] { '.', '.' });
@@ -144,7 +144,7 @@ namespace XmlCoreTest.Common
                 addCharRange(new char[] { '\u1F80', '\u1FB4' }); addCharRange(new char[] { '\u1FB6', '\u1FBC' }); addCharRange(new char[] { '\u1FBE', '\u1FBE' }); addCharRange(new char[] { '\u1FC2', '\u1FC4' }); addCharRange(new char[] { '\u1FC6', '\u1FCC' }); addCharRange(new char[] { '\u1FD0', '\u1FD3' }); addCharRange(new char[] { '\u1FD6', '\u1FDB' }); addCharRange(new char[] { '\u1FE0', '\u1FEC' });
                 addCharRange(new char[] { '\u1FF2', '\u1FF4' }); addCharRange(new char[] { '\u1FF6', '\u1FFC' }); addCharRange(new char[] { '\u2126', '\u2126' }); addCharRange(new char[] { '\u212A', '\u212B' }); addCharRange(new char[] { '\u212E', '\u212E' }); addCharRange(new char[] { '\u2180', '\u2182' }); addCharRange(new char[] { '\u3041', '\u3094' }); addCharRange(new char[] { '\u30A1', '\u30FA' });
                 addCharRange(new char[] { '\u3105', '\u312C' }); addCharRange(new char[] { '\uAC00', '\uD7A3' });
-                //Ideographic 
+                //Ideographic
                 addCharRange(new char[] { '\u3007', '\u3007' }); addCharRange(new char[] { '\u3021', '\u3029' }); addCharRange(new char[] { '\u4E00', '\u9FA5' });
                 //Digit
                 addCharRange(new char[] { '\u0030', '\u0039' }); addCharRange(new char[] { '\u0660', '\u0669' }); addCharRange(new char[] { '\u06F0', '\u06F9' }); addCharRange(new char[] { '\u0966', '\u096F' }); addCharRange(new char[] { '\u09E6', '\u09EF' }); addCharRange(new char[] { '\u0A66', '\u0A6F' }); addCharRange(new char[] { '\u0AE6', '\u0AEF' }); addCharRange(new char[] { '\u0B66', '\u0B6F' });
@@ -197,7 +197,7 @@ namespace XmlCoreTest.Common
                 addCharRange(new char[] { '\u1F80', '\u1FB4' }); addCharRange(new char[] { '\u1FB6', '\u1FBC' }); addCharRange(new char[] { '\u1FBE', '\u1FBE' }); addCharRange(new char[] { '\u1FC2', '\u1FC4' }); addCharRange(new char[] { '\u1FC6', '\u1FCC' }); addCharRange(new char[] { '\u1FD0', '\u1FD3' }); addCharRange(new char[] { '\u1FD6', '\u1FDB' }); addCharRange(new char[] { '\u1FE0', '\u1FEC' });
                 addCharRange(new char[] { '\u1FF2', '\u1FF4' }); addCharRange(new char[] { '\u1FF6', '\u1FFC' }); addCharRange(new char[] { '\u2126', '\u2126' }); addCharRange(new char[] { '\u212A', '\u212B' }); addCharRange(new char[] { '\u212E', '\u212E' }); addCharRange(new char[] { '\u2180', '\u2182' }); addCharRange(new char[] { '\u3041', '\u3094' }); addCharRange(new char[] { '\u30A1', '\u30FA' });
                 addCharRange(new char[] { '\u3105', '\u312C' }); addCharRange(new char[] { '\uAC00', '\uD7A3' });
-                //Ideographic 
+                //Ideographic
                 addCharRange(new char[] { '\u3007', '\u3007' }); addCharRange(new char[] { '\u3021', '\u3029' }); addCharRange(new char[] { '\u4E00', '\u9FA5' });
             }
             // Same thing as NameChar but no ':' character
@@ -231,7 +231,7 @@ namespace XmlCoreTest.Common
                 addCharRange(new char[] { '\u1F80', '\u1FB4' }); addCharRange(new char[] { '\u1FB6', '\u1FBC' }); addCharRange(new char[] { '\u1FBE', '\u1FBE' }); addCharRange(new char[] { '\u1FC2', '\u1FC4' }); addCharRange(new char[] { '\u1FC6', '\u1FCC' }); addCharRange(new char[] { '\u1FD0', '\u1FD3' }); addCharRange(new char[] { '\u1FD6', '\u1FDB' }); addCharRange(new char[] { '\u1FE0', '\u1FEC' });
                 addCharRange(new char[] { '\u1FF2', '\u1FF4' }); addCharRange(new char[] { '\u1FF6', '\u1FFC' }); addCharRange(new char[] { '\u2126', '\u2126' }); addCharRange(new char[] { '\u212A', '\u212B' }); addCharRange(new char[] { '\u212E', '\u212E' }); addCharRange(new char[] { '\u2180', '\u2182' }); addCharRange(new char[] { '\u3041', '\u3094' }); addCharRange(new char[] { '\u30A1', '\u30FA' });
                 addCharRange(new char[] { '\u3105', '\u312C' }); addCharRange(new char[] { '\uAC00', '\uD7A3' });
-                //Ideographic 
+                //Ideographic
                 addCharRange(new char[] { '\u3007', '\u3007' }); addCharRange(new char[] { '\u3021', '\u3029' }); addCharRange(new char[] { '\u4E00', '\u9FA5' });
                 //Digit
                 addCharRange(new char[] { '\u0030', '\u0039' }); addCharRange(new char[] { '\u0660', '\u0669' }); addCharRange(new char[] { '\u06F0', '\u06F9' }); addCharRange(new char[] { '\u0966', '\u096F' }); addCharRange(new char[] { '\u09E6', '\u09EF' }); addCharRange(new char[] { '\u0A66', '\u0A6F' }); addCharRange(new char[] { '\u0AE6', '\u0AEF' }); addCharRange(new char[] { '\u0B66', '\u0B6F' });
@@ -278,7 +278,7 @@ namespace XmlCoreTest.Common
                 addCharRange(new char[] { '\udc00', '\udfff' });
             }
 
-            //[13]    PubidChar    ::=    #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] 
+            //[13]    PubidChar    ::=    #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%]
             CurrentCharType = CharType.PubidChar;// ranges
             {
                 addCharRange(new char[] { '\u0020', '\u0020' }); addCharRange(new char[] { '\u000D', '\u000D' }); addCharRange(new char[] { '\u000A', '\u000A' });

@@ -13,7 +13,7 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal sealed class RoThinMethodParameter : RoMethodParameter
     {
-        internal RoThinMethodParameter(IRoMethodBase roMethodBase, int position, Type parameterType) 
+        internal RoThinMethodParameter(IRoMethodBase roMethodBase, int position, Type parameterType)
             : base(roMethodBase, position, parameterType)
         {
             Debug.Assert(roMethodBase != null);
@@ -30,7 +30,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool HasDefaultValue => true; // Compat: returning "true" makes no sense but this is how it's always been.
 
         // Returning "null" matches the desktop behavior, though this is inconsistent with the DBNull/Missing values
-        // returned by fat ParameterInfo's without default values. 
-        public sealed override object RawDefaultValue => null; 
+        // returned by fat ParameterInfo's without default values.
+        public sealed override object RawDefaultValue => null;
     }
 }

@@ -222,7 +222,7 @@ namespace System.Net.Security
         {
             AuthenticateAsClient(credential, null, targetName, requiredProtectionLevel, allowedImpersonationLevel);
         }
-        
+
         public virtual void AuthenticateAsClient(
             NetworkCredential credential, ChannelBinding binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
         {

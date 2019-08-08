@@ -54,17 +54,17 @@ namespace System.Security.Cryptography.Xml.Tests
         /// The XML to transform. This cannot be null, empty or whitespace.
         /// </param>
         /// <param name="transform">
-        /// The <see cref="Transform"/> to perform on 
+        /// The <see cref="Transform"/> to perform on
         /// <paramref name="inputXml"/>. This cannot be null.
         /// </param>
         /// <param name="encoding">
-        /// An optional <see cref="Encoding"/> to use when serializing or 
-        /// deserializing <paramref name="inputXml"/>. This should match the 
-        /// encoding specified in <paramref name="inputXml"/>. If omitted or 
+        /// An optional <see cref="Encoding"/> to use when serializing or
+        /// deserializing <paramref name="inputXml"/>. This should match the
+        /// encoding specified in <paramref name="inputXml"/>. If omitted or
         /// null, <see cref="UTF8Encoding"/> is used.
         /// </param>
         /// <param name="resolver">
-        /// An optional <see cref="XmlResolver"/> to use. If omitted or null, 
+        /// An optional <see cref="XmlResolver"/> to use. If omitted or null,
         /// no resolver is used.
         /// </param>
         /// <returns>
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         /// <summary>
-        /// Convert <paramref name="fileName"/> to a full URI for referencing 
+        /// Convert <paramref name="fileName"/> to a full URI for referencing
         /// in an <see cref="XmlPreloadedResolver"/>.
         /// </summary>
         /// <param name="fileName">

@@ -2465,7 +2465,7 @@ namespace System.Data.OleDb
                 {
                     info.isKeyColumn = false;
 
-                    // This is the first key column to be invalidated, scan back through the 
+                    // This is the first key column to be invalidated, scan back through the
                     //  columns we already processed to make sure none of those are marked as keys.
                     disallowKeyColumns = true;
                     for (int index2 = metainfo.Count - 1; index < index2; --index2)

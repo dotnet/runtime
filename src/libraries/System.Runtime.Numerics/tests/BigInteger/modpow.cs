@@ -101,7 +101,7 @@ namespace System.Numerics.Tests
             byte[] tempByteArray1;
             byte[] tempByteArray2;
             byte[] tempByteArray3;
-            
+
             // ModPow Method - Three Small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
@@ -206,7 +206,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1;
             byte[] tempByteArray2;
-            
+
             // ModPow Method - zero power
             for (int i = 0; i < s_samples; i++)
             {
@@ -233,7 +233,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1;
             byte[] tempByteArray2;
-            
+
             // ModPow Method - zero base
             for (int i = 0; i < s_samples; i++)
             {
@@ -261,7 +261,7 @@ namespace System.Numerics.Tests
             byte[] tempByteArray1;
             byte[] tempByteArray2;
             byte[] tempByteArray3;
-            
+
             // Axiom (x^y)%z = modpow(x,y,z)
             for (int i = 0; i < s_samples; i++)
             {
@@ -286,7 +286,7 @@ namespace System.Numerics.Tests
             // 32 bit boundary  n1=0 n2=1
             VerifyModPowString(Math.Pow(2, 35) + " " + Math.Pow(2, 33) + " 2 tModPow");
         }
-        
+
         private static void VerifyModPowString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
@@ -356,7 +356,7 @@ namespace System.Numerics.Tests
 
             return value;
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

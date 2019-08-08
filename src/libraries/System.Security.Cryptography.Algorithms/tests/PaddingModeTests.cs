@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Tests
 
                 ValidatePadding(decrypted, PaddingMode.ISO10126, expectedPaddingSize);
             }
-        }        
+        }
 
         private static void ValidatePadding(byte[] buffer, PaddingMode paddingMode, int expectedPaddingSize)
         {

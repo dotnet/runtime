@@ -31,7 +31,7 @@ namespace System.Globalization.Tests
             var format = new DateTimeFormatInfo();
             AssertExtensions.Throws<ArgumentNullException>("value", () => format.AMDesignator = null);
         }
-        
+
         [Fact]
         public void AMDesignator_SetReadOnly_ThrowsInvalidOperationException()
         {

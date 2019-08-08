@@ -23,9 +23,9 @@ namespace Microsoft.Framework.WebEncoders
         private static readonly UTF8Encoding _utf8EncodingThrowOnInvalidBytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         // To future refactorers:
-        // The following GetScalarValueFromUtf16_* tests must not be done as a [Theory].  If done via [InlineData], the invalid 
-        // code points will get sanitized with replacement characters before they even reach the test, as the strings are parsed 
-        // from the attributes in reflection.  And if done via [MemberData], the XmlWriter used by xunit will throw exceptions 
+        // The following GetScalarValueFromUtf16_* tests must not be done as a [Theory].  If done via [InlineData], the invalid
+        // code points will get sanitized with replacement characters before they even reach the test, as the strings are parsed
+        // from the attributes in reflection.  And if done via [MemberData], the XmlWriter used by xunit will throw exceptions
         // when it attempts to write out the test arguments, due to the invalid text.
 
         [Fact]

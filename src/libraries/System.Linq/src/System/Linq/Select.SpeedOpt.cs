@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,7 +23,7 @@ namespace System.Linq
             public TResult[] ToArray()
             {
                 var builder = new LargeArrayBuilder<TResult>(initialize: true);
-                
+
                 foreach (TSource item in _source)
                 {
                     builder.Add(_selector(item));

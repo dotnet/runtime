@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Tests
             c.A = ("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC").HexToByteArray();
             c.B = ("5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B").HexToByteArray();
             c.G = new ECPoint()
-            { 
+            {
                 X = ("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296").HexToByteArray(),
                 Y = ("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5").HexToByteArray(),
             };

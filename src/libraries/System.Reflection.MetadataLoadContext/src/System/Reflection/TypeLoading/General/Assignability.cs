@@ -23,15 +23,15 @@ namespace System.Reflection.TypeLoading
             {
                 // Asking whether something can cast to a generic type definition is arguably meaningless. The desktop CLR Reflection layer converts all
                 // generic type definitions to generic type instantiations closed over the formal generic type parameters. The .NET Native framework
-                // keeps the two separate. Fortunately, under either interpretation, returning "false" unless the two types are identical is still a 
+                // keeps the two separate. Fortunately, under either interpretation, returning "false" unless the two types are identical is still a
                 // defensible behavior. To avoid having the rest of the code deal with the differing interpretations, we'll short-circuit this now.
                 return false;
             }
 
             if (fromTypeInfo.IsGenericTypeDefinition)
             {
-                // The desktop CLR Reflection layer converts all generic type definitions to generic type instantiations closed over the formal 
-                // generic type parameters. The .NET Native framework keeps the two separate. For the purpose of IsAssignableFrom(), 
+                // The desktop CLR Reflection layer converts all generic type definitions to generic type instantiations closed over the formal
+                // generic type parameters. The .NET Native framework keeps the two separate. For the purpose of IsAssignableFrom(),
                 // it makes sense to unify the two for the sake of backward compat. We'll just make the transform here so that the rest of code
                 // doesn't need to know about this quirk.
                 fromTypeInfo = fromTypeInfo.GetGenericTypeDefinition().MakeGenericType(fromTypeInfo.GetGenericTypeParameters());
@@ -159,7 +159,7 @@ namespace System.Reflection.TypeLoading
             }
             else
             {
-                // Interfaces are always castable to System.Object. The code below will not catch this as interfaces report their BaseType as null. 
+                // Interfaces are always castable to System.Object. The code below will not catch this as interfaces report their BaseType as null.
                 if (toTypeInfo.Equals(coreTypes[CoreType.Object]) && fromTypeInfo.IsInterface)
                     return true;
 

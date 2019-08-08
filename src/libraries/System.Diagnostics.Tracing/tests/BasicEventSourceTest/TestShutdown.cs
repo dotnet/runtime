@@ -34,7 +34,7 @@ namespace BasicEventSourceTests
             var sessionName = Path.GetFileNameWithoutExtension(dataFileName) + "Session";
             var logger = ADShutdownEventSourceTester.ADShutdownEventSource.Log;
 
-            // Normalize to a full path name.  
+            // Normalize to a full path name.
             dataFileName = Path.GetFullPath(dataFileName);
             Debug.WriteLine(String.Format("Creating data file {0}", dataFileName));
 
@@ -48,7 +48,7 @@ namespace BasicEventSourceTests
 
                 Thread.Sleep(100);  // Enabling is async. Wait a bit.
 
-                // Generate events for all the tests, surrounded by events that tell us we are starting a test.  
+                // Generate events for all the tests, surrounded by events that tell us we are starting a test.
                 var info = new AppDomainSetup { ApplicationBase = AppDomain.CurrentDomain.BaseDirectory };
                 var appDomain =
                 AppDomain.CreateDomain("TestShutdownAD", new Evidence(), info);
@@ -73,12 +73,12 @@ namespace BasicEventSourceTests
                 bool hasManifestEvents = false;
                 Action<TraceEvent> onEvent = delegate (TraceEvent data)
                 {
-                    // Check for manifest events. 
+                    // Check for manifest events.
                     if ((int)data.ID == 0xFFFE)
                         hasManifestEvents = true;
                 };
 
-                // Parse all the events as best we can, and also send unhandled events there as well.  
+                // Parse all the events as best we can, and also send unhandled events there as well.
                 traceEventSource.Dynamic.All += onEvent;
                 traceEventSource.UnhandledEvent += onEvent;
                 traceEventSource.Process();

@@ -22,7 +22,7 @@ namespace System.Text.Tests
         public void Ctor_Bool(bool encoderShouldEmitUTF8Identifier)
         {
             UTF8Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier);
-            VerifyUtf8Encoding(encoding, encoderShouldEmitUTF8Identifier, throwOnInvalidBytes: false);    
+            VerifyUtf8Encoding(encoding, encoderShouldEmitUTF8Identifier, throwOnInvalidBytes: false);
         }
 
         [Theory]

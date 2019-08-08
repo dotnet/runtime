@@ -274,7 +274,7 @@ namespace System.Linq.Parallel
 
         /// <summary>
         /// A wrapper for the HashLookup returned by GroupJoinHashLookupBuilder.
-        /// 
+        ///
         /// The order key is a dummy value since we are unordered.
         /// </summary>
         private class GroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, ListChunk<TElement>, int>
@@ -336,7 +336,7 @@ namespace System.Linq.Parallel
         }
 
         /// <summary>
-        /// Adds TElement values to a HashLookup of GroupKeyData. 
+        /// Adds TElement values to a HashLookup of GroupKeyData.
         /// TOrderKey is used for both ordering the elements that have the same hashKey
         /// and also for providing an order key for the resulting list.
         /// </summary>
@@ -382,7 +382,7 @@ namespace System.Linq.Parallel
 
         /// <summary>
         /// A wrapper for the HashLookup returned by OrderedGroupJoinHashLookupBuilder.
-        /// 
+        ///
         /// The order key is wrapped so that empty lists can be treated as less than all non-empty lists.
         /// </summary>
         private class OrderedGroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, GroupKeyData, Pair<bool, TOrderKey>>
@@ -423,7 +423,7 @@ namespace System.Linq.Parallel
 
     /// <summary>
     /// A base wrapper for the HashLookup returned by GroupJoinHashLookupBuilder and OrderedGroupJoinHashLookupBuilder.
-    /// 
+    ///
     /// Since GroupJoin operations always match, if no matching elements exist, an empty enumerable is returned.
     /// </summary>
     internal abstract class GroupJoinHashLookup<THashKey, TElement, TBaseElement, TOrderKey> : HashJoinHashLookup<THashKey, IEnumerable<TElement>, TOrderKey>

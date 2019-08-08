@@ -5,7 +5,7 @@
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
 
-namespace System.Management 
+namespace System.Management
 {
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
@@ -14,7 +14,7 @@ namespace System.Management
     ///       names are case-insensitive.</para>
     /// </summary>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
-    public class ManagementNamedValueCollection : NameObjectCollectionBase 
+    public class ManagementNamedValueCollection : NameObjectCollectionBase
     {
         // Notification of when the content of this collection changes
         internal event IdentifierChangedEventHandler IdentifierChanged;
@@ -32,16 +32,16 @@ namespace System.Management
         ///    of the <see cref='System.Management.ManagementNamedValueCollection'/> class.
         /// </overload>
         /// <summary>
-        /// <para> Initializes a new instance of the <see cref='System.Management.ManagementNamedValueCollection'/> class, which is empty. This is 
+        /// <para> Initializes a new instance of the <see cref='System.Management.ManagementNamedValueCollection'/> class, which is empty. This is
         ///    the default constructor.</para>
         /// </summary>
-        public ManagementNamedValueCollection() 
+        public ManagementNamedValueCollection()
         {
         }
 
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementNamedValueCollection'/> class that is serializable 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementNamedValueCollection'/> class that is serializable
         ///    and uses the specified <see cref='System.Runtime.Serialization.SerializationInfo'/>
         ///    and <see cref='System.Runtime.Serialization.StreamingContext'/>.</para>
         /// </summary>
@@ -56,7 +56,7 @@ namespace System.Management
         ///    <para>Internal method to return an IWbemContext representation
         ///    of the named value collection.</para>
         /// </summary>
-        internal IWbemContext GetContext() 
+        internal IWbemContext GetContext()
         {
             IWbemContext wbemContext = null;
 
@@ -79,7 +79,7 @@ namespace System.Management
                     }
                 } catch {}
             }
-            
+
             return wbemContext;
         }
 
@@ -88,10 +88,10 @@ namespace System.Management
         /// </summary>
         /// <param name=' name'>The name of the new value.</param>
         /// <param name=' value'>The value to be associated with the name.</param>
-        public void Add (string name, object value) 
+        public void Add (string name, object value)
         {
             // Remove any old entry
-            try 
+            try
             {
                 base.BaseRemove (name);
             } catch {}
@@ -101,7 +101,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///    <para> Removes a single-named value from the collection. 
+        ///    <para> Removes a single-named value from the collection.
         ///       If the collection does not contain an element with the
         ///       specified name, the collection remains unchanged and no
         ///       exception is thrown.</para>
@@ -116,14 +116,14 @@ namespace System.Management
         /// <summary>
         ///    <para>Removes all entries from the collection.</para>
         /// </summary>
-        public void RemoveAll () 
+        public void RemoveAll ()
         {
             base.BaseClear ();
             FireIdentifierChanged ();
         }
 
         /// <summary>
-        ///    <para>Creates a clone of the collection. Individual values 
+        ///    <para>Creates a clone of the collection. Individual values
         ///       are cloned. If a value does not support cloning, then a <see cref='System.NotSupportedException'/>
         ///       is thrown. </para>
         /// </summary>
@@ -142,15 +142,15 @@ namespace System.Management
                 if (null != val)
                 {
                     Type valueType = val.GetType ();
-                    
+
                     if (valueType.IsByRef)
                     {
-                        try 
+                        try
                         {
                             object clonedValue = ((ICloneable)val).Clone ();
                             nvc.Add (name, clonedValue);
                         }
-                        catch 
+                        catch
                         {
                             throw new NotSupportedException ();
                         }
@@ -172,15 +172,15 @@ namespace System.Management
         /// </summary>
         /// <param name=' name'>The name of the value to be returned.</param>
         /// <value>
-        /// <para>An <see cref='object'/> containing the 
+        /// <para>An <see cref='object'/> containing the
         ///    value of the specified item in this collection.</para>
         /// </value>
-        public object this[string name] 
+        public object this[string name]
         {
-            get { 
+            get {
                 return base.BaseGet(name);
             }
-        }        
+        }
     }
 
 }

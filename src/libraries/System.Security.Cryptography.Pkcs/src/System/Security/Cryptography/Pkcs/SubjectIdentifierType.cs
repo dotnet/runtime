@@ -15,5 +15,3 @@ namespace System.Security.Cryptography.Pkcs
         NoSignature = 3             // NoSignature
     }
 }
-
-

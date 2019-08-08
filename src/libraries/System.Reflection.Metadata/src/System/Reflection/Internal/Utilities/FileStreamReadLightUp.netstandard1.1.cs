@@ -72,7 +72,7 @@ namespace System.Reflection.Internal
             }
             catch (TargetInvocationException)
             {
-                // Some FileStream implementations (e.g. IsolatedStorage) restrict access to the underlying handle by throwing 
+                // Some FileStream implementations (e.g. IsolatedStorage) restrict access to the underlying handle by throwing
                 // Tolerate it and fall back to slow path.
                 return null;
             }
@@ -115,11 +115,11 @@ namespace System.Reflection.Internal
 
             if (!result || bytesRead != size)
             {
-                // We used to throw here, but this is where we land if the FileStream was 
-                // opened with useAsync: true, which is currently the default on .NET Core. 
+                // We used to throw here, but this is where we land if the FileStream was
+                // opened with useAsync: true, which is currently the default on .NET Core.
                 // Issue #987 filed to look in to how best to handle this, but in the meantime,
                 // we'll fall back to the slower code path just as in the case where the native
-                // API is unavailable in the current platform. 
+                // API is unavailable in the current platform.
                 return false;
             }
 

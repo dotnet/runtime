@@ -5,9 +5,9 @@
 using System.IO;
 using System.Threading;
 
-// The CODEDOM check is here to support frameworks that may not have fully 
-// incorporated all of corefx, but want to use System.Configuration.ConfigurationManager. 
-// TempFileCollection was moved in corefx. 
+// The CODEDOM check is here to support frameworks that may not have fully
+// incorporated all of corefx, but want to use System.Configuration.ConfigurationManager.
+// TempFileCollection was moved in corefx.
 #if CODEDOM
 using System.CodeDom.Compiler;
 #else
@@ -48,14 +48,14 @@ namespace System.Configuration.Internal
         // or failure
         //
         // Note: The current algorithm guarantess
-        //         1) The file we are saving to will always be present 
+        //         1) The file we are saving to will always be present
         //            on the file system (ie. there will be no window
         //            during saving in which there won't be a file there)
-        //         2) It will always be available for reading from a 
+        //         2) It will always be available for reading from a
         //            client and it will be complete and accurate.
         //
         // ... This means that writing is a bit more complicated, and may
-        // have to be retried (because of reading lock), but I don't see 
+        // have to be retried (because of reading lock), but I don't see
         // anyway to get around this given 1 and 2.
         internal void Complete(string filename, bool success)
         {
@@ -119,14 +119,14 @@ namespace System.Configuration.Internal
         }
 
         // Validate that we can write to the file.  This will enforce the ACL's
-        // on the file.  Since we do our moving of files to replace, this is 
+        // on the file.  Since we do our moving of files to replace, this is
         // nice to ensure we are not by-passing some security permission
         // that someone set (although that could bypass this via move themselves)
         //
         // Note: 1) This is really just a nice to have, since with directory permissions
         //          they could do the same thing we are doing
         //
-        //       2) We are depending on the current behavior that if the file is locked 
+        //       2) We are depending on the current behavior that if the file is locked
         //          and we can not open it, that we will get an UnauthorizedAccessException
         //          and not the IOException.
         private void ValidateWriteAccess(string filename)
@@ -162,7 +162,7 @@ namespace System.Configuration.Internal
 
             writeSucceeded = AttemptMove(source, target);
 
-            // The file may be open for read, if it is then 
+            // The file may be open for read, if it is then
             // lets try again because maybe they will finish
             // soon, and we will be able to replace
             while (!writeSucceeded &&

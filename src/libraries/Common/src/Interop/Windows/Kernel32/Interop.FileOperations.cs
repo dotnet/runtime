@@ -23,6 +23,6 @@ internal partial class Interop
 
             internal const int FILE_LIST_DIRECTORY = 0x0001;
         }
-        
+
     }
 }

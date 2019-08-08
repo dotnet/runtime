@@ -70,7 +70,7 @@ namespace System.Linq.Parallel
         }
 
         /// <summary>
-        /// Determines the OrdinalIndexState for a partitioner 
+        /// Determines the OrdinalIndexState for a partitioner
         /// </summary>
         internal static OrdinalIndexState GetOrdinalIndexState(Partitioner<TElement> partitioner)
         {

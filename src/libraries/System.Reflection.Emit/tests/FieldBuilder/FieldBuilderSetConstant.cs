@@ -27,7 +27,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Bool()
         {
             FieldBuilder field = s_type.DefineField("BoolField", typeof(bool), FieldAttributes.Public);
-            
+
             field.SetConstant(false);
             field.SetConstant(true);
         }
@@ -36,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_SByte()
         {
             FieldBuilder field = s_type.DefineField("SByteField", typeof(sbyte), FieldAttributes.Public);
-            
+
             field.SetConstant(sbyte.MinValue);
             field.SetConstant(sbyte.MaxValue);
         }
@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Short()
         {
             FieldBuilder field = s_type.DefineField("ShortField", typeof(short), FieldAttributes.Public);
-            
+
             field.SetConstant(short.MaxValue);
             field.SetConstant(short.MinValue);
         }
@@ -54,7 +54,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Int()
         {
             FieldBuilder field = s_type.DefineField("IntField", typeof(int), FieldAttributes.Public);
-            
+
             field.SetConstant(int.MinValue);
             field.SetConstant(int.MaxValue);
         }
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Long()
         {
             FieldBuilder field = s_type.DefineField("LongField", typeof(long), FieldAttributes.Public);
-            
+
             field.SetConstant(long.MaxValue);
             field.SetConstant(long.MinValue);
         }
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Byte()
         {
             FieldBuilder field = s_type.DefineField("ByteField", typeof(byte), FieldAttributes.Public);
-            
+
             field.SetConstant(byte.MinValue);
             field.SetConstant(byte.MaxValue);
         }
@@ -81,7 +81,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_UShort()
         {
             FieldBuilder field = s_type.DefineField("UShortField", typeof(ushort), FieldAttributes.Public);
-            
+
             field.SetConstant(ushort.MaxValue);
             field.SetConstant(ushort.MinValue);
         }
@@ -90,7 +90,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_UInt()
         {
             FieldBuilder field = s_type.DefineField("UIntField", typeof(uint), FieldAttributes.Public);
-            
+
             field.SetConstant(uint.MaxValue);
             field.SetConstant(uint.MinValue);
         }
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_ULong()
         {
             FieldBuilder field = s_type.DefineField("ULongField", typeof(ulong), FieldAttributes.Public);
-            
+
             field.SetConstant(ulong.MaxValue);
             field.SetConstant(ulong.MinValue);
         }
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Float()
         {
             FieldBuilder field = s_type.DefineField("FloatField", typeof(float), FieldAttributes.Public);
-            
+
             field.SetConstant(float.MaxValue);
             field.SetConstant(float.NaN);
         }
@@ -117,7 +117,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Double()
         {
             FieldBuilder field = s_type.DefineField("DoubleField", typeof(double), FieldAttributes.Public);
-            
+
             field.SetConstant(double.PositiveInfinity);
             field.SetConstant(double.NegativeInfinity);
         }
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_DateTime()
         {
             FieldBuilder field = s_type.DefineField("DateTimeField", typeof(DateTime), FieldAttributes.Public);
-            
+
             field.SetConstant(DateTime.MinValue);
             field.SetConstant(DateTime.MaxValue);
         }
@@ -144,7 +144,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_String()
         {
             FieldBuilder field = s_type.DefineField("StringField", typeof(string), FieldAttributes.Public);
-            
+
             field.SetConstant(null);
             field.SetConstant("TestString");
         }
@@ -153,7 +153,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Enum()
         {
             FieldBuilder field = s_type.DefineField("EnumField", typeof(CustomEnum), FieldAttributes.Public);
-            
+
             field.SetConstant(CustomEnum.Value0);
             field.SetConstant(CustomEnum.Value1);
         }
@@ -162,7 +162,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_Object()
         {
             FieldBuilder field = s_type.DefineField("ObjectField", typeof(object), FieldAttributes.Public);
-            
+
             field.SetConstant(null);
         }
 
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit.Tests
         public void SetConstant_CustomObject()
         {
             FieldBuilder field = s_type.DefineField("CustomObjectField", typeof(FieldBuilderSetConstant), FieldAttributes.Public);
-            
+
             field.SetConstant(null);
         }
 

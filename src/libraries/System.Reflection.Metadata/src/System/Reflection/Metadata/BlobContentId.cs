@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata
             Stamp = stamp;
         }
 
-        public BlobContentId(ImmutableArray<byte> id) 
+        public BlobContentId(ImmutableArray<byte> id)
             : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id))
         {
         }

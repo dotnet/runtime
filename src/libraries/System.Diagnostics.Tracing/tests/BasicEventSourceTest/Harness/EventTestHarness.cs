@@ -16,16 +16,16 @@ namespace BasicEventSourceTests
 {
     /// <summary>
     /// The EventTestHarness class knows how to run a set of single-event tests on either
-    /// the ETW pipeline or the EventListener pipeline.  
-    /// 
+    /// the ETW pipeline or the EventListener pipeline.
+    ///
     /// Basically you make up a bunch of SubTests and then hand it to this harness
-    /// to run them in bulk.   
+    /// to run them in bulk.
     /// </summary>
     public static class EventTestHarness
     {
         /// <summary>
-        /// LogWriteLine will dump its output into a string that will be appended to any exception 
-        /// that happened during a test the harness is running.  
+        /// LogWriteLine will dump its output into a string that will be appended to any exception
+        /// that happened during a test the harness is running.
         /// </summary>
         /// <param name="format"></param>
         /// <param name="arg"></param>
@@ -38,14 +38,14 @@ namespace BasicEventSourceTests
             _log.WriteLine(format, arg);
         }
 
-        // Use to log things in the test itself if needed 
+        // Use to log things in the test itself if needed
         private static StringWriter _log = null;
 
         /// <summary>
-        /// Runs a series of tests 'tests' using the listener (either an ETWListener or an EventListenerListener) on 
+        /// Runs a series of tests 'tests' using the listener (either an ETWListener or an EventListenerListener) on
         /// an EventSource 'source' passing it the filter parameters=options (by default source turn on completely
-        /// 
-        /// Note that this routine calls Dispose on the listener, so it can't be used after that.  
+        ///
+        /// Note that this routine calls Dispose on the listener, so it can't be used after that.
         /// </summary>
         public static void RunTests(List<SubTest> tests, Listener listener, EventSource source, FilteringOptions options = null)
         {
@@ -53,7 +53,7 @@ namespace BasicEventSourceTests
             SubTest currentTest = null;
             List<Event> replies = new List<Event>(2);
 
-            // Wire up the callback to handle the validation when the listener receives events. 
+            // Wire up the callback to handle the validation when the listener receives events.
             listener.OnEvent = delegate (Event data)
             {
                 if (data.ProviderName == "TestHarnessEventSource")
@@ -63,16 +63,16 @@ namespace BasicEventSourceTests
                     int testNumber = (int)data.PayloadValue(1, "testNumber");
                     Assert.Equal(expectedTestNumber, testNumber);
 
-                    // Validate that the events that came in during the test are correct. 
+                    // Validate that the events that came in during the test are correct.
                     if (currentTest != null)
                     {
-                        // You can use the currentTest.Name to set a filter in the harness 
+                        // You can use the currentTest.Name to set a filter in the harness
                         // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "Write/Basic/EventII")
-                        // so the test only runs this one sub-test.   Then you can set 
-                        // breakpoints to watch the events be generated.  
+                        // so the test only runs this one sub-test.   Then you can set
+                        // breakpoints to watch the events be generated.
                         //
                         // All events from EventSource infrastructure should be coming from
-                        // the ReportOutOfBand, so placing a breakpoint there is typically useful. 
+                        // the ReportOutOfBand, so placing a breakpoint there is typically useful.
                         if (currentTest.EventListValidator != null)
                             currentTest.EventListValidator(replies);
                         else
@@ -110,18 +110,18 @@ namespace BasicEventSourceTests
                 }
             };
 
-            // Run the tests. collecting and validating the results. 
+            // Run the tests. collecting and validating the results.
             try
             {
 
                 using (TestHarnessEventSource testHarnessEventSource = new TestHarnessEventSource())
                 {
-                    // Turn on the test EventSource.  
+                    // Turn on the test EventSource.
                     listener.EventSourceSynchronousEnable(source, options);
-                    // And the harnesses's EventSource. 
+                    // And the harnesses's EventSource.
                     listener.EventSourceSynchronousEnable(testHarnessEventSource);
 
-                    // Generate events for all the tests, surrounded by events that tell us we are starting a test.  
+                    // Generate events for all the tests, surrounded by events that tell us we are starting a test.
                     int testNumber = 0;
                     foreach (var test in tests)
                     {
@@ -129,13 +129,13 @@ namespace BasicEventSourceTests
                         test.EventGenerator();
                         testNumber++;
                     }
-                    testHarnessEventSource.StartTest("", testNumber);        // Empty test marks the end of testing. 
+                    testHarnessEventSource.StartTest("", testNumber);        // Empty test marks the end of testing.
 
-                    // Disable the listeners.  
+                    // Disable the listeners.
                     listener.EventSourceCommand(source.Name, EventCommand.Disable);
                     listener.EventSourceCommand(testHarnessEventSource.Name, EventCommand.Disable);
 
-                    // Send something that should be ignored.  
+                    // Send something that should be ignored.
                     testHarnessEventSource.IgnoreEvent();
                 }
             }
@@ -169,7 +169,7 @@ namespace BasicEventSourceTests
 
             listener.Dispose();         // Indicate we are done listening.  For the ETW file based cases, we do all the processing here
 
-            // expectedTetst number are the number of tests we successfully ran.  
+            // expectedTetst number are the number of tests we successfully ran.
             Assert.Equal(expectedTestNumber, tests.Count);
         }
 
@@ -179,13 +179,13 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// This eventSource I use to emit events to separate tests from each other.  
+        /// This eventSource I use to emit events to separate tests from each other.
         /// </summary>
         private class TestHarnessEventSource : EventSource
         {
             public void StartTest(string name, int testNumber) { WriteEvent(1, name, testNumber); }
             /// <summary>
-            /// Sent to make sure the listener is ignoring when it should be.  
+            /// Sent to make sure the listener is ignoring when it should be.
             /// </summary>
             public void IgnoreEvent() { WriteEvent(2); }
         }
@@ -194,7 +194,7 @@ namespace BasicEventSourceTests
     /// <summary>
     /// A boring typed container that holds information about a test of single EventSource event
     /// It holds the
-    ///     name, 
+    ///     name,
     ///     the code to generate an event to test (EventGenerator)
     ///     the code to validate that the event is correct (EventValidator)
     ///     OR the code to validate that the List of events is (EventListValidator) (when the output is not a single event)
@@ -209,7 +209,7 @@ namespace BasicEventSourceTests
         }
         /// <summary>
         /// If a single event does not produce a single response (if you expect additional error messages)
-        /// use this constructor to validate the response.  
+        /// use this constructor to validate the response.
         /// </summary>
         public SubTest(string name, Action eventGenerator, Action<List<Event>> eventListValidator)
         {

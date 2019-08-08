@@ -102,4 +102,3 @@ namespace MS.Internal.Xml.XPath
         public override QueryProps Properties { get { return base.Properties | QueryProps.Reverse; } }
     }
 }
-

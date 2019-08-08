@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a string parser that may be used instead of String.Split 
+    /// Provides a string parser that may be used instead of String.Split
     /// to avoid unnecessary string and array allocations.
     /// </summary>
     internal struct StringParser

@@ -221,7 +221,7 @@ LAgain:
             CType[] typeList = new CType[pta.Count];
             MethodOrPropertySymbol methProp = GroupToArgsBinder.FindMostDerivedMethod(mpwi.MethProp(), type);
 
-            // We initialize the new type array with the parameters for the method. 
+            // We initialize the new type array with the parameters for the method.
             for (int iParam = 0; iParam < pta.Count; iParam++)
             {
                 typeList[iParam] = pta[iParam];
@@ -375,7 +375,7 @@ LAgain:
                 }
 
                 // Here, if both methods needed to use optionals to fill in the signatures,
-                // then we are ambiguous. Otherwise, take the one that didn't need any 
+                // then we are ambiguous. Otherwise, take the one that didn't need any
                 // optionals.
 
                 if (pta1.Count == carg)
@@ -475,7 +475,7 @@ LAgain:
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Determine best method for overload resolution. Returns null if no best 
+        // Determine best method for overload resolution. Returns null if no best
         // method, in which case two tying methods are returned for error reporting.
         private CandidateFunctionMember FindBestMethod(
             List<CandidateFunctionMember> list,

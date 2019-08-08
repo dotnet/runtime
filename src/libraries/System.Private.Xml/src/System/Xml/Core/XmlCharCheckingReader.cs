@@ -406,7 +406,7 @@ namespace System.Xml
 
             if (_state != State.InReadBinary)
             {
-                // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we 
+                // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we
                 // should not check characters
                 if (base.CanReadBinaryContent && (!_checkCharacters))
                 {
@@ -422,7 +422,7 @@ namespace System.Xml
             }
             else
             {
-                // forward calls into wrapped reader 
+                // forward calls into wrapped reader
                 if (_readBinaryHelper == null)
                 {
                     return base.ReadContentAsBase64(buffer, index, count);
@@ -449,7 +449,7 @@ namespace System.Xml
 
             if (_state != State.InReadBinary)
             {
-                // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we 
+                // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we
                 // should not check characters
                 if (base.CanReadBinaryContent && (!_checkCharacters))
                 {
@@ -465,7 +465,7 @@ namespace System.Xml
             }
             else
             {
-                // forward calls into wrapped reader 
+                // forward calls into wrapped reader
                 if (_readBinaryHelper == null)
                 {
                     return base.ReadContentAsBinHex(buffer, index, count);
@@ -510,7 +510,7 @@ namespace System.Xml
 
             if (_state != State.InReadBinary)
             {
-                // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we 
+                // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we
                 // should not check characters
                 if (base.CanReadBinaryContent && (!_checkCharacters))
                 {
@@ -526,7 +526,7 @@ namespace System.Xml
             }
             else
             {
-                // forward calls into wrapped reader 
+                // forward calls into wrapped reader
                 if (_readBinaryHelper == null)
                 {
                     return base.ReadElementContentAsBase64(buffer, index, count);
@@ -570,7 +570,7 @@ namespace System.Xml
 
             if (_state != State.InReadBinary)
             {
-                // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we 
+                // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we
                 // should not check characters
                 if (base.CanReadBinaryContent && (!_checkCharacters))
                 {
@@ -586,7 +586,7 @@ namespace System.Xml
             }
             else
             {
-                // forward calls into wrapped reader 
+                // forward calls into wrapped reader
                 if (_readBinaryHelper == null)
                 {
                     return base.ReadElementContentAsBinHex(buffer, index, count);

@@ -148,7 +148,7 @@ namespace System.Tests
         {
             const int CopyPadding = 5;
             const int DestinationSegmentPadding = 3;
-            
+
             int count = arraySegment.Count;
 
             var destinationModel = new int[count + 2 * CopyPadding];
@@ -157,7 +157,7 @@ namespace System.Tests
             CopyAndInvoke(destinationModel, destination =>
             {
                 arraySegment.CopyTo(destination);
-                
+
                 Assert.Equal(Enumerable.Repeat(default(int), 2 * CopyPadding), destination.Skip(count));
 
                 Assert.Equal(arraySegment, destination.Take(count));
@@ -167,7 +167,7 @@ namespace System.Tests
             CopyAndInvoke(destinationModel, destination =>
             {
                 arraySegment.CopyTo(destination, CopyPadding);
-                
+
                 Assert.Equal(Enumerable.Repeat(default(int), CopyPadding), destination.Take(CopyPadding));
                 Assert.Equal(Enumerable.Repeat(default(int), CopyPadding), destination.Skip(CopyPadding + count));
 
@@ -178,7 +178,7 @@ namespace System.Tests
             CopyAndInvoke(destinationModel, destination =>
             {
                 ((ICollection<int>)arraySegment).CopyTo(destination, CopyPadding);
-                
+
                 Assert.Equal(Enumerable.Repeat(default(int), CopyPadding), destination.Take(CopyPadding));
                 Assert.Equal(Enumerable.Repeat(default(int), CopyPadding), destination.Skip(CopyPadding + count));
 
@@ -245,7 +245,7 @@ namespace System.Tests
             int[] array = arraySegment.Array;
             int index = arraySegment.Offset;
             int count = arraySegment.Count;
-            
+
             ArraySegment<int>.Enumerator enumerator = arraySegment.GetEnumerator();
 
             var actual = new List<int>();
@@ -268,11 +268,11 @@ namespace System.Tests
         {
             int[] array = arraySegment.Array;
             int index = arraySegment.Offset;
-            
+
             ArraySegment<int>.Enumerator enumerator = arraySegment.GetEnumerator();
 
             bool expected = arraySegment.Count > 0;
-            
+
             // Dispose shouldn't do anything. Call it twice and then assert like nothing happened.
             enumerator.Dispose();
             enumerator.Dispose();
@@ -291,11 +291,11 @@ namespace System.Tests
             int[] array = arraySegment.Array;
             int index = arraySegment.Offset;
             int count = arraySegment.Count;
-            
+
             var enumerator = (IEnumerator<int>)arraySegment.GetEnumerator();
 
             int[] expected = array.Skip(index).Take(count).ToArray();
-            
+
             // Reset at a variety of different positions to ensure the implementation
             // isn't something like `position -= CONSTANT`.
             for (int i = 0; i < 3; i++)
@@ -324,7 +324,7 @@ namespace System.Tests
             Assert.Throws<InvalidOperationException>(() => ((IEnumerator)enumerator).Current);
 
             while (enumerator.MoveNext()) ;
-            
+
             // After end
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.Throws<InvalidOperationException>(() => ((IEnumerator<int>)enumerator).Current);
@@ -338,7 +338,7 @@ namespace System.Tests
             int[] array = arraySegment.Array;
             int index = arraySegment.Offset;
             int count = arraySegment.Count;
-            
+
             int[] expected = array.Skip(index).Take(count).ToArray();
 
             for (int i = 0; i < count; i++)
@@ -369,7 +369,7 @@ namespace System.Tests
         public static void GetSetItem_NotInRange_Invalid(ArraySegment<int> arraySegment)
         {
             int[] array = arraySegment.Array;
-            
+
             // Before array start
             Assert.Throws<ArgumentOutOfRangeException>(() => arraySegment[-arraySegment.Offset - 1]);
             Assert.Throws<ArgumentOutOfRangeException>(() => arraySegment[-arraySegment.Offset - 1] = default(int));
@@ -410,7 +410,7 @@ namespace System.Tests
                 yield return new object[] { arraySegment, 0, 0 }; // Preserve start, no items
                 yield return new object[] { arraySegment, 0, arraySegment.Count }; // Preserve start, preserve count (noop)
                 yield return new object[] { arraySegment, arraySegment.Count, 0 }; // Start at end, no items
-                
+
                 if (arraySegment.Any())
                 {
                     yield return new object[] { arraySegment, 1, 0 }; // Start at middle or end, no items
@@ -467,7 +467,7 @@ namespace System.Tests
                 (array: new[] { 3, 4, 5, 6 }, index: 1, count: 2), // Starts in middle, ends in middle
                 (array: new[] { 3, 4, 5, 6 }, index: 1, count: 0) // Non-empty array, count == 0
             };
-            
+
             return arraySegments.Select(aseg => new object[] { new ArraySegment<int>(aseg.array, aseg.index, aseg.count) });
         }
     }

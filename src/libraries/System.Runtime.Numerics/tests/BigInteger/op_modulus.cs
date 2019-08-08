@@ -140,7 +140,7 @@ namespace System.Numerics.Tests
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
-            
+
             // Axiom: X%1 = 0
             VerifyIdentityString(BigInteger.One + " " + int.MaxValue + " b%", BigInteger.Zero.ToString());
             VerifyIdentityString(BigInteger.One + " " + long.MaxValue + " b%", BigInteger.Zero.ToString());
@@ -206,7 +206,7 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

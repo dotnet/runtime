@@ -39,7 +39,7 @@ namespace System.Drawing.Imaging
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
-#endif                                                         
+#endif
 
         internal IntPtr nativeImageAttributes;
 
@@ -96,7 +96,7 @@ namespace System.Drawing.Imaging
                     Gdip.GdipDisposeImageAttributes(new HandleRef(this, nativeImageAttributes));
 #if DEBUG
                     Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
                 }
                 catch (Exception ex)
                 {

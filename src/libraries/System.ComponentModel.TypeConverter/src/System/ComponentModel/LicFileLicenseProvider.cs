@@ -16,7 +16,7 @@ namespace System.ComponentModel
     public class LicFileLicenseProvider : LicenseProvider
     {
         /// <summary>
-        /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid 
+        /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid
         /// for the specified type.
         /// </summary>
         protected virtual bool IsKeyValid(string key, Type type)

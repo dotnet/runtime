@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -58,17 +58,17 @@ namespace Microsoft.SqlServer.TDS.Authentication
             do
             {
                 // Read feature type.
-                // 
+                //
                 currentFeatureType = (TDSFedAuthInfoId)source.ReadByte();
 
                 // Ensure we're not looking at the terminator.
-                // 
+                //
                 switch (currentFeatureType)
                 {
                     case TDSFedAuthInfoId.STSURL:
                         {
                             // Create an STSURL option.
-                            // 
+                            //
                             infoDataLength = TDSUtilities.ReadUInt(source);
                             infoDataOffset = TDSUtilities.ReadUInt(source);
                             Options.Add(i++, new TDSFedAuthInfoOptionSTSURL(infoDataLength));
@@ -78,7 +78,7 @@ namespace Microsoft.SqlServer.TDS.Authentication
                     case TDSFedAuthInfoId.SPN:
                         {
                             // Create SPN option.
-                            // 
+                            //
                             infoDataLength = TDSUtilities.ReadUInt(source);
                             infoDataOffset = TDSUtilities.ReadUInt(source);
                             Options.Add(i++, new TDSFedAuthInfoOptionSPN(infoDataLength));

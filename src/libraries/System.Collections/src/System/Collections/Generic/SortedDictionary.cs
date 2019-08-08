@@ -951,7 +951,7 @@ namespace System.Collections.Generic
     /// have the problem where they have already been serialized to disk as having a backing class named
     /// TreeSet. To ensure that we can read back anything that has already been written to disk, we need to
     /// make sure that we have a class named TreeSet that does everything the way it used to.
-    /// 
+    ///
     /// The only thing that makes it different from SortedSet is that it throws on duplicates
     /// </summary>
     /// <typeparam name="T"></typeparam>

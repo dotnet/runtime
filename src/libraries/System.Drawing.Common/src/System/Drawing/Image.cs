@@ -23,7 +23,7 @@ namespace System.Drawing
 #endif
     public abstract partial class Image : MarshalByRefObject, IDisposable, ICloneable, ISerializable
     {
-        // The signature of this delegate is incorrect. The signature of the corresponding 
+        // The signature of this delegate is incorrect. The signature of the corresponding
         // native callback function is:
         // extern "C" {
         //     typedef BOOL (CALLBACK * ImageAbort)(VOID *);
@@ -459,4 +459,3 @@ namespace System.Drawing
         }
     }
 }
-

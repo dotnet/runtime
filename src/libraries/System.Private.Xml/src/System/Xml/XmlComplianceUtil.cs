@@ -98,7 +98,7 @@ namespace System.Xml
             }
         }
 
-        // Replaces \r\n, \n, \r and \t with single space (0x20) 
+        // Replaces \r\n, \n, \r and \t with single space (0x20)
         public static string CDataNormalize(string value)
         {
             int len = value.Length;

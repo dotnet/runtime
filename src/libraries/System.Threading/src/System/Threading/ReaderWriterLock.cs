@@ -1126,7 +1126,7 @@ namespace System.Threading
         /// The original code used to throw <see cref="ApplicationException"/> for almost all exception cases, even for
         /// out-of-memory scenarios. <see cref="Exception.HResult"/> property was set to a specific value to indicate the actual
         /// error that occurred, and this was not documented.
-        /// 
+        ///
         /// In this C# rewrite, out-of-memory and low-resource cases throw <see cref="OutOfMemoryException"/> or whatever the
         /// original type of exception was (for example, <see cref="IO.IOException"/> may be thrown if the system is unable to
         /// create an <see cref="AutoResetEvent"/>). For all other exceptions, a
@@ -1203,7 +1203,7 @@ namespace System.Threading
         /// <summary>
         /// Stores thread-local lock info and manages the association of this info with each <see cref="ReaderWriterLock"/>
         /// owned by a thread.
-        /// 
+        ///
         /// The original code maintained lists of thread-local lock entries on the CLR's thread objects, and manually released
         /// lock entries, which involved walking through all threads. While this is possible with ThreadLocal{T}, this
         /// implementation prefers to use a similar design to that from ReaderWriterLockSlim, and allow reusing free entries

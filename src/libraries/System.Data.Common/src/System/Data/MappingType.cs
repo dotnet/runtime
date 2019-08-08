@@ -12,4 +12,3 @@ namespace System.Data
         Hidden = 4         // Internal mapping
     }
 }
-

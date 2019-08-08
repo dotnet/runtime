@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed class EcmaGenericMethodParameterType : EcmaGenericParameterType
     {
-        internal EcmaGenericMethodParameterType(GenericParameterHandle handle, EcmaModule module) 
+        internal EcmaGenericMethodParameterType(GenericParameterHandle handle, EcmaModule module)
             : base(handle, module)
         {
             Debug.Assert(!handle.IsNil);

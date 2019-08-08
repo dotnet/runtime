@@ -219,7 +219,7 @@ namespace System.Transactions
         }
 
 
-        // Add a transaction to the table.  Transactions are added to the end of the list in sorted order based on their 
+        // Add a transaction to the table.  Transactions are added to the end of the list in sorted order based on their
         // absolute timeout.
         internal int Add(InternalTransaction txNew)
         {
@@ -341,7 +341,7 @@ namespace System.Transactions
                             BucketSet oldSet = (BucketSet)oldNextSetWeak.Target;
                             if (oldSet != null)
                             {
-                                // prev references are just there to root things for the GC.  If this object is 
+                                // prev references are just there to root things for the GC.  If this object is
                                 // gone we don't really care.
                                 oldSet.prevSet = newBucketSet;
                             }
@@ -430,7 +430,7 @@ namespace System.Transactions
                 _rwLock.EnterWriteLock();
                 try
                 {
-                    // Access the nextBucketSet again in writer lock to account for any race before disabling the timeout. 
+                    // Access the nextBucketSet again in writer lock to account for any race before disabling the timeout.
                     nextWeakSet = (WeakReference)currentBucketSet.nextSetWeak;
                     if (nextWeakSet != null)
                     {
@@ -464,7 +464,7 @@ namespace System.Transactions
             }
 
             // Note it is slightly subtle that we always skip the head node.  This is done
-            // on purpose because the head node contains transactions with essentially 
+            // on purpose because the head node contains transactions with essentially
             // an infinite timeout.
             do
             {
@@ -622,7 +622,7 @@ namespace System.Transactions
             {
                 tx._tableBucket = this;
                 tx._bucketIndex = currentIndex;
-                Interlocked.MemoryBarrier(); // This data must be written before the transaction 
+                Interlocked.MemoryBarrier(); // This data must be written before the transaction
                                              // could be timed out.
                 _transactions[currentIndex] = tx;
 

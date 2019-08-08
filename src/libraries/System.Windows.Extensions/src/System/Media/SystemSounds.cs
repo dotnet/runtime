@@ -16,7 +16,7 @@ namespace System.Media
         {
             get => s_asterisk ?? (s_asterisk = new SystemSound(Interop.User32.MB_ICONASTERISK));
         }
-        
+
         public static SystemSound Beep
         {
             get => s_beep ?? (s_beep = new SystemSound(Interop.User32.MB_OK));
@@ -26,7 +26,7 @@ namespace System.Media
         {
             get => s_exclamation ?? (s_exclamation = new SystemSound(Interop.User32.MB_ICONEXCLAMATION));
         }
-        
+
         public static SystemSound Hand
         {
             get => s_hand ?? (s_hand = new SystemSound(Interop.User32.MB_ICONHAND));

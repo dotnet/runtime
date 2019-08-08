@@ -175,7 +175,7 @@ namespace System.IO.Ports.Tests
                     "Verifying ReadTimeout={0} with successive call to Read(byte[], int, int) and some data being received in the first call",
                     stream.ReadTimeout);
 
-                // Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
+                // Call WriteToCom1 asynchronously this will write to com1 some time before the following call
                 // to a read method times out
                 t.Start();
 
@@ -229,7 +229,7 @@ namespace System.IO.Ports.Tests
                     "Verifying ReadTimeout={0} with successive call to ReadByte() and some data being received in the first call",
                     stream.ReadTimeout);
 
-                // Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
+                // Call WriteToCom1 asynchronously this will write to com1 some time before the following call
                 // to a read method times out
                 t.Start();
 

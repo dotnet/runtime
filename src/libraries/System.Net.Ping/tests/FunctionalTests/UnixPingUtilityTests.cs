@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,16 +38,16 @@ namespace System.Net.NetworkInformation.Tests
             p.StartInfo.FileName = utilityPath;
             p.StartInfo.Arguments = arguments;
             p.StartInfo.UseShellExecute = false;
-            
+
             p.StartInfo.RedirectStandardOutput = true;
             var stdOutLines = new List<string>();
             p.OutputDataReceived += new DataReceivedEventHandler(
-                delegate (object sendingProcess, DataReceivedEventArgs outputLine) { stdOutLines.Add(outputLine.Data); }); 
+                delegate (object sendingProcess, DataReceivedEventArgs outputLine) { stdOutLines.Add(outputLine.Data); });
 
             p.StartInfo.RedirectStandardError = true;
             var stdErrLines = new List<string>();
             p.ErrorDataReceived += new DataReceivedEventHandler(
-                delegate (object sendingProcess, DataReceivedEventArgs errorLine) { stdErrLines.Add(errorLine.Data); }); 
+                delegate (object sendingProcess, DataReceivedEventArgs errorLine) { stdErrLines.Add(errorLine.Data); });
 
             p.Start();
             p.BeginOutputReadLine();
@@ -86,7 +86,7 @@ namespace System.Net.NetworkInformation.Tests
                 throw new Exception(
                     $"[{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
             }
-            
+
             try
             {
                 // Validate that the returned data size is correct.

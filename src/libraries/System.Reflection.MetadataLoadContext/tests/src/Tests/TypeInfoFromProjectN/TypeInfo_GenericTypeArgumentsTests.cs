@@ -10,35 +10,35 @@ namespace System.Reflection.Tests
     public class TypeInfoDeclaredGenericTypeArgumentsTests
     {
         //Interfaces
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments1()
         {
             VerifyGenericTypeArguments(typeof(Test_I).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments2()
         {
             VerifyGenericTypeArguments(typeof(Test_IG<>).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments3()
         {
             VerifyGenericTypeArguments(typeof(Test_IG<int>).Project(), new string[] { "Int32" }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments4()
         {
             VerifyGenericTypeArguments(typeof(Test_IG2<,>).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments5()
         {
@@ -46,98 +46,98 @@ namespace System.Reflection.Tests
         }
 
         // For Structs
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments6()
         {
             VerifyGenericTypeArguments(typeof(Test_S).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments7()
         {
             VerifyGenericTypeArguments(typeof(Test_SG<>).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments8()
         {
             VerifyGenericTypeArguments(typeof(Test_SG<int>).Project(), new string[] { "Int32" }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments9()
         {
             VerifyGenericTypeArguments(typeof(Test_SG2<,>).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments10()
         {
             VerifyGenericTypeArguments(typeof(Test_SG2<int, string>).Project(), new string[] { "Int32", "String" }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments11()
         {
             VerifyGenericTypeArguments(typeof(Test_SI).Project(), new string[] { }, new string[] { });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments12()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG<>).Project(), new string[] { }, new string[] { "TS" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments13()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG<int>).Project(), new string[] { "Int32" }, new string[] { "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments14()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG2<,>).Project(), new string[] { }, new string[] { "TS", "VS" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments15()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG2<int, string>).Project(), new string[] { "Int32", "String" }, new string[] { "Int32", "String" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments16()
         {
             VerifyGenericTypeArguments(typeof(Test_SI_Int).Project(), new string[] { }, new string[] { "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments17()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG_Int<>).Project(), new string[] { }, new string[] { "TS", "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments18()
         {
             VerifyGenericTypeArguments(typeof(Test_SIG_Int<string>).Project(), new string[] { "String" }, new string[] { "String", "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments19()
         {
@@ -146,14 +146,14 @@ namespace System.Reflection.Tests
 
         //For classes
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments20()
         {
             VerifyGenericTypeArguments(typeof(Test_C).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments21()
         {
@@ -161,42 +161,42 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments22()
         {
             VerifyGenericTypeArguments(typeof(Test_CG<int>).Project(), new string[] { "Int32" }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments23()
         {
             VerifyGenericTypeArguments(typeof(Test_CG2<,>).Project(), new string[] { }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments24()
         {
             VerifyGenericTypeArguments(typeof(Test_CG2<int, string>).Project(), new string[] { "Int32", "String" }, null);
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments25()
         {
             VerifyGenericTypeArguments(typeof(Test_CI).Project(), new string[] { }, new string[] { });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments26()
         {
             VerifyGenericTypeArguments(typeof(Test_CIG<int>).Project(), new string[] { "Int32" }, new string[] { "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments27()
         {
@@ -204,14 +204,14 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments28()
         {
             VerifyGenericTypeArguments(typeof(Test_CIG2<int, string>).Project(), new string[] { "Int32", "String" }, new string[] { "Int32", "String" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments29()
         {
@@ -219,21 +219,21 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments30()
         {
             VerifyGenericTypeArguments(typeof(Test_CIG_Int<>).Project(), new string[] { }, new string[] { "T", "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments31()
         {
             VerifyGenericTypeArguments(typeof(Test_CIG_Int<string>).Project(), new string[] { "String" }, new string[] { "String", "Int32" });
         }
 
-        // Verify Generic Arguments 
+        // Verify Generic Arguments
         [Fact]
         public static void TestGenericArguments32()
         {

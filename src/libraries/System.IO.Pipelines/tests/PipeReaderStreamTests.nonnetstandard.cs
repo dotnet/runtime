@@ -145,7 +145,7 @@ namespace System.IO.Pipelines.Tests
         public async Task BuggyPipeReaderImplementationThrows()
         {
             var pipeReader = new BuggyPipeReader();
-            
+
             Stream stream = pipeReader.AsStream();
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await stream.ReadAsync(new byte[5]));
@@ -284,7 +284,7 @@ namespace System.IO.Pipelines.Tests
         public void AsStreamDoNotCompleteReader()
         {
             var pipeReader = new NotImplementedPipeReader();
-            
+
             // would throw in Complete if it was actually invoked
             pipeReader.AsStream(leaveOpen: true).Dispose();
         }
@@ -293,12 +293,12 @@ namespace System.IO.Pipelines.Tests
         {
             public override void AdvanceTo(SequencePosition consumed)
             {
-                
+
             }
 
             public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
             {
-                
+
             }
 
             public override void CancelPendingRead()

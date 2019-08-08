@@ -270,7 +270,7 @@ namespace System.Web.Util
                     int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
 
                     if (h1 >= 0 && h2 >= 0)
-                    {   
+                    {
                         // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
                         i += 2;
@@ -615,7 +615,7 @@ namespace System.Web.Util
             if (!isValidUrl)
             {
                 // If the value is not a valid url, we treat it as a relative url.
-                // We don't need to extract query string from the url since UrlPathEncode() 
+                // We don't need to extract query string from the url since UrlPathEncode()
                 // does not encode query string.
                 schemeAndAuthority = null;
                 path = value;

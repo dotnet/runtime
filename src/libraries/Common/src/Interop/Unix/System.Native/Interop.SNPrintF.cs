@@ -23,8 +23,8 @@ internal static partial class Interop
         /// arguments in correctly.
         /// </remarks>
         /// <returns>
-        /// Returns the number of characters (excluding null terminator) written to the buffer on 
-        /// success; if the return value is equal to the size then the result may have been truncated. 
+        /// Returns the number of characters (excluding null terminator) written to the buffer on
+        /// success; if the return value is equal to the size then the result may have been truncated.
         /// On failure, returns a negative value.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]
@@ -44,8 +44,8 @@ internal static partial class Interop
         /// arguments in correctly.
         /// </remarks>
         /// <returns>
-        /// Returns the number of characters (excluding null terminator) written to the buffer on 
-        /// success; if the return value is equal to the size then the result may have been truncated. 
+        /// Returns the number of characters (excluding null terminator) written to the buffer on
+        /// success; if the return value is equal to the size then the result may have been truncated.
         /// On failure, returns a negative value.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]

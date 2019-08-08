@@ -22,8 +22,8 @@ namespace System.Linq
     {
         /// <summary>
         /// By default, the system will use algorithms for queries
-        /// that are ripe for parallelism and will avoid algorithms with high 
-        /// overheads that will likely result in slow downs for parallel execution. 
+        /// that are ripe for parallelism and will avoid algorithms with high
+        /// overheads that will likely result in slow downs for parallel execution.
         /// </summary>
         Default = 0,
 

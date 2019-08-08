@@ -47,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         particular method group is specified in a method invocation, and no CType arguments
         are specified as part of the method invocation, CType inference is applied to each
         generic method in the method group. If CType inference succeeds, then the inferred
-        CType arguments are used to determine the types of formal parameters for subsequent 
+        CType arguments are used to determine the types of formal parameters for subsequent
         overload resolution. If overload resolution chooses a generic method as the one to
         invoke then the inferred CType arguments are used as the actual CType arguments for the
         invocation. If CType inference for a particular method fails, that method does not
@@ -227,7 +227,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool InferTypeArgs()
         {
-            // SPEC: CType inference takes place in phases. Each phase will try to infer CType 
+            // SPEC: CType inference takes place in phases. Each phase will try to infer CType
             // SPEC: arguments for more CType parameters based on the findings of the previous
             // SPEC: phase. The first phase makes some initial inferences of bounds, whereas
             // SPEC: the second phase fixes CType parameters to specific types and infers further
@@ -259,9 +259,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // SPEC ISSUE: optional parameter and sometimes deduce something harmful.
                 // SPEC ISSUE: Ex: Foo<T>(T t = default(T)) -- we do not want to add
                 // SPEC ISSUE: "T" to the bound set of "T" in this case and produce
-                // SPEC ISSUE: a "chicken and egg" problem. 
-                // SPEC ISSUE: We should put language in the spec saying that we skip 
-                // SPEC ISSUE: inference on any argument that was created via the 
+                // SPEC ISSUE: a "chicken and egg" problem.
+                // SPEC ISSUE: We should put language in the spec saying that we skip
+                // SPEC ISSUE: inference on any argument that was created via the
                 // SPEC ISSUE: optional parameter mechanism.
                 Expr pExpr = _pMethodArguments.prgexpr[iArg];
 
@@ -301,7 +301,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // If the argument is a TYPEORNAMESPACEERROR and the pSource is an
-                // error CType, then we want to set it to the generic error CType 
+                // error CType, then we want to set it to the generic error CType
                 // that has no name text. This is because of the following scenario:
                 //
                 // void M<T>(T t) { }
@@ -314,7 +314,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // In the first call to M, we'll have an EXPRLOCAL with an error CType,
                 // which is correct - we want the parameter help to display that we've
-                // got an inferred CType of UnknownType, which is an error CType since 
+                // got an inferred CType of UnknownType, which is an error CType since
                 // its undefined.
                 //
                 // However, for the M in the second call, we DON'T want to display parameter
@@ -330,7 +330,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // at this time because we have no fixed types yet to use for
                 // overload resolution.)
 
-                // SPEC:  Otherwise, if Ei has a CType U then a lower-bound inference 
+                // SPEC:  Otherwise, if Ei has a CType U then a lower-bound inference
                 // SPEC:   or exact inference is made from U to Ti.
 
                 // SPEC:  Otherwise, no inference is made for this argument
@@ -363,14 +363,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:     o the output CType of Ei with CType Ti contains at least one unfixed
             // SPEC:       CType parameter Xj, and
             // SPEC:     o none of the input types of Ei with CType Ti contains any unfixed
-            // SPEC:       CType parameter Xj, 
-            // SPEC:   then an output CType inference is made from all such Ei to Ti. 
+            // SPEC:       CType parameter Xj,
+            // SPEC:   then an output CType inference is made from all such Ei to Ti.
             // SPEC:  Whether or not the previous step actually made an inference, we must
             // SPEC:   now fix at least one CType parameter, as follows:
-            // SPEC:  If there exists one or more CType parameters Xi such that 
+            // SPEC:  If there exists one or more CType parameters Xi such that
             // SPEC:     o Xi is unfixed, and
             // SPEC:     o Xi has a non-empty set of bounds, and
-            // SPEC:     o Xi does not depend on any Xj 
+            // SPEC:     o Xi does not depend on any Xj
             // SPEC:   then each such Xi is fixed. If any fixing operation fails then CType
             // SPEC:   inference fails.
             // SPEC:  Otherwise, if there exists one or more CType parameters Xi such that
@@ -380,7 +380,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   then each such Xi is fixed. If any fixing operation fails then
             // SPEC:   CType inference fails.
             // SPEC:  Otherwise, we are unable to make progress and there are unfixed parameters.
-            // SPEC:   CType inference fails. 
+            // SPEC:   CType inference fails.
             // SPEC:  If CType inference neither succeeds nor fails then the second phase is
             // SPEC:   repeated until CType inference succeeds or fails. (Since each repetition of
             // SPEC:   the second phase either succeeds, fails or fixes an unfixed CType parameter,
@@ -466,7 +466,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Dependency is only defined for unfixed parameters. Therefore, fixing
             // a parameter may cause all of its dependencies to become no longer
-            // dependent on anything. We need to first determine which parameters need to be 
+            // dependent on anything. We need to first determine which parameters need to be
             // fixed, and then fix them all at once.
 
             bool[] pNeedsFixing = new bool[_pMethodTypeParameters.Count];
@@ -564,7 +564,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // DependsTransitivelyOn, giving this algorithm a worst case of O(n^4).
             //
             // Of course, in reality, n is going to almost always be on the order of
-            // "smaller than 5", and there will not be O(n^2) dependency relationships 
+            // "smaller than 5", and there will not be O(n^2) dependency relationships
             // between CType parameters; it is far more likely that the transitivity chains
             // will be very short and not branch or loop at all. This is much more likely to
             // be an O(n^2) algorithm in practice.
@@ -826,7 +826,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool ExactNullableInference(CType pSource, CType pDest)
         {
-            // SPEC:  Otherwise, if U is the CType U1? and V is the CType V1? 
+            // SPEC:  Otherwise, if U is the CType U1? and V is the CType V1?
             // SPEC:   then an exact inference is made from U to V.
             if (!(pSource is NullableType nubSource) || !(pDest is NullableType nubDest))
             {
@@ -842,7 +842,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool ExactConstructedInference(CType pSource, CType pDest)
         {
             // SPEC:  Otherwise, if V is a constructed CType C<V1...Vk> and U is a constructed
-            // SPEC:   CType C<U1...Uk> then an exact inference 
+            // SPEC:   CType C<U1...Uk> then an exact inference
             // SPEC:   is made from each Ui to the corresponding Vi.
 
             if (!(pSource is AggregateType pConstructedSource) || !(pDest is AggregateType pConstructedDest)
@@ -886,7 +886,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // SPEC: A lower-bound inference from a CType U to a CType V is made as follows:
 
-            // SPEC:  If V is one of the unfixed Xi then U is added to the set of 
+            // SPEC:  If V is one of the unfixed Xi then U is added to the set of
             // SPEC:   lower bounds for Xi.
 
             if (LowerBoundTypeParameterInference(pSource, pDest))
@@ -917,13 +917,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // At this point we could also do an inference from non-nullable U
             // to nullable V.
-            // 
+            //
             // We tried implementing lower bound nullable inference as follows:
-            // 
-            //  Otherwise, if V is nullable CType V1? and U is a non-nullable 
+            //
+            //  Otherwise, if V is nullable CType V1? and U is a non-nullable
             //   struct CType then an exact inference is made from U to V1.
-            // 
-            // However, this causes an unfortunate interaction with 
+            //
+            // However, this causes an unfortunate interaction with
             // our implementation of section 15.2 of
             // the specification. Namely, it appears that the code which
             // checks whether a given method is compatible with
@@ -931,7 +931,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // then the inferred types are compatible with the delegate types.
             // This is not necessarily so; the inferred types could be compatible
             // via a conversion other than reference or identity.
-            // 
+            //
             // We should take an action item to investigate this problem.
             // Until then, we will turn off the proposed lower bound nullable
             // inference.
@@ -973,7 +973,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // SPEC:  Otherwise, if U is an array CType Ue[...] and V is either an array
             // SPEC:   CType Ve[...] of the same rank, or if U is a one-dimensional array
-            // SPEC:   CType Ue[] and V is one of IEnumerable<Ve>, ICollection<Ve>, 
+            // SPEC:   CType Ue[] and V is one of IEnumerable<Ve>, ICollection<Ve>,
             // SPEC:   IList<Ve>, IReadOnlyCollection<Ve> or IReadOnlyList<Ve> then
             // SPEC:    if Ue is known to be a reference CType then a lower-bound inference
             // SPEC:     from Ue to Ve is made.
@@ -1043,7 +1043,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC ISSUE: to do CType inference to a nullable target. I propose the
             // SPEC ISSUE: following:
             // SPEC ISSUE:
-            // SPEC ISSUE:  Otherwise, if V is nullable CType V1? and U is a 
+            // SPEC ISSUE:  Otherwise, if V is nullable CType V1? and U is a
             // SPEC ISSUE:   non-nullable struct CType then an exact inference is made from U to V1.
 
             if (!pDest.IsNullableType() || !pSource.isStructType() || pSource.IsNullableType())
@@ -1070,11 +1070,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            // SPEC:  Otherwise, if V is a constructed class or struct CType C<V1...Vk> 
+            // SPEC:  Otherwise, if V is a constructed class or struct CType C<V1...Vk>
             // SPEC:   and U is C<U1...Uk> then an exact inference
             // SPEC:   is made from each Ui to the corresponding Vi.
 
-            // SPEC:  Otherwise, if V is a constructed interface or delegate CType C<V1...Vk> 
+            // SPEC:  Otherwise, if V is a constructed interface or delegate CType C<V1...Vk>
             // SPEC:   and U is C<U1...Uk> then an exact inference,
             // SPEC:   lower bound inference or upper bound inference
             // SPEC:   is made from each Ui to the corresponding Vi.
@@ -1104,7 +1104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if V is an interface CType C<V1...Vk> and U is a class CType
-            // SPEC:   or struct CType and there is a unique set U1...Uk such that U directly 
+            // SPEC:   or struct CType and there is a unique set U1...Uk such that U directly
             // SPEC:   or indirectly implements C<U1...Uk> then an exact ...
             // SPEC:  ... and U is an interface CType ...
             // SPEC:  ... and U is a CType parameter ...
@@ -1127,10 +1127,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if V is a class CType C<V1...Vk> and U is a class CType which
-            // SPEC:   inherits directly or indirectly from C<U1...Uk> 
+            // SPEC:   inherits directly or indirectly from C<U1...Uk>
             // SPEC:   then an exact inference is made from each Ui to the corresponding Vi.
             // SPEC:  Otherwise, if V is a class CType C<V1...Vk> and U is a CType parameter
-            // SPEC:   with effective base class C<U1...Uk> 
+            // SPEC:   with effective base class C<U1...Uk>
             // SPEC:   then an exact inference is made from each Ui to the corresponding Vi.
             // SPEC:  Otherwise, if V is a class CType C<V1...Vk> and U is a CType parameter
             // SPEC:   with an effective base class which inherits directly or indirectly from
@@ -1168,7 +1168,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if V is an interface CType C<V1...Vk> and U is a class CType
-            // SPEC:   or struct CType and there is a unique set U1...Uk such that U directly 
+            // SPEC:   or struct CType and there is a unique set U1...Uk such that U directly
             // SPEC:   or indirectly implements C<U1...Uk> then an
             // SPEC:   exact, upper-bound, or lower-bound inference ...
             // SPEC:  ... and U is an interface CType ...
@@ -1265,7 +1265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // SPEC: An upper-bound inference from a CType U to a CType V is made as follows:
 
-            // SPEC:  If V is one of the unfixed Xi then U is added to the set of 
+            // SPEC:  If V is one of the unfixed Xi then U is added to the set of
             // SPEC:   upper bounds for Xi.
 
             if (UpperBoundTypeParameterInference(pSource, pDest))
@@ -1422,7 +1422,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if U is an interface CType C<U1...Uk> and V is a class CType
-            // SPEC:   or struct CType and there is a unique set V1...Vk such that V directly 
+            // SPEC:   or struct CType and there is a unique set V1...Vk such that V directly
             // SPEC:   or indirectly implements C<V1...Vk> then an exact ...
             // SPEC:  ... and U is an interface CType ...
 
@@ -1444,7 +1444,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if U is a class CType C<U1...Uk> and V is a class CType which
-            // SPEC:   inherits directly or indirectly from C<V1...Vk> then an exact 
+            // SPEC:   inherits directly or indirectly from C<V1...Vk> then an exact
             // SPEC:   inference is made from each Ui to the corresponding Vi.
 
             AggregateType pDestBase = ((AggregateType)pDest).BaseClass;
@@ -1473,7 +1473,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // SPEC:  Otherwise, if U is an interface CType C<U1...Uk> and V is a class CType
-            // SPEC:   or struct CType and there is a unique set V1...Vk such that V directly 
+            // SPEC:   or struct CType and there is a unique set V1...Vk such that V directly
             // SPEC:   or indirectly implements C<V1...Vk> then an exact ...
             // SPEC:  ... and U is an interface CType ...
 
@@ -1686,7 +1686,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // RUNTIME BINDER ONLY CHANGE
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // 
+            //
             // just as we fix each individual type parameter, we need to
             // ensure that we infer accessible type parameters, and so we
             // widen them when necessary using the same technique that we

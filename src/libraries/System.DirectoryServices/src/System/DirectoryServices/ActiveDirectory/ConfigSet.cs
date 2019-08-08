@@ -175,7 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             //
-            // null partitionName would signify that we don't care about the partition 
+            // null partitionName would signify that we don't care about the partition
             //
 
             if (siteName == null)
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             //
-            // null partitionName would signify that we don't care about the partition 
+            // null partitionName would signify that we don't care about the partition
             //
 
             if (siteName == null)
@@ -376,8 +376,8 @@ namespace System.DirectoryServices.ActiveDirectory
             if (forestContext.ContextType == DirectoryContextType.DirectoryServer)
             {
                 //
-                // the forest object was created by specifying a server name 
-                // so we will stick to that server for the search. We need to determine 
+                // the forest object was created by specifying a server name
+                // so we will stick to that server for the search. We need to determine
                 // whether or not the server is a DC or GC
                 //
                 isServer = true;
@@ -389,7 +389,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (isServer)
             {
                 authType |= AuthenticationTypes.ServerBind;
-                
+
                 if (isGC)
                 {
                     rootEntry = new DirectoryEntry("GC://" + forestContext.GetServerName(), forestContext.UserName, forestContext.Password, authType);
@@ -412,7 +412,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
-                // assuming it's an ADAM Instance 
+                // assuming it's an ADAM Instance
                 // check that it is an ADAM server only (not AD)
                 DirectoryEntryManager directoryEntryMgr = new DirectoryEntryManager(context);
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
@@ -438,7 +438,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 string entryName = (string)rootEntry.Properties["distinguishedName"].Value;
 
-                // Search for computer "serviceConnectionObjects" where the keywords attribute 
+                // Search for computer "serviceConnectionObjects" where the keywords attribute
                 // contains the specified keyword
                 // set up the searcher object
 
@@ -452,7 +452,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 str.Append("=1.2.840.113556.1.4.1851)(");
                 str.Append(PropertyManager.Keywords);
                 str.Append("=");
-                str.Append(Utils.GetEscapedFilterValue(context.Name)); // target = config set name 
+                str.Append(Utils.GetEscapedFilterValue(context.Name)); // target = config set name
                 str.Append("))");
 
                 string filter = str.ToString();
@@ -650,7 +650,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            // create a new context object for the adam instance passing on  the 
+            // create a new context object for the adam instance passing on  the
             // credentials from the context
             DirectoryContext adamInstContext = Utils.GetNewDirectoryContext(adamInstName, DirectoryContextType.DirectoryServer, _context);
 
@@ -662,7 +662,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ArrayList sites = new ArrayList();
             DirectoryEntry sitesEntry = _directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.SitesContainer);
 
-            // search for all the "site" objects 
+            // search for all the "site" objects
             // (one-level search is good enough)
             // setup the directory searcher object
             string filter = "(" + PropertyManager.ObjectCategory + "=site)";
@@ -704,7 +704,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry rootDSE = _directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
             DirectoryEntry partitionsEntry = _directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.PartitionsContainer);
 
-            // search for all the "crossRef" objects that have the 
+            // search for all the "crossRef" objects that have the
             // ADS_SYSTEMFLAG_CR_NTDS_NC set and the SYSTEMFLAG_CR_NTDS_DOMAIN flag not set
             // (one-level search is good enough)
             // setup the directory searcher object
@@ -740,7 +740,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 foreach (SearchResult res in resCol)
                 {
-                    // add the name of the appNC only if it is not 
+                    // add the name of the appNC only if it is not
                     // the Schema or Configuration partition
                     string nCName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.NCName);
 

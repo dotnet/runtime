@@ -131,7 +131,7 @@ namespace System.Data.Tests
 
             _dataSet.Tables.Add(_parentTable1);
 
-            // Create three new DataRow objects and add 
+            // Create three new DataRow objects and add
             // them to the DataTable
             for (int i = 0; i <= 2; i++)
             {
@@ -151,7 +151,7 @@ namespace System.Data.Tests
             DataColumn column;
             DataRow row;
 
-            // Create new DataColumn, set DataType, 
+            // Create new DataColumn, set DataType,
             // ColumnName and add to Table.
             column = new DataColumn();
             column.DataType = typeof(int);
@@ -172,7 +172,7 @@ namespace System.Data.Tests
 
             _dataSet.Tables.Add(_dummyTable);
 
-            // Create three new DataRow objects and add 
+            // Create three new DataRow objects and add
             // them to the DataTable
             for (int i = 0; i <= 2; i++)
             {
@@ -227,7 +227,7 @@ namespace System.Data.Tests
 
             _dataSet.Tables.Add(_childTable);
 
-            // Create three sets of DataRow objects, 
+            // Create three sets of DataRow objects,
             // five rows each, and add to DataTable.
             for (int i = 0; i <= 1; i++)
             {
@@ -303,7 +303,7 @@ namespace System.Data.Tests
             _secondChildTable.Columns.Add(column);
 
             _dataSet.Tables.Add(_secondChildTable);
-            // Create three sets of DataRow objects, 
+            // Create three sets of DataRow objects,
             // five rows each, and add to DataTable.
             for (int i = 0; i <= 1; i++)
             {
@@ -377,7 +377,7 @@ namespace System.Data.Tests
         //Test properties of a table which does not belongs to a DataSet
         private void VerifyTableSchema(DataTable table, string tableName, DataSet ds)
         {
-            //Test Schema 
+            //Test Schema
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
             Assert.Equal(ds, table.DataSet);
@@ -504,7 +504,7 @@ namespace System.Data.Tests
             DataSet ds = new DataSet("XmlDataSet");
             ds.Tables.Add(table);
             //Read the Xml and the Schema into a table which already belongs to a DataSet
-            //and the table name matches with the table in the source XML 
+            //and the table name matches with the table in the source XML
             ReadXmlSerializable(_tempFile, table);
             VerifyTableSchema(table, _parentTable1.TableName, ds);
         }
@@ -548,7 +548,7 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
             ReadXmlSerializable(_tempFile, table);
 
-            //Test Schema 
+            //Test Schema
             //Check Properties of Table
             Assert.Equal(string.Empty, table.Namespace);
             Assert.Null(table.DataSet);
@@ -710,7 +710,7 @@ namespace System.Data.Tests
 
             using (FileStream stream = new FileStream(_tempFile, FileMode.Open))
             {
-                // ReadXml does not read anything as the column 
+                // ReadXml does not read anything as the column
                 // names are not matching
                 ReadXmlSerializable(stream, table);
             }

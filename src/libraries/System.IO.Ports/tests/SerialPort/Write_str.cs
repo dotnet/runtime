@@ -13,7 +13,7 @@ namespace System.IO.Ports.Tests
 {
     public class Write_str : PortsTest
     {
-        // The string size used when verifying encoding 
+        // The string size used when verifying encoding
         private const int ENCODING_STRING_SIZE = 4;
 
         // The string size used for large string testing

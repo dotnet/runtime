@@ -18,13 +18,13 @@ internal class WmiEventSink : IWmiEventSource
 
     // Used for Put's only
     internal event InternalObjectPutEventHandler  InternalObjectPut;
-    private ManagementPath                  path;           
+    private ManagementPath                  path;
     private string                          className;
     private bool                            isLocal;
 
 
     static ManagementOperationObserver watcherParameter;
-    static object contextParameter; 
+    static object contextParameter;
     static ManagementScope scopeParameter;
     static string pathParameter;
     static string classNameParameter;
@@ -32,7 +32,7 @@ internal class WmiEventSink : IWmiEventSource
 
     internal static WmiEventSink GetWmiEventSink(
         ManagementOperationObserver watcher,
-        object context, 
+        object context,
         ManagementScope scope,
         string path,
         string className)
@@ -61,7 +61,7 @@ internal class WmiEventSink : IWmiEventSource
     }
 
     protected WmiEventSink (ManagementOperationObserver watcher,
-                         object context, 
+                         object context,
                          ManagementScope scope,
                          string path,
                          string className)
@@ -104,10 +104,10 @@ internal class WmiEventSink : IWmiEventSource
         return hash;
     }
 
-    public IWbemObjectSink Stub { 
-        get {           
+    public IWbemObjectSink Stub {
+        get {
             try {
-                return (null != stub) ? (IWbemObjectSink) stub : null; 
+                return (null != stub) ? (IWbemObjectSink) stub : null;
             } catch {
                 return null;
             }
@@ -119,16 +119,16 @@ internal class WmiEventSink : IWmiEventSource
         Marshal.AddRef(pIWbemClassObject);
         IWbemClassObjectFreeThreaded obj = new IWbemClassObjectFreeThreaded(pIWbemClassObject);
         try {
-            ObjectReadyEventArgs args = new ObjectReadyEventArgs (context, 
+            ObjectReadyEventArgs args = new ObjectReadyEventArgs (context,
                                         ManagementBaseObject.GetBaseObject (obj, scope));
-            watcher.FireObjectReady (args); 
+            watcher.FireObjectReady (args);
         } catch {}
     }
 
     public void SetStatus (
-                    int flags, 
-                    int hResult, 
-                    string message, 
+                    int flags,
+                    int hResult,
+                    string message,
                     IntPtr pErrorObj)
     {
         IWbemClassObjectFreeThreaded errObj = null;
@@ -166,25 +166,25 @@ internal class WmiEventSink : IWmiEventSource
                 CompletedEventArgs args2 = null ;
                 if ( errObj != null )
                     {
-                        args2 = new CompletedEventArgs (context, hResult, 
+                        args2 = new CompletedEventArgs (context, hResult,
                                                 new ManagementBaseObject (errObj)
                                                 );
                     }
                 else
                     {
-                        args2 = new CompletedEventArgs (context, hResult, 
+                        args2 = new CompletedEventArgs (context, hResult,
                                                 null
                                                 );
                     }
                 watcher.FireCompleted (args2);
-                
+
                 // Unhook and tidy up
                 watcher.RemoveSink (this);
             }
             else if (0 != (flags & (int) tag_WBEM_STATUS_TYPE.WBEM_STATUS_PROGRESS))
             {
                 // Fire Progress event
-                ProgressEventArgs args = new ProgressEventArgs (context, 
+                ProgressEventArgs args = new ProgressEventArgs (context,
                     (int) (((uint)hResult & 0xFFFF0000) >> 16), hResult & 0xFFFF, message);
 
                 watcher.FireProgress (args);
@@ -192,11 +192,11 @@ internal class WmiEventSink : IWmiEventSource
         } catch {}
     }
 
-    internal void Cancel () 
+    internal void Cancel ()
     {
         try {
             scope.GetIWbemServices().CancelAsyncCall_((IWbemObjectSink) stub);
-        } catch {}      
+        } catch {}
     }
 
     internal void ReleaseStub ()
@@ -223,7 +223,7 @@ internal class WmiGetEventSink : WmiEventSink
     private ManagementObject    managementObject;
 
     static ManagementOperationObserver watcherParameter;
-    static object contextParameter; 
+    static object contextParameter;
     static ManagementScope scopeParameter;
     static ManagementObject managementObjectParameter;
 
@@ -231,7 +231,7 @@ internal class WmiGetEventSink : WmiEventSink
 
     internal static WmiGetEventSink GetWmiGetEventSink(
         ManagementOperationObserver watcher,
-        object context, 
+        object context,
         ManagementScope scope,
         ManagementObject managementObject)
     {
@@ -259,7 +259,7 @@ internal class WmiGetEventSink : WmiEventSink
 
 
     private WmiGetEventSink (ManagementOperationObserver watcher,
-                         object context, 
+                         object context,
                          ManagementScope scope,
                          ManagementObject managementObject) :
         base (watcher, context, scope, null, null)

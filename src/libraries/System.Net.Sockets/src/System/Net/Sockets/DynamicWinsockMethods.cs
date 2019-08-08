@@ -296,16 +296,16 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate bool DisconnectExDelegate(
-                SafeSocketHandle socketHandle, 
-                NativeOverlapped* overlapped, 
-                int flags, 
+                SafeSocketHandle socketHandle,
+                NativeOverlapped* overlapped,
+                int flags,
                 int reserved);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal delegate bool DisconnectExDelegateBlocking(
-                SafeSocketHandle socketHandle, 
-                IntPtr overlapped, 
-                int flags, 
+                SafeSocketHandle socketHandle,
+                IntPtr overlapped,
+                int flags,
                 int reserved);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]

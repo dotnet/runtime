@@ -24,8 +24,8 @@ namespace System.Runtime.Serialization
         {
             var mh = obj as MemberHolder;
             return
-                mh != null && 
-                ReferenceEquals(mh._memberType, _memberType) && 
+                mh != null &&
+                ReferenceEquals(mh._memberType, _memberType) &&
                 mh._context.State == _context.State;
         }
     }

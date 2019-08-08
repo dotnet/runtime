@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
                 _position = 0;
                 _rewindable = rewindable;
             }
-        
+
             public override bool CanRead
             {
                 get { return true; }

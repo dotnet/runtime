@@ -13,7 +13,7 @@ namespace System.UnitTesting
             where TEnum2 : struct
         {
             EnumsContainSameValuesCore<TEnum1, TEnum2>();
-            EnumsContainSameValuesCore<TEnum2, TEnum1>();            
+            EnumsContainSameValuesCore<TEnum2, TEnum1>();
         }
 
         private static void EnumsContainSameValuesCore<TEnum1, TEnum2>()

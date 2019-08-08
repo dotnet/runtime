@@ -191,7 +191,7 @@ namespace System.Runtime.Caching
             }
             catch
             {
-                // 
+                //
             }
         }
 

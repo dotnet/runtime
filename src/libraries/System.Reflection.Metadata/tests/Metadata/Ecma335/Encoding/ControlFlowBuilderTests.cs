@@ -46,12 +46,12 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             flow.AddFaultRegion(l1, l2, l3, l4);
             flow.AddFinallyRegion(l1, l2, l3, l4);
             flow.AddFilterRegion(l1, l2, l3, l4, l5);
-            
+
             var builder = new BlobBuilder();
             builder.WriteByte(0xff);
             flow.SerializeExceptionTable(builder);
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0xFF, 0x00, 0x00, 0x00,    // padding
                 0x01,                      // flag
@@ -63,15 +63,15 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x00, 0x00, 0x00, 0x00,    // catch type or filter offset
-                                           
+
                 0x02, 0x00,                // kind
                 0x00, 0x00,                // try offset
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x00, 0x00, 0x00, 0x00,    // catch type or filter offset
 
                 0x01, 0x00,                // kind
@@ -79,7 +79,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x0A, 0x00, 0x00, 0x00     // catch type or filter offset
             }, builder.ToArray());
         }
@@ -136,15 +136,15 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x01, 0x00, 0x00, 0x02,    // catch type or filter offset
-                                           
+
                 0x00, 0x00,                // kind
                 0x00, 0x00,                // try offset
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x02, 0x00, 0x00, 0x1B,    // catch type or filter offset
 
                 0x00, 0x00,                // kind
@@ -152,7 +152,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x01,                      // try length
                 0x03, 0x00,                // handler offset
                 0x03,                      // handler length
-                                           
+
                 0x03, 0x00, 0x00, 0x01,    // catch type or filter offset
             }, builder.ToArray());
         }
@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             AssertExtensions.Throws<ArgumentException>("catchType", () => flow.AddCatchRegion(l1, l2, l3, l4, default(TypeDefinitionHandle)));
             AssertExtensions.Throws<ArgumentException>("catchType", () => flow.AddCatchRegion(l1, l2, l3, l4, MetadataTokens.MethodDefinitionHandle(1)));
-            
+
             Assert.Throws<ArgumentNullException>(() => flow.AddCatchRegion(default(LabelHandle), l2, l3, l4, MetadataTokens.TypeReferenceHandle(1)));
             Assert.Throws<ArgumentNullException>(() => flow.AddCatchRegion(l1, default(LabelHandle), l3, l4, MetadataTokens.TypeReferenceHandle(1)));
             Assert.Throws<ArgumentNullException>(() => flow.AddCatchRegion(l1, l2, default(LabelHandle), l4, MetadataTokens.TypeReferenceHandle(1)));

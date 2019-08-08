@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public, typeof(void), parameterTypes);
-            
+
             Type[] typeParameters = method.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
             method.SetParameters(typeParameters);
 

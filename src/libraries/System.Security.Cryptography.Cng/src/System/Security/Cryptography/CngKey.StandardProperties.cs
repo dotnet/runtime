@@ -221,7 +221,7 @@ namespace System.Security.Cryptography
                 }
             }
         }
-      
+
 
         /// <summary>
         ///     KSP which holds this key
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography
                             throw ErrorCode.E_FAIL.ToCryptographicException();
 
                         // ! We must keep this byte array pinned until NCryptGetProperty() has returned *and* we've marshaled all of the inner native strings into managed String
-                        // ! objects. Otherwise, a badly timed GC will move the native strings in memory and invalidate the pointers to them before we dereference them. 
+                        // ! objects. Otherwise, a badly timed GC will move the native strings in memory and invalidate the pointers to them before we dereference them.
                         byte[] ncryptUiPolicyAndStrings = new byte[numBytesNeeded];
                         fixed (byte* pNcryptUiPolicyAndStrings = &ncryptUiPolicyAndStrings[0])
                         {
@@ -323,4 +323,3 @@ namespace System.Security.Cryptography
         }
     }
 }
-

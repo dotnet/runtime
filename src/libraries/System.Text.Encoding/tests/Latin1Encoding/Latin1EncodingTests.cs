@@ -31,7 +31,7 @@ namespace System.Text.Tests
         {
             Assert.Equal("iso-8859-1", encoding.WebName);
         }
-        
+
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         public void CodePage(Encoding encoding)

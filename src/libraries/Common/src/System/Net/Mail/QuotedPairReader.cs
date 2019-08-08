@@ -8,14 +8,14 @@ using System.Net.Mime;
 namespace System.Net.Mail
 {
     // RFC 2822 Section 3.2.2 - Quoted Characters
-    // As in C# strings, characters that would otherwise have special meaning should be ignored when quoted/escaped 
-    // by a backslash "\". Quoted characters (quoted-pair) are only allowed in the following contexts: Comments, 
-    // quoted-string, domain-literal, and message-id. 
-    // 
+    // As in C# strings, characters that would otherwise have special meaning should be ignored when quoted/escaped
+    // by a backslash "\". Quoted characters (quoted-pair) are only allowed in the following contexts: Comments,
+    // quoted-string, domain-literal, and message-id.
+    //
     // Example: A quoted-string ("hello there") cannot contain a double quote, as it must be surrounded by them.
     //  However, the double quote can be included as a quoted-pair: ("hello\"there") means (hello"there).
     //
-    // Because backslashes themselves can be quoted-pairs (\\), this class's primary function is to verify what 
+    // Because backslashes themselves can be quoted-pairs (\\), this class's primary function is to verify what
     // character is being quoted. In "hi\\\\a", 'a' is not quoted because all of the backslashes are paired together.
     // In "hi\\\a", 'a' is quoted.
     internal static class QuotedPairReader
@@ -25,8 +25,8 @@ namespace System.Net.Mail
         //
         // Preconditions: Index should be within the bounds of the data string.
         //
-        // Return value: 
-        // - 0 if the char at data[index] was not quoted 
+        // Return value:
+        // - 0 if the char at data[index] was not quoted
         //   e.g. (\\a) given index=2 returns 0 because 'a' is not quoted
         // - The number of consecutive quoted chars, including multiple preceding quoted backslashes
         //   e.g. (a\\\b) given index=4 returns 4, as 'b' is quoted, and so are the previous backslashes
@@ -64,7 +64,7 @@ namespace System.Net.Mail
         //
         // Counts the number of consecutive backslashes
         //
-        // Preconditions: 
+        // Preconditions:
         // - Index should be within the bounds of the data string.
         // - The initial data[index] must be a backslash.
         //

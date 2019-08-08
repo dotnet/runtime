@@ -45,7 +45,7 @@ namespace System.Data
             _nodeToRowMap = new Hashtable();
             _fIsXdr = IsXdr;
 
-            // Allocate the stack and create the mappings            
+            // Allocate the stack and create the mappings
             _childRowsStack = new Stack(50);
 
             _topMostNode = topNode;
@@ -664,7 +664,7 @@ namespace System.Data
             }
         }
 
-        // Loads a top most table. 
+        // Loads a top most table.
         // This is neded because desktop is capable of loading almost anything into the dataset.
         // The top node could be a DataSet element or a Table element. To make things worse,
         // you could have a table with the same name as dataset.
@@ -680,7 +680,7 @@ namespace System.Data
         //      Current node matches column or nested table in the table ?             and current node
         //     / No                                                 \ Yes              is a column or a
         //     TopNode is DataSet                            TopNode is table          nested table
-        // 
+        //
         // Yes, it is terrible and I don't like it also..
 
         private void LoadTopMostTable(DataTable table)
@@ -690,7 +690,7 @@ namespace System.Data
             //      <Column>Value</Column>
             //      <AnotherColumn>Value</AnotherColumn>
             //  </Table> ...
-            //            \------------------------------ We are here on exit           
+            //            \------------------------------ We are here on exit
 
 
             Debug.Assert(table != null, "Table to be loaded is null on LoadTopMostTable() entry");
@@ -706,8 +706,8 @@ namespace System.Data
             bool matchFound = false;                            // Assume we found no matching elements
 
             int entryDepth = _dataReader.Depth - 1;              // Store current reader depth so we know when to stop reading
-                                                                 // Adjust depth by one as we've read top most element 
-                                                                 // outside this method. 
+                                                                 // Adjust depth by one as we've read top most element
+                                                                 // outside this method.
             string textNodeValue;                               // Value of a text node we might have
 
             Debug.Assert(entryDepth >= 0, "Wrong entry Depth for top most element.");
@@ -764,7 +764,7 @@ namespace System.Data
                             }
                             else
                             {
-                                _dataReader.Read();                  // Advance to next element. 
+                                _dataReader.Read();                  // Advance to next element.
                             }
                         }
                         else
@@ -775,11 +775,11 @@ namespace System.Data
                             {            // Do we have matched table in DataSet ?
                                 LoadTable(nestedTable, true /* isNested */);
                                 // Yes. Load nested table (recursive)
-                                matchFound = true;                  // Got matched nested table 
+                                matchFound = true;                  // Got matched nested table
                             }
                             else if (ProcessXsdSchema())
                             {          // Check for schema. Skip or load if found.
-                                continue;                           // Schema has been found. Process the next element 
+                                continue;                           // Schema has been found. Process the next element
                                                                     // we're already at (done by schema processing).
                             }
                             else
@@ -789,7 +789,7 @@ namespace System.Data
                                     // Could top node be a DataSet?
 
 
-                                    return;                         // Assume top node is DataSet 
+                                    return;                         // Assume top node is DataSet
                                                                     // and stop top node processing
                                 }
                                 _dataReader.Read();                  // Continue to the next element.
@@ -810,7 +810,7 @@ namespace System.Data
                         if (c != null && foundColumns[c.Ordinal] == null)
                         {
                             // If XmlText Column is set
-                            // and we do not have data already                
+                            // and we do not have data already
                             foundColumns[c.Ordinal] = c.ConvertXmlToObject(textNodeValue);
                             // Read and store the data
                         }
@@ -857,24 +857,24 @@ namespace System.Data
             }
         }
 
-        // Loads a table. 
-        // Yes, I know it's a big method. This is done to avoid performance penalty of calling methods 
+        // Loads a table.
+        // Yes, I know it's a big method. This is done to avoid performance penalty of calling methods
         // with many arguments and to keep recursion within one method only. To make code readable,
-        // this method divided into 3 parts: attribute processing (including diffgram), 
+        // this method divided into 3 parts: attribute processing (including diffgram),
         // nested elements processing and loading data. Please keep it this way.
 
         private void LoadTable(DataTable table, bool isNested)
         {
             //  <DataSet> /--------------------------- We are here on entrance
-            //      <Table>               
+            //      <Table>
             //          <Column>Value</Column>
             //          <AnotherColumn>Value</AnotherColumn>
-            //      </Table>    /-------------------------- We are here on exit           
+            //      </Table>    /-------------------------- We are here on exit
             //      <AnotherTable>
             //      ...
             //      </AnotherTable>
             //      ...
-            //  </DataSet> 
+            //  </DataSet>
 
             Debug.Assert(table != null, "Table to be loaded is null on LoadTable() entry");
 
@@ -887,7 +887,7 @@ namespace System.Data
             DataColumnCollection collection = table.Columns;    // Hold column collectio here
 
             object[] foundColumns = new object[collection.Count];
-            // This is the columns data we found 
+            // This is the columns data we found
             // This is used to process diffgramms
 
             int rowOrder = -1;                                  // Row to insert data to
@@ -897,7 +897,7 @@ namespace System.Data
 
             string textNodeValue;                               // Value of a text node we might have
 
-            // Process attributes first                         
+            // Process attributes first
 
             for (int i = _dataReader.AttributeCount - 1; i >= 0; --i)
             {
@@ -915,7 +915,7 @@ namespace System.Data
                 }                                               // Oops. No column for this element
 
                 if (_isDiffgram)
-                {                             // Now handle some diffgram attributes 
+                {                             // Now handle some diffgram attributes
                     if (_dataReader.NamespaceURI == Keywords.DFFNS)
                     {
                         switch (_dataReader.LocalName)
@@ -944,7 +944,7 @@ namespace System.Data
                         {
                             // Hidden column ?
                             c = collection[XmlConvert.DecodeName(_dataReader.LocalName.Substring(6))];
-                            // Let's see if we have one. 
+                            // Let's see if we have one.
                             // We have to decode name before we look it up
                             // We could not use XmlToDataSet map as it contains
                             // no hidden columns
@@ -961,7 +961,7 @@ namespace System.Data
             // Now handle elements. This could be columns or nested tables.
 
             //  <DataSet> /------------------- We are here after dealing with attributes
-            //      <Table foo="FooValue" bar="BarValue">  
+            //      <Table foo="FooValue" bar="BarValue">
             //          <Column>Value</Column>
             //          <AnotherColumn>Value</AnotherColumn>
             //      </Table>
@@ -990,7 +990,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    _dataReader.Read();              // Advance to next element. 
+                                    _dataReader.Read();              // Advance to next element.
                                 }
                             }
                             else
@@ -1004,15 +1004,15 @@ namespace System.Data
                                 }                                   // Not a table nor column? Check if it's schema.
                                 else if (ProcessXsdSchema())
                                 {      // Check for schema. Skip or load if found.
-                                    continue;                       // Schema has been found. Process the next element 
+                                    continue;                       // Schema has been found. Process the next element
                                                                     // we're already at (done by schema processing).
                                 }
                                 else
                                 {
                                     // We've got element which is not supposed to he here according to the schema.
-                                    // That might be a table which was misplaced. We should've thrown on that, 
+                                    // That might be a table which was misplaced. We should've thrown on that,
                                     // but we'll try to load it so we could keep compatibility.
-                                    // We won't try to match to columns as we have no idea 
+                                    // We won't try to match to columns as we have no idea
                                     // which table this potential column might belong to.
                                     DataTable misplacedTable = _nodeToSchemaMap.GetTableForNode(_dataReader, FIgnoreNamespace(_dataReader));
                                     // Try to get table for node
@@ -1043,7 +1043,7 @@ namespace System.Data
                             if (c != null && foundColumns[c.Ordinal] == null)
                             {
                                 // If XmlText Column is set
-                                // and we do not have data already                
+                                // and we do not have data already
                                 foundColumns[c.Ordinal] = c.ConvertXmlToObject(textNodeValue);
                                 // Read and store the data
                             }
@@ -1063,7 +1063,7 @@ namespace System.Data
             {                               // In case of diffgram
                 row = table.NewRow(table.NewUninitializedRecord());
                 // just create an empty row
-                row.BeginEdit();                            // and allow it's population with data 
+                row.BeginEdit();                            // and allow it's population with data
 
                 for (int i = foundColumns.Length - 1; i >= 0; --i)
                 {
@@ -1234,7 +1234,7 @@ namespace System.Data
                 foundColumns[column.Ordinal] = columnValue;     // Store value
             }
             else
-            {                                                  // Not a custom type. 
+            {                                                  // Not a custom type.
                 if (_dataReader.Read() && entryDepth < _dataReader.Depth)
                 {
                     // Read to the next element and see if we're inside.
@@ -1250,7 +1250,7 @@ namespace System.Data
                                 {                 // In case we do not have value already
                                     text = _dataReader.Value;            // Get value.
 
-                                    // See if we have other text nodes near. In most cases this loop will not be executed. 
+                                    // See if we have other text nodes near. In most cases this loop will not be executed.
                                     StringBuilder builder = null;
                                     while (_dataReader.Read() && entryDepth < _dataReader.Depth && IsTextLikeNode(_dataReader.NodeType))
                                     {
@@ -1277,7 +1277,7 @@ namespace System.Data
                             case XmlNodeType.Element:
                                 if (ProcessXsdSchema())
                                 {               // Check for schema. Skip or load if found.
-                                    continue;                           // Schema has been found. Process the next element 
+                                    continue;                           // Schema has been found. Process the next element
                                                                         // we're already at (done by schema processing).
                                 }
                                 else
@@ -1315,7 +1315,7 @@ namespace System.Data
                                             // Yes. Load nested table (recursive)
                                         }
                                         else
-                                        {                          // Not a nested column nor nested table.    
+                                        {                          // Not a nested column nor nested table.
                                                                    // Let's try other tables in the DataSet
 
                                             DataTable misplacedTable = _nodeToSchemaMap.GetTableForNode(_dataReader, FIgnoreNamespace(_dataReader));
@@ -1387,11 +1387,11 @@ namespace System.Data
             else if (((object)_dataReader.LocalName == _XDR_SCHEMA && (object)_dataReader.NamespaceURI == _XDRNS) ||
                     ((object)_dataReader.LocalName == _SQL_SYNC && (object)_dataReader.NamespaceURI == _UPDGNS))
             {
-                _dataReader.Skip();                                  // Skip XDR or SQL sync 
+                _dataReader.Skip();                                  // Skip XDR or SQL sync
             }
             else
             {
-                return false;                                       // No schema found. That means reader's position 
+                return false;                                       // No schema found. That means reader's position
                                                                     // is unchganged. Report that to the caller.
             }
 

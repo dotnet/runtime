@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,7 +16,7 @@ namespace System.Text.Json
     /// a JsonException with basic error information like line number and byte position on the line.
     /// Since this type is a ref struct, it does not directly support async. However, it does provide
     /// support for reentrancy to read incomplete data, and continue reading once more data is presented.
-    /// To be able to set max depth while reading OR allow skipping comments, create an instance of 
+    /// To be able to set max depth while reading OR allow skipping comments, create an instance of
     /// <see cref="JsonReaderState"/> and pass that in to the reader.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
@@ -124,7 +124,7 @@ namespace System.Text.Json
         public JsonTokenType TokenType => _tokenType;
 
         /// <summary>
-        /// Lets the caller know which of the two 'Value' properties to read to get the 
+        /// Lets the caller know which of the two 'Value' properties to read to get the
         /// token value. For input data within a ReadOnlySpan&lt;byte&gt; this will
         /// always return false. For input data within a ReadOnlySequence&lt;byte&gt;, this
         /// will only return true if the token value straddles more than a single segment and
@@ -297,10 +297,10 @@ namespace System.Text.Json
         /// </exception>
         /// <remarks>
         /// When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
-        /// When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
+        /// When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or
         /// <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
         /// <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
-        /// 
+        ///
         /// For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
         /// the next value (when in an array), the next property name (when in an object), or the end array/object token.
         /// </remarks>
@@ -356,10 +356,10 @@ namespace System.Text.Json
         ///   </para>
         ///   <para>
         ///     When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
-        ///     When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
+        ///     When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or
         ///     <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
         ///     <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
-        /// 
+        ///
         ///     For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
         ///     the next value (when in an array), the next property name (when in an object), or the end array/object token.
         ///   </para>
@@ -421,7 +421,7 @@ namespace System.Text.Json
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
+        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have
         ///     invalid UTF-8 within the JSON payload.
         ///   </para>
         ///   <para>
@@ -450,7 +450,7 @@ namespace System.Text.Json
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
+        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have
         ///     invalid UTF-8 within the JSON payload.
         ///   </para>
         ///   <para>
@@ -926,7 +926,7 @@ namespace System.Text.Json
         }
 
         // Unlike the parameter-less overload of HasMoreData, if there is no more data when this method is called, we know the JSON input is invalid.
-        // This is because, this method is only called after a ',' (i.e. we expect a value/property name) or after 
+        // This is because, this method is only called after a ',' (i.e. we expect a value/property name) or after
         // a property name, which means it must be followed by a value.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HasMoreData(ExceptionResource resource)

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -53,7 +53,7 @@ namespace System.Data.Tests
             myTable.Rows.Add(myRow);
 
             // DataRow AcceptChanges
-            // DataRowState.Added -> DataRowState.Unchanged 
+            // DataRowState.Added -> DataRowState.Unchanged
             myTable.AcceptChanges();
             Assert.Equal(DataRowState.Unchanged, myRow.RowState);
         }
@@ -679,12 +679,12 @@ namespace System.Data.Tests
             drTemp[1]["String1"] = "NewValue"; //row now has versions: Proposed,Current,Original,Default
 
             // Check DataRowVersion.Current
-            //Check DataRowVersion.Current 
+            //Check DataRowVersion.Current
             drArrExcepted = dtParent.Select("ParentId=" + drParent["ParentId"], "", DataViewRowState.CurrentRows);
             drArrResult = drChild.GetParentRows("Parent-Child", DataRowVersion.Current);
             Assert.Equal(drArrExcepted, drArrResult);
 
-            //Check DataRowVersion.Current 
+            //Check DataRowVersion.Current
             // Teting: DataRow.GetParentRows_D_D ,DataRowVersion.Original
             drArrExcepted = dtParent.Select("ParentId=" + drParent["ParentId"], "", DataViewRowState.OriginalRows);
             drArrResult = drChild.GetParentRows("Parent-Child", DataRowVersion.Original);
@@ -2569,11 +2569,11 @@ namespace System.Data.Tests
 
             DataRow myRow = myTable.Rows[0];
 
-            Assert.Throws<ConstraintException>(() => myRow[0] = 2); //row[0] now conflict with row[1] 
+            Assert.Throws<ConstraintException>(() => myRow[0] = 2); //row[0] now conflict with row[1]
 
             //Will NOT! throw exception
             myRow.BeginEdit();
-            myRow[0] = 2; //row[0] now conflict with row[1] 
+            myRow[0] = 2; //row[0] now conflict with row[1]
 
             DataTable dt = DataProvider.CreateParentDataTable();
             DataRow dr = dt.Rows[0];

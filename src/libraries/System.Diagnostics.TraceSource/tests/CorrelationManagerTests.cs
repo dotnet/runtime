@@ -123,7 +123,7 @@ namespace System.Diagnostics.TraceSourceTests
         private static void ValidateStack(Stack input, params object[] expectedContents)
         {
             Assert.Equal(expectedContents.Length, input.Count);
-            // Note: this reverts the stack 
+            // Note: this reverts the stack
             Stack currentStack = new Stack(input);
 
             // The expected values are passed in the order they are supposed to be in the original stack

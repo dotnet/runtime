@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
                 }
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(GetWeekOfYear_TestData))]
         public void GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
             }
             Assert.Equal(expected, new TaiwanCalendar().GetWeekOfYear(time, rule, firstDayOfWeek));
         }
-        
+
         [Fact]
         public void GetWeekOfYear_LastDayOfYear()
         {
@@ -55,7 +55,7 @@ namespace System.Globalization.Tests
             }
             Assert.Equal(expected, new TaiwanCalendar().GetWeekOfYear(time, CalendarWeekRule.FirstDay, DayOfWeek.Sunday));
         }
-        
+
         internal int GetWeekOfYearFirstDay(DateTime time, int firstDayOfWeek)
         {
             Calendar gc = new GregorianCalendar();
@@ -73,7 +73,7 @@ namespace System.Globalization.Tests
         {
             GregorianCalendar gregorianCalendar = new GregorianCalendar();
             // Make the day of year to be 0-based, so that 1/1 is day 0.
-            int dayOfYear = gregorianCalendar.GetDayOfYear(time) - 1; 
+            int dayOfYear = gregorianCalendar.GetDayOfYear(time) - 1;
             //
             // Calculate the number of days between the first day of year (1/1) and the first day of the week.
             // This value will be a positive value from 0 ~ 6.  We call this value as "offset".

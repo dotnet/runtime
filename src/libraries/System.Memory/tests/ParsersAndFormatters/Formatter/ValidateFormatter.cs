@@ -74,7 +74,7 @@ namespace System.Buffers.Text.Tests
                 string expected = testData.ExpectedOutput;
                 if (actual != expected)
                 {
-                    // We'll allocate (and not throw) the TestException (so that someone with a breakpoint inside TestException's constructor will break as desired) but 
+                    // We'll allocate (and not throw) the TestException (so that someone with a breakpoint inside TestException's constructor will break as desired) but
                     // use Assert.Equals() to trigger the actual failure so we get XUnit's more useful comparison output into the log.
                     new TestException($"This format attempt ({testData}) succeeded as expected but generated the wrong text:\n  Expected: \"{expected}\"\n  Actual:   \"{actual}\"\n");
                     Assert.Equal(expected, actual);
@@ -230,4 +230,3 @@ namespace System.Buffers.Text.Tests
         }
     }
 }
-

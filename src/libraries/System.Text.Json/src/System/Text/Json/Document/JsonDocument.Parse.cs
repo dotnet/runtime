@@ -303,7 +303,7 @@ namespace System.Text.Json
         ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
         ///     the start of the value.
         ///   </para>
-        /// 
+        ///
         ///   <para>
         ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown the reader is reset to
@@ -499,7 +499,7 @@ namespace System.Text.Json
                         {
                             // Default case would only hit if TokenType equals JsonTokenType.EndObject or JsonTokenType.EndArray in which case it would never be sequence
                             Debug.Assert(!reader.HasValueSequence);
-                            byte displayByte = reader.ValueSpan[0];                          
+                            byte displayByte = reader.ValueSpan[0];
 
                             ThrowHelper.ThrowJsonReaderException(
                                 ref reader,

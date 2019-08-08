@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions.Tests
 
             yield return new object[] { ":", "kkk:lll:mmm:nnn:ooo", RegexOptions.None, 19, 0, new string[] { "kkk", "lll", "mmm", "nnn", "ooo" } };
             yield return new object[] { ":", "kkk:lll:mmm:nnn:ooo", RegexOptions.None, 0, 0, new string[] { "kkk", "lll", "mmm", "nnn", "ooo" } };
-            
+
             yield return new object[] { @"(\s)?(-)", "once -upon-a time", RegexOptions.None, 17, 0, new string[] { "once", " ", "-", "upon", "-", "a time" } };
             yield return new object[] { @"(\s)?(-)", "once upon a time", RegexOptions.None, 16, 0, new string[] { "once upon a time" } };
             yield return new object[] { @"(\s)?(-)", "once - -upon- a- time", RegexOptions.None, 21, 0, new string[] { "once", " ", "-", "", " ", "-", "upon", "-", " a", "-", " time" } };

@@ -17,8 +17,8 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the inheritance attribute of the specified
         /// component. If the component is not being inherited, this method will return the
-        /// value <see cref='System.ComponentModel.InheritanceAttribute.NotInherited'/>. 
-        /// Otherwise it will return the inheritance attribute for this component.    
+        /// value <see cref='System.ComponentModel.InheritanceAttribute.NotInherited'/>.
+        /// Otherwise it will return the inheritance attribute for this component.
         /// </summary>
         InheritanceAttribute GetInheritanceAttribute(IComponent component);
     }

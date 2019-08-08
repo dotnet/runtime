@@ -62,7 +62,7 @@ namespace System.Drawing
                     {
                         return string.Empty;
                     }
-                    
+
                     // If this is a known color, then Color can provide its own name.
                     // Otherwise, we fabricate an ARGB value for it.
                     if (ColorTable.IsKnownNamedColor(c.Name))
@@ -112,7 +112,7 @@ namespace System.Drawing
                     }
                     else if (ColorTable.IsKnownNamedColor(c.Name))
                     {
-                        member = typeof(Color).GetProperty(c.Name) ?? typeof(SystemColors).GetProperty(c.Name);   
+                        member = typeof(Color).GetProperty(c.Name) ?? typeof(SystemColors).GetProperty(c.Name);
                     }
                     else if (c.A != 255)
                     {

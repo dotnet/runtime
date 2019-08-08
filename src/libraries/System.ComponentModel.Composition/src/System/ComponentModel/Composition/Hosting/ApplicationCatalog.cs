@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             _definitionOrigin = definitionOrigin;
         }
-        
+
         public ApplicationCatalog(ReflectionContext reflectionContext)
         {
             Requires.NotNull(reflectionContext, nameof(reflectionContext));
@@ -77,11 +77,11 @@ namespace System.ComponentModel.Composition.Hosting
                             {
                                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                             }
-        
+
                             var catalogs = new List<ComposablePartCatalog>();
                             catalogs.Add(CreateCatalog(location, "*.exe"));
                             catalogs.Add(CreateCatalog(location, "*.dll"));
-        
+
                             string relativeSearchPath = AppDomain.CurrentDomain.RelativeSearchPath;
                             if(!string.IsNullOrEmpty(relativeSearchPath))
                             {
@@ -141,13 +141,13 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Returns the export definitions that match the constraint defined by the specified definition.
         /// </summary>
         /// <param name="definition">
-        ///     The <see cref="ImportDefinition"/> that defines the conditions of the 
+        ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="ExportDefinition"/> objects to return.
         /// </param>
         /// <returns>
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the 
-        ///     <see cref="ExportDefinition"/> objects and their associated 
-        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="Tuple{T1, T2}"/> containing the
+        ///     <see cref="ExportDefinition"/> objects and their associated
+        ///     <see cref="ComposablePartDefinition"/> for objects that match the constraint defined
         ///     by <paramref name="definition"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -179,7 +179,7 @@ namespace System.ComponentModel.Composition.Hosting
             return string.Format(CultureInfo.CurrentCulture,
                                 "{0} (Path=\"{1}\") (PrivateProbingPath=\"{2}\")",   // NOLOC
                                 GetType().Name,
-                                AppDomain.CurrentDomain.BaseDirectory, 
+                                AppDomain.CurrentDomain.BaseDirectory,
                                 AppDomain.CurrentDomain.RelativeSearchPath);
         }
 

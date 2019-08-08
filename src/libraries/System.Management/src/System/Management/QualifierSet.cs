@@ -12,15 +12,15 @@ namespace System.Management
     /// <para> Represents a collection of <see cref='System.Management.QualifierData'/> objects.</para>
     /// </summary>
     /// <example>
-    ///    <code lang='C#'>using System; 
+    ///    <code lang='C#'>using System;
     /// using System.Management;
-    ///  
-    /// // This sample demonstrates how to list all qualifiers including amended 
-    /// // qualifiers of a ManagementClass object. 
-    /// class Sample_QualifierDataCollection 
-    /// { 
-    ///     public static int Main(string[] args) { 
-    ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk"); 
+    ///
+    /// // This sample demonstrates how to list all qualifiers including amended
+    /// // qualifiers of a ManagementClass object.
+    /// class Sample_QualifierDataCollection
+    /// {
+    ///     public static int Main(string[] args) {
+    ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk");
     ///         diskClass.Options.UseAmendedQualifiers = true;
     ///         QualifierDataCollection qualifierCollection = diskClass.Qualifiers;
     ///         foreach (QualifierData q in qualifierCollection) {
@@ -86,7 +86,7 @@ namespace System.Management
             IWbemQualifierSetFreeThreaded qualifierSet    = null;
             int status                        = (int)ManagementStatus.NoError;
 
-            switch (qualifierSetType) 
+            switch (qualifierSetType)
             {
                 case QualifierType.ObjectQualifier :
                     status = parent.wbemObject.GetQualifierSet_(out qualifierSet);
@@ -122,7 +122,7 @@ namespace System.Management
         /// <value>
         ///    <para>The number of objects in the collection.</para>
         /// </value>
-        public int Count 
+        public int Count
         {
             get {
                 string[] qualifierNames = null;
@@ -140,7 +140,7 @@ namespace System.Management
                         throw;
                 }
                 int status = quals.GetNames_(0, out qualifierNames);
-                
+
                 if (status < 0)
                 {
                     if ((status & 0xfffff000) == 0x80041000)
@@ -157,10 +157,10 @@ namespace System.Management
         ///    <para>Gets or sets a value indicating whether the object is synchronized.</para>
         /// </summary>
         /// <value>
-        /// <para><see langword='true'/> if the object is synchronized; 
+        /// <para><see langword='true'/> if the object is synchronized;
         ///    otherwise, <see langword='false'/>.</para>
         /// </value>
-        public bool IsSynchronized { get { return false; } 
+        public bool IsSynchronized { get { return false; }
         }
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace System.Management
         /// <value>
         ///    <para>The object to be used for synchronization.</para>
         /// </value>
-        public object SyncRoot { get { return this; } 
+        public object SyncRoot { get { return this; }
         }
 
         /// <overload>
@@ -223,11 +223,11 @@ namespace System.Management
         }
 
         /// <summary>
-        /// <para>Copies the <see cref='System.Management.QualifierDataCollection'/> into a specialized 
-        /// <see cref='System.Management.QualifierData'/> 
+        /// <para>Copies the <see cref='System.Management.QualifierDataCollection'/> into a specialized
+        /// <see cref='System.Management.QualifierData'/>
         /// array.</para>
         /// </summary>
-        /// <param name='qualifierArray'><para>The specialized array of <see cref='System.Management.QualifierData'/> objects 
+        /// <param name='qualifierArray'><para>The specialized array of <see cref='System.Management.QualifierData'/> objects
         /// to which to copy the <see cref='System.Management.QualifierDataCollection'/>.</para></param>
         /// <param name=' index'>The index from which to start copying.</param>
         public void CopyTo(QualifierData[] qualifierArray, int index)
@@ -247,7 +247,7 @@ namespace System.Management
         /// <para>Returns an enumerator for the <see cref='System.Management.QualifierDataCollection'/>. This method is strongly typed.</para>
         /// </summary>
         /// <returns>
-        /// <para>An <see cref='System.Collections.IEnumerator'/> that can be used to iterate through the 
+        /// <para>An <see cref='System.Collections.IEnumerator'/> that can be used to iterate through the
         ///    collection.</para>
         /// </returns>
         public QualifierDataEnumerator GetEnumerator()
@@ -256,22 +256,22 @@ namespace System.Management
         }
 
         /// <summary>
-        /// <para>Represents the enumerator for <see cref='System.Management.QualifierData'/> 
+        /// <para>Represents the enumerator for <see cref='System.Management.QualifierData'/>
         /// objects in the <see cref='System.Management.QualifierDataCollection'/>.</para>
         /// </summary>
         /// <example>
-        ///    <code lang='C#'>using System; 
-        /// using System.Management; 
-        /// 
-        /// // This sample demonstrates how to enumerate qualifiers of a ManagementClass 
-        /// // using QualifierDataEnumerator object. 
-        /// class Sample_QualifierDataEnumerator 
-        /// { 
-        ///     public static int Main(string[] args) { 
-        ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk"); 
-        ///         diskClass.Options.UseAmendedQualifiers = true; 
+        ///    <code lang='C#'>using System;
+        /// using System.Management;
+        ///
+        /// // This sample demonstrates how to enumerate qualifiers of a ManagementClass
+        /// // using QualifierDataEnumerator object.
+        /// class Sample_QualifierDataEnumerator
+        /// {
+        ///     public static int Main(string[] args) {
+        ///         ManagementClass diskClass = new ManagementClass("Win32_LogicalDisk");
+        ///         diskClass.Options.UseAmendedQualifiers = true;
         ///         QualifierDataCollection diskQualifier = diskClass.Qualifiers;
-        ///         QualifierDataCollection.QualifierDataEnumerator 
+        ///         QualifierDataCollection.QualifierDataEnumerator
         ///             qualifierEnumerator = diskQualifier.GetEnumerator();
         ///         while(qualifierEnumerator.MoveNext()) {
         ///             Console.WriteLine(qualifierEnumerator.Current.Name + " = " +
@@ -283,7 +283,7 @@ namespace System.Management
         ///    </code>
         ///    <code lang='VB'>Imports System
         /// Imports System.Management
-        /// 
+        ///
         /// ' This sample demonstrates how to enumerate qualifiers of a ManagementClass
         /// ' using QualifierDataEnumerator object.
         /// Class Sample_QualifierDataEnumerator
@@ -312,7 +312,7 @@ namespace System.Management
             private int index = -1;
 
             //Internal constructor
-            internal QualifierDataEnumerator(ManagementBaseObject parent, string propertyOrMethodName, 
+            internal QualifierDataEnumerator(ManagementBaseObject parent, string propertyOrMethodName,
                                                         QualifierType qualifierType)
             {
                 this.parent               = parent;
@@ -323,7 +323,7 @@ namespace System.Management
                 IWbemQualifierSetFreeThreaded qualifierSet = null;
                 int status = (int)ManagementStatus.NoError;
 
-                switch (qualifierType) 
+                switch (qualifierType)
                 {
                     case QualifierType.ObjectQualifier :
                         status = parent.wbemObject.GetQualifierSet_(out qualifierSet);
@@ -346,7 +346,7 @@ namespace System.Management
                 else
                 {
                     status = qualifierSet.GetNames_(0, out qualifierNames);
-                                
+
                     if (status < 0)
                     {
                         if ((status & 0xfffff000) == 0x80041000)
@@ -356,7 +356,7 @@ namespace System.Management
                     }
                 }
             }
-        
+
             //Standard "Current" variant
             /// <internalonly/>
             object IEnumerator.Current { get { return (object)this.Current; } }
@@ -367,13 +367,13 @@ namespace System.Management
             /// <value>
             /// <para>The current <see cref='System.Management.QualifierData'/> element in the collection.</para>
             /// </value>
-            public QualifierData Current 
+            public QualifierData Current
             {
                 get {
                     if ((index == -1) || (index == qualifierNames.Length))
                         throw new InvalidOperationException();
                     else
-                        return new QualifierData(parent, propertyOrMethodName, 
+                        return new QualifierData(parent, propertyOrMethodName,
                                                 qualifierNames[index], qualifierType);
                 }
             }
@@ -382,7 +382,7 @@ namespace System.Management
             /// <para> Moves to the next element in the <see cref='System.Management.QualifierDataCollection'/> enumeration.</para>
             /// </summary>
             /// <returns>
-            /// <para><see langword='true'/> if the enumerator was successfully advanced to the next 
+            /// <para><see langword='true'/> if the enumerator was successfully advanced to the next
             ///    element; <see langword='false'/> if the enumerator has passed the end of the
             ///    collection.</para>
             /// </returns>
@@ -402,7 +402,7 @@ namespace System.Management
             {
                 index = -1;
             }
-            
+
         }//QualifierDataEnumerator
 
 
@@ -417,13 +417,13 @@ namespace System.Management
         /// <value>
         /// <para>A <see cref='System.Management.QualifierData'/>, based on the name specified.</para>
         /// </value>
-        public virtual QualifierData this[string qualifierName] 
+        public virtual QualifierData this[string qualifierName]
         {
-            get { 
+            get {
                 if (null == qualifierName)
                     throw new ArgumentNullException(nameof(qualifierName));
 
-                return new QualifierData(parent, propertyOrMethodName, qualifierName, qualifierSetType); 
+                return new QualifierData(parent, propertyOrMethodName, qualifierName, qualifierSetType);
             }
         }
 
@@ -434,7 +434,7 @@ namespace System.Management
         public virtual void Remove(string qualifierName)
         {
             int status = GetTypeQualifierSet().Delete_(qualifierName);
-        
+
             if (status < 0)
             {
                 if ((status & 0xfffff000) == 0x80041000)
@@ -460,7 +460,7 @@ namespace System.Management
 
 
         /// <summary>
-        /// <para>Adds a <see cref='System.Management.QualifierData'/> to the <see cref='System.Management.QualifierDataCollection'/>. This overload 
+        /// <para>Adds a <see cref='System.Management.QualifierData'/> to the <see cref='System.Management.QualifierDataCollection'/>. This overload
         ///    specifies all property values for a <see cref='System.Management.QualifierData'/> object.</para>
         /// </summary>
         /// <param name='qualifierName'>The qualifier name. </param>
@@ -471,7 +471,7 @@ namespace System.Management
         /// <param name='isOverridable'><see langword='true'/> to specify that this qualifier's value is overridable in instances of subclasses; otherwise, <see langword='false'/>. </param>
         public virtual void Add(string qualifierName, object qualifierValue, bool isAmended, bool propagatesToInstance, bool propagatesToSubclass, bool isOverridable)
         {
-            
+
             //Build the flavors bitmask and call the internal Add that takes a bitmask
             int qualFlavor = 0;
             if (isAmended) qualFlavor = (qualFlavor | (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_AMENDED);
@@ -483,7 +483,7 @@ namespace System.Management
 
             //Try to add the qualifier to the WMI object
             int status = GetTypeQualifierSet().Put_(qualifierName, ref qualifierValue, qualFlavor);
-                        
+
             if (status < 0)
             {
                 if ((status & 0xfffff000) == 0x80041000)

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
@@ -77,7 +77,7 @@ namespace System.Drawing.Tests
                     break;
                 case 0x1E: // th-TH
                 case 0x54: // lo-LA
-                case 0x53: // km-KH 
+                case 0x53: // km-KH
                     fonts = new SystemFontList("Leelawadee UI");
                     break;
                 case 0x4A: // te-IN

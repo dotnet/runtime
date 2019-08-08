@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Authors:
@@ -326,7 +326,7 @@ namespace System.Drawing.Printing.Tests
 
             Assert.Equal(printRange, printerSettings.PrintRange);
         }
-        
+
         [Theory]
         [InlineData(PrintRange.AllPages - 1)]
         [InlineData(PrintRange.SomePages + 1)]
@@ -609,7 +609,7 @@ namespace System.Drawing.Printing.Tests
         private static readonly string[] s_TestPrinterNames =
         {
             // Our method of testing this api requires a printer that supports multi-copy printing, collating and duplex settings. Not all printers
-            // support these so rather than trust the machine running the test to have configured such a printer as the default, use the name of 
+            // support these so rather than trust the machine running the test to have configured such a printer as the default, use the name of
             // a known compliant printer that ships with Windows 10.
             "Microsoft Print to PDF",
             "Microsoft XPS Document Writer", // Backup for older Windows

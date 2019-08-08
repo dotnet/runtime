@@ -112,6 +112,3 @@ namespace System.Reflection.TypeLoading
         internal TypeContext TypeContext => _declaringType.Instantiation.ToTypeContext();
     }
 }
-
-
-

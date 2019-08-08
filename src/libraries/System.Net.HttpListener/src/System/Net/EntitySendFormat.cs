@@ -10,4 +10,3 @@ namespace System.Net
         Chunked = 1, // Transfer-Encoding: chunked
     }
 }
-

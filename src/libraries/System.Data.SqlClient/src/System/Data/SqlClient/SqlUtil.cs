@@ -272,7 +272,7 @@ namespace System.Data.SqlClient
         internal static Exception ParsingErrorLibraryType(ParsingErrorState state, int libraryType)
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorAuthLibraryType, ((int)state).ToString(CultureInfo.InvariantCulture), libraryType));
-        }       
+        }
         internal static Exception InvalidSQLServerVersionUnknown()
         {
             return ADP.DataAdapter(SR.GetString(SR.SQL_InvalidSQLServerVersionUnknown));
@@ -798,7 +798,7 @@ namespace System.Data.SqlClient
         //
 
         /// <summary>
-        /// used to block two scenarios if MultiSubnetFailover is true: 
+        /// used to block two scenarios if MultiSubnetFailover is true:
         /// * server-provided failover partner - raising SqlException in this case
         /// * connection string with failover partner and MultiSubnetFailover=true - raising argument one in this case with the same message
         /// </summary>
@@ -1206,7 +1206,7 @@ namespace System.Data.SqlClient
 
         /// <summary>
         /// Escape a string as a TSQL literal, wrapping it around with single quotes.
-        /// Use this method to escape input strings to prevent SQL injection 
+        /// Use this method to escape input strings to prevent SQL injection
         /// and to get correct behavior for embedded quotes.
         /// </summary>
         /// <param name="input">unescaped string</param>

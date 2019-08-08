@@ -22,4 +22,3 @@ namespace Internal.Cryptography
         public abstract CryptographicAttributeObject OtherKeyAttribute { get; }
     }
 }
-

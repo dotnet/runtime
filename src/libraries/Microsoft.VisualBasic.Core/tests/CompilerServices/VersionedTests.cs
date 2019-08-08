@@ -88,7 +88,7 @@ namespace Microsoft.VisualBasic.Tests
         {
             Assert.Equal(expected, Versioned.IsNumeric(value));
         }
-        
+
         [Theory]
         [InlineData(null, null)]
         [InlineData("OBJECT", "System.Object")]

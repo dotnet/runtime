@@ -141,7 +141,7 @@ namespace System.Xml.Tests
         }
 
         // returns InnerText from the Data (default section),
-        // throws the CTestFailedException if node doesn't exist. 
+        // throws the CTestFailedException if node doesn't exist.
         public string SelectExistingValue(string xpath)
         {
             string value = SelectValue(xpath);
@@ -150,7 +150,7 @@ namespace System.Xml.Tests
         }
 
         // returns a value from the given section,
-        // throws the CTestFailedException if value doesn't exist. 
+        // throws the CTestFailedException if value doesn't exist.
         public string SelectExistingValue(string xpath, string sectionName)
         {
             string value = SelectValue(xpath, sectionName);

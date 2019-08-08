@@ -37,5 +37,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetActiveUdpListeners")]
         public static extern unsafe int GetActiveUdpListeners(IPEndPointInfo* infos, int* infoCount);
-    }    
+    }
 }

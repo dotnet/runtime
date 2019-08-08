@@ -18,7 +18,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// A forall operator just enables an action to be placed at the "top" of a query tree
     /// instead of yielding an enumerator that some consumer can walk. We execute the
-    /// query for effect instead of yielding a data result. 
+    /// query for effect instead of yielding a data result.
     /// </summary>
     /// <typeparam name="TInput"></typeparam>
     internal sealed class ForAllOperator<TInput> : UnaryQueryOperator<TInput, TInput>

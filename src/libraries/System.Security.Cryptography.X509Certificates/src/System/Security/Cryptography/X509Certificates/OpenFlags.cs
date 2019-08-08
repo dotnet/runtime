@@ -20,4 +20,3 @@ namespace System.Security.Cryptography.X509Certificates
         IncludeArchived = 0x08,
     }
 }
-

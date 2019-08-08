@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.Xslt
     }
 
     // RootLevel is underdeveloped consept currently. I plane to move here more collections from Compiler.
-    // Compiler is like a stylesheet in some sense. it has a lot of properties of stylesheet. Instead of 
+    // Compiler is like a stylesheet in some sense. it has a lot of properties of stylesheet. Instead of
     // inhereting from Styleseet (or StylesheetLevel) I desided to aggregate special subclass of StylesheetLevel.
     // One more reason to for this design is to normolize apply-templates and apply-imports to one concept:
     // apply-templates is apply-imports(compiler.Root).

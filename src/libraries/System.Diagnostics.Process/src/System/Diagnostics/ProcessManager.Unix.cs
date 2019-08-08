@@ -61,8 +61,8 @@ namespace System.Diagnostics
 
         private static bool IsRemoteMachineCore(string machineName)
         {
-            return 
-                machineName != "." && 
+            return
+                machineName != "." &&
                 machineName != Interop.Sys.GetHostName();
         }
 

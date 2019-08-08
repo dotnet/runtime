@@ -60,8 +60,8 @@ namespace Internal.Cryptography.Pal.Native
         //CERT_QUERY_CONTENT_FLAG_ALL)
          CERT_QUERY_CONTENT_FLAG_PFX_AND_LOAD = 1 << ContentType.CERT_QUERY_CONTENT_PFX_AND_LOAD,
 
-         CERT_QUERY_CONTENT_FLAG_ALL = 
-             CERT_QUERY_CONTENT_FLAG_CERT | 
+         CERT_QUERY_CONTENT_FLAG_ALL =
+             CERT_QUERY_CONTENT_FLAG_CERT |
              CERT_QUERY_CONTENT_FLAG_CTL |
              CERT_QUERY_CONTENT_FLAG_CRL |
              CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE |
@@ -69,7 +69,7 @@ namespace Internal.Cryptography.Pal.Native
              CERT_QUERY_CONTENT_FLAG_SERIALIZED_CTL |
              CERT_QUERY_CONTENT_FLAG_SERIALIZED_CRL |
              CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
-             CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED | 
+             CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED |
              CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
              CERT_QUERY_CONTENT_FLAG_PKCS10 |
              CERT_QUERY_CONTENT_FLAG_PFX |
@@ -98,7 +98,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         //encoded single certificate
         CERT_QUERY_CONTENT_CERT                = 1,
-        //encoded single CTL                   
+        //encoded single CTL
         CERT_QUERY_CONTENT_CTL                 = 2,
         //encoded single CRL
         CERT_QUERY_CONTENT_CRL                 = 3,
@@ -324,8 +324,8 @@ namespace Internal.Cryptography.Pal.Native
         CERT_STORE_READONLY_FLAG                        = 0x00008000,
         CERT_STORE_OPEN_EXISTING_FLAG                   = 0x00004000,
         CERT_STORE_CREATE_NEW_FLAG                      = 0x00002000,
-        CERT_STORE_MAXIMUM_ALLOWED_FLAG                 = 0x00001000,   
- 
+        CERT_STORE_MAXIMUM_ALLOWED_FLAG                 = 0x00001000,
+
         CERT_SYSTEM_STORE_CURRENT_USER                  = 0x00010000,
         CERT_SYSTEM_STORE_LOCAL_MACHINE                 = 0x00020000,
 
@@ -397,7 +397,7 @@ namespace Internal.Cryptography.Pal.Native
         EXPORT_PRIVATE_KEYS                   = 0x00000004,
         None                                  = 0x00000000,
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct CRYPT_KEY_PROV_INFO
     {
@@ -769,5 +769,3 @@ namespace Internal.Cryptography.Pal.Native
         CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG = 0x00040000,
     }
 }
-
-

@@ -16,7 +16,7 @@ namespace System.Data.Odbc.Tests
 
             using (var connection = new OdbcConnection(ConnectionStrings.WorkingConnection))
             {
-                Assert.Throws<DllNotFoundException>(() => connection.Open()); 
+                Assert.Throws<DllNotFoundException>(() => connection.Open());
             }
         }
     }

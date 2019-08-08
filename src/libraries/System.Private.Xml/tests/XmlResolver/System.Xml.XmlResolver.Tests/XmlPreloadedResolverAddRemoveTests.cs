@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,7 +16,7 @@ namespace System.Xml.XmlResolver.Tests
         {
             var xmlResolver = new XmlPreloadedResolver();
             Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(null, new byte[22]));
-            
+
             Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(new Uri("https://html"), null as byte[]));
 
             Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(null, null, 0, 0));
@@ -29,7 +29,7 @@ namespace System.Xml.XmlResolver.Tests
             xmlResolver.Add(new Uri("https://html"), new byte[0], 0, 0);
             xmlResolver.Add(new Uri("https://html"), new byte[5], 0, 5);
 
-            Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(null, new MemoryStream()));            
+            Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(null, new MemoryStream()));
             Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(new Uri("https://html"), null as MemoryStream));
 
             Assert.Throws<ArgumentNullException>(() => xmlResolver.Add(null, string.Empty));
@@ -38,8 +38,8 @@ namespace System.Xml.XmlResolver.Tests
 
         [Fact]
         public void XmlResolverAddWithValidData()
-        {            
-            var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);                        
+        {
+            var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
 
             byte[] data = Encoding.ASCII.GetBytes("hello world");
             MemoryStream stream = new MemoryStream(data);

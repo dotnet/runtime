@@ -23,7 +23,7 @@ namespace System.Linq.Tests
                 timesCalledMap[index]++;
                 return new[] { index };
             });
-            
+
             // Iteration
             foreach (int index in iterator)
             {

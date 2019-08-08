@@ -349,7 +349,7 @@ namespace System.ServiceModel.Syndication
             else if (reader.IsStartElement(Atom10Constants.SourceFeedTag, Atom10Constants.Atom10Namespace))
             {
                 reader.ReadStartElement();
-                result.SourceFeed = ReadFeedFrom(reader, new SyndicationFeed(), true); //  isSourceFeed 
+                result.SourceFeed = ReadFeedFrom(reader, new SyndicationFeed(), true); //  isSourceFeed
                 reader.ReadEndElement();
             }
             else if (reader.IsStartElement(Atom10Constants.SummaryTag, Atom10Constants.Atom10Namespace))

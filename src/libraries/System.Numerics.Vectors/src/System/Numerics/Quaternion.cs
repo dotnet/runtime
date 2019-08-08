@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System.Numerics
 {
     /// <summary>
-    /// A structure encapsulating a four-dimensional vector (x,y,z,w), 
+    /// A structure encapsulating a four-dimensional vector (x,y,z,w),
     /// which is used to efficiently rotate an object about the (x,y,z) vector by the angle theta, where w = cos(theta/2).
     /// </summary>
     public struct Quaternion : IEquatable<Quaternion>
@@ -32,7 +32,7 @@ namespace System.Numerics
         public float W;
 
         /// <summary>
-        /// Returns a Quaternion representing no rotation. 
+        /// Returns a Quaternion representing no rotation.
         /// </summary>
         public static Quaternion Identity
         {

@@ -136,7 +136,7 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Decodes a compressed integer value starting at offset. 
+        /// Decodes a compressed integer value starting at offset.
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <param name="offset">Offset to the start of the compressed data.</param>
@@ -296,7 +296,7 @@ namespace System.Reflection.Internal
         /// <param name="prefix">UTF8 encoded prefix to prepend to the bytes at the offset before decoding.</param>
         /// <param name="utf8Decoder">The UTF8 decoder to use that allows user to adjust fallback and/or reuse existing strings without allocating a new one.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
-        /// <param name="terminator">A character in the ASCII range that marks the end of the string. 
+        /// <param name="terminator">A character in the ASCII range that marks the end of the string.
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <returns>The decoded string.</returns>
         internal string PeekUtf8NullTerminated(int offset, byte[] prefix, MetadataStringDecoder utf8Decoder, out int numberOfBytesRead, char terminator = '\0')
@@ -312,7 +312,7 @@ namespace System.Reflection.Internal
         /// Returned length does not include the terminator, but numberOfBytesRead out parameter does.
         /// </summary>
         /// <param name="offset">Offset in to the block where the UTF8 bytes start.</param>
-        /// <param name="terminator">A character in the ASCII range that marks the end of the string. 
+        /// <param name="terminator">A character in the ASCII range that marks the end of the string.
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
         /// <returns>Length (byte count) not including terminator.</returns>
@@ -524,14 +524,14 @@ namespace System.Reflection.Internal
                 if (*p != asciiString[i])
                 {
                     // If we hit the end of the heap value (*p == 0)
-                    // the heap value is shorter than the string, so we return negative value. 
+                    // the heap value is shorter than the string, so we return negative value.
                     return *p - asciiString[i];
                 }
 
                 p++;
             }
 
-            // Either the heap value name matches exactly the given string or 
+            // Either the heap value name matches exactly the given string or
             // it is longer so it is considered "greater".
             return (*p == 0) ? 0 : +1;
         }
@@ -596,7 +596,7 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// In a table that specifies children via a list field (e.g. TypeDef.FieldList, TypeDef.MethodList), 
+        /// In a table that specifies children via a list field (e.g. TypeDef.FieldList, TypeDef.MethodList),
         /// searches for the parent given a reference to a child.
         /// </summary>
         /// <returns>Returns row number [0..RowCount).</returns>

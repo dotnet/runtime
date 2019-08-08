@@ -71,7 +71,7 @@ namespace System.Net.Primitives.Functional.Tests
             ep.Address = testIpV42;
             Assert.Equal(ep.Address, testIpV42);
         }
-        
+
         [Fact]
         public static void ToString_Compare_Success()
         {
@@ -84,14 +84,14 @@ namespace System.Net.Primitives.Functional.Tests
 
         [Fact]
         public static void SerializeCreate_Compare_Equal()
-        { 
+        {
             //Serializing an IPEndPoint from a SocketAddress should produce the same output as creating one from a SocketAddress
             IPEndPoint ep = new IPEndPoint(testIpV41, 500);
             SocketAddress sa = ep.Serialize();
-            
+
             EndPoint ep2 = ep.Create(sa);
 
-            Assert.Equal(ep, ep2); 
+            Assert.Equal(ep, ep2);
         }
 
         [Fact]

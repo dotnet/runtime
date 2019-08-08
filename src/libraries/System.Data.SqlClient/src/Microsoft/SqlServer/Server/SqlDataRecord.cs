@@ -735,4 +735,3 @@ namespace Microsoft.SqlServer.Server
         }
     }
 }
-

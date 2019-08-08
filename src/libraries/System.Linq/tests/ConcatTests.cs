@@ -89,7 +89,7 @@ namespace System.Linq.Tests
             // Returns a list of functions that, when applied to enumerable, should return
             // another one that has equivalent contents.
             var identityTransforms = IdentityTransforms<T>();
-            
+
             // We run the transforms N^2 times, by testing all transforms
             // of expected against all transforms of actual.
             foreach (var outTransform in identityTransforms)
@@ -275,7 +275,7 @@ namespace System.Linq.Tests
             // singly-linked list of iterators, each holding 1 collection. When
             // we call Count() on the last iterator, it needs to sum up the count
             // of its collection, plus the count of all the previous collections.
-            
+
             // It is tempting to use recursion to solve this problem, by simply
             // returning [this collection].Count + [previous iterator].Count(),
             // since it is so much simpler than the iterative solution.
@@ -297,7 +297,7 @@ namespace System.Linq.Tests
             Assert.Equal(0, concatChain.Count()); // should not throw a StackOverflowException
             // ToArray needs the count as well, and the process of copying all of the collections
             // to the array should also not be recursive.
-            Assert.Equal(new int[] { }, concatChain.ToArray()); 
+            Assert.Equal(new int[] { }, concatChain.ToArray());
             Assert.Equal(new List<int> { }, concatChain.ToList()); // ToList also gets the count beforehand
         }
 
@@ -377,7 +377,7 @@ namespace System.Linq.Tests
             // the collection iterator's GetEnumerable() under the assumption that the callee
             // will never call into another enumerable iterator's GetEnumerable(). This is
             // because collection iterators can only be preceded by other collection iterators.
-            
+
             // Violation of this assumption means that the GetEnumerable() implementations could
             // become mutually recursive, which may lead to stack overflow for enumerable iterators
             // preceded by a long chain of collection iterators.
@@ -395,7 +395,7 @@ namespace System.Linq.Tests
 
             // Finally, link an enumerable iterator at the head of the list.
             concatChain = concatChain.Concat(ForceNotCollection(Array.Empty<int>()));
-            
+
             using (IEnumerator<int> en = concatChain.GetEnumerator())
             {
                 Assert.True(en.MoveNext());

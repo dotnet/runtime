@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(SHA256_Name, oid.FriendlyName);
             Assert.Equal(SHA256_Oid, oid.Value);
         }
-        
+
         [Theory]
         [MemberData(nameof(ValidOidFriendlyNameHashAlgorithmPairs))]
         public static void LookupOidByValue_Method_HashAlgorithm(string oidValue, string friendlyName)

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -50,8 +50,8 @@ namespace System.Text.RegularExpressions
         public DynamicMethod DefineDynamicMethod(string methname, Type returntype, Type hostType)
         {
             // We're claiming that these are static methods, but really they are instance methods.
-            // By giving them a parameter which represents "this", we're tricking them into 
-            // being instance methods.  
+            // By giving them a parameter which represents "this", we're tricking them into
+            // being instance methods.
 
             MethodAttributes attribs = MethodAttributes.Public | MethodAttributes.Static;
             CallingConventions conventions = CallingConventions.Standard;

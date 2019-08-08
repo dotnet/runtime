@@ -38,7 +38,7 @@ namespace System.IO.Tests
             string testFilePath = Path.Combine(TestDirectory, $"{filePrefix}{GetTestFileName()}");
             FileInfo fileInfo = new FileInfo(testFilePath);
             fileInfo.Create().Dispose();
-            
+
             Assert.Equal(hidden, (fileInfo.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden);
         }
     }

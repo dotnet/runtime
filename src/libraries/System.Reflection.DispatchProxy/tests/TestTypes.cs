@@ -156,4 +156,3 @@ public class NoDefaultCtor_TestDispatchProxy : DispatchProxy
         throw new InvalidOperationException();
     }
 }
-

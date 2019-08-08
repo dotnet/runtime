@@ -57,7 +57,7 @@ namespace System.Tests
             Assert.NotEqual(d3, a3);
             Assert.NotEqual(d1, a3);
             Assert.NotEqual(d3, a1);
-            
+
             Assert.NotEqual(d1, s1);
             Assert.NotEqual(d2, s2);
             Assert.NotEqual(d3, s3);
@@ -77,7 +77,7 @@ namespace System.Tests
             var a1 = new ParentAttribute { Prop = 1 };
             var a2 = new ParentAttribute { Prop = 42 };
             var a3 = new ParentAttribute { Prop = 1 };
-            
+
             var d1 = new ChildAttribute { Prop = 1 };
             var d2 = new ChildAttribute { Prop = 42 };
             var d3 = new ChildAttribute { Prop = 1 };
@@ -88,7 +88,7 @@ namespace System.Tests
 
             var f1 = new ChildAttributeWithField { Prop = 1 };
             var f2 = new ChildAttributeWithField { Prop = 42 };
-            var f3 = new ChildAttributeWithField { Prop = 1 }; 
+            var f3 = new ChildAttributeWithField { Prop = 1 };
 
             Assert.NotEqual(0, a1.GetHashCode());
             Assert.NotEqual(0, a2.GetHashCode());
@@ -150,8 +150,8 @@ namespace System.Tests
 
         class ChildAttribute : ParentAttribute { }
         class GrandchildAttribute : ChildAttribute { }
-        class ChildAttributeWithField : ParentAttribute 
-        { 
+        class ChildAttributeWithField : ParentAttribute
+        {
             public int Field = 0;
         }
 

@@ -487,7 +487,7 @@ namespace System.Linq.Parallel
 
                         // After the barrier, the other partition will have made two things available to us:
                         // (1) its own indices, keys, and values, stored in the cell that used to hold our data,
-                        // and (2) the arrays into which merged data will go, stored in its shared array cells.  
+                        // and (2) the arrays into which merged data will go, stored in its shared array cells.
                         // We will snag references to all of these things.
                         int[] leftIndices = _sharedIndices[_partitionIndex];
                         TKey[] leftKeys = _sharedKeys[_partitionIndex].InternalArray;
@@ -584,7 +584,7 @@ namespace System.Linq.Parallel
             Debug.Assert(0 <= right && right < keys.Length);
 
             // cancellation check.
-            // only test for intervals that are wider than so many items, else this test is 
+            // only test for intervals that are wider than so many items, else this test is
             // relatively expensive compared to the work being performed.
             if (right - left > CancellationState.POLL_INTERVAL)
                 CancellationState.ThrowIfCanceled(cancelToken);

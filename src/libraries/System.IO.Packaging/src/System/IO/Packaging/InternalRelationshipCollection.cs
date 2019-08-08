@@ -6,7 +6,7 @@
 //
 // Description:
 //  This is a class for representing a PackageRelationshipCollection. This is an internal
-//  class for manipulating relationships associated with a part 
+//  class for manipulating relationships associated with a part
 //
 // Details:
 //   This class handles serialization to/from relationship parts, creation of those parts
@@ -62,7 +62,7 @@ namespace System.IO.Packaging
         }
 
         #endregion
-        
+
         #region Internal Methods
         /// <summary>
         /// Constructor
@@ -260,7 +260,7 @@ namespace System.IO.Packaging
                         reader.MoveToContent();
 
                         // look for our tag and namespace pair - throw if other elements are encountered
-                        // Make sure that the current node read is an Element 
+                        // Make sure that the current node read is an Element
                         if (reader.NodeType == XmlNodeType.Element
                             && (reader.Depth == 0)
                             && (string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0)
@@ -268,7 +268,7 @@ namespace System.IO.Packaging
                         {
                             ThrowIfXmlBaseAttributeIsPresent(reader);
 
-                            //There should be a namespace Attribute present at this level. 
+                            //There should be a namespace Attribute present at this level.
                             //Also any other attribute on the <Relationships> tag is an error including xml: and xsi: attributes
                             if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) > 0)
                                 throw new XmlException(SR.RelationshipsTagHasExtraAttributes, null, reader.LineNumber, reader.LinePosition);
@@ -298,7 +298,7 @@ namespace System.IO.Packaging
                                     if (targetModeAttributeValue != null)
                                         expectedAttributesCount++;
 
-                                    //check if there are expected number of attributes. 
+                                    //check if there are expected number of attributes.
                                     //Also any other attribute on the <Relationship> tag is an error including xml: and xsi: attributes
                                     if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) == expectedAttributesCount)
                                     {
@@ -430,9 +430,9 @@ namespace System.IO.Packaging
                     || (targetUri.IsAbsoluteUri && targetUri.Scheme == PackUriHelper.UriSchemePack))
             {
                 Uri resolvedUri = GetResolvedTargetUri(targetUri, targetMode);
-                //GetResolvedTargetUri returns a null if the target mode is external and the 
-                //target Uri is a packUri with no "part" component, so in that case we know that 
-                //its not a relationship part. 
+                //GetResolvedTargetUri returns a null if the target mode is external and the
+                //target Uri is a packUri with no "part" component, so in that case we know that
+                //its not a relationship part.
                 if (resolvedUri != null)
                 {
                     if (PackUriHelper.IsRelationshipPartUri(resolvedUri))
@@ -511,14 +511,14 @@ namespace System.IO.Packaging
                 // Write Target attribute.
                 // We would like to persist the uri as passed in by the user and so we use the
                 // OriginalString property. This makes the persisting behavior consistent
-                // for relative and absolute Uris. 
+                // for relative and absolute Uris.
                 // Since we accepted the Uri as a string, we are at the minimum guaranteed that
-                // the string can be converted to a valid Uri. 
+                // the string can be converted to a valid Uri.
                 // Also, we are just using it here to persist the information and we are not
                 // resolving or fetching a resource based on this Uri.
                 writer.WriteAttributeString(TargetAttributeName, relationship.TargetUri.OriginalString);
 
-                // TargetMode is optional attribute in the markup and its default value is TargetMode="Internal" 
+                // TargetMode is optional attribute in the markup and its default value is TargetMode="Internal"
                 if (alwaysWriteTargetModeAttribute || relationship.TargetMode == TargetMode.External)
                     writer.WriteAttributeString(TargetModeAttributeName, relationship.TargetMode.ToString());
 
@@ -552,8 +552,8 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Resolves the target uri in the relationship against the source part or the 
-        /// package root. This resolved Uri is then used by the Add method to figure 
+        /// Resolves the target uri in the relationship against the source part or the
+        /// package root. This resolved Uri is then used by the Add method to figure
         /// out if a relationship is being created to another relationship part.
         /// </summary>
         /// <param name="target">PackageRelationship target uri</param>
@@ -669,6 +669,6 @@ namespace System.IO.Packaging
         private static readonly string[] s_relationshipKnownNamespaces
             = new string[] { PackagingUtilities.RelationshipNamespaceUri };
 
-        #endregion    
+        #endregion
     }
 }

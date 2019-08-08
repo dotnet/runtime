@@ -91,7 +91,7 @@ namespace System.Net.Sockets
 
         // SetUnmanagedStructures
         //
-        // This method fills in overlapped structures used in an asynchronous 
+        // This method fills in overlapped structures used in an asynchronous
         // overlapped Winsock call. These calls are outside the runtime and are
         // unmanaged code, so we need to prepare specific structures and ints that
         // lie in unmanaged memory since the overlapped calls may complete asynchronously.

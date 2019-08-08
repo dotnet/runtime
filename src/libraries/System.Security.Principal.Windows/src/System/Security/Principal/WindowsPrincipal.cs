@@ -40,7 +40,7 @@ namespace System.Security.Principal
 
             _identity = ntIdentity;
         }
-        
+
         //
         // Properties.
         //
@@ -145,7 +145,7 @@ namespace System.Security.Principal
         // a rid (as an int). It is also better from a performance standpoint than the overload that accepts a string.
         // The aforementioned overloads remain in this class since we do not want to introduce a
         // breaking change. However, this method should be used in all new applications.
-        
+
         public virtual bool IsInRole(SecurityIdentifier sid)
         {
             if (sid == null)

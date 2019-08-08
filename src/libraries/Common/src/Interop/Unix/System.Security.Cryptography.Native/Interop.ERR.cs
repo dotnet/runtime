@@ -82,7 +82,7 @@ internal static partial class Interop
                 return new OutOfMemoryException();
             }
 
-            // Even though ErrGetError returns ulong (C++ unsigned long), we 
+            // Even though ErrGetError returns ulong (C++ unsigned long), we
             // really only expect error codes in the UInt32 range
             Debug.Assert(error <= uint.MaxValue, "ErrGetError should only return error codes in the UInt32 range.");
 

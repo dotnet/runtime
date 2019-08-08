@@ -12,8 +12,8 @@ namespace System.Reflection.Emit.Tests
         public void DefineTypeInitializer()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            
-            FieldBuilder greetingField = type.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);            
+
+            FieldBuilder greetingField = type.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
             ConstructorBuilder constructor = type.DefineTypeInitializer();
 
             // Generate IL for the method. The constructor calls its base class

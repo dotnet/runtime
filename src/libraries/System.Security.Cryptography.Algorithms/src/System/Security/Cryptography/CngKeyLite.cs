@@ -177,7 +177,7 @@ namespace System.Security.Cryptography
                 bytesWritten = 0;
                 return false;
             }
-            
+
             // Sanity check the current bounds
             Span<byte> empty = default;
 
@@ -597,7 +597,7 @@ namespace System.Security.Cryptography
 
         /// <summary>
         /// Retrieve a well-known CNG string property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
-        /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.) 
+        /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
         internal static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {

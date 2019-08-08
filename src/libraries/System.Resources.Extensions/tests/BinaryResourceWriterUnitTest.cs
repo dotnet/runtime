@@ -56,7 +56,7 @@ namespace System.Resources.Extensions.Tests
                     Assert.Throws<ArgumentNullException>("name", () => writer.AddResource(null, stream, true));
                     Assert.Throws<ArgumentNullException>("name", () => writer.AddActivatorResource(null, stream, "System.DayOfWeek", false));
                 }
-                
+
                 Assert.Throws<ArgumentNullException>("name", () => writer.AddBinaryFormattedResource(null, new byte[1], "System.DayOfWeek"));
                 Assert.Throws<ArgumentNullException>("name", () => writer.AddTypeConverterResource(null, new byte[1], "System.DayOfWeek"));
                 Assert.Throws<ArgumentNullException>("name", () => writer.AddResource(null, "Monday", "System.DayOfWeek"));
@@ -150,7 +150,7 @@ namespace System.Resources.Extensions.Tests
             Assert.Equal(writerBuffer, binaryWriterBuffer);
         }
 
-        
+
         [Fact]
         public static void PrimitiveResources()
         {
@@ -461,7 +461,7 @@ namespace System.Resources.Extensions.Tests
                 }
             }
         }
-        
+
         [Fact]
         public static void CanReadViaResourceManager()
         {
@@ -474,7 +474,7 @@ namespace System.Resources.Extensions.Tests
                 .Concat(TestData.ByteArrayConverterWithoutDrawing)
                 .Concat(TestData.StringConverterWithoutDrawing);
 
-            foreach(KeyValuePair<string, object> pair in objectPairs) 
+            foreach(KeyValuePair<string, object> pair in objectPairs)
             {
                 var actualValue = resourceManager.GetObject(pair.Key);
 

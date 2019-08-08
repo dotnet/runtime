@@ -109,9 +109,9 @@ namespace System.Net
                 }
                 SecureString sstr = _password as SecureString;
                 return sstr != null ? sstr.Copy() : new SecureString();
-            } 
+            }
             set
-            { 
+            {
                 SecureString old = _password as SecureString;
                 _password = value?.Copy();
                 old?.Dispose();

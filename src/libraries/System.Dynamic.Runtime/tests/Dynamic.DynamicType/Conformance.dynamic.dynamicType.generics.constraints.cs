@@ -943,7 +943,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference002.typeinference002
 {
     // <Title>Generic Type Inference</Title>
-    // <Description> 
+    // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1057,7 +1057,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference003.typeinference003
 {
     // <Title>Generic Type Inference</Title>
-    // <Description> 
+    // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1072,7 +1072,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
     public struct Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1167,7 +1167,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference004.typeinference004
 {
     // <Title>Generic Type Inference</Title>
-    // <Description> 
+    // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1297,7 +1297,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference005.typeinference005
 {
     // <Title>Generic Type Inference</Title>
-    // <Description> 
+    // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1309,7 +1309,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

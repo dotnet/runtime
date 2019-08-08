@@ -34,11 +34,11 @@ namespace System.Reflection.Tests
         // .stackreserve 0x00100000
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
-        // 
+        //
         // .class public auto ansi beforefieldinit SimpleAssembly
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -48,7 +48,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method SimpleAssembly::.ctor
-        // 
+        //
         // } // end of class SimpleAssembly
         public static readonly string s_SimpleAssemblyFullName = "SimpleAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=00ebb29cd7a0d3d4";
         public static readonly Guid s_SimpleAssemblyMvid = new Guid("33BEE212-AE78-455E-BBD1-DF3241DBF803");
@@ -106,14 +106,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // Image base: 0x0000024789A30000
-        // 
-        // 
+        //
+        //
         // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit SimpleAssembly
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -123,7 +123,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method SimpleAssembly::.ctor
-        // 
+        //
         // } // end of class SimpleAssembly
         public static readonly Guid s_SimpleAssemblyRecompiledMvid = new Guid("A3BAB2EF-E351-4BD7-B45E-9C27A6B2B159");
         public static readonly byte[] s_SimpleAssemblyRecompiledImage = Convert.FromBase64String(
@@ -161,7 +161,7 @@ namespace System.Reflection.Tests
         // }
         // .assembly 'NetFx2.0'
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
         //   .hash algorithm 0x00008004
@@ -246,12 +246,12 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x000001EDC3B20000
-        // 
-        // 
+        //
+        //
         // .class public auto ansi beforefieldinit MainType1
         //        extends [.module Bob.netmodule]JoeType1
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -261,13 +261,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method MainType1::.ctor
-        // 
+        //
         // } // end of class MainType1
-        // 
+        //
         // .class public auto ansi beforefieldinit MainType2
         //        extends [.module Bob.netmodule]JoeType2
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -277,7 +277,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method MainType2::.ctor
-        // 
+        //
         // } // end of class MainType2
         public static readonly Guid s_MultiModuleDllMvid = new Guid("7B43F7C7-A795-48C8-9DD2-C00D4FACA4CC");
         public static readonly byte[] s_MultiModuleDllImage = Convert.FromBase64String(
@@ -320,14 +320,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x000002291F730000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit JoeType1
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -337,13 +337,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method JoeType1::.ctor
-        // 
+        //
         // } // end of class JoeType1
-        // 
+        //
         // .class public auto ansi beforefieldinit JoeType2
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -353,7 +353,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method JoeType2::.ctor
-        // 
+        //
         // } // end of class JoeType2
         public static readonly string s_JoeScopeName = "Joe.netmodule";
         public static readonly Guid s_JoeNetModuleMvid = new Guid("0B58D7F6-4E0D-49FB-870A-1D492B846154");
@@ -397,11 +397,11 @@ namespace System.Reflection.Tests
 
         // using System;
         // using System.Runtime.CompilerServices;
-        // 
+        //
         // [assembly:TypeForwardedTo(typeof(object))]   // Built against "mscorlib"
-        // 
+        //
         // public abstract class Base<T> {}
-        // 
+        //
         // public sealed class Derived : Base<object>
         // {
         // }
@@ -956,13 +956,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly AssemblyReferenceTest
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -1037,7 +1037,7 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000024A7B400000
-        // 
+        //
         public static readonly byte[] s_PartialVersionsImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAECACemYFsAAAAAAAAAAOAAAiELAQsAAAQAAAACAAAAAAAAbiIAAAAgAAAAQAAA" +
@@ -1082,11 +1082,11 @@ namespace System.Reflection.Tests
         // .stackreserve 0x00100000
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
-        // 
+        //
         // .class public auto ansi beforefieldinit C
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1096,7 +1096,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method C::.ctor
-        // 
+        //
         // } // end of class C
         public static readonly byte[] s_AssemblyRefUsingFullPublicKeyImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
@@ -1132,7 +1132,7 @@ namespace System.Reflection.Tests
         // }
         // .assembly CustomModifiers
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
         //   .hash algorithm 0x00008004
@@ -1146,17 +1146,17 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000025996320000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit N
         //        extends [mscorlib]System.Object
         // {
         //   .field public static int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC) MyField
         //   .field public static int32 modreq(ReqA)[] modreq(ReqB) MyArrayField
-        //   .method public hidebysig specialname static 
-        //           int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC) 
+        //   .method public hidebysig specialname static
+        //           int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC)
         //           get_MyProperty() cil managed
         //   {
         //     // Code size       2 (0x2)
@@ -1164,7 +1164,7 @@ namespace System.Reflection.Tests
         //     IL_0000:  ldc.i4.0
         //     IL_0001:  ret
         //   } // end of method N::get_MyProperty
-        // 
+        //
         //   .method public hidebysig static void  MyMethod(int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC) i) cil managed
         //   {
         //     // Code size       2 (0x2)
@@ -1172,49 +1172,49 @@ namespace System.Reflection.Tests
         //     IL_0000:  nop
         //     IL_0001:  ret
         //   } // end of method N::MyMethod
-        // 
+        //
         //   .property int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC)
         //           MyProperty()
         //   {
         //     .get int32 modreq(ReqA) modopt(OptA) modreq(ReqB) modopt(OptB) modreq(ReqC) modopt(OptC) N::get_MyProperty()
         //   } // end of property N::MyProperty
         // } // end of class N
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit ReqA
         //        extends [mscorlib]System.Object
         // {
         // } // end of class ReqA
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit OptA
         //        extends [mscorlib]System.Object
         // {
         // } // end of class OptA
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit ReqB
         //        extends [mscorlib]System.Object
         // {
         // } // end of class ReqB
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit OptB
         //        extends [mscorlib]System.Object
         // {
         // } // end of class OptB
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit ReqC
         //        extends [mscorlib]System.Object
         // {
         // } // end of class ReqC
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit OptC
         //        extends [mscorlib]System.Object
         // {
         // } // end of class OptC
-        // 
+        //
         // .class public abstract auto ansi sealed beforefieldinit G`1<T>
         //        extends [mscorlib]System.Object
         // {
         // } // end of class G`1
-        // 
+        //
         public static readonly byte[] s_CustomModifiersImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAECAC9WZlsAAAAAAAAAAOAAAiELAQsAAAYAAAACAAAAAAAALiQAAAAgAAAAQAAA" +
@@ -1250,9 +1250,9 @@ namespace System.Reflection.Tests
         // public static class Lower1 {}
         // public static class Lower2 {}
         // public static class Lower3 {}
-        // 
+        //
         // public static class Middle2 {}
-        // 
+        //
         // public static class Upper3
         // {
         //     public class Upper3a {}
@@ -1305,12 +1305,12 @@ namespace System.Reflection.Tests
             );
 
         // using System.Runtime.CompilerServices;
-        // 
+        //
         // [assembly: TypeForwardedTo(typeof(Middle2))]
-        // 
+        //
         // public static class Middle1 {}
         // public static class Middle3 {}
-        // 
+        //
         // public static class Upper2 {}
         public static readonly byte[] s_MiddleImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
@@ -1350,17 +1350,17 @@ namespace System.Reflection.Tests
             "AAAAAAAAAAAAAAAA"
             );
 
-        // 
+        //
         // using System.Runtime.CompilerServices;
-        // 
+        //
         // [assembly: TypeForwardedTo(typeof(Middle2))]
         // [assembly: TypeForwardedTo(typeof(Upper2))]   // <-- Modified by ILDASM/ILASM to typeforward to Middle.dll rather than Lower.dll so that we can test forward chaining
         // [assembly: TypeForwardedTo(typeof(Upper3))]
-        // 
+        //
         // public static class Upper1 {}
-        // 
+        //
         // internal static class Upper4 {}
-        // 
+        //
         // public static class Outer1
         // {
         //     public static class Inner1 {}
@@ -1369,7 +1369,7 @@ namespace System.Reflection.Tests
         //     private static class Inner4 {}
         //     protected internal static class Inner5 {}
         // }
-        // 
+        //
         // internal static class Outer2
         // {
         //     public static class Inner1 {}
@@ -1418,13 +1418,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly n
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -1497,13 +1497,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly n
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -1582,13 +1582,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly n
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -1620,14 +1620,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x000001D822FD0000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit N
         //        extends [.module a.netmodule]A
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1637,9 +1637,9 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method N::.ctor
-        // 
+        //
         // } // end of class N
-        // 
+        //
         public static readonly byte[] s_AssemblyWithResourcesInModuleImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAEDADXjaFsAAAAAAAAAAOAAIiALATAAAAQAAAAGAAAAAAAAliMAAAAgAAAAQAAA" +
@@ -1678,7 +1678,7 @@ namespace System.Reflection.Tests
             "AAAAAAAAAAAAAAAA"
         );
 
-        // 
+        //
         // // Metadata version: v4.0.30319
         // .assembly extern mscorlib
         // {
@@ -1708,14 +1708,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000021F5E0B0000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit A
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1725,9 +1725,9 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method A::.ctor
-        // 
+        //
         // } // end of class A
-        // 
+        //
         public static readonly byte[] s_ModuleForAssemblyWithResourcesInModuleImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAEDACbjaFsAAAAAAAAAAOAAIiALATAAAAQAAAAGAAAAAAAAaiIAAAAgAAAAQAAA" +
@@ -1877,13 +1877,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly Derived
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -1895,14 +1895,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x000001F439810000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived1
         //        extends [Foo1]Base1
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1912,13 +1912,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived1::.ctor
-        // 
+        //
         // } // end of class Derived1
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived2
         //        extends [Foo2]Base2
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1928,13 +1928,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived2::.ctor
-        // 
+        //
         // } // end of class Derived2
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived3
         //        extends [Foo3]Base3
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1944,13 +1944,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived3::.ctor
-        // 
+        //
         // } // end of class Derived3
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived4
         //        extends [Foo4]Base4
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1960,13 +1960,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived4::.ctor
-        // 
+        //
         // } // end of class Derived4
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived5
         //        extends [Foo5]Base5
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1976,13 +1976,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived5::.ctor
-        // 
+        //
         // } // end of class Derived5
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived6
         //        extends [Foo6]Base6
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -1992,13 +1992,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived6::.ctor
-        // 
+        //
         // } // end of class Derived6
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived7
         //        extends [Foo7]Base7
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2008,13 +2008,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived7::.ctor
-        // 
+        //
         // } // end of class Derived7
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived8
         //        extends [Foo8]Base8
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2024,13 +2024,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived8::.ctor
-        // 
+        //
         // } // end of class Derived8
-        // 
+        //
         // .class public auto ansi beforefieldinit Derived9
         //        extends [Foo9]Base9
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2040,10 +2040,10 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method Derived9::.ctor
-        // 
+        //
         // } // end of class Derived9
-        // 
-        // 
+        //
+        //
         public static readonly byte[] s_DerivedClassWithVariationsOnFooImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAECAIgKaVsAAAAAAAAAAOAAAiELAQsAAAYAAAACAAAAAAAAriUAAAAgAAAAQAAA" +
@@ -2095,8 +2095,8 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000016ECD460000
-        // 
-        // 
+        //
+        //
         // .class private auto ansi beforefieldinit MyClass
         //        extends [mscorlib]System.Object
         // {
@@ -2107,7 +2107,7 @@ namespace System.Reflection.Tests
         //     IL_0000:  nop
         //     IL_0001:  ret
         //   } // end of method MyClass::Foo
-        // 
+        //
         //   .method private hidebysig static void  Main() cil managed
         //   {
         //     .entrypoint
@@ -2116,8 +2116,8 @@ namespace System.Reflection.Tests
         //     IL_0000:  nop
         //     IL_0001:  ret
         //   } // end of method MyClass::Main
-        // 
-        //   .method public hidebysig specialname rtspecialname 
+        //
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2127,9 +2127,9 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method MyClass::.ctor
-        // 
+        //
         // } // end of class MyClass
-        // 
+        //
         public static int s_AssemblyWithEntryPointEntryPointToken = 0x06000002;
         public static readonly byte[] s_AssemblyWithEntryPointImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
@@ -2159,7 +2159,7 @@ namespace System.Reflection.Tests
 
         // using System;
         // using System.Collections.Generic;
-        // 
+        //
         // public unsafe class Nonsense<T>
         // {
         //     public unsafe void Foo<M>()
@@ -2169,10 +2169,10 @@ namespace System.Reflection.Tests
         //         T t1 = default(T);
         //         T[] t2 = null;
         //         IList<M> i1 = null;
-        // 
+        //
         //         string s = f1 + d1.ToString() + t1 + t2 + i1;
         //         Console.WriteLine(s);
-        // 
+        //
         //         try
         //         {
         //             int[] ia = new int[3];
@@ -2250,7 +2250,7 @@ namespace System.Reflection.Tests
         // }
         // .assembly EhClauses
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
         //   .hash algorithm 0x00008004
@@ -2264,14 +2264,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000018B01460000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit G`1<T>
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig instance void 
+        //   .method public hidebysig instance void
         //           Catch<M>() cil managed
         //   {
         //     // Code size       33 (0x21)
@@ -2285,9 +2285,9 @@ namespace System.Reflection.Tests
         //       IL_000c:  nop
         //       IL_000d:  nop
         //       IL_000e:  leave.s    IL_0020
-        // 
+        //
         //     }  // end .try
-        //     catch class MyException`2<!T,!!M> 
+        //     catch class MyException`2<!T,!!M>
         //     {
         //       IL_0010:  pop
         //       IL_0011:  nop
@@ -2296,12 +2296,12 @@ namespace System.Reflection.Tests
         //       IL_001c:  nop
         //       IL_001d:  nop
         //       IL_001e:  leave.s    IL_0020
-        // 
+        //
         //     }  // end handler
         //     IL_0020:  ret
         //   } // end of method G`1::Catch
-        // 
-        //   .method public hidebysig instance void 
+        //
+        //   .method public hidebysig instance void
         //           Finally() cil managed
         //   {
         //     // Code size       31 (0x1f)
@@ -2315,7 +2315,7 @@ namespace System.Reflection.Tests
         //       IL_000c:  nop
         //       IL_000d:  nop
         //       IL_000e:  leave.s    IL_001e
-        // 
+        //
         //     }  // end .try
         //     finally
         //     {
@@ -2328,8 +2328,8 @@ namespace System.Reflection.Tests
         //     }  // end handler
         //     IL_001e:  ret
         //   } // end of method G`1::Finally
-        // 
-        //   .method public hidebysig instance void 
+        //
+        //   .method public hidebysig instance void
         //           Fault() cil managed
         //   {
         //     // Code size       31 (0x1f)
@@ -2343,7 +2343,7 @@ namespace System.Reflection.Tests
         //       IL_000c:  nop
         //       IL_000d:  nop
         //       IL_000e:  leave.s    IL_001e
-        // 
+        //
         //     }  // end .try
         //     fault
         //     {
@@ -2356,8 +2356,8 @@ namespace System.Reflection.Tests
         //     }  // end handler
         //     IL_001e:  ret
         //   } // end of method G`1::Fault
-        // 
-        //   .method public hidebysig instance void 
+        //
+        //   .method public hidebysig instance void
         //           Filter() cil managed
         //   {
         //     // Code size       57 (0x39)
@@ -2373,18 +2373,18 @@ namespace System.Reflection.Tests
         //       IL_000c:  nop
         //       IL_000d:  nop
         //       IL_000e:  leave.s    IL_0038
-        // 
+        //
         //     }  // end .try
         //     filter
         //     {
         //       IL_0010:  isinst     [mscorlib]System.Exception
         //       IL_0015:  dup
         //       IL_0016:  brtrue.s   IL_001c
-        // 
+        //
         //       IL_0018:  pop
         //       IL_0019:  ldc.i4.0
         //       IL_001a:  br.s       IL_0026
-        // 
+        //
         //       IL_001c:  stloc.0
         //       IL_001d:  ldloc.0
         //       IL_001e:  ldnull
@@ -2403,12 +2403,12 @@ namespace System.Reflection.Tests
         //       IL_0034:  nop
         //       IL_0035:  nop
         //       IL_0036:  leave.s    IL_0038
-        // 
+        //
         //     }  // end handler
         //     IL_0038:  ret
         //   } // end of method G`1::Filter
-        // 
-        //   .method public hidebysig specialname rtspecialname 
+        //
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2418,13 +2418,13 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method G`1::.ctor
-        // 
+        //
         // } // end of class G`1
-        // 
+        //
         // .class public auto ansi beforefieldinit MyException`2<T,U>
         //        extends [mscorlib]System.Exception
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2434,9 +2434,9 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method MyException`2::.ctor
-        // 
+        //
         // } // end of class MyException`2
-        // 
+        //
         public static readonly byte[] s_AssemblyWithEhClausesImage = Convert.FromBase64String(
             "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
             "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAECAE3DbVsAAAAAAAAAAOAAAiELAQsAAAYAAAACAAAAAAAALiUAAAAgAAAAQAAA" +
@@ -2564,13 +2564,13 @@ namespace System.Reflection.Tests
         // }
         // .assembly n
         // {
-        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-        // 
+        //
         //   // --- The following custom attribute is added automatically, do not uncomment -------
-        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-        // 
+        //   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
+        //
         //   .hash algorithm 0x00008004
         //   .ver 0:0:0:0
         // }
@@ -2582,14 +2582,14 @@ namespace System.Reflection.Tests
         // .subsystem 0x0003       // WINDOWS_CUI
         // .corflags 0x00000001    //  ILONLY
         // // Image base: 0x0000026B7C8E0000
-        // 
-        // 
+        //
+        //
         // // =============== CLASS MEMBERS DECLARATION ===================
-        // 
+        //
         // .class public auto ansi beforefieldinit 'Typ\\W[t]S+r*n&e,haracters'
         //        extends [mscorlib]System.Object
         // {
-        //   .method public hidebysig specialname rtspecialname 
+        //   .method public hidebysig specialname rtspecialname
         //           instance void  .ctor() cil managed
         //   {
         //     // Code size       8 (0x8)
@@ -2599,7 +2599,7 @@ namespace System.Reflection.Tests
         //     IL_0006:  nop
         //     IL_0007:  ret
         //   } // end of method 'Typ\\W[t]S+r*n&e,haracters'::.ctor
-        // 
+        //
         // } // end of class 'Typ\\W[t]S+r*n&e,haracters'
         public const string s_NameOfTypeWithStrangeCharacters = @"Typ\\W\[t\]S\+r\*n\&e\,haracters";
         public static readonly byte[] s_TypeWithStrangeCharacters = Convert.FromBase64String(
@@ -2649,13 +2649,13 @@ namespace System.Reflection.Tests
         //.assembly SimpleAssemblyVersioned
         //    {
         //  .custom instance void [mscorlib]
-        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //  .custom instance void [mscorlib]
         //        System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
         //  // --- The following custom attribute is added automatically, do not uncomment -------
-        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
         //  .publickey = (00 24 00 00 04 80 00 00 94 00 00 00 06 02 00 00   // .$..............
         //                00 24 00 00 52 53 41 31 00 04 00 00 01 00 01 00   // .$..RSA1........
@@ -2732,13 +2732,13 @@ namespace System.Reflection.Tests
         //.assembly SimpleAssemblyVersioned
         //    {
         //  .custom instance void [mscorlib]
-        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //  .custom instance void [mscorlib]
         //        System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
         //  // --- The following custom attribute is added automatically, do not uncomment -------
-        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
         //  .publickey = (00 24 00 00 04 80 00 00 94 00 00 00 06 02 00 00   // .$..............
         //                00 24 00 00 52 53 41 31 00 04 00 00 01 00 01 00   // .$..RSA1........
@@ -2814,13 +2814,13 @@ namespace System.Reflection.Tests
         //.assembly SimpleAssemblyVersioned
         //    {
         //  .custom instance void [mscorlib]
-        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //  .custom instance void [mscorlib]
         //        System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
         //  // --- The following custom attribute is added automatically, do not uncomment -------
-        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
         //  .hash algorithm 0x00008004
         //  .ver 1:0:0:0
@@ -2881,13 +2881,13 @@ namespace System.Reflection.Tests
         //.assembly SimpleAssemblyVersioned
         //    {
         //  .custom instance void [mscorlib]
-        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //  .custom instance void [mscorlib]
         //        System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
         //  // --- The following custom attribute is added automatically, do not uncomment -------
-        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
         //  .hash algorithm 0x00008004
         //  .ver 1:0:0:0
@@ -2954,13 +2954,13 @@ namespace System.Reflection.Tests
         //.assembly SimpleAssemblyVersioned
         //    {
         //  .custom instance void [mscorlib]
-        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+        //        System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
         //  .custom instance void [mscorlib]
         //        System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
         //                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
         //  // --- The following custom attribute is added automatically, do not uncomment -------
-        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+        //  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
         //  .hash algorithm 0x00008004
         //  .ver 2:0:0:0

@@ -98,7 +98,7 @@ namespace System.ComponentModel
         private void OnOwnerDisposed(object sender, EventArgs e) => Dispose();
 
         /// <summary>
-        /// Simple site implementation. We do some special processing to name the site, but 
+        /// Simple site implementation. We do some special processing to name the site, but
         /// that's about it.
         /// </summary>
         private class Site : INestedSite

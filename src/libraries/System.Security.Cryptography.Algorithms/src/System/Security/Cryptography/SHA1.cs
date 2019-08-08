@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other *Provider classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from the abstract HashAlgorithm class, 
+    // preexisting contract from the desktop locks all of these into deriving directly from the abstract HashAlgorithm class,
     // it can't be helped.
     //
 
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
 
             public sealed override void Initialize()
             {
-                // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the 
+                // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
                 // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
             }
 

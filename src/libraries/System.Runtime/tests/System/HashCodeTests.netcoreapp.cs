@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,7 +23,7 @@ public static class HashCodeTests
             // that these tests can not be executed against the version that exists
             // within CoreCLR. Copy HashCode and set m_seed to 0 in order to execute
             // these tests.
-        
+
             Assert.Equal(expected, (uint)hc.ToHashCode());
 #else
             // Validate that the HashCode.m_seed is randomized. This has a 1 in 4
@@ -58,7 +58,7 @@ public static class HashCodeTests
 
     [Fact]
     public static void HashCode_Add_HashCode()
-    {        
+    {
         var hc1 = new HashCode();
         hc1.Add("Hello");
 

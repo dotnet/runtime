@@ -19,7 +19,7 @@ namespace System.Data
 namespace System.Data.Common
 {
     [System.ComponentModel.TypeConverterAttribute(typeof(DataColumnMapping.DataColumnMappingConverter))]
-    public sealed partial class DataColumnMapping 
+    public sealed partial class DataColumnMapping
     {
         internal class DataColumnMappingConverter { }
     }

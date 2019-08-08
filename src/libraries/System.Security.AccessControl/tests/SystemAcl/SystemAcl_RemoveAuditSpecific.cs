@@ -63,7 +63,7 @@ new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(si
 
                 if (!Utils.IsBinaryFormEqual(sAclBinaryForm, rAclBinaryForm))
                     result = false;
-                //redundant index check                    
+                //redundant index check
                 for (int i = 0; i < systemAcl.Count; i++)
                 {
                     if (!Utils.IsAceEqual(systemAcl[i], rawAcl[i]))

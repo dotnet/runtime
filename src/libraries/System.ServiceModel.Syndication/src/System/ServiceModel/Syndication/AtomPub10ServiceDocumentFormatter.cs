@@ -66,7 +66,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            
+
             ReadDocument(reader);
         }
 

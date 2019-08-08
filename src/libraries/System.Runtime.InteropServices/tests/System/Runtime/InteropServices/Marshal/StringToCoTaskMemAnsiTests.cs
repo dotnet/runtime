@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.Tests
             string expectedFullString = new string(s.ToCharArray().Select(c => c > 0xFF ? '?' : c).ToArray());
             int nullIndex = expectedFullString.IndexOf('\0');
             string expectedParameterlessString = nullIndex == -1 ? expectedFullString : expectedFullString.Substring(0, nullIndex);
-    
+
             IntPtr ptr = Marshal.StringToCoTaskMemAnsi(s);
             try
             {

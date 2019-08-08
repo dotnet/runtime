@@ -70,7 +70,7 @@ namespace System.Net.WebSockets
 
         public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken) =>
             _webSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
-        
+
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             HttpResponseMessage response = null;

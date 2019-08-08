@@ -5,7 +5,7 @@
 namespace System.Reflection.Metadata
 {
     /// <summary>
-    /// Specifies the signature kind. Underlying values correspond to the representation 
+    /// Specifies the signature kind. Underlying values correspond to the representation
     /// in the leading signature byte represented by <see cref="SignatureHeader"/>.
     /// </summary>
     public enum SignatureKind : byte

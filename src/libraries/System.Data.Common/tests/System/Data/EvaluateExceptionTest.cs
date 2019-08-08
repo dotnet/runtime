@@ -40,7 +40,7 @@ namespace System.Data.Tests
             DataColumn dc = new DataColumn();
             dc.Expression = "something"; //invalid expression
 
-            // EvaluateException - Column 
+            // EvaluateException - Column
             Assert.Throws<EvaluateException>(() =>
             {
                 tbl.Columns.Add(dc);

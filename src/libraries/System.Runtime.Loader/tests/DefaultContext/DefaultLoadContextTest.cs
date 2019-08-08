@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -185,7 +185,7 @@ namespace System.Runtime.Loader.Tests
         private void DefaultContextFallback()
         {
             var lcDefault = AssemblyLoadContext.Default;
-            
+
             // Load the assembly in custom load context
             FallbackLoadContext flc = new FallbackLoadContext();
             var asmTargetAsm = flc.LoadFromAssemblyPath(_assemblyPath);
@@ -194,12 +194,12 @@ namespace System.Runtime.Loader.Tests
             // LoadContext of the assembly should be the custom context and not DefaultContext
             Assert.NotEqual(lcDefault, flc);
             Assert.Equal(flc, loadedContext);
-            
+
             // Get reference to the helper method that will load assemblies (actually, resolve them)
             // from DefaultContext
             Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass");
             var method = System.Reflection.TypeExtensions.GetMethod(type, "LoadFromDefaultContext");
-            
+
             // Load System.Runtime - since this is on TPA, it should get resolved from DefaultContext
             // since FallbackLoadContext does not override the Load method to specify its location.
             var assemblyName = "System.Runtime, Version=4.0.0.0";
@@ -220,8 +220,8 @@ namespace System.Runtime.Loader.Tests
             Assert.NotEqual(lcDefault, loadedContext);
             Assert.Equal(flc, loadedContext);
 
-            // Attempt to bind an assembly that has not been loaded in DefaultContext and is not 
-            // present on TPA as well. Such an assembly will not trigger a load since we only consult 
+            // Attempt to bind an assembly that has not been loaded in DefaultContext and is not
+            // present on TPA as well. Such an assembly will not trigger a load since we only consult
             // the DefaultContext cache (including assemblies on TPA list) in an attempt to bind.
             assemblyName = "System.Runtime.Loader.Noop.Assembly.NonExistent";
             Exception ex = null;
@@ -240,7 +240,7 @@ namespace System.Runtime.Loader.Tests
         private void DefaultContextOverrideTPA()
         {
             var lcDefault = AssemblyLoadContext.Default;
-            
+
             // Load the assembly in custom load context
             OverrideDefaultLoadContext olc = new OverrideDefaultLoadContext();
             var asmTargetAsm = olc.LoadFromAssemblyPath(_assemblyPath);
@@ -251,12 +251,12 @@ namespace System.Runtime.Loader.Tests
             // LoadContext of the assembly should be the custom context and not DefaultContext
             Assert.NotEqual(lcDefault, olc);
             Assert.Equal(olc, loadedContext);
-            
+
             // Get reference to the helper method that will load assemblies (actually, resolve them)
             // from DefaultContext
             Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass", true);
             var method = System.Reflection.TypeExtensions.GetMethod(type, "LoadFromDefaultContext");
-            
+
             // Load System.Runtime - since this is on TPA, it should get resolved from our custom load context
             // since the Load method has been implemented to override TPA assemblies.
             var assemblyName = "System.Runtime, Version=4.0.0.0";

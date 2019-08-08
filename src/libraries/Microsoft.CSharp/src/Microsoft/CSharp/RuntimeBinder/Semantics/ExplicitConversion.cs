@@ -20,18 +20,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
 
-            // This is for lambda error reporting. The reason we have this is because we 
+            // This is for lambda error reporting. The reason we have this is because we
             // store errors for lambda conversions, and then we don't bind the conversion
             // again to report errors. Consider the following case:
             //
             // int? x = () => null;
             //
-            // When we try to convert the lambda to the nullable type int?, we first 
+            // When we try to convert the lambda to the nullable type int?, we first
             // attempt the conversion to int. If that fails, then we know there is no
             // conversion to int?, since int is a predef type. We then look for UserDefined
             // conversions, and fail. When we report the errors, we ask the lambda for its
-            // conversion errors. But since we attempted its conversion to int and not int?, 
-            // we report the wrong error. This field is to keep track of the right type 
+            // conversion errors. But since we attempted its conversion to int and not int?,
+            // we report the wrong error. This field is to keep track of the right type
             // to report the error on, so that when the lambda conversion fails, it reports
             // errors on the correct type.
 
@@ -73,9 +73,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert((_flags & CONVERTTYPE.STANDARD) == 0);
 
                 // 13.2 Explicit conversions
-                // 
-                // The following conversions are classified as explicit conversions: 
-                // 
+                //
+                // The following conversions are classified as explicit conversions:
+                //
                 // * All implicit conversions
                 // * Explicit numeric conversions
                 // * Explicit enumeration conversions
@@ -268,7 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // The explicit reference conversions are:
                 //
-                // * From System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> and their base interfaces 
+                // * From System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> and their base interfaces
                 //   to a one-dimensional array-type S[], provided there is an implicit or explicit reference conversion from
                 //   S[] to System.Collections.Generic.IList<T> or System.Collections.Generic.IReadOnlyList<T>. This is precisely when either S and T
                 //   are the same type or there is an implicit or explicit reference conversion from S to T.
@@ -650,7 +650,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private AggCastResult bindExplicitConversionBetweenAggregates(AggregateType aggTypeDest)
             {
-                // 13.2.3 
+                // 13.2.3
                 //
                 // The explicit reference conversions are:
                 //

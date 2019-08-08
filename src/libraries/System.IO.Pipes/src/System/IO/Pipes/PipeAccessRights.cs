@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,15 +38,14 @@ namespace System.IO.Pipes
                                        Synchronize,
 
         Read = ReadData | ReadAttributes | ReadExtendedAttributes | ReadPermissions,
-        Write = WriteData | WriteAttributes | WriteExtendedAttributes, // | CreateNewInstance, For security, I really don't this CreateNewInstance belongs here.   
+        Write = WriteData | WriteAttributes | WriteExtendedAttributes, // | CreateNewInstance, For security, I really don't this CreateNewInstance belongs here.
         ReadWrite = Read | Write,
 
         // These are somewhat similar to what you get if you use PipeDirection:
-        //In                           = ReadData | ReadAttributes | ReadExtendedAttributes | ReadPermissions, 
-        //Out                          = WriteData | WriteAttributes | WriteExtendedAttributes | ChangePermissions | CreateNewInstance | ReadAttributes, // NOTE: Not sure if ReadAttributes should really be here 
+        //In                           = ReadData | ReadAttributes | ReadExtendedAttributes | ReadPermissions,
+        //Out                          = WriteData | WriteAttributes | WriteExtendedAttributes | ChangePermissions | CreateNewInstance | ReadAttributes, // NOTE: Not sure if ReadAttributes should really be here
         //InOut                        = In | Out,
 
-        AccessSystemSecurity = 0x01000000, // Allow changes to SACL. 
+        AccessSystemSecurity = 0x01000000, // Allow changes to SACL.
     }
 }
-

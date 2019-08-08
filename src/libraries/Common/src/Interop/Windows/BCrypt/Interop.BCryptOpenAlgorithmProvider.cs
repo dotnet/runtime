@@ -23,4 +23,3 @@ internal partial class Interop
         }
     }
 }
-

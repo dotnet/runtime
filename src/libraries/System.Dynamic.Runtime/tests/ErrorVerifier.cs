@@ -162,10 +162,10 @@ public enum RuntimeErrorId
     // RuntimeBinderException
     BindPropertyFailedMethodGroup, // The name '{0}' is bound to a method and cannot be used like a property
     // RuntimeBinderException
-    BindPropertyFailedEvent, // The event '{0}' can only appear on the left hand side of += or -= 
+    BindPropertyFailedEvent, // The event '{0}' can only appear on the left hand side of += or -=
     // RuntimeBinderException
     BindInvokeFailedNonDelegate, // Cannot invoke a non-delegate type
-    // ArgumentException 
+    // ArgumentException
     BindImplicitConversionRequireOneArgument, // Implicit conversion takes exactly one argument
     // ArgumentException
     BindExplicitConversionRequireOneArgument, // Explicit conversion takes exactly one argument

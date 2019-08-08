@@ -15,9 +15,9 @@ namespace System.Globalization.Tests
         public bool Success { get; private set; }
 
         /// <summary>
-        /// If Success is true, then the value shows the expected value of the test 
+        /// If Success is true, then the value shows the expected value of the test
         /// If Success is false, then the value shows the conversion steps that have issues
-        /// 
+        ///
         /// For details, see the explanation in IdnaTest.txt for the Unicode version being tested
         /// </summary>
         public string Value { get; private set; }

@@ -112,7 +112,7 @@ namespace System.DirectoryServices.AccountManagement
         private string _samName = null;          // the actual property value
 
         [System.Diagnostics.DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private LoadState _samNameChanged = LoadState.NotSet;    // change-tracking     
+        private LoadState _samNameChanged = LoadState.NotSet;    // change-tracking
 
         public string SamAccountName
         {
@@ -138,7 +138,7 @@ namespace System.DirectoryServices.AccountManagement
         private string _userPrincipalName = null;          // the actual property value
 
         [System.Diagnostics.DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private LoadState _userPrincipalNameChanged = LoadState.NotSet;    // change-tracking           
+        private LoadState _userPrincipalNameChanged = LoadState.NotSet;    // change-tracking
         public string UserPrincipalName
         {
             get
@@ -317,7 +317,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Save: inserting principal of type {0} using {1}", this.GetType(), storeCtxToUse.GetType());
                 Debug.Assert(storeCtxToUse == _ctx.ContextForType(this.GetType()));
                 storeCtxToUse.Insert(this);
-                this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state             
+                this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state
             }
             else
             {
@@ -380,14 +380,14 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Save(context): inserting new principal of type {0} using {1}", this.GetType(), newStoreCtx.GetType());
                 Debug.Assert(newStoreCtx == _ctx.ContextForType(this.GetType()));
                 newStoreCtx.Insert(this);
-                this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state             
+                this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state
             }
             else
             {
-                // We have a principal that already exists.  We need to move it to the new store.            
+                // We have a principal that already exists.  We need to move it to the new store.
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Save(context): Moving principal of type {0} using {1}", this.GetType(), newStoreCtx.GetType());
 
-                // we are now saving to a new store so this principal is unpersisted.                
+                // we are now saving to a new store so this principal is unpersisted.
                 this.unpersisted = true;
 
                 // If the user has modified the name save away the current name so
@@ -408,7 +408,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 try
                 {
-                    this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state                             
+                    this.unpersisted = false;  // once we persist, we're no longer in the unpersisted state
 
                     newStoreCtx.Update(this);
                 }
@@ -602,7 +602,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //
-        // 
+        //
         //
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected Principal()
@@ -1022,7 +1022,7 @@ namespace System.DirectoryServices.AccountManagement
         // HandleGet<T> was called.
         //
         // We'd like this to be marked protected AND internal, but that's not possible, so we'll settle for
-        // internal and treat it as if it were also protected.        
+        // internal and treat it as if it were also protected.
         internal T HandleGet<T>(ref T currentValue, string name, ref LoadState state)
         {
             // Make sure we're not disposed or deleted.
@@ -1134,7 +1134,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 default:
                     // If we're here, we didn't find the property.  They probably asked for a property we don't
-                    // support (e.g., we're a Group, and they asked for PropertyNames.UserEmailAddress).  
+                    // support (e.g., we're a Group, and they asked for PropertyNames.UserEmailAddress).
                     break;
             }
         }

@@ -10,37 +10,37 @@ namespace System.ComponentModel.Composition.Registration.Tests
     public class ExportBuilderTests
     {
         interface IFoo { }
-        
+
         class FooImpl {}
-    
+
         [Fact]
         public void AsContractTypeOfT_SetsContractType()
         {
             var builder = new ExportBuilder();
             builder.AsContractType<IFoo>();
-            
+
             ExportAttribute exportAtt = GetExportAttribute(builder);
             Assert.Equal(typeof(IFoo), exportAtt.ContractType);
             Assert.Null(exportAtt.ContractName);
         }
-    
+
         [Fact]
         public void AsContractType_SetsContractType()
         {
             var builder = new ExportBuilder();
             builder.AsContractType(typeof(IFoo));
-            
+
             ExportAttribute exportAtt = GetExportAttribute(builder);
             Assert.Equal(typeof(IFoo), exportAtt.ContractType);
             Assert.Null(exportAtt.ContractName);
         }
-    
+
         [Fact]
         public void AsContractName_SetsContractName()
         {
             var builder = new ExportBuilder();
             builder.AsContractName("hey");
-            
+
             ExportAttribute exportAtt = GetExportAttribute(builder);
             Assert.Equal("hey", exportAtt.ContractName);
             Assert.Null(exportAtt.ContractType);
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             var builder = new ExportBuilder();
             builder.AsContractName("hey");
             builder.AsContractType(typeof (IFoo));
-            
+
             ExportAttribute exportAtt = GetExportAttribute(builder);
             Assert.Equal("hey", exportAtt.ContractName);
             Assert.Equal(typeof(IFoo), exportAtt.ContractType);

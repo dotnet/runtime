@@ -409,7 +409,7 @@ namespace System.DirectoryServices
                 default:
 
                     //
-                    // This should not happen. Indicates a problem with the 
+                    // This should not happen. Indicates a problem with the
                     // internal logic.
                     //
                     Debug.Fail("Invalid PropertyAccess value");
@@ -431,7 +431,7 @@ namespace System.DirectoryServices
         //  None                None                    None
         //  All                 ContainerInherit        None
         //  Descendents         ContainerInherit        InheritOnly
-        //  SelfAndChildren     ContainerInherit        NoPropogateInherit                                    
+        //  SelfAndChildren     ContainerInherit        NoPropogateInherit
         //  Children            ContainerInherit        InheritOnly | NoPropagateInherit
         //
         internal static InheritanceFlags[] ITToIF = new InheritanceFlags[] {
@@ -505,7 +505,7 @@ namespace System.DirectoryServices
                     default:
 
                         //
-                        // This should not happen. Indicates a problem with the 
+                        // This should not happen. Indicates a problem with the
                         // internal logic.
                         //
                         Debug.Fail("Invalid PropagationFlags value");

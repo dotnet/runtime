@@ -22,8 +22,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
         public unsafe void VerifyMultipleOptionalModifiers()
         {
             // Type 1: int32 modopt([mscorlib]System.Runtime.CompilerServices.IsLong) modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl)
-            // Type 2: char* 
-            // Type 3: uint32 
+            // Type 2: char*
+            // Type 3: uint32
             // Type 4: char modopt([mscorlib]System.Runtime.CompilerServices.IsConst)*
             var testSignature = new byte[] { 0x20, 0x45, 0x20, 0x69, 0x08, 0x0F, 0x03, 0x09, 0x0F, 0x20, 0x55, 0x03 };
             var types = new string[]

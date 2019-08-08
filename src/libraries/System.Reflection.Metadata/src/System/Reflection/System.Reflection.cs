@@ -92,7 +92,7 @@ namespace System.Reflection
         RequestMinimum = 0x0008,
 
         /// <summary>
-        /// The request for additional permissions that are optional (not required to run). This request implicitly refuses all other permissions not specifically requested. This action can only be used within the scope of the assembly. 
+        /// The request for additional permissions that are optional (not required to run). This request implicitly refuses all other permissions not specifically requested. This action can only be used within the scope of the assembly.
         /// </summary>
         RequestOptional = 0x0009,
 
@@ -100,7 +100,7 @@ namespace System.Reflection
         /// The request that permissions that might be misused will not be granted to the calling code. This action can only be used within the scope of the assembly.
         /// </summary>
         RequestRefuse = 0x000A,
-        // Wait for an actual need before exposing these. They all have ilasm keywords, but some are missing from the CLI spec and 
+        // Wait for an actual need before exposing these. They all have ilasm keywords, but some are missing from the CLI spec and
         // and none are defined in System.Security.Permissions.SecurityAction.
         //Request = 0x0001,
         //PrejitGrant = 0x000B,
@@ -226,7 +226,7 @@ namespace System.Reflection
 
     internal static class TypeAttributesExtensions
     {
-        // This flag will be added to the BCL (Bug #1041207), but we still 
+        // This flag will be added to the BCL (Bug #1041207), but we still
         // need to define a copy here for downlevel portability.
         private const TypeAttributes Forwarder = (TypeAttributes)0x00200000;
 

@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [Fact]
         public void LoadC14NTransform()
-        { 
+        {
             string test =
                 @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#""><Transforms><Transform Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             XmlDocument doc = new XmlDocument();
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             Reference reference = new Reference();
             const string uri = "urn:1";
-            string test = 
+            string test =
                 $@"<Reference URI=""{ uri }"" xmlns=""http://www.w3.org/2000/09/xmldsig#""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference>";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test);

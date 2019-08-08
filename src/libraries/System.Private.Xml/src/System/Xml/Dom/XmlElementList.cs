@@ -11,7 +11,7 @@ namespace System.Xml
     {
         private string _asterisk;
         private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
-        //the member vars below are saved for further reconstruction        
+        //the member vars below are saved for further reconstruction
         private string _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
         private string _localName;
         private string _namespaceURI;

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System {
-    
+
     public class HttpStyleUriParser: UriParser
     {
         public HttpStyleUriParser():base(UriParser.HttpUri.Flags)
@@ -52,7 +52,7 @@ namespace System {
         {
         }
     }
-    
+
     public class NetTcpStyleUriParser: UriParser
     {
         public NetTcpStyleUriParser():base(UriParser.NetTcpUri.Flags)

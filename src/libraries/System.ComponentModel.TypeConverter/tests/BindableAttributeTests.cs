@@ -71,7 +71,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, attribute, true };
             yield return new object[] { attribute, new BindableAttribute(true, BindingDirection.TwoWay), true };
             yield return new object[] { attribute, new BindableAttribute(false, BindingDirection.OneWay), false };
-            
+
             yield return new object[] { attribute, new object(), false };
             yield return new object[] { attribute, null, false };
         }

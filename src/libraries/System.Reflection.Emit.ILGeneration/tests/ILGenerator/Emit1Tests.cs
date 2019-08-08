@@ -178,7 +178,7 @@ namespace System.Reflection.Emit.Tests
 
             TypeBuilder type2 = module.DefineType("C2", TypeAttributes.Public);
             MethodBuilder method2 = type2.DefineMethod("meth2", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[0]);
-   
+
             // Generate code for the method which will be invoking the first method
             ILGenerator ilGenerator2 = method2.GetILGenerator();
             ilGenerator2.Emit(OpCodes.Newobj, genericType.GetConstructor(new Type[0]));

@@ -17,7 +17,7 @@ namespace System
         //
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind)
         {
-            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow 
+            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
             // to be used here.
             if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
             {
@@ -44,7 +44,7 @@ namespace System
                 if (IsImplicitFile)
                 {
                     // V1 compat
-                    // A relative Uri wins over implicit UNC path unless the UNC path is of the form "\\something" and 
+                    // A relative Uri wins over implicit UNC path unless the UNC path is of the form "\\something" and
                     // uriKind != Absolute
                     // A relative Uri wins over implicit Unix path unless uriKind == Absolute
                     if (NotAny(Flags.DosPath) &&
@@ -164,14 +164,14 @@ namespace System
                         }
                         else if (uriKind == UriKind.Relative)
                         {
-                            // Here we know that custom parser can create an absolute Uri, but the user has requested only a 
+                            // Here we know that custom parser can create an absolute Uri, but the user has requested only a
                             // relative one
                             e = GetException(ParsingError.CannotCreateRelative);
                         }
 
                         if (_iriParsing && hasUnicode)
                         {
-                            // In this scenario we need to parse the whole string 
+                            // In this scenario we need to parse the whole string
                             try
                             {
                                 EnsureParseRemaining();
@@ -186,7 +186,7 @@ namespace System
                     // will return from here
                 }
             }
-            // If we encountered any parsing errors that indicate this may be a relative Uri, 
+            // If we encountered any parsing errors that indicate this may be a relative Uri,
             // and we'll allow relative Uri's, then create one.
             else if (err != ParsingError.None && uriKind != UriKind.Absolute
                 && err <= ParsingError.LastRelativeUriOkErrIndex)
@@ -464,7 +464,7 @@ namespace System
 
                 // User, Path, Query or Fragment may have some non escaped characters
                 if (((nonCanonical & Flags.E_CannotDisplayCanonical & (Flags.E_UserNotCanonical | Flags.E_PathNotCanonical |
-                                        Flags.E_QueryNotCanonical | Flags.E_FragmentNotCanonical)) != Flags.Zero))                   
+                                        Flags.E_QueryNotCanonical | Flags.E_FragmentNotCanonical)) != Flags.Zero))
                 {
                     return false;
                 }
@@ -533,7 +533,7 @@ namespace System
                 }
             }
             //
-            // May be scheme, host, port or path need some canonicalization but still the uri string is found to be a 
+            // May be scheme, host, port or path need some canonicalization but still the uri string is found to be a
             // "well formed" one
             //
             return true;
@@ -615,7 +615,7 @@ namespace System
         // a) Chars allowed by iri in a component are unescaped if found escaped
         // b) Bidi chars are stripped
         //
-        // should be called only if IRI parsing is switched on 
+        // should be called only if IRI parsing is switched on
         internal unsafe string EscapeUnescapeIri(string input, int start, int end, UriComponents component)
         {
             fixed (char* pInput = input)
@@ -637,7 +637,7 @@ namespace System
         //
         internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e)
         {
-            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow 
+            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
             // to be used here.
             if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
             {
@@ -684,8 +684,8 @@ namespace System
         }
 
         //
-        // Resolves into either baseUri or relativeUri according to conditions OR if not possible it uses newUriString 
-        // to  return combined URI strings from both Uris 
+        // Resolves into either baseUri or relativeUri according to conditions OR if not possible it uses newUriString
+        // to  return combined URI strings from both Uris
         // otherwise if e != null on output the operation has failed
         //
         internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped,

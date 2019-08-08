@@ -606,10 +606,10 @@ namespace System.Drawing
             }
             else
             {
-                // Ideally, we would pick apart the icon using 
+                // Ideally, we would pick apart the icon using
                 // GetIconInfo, and then pull the individual bitmaps out,
                 // converting them to DIBS and saving them into the file.
-                // But, in the interest of simplicity, we just call to 
+                // But, in the interest of simplicity, we just call to
                 // OLE to do it for us.
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
                 Guid g = typeof(IPicture).GUID;
@@ -759,7 +759,7 @@ namespace System.Drawing
 
                                 // In GDI+ the bits are there but the bitmap was created with no alpha channel
                                 // so copy the bits by hand to a new bitmap
-                                // we also need to go around a limitation in the way the ICON is stored (ie if it's another bpp 
+                                // we also need to go around a limitation in the way the ICON is stored (ie if it's another bpp
                                 // but stored in 32bpp all pixels are transparent and not opaque)
                                 // (Here you mostly need to remain calm....)
                                 bmpData = tmpBitmap.LockBits(new Rectangle(0, 0, tmpBitmap.Width, tmpBitmap.Height), ImageLockMode.ReadOnly, tmpBitmap.PixelFormat);
@@ -806,7 +806,7 @@ namespace System.Drawing
             {
                 // last chance... all the other cases (ie non 32 bpp icons coming from a handle or from the bitmapData)
 
-                // we have to do this rather than just return Bitmap.FromHIcon because 
+                // we have to do this rather than just return Bitmap.FromHIcon because
                 // the bitmap returned from that, even though it's 32bpp, just paints where the mask allows it
                 // seems like another GDI+ weirdness. might be interesting to investigate further. In the meantime
                 // this looks like the right thing to do and is not more expansive that what was present before.
@@ -826,7 +826,7 @@ namespace System.Drawing
                     catch (ArgumentException)
                     {
                         // Sometimes FromHicon will crash with no real reason.
-                        // The backup plan is to just draw the image like we used to. 
+                        // The backup plan is to just draw the image like we used to.
                         // NOTE: FromHIcon is also where we have the buffer overrun
                         // if width and height are mismatched.
                         Draw(graphics, new Rectangle(0, 0, size.Width, size.Height));

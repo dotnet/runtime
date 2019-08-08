@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
@@ -377,7 +377,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[3], new byte[3], 0, int.MaxValue };
             yield return new object[] { new PointF[3], new byte[3], 2, 0 };
         }
-        
+
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(CopyData_StartEndIndexesOutOfRange_TestData))]
         public void CopyData_StartEndIndexesOutOfRange_ReturnsExpeced(PointF[] points, byte[] types, int startIndex, int endIndex)

@@ -879,4 +879,3 @@ namespace System.Xml.Tests
         }
     }
 }
-

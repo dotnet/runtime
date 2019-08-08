@@ -695,4 +695,3 @@ namespace System.Data.SqlTypes
         public static readonly SqlDateTime Null = new SqlDateTime(true);
     } // SqlDateTime
 } // namespace System.Data.SqlTypes
-

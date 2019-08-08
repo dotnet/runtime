@@ -45,7 +45,7 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.CanConvertFrom(context, sourceType);
             }
-            
+
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -66,7 +66,7 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.ConvertFrom(context, culture, value);
             }
-            
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -87,7 +87,7 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.CanConvertTo(context, destinationType);
             }
-            
+
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -105,7 +105,7 @@ namespace System.ComponentModel
             {
                 return value;
             }
-            else if (destinationType == typeof(InstanceDescriptor)) 
+            else if (destinationType == typeof(InstanceDescriptor))
             {
                 ConstructorInfo ci = NullableType.GetConstructor(new Type[] {UnderlyingType});
                 Debug.Assert(ci != null, "Couldn't find constructor");
@@ -193,7 +193,7 @@ namespace System.ComponentModel
                 StandardValuesCollection values = UnderlyingTypeConverter.GetStandardValues(context);
                 if (GetStandardValuesSupported(context) && values != null)
                 {
-                    // Create a set of standard values around nullable instances. 
+                    // Create a set of standard values around nullable instances.
                     object[] wrappedValues = new object[values.Count + 1];
                     int idx = 0;
 
@@ -212,7 +212,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive 
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive
         /// list of possible values, using the specified context.
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)

@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
             Assert.Equal(basetype, typeof(object).Project());
         }
 
-        // Verify ContainsGenericParameter 
+        // Verify ContainsGenericParameter
         [Fact]
         public static void TestContainsGenericParameter1()
         {
@@ -49,7 +49,7 @@ namespace System.Reflection.Tests
             Assert.True(hasgenericParam, string.Format("Failed!! TestContainsGenericParameter did not return correct result. "));
         }
 
-        // Verify ContainsGenericParameter 
+        // Verify ContainsGenericParameter
         [Fact]
         public static void TestContainsGenericParameter2()
         {
@@ -141,7 +141,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsClass  
+        // VerifyIsClass
         [Fact]
         public static void TestIsClass()
         {
@@ -150,7 +150,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsEnum  
+        // VerifyIsEnum
         [Fact]
         public static void TestIsEnum()
         {
@@ -158,7 +158,7 @@ namespace System.Reflection.Tests
             Assert.True(typeof(MYENUM).Project().GetTypeInfo().IsEnum, "Failed!!  IsEnum returned false for a Enum Type");
         }
 
-        // VerifyIsInterface  
+        // VerifyIsInterface
         [Fact]
         public static void TestIsInterface()
         {
@@ -166,7 +166,7 @@ namespace System.Reflection.Tests
             Assert.True(typeof(ITest).Project().GetTypeInfo().IsInterface, "Failed!!   IsInterface returned false for a interface Type");
         }
 
-        // VerifyIsNested  
+        // VerifyIsNested
         [Fact]
         public static void TestIsNested()
         {
@@ -188,7 +188,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsPrimitive 
+        // VerifyIsPrimitive
         [Fact]
         public static void TestIsPrimitive()
         {
@@ -199,7 +199,7 @@ namespace System.Reflection.Tests
 
 
 
-        // VerifyIsPublic 
+        // VerifyIsPublic
         [Fact]
         public static void TestIsPublic()
         {
@@ -211,7 +211,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsNotPublic 
+        // VerifyIsNotPublic
         [Fact]
         public static void TestIsNotPublic()
         {
@@ -223,14 +223,14 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsNestedPublic 
+        // VerifyIsNestedPublic
         [Fact]
         public static void TestIsNestedPublic()
         {
             Assert.True(typeof(PublicClass.publicNestedClass).Project().GetTypeInfo().IsNestedPublic, "Failed!!  IsNestedPublic returned false for a nested public Type");
         }
 
-        // VerifyIsNestedPrivate 
+        // VerifyIsNestedPrivate
         [Fact]
         public static void TestIsNestedPrivate()
         {
@@ -238,7 +238,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // Verify IsSealed 
+        // Verify IsSealed
         [Fact]
         public static void TestIsSealed()
         {
@@ -286,7 +286,7 @@ namespace System.Reflection.Tests
             Assert.Equal("System", typeof(int).Project().GetTypeInfo().Namespace);
         }
 
-        // VerifyIsImport 
+        // VerifyIsImport
         [Fact]
         public static void TestIsImport()
         {
@@ -294,7 +294,7 @@ namespace System.Reflection.Tests
             Assert.False(typeof(MYENUM).Project().GetTypeInfo().IsImport, "Failed!!  IsImport returned true for a non-class Type that is not imported.");
         }
 
-        // VerifyIsUnicodeClass 
+        // VerifyIsUnicodeClass
         [Fact]
         public static void TestIsUnicodeClass()
         {
@@ -306,7 +306,7 @@ namespace System.Reflection.Tests
             Assert.False(ref_type.GetTypeInfo().IsUnicodeClass, "Failed!!  IsUnicodeClass returned true for string.");
         }
 
-        // Verify IsAutoClass 
+        // Verify IsAutoClass
         [Fact]
         public static void TestIsAutoClass()
         {
@@ -334,7 +334,7 @@ namespace System.Reflection.Tests
 
 
 
-        // VerifyIsNestedAssembly  
+        // VerifyIsNestedAssembly
         [Fact]
         public static void TestIsNestedAssembly()
         {
@@ -342,7 +342,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsNestedFamily  
+        // VerifyIsNestedFamily
         [Fact]
         public static void TestIsNestedFamily()
         {
@@ -350,7 +350,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsNestedFamANDAssem 
+        // VerifyIsNestedFamANDAssem
         [Fact]
         public static void TestIsNestedFamAndAssem()
         {
@@ -358,7 +358,7 @@ namespace System.Reflection.Tests
         }
 
 
-        // VerifyIsNestedFamOrAssem  
+        // VerifyIsNestedFamOrAssem
         [Fact]
         public static void TestIsNestedFamOrAssem()
         {

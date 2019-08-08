@@ -192,7 +192,7 @@ namespace CoreXml.Test.XLinq
                         // removed are only namespace declarations
                         TestLog.Compare(n[2] == XNamespace.Xmlns || n[1] == "xmlns", "Removed is not namespace declaration");
 
-                        // Lookup namespace ... should pass 
+                        // Lookup namespace ... should pass
                         TestLog.Compare(filteredReader.LookupNamespace(n[0] != "" ? n[1] : ""), n[3], "Lookup namespace failed - for removed declaration");
                     }
 

@@ -54,7 +54,7 @@ namespace System.Collections.Immutable
         private ImmutableStack(T head, ImmutableStack<T> tail)
         {
             Debug.Assert(tail != null);
-            
+
             _head = head;
             _tail = tail;
         }
@@ -103,7 +103,7 @@ namespace System.Collections.Immutable
         /// Gets the element on the top of the stack.
         /// </summary>
         /// <returns>
-        /// The element on the top of the stack. 
+        /// The element on the top of the stack.
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
         [Pure]
@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
         /// Gets a read-only reference to the element on the top of the stack.
         /// </summary>
         /// <returns>
-        /// A read-only reference to the element on the top of the stack. 
+        /// A read-only reference to the element on the top of the stack.
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
         [Pure]

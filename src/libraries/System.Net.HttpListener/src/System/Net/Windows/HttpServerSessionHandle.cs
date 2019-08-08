@@ -19,7 +19,7 @@ namespace System.Net
         {
             _serverSessionId = id;
 
-            // This class uses no real handle so we need to set a dummy handle. Otherwise, IsInvalid always remains             
+            // This class uses no real handle so we need to set a dummy handle. Otherwise, IsInvalid always remains
             // true.
             SetHandle(new IntPtr(1));
         }
@@ -37,4 +37,3 @@ namespace System.Net
         }
     }
 }
-

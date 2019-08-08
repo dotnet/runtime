@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -125,7 +125,7 @@ namespace System.IO.Compression
             size_t availableInput = (size_t)source.Length;
             unsafe
             {
-                // We can freely cast between int and size_t for two reasons: 
+                // We can freely cast between int and size_t for two reasons:
                 // 1. Interop Brotli functions will always return an availableInput/Output value lower or equal to the one passed to the function
                 // 2. Span's have a maximum length of the int boundary.
                 while ((int)availableOutput > 0)

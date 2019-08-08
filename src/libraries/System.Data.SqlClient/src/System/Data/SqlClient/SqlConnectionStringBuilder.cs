@@ -1005,4 +1005,3 @@ namespace System.Data.SqlClient
         }
     }
 }
-

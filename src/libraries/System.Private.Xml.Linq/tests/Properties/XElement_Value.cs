@@ -173,7 +173,7 @@ namespace CoreXml.Test.XLinq
                 private EventsHelper _eHelper;
                 private bool _runWithEvents;
 
-                // GET: 
+                // GET:
                 // - no content
                 // - empty string content
                 // - child nodes (different namespaces)
@@ -223,8 +223,8 @@ namespace CoreXml.Test.XLinq
                 //  ~ API touched data and Value (sanity)
                 //      ~ adjacent following text nodes
                 //      ~ concatenated text node value
-                //      ~ removed 
-                //          ~ text node 
+                //      ~ removed
+                //          ~ text node
                 //          ~ non text node
                 //          ~ set value on subnodes
 
@@ -291,12 +291,12 @@ namespace CoreXml.Test.XLinq
                 // SET:
                 //  ~ set null
                 //  ~ set empty string
-                //  ~ set string 
+                //  ~ set string
                 //  :: verify the replaced nodes properties, node content, node value
                 //  ~ replace:
                 //      ~ no content
                 //      ~ empty string
-                //      ~ just string 
+                //      ~ just string
                 //      ---- from here verify replaced nodes content
                 //      ~ just text/CDATA node
                 //      ~ mixed content

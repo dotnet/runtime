@@ -25,7 +25,7 @@ internal static partial class Interop
         {
             return true;
         }
-        
+
         public static bool CertVerifyCertificateChainPolicy(
             IntPtr pszPolicyOID,
             SafeX509ChainHandle pChainContext,
@@ -64,8 +64,8 @@ internal static partial class Interop
                 TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INVALID_HANDLE;
                 return new FakeSafeWinHttpHandle(false);
             }
-            
-            if (accessType == Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY && 
+
+            if (accessType == Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY &&
                 !TestControl.WinHttpAutomaticProxySupport)
             {
                 TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INVALID_PARAMETER;
@@ -179,7 +179,7 @@ internal static partial class Interop
             {
                 return false;
             }
-            
+
             if (TestControl.WinHttpQueryDataAvailable.ErrorWithApiCall)
             {
                 return false;
@@ -207,8 +207,8 @@ internal static partial class Interop
                     fakeHandle.InvokeCallback(Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE, buffer, (uint)bufferSize);
                     Marshal.FreeHGlobal(buffer);
                 }
-            });            
-            
+            });
+
             return true;
         }
 
@@ -453,7 +453,7 @@ internal static partial class Interop
                 return false;
             }
 
-            if (option == Interop.WinHttp.WINHTTP_OPTION_DISABLE_FEATURE && 
+            if (option == Interop.WinHttp.WINHTTP_OPTION_DISABLE_FEATURE &&
                 optionData == Interop.WinHttp.WINHTTP_DISABLE_COOKIES)
             {
                 APICallHistory.WinHttpOptionDisableCookies = true;
@@ -621,10 +621,10 @@ internal static partial class Interop
             {
                 throw new ArgumentNullException(nameof(handle));
             }
-            
+
             var fakeHandle = (FakeSafeWinHttpHandle)handle;
             fakeHandle.Callback = callback;
-            
+
             return IntPtr.Zero;
         }
     }

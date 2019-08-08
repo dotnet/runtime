@@ -22,7 +22,7 @@ namespace System.Data
 
         internal static void SetProperties(object instance, XmlAttributeCollection attrs)
         {
-            // This is called from both XSD and XDR schemas. 
+            // This is called from both XSD and XDR schemas.
             // Do we realy need it in XSD ???
             for (int i = 0; i < attrs.Count; i++)
             {
@@ -260,7 +260,7 @@ namespace System.Data
 
         internal static void SetProperties(object instance, XmlAttribute[] attrs)
         {
-            // This is called from both XSD and XDR schemas. 
+            // This is called from both XSD and XDR schemas.
             // Do we realy need it in XSD ???
             if (attrs == null)
                 return;
@@ -760,7 +760,7 @@ namespace System.Data
                 }
             }
 
-            // Walk all the top level Element tags.  
+            // Walk all the top level Element tags.
             foreach (XmlSchemaElement element in _elements)
             {
                 if (element == _dsElement)
@@ -794,7 +794,7 @@ namespace System.Data
                 HandleRelations(annotation, false);
             }
 
-            //just add Expressions, at this point and if ColumnExpressions.Count > 0, this.expressions should not be null 
+            //just add Expressions, at this point and if ColumnExpressions.Count > 0, this.expressions should not be null
             for (int i = 0; i < _columnExpressions.Count; i++)
             {
                 DataColumn dc = ((DataColumn)(_columnExpressions[i]));
@@ -873,7 +873,7 @@ namespace System.Data
                 return ((XmlSchemaChoice)pt).Items;
             if (pt is XmlSchemaAny)
                 return null;
-            // the code below is a little hack for the SOM behavior        
+            // the code below is a little hack for the SOM behavior
             if (pt is XmlSchemaElement)
             {
                 XmlSchemaObjectCollection Items = new XmlSchemaObjectCollection();
@@ -903,7 +903,7 @@ namespace System.Data
 
 
                     DataTable child = null;
-                    // to decide if element is our table, we need to match both name and ns 
+                    // to decide if element is our table, we need to match both name and ns
                     // 286043 - SQL BU Defect Tracking
                     if (((el.Name == null) && (el.RefName.Name == table.EncodedTableName && el.RefName.Namespace == table.Namespace)) ||
                         (IsTable(el) && el.Name == table.TableName))
@@ -961,7 +961,7 @@ namespace System.Data
                                     if (dc.ColumnMapping == MappingType.Element)
                                         ukColumnPosition++;
                                 }
-                                table.UKColumnPositionForInference = ukColumnPosition + 1; // since it starts from 
+                                table.UKColumnPositionForInference = ukColumnPosition + 1; // since it starts from
                             }
                         }
                     }
@@ -1461,7 +1461,7 @@ namespace System.Data
 
 
             XmlSchemaComplexType ct = node.SchemaType as XmlSchemaComplexType;
-            // We assume node.ElementSchemaType.BaseSchemaType to be null for 
+            // We assume node.ElementSchemaType.BaseSchemaType to be null for
             //  <xs:element name="foo"/> and not null for <xs:element name="foo" type="xs:string"/>
             bool isSimpleContent = ((node.ElementSchemaType.BaseXmlSchemaType != null) || (ct != null && ct.ContentModel is XmlSchemaSimpleContent));
 
@@ -1548,7 +1548,7 @@ namespace System.Data
 
             table = _ds.Tables.GetTable(XmlConvert.DecodeName(typeName), _TableUri);
             // TOD: Do not do this fix
-            //            if (table == null && node.RefName.IsEmpty && !IsTopLevelElement(node) && _TableUri != null && _TableUri.Length > 0) { 
+            //            if (table == null && node.RefName.IsEmpty && !IsTopLevelElement(node) && _TableUri != null && _TableUri.Length > 0) {
             //                _TableUri = null;    // it means form="qualified", so child element inherits namespace. amirhmy
             //            }
 
@@ -2083,7 +2083,7 @@ namespace System.Data
             {
                 return;
             }
-            type = ParseDataType(strType); // we pass it correctly when we call the method, no need to special check. 
+            type = ParseDataType(strType); // we pass it correctly when we call the method, no need to special check.
             DataColumn column;
 
 
@@ -2243,7 +2243,7 @@ namespace System.Data
                   // throw eception if same column is being aded with different mapping
                     if (column.ColumnMapping != MappingType.Attribute)
                         throw ExceptionBuilder.ColumnTypeConflict(column.ColumnName);
-                    // in previous inference , if we have incoming column with different NS, we think as different column and 
+                    // in previous inference , if we have incoming column with different NS, we think as different column and
                     //while adding , since there is no NS concept for datacolumn, we used to throw exception
                     // simulate the same behavior.
                     if ((string.IsNullOrEmpty(attrib.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatability :SQL BU DT 310912
@@ -2361,7 +2361,7 @@ namespace System.Data
             {
                 XmlSchemaSimpleType simpleTypeNode = typeNode as XmlSchemaSimpleType;
                 xsdType = new SimpleType(simpleTypeNode);
-                // ((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name.Length != 0 check is for annonymos simple type, 
+                // ((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name.Length != 0 check is for annonymos simple type,
                 // it should be  user defined  Named  simple type
                 if (((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name.Length != 0 && ((XmlSchemaSimpleType)typeNode).QualifiedName.Namespace != Keywords.XSDNS)
                 {
@@ -2428,7 +2428,7 @@ namespace System.Data
                 { // for backward compatability with old inference
                     if (column.ColumnMapping != MappingType.Element)
                         throw ExceptionBuilder.ColumnTypeConflict(column.ColumnName);
-                    // in previous inference , if we have incoming column with different NS, we think as different column and 
+                    // in previous inference , if we have incoming column with different NS, we think as different column and
                     //while adding , since there is no NS concept for datacolumn, we used to throw exception
                     // simulate the same behavior.
                     if ((string.IsNullOrEmpty(elem.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatability :SQL BU DT 310912
@@ -2517,7 +2517,7 @@ namespace System.Data
                 column._columnUri = null; // to not raise a column change namespace again
 
             if (FromInference)
-            {// search for prefix after adding to table, so NS has its final value, and 
+            {// search for prefix after adding to table, so NS has its final value, and
                 column.Prefix = GetPrefix(column.Namespace); // it can inherit its NS from DataTable, if it is null
             }
 
@@ -2819,7 +2819,7 @@ namespace System.Data
         }
 
         //        internal bool IsTopLevelElement (XmlSchemaElement node) {
-        //            return (elements.IndexOf(node) != -1);           
+        //            return (elements.IndexOf(node) != -1);
         //        }
         internal DataTable HandleTable(XmlSchemaElement node)
         {
@@ -2843,7 +2843,7 @@ namespace System.Data
     internal sealed class XmlIgnoreNamespaceReader : XmlNodeReader
     {
         private List<string> _namespacesToIgnore;
-        // 
+        //
         // Constructor
         //
         internal XmlIgnoreNamespaceReader(XmlDocument xdoc, string[] namespacesToIgnore) : base(xdoc)

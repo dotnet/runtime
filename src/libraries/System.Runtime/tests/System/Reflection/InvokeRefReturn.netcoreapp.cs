@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -58,7 +58,7 @@ namespace System.Reflection.Tests
             int* actual = (int*)(Pointer.Unbox(rv));
             Assert.Equal((IntPtr)expected, (IntPtr)actual);
         }
-        
+
         [Fact]
         public static unsafe void TestNullRefReturnOfPointer()
         {
@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(p);
             Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
         }
-        
+
         [Fact]
         public static unsafe void TestByRefLikeRefReturn()
         {
@@ -79,7 +79,7 @@ namespace System.Reflection.Tests
             {
                 // Don't use Assert.Throws because that will make a lambda and invalidate the pointer
                 object o = mi.Invoke(null, new object[] { Pointer.Box(pBrl, typeof(ByRefLike*)) });
-                
+
                 // If this is reached, it means `o` is a boxed byref-like type. That's a GC hole right there.
                 throw new Xunit.Sdk.XunitException("Boxed a byref-like type.");
             }
@@ -109,7 +109,7 @@ namespace System.Reflection.Tests
                 // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
                 //yield return new object[] { new IntPtr(42) };
                 //yield return new object[] { new UIntPtr(42) };
-                //yield return new object[] { 232953453454m }; 
+                //yield return new object[] { 232953453454m };
                 yield return new object[] { BindingFlags.IgnoreCase };
                 yield return new object[] { "Hello" };
                 yield return new object[] { new object() };
@@ -159,7 +159,7 @@ namespace System.Reflection.Tests
         }
 
         public ref struct ByRefLike { }
-        
+
         private sealed class TestClass<T>
         {
             private T _value;

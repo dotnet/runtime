@@ -411,7 +411,7 @@ namespace System.IO.Pipes.Tests
                     Assert.Throws<InvalidOperationException>(() => { server.ReadAsync(buffer, 0, buffer.Length); });
                 }
 
-                Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // disconnect when not connected 
+                Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // disconnect when not connected
                 Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
             }
         }
@@ -545,7 +545,7 @@ namespace System.IO.Pipes.Tests
                     Assert.True(server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
                 }
 
-                if (server.CanWrite) 
+                if (server.CanWrite)
                 {
                     var ctx1 = new CancellationTokenSource();
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // On Unix WriteAsync's aren't cancelable once initiated
@@ -751,7 +751,7 @@ namespace System.IO.Pipes.Tests
             }
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerInOutRead_ClientInOutWrite : NamedPipeTest_Simple
     {
@@ -765,7 +765,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerInOutWrite_ClientInOutRead : NamedPipeTest_Simple
     {
@@ -779,7 +779,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerInOut_ClientIn : NamedPipeTest_Simple
     {
@@ -793,7 +793,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerInOut_ClientOut : NamedPipeTest_Simple
     {
@@ -807,7 +807,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerOut_ClientIn : NamedPipeTest_Simple
     {
@@ -821,7 +821,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-    
+
     [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public class NamedPipeTest_Simple_ServerIn_ClientOut : NamedPipeTest_Simple
     {
@@ -835,5 +835,5 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-      
+
 }

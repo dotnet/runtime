@@ -129,7 +129,7 @@ namespace System.Security.Principal
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
                 // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
-                // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves 
+                // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves
                 // and simulate the exception from Encoding.Unicode.GetBytes().
                 if (sUserPrincipalName == null)
                     throw new ArgumentNullException("s");
@@ -869,7 +869,7 @@ namespace System.Security.Principal
                 case Interop.Errors.ERROR_BAD_LENGTH:
                 // special case for TokenSessionId. Falling through
                 case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                    // ptrLength is an [In] param to LocalAlloc 
+                    // ptrLength is an [In] param to LocalAlloc
                     UIntPtr ptrLength = new UIntPtr(dwLength);
                     safeLocalAllocHandle.Dispose();
                     safeLocalAllocHandle = Interop.Kernel32.LocalAlloc(0, ptrLength);
@@ -972,7 +972,7 @@ namespace System.Security.Principal
         /// <summary>
         /// Internal method to initialize the claim collection.
         /// Lazy init is used so claims are not initialized until needed
-        /// </summary>        
+        /// </summary>
         private void InitializeClaims()
         {
             if (!_claimsInitialized)

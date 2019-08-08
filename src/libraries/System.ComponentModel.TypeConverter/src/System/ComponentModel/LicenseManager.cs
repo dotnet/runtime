@@ -103,7 +103,7 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        /// Creates an instance of the specified type, using 
+        /// Creates an instance of the specified type, using
         /// creationContext
         /// as the context in which the licensed instance can be used.
         /// </summary>
@@ -113,7 +113,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Creates an instance of the specified type with the 
+        /// Creates an instance of the specified type with the
         /// specified arguments, using creationContext as the context in which the licensed
         /// instance can be used.
         /// </summary>
@@ -213,8 +213,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Determines if a valid license can be granted for the 
-        /// specified instance of the type. This method creates a valid <see cref='System.ComponentModel.License'/>. 
+        /// Determines if a valid license can be granted for the
+        /// specified instance of the type. This method creates a valid <see cref='System.ComponentModel.License'/>.
         /// </summary>
         public static bool IsValid(Type type, object instance, out License license)
         {
@@ -260,7 +260,7 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        /// Since we want to walk up the entire inheritance change, when not 
+        /// Since we want to walk up the entire inheritance change, when not
         /// give an instance, we need another helper method to walk up
         /// the chain...
         /// </summary>
@@ -294,7 +294,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    // For the case where a COM client is calling "RequestLicKey", 
+                    // For the case where a COM client is calling "RequestLicKey",
                     // we try to squirrel away the first found license key
                     licenseKey = license.LicenseKey;
                 }

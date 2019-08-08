@@ -106,7 +106,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("first", () => first.Except(second));
             AssertExtensions.Throws<ArgumentNullException>("first", () => first.Except(second, new AnagramEqualityComparer()));
         }
-        
+
         [Fact]
         public void SecondNull_ThrowsArgumentNullException()
         {

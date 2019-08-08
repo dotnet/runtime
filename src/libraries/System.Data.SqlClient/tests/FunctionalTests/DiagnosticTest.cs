@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,7 +23,7 @@ namespace System.Data.SqlClient.Tests
     {
         private const string BadConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
         private static readonly string s_tcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR") ?? string.Empty;
-        
+
         public static bool IsConnectionStringConfigured() => s_tcpConnStr != string.Empty;
 
         [Fact]
@@ -108,7 +108,7 @@ namespace System.Data.SqlClient.Tests
                         {
                             cmd.Connection = conn;
                             cmd.CommandText = "select 1 / 0;";
-                            
+
                             // Limiting the command timeout to 3 seconds. This should be lower than the Process timeout.
                             cmd.CommandTimeout = 3;
                             conn.Open();
@@ -519,7 +519,7 @@ namespace System.Data.SqlClient.Tests
             bool statsLogged = false;
             bool operationHasError = false;
             Guid beginOperationId = Guid.Empty;
-            
+
             FakeDiagnosticListenerObserver diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
                     IDictionary statistics;
@@ -539,12 +539,12 @@ namespace System.Data.SqlClient.Tests
 
                         Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
                         if (sqlCommand.Connection.State == ConnectionState.Open)
-                        { 
+                        {
                             Assert.NotEqual(connectionId, Guid.Empty);
                         }
 
                         beginOperationId = retrievedOperationId;
-                                                                        
+
                         statsLogged = true;
                     }
                     else if (kvp.Key.Equals("System.Data.SqlClient.WriteCommandAfter"))
@@ -570,7 +570,7 @@ namespace System.Data.SqlClient.Tests
                             Assert.NotEqual(connectionId, Guid.Empty);
                         }
 
-                        // if we get to this point, then statistics exist and this must be the "end" 
+                        // if we get to this point, then statistics exist and this must be the "end"
                         // event, so we need to make sure the operation IDs match
                         Assert.Equal(retrievedOperationId, beginOperationId);
                         beginOperationId = Guid.Empty;
@@ -707,7 +707,7 @@ namespace System.Data.SqlClient.Tests
                     sqlOperation(server.ConnectionString);
 
                     Console.WriteLine(string.Format("Test: {0} SqlOperation Successful", methodName));
-                    
+
                     Assert.True(statsLogged);
 
                     diagnosticListenerObserver.Disable();
@@ -763,7 +763,7 @@ namespace System.Data.SqlClient.Tests
                     string operation = GetPropertyValueFromType<string>(kvp.Value, "Operation");
                     Assert.False(string.IsNullOrWhiteSpace(operation));
 
-                    // if we get to this point, then statistics exist and this must be the "end" 
+                    // if we get to this point, then statistics exist and this must be the "end"
                     // event, so we need to make sure the operation IDs match
                     Assert.Equal(retrievedOperationId, beginOperationId);
                     beginOperationId = Guid.Empty;
@@ -813,7 +813,7 @@ namespace System.Data.SqlClient.Tests
 
                     Guid connectionId = GetPropertyValueFromType<Guid>(kvp.Value, "ConnectionId");
                     if (sqlConnection.State == ConnectionState.Open)
-                    { 
+                    {
                         Assert.NotEqual(connectionId, Guid.Empty);
                     }
 
@@ -908,7 +908,7 @@ namespace System.Data.SqlClient.Tests
             }
             Console.WriteLine(string.Format("Test: {0} Listeners Disposed Successfully", methodName));
         }
-        
+
         private static T GetPropertyValueFromType<T>(object obj, string propName)
         {
             Type type = obj.GetType();
@@ -928,8 +928,8 @@ namespace System.Data.SqlClient.Tests
         protected override TDSMessageCollection CreateQueryResponse(ITDSServerSession session, TDSSQLBatchToken batchRequest)
         {
             string lowerBatchText = batchRequest.Text.ToLowerInvariant();
-            
-            if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0 
+
+            if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0
             {
                 TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 16, "Divide by zero error encountered.");
                 TDSDoneToken doneToken = new TDSDoneToken(TDSDoneTokenStatusType.Final | TDSDoneTokenStatusType.Count, TDSDoneTokenCommandType.Select, 1);

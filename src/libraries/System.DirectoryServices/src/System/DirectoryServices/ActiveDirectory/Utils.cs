@@ -62,7 +62,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #define NORM_IGNOREWIDTH          0x00020000  // ignore width
 
         #define SORT_STRINGSORT           0x00001000  // use string sort method
-        
+
         #define MAKELANGID(p, s)       ((((WORD  )(s)) << 10) | (WORD  )(p))
 
         #define MAKELCID(lgid, srtid)  ((DWORD)((((DWORD)((WORD  )(srtid))) << 16) |  \
@@ -439,13 +439,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
         //
         // Splits up a DN into it's components
-        // e.g. cn=a,cn=b,dc=c,dc=d would be returned as 
+        // e.g. cn=a,cn=b,dc=c,dc=d would be returned as
         // a component array
         // components[0].name = cn
         // components[0].value = a
         // components[1].name = cn
         // components[1].value = b ... and so on
-        // 
+        //
         internal static Component[] GetDNComponents(string distinguishedName)
         {
             Debug.Assert(distinguishedName != null, "Utils.GetDNComponents: distinguishedName is null");
@@ -556,7 +556,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (i == (distinguishedName.Length - 1))
                 {
-                    // we've reached the end 
+                    // we've reached the end
 
                     // if we are still in quoted string, the format is invalid
                     if (inQuotedString)
@@ -618,7 +618,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // split the username from the context into username and domain (if possible)
             GetDomainAndUsername(context, out username, out domain);
 
-            // create the credentials 
+            // create the credentials
             // call DsMakePasswordCredentialsW
             IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
             if (functionPtr == (IntPtr)0)
@@ -738,7 +738,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static DirectoryEntry GetCrossRefEntry(DirectoryContext context, DirectoryEntry partitionsEntry, string partitionName)
         {
-            // search for the crossRef that matches this one and 
+            // search for the crossRef that matches this one and
 
             // build the filter
             StringBuilder str = new StringBuilder(15);
@@ -773,7 +773,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (res == null)
                 {
-                    // should not happen 
+                    // should not happen
                     throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ActiveDirectoryPartition), partitionName);
                 }
             }
@@ -898,7 +898,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (server is AdamInstance)
                 {
-                    // we might need to add the port number                          
+                    // we might need to add the port number
                     int portnumber = (int)PropertyManager.GetPropertyValue(server.Context, de, PropertyManager.MsDSPortLDAP);
 
                     if (portnumber != 389)
@@ -1097,7 +1097,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // The logic is as follows:
             // For each property in the propertiesWithRangeRetrieval we add the range as 0-*, e.g. member would be "member;range=0-*"
-            // When the results are returned if the property name is not present or is still "member;range=0-*", then we got the last batch and so we 
+            // When the results are returned if the property name is not present or is still "member;range=0-*", then we got the last batch and so we
             // will not retrieve this property in the next round. However, if the property comes back as "member;range=0-1499" this means
             // we still have more values to retrieve, so we will retrieve "member;range=5000-*" next time and so on...
             //
@@ -1114,7 +1114,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 searcher.PropertiesToLoad.Add(propertyName);
             }
 
-            // keep a list of properties for which we have not yet retrieved all the 
+            // keep a list of properties for which we have not yet retrieved all the
             // results
             foreach (string propertyName in propertiesWithRangeRetrieval)
             {
@@ -1166,7 +1166,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (propertyNamesWithRangeInfo.Contains(propertyName))
                         {
                             //
-                            // if this is a property retrieved along with range retrieval, check if we need to include 
+                            // if this is a property retrieved along with range retrieval, check if we need to include
                             // it in the next round.
                             //
 
@@ -1201,7 +1201,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // The algorithm is as follows:
             // 1. Search for the crossRef entry of this partition and retrieve the msDS-NC-Replica-Locations  and
-            //     msDS_NC-RO-Replica-Locations for a list of the replicas (using range retrieval). This is needed 
+            //     msDS_NC-RO-Replica-Locations for a list of the replicas (using range retrieval). This is needed
             //     in the case of application partition only.
             // 2. Search for the ntdsa objects of these replicas which have the partition in the Has-MasterNCs attribute (if partition name is specified
             //     else search for all ntdsa objects)
@@ -1231,8 +1231,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //
-            // If partition name is not null and is not Configuration/Schema/defaultNC , we need to get the list of the 
-            // msDS-NC-Replica-Locations and msDS-NC-RO-Replica-Locations (for Configuration/Schema, these attributes are 
+            // If partition name is not null and is not Configuration/Schema/defaultNC , we need to get the list of the
+            // msDS-NC-Replica-Locations and msDS-NC-RO-Replica-Locations (for Configuration/Schema, these attributes are
             // not populated, so we just return a list of all the servers)
             //
             if (partitionName != null && !isDefaultNC)
@@ -1487,7 +1487,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 {
                                     if ((objectCategory.Length >= roObjectCategoryValue.Length) && (Utils.Compare(objectCategory, 0, roObjectCategoryValue.Length, roObjectCategoryValue, 0, roObjectCategoryValue.Length) == 0))
                                     {
-                                        //for read-only NCs, msDS-HasInstantiatedNCs will be populated ONLY on each RODC and it will NOT be 
+                                        //for read-only NCs, msDS-HasInstantiatedNCs will be populated ONLY on each RODC and it will NOT be
                                         //replicated to other DCs. So it can't be used, provided we connect to each RODC and verify it which is not
                                         //really required as msDS-NC-RO-Replica-Locations should provide the correct information.
                                         ntdsaNames.Add(ntdsaName);
@@ -1534,7 +1534,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                                         if (((dnString.Length - 13) >= partitionName.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
                                         {
-                                            // found the entry that corresponds to this partition so even if we didn't get all the values of the 
+                                            // found the entry that corresponds to this partition so even if we didn't get all the values of the
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
@@ -1592,7 +1592,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (needToContinueRangeRetrieval)
                     {
-                        // Now continue with range retrieval if necessary for msDS-HasInstantiatedNCs 
+                        // Now continue with range retrieval if necessary for msDS-HasInstantiatedNCs
                         do
                         {
                             // Here we only need the NTDS settings objects of the ntdsaNames that need range retrieval
@@ -1620,7 +1620,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 str.Append(")");
                             }
 
-                            // Clear it for the next round of range retrieval 
+                            // Clear it for the next round of range retrieval
                             ntdsaNamesForRangeRetrieval.Clear();
                             needToContinueRangeRetrieval = false;
 
@@ -1778,7 +1778,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (index != -1)
             {
                 //
-                // if it contains any of the special characters then we 
+                // if it contains any of the special characters then we
                 // need to escape those
                 //
 
@@ -1845,7 +1845,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // This code block was specifically written for handling string comparison
             // involving null strings. The unmanged API "NativeMethods.CompareString"
             // does not handle null strings elegantly.
-            // 
+            //
             // This method handles comparison of the specified strings
             // if and only if either one of the two strings or both are null.
             if (s1 == null || s2 == null)
@@ -2007,9 +2007,9 @@ namespace System.DirectoryServices.ActiveDirectory
             //      If YES -->
             //          IS the local machine a DC
             //          If NO --> is local user
-            //         If YES --> is _not_ local user            
+            //         If YES --> is _not_ local user
             //      If NO --> is _not_ local user
-            //            
+            //
 
             IntPtr pCopyOfUserSid = IntPtr.Zero;
             IntPtr pMachineDomainSid = IntPtr.Zero;
@@ -2041,7 +2041,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    // It's not a domain SID, must be local (e.g., NT AUTHORITY\foo, or BUILTIN\foo)                    
+                    // It's not a domain SID, must be local (e.g., NT AUTHORITY\foo, or BUILTIN\foo)
                     return true;
                 }
             }

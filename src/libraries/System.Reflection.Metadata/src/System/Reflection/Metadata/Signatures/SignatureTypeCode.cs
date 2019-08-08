@@ -103,7 +103,7 @@ namespace System.Reflection.Metadata
         // ELEMENT_TYPE_VALUETYPE (0x11) and ELEMENT_TYPE_CLASS (0x12) are unified to ELEMENT_TYPE_HANDLE.
 
         /// <summary>
-        /// Represents a generic type parameter used within a signature. 
+        /// Represents a generic type parameter used within a signature.
         /// </summary>
         GenericTypeParameter = CorElementType.ELEMENT_TYPE_VAR,        // a class type variable VAR <U1>
 
@@ -133,7 +133,7 @@ namespace System.Reflection.Metadata
         UIntPtr = CorElementType.ELEMENT_TYPE_U,
 
         /// <summary>
-        /// Represents function pointer types in signatures. 
+        /// Represents function pointer types in signatures.
         /// </summary>
         FunctionPointer = CorElementType.ELEMENT_TYPE_FNPTR,           // FNPTR <complete sig for the function including calling convention>
 
@@ -150,13 +150,13 @@ namespace System.Reflection.Metadata
         // SZARRAY <type>
 
         /// <summary>
-        /// Represents a generic method parameter used within a signature. 
+        /// Represents a generic method parameter used within a signature.
         /// </summary>
         GenericMethodParameter = CorElementType.ELEMENT_TYPE_MVAR,     // a method type variable MVAR <U1>
 
         // This is only for binding
         /// <summary>
-        /// Represents a custom modifier applied to a type within a signature that the caller must understand. 
+        /// Represents a custom modifier applied to a type within a signature that the caller must understand.
         /// </summary>
         RequiredModifier = CorElementType.ELEMENT_TYPE_CMOD_REQD,      // required C modifier : E_T_CMOD_REQD <mdTypeRef/mdTypeDef>
 
@@ -177,7 +177,7 @@ namespace System.Reflection.Metadata
         TypeHandle = CorElementType.ELEMENT_TYPE_HANDLE,               // CLASS | VALUETYPE <class Token>
 
         /// <summary>
-        /// Represents a marker to indicate the end of fixed arguments and the beginning of variable arguments. 
+        /// Represents a marker to indicate the end of fixed arguments and the beginning of variable arguments.
         /// </summary>
         Sentinel = CorElementType.ELEMENT_TYPE_SENTINEL,
 

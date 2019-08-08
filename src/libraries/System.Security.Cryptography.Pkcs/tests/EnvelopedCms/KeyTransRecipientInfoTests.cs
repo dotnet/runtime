@@ -259,5 +259,3 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             + "302b06092a864886f70d010701301406082a864886f70d03070408355c596e3e8540608008f1f811e862e51bbd").HexToByteArray();
     }
 }
-
-

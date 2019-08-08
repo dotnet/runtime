@@ -10,7 +10,7 @@ namespace System.Diagnostics
         {
         }
 
-        public ConsoleTraceListener(bool useErrorStream) 
+        public ConsoleTraceListener(bool useErrorStream)
             : base (useErrorStream ? Console.Error : Console.Out)
         {
         }

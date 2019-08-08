@@ -9,11 +9,11 @@
 //  It provides functionality to compare the type/subtype values.
 //
 // Details:
-// Grammar which this class follows - 
+// Grammar which this class follows -
 //
-// Content-type grammar MUST conform to media-type grammar as per 
+// Content-type grammar MUST conform to media-type grammar as per
 // RFC 2616 (ABNF notation):
-// 
+//
 // media-type     = type "/" subtype *( ";" parameter )
 // type           = token
 // subtype        = token
@@ -39,9 +39,9 @@
 // <">            = <US-ASCII double-quote mark (34)>
 // LWS            = [CRLF] 1*( SP | HT )
 // CRLF           = CR LF
-// Linear white space (LWS) MUST NOT be used between the type and subtype, nor 
+// Linear white space (LWS) MUST NOT be used between the type and subtype, nor
 // between an attribute and its value. Leading and trailing LWS are prohibited.
-// 
+//
 //-----------------------------------------------------------------------------
 
 using System;
@@ -59,15 +59,15 @@ namespace System.IO.Packaging
         #region Internal Constructors
 
         /// <summary>
-        /// This constructor creates a ContentType object that represents 
-        /// the content-type string. At construction time we validate the 
+        /// This constructor creates a ContentType object that represents
+        /// the content-type string. At construction time we validate the
         /// string as per the grammar specified in RFC 2616.
         /// Note: We allow empty strings as valid input. Empty string should
-        /// we used more as an indication of an absent/unknown ContentType. 
+        /// we used more as an indication of an absent/unknown ContentType.
         /// </summary>
         /// <param name="contentType">content-type</param>
         /// <exception cref="ArgumentNullException">If the contentType parameter is null</exception>
-        /// <exception cref="ArgumentException">If the contentType string has leading or 
+        /// <exception cref="ArgumentException">If the contentType string has leading or
         /// trailing Linear White Spaces(LWS) characters</exception>
         /// <exception cref="ArgumentException">If the contentType string invalid CR-LF characters</exception>
         internal ContentType(string contentType)
@@ -88,7 +88,7 @@ namespace System.IO.Packaging
                 //We need to make sure that a \r is accompanied by \n
                 ValidateCarriageReturns(contentType);
 
-                //Begin Parsing                
+                //Begin Parsing
                 int semiColonIndex = contentType.IndexOf(SemicolonSeparator);
 
                 if (semiColonIndex == -1)
@@ -142,12 +142,12 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Enumerator which iterates over the Parameter and Value pairs which are stored 
+        /// Enumerator which iterates over the Parameter and Value pairs which are stored
         /// in a dictionary. We hand out just the enumerator in order to make this property
         /// ReadOnly
-        /// Consider following Content type - 
+        /// Consider following Content type -
         /// type/subtype ; param1=value1 ; param2=value2 ; param3="value3"
-        /// This will return an enumerator over a dictionary of the parameter/value pairs. 
+        /// This will return an enumerator over a dictionary of the parameter/value pairs.
         /// </summary>
         internal Dictionary<string, string>.Enumerator ParameterValuePairs
         {
@@ -158,11 +158,11 @@ namespace System.IO.Packaging
             }
         }
         #endregion Internal Properties
-        
+
         #region Internal Methods
 
         /// <summary>
-        /// This method does a strong comparison of the content types, as parameters are not allowed. 
+        /// This method does a strong comparison of the content types, as parameters are not allowed.
         /// We only compare the type and subType values in an ASCII case-insensitive manner.
         /// Parameters are not allowed to be present on any of the content type operands.
         /// </summary>
@@ -176,14 +176,14 @@ namespace System.IO.Packaging
         /// <summary>
         /// This method does a weak comparison of the content types. We only compare the
         /// type and subType values in an ASCII case-insensitive manner.
-        /// Parameter and value pairs are not used for the comparison. 
+        /// Parameter and value pairs are not used for the comparison.
         /// If you wish to compare the parameters too, then you must get the ParameterValuePairs from
         /// both the ContentType objects and compare each parameter entry.
-        /// The allowParameterValuePairs parameter is used to indicate whether the 
+        /// The allowParameterValuePairs parameter is used to indicate whether the
         /// comparison is tolerant to parameters being present or no.
         /// </summary>
         /// <param name="contentType">Content type to be compared with</param>
-        /// <param name="allowParameterValuePairs">If true, allows the presence of parameter value pairs. 
+        /// <param name="allowParameterValuePairs">If true, allows the presence of parameter value pairs.
         /// If false, parameter/value pairs cannot be present in the content type string.
         /// In either case, the parameter value pair is not used for the comparison.</param>
         /// <returns></returns>
@@ -228,7 +228,7 @@ namespace System.IO.Packaging
         {
             if (_contentType == null)
             {
-                //This is needed so that while debugging we get the correct 
+                //This is needed so that while debugging we get the correct
                 //string
                 if (!_isInitialized)
                     return string.Empty;
@@ -266,7 +266,7 @@ namespace System.IO.Packaging
 
         /// <summary>
         /// This method validates if the content type string has
-        /// valid CR-LF characters. Specifically we test if '\r' is 
+        /// valid CR-LF characters. Specifically we test if '\r' is
         /// accompanied by a '\n' in the string, else its an error.
         /// </summary>
         /// <param name="contentType"></param>
@@ -292,7 +292,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Parses the type and subType tokens from the string. 
+        /// Parses the type and subType tokens from the string.
         /// Also verifies if the Tokens are valid as per the grammar.
         /// </summary>
         /// <param name="typeAndSubType">substring that has the type and subType of the content type</param>
@@ -389,7 +389,7 @@ namespace System.IO.Packaging
                 else
                     length = semicolonIndex;
 
-                //If there is no linear whitespace found we treat the entire remaining string as 
+                //If there is no linear whitespace found we treat the entire remaining string as
                 //parameter value.
                 if (length == -1)
                     length = s.Length;
@@ -420,7 +420,7 @@ namespace System.IO.Packaging
 
         /// <summary>
         /// Validating the given token
-        /// The following checks are being made - 
+        /// The following checks are being made -
         /// 1. If all the characters in the token are either ASCII letter or digit.
         /// 2. If all the characters in the token are either from the remaining allowed cha----ter set.
         /// </summary>
@@ -444,7 +444,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Validating if the value of a parameter is either a valid token or a 
+        /// Validating if the value of a parameter is either a valid token or a
         /// valid quoted string
         /// </summary>
         /// <param name="parameterValue">parameter value string</param>
@@ -517,13 +517,13 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static bool IsAsciiLetter(char character)
         {
-            return 
-                (character >= 'a' && character <= 'z') || 
+            return
+                (character >= 'a' && character <= 'z') ||
                 (character >= 'A' && character <= 'Z');
         }
 
         /// <summary>
-        /// Returns true if the input character is one of the Linear White Space characters - 
+        /// Returns true if the input character is one of the Linear White Space characters -
         /// ' ', '\t', '\n', '\r'
         /// Returns false if the input character is none of the above
         /// </summary>
@@ -535,7 +535,7 @@ namespace System.IO.Packaging
             {
                 return false;
             }
-            
+
             int whiteSpaceIndex = Array.IndexOf(s_linearWhiteSpaceChars, ch);
             return whiteSpaceIndex != -1;
         }

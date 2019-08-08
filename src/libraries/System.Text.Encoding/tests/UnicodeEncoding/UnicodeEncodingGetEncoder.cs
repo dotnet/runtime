@@ -23,6 +23,6 @@ namespace System.Text.Tests
             {
                 Assert.Equal(bytes, desBytes);
             }
-        }        
+        }
     }
 }

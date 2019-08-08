@@ -425,7 +425,7 @@ namespace System.Xml.Linq.Tests
                 new XText("text1 text1"), new XComment("comment1 comment1"),
                 new XProcessingInstruction("pi1", "pi1pi1pi1pi1pi1"), new XCData("cdata cdata"),
                 new XDeclaration("234", "UTF-8", "yes"), XNamespace.Xmlns,
-                //new XStreamingElement("elementSequence"), 
+                //new XStreamingElement("elementSequence"),
                 new XDocumentType("dtd1", "dtd1dtd1dtd1", "dtd1 dtd1", "dtd1 dtd1 dtd1 ")
             };
 
@@ -512,7 +512,7 @@ namespace System.Xml.Linq.Tests
                 typeof(DifferentNamespace.A), typeof(DifferentNamespace.B), typeof(XAttribute), typeof(XElement),
                 typeof(Extensions), typeof(XDocument), typeof(XText), typeof(XName), typeof(XComment),
                 typeof(XProcessingInstruction), typeof(XCData), typeof(XDeclaration), typeof(XNamespace),
-                //typeof(XStreamingElement), 
+                //typeof(XStreamingElement),
                 typeof(XDocumentType)
             };
 
