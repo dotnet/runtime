@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -33,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
                 var options = new JsonSerializerOptions();
                 options.MaxDepth = depth + 1;
 
-                // No exception since depth was not passed.
+                // No exception since depth was not greater than MaxDepth.
                 string json = JsonSerializer.Serialize(rootObj, options);
                 Assert.False(string.IsNullOrEmpty(json));
             }
@@ -41,7 +42,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 var options = new JsonSerializerOptions();
                 options.MaxDepth = depth;
-                Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
+                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
+
+                // Exception should contain the path and MaxDepth.
+                string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", depth));
+                Assert.Contains(expectedPath, ex.Path);
+                Assert.Contains(depth.ToString(), ex.ToString());
             }
         }
 

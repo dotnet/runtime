@@ -28,6 +28,11 @@ namespace System.Text.Json
             return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollectionType, propertyType));
         }
 
+        public static void ThrowInvalidOperationException_SerializerCycleDetected(int maxDepth)
+        {
+            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, in Utf8JsonReader reader, string path, Exception innerException = null)
         {
