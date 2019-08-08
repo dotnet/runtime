@@ -95,7 +95,7 @@ namespace System.Threading.Tasks
             /// </summary>
             public const EventKeywords TaskTransfer = (EventKeywords)1;
             /// <summary>
-            /// TaskTranser events plus events when tasks start and stop 
+            /// TaskTranser events plus events when tasks start and stop
             /// </summary>
             public const EventKeywords Tasks = (EventKeywords)2;
             /// <summary>
@@ -117,7 +117,7 @@ namespace System.Threading.Tasks
 
             /// <summary>
             /// TasksFlowActivityIds indicate that activity ID flow from one task
-            /// to any task created by it. 
+            /// to any task created by it.
             /// </summary>
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
 
@@ -127,7 +127,7 @@ namespace System.Threading.Tasks
             public const EventKeywords AsyncMethod = (EventKeywords)0x100;
 
             /// <summary>
-            /// TasksSetActivityIds will cause the task operations to set Activity Ids 
+            /// TasksSetActivityIds will cause the task operations to set Activity Ids
             /// This option is incompatible with TasksFlowActivityIds flow is ignored
             /// if that keyword is set.   This option is likely to be removed in the future
             /// </summary>
@@ -147,7 +147,7 @@ namespace System.Threading.Tasks
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // TPL Event IDs (must be unique)
         //
 
@@ -189,12 +189,12 @@ namespace System.Threading.Tasks
 
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Task Events
         //
 
-        // These are all verbose events, so we need to call IsEnabled(EventLevel.Verbose, ALL_KEYWORDS) 
-        // call. However since the IsEnabled(l,k) call is more expensive than IsEnabled(), we only want 
+        // These are all verbose events, so we need to call IsEnabled(EventLevel.Verbose, ALL_KEYWORDS)
+        // call. However since the IsEnabled(l,k) call is more expensive than IsEnabled(), we only want
         // to incur this cost when instrumentation is enabled. So the Task codepaths that call these
         // event functions still do the check for IsEnabled()
 
@@ -213,7 +213,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, int CreatingTaskID, int TaskCreationOptions, int appDomain = DefaultAppDomainID)
         {
-            // IsEnabled() call is an inlined quick check that makes this very fast when provider is off 
+            // IsEnabled() call is an inlined quick check that makes this very fast when provider is off
             if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
             {
                 unsafe
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks
         /// <param name="TaskID">The task ID.</param>
         /// <param name="Behavior">Configured behavior for the wait.</param>
         /// <param name="ContinueWithTaskID">
-        /// If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.  
+        /// If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.
         /// 0 means unknown.   This allows better visualization of the common sequential chaining case.
         /// </param>
         [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
@@ -369,7 +369,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID)
         {
-            // Log an event if indicated.  
+            // Log an event if indicated.
             if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
                 WriteEvent(TASKWAITEND_ID, OriginatingTaskSchedulerID, OriginatingTaskID, TaskID);
         }
@@ -382,7 +382,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Verbose, Keywords = Keywords.TaskStops)]
         public void TaskWaitContinuationComplete(int TaskID)
         {
-            // Log an event if indicated.  
+            // Log an event if indicated.
             if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
                 WriteEvent(TASKWAITCONTINUATIONCOMPLETE_ID, TaskID);
         }
@@ -395,7 +395,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Verbose, Keywords = Keywords.TaskStops)]
         public void TaskWaitContinuationStarted(int TaskID)
         {
-            // Log an event if indicated.  
+            // Log an event if indicated.
             if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
                 WriteEvent(TASKWAITCONTINUATIONSTARTED_ID, TaskID);
         }
@@ -572,7 +572,7 @@ namespace System.Threading.Tasks
         {
             // The thread pool generated a process wide unique GUID from a task GUID by
             // using the taskGuid, the appdomain ID, and 8 bytes of 'randomization' chosen by
-            // using the last 8 bytes  as the provider GUID for this provider.  
+            // using the last 8 bytes  as the provider GUID for this provider.
             // These were generated by CreateGuid, and are reasonably random (and thus unlikely to collide
             uint pid = EventSource.s_currentPid;
             return new Guid(taskID,

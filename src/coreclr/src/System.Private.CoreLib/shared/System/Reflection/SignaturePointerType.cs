@@ -10,16 +10,16 @@ namespace System.Reflection
             : base(elementType)
         {
         }
-    
+
         protected sealed override bool IsArrayImpl() => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => true;
-    
+
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
-    
+
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
-    
+
         protected sealed override string Suffix => "*";
     }
 }

@@ -16,7 +16,7 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // The ArgumentOutOfRangeException is thrown when an argument 
+    // The ArgumentOutOfRangeException is thrown when an argument
     // is outside the legal range for that argument.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -24,7 +24,7 @@ namespace System
     {
         private object? _actualValue;
 
-        // Creates a new ArgumentOutOfRangeException with its message 
+        // Creates a new ArgumentOutOfRangeException with its message
         // string set to a default message explaining an argument was out of range.
         public ArgumentOutOfRangeException()
             : base(SR.Arg_ArgumentOutOfRangeException)
@@ -89,7 +89,7 @@ namespace System
         }
 
         // Gets the value of the argument that caused the exception.
-        // Note - we don't set this anywhere in the class libraries in 
+        // Note - we don't set this anywhere in the class libraries in
         // version 1, but it might come in handy for other developers who
         // want to avoid sticking printf's in their code.
         public virtual object? ActualValue

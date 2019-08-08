@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Reflection.Emit
-{  
+{
     /// <summary>
     /// The ParameterToken class is an opaque representation of the Token returned
     /// by the Metadata to represent the parameter.

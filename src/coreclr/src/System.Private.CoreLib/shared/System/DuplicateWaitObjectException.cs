@@ -15,13 +15,13 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // The DuplicateWaitObjectException is thrown when an object 
+    // The DuplicateWaitObjectException is thrown when an object
     // appears more than once in the list of objects to WaitAll or WaitAny.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DuplicateWaitObjectException : ArgumentException
     {
-        // Creates a new DuplicateWaitObjectException with its message 
+        // Creates a new DuplicateWaitObjectException with its message
         // string set to a default message.
         public DuplicateWaitObjectException()
             : base(SR.Arg_DuplicateWaitObjectException)
@@ -46,7 +46,7 @@ namespace System
         {
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
-        
+
         protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

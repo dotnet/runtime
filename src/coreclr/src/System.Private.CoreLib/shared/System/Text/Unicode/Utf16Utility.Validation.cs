@@ -60,7 +60,7 @@ namespace System.Text.Unicode
             // If we got here, it means we saw some non-ASCII data, so within our
             // vectorized code paths below we'll handle all non-surrogate UTF-16
             // code points branchlessly. We'll only branch if we see surrogates.
-            // 
+            //
             // We still optimistically assume the data is mostly ASCII. This means that the
             // number of UTF-8 code units and the number of scalars almost matches the number
             // of UTF-16 code units. As we go through the input and find non-ASCII
@@ -324,7 +324,7 @@ namespace System.Text.Unicode
                             // or palignr available to us, we'll do this as a loop. We won't look at
                             // the very last high surrogate char element since we don't yet know if
                             // the next vector read will have a low surrogate char element.
-                            
+
                             if (lowSurrogateChars[0] != 0)
                             {
                                 goto Error; // error: start of buffer contains standalone low surrogate char

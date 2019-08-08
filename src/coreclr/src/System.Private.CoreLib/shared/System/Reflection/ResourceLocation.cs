@@ -12,4 +12,3 @@ namespace System.Reflection
         Embedded = 1,
     }
 }
-

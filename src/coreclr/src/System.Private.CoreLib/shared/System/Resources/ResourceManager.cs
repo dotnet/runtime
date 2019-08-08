@@ -11,80 +11,80 @@ using System.Diagnostics;
 namespace System.Resources
 {
     // Resource Manager exposes an assembly's resources to an application for
-    // the correct CultureInfo.  An example would be localizing text for a 
-    // user-visible message.  Create a set of resource files listing a name 
+    // the correct CultureInfo.  An example would be localizing text for a
+    // user-visible message.  Create a set of resource files listing a name
     // for a message and its value, compile them using ResGen, put them in
-    // an appropriate place (your assembly manifest(?)), then create a Resource 
+    // an appropriate place (your assembly manifest(?)), then create a Resource
     // Manager and query for the name of the message you want.  The Resource
     // Manager will use CultureInfo.GetCurrentUICulture() to look
     // up a resource for your user's locale settings.
-    // 
+    //
     // Users should ideally create a resource file for every culture, or
-    // at least a meaningful subset.  The filenames will follow the naming 
+    // at least a meaningful subset.  The filenames will follow the naming
     // scheme:
-    // 
+    //
     // basename.culture name.resources
-    // 
-    // The base name can be the name of your application, or depending on 
-    // the granularity desired, possibly the name of each class.  The culture 
-    // name is determined from CultureInfo's Name property.  
+    //
+    // The base name can be the name of your application, or depending on
+    // the granularity desired, possibly the name of each class.  The culture
+    // name is determined from CultureInfo's Name property.
     // An example file name may be MyApp.en-US.resources for
     // MyApp's US English resources.
-    // 
+    //
     // -----------------
     // Refactoring Notes
     // -----------------
     // In Feb 08, began first step of refactoring ResourceManager to improve
     // maintainability (sd changelist 3012100). This resulted in breaking
     // apart the InternalGetResourceSet "big loop" so that the file-based
-    // and manifest-based lookup was located in separate methods. 
+    // and manifest-based lookup was located in separate methods.
     // In Apr 08, continued refactoring so that file-based and manifest-based
     // concerns are encapsulated by separate classes. At construction, the
-    // ResourceManager creates one of these classes based on whether the 
-    // RM will need to use file-based or manifest-based resources, and 
+    // ResourceManager creates one of these classes based on whether the
+    // RM will need to use file-based or manifest-based resources, and
     // afterwards refers to this through the interface IResourceGroveler.
-    // 
+    //
     // Serialization Compat: Ideally, we could have refactored further but
     // this would have broken serialization compat. For example, the
-    // ResourceManager member UseManifest and UseSatelliteAssem are no 
+    // ResourceManager member UseManifest and UseSatelliteAssem are no
     // longer relevant on ResourceManager. Similarly, other members could
-    // ideally be moved to the file-based or manifest-based classes 
+    // ideally be moved to the file-based or manifest-based classes
     // because they are only relevant for those types of lookup.
     //
-    // Solution now / in the future: 
+    // Solution now / in the future:
     // For now, we simply use a mediator class so that we can keep these
     // members on ResourceManager but allow the file-based and manifest-
     // based classes to access/set these members in a uniform way. See
     // ResourceManagerMediator.
-    // We encapsulate fallback logic in a fallback iterator class, so that 
+    // We encapsulate fallback logic in a fallback iterator class, so that
     // this logic isn't duplicated in several methods.
-    // 
+    //
     // In the future, we can also look into further factoring and better
     // design of IResourceGroveler interface to accommodate unused parameters
     // that don't make sense for either file-based or manifest-based lookup paths.
     //
     // Benefits of this refactoring:
-    // - Makes it possible to understand what the ResourceManager does, 
-    // which is key for maintainability. 
+    // - Makes it possible to understand what the ResourceManager does,
+    // which is key for maintainability.
     // - Makes the ResourceManager more extensible by identifying and
     // encapsulating what varies
-    // - Unearthed a bug that's been lurking a while in file-based 
+    // - Unearthed a bug that's been lurking a while in file-based
     // lookup paths for InternalGetResourceSet if createIfNotExists is
     // false.
-    // - Reuses logic, e.g. by breaking apart the culture fallback into 
-    // the fallback iterator class, we don't have to repeat the 
+    // - Reuses logic, e.g. by breaking apart the culture fallback into
+    // the fallback iterator class, we don't have to repeat the
     // sometimes confusing fallback logic across multiple methods
-    // - Fxcop violations reduced to 1/5th of original count. Most 
+    // - Fxcop violations reduced to 1/5th of original count. Most
     // importantly, code complexity violations disappeared.
     // - Finally, it got rid of dead code paths. Because the big loop was
-    // so confusing, it masked unused chunks of code. Also, dividing 
-    // between file-based and manifest-based allowed functionaliy 
+    // so confusing, it masked unused chunks of code. Also, dividing
+    // between file-based and manifest-based allowed functionaliy
     // unused in silverlight to fall out.
-    // 
+    //
     // Note: this type is integral to the construction of exception objects,
     // and sometimes this has to be done in low memory situtations (OOM) or
     // to create TypeInitializationExceptions due to failure of a static class
-    // constructor. This type needs to be extremely careful and assume that 
+    // constructor. This type needs to be extremely careful and assume that
     // any type it references may have previously failed to construct, so statics
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
@@ -113,7 +113,7 @@ namespace System.Resources
 
         private bool _useManifest;  // Use Assembly manifest, or grovel disk.
 
-        // Whether to fall back to the main assembly or a particular 
+        // Whether to fall back to the main assembly or a particular
         // satellite for the neutral resources.
         private UltimateResourceFallbackLocation _fallbackLoc;
         // Version number of satellite assemblies to look for.  May be null.
@@ -135,7 +135,7 @@ namespace System.Resources
 
         //
         //It would be better if we could use _neutralCulture instead of calling
-        //CultureInfo.InvariantCulture everywhere, but we run into problems with the .cctor.  CultureInfo 
+        //CultureInfo.InvariantCulture everywhere, but we run into problems with the .cctor.  CultureInfo
         //initializes assembly, which initializes ResourceManager, which tries to get a CultureInfo which isn't
         //there yet because CultureInfo's class initializer hasn't finished.  If we move SystemResMgr off of
         //Assembly (or at least make it an internal property) we should be able to circumvent this problem.
@@ -158,16 +158,16 @@ namespace System.Resources
             BaseNameField = string.Empty;
         }
 
-        // Constructs a Resource Manager for files beginning with 
+        // Constructs a Resource Manager for files beginning with
         // baseName in the directory specified by resourceDir
-        // or in the current directory.  This Assembly-ignorant constructor is 
+        // or in the current directory.  This Assembly-ignorant constructor is
         // mostly useful for testing your own ResourceSet implementation.
         //
-        // A good example of a baseName might be "Strings".  BaseName 
+        // A good example of a baseName might be "Strings".  BaseName
         // should not end in ".resources".
         //
         // Note: System.Windows.Forms uses this method at design time.
-        // 
+        //
         private ResourceManager(string baseName, string resourceDir, Type? userResourceSet)
         {
             if (null == baseName)
@@ -283,14 +283,14 @@ namespace System.Resources
             set { _fallbackLoc = value; }
         }
 
-        // Tells the ResourceManager to call Close on all ResourceSets and 
+        // Tells the ResourceManager to call Close on all ResourceSets and
         // release all resources.  This will shrink your working set by
         // potentially a substantial amount in a running application.  Any
-        // future resource lookups on this ResourceManager will be as 
+        // future resource lookups on this ResourceManager will be as
         // expensive as the very first lookup, since it will need to search
         // for files and load resources again.
-        // 
-        // This may be useful in some complex threading scenarios, where 
+        //
+        // This may be useful in some complex threading scenarios, where
         // creating a new ResourceManager isn't quite the correct behavior.
         public virtual void ReleaseAllResources()
         {
@@ -316,14 +316,14 @@ namespace System.Resources
             return new ResourceManager(baseName, resourceDir, usingResourceSet);
         }
 
-        // Given a CultureInfo, GetResourceFileName generates the name for 
-        // the binary file for the given CultureInfo.  This method uses 
+        // Given a CultureInfo, GetResourceFileName generates the name for
+        // the binary file for the given CultureInfo.  This method uses
         // CultureInfo's Name property as part of the file name for all cultures
-        // other than the invariant culture.  This method does not touch the disk, 
+        // other than the invariant culture.  This method does not touch the disk,
         // and is used only to construct what a resource file name (suitable for
         // passing to the ResourceReader constructor) or a manifest resource file
         // name should look like.
-        // 
+        //
         // This method can be overriden to look for a different extension,
         // such as ".ResX", or a completely different format for naming files.
         protected virtual string GetResourceFileName(CultureInfo culture)
@@ -388,13 +388,13 @@ namespace System.Resources
         }
 
         // Looks up a set of resources for a particular CultureInfo.  This is
-        // not useful for most users of the ResourceManager - call 
-        // GetString() or GetObject() instead.  
+        // not useful for most users of the ResourceManager - call
+        // GetString() or GetObject() instead.
         //
-        // The parameters let you control whether the ResourceSet is created 
-        // if it hasn't yet been loaded and if parent CultureInfos should be 
+        // The parameters let you control whether the ResourceSet is created
+        // if it hasn't yet been loaded and if parent CultureInfos should be
         // loaded as well for resource inheritance.
-        //         
+        //
         public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             if (null == culture)
@@ -430,7 +430,7 @@ namespace System.Resources
 
         // InternalGetResourceSet is a non-threadsafe method where all the logic
         // for getting a resource set lives.  Access to it is controlled by
-        // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
+        // threadsafe methods such as GetResourceSet, GetString, & GetObject.
         // This will take a minimal number of locks.
         protected virtual ResourceSet? InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
@@ -465,7 +465,7 @@ namespace System.Resources
                 // InternalGetResourceSet will never be threadsafe.  However, it must
                 // be protected against reentrancy from the SAME THREAD.  (ie, calling
                 // GetSatelliteAssembly may send some window messages or trigger the
-                // Assembly load event, which could fail then call back into the 
+                // Assembly load event, which could fail then call back into the
                 // ResourceManager).  It's happened.
 
                 rs = _resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
@@ -504,7 +504,7 @@ namespace System.Resources
         // Simple helper to ease maintenance and improve readability.
         private static void AddResourceSet(Dictionary<string, ResourceSet> localResourceSets, string cultureName, ref ResourceSet rs)
         {
-            // InternalGetResourceSet is both recursive and reentrant - 
+            // InternalGetResourceSet is both recursive and reentrant -
             // assembly load callbacks in particular are a way we can call
             // back into the ResourceManager in unexpectedly on the same thread.
             lock (localResourceSets)
@@ -517,7 +517,7 @@ namespace System.Resources
                     {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
-                        // of those cultures.  If there is a race condition we must make sure our ResourceSet 
+                        // of those cultures.  If there is a race condition we must make sure our ResourceSet
                         // isn't in our dictionary before closing it.
                         if (!localResourceSets.ContainsValue(rs))
                             rs.Dispose();
@@ -590,19 +590,19 @@ namespace System.Resources
             return string.Equals(an.Name, "mscorlib", StringComparison.OrdinalIgnoreCase);
         }
 
-        // Looks up a resource value for a particular name.  Looks in the 
+        // Looks up a resource value for a particular name.  Looks in the
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        // 
+        //
         public virtual string? GetString(string name)
         {
             return GetString(name, null);
         }
 
-        // Looks up a resource value for a particular name.  Looks in the 
+        // Looks up a resource value for a particular name.  Looks in the
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        // 
+        //
         public virtual string? GetString(string name, CultureInfo? culture)
         {
             if (null == name)
@@ -631,8 +631,8 @@ namespace System.Resources
                     return value;
             }
 
-            // This is the CultureInfo hierarchy traversal code for resource 
-            // lookups, similar but necessarily orthogonal to the ResourceSet 
+            // This is the CultureInfo hierarchy traversal code for resource
+            // lookups, similar but necessarily orthogonal to the ResourceSet
             // lookup logic.
             ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
             foreach (CultureInfo currentCultureInfo in mgr)
@@ -665,16 +665,16 @@ namespace System.Resources
             return null;
         }
 
-        // Looks up a resource value for a particular name.  Looks in the 
+        // Looks up a resource value for a particular name.  Looks in the
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        // 
+        //
         public virtual object? GetObject(string name)
         {
             return GetObject(name, null, true);
         }
 
-        // Looks up a resource value for a particular name.  Looks in the 
+        // Looks up a resource value for a particular name.  Looks in the
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         public virtual object? GetObject(string name, CultureInfo? culture)
@@ -706,8 +706,8 @@ namespace System.Resources
                 }
             }
 
-            // This is the CultureInfo hierarchy traversal code for resource 
-            // lookups, similar but necessarily orthogonal to the ResourceSet 
+            // This is the CultureInfo hierarchy traversal code for resource
+            // lookups, similar but necessarily orthogonal to the ResourceSet
             // lookup logic.
             ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
 

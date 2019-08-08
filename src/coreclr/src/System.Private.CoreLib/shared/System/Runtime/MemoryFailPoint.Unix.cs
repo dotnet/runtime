@@ -21,9 +21,9 @@ namespace System.Runtime
             return false;
         }
 
-        // Based on the shouldThrow parameter, this will throw an exception, or 
+        // Based on the shouldThrow parameter, this will throw an exception, or
         // returns whether there is enough space.  In all cases, we update
-        // our last known free address space, hopefully avoiding needing to 
+        // our last known free address space, hopefully avoiding needing to
         // probe again.
         private static bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
         {

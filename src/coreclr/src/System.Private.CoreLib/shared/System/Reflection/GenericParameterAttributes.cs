@@ -17,4 +17,3 @@ namespace System.Reflection
         DefaultConstructorConstraint = 0x0010,
     }
 }
-

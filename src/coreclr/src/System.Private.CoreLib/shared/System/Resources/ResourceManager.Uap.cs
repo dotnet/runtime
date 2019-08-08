@@ -82,10 +82,10 @@ namespace System.Resources
         //
         // 1) For Framework assemblies, we always use satellite assembly based lookup.
         // 2) For non-FX assemblies:
-        //    
+        //
         //    a) If the assembly lives under PLATFORM_RESOURCE_ROOTS (as specified by the host during AppDomain creation),
         //       then we will use satellite assembly based lookup in assemblies like *.resources.dll.
-        //   
+        //
         //    b) For any other non-FX assembly, we will use the modern resource manager with the premise that app package
         //       contains the PRI resources.
         //

@@ -29,7 +29,7 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
@@ -57,7 +57,7 @@ namespace System.Buffers.Text
             // 1st byte: the ASCII byte to insert for the opening brace position (or 0 if no braces),
             // 2nd byte: the ASCII byte to insert for the closing brace position (or 0 if no braces),
             // 3rd byte: high bit set if dashes are to be inserted.
-            // 
+            //
             // The reason for keeping a single flag instead of separate vars is that we can avoid register spillage
             // as we build up the output value.
             int flags;

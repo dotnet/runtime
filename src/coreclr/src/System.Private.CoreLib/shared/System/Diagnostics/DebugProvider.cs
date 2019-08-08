@@ -58,7 +58,7 @@ namespace System.Diagnostics
                 }
             }
         }
-        
+
         public virtual void WriteLine(string? message)
         {
             Write(message + Environment.NewLine);

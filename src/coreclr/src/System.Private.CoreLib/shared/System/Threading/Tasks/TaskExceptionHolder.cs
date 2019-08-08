@@ -21,8 +21,8 @@ namespace System.Threading.Tasks
     /// An exception holder manages a list of exceptions for one particular task.
     /// It offers the ability to aggregate, but more importantly, also offers intrinsic
     /// support for propagating unhandled exceptions that are never observed. It does
-    /// this by aggregating and calling UnobservedTaskException event event if the holder 
-    /// is ever GC'd without the holder's contents ever having been requested 
+    /// this by aggregating and calling UnobservedTaskException event event if the holder
+    /// is ever GC'd without the holder's contents ever having been requested
     /// (e.g. by a Task.Wait, Task.get_Exception, etc).
     /// </summary>
     internal class TaskExceptionHolder
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks
         /// </param>
         /// <param name="exceptionObject">
         /// An exception object (either an Exception, an ExceptionDispatchInfo,
-        /// an IEnumerable{Exception}, or an IEnumerable{ExceptionDispatchInfo}) 
+        /// an IEnumerable{Exception}, or an IEnumerable{ExceptionDispatchInfo})
         /// to add to the list.
         /// </param>
         /// <remarks>
@@ -230,7 +230,7 @@ namespace System.Threading.Tasks
         /// A private helper method that ensures the holder is considered
         /// handled, i.e. it is not registered for finalization.
         /// </summary>
-        /// <param name="calledFromFinalizer">Whether this is called from the finalizer thread.</param> 
+        /// <param name="calledFromFinalizer">Whether this is called from the finalizer thread.</param>
         internal void MarkAsHandled(bool calledFromFinalizer)
         {
             if (!m_isHandled)
@@ -261,12 +261,12 @@ namespace System.Threading.Tasks
             // Mark as handled and aggregate the exceptions.
             MarkAsHandled(calledFromFinalizer);
 
-            // If we're only including the previously captured exceptions, 
+            // If we're only including the previously captured exceptions,
             // return them immediately in an aggregate.
             if (includeThisException == null)
                 return new AggregateException(exceptions);
 
-            // Otherwise, the caller wants a specific exception to be included, 
+            // Otherwise, the caller wants a specific exception to be included,
             // so return an aggregate containing that exception and the rest.
             Exception[] combinedExceptions = new Exception[exceptions.Count + 1];
             for (int i = 0; i < combinedExceptions.Length - 1; i++)
@@ -278,8 +278,8 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Wraps the exception dispatch infos into a new read-only collection. By calling this method, 
-        /// the holder assumes exceptions to have been "observed", such that the finalization 
+        /// Wraps the exception dispatch infos into a new read-only collection. By calling this method,
+        /// the holder assumes exceptions to have been "observed", such that the finalization
         /// check will be subsequently skipped.
         /// </summary>
         internal ReadOnlyCollection<ExceptionDispatchInfo> GetExceptionDispatchInfos()
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Gets the ExceptionDispatchInfo representing the singular exception 
+        /// Gets the ExceptionDispatchInfo representing the singular exception
         /// that was the cause of the task's cancellation.
         /// </summary>
         /// <returns>

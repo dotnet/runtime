@@ -300,7 +300,7 @@ namespace System
             return totalSeconds * TicksPerSecond;
         }
 
-        // See System.Globalization.TimeSpanParse and System.Globalization.TimeSpanFormat 
+        // See System.Globalization.TimeSpanParse and System.Globalization.TimeSpanFormat
         #region ParseAndFormat
         private static void ValidateStyles(TimeSpanStyles style, string parameterName)
         {

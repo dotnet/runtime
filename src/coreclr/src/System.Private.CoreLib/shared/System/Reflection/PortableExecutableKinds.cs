@@ -15,4 +15,3 @@ namespace System.Reflection
         Preferred32Bit = 0x10,
     }
 }
-

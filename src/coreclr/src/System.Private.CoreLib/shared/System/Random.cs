@@ -7,7 +7,7 @@ namespace System
     public class Random
     {
         //
-        // Private Constants 
+        // Private Constants
         //
         private const int MBIG = int.MaxValue;
         private const int MSEED = 161803398;
@@ -152,7 +152,7 @@ namespace System
 
         //
         // Public Instance Methods
-        // 
+        //
 
 
         /*=====================================Next=====================================
@@ -167,7 +167,7 @@ namespace System
 
         private double GetSampleForLargeRange()
         {
-            // The distribution of double value returned by Sample 
+            // The distribution of double value returned by Sample
             // is not distributed well enough for a large range.
             // If we use Sample for a range [int.MinValue..int.MaxValue)
             // We will end up getting even numbers only.

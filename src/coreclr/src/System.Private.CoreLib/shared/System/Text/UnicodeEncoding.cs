@@ -427,8 +427,8 @@ namespace System.Text
                         while (longChars < longEnd)
                         {
                             // See if we potentially have surrogates (0x8000 bit set)
-                            // (We're either big endian on a big endian machine or little endian on 
-                            // a little endian machine so that'll work)                            
+                            // (We're either big endian on a big endian machine or little endian on
+                            // a little endian machine so that'll work)
                             if ((0x8000800080008000 & *longChars) != 0)
                             {
                                 // See if any of these are high or low surrogates (0xd800 - 0xdfff).  If the high
@@ -464,7 +464,7 @@ namespace System.Text
                                 }
                                 // else none are surrogates, so we can use them.
                             }
-                            // else all < 0x8000 so we can use them                            
+                            // else all < 0x8000 so we can use them
 
                             // We already counted these four chars, go to next long.
                             longChars++;
@@ -697,7 +697,7 @@ namespace System.Text
                     // No fallback, maybe we can do it fast
 #if FASTLOOP
                     // If endianess is backwards then each pair of bytes would be backwards.
-                    if ( (bigEndian ^ BitConverter.IsLittleEndian) && 
+                    if ( (bigEndian ^ BitConverter.IsLittleEndian) &&
 #if BIT64
                         (unchecked((long)chars) & 7) == 0 &&
 #else
@@ -720,8 +720,8 @@ namespace System.Text
                         while (longChars < longEnd)
                         {
                             // See if we potentially have surrogates (0x8000 bit set)
-                            // (We're either big endian on a big endian machine or little endian on 
-                            // a little endian machine so that'll work)                            
+                            // (We're either big endian on a big endian machine or little endian on
+                            // a little endian machine so that'll work)
                             if ((0x8000800080008000 & *longChars) != 0)
                             {
                                 // See if any of these are high or low surrogates (0xd800 - 0xdfff).  If the high
@@ -850,7 +850,7 @@ namespace System.Text
                         {
                             // These must have both been from the fallbacks.
                             // Both of these MUST have been from a fallback because if the 1st wasn't
-                            // from a fallback, then a high surrogate followed by an illegal char 
+                            // from a fallback, then a high surrogate followed by an illegal char
                             // would've caused the high surrogate to fall back.  If a high surrogate
                             // fell back, then it was consumed and both chars came from the fallback.
                             fallbackBuffer.MovePrevious();                     // Didn't use either fallback surrogate
@@ -1068,7 +1068,7 @@ namespace System.Text
                     while (longBytes < longEnd)
                     {
                         // See if we potentially have surrogates (0x8000 bit set)
-                        // (We're either big endian on a big endian machine or little endian on 
+                        // (We're either big endian on a big endian machine or little endian on
                         // a little endian machine so that'll work)
                         if ((0x8000800080008000 & *longBytes) != 0)
                         {
@@ -1393,7 +1393,7 @@ namespace System.Text
                     while (longBytes < longEnd)
                     {
                         // See if we potentially have surrogates (0x8000 bit set)
-                        // (We're either big endian on a big endian machine or little endian on 
+                        // (We're either big endian on a big endian machine or little endian on
                         // a little endian machine so that'll work)
                         if ((0x8000800080008000 & *longBytes) != 0)
                         {
@@ -1872,7 +1872,7 @@ namespace System.Text
             {
                 // base calls reset
             }
-            
+
             public override void Reset()
             {
                 lastByte = -1;
@@ -1892,4 +1892,3 @@ namespace System.Text
         }
     }
 }
-

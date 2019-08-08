@@ -24,11 +24,11 @@ namespace System
 
 
         // Compares this object to another object, returning an integer that
-        // indicates the relationship. 
+        // indicates the relationship.
         // Returns a value less than zero if this  object
         // null is considered to be less than any instance.
         // If object is not of type byte, this method throws an ArgumentException.
-        // 
+        //
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -90,7 +90,7 @@ namespace System
         }
 
         // Parses an unsigned byte from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's 
+        // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         public static byte Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
@@ -191,7 +191,7 @@ namespace System
 
         //
         // IConvertible implementation
-        // 
+        //
         public TypeCode GetTypeCode()
         {
             return TypeCode.Byte;

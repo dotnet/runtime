@@ -6,9 +6,9 @@
 //
 //
 //
-// A pair of schedulers that together support concurrent (reader) / exclusive (writer) 
+// A pair of schedulers that together support concurrent (reader) / exclusive (writer)
 // task scheduling.  Using just the exclusive scheduler can be used to simulate a serial
-// processing queue, and using just the concurrent scheduler with a specified 
+// processing queue, and using just the concurrent scheduler with a specified
 // MaximumConcurrentlyLevel can be used to achieve a MaxDegreeOfParallelism across
 // a bunch of tasks, parallel loops, dataflow blocks, etc.
 //
@@ -37,7 +37,7 @@ namespace System.Threading.Tasks
         /// <summary>The underlying task scheduler to which all work should be scheduled.</summary>
         private readonly TaskScheduler m_underlyingTaskScheduler;
         /// <summary>
-        /// The maximum number of tasks allowed to run concurrently.  This only applies to concurrent tasks, 
+        /// The maximum number of tasks allowed to run concurrently.  This only applies to concurrent tasks,
         /// since exclusive tasks are inherently limited to 1.
         /// </summary>
         private readonly int m_maxConcurrencyLevel;
@@ -92,7 +92,7 @@ namespace System.Threading.Tasks
         { }
 
         /// <summary>
-        /// Initializes the ConcurrentExclusiveSchedulerPair to target the specified scheduler with a maximum 
+        /// Initializes the ConcurrentExclusiveSchedulerPair to target the specified scheduler with a maximum
         /// concurrency level and a maximum number of scheduled tasks that may be processed as a unit.
         /// </summary>
         /// <param name="taskScheduler">The target scheduler on which this pair should execute.</param>
@@ -279,9 +279,9 @@ namespace System.Threading.Tasks
             {
                 // We snap whether there are any exclusive tasks or concurrent tasks waiting.
                 // (We grab the concurrent count below only once we know we need it.)
-                // With processing happening concurrent to this operation, this data may 
+                // With processing happening concurrent to this operation, this data may
                 // immediately be out of date, but it can only go from non-empty
-                // to empty and not the other way around.  As such, this is safe, 
+                // to empty and not the other way around.  As such, this is safe,
                 // as worst case is we'll schedule an extra  task when we didn't
                 // otherwise need to, and we'll just eat its overhead.
                 bool exclusiveTasksAreWaiting = !m_exclusiveTaskScheduler.m_tasks.IsEmpty;
@@ -592,7 +592,7 @@ namespace System.Threading.Tasks
                 //    while completion may have been requested, we can't have shutdown yet.
                 if (!taskWasPreviouslyQueued && m_pair.CompletionRequested) return false;
 
-                // We know the implementation of the default scheduler and how it will behave. 
+                // We know the implementation of the default scheduler and how it will behave.
                 // As it's the most common underlying scheduler, we optimize for it.
                 bool isDefaultScheduler = m_pair.m_underlyingTaskScheduler == TaskScheduler.Default;
 
@@ -627,7 +627,7 @@ namespace System.Threading.Tasks
             }
 
             /// <summary>
-            /// Implements a reasonable approximation for TryExecuteTaskInline on the underlying scheduler, 
+            /// Implements a reasonable approximation for TryExecuteTaskInline on the underlying scheduler,
             /// which we can't call directly on the underlying scheduler.
             /// </summary>
             /// <param name="task">The task to execute inline if possible.</param>

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -33,7 +33,7 @@ namespace System.Threading
         // Its value must be between the maximum semaphore value and zero
         private volatile int m_currentCount;
 
-        // The maximum semaphore value, it is initialized to Int.MaxValue if the client didn't specify it. it is used 
+        // The maximum semaphore value, it is initialized to Int.MaxValue if the client didn't specify it. it is used
         // to check if the count excceeded the maxi value or not.
         private readonly int m_maxCount;
 
@@ -279,7 +279,7 @@ namespace System.Threading
 
         /// <summary>
         /// Blocks the current thread until it can enter the <see cref="SemaphoreSlim"/>,
-        /// using a 32-bit signed integer to measure the time interval, 
+        /// using a 32-bit signed integer to measure the time interval,
         /// while observing a <see cref="T:System.Threading.CancellationToken"/>.
         /// </summary>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite"/>(-1) to
@@ -359,7 +359,7 @@ namespace System.Threading
                 }
 
                 // If there are any async waiters, for fairness we'll get in line behind
-                // then by translating our synchronous wait into an asynchronous one that we 
+                // then by translating our synchronous wait into an asynchronous one that we
                 // then block on (once we've released the lock).
                 if (m_asyncHead != null)
                 {
@@ -519,7 +519,7 @@ namespace System.Threading
         /// The number of milliseconds to wait, or <see cref="Timeout.Infinite"/>(-1) to wait indefinitely.
         /// </param>
         /// <returns>
-        /// A task that will complete with a result of true if the current thread successfully entered 
+        /// A task that will complete with a result of true if the current thread successfully entered
         /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
         /// </returns>
         /// <exception cref="T:System.ObjectDisposedException">The current instance has already been
@@ -542,14 +542,14 @@ namespace System.Threading
         /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
         /// <returns>
-        /// A task that will complete with a result of true if the current thread successfully entered 
+        /// A task that will complete with a result of true if the current thread successfully entered
         /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
         /// </returns>
         /// <exception cref="T:System.ObjectDisposedException">
         /// The current instance has already been disposed.
         /// </exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException">
-        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents 
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents
         /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
@@ -569,11 +569,11 @@ namespace System.Threading
         /// The <see cref="T:System.Threading.CancellationToken"/> token to observe.
         /// </param>
         /// <returns>
-        /// A task that will complete with a result of true if the current thread successfully entered 
+        /// A task that will complete with a result of true if the current thread successfully entered
         /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
         /// </returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException">
-        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents 
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents
         /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
@@ -592,7 +592,7 @@ namespace System.Threading
 
         /// <summary>
         /// Asynchronously waits to enter the <see cref="SemaphoreSlim"/>,
-        /// using a 32-bit signed integer to measure the time interval, 
+        /// using a 32-bit signed integer to measure the time interval,
         /// while observing a <see cref="T:System.Threading.CancellationToken"/>.
         /// </summary>
         /// <param name="millisecondsTimeout">
@@ -600,7 +600,7 @@ namespace System.Threading
         /// </param>
         /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken"/> to observe.</param>
         /// <returns>
-        /// A task that will complete with a result of true if the current thread successfully entered 
+        /// A task that will complete with a result of true if the current thread successfully entered
         /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
         /// </returns>
         /// <exception cref="T:System.ObjectDisposedException">The current instance has already been
@@ -884,7 +884,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// When overridden in a derived class, releases the unmanaged resources used by the 
+        /// When overridden in a derived class, releases the unmanaged resources used by the
         /// <see cref="T:System.Threading.ManualResetEventSlim"/>, and optionally releases the managed resources.
         /// </summary>
         /// <param name="disposing">true to release both managed and unmanaged resources;

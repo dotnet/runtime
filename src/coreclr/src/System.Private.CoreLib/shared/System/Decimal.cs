@@ -62,7 +62,7 @@ namespace System
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
         // negative Decimal value.
-        // 
+        //
         // Look at OleAut's DECIMAL_NEG constant to check for negative values
         // in native code.
         private const int SignMask = unchecked((int)0x80000000);
@@ -102,7 +102,7 @@ namespace System
         // positive and 1 meaning negative.
         //
         // NOTE: Do not change the order in which these fields are declared. The
-        // native methods in this class rely on this particular order. 
+        // native methods in this class rely on this particular order.
         // Do not rename (binary serialization).
         private readonly int flags;
         private readonly int hi;
@@ -263,7 +263,7 @@ namespace System
         }
 
         // Constructs a Decimal from its constituent parts.
-        // 
+        //
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale)
         {
             if (scale > 28)
@@ -340,11 +340,11 @@ namespace System
         }
 
         // Compares this object to another object, returning an integer that
-        // indicates the relationship. 
+        // indicates the relationship.
         // Returns a value less than zero if this  object
         // null is considered to be less than any instance.
         // If object is not of type Decimal, this method throws an ArgumentException.
-        // 
+        //
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -751,8 +751,8 @@ namespace System
             throw new OverflowException(SR.Overflow_Int64);
         }
 
-        // Converts a Decimal to an ushort. The Decimal 
-        // value is rounded towards zero to the nearest integer value, and the 
+        // Converts a Decimal to an ushort. The Decimal
+        // value is rounded towards zero to the nearest integer value, and the
         // result of this operation is returned as an ushort.
         //
         [CLSCompliant(false)]
@@ -772,8 +772,8 @@ namespace System
             return (ushort)temp;
         }
 
-        // Converts a Decimal to an unsigned integer. The Decimal 
-        // value is rounded towards zero to the nearest integer value, and the 
+        // Converts a Decimal to an unsigned integer. The Decimal
+        // value is rounded towards zero to the nearest integer value, and the
         // result of this operation is returned as an unsigned integer.
         //
         [CLSCompliant(false)]
@@ -789,8 +789,8 @@ namespace System
             throw new OverflowException(SR.Overflow_UInt32);
         }
 
-        // Converts a Decimal to an unsigned long. The Decimal 
-        // value is rounded towards zero to the nearest integer value, and the 
+        // Converts a Decimal to an unsigned long. The Decimal
+        // value is rounded towards zero to the nearest integer value, and the
         // result of this operation is returned as a long.
         //
         [CLSCompliant(false)]

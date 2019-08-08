@@ -88,7 +88,7 @@ namespace System.Threading.Tasks
         /// Gets the task associated with this exception.
         /// </summary>
         /// <remarks>
-        /// It is permissible for no Task to be associated with a 
+        /// It is permissible for no Task to be associated with a
         /// <see cref="T:System.Threading.Tasks.TaskCanceledException"/>, in which case
         /// this property will return null.
         /// </remarks>

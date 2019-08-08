@@ -4,8 +4,8 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 ** Purpose: Create a Memorystream over an UnmanagedMemoryStream
 **
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     // Needed for backwards compatibility with V1.x usages of the
-    // ResourceManager, where a MemoryStream is now returned as an 
+    // ResourceManager, where a MemoryStream is now returned as an
     // UnmanagedMemoryStream from ResourceReader.
     internal sealed class UnmanagedMemoryStreamWrapper : MemoryStream
     {
@@ -220,4 +220,3 @@ namespace System.IO
         }
     }  // class UnmanagedMemoryStreamWrapper
 }  // namespace
-

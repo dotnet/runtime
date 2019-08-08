@@ -24,11 +24,11 @@ namespace System
             _message = message;
         }
 
-        // Creates a new Exception.  All derived classes should 
+        // Creates a new Exception.  All derived classes should
         // provide this constructor.
-        // Note: the stack trace is not started until the exception 
+        // Note: the stack trace is not started until the exception
         // is thrown
-        // 
+        //
         public Exception(string? message, Exception? innerException)
             : this()
         {

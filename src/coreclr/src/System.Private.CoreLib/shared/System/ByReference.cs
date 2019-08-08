@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 namespace System
 {
     // ByReference<T> is meant to be used to represent "ref T" fields. It is working
-    // around lack of first class support for byref fields in C# and IL. The JIT and 
+    // around lack of first class support for byref fields in C# and IL. The JIT and
     // type loader has special handling for it that turns it into a thin wrapper around ref T.
     [NonVersionable]
     internal readonly ref struct ByReference<T>
@@ -21,7 +21,7 @@ namespace System
         [Intrinsic]
         public ByReference(ref T value)
         {
-            // Implemented as a JIT intrinsic - This default implementation is for 
+            // Implemented as a JIT intrinsic - This default implementation is for
             // completeness and to provide a concrete error if called via reflection
             // or if intrinsic is missed.
             throw new PlatformNotSupportedException();
@@ -32,7 +32,7 @@ namespace System
             [Intrinsic]
             get
             {
-                // Implemented as a JIT intrinsic - This default implementation is for 
+                // Implemented as a JIT intrinsic - This default implementation is for
                 // completeness and to provide a concrete error if called via reflection
                 // or if the intrinsic is missed.
                 throw new PlatformNotSupportedException();

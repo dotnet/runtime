@@ -702,7 +702,7 @@ namespace System.Runtime.InteropServices
             }
 
             IntPtr hglobal = AllocHGlobal((IntPtr)nb);
-            
+
             fixed (char* firstChar = s)
             {
                 string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);

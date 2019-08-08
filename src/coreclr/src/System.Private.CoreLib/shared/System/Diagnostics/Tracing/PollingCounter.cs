@@ -18,9 +18,9 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     /// <summary>
-    /// PollingCounter is a variant of EventCounter - it collects and calculates similar statistics 
+    /// PollingCounter is a variant of EventCounter - it collects and calculates similar statistics
     /// as EventCounter. PollingCounter differs from EventCounter in that it takes in a callback
-    /// function to collect metrics on its own rather than the user having to call WriteMetric() 
+    /// function to collect metrics on its own rather than the user having to call WriteMetric()
     /// every time.
     /// </summary>
     public partial class PollingCounter : DiagnosticCounter
@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tracing
             lock (this)
             {
                 double value = 0;
-                try 
+                try
                 {
                     value = _metricProvider();
                 }

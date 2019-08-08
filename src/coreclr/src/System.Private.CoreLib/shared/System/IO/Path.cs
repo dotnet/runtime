@@ -18,7 +18,7 @@ namespace System.IO
 #endif
 {
     // Provides methods for processing file system strings in a cross-platform manner.
-    // Most of the methods don't do a complete parsing (such as examining a UNC hostname), 
+    // Most of the methods don't do a complete parsing (such as examining a UNC hostname),
     // but they will handle most string operations.
     public static partial class Path
     {
@@ -161,7 +161,7 @@ namespace System.IO
         /// <summary>
         /// Returns the extension of the given path.
         /// </summary>
-        /// <remarks> 
+        /// <remarks>
         /// The returned value is an empty ReadOnlySpan if the given path does not include an extension.
         /// </remarks>
         public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
@@ -484,7 +484,7 @@ namespace System.IO
             {
                 return string.Empty;
             }
-            
+
             int maxSize = 0;
             foreach (string? path in paths)
             {

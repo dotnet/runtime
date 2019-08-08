@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // TypeDelegator
-// 
+//
 // This class wraps a Type object and delegates all methods to that Type.
 
 using CultureInfo = System.Globalization.CultureInfo;

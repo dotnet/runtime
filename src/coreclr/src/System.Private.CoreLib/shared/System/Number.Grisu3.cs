@@ -10,7 +10,7 @@ namespace System
     {
         // This is a port of the `Grisu3` implementation here: https://github.com/google/double-conversion/blob/a711666ddd063eb1e4b181a6cb981d39a1fc8bac/double-conversion/fast-dtoa.cc
         // The backing algorithm and the proofs behind it are described in more detail here: http://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
-        // ======================================================================================================================================== 
+        // ========================================================================================================================================
         //
         // Overview:
         //
@@ -500,7 +500,7 @@ namespace System
             //      number < (1 << (numberBits + 1))
             private static uint BiggestPowerTen(uint number, int numberBits, out int exponentPlusOne)
             {
-                // Inspired by the method for finding an integer log base 10 from here: 
+                // Inspired by the method for finding an integer log base 10 from here:
                 // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
 
                 Debug.Assert(number < (1U << (numberBits + 1)));

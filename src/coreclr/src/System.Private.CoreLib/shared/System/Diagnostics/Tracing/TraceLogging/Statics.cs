@@ -108,10 +108,10 @@ namespace System.Diagnostics.Tracing
         /// starting at the index given by pos. Updates pos. Writes 1 to 4 bytes,
         /// depending on the value of the tags variable. Usable for event tags and
         /// field tags.
-        /// 
+        ///
         /// Note that 'metadata' can be null, in which case it only updates 'pos'.
         /// This is useful for a two pass approach where you figure out how big to
-        /// make the array, and then you fill it in.   
+        /// make the array, and then you fill it in.
         /// </summary>
         public static void EncodeTags(int tags, ref int pos, byte[]? metadata)
         {
@@ -213,7 +213,7 @@ namespace System.Diagnostics.Tracing
                     return TraceLoggingDataType.Boolean8;
                 case EventFieldFormat.Hexadecimal:
                     return TraceLoggingDataType.HexInt8;
-#if false 
+#if false
                 case EventSourceFieldFormat.Signed:
                     return TraceLoggingDataType.Int8;
                 case EventSourceFieldFormat.Unsigned:
@@ -273,7 +273,7 @@ namespace System.Diagnostics.Tracing
                     return TraceLoggingDataType.Boolean32;
                 case EventFieldFormat.Hexadecimal:
                     return TraceLoggingDataType.HexInt32;
-#if false 
+#if false
                 case EventSourceFieldFormat.Ipv4Address:
                     return TraceLoggingDataType.Ipv4Address;
                 case EventSourceFieldFormat.ProcessId:
@@ -287,7 +287,7 @@ namespace System.Diagnostics.Tracing
 #endif
                 case EventFieldFormat.HResult:
                     return TraceLoggingDataType.HResult;
-#if false 
+#if false
                 case EventSourceFieldFormat.Signed:
                     return TraceLoggingDataType.Int32;
                 case EventSourceFieldFormat.Unsigned:
@@ -314,7 +314,7 @@ namespace System.Diagnostics.Tracing
                     return native;
                 case EventFieldFormat.Hexadecimal:
                     return TraceLoggingDataType.HexInt64;
-#if false 
+#if false
                 case EventSourceFieldFormat.FileTime:
                     return TraceLoggingDataType.FileTime;
                 case EventSourceFieldFormat.Signed:
@@ -343,7 +343,7 @@ namespace System.Diagnostics.Tracing
                     return native;
                 case EventFieldFormat.Hexadecimal:
                     return HexIntPtrType;
-#if false 
+#if false
                 case EventSourceFieldFormat.Signed:
                     return IntPtrType;
                 case EventSourceFieldFormat.Unsigned:

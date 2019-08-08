@@ -91,7 +91,7 @@ namespace System
                 return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
 
             throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
-        }        
+        }
 
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,

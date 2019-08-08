@@ -5,12 +5,12 @@
 /*============================================================
 **
 **
-** 
+**
 **
 **
 ** Purpose: class to sort arrays
 **
-** 
+**
 ===========================================================*/
 
 using System.Diagnostics;
@@ -670,7 +670,7 @@ namespace System.Collections.Generic
 
                     TValue value = values[a];
                     values[a] = values[b];
-                    values[b] = value;                    
+                    values[b] = value;
                 }
             }
         }
@@ -685,7 +685,7 @@ namespace System.Collections.Generic
 
                 TValue v = values[i];
                 values[i] = values[j];
-                values[j] = v;                
+                values[j] = v;
             }
         }
 
@@ -912,7 +912,7 @@ namespace System.Collections.Generic
 
                     TValue value = values[a];
                     values[a] = values[b];
-                    values[b] = value;                    
+                    values[b] = value;
                 }
             }
         }

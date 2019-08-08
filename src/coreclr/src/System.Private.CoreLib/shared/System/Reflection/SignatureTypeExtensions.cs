@@ -15,10 +15,10 @@ namespace System.Reflection
     static class SignatureTypeExtensions
     {
         /// <summary>
-        /// This is semantically identical to 
-        /// 
+        /// This is semantically identical to
+        ///
         ///      parameter.ParameterType == pattern.TryResolveAgainstGenericMethod(parameter.Member)
-        ///      
+        ///
         /// but without the allocation overhead of TryResolve.
         /// </summary>
         public static bool MatchesParameterTypeExactly(this Type pattern, ParameterInfo parameter)
@@ -30,10 +30,10 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// This is semantically identical to 
-        /// 
+        /// This is semantically identical to
+        ///
         ///      actual == pattern.TryResolveAgainstGenericMethod(parameterMember)
-        ///      
+        ///
         /// but without the allocation overhead of TryResolve.
         /// </summary>
         internal static bool MatchesExactly(this SignatureType pattern, Type actual)
@@ -100,7 +100,7 @@ namespace System.Reflection
         /// with its corresponding generic parameter definition. This is slow so MatchesExactly or MatchesParameterTypeExactly should be
         /// substituted instead whenever possible. This is only used by the DefaultBinder when its fast-path checks have been exhausted and
         /// it needs to call non-trivial methods like IsAssignableFrom which SignatureTypes will never support.
-        /// 
+        ///
         /// Because this method is used to eliminate method candidates in a GetMethod() lookup, it is entirely possible that the Type
         /// might not be creatable due to conflicting generic constraints. Since this merely implies that this candidate is not
         /// the method we're looking for, we return null rather than let the TypeLoadException bubble up. The DefaultBinder will catch
@@ -110,7 +110,7 @@ namespace System.Reflection
         {
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
-    
+
         private static Type? TryResolve(this SignatureType signatureType, Type[] genericMethodParameters)
         {
             if (signatureType.IsSZArray)
@@ -162,7 +162,7 @@ namespace System.Reflection
                 return null;
             }
         }
-    
+
         private static Type? TryMakeArrayType(this Type type)
         {
             try
@@ -174,7 +174,7 @@ namespace System.Reflection
                 return null;
             }
         }
-    
+
         private static Type? TryMakeArrayType(this Type type, int rank)
         {
             try
@@ -186,7 +186,7 @@ namespace System.Reflection
                 return null;
             }
         }
-    
+
         private static Type? TryMakeByRefType(this Type type)
         {
             try
@@ -198,7 +198,7 @@ namespace System.Reflection
                 return null;
             }
         }
-    
+
         private static Type? TryMakePointerType(this Type type)
         {
             try
@@ -210,7 +210,7 @@ namespace System.Reflection
                 return null;
             }
         }
-    
+
         private static Type? TryMakeGenericType(this Type type, Type[] instantiation)
         {
             try

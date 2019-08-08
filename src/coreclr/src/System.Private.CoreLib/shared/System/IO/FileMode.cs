@@ -7,11 +7,11 @@ namespace System.IO
     // Contains constants for specifying how the OS should open a file.
     // These will control whether you overwrite a file, open an existing
     // file, or some combination thereof.
-    // 
+    //
     // To append to a file, use Append (which maps to OpenOrCreate then we seek
-    // to the end of the file).  To truncate a file or create it if it doesn't 
+    // to the end of the file).  To truncate a file or create it if it doesn't
     // exist, use Create.
-    // 
+    //
     public enum FileMode
     {
         // Creates a new file. An exception is raised if the file already exists.
@@ -31,7 +31,7 @@ namespace System.IO
         // WRITE access. An exception is raised if the file does not exist.
         Truncate = 5,
 
-        // Opens the file if it exists and seeks to the end.  Otherwise, 
+        // Opens the file if it exists and seeks to the end.  Otherwise,
         // creates a new file.
         Append = 6,
     }

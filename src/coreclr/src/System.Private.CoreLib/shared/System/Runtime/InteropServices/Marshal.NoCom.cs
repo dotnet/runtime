@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
             }
 
             return (IntPtr)(-1);
-        }           
+        }
 
         public static IntPtr GetIUnknownForObject(object o)
         {
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static Type GetTypeFromCLSID(Guid clsid) 
+        public static Type GetTypeFromCLSID(Guid clsid)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
