@@ -18,7 +18,7 @@ using nuint = System.UInt32;
 namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both
-    // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.    
+    // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // Create instance will create an array
@@ -88,9 +88,9 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             // Check to make sure the lengths are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution 
-            // engine's low level allocation function after having made a copy of the array to prevent a 
-            // malicious caller from mutating the array after this check.           
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
             for (int i = 0; i < lengths.Length; i++)
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
@@ -117,9 +117,9 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             // Check to make sure the lenghts are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution 
-            // engine's low level allocation function after having made a copy of the array to prevent a 
-            // malicious caller from mutating the array after this check.           
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
             for (int i = 0; i < lengths.Length; i++)
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
@@ -153,7 +153,7 @@ namespace System
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
         }
 
-        // Reliability-wise, this method will either possibly corrupt your 
+        // Reliability-wise, this method will either possibly corrupt your
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
@@ -162,7 +162,7 @@ namespace System
 
         // Provides a strong exception guarantee - either it succeeds, or
         // it throws an exception with no side effects.  The arrays must be
-        // compatible array types based on the array element type - this 
+        // compatible array types based on the array element type - this
         // method does not support casting, boxing, or primitive widening.
         // It will up-cast, assuming the array types are correct.
         public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
@@ -386,7 +386,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool TrySZSort(Array keys, Array? items, int left, int right);
 
-        // if this is an array of value classes and that value class has a default constructor 
+        // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -395,12 +395,12 @@ namespace System
 
     //----------------------------------------------------------------------------------------
     // ! READ THIS BEFORE YOU WORK ON THIS CLASS.
-    // 
+    //
     // The methods on this class must be written VERY carefully to avoid introducing security holes.
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not SZArrayHelper objects. Rather, they are of type U[]
     // where U[] is castable to T[]. No actual SZArrayHelper object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" "T[]". 
+    // see a lot of expressions that cast "this" "T[]".
     //
     // This class is needed to allow an SZ array of type T[] to expose IList<T>,
     // IList<T.BaseType>, etc., etc. all the way up to IList<Object>. When the following call is
@@ -410,7 +410,7 @@ namespace System
     //
     // the interface stub dispatcher treats this as a special case, loads up SZArrayHelper,
     // finds the corresponding generic method (matched simply by method name), instantiates
-    // it for type <T> and executes it. 
+    // it for type <T> and executes it.
     //
     // The "T" will reflect the interface used to invoke the method. The actual runtime "this" will be
     // array that is castable to "T[]" (i.e. for primitivs and valuetypes, it will be exactly

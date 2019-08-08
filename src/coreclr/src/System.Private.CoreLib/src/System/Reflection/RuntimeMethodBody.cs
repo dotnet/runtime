@@ -27,4 +27,3 @@ namespace System.Reflection
         public override IList<ExceptionHandlingClause> ExceptionHandlingClauses => Array.AsReadOnly(_exceptionHandlingClauses);
     }
 }
-

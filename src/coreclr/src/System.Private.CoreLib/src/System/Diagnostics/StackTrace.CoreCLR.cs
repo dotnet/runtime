@@ -19,7 +19,7 @@ namespace System.Diagnostics
             const string PackageName = "System.Diagnostics";
 
             // Check if this method is part of the System.Diagnostics
-            // package. If so, increment counter keeping track of 
+            // package. If so, increment counter keeping track of
             // System.Diagnostics functions
             for (int i = 0; i < iNumFrames; i++)
             {

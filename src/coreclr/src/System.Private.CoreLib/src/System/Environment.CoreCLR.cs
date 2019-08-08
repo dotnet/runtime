@@ -32,7 +32,7 @@ namespace System
         }
 
         // Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
-        // to assign blame for crashes.  Don't mess with this, such as by making it call 
+        // to assign blame for crashes.  Don't mess with this, such as by making it call
         // another managed helper method, unless you consult with some CLR Watson experts.
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -67,10 +67,10 @@ namespace System
             // There are multiple entry points to a hosted app. The host could
             // use ::ExecuteAssembly() or ::CreateDelegate option:
             //
-            // ::ExecuteAssembly() -> In this particular case, the runtime invokes the main 
+            // ::ExecuteAssembly() -> In this particular case, the runtime invokes the main
             // method based on the arguments set by the host, and we return those arguments
             //
-            // ::CreateDelegate() -> In this particular case, the host is asked to create a 
+            // ::CreateDelegate() -> In this particular case, the host is asked to create a
             // delegate based on the appDomain, assembly and methodDesc passed to it.
             // which the caller uses to invoke the method. In this particular case we do not have
             // any information on what arguments would be passed to the delegate.

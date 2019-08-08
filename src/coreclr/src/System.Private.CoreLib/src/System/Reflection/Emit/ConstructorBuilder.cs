@@ -149,8 +149,8 @@ namespace System.Reflection.Emit
 
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
-            // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have 
-            // return parameters. But we'll allow it for backward compatibility with V2. The attributes 
+            // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have
+            // return parameters. But we'll allow it for backward compatibility with V2. The attributes
             // defined on the return parameters won't be very useful but won't do much harm either.
 
             // MD will assert if we try to set the reserved bits explicitly
@@ -224,4 +224,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-

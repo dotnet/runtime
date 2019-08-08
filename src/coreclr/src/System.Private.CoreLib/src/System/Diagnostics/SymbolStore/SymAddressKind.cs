@@ -9,9 +9,9 @@
 ** Represents address Kinds used with local variables, parameters, and
 ** fields.
 **
-** 
+**
 ===========================================================*/
-// Only statics, does not need to be marked with the serializable attribute    
+// Only statics, does not need to be marked with the serializable attribute
 
 namespace System.Diagnostics.SymbolStore
 {

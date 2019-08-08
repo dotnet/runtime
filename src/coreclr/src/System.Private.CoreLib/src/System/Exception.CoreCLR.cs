@@ -19,7 +19,7 @@ namespace System
 
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
-            // 
+            //
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
@@ -28,13 +28,13 @@ namespace System
             // If we are constructing a new exception after a cross-appdomain call...
             if (context.State == StreamingContextStates.CrossAppDomain)
             {
-                // ...this new exception may get thrown.  It is logically a re-throw, but 
-                //  physically a brand-new exception.  Since the stack trace is cleared 
-                //  on a new exception, the "_remoteStackTraceString" is provided to 
+                // ...this new exception may get thrown.  It is logically a re-throw, but
+                //  physically a brand-new exception.  Since the stack trace is cleared
+                //  on a new exception, the "_remoteStackTraceString" is provided to
                 //  effectively import a stack trace from a "remote" exception.  So,
                 //  move the _stackTraceString into the _remoteStackTraceString.  Note
-                //  that if there is an existing _remoteStackTraceString, it will be 
-                //  preserved at the head of the new string, so everything works as 
+                //  that if there is an existing _remoteStackTraceString, it will be
+                //  preserved at the head of the new string, so everything works as
                 //  expected.
                 // Even if this exception is NOT thrown, things will still work as expected
                 //  because the StackTrace property returns the concatenation of the
@@ -59,8 +59,8 @@ namespace System
 #if FEATURE_COMINTEROP
         //
         // Exception requires anything to be added into Data dictionary is serializable
-        // This wrapper is made serializable to satisfy this requirement but does NOT serialize 
-        // the object and simply ignores it during serialization, because we only need 
+        // This wrapper is made serializable to satisfy this requirement but does NOT serialize
+        // the object and simply ignores it during serialization, because we only need
         // the exception instance in the app to hold the error object alive.
         // Once the exception is serialized to debugger, debugger only needs the error reference string
         //
@@ -221,7 +221,7 @@ namespace System
             // Using it across process or an AppDomain could be invalid and result
             // in AV in the runtime.
             //
-            // Hence, we set it to zero when deserialization takes place. 
+            // Hence, we set it to zero when deserialization takes place.
             _ipForWatsonBuckets = UIntPtr.Zero;
         }
 
@@ -322,7 +322,7 @@ namespace System
                     object? _stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
                     object? _dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
 
-                    // Finally, restore the information. 
+                    // Finally, restore the information.
                     //
                     // Since EDI can be created at various points during exception dispatch (e.g. at various frames on the stack) for the same exception instance,
                     // they can have different data to be restored. Thus, to ensure atomicity of restoration from each EDI, perform the restore under a lock.
@@ -342,16 +342,16 @@ namespace System
             }
         }
 
-        private MethodBase? _exceptionMethod;  //Needed for serialization.  
+        private MethodBase? _exceptionMethod;  //Needed for serialization.
         internal string? _message;
         private IDictionary? _data;
         private Exception? _innerException;
         private string? _helpURL;
         private object? _stackTrace;
         private object? _watsonBuckets;
-        private string? _stackTraceString; //Needed for serialization.  
+        private string? _stackTraceString; //Needed for serialization.
         private string? _remoteStackTraceString;
-#pragma warning disable 414  // Field is not used from managed.        
+#pragma warning disable 414  // Field is not used from managed.
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
@@ -361,9 +361,9 @@ namespace System
 
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
-        private IntPtr _xptrs;             // Internal EE stuff 
+        private IntPtr _xptrs;             // Internal EE stuff
 #pragma warning disable 414  // Field is not used from managed.
-        private int _xcode = _COMPlusExceptionCode;             // Internal EE stuff 
+        private int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
 #pragma warning restore 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
@@ -391,12 +391,12 @@ namespace System
             }
         }
 
-        // This piece of infrastructure exists to help avoid deadlocks 
-        // between parts of mscorlib that might throw an exception while 
+        // This piece of infrastructure exists to help avoid deadlocks
+        // between parts of mscorlib that might throw an exception while
         // holding a lock that are also used by mscorlib's ResourceManager
         // instance.  As a special case of code that may throw while holding
         // a lock, we also need to fix our asynchronous exceptions to use
-        // Win32 resources as well (assuming we ever call a managed 
+        // Win32 resources as well (assuming we ever call a managed
         // constructor on instances of them).  We should grow this set of
         // exception messages as we discover problems, then move the resources
         // involved to native code.

@@ -15,7 +15,7 @@
 **
 **
 **
-** Purpose: Class for converting information to and from the native 
+** Purpose: Class for converting information to and from the native
 **          overlapped structure used in asynchronous file i/o
 **
 **
@@ -33,7 +33,7 @@ namespace System.Threading
         private IOCompletionCallback _ioCompletionCallback;
         private ExecutionContext _executionContext;
         private uint _errorCode; // Error code
-        private uint _numBytes; // No. of bytes transferred 
+        private uint _numBytes; // No. of bytes transferred
         private NativeOverlapped* _pNativeOverlapped;
 
         internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
@@ -87,7 +87,7 @@ namespace System.Threading
 
     sealed internal unsafe class OverlappedData
     {
-        // ! If you make any change to the layout here, you need to make matching change 
+        // ! If you make any change to the layout here, you need to make matching change
         // ! to OverlappedDataObject in vm\nativeoverlapped.h
         internal IAsyncResult? _asyncResult;
         internal object? _callback; // IOCompletionCallback or _IOCompletionCallback
@@ -159,7 +159,7 @@ namespace System.Threading
 
         public Overlapped()
         {
-            // The split between Overlapped and OverlappedData should not be needed. It is required by the implementation of 
+            // The split between Overlapped and OverlappedData should not be needed. It is required by the implementation of
             // async GC handles currently. It expects OverlappedData to be a sealed type.
             _overlappedData = new OverlappedData(this);
         }
@@ -211,8 +211,8 @@ namespace System.Threading
 
         /*====================================================================
         *  Packs a managed overlapped class into native Overlapped struct.
-        *  Roots the iocb and stores it in the ReservedCOR field of native Overlapped 
-        *  Pins the native Overlapped struct and returns the pinned index. 
+        *  Roots the iocb and stores it in the ReservedCOR field of native Overlapped
+        *  Pins the native Overlapped struct and returns the pinned index.
         ====================================================================*/
         [Obsolete("This method is not safe.  Use Pack (iocb, userData) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         [CLSCompliant(false)]
@@ -241,7 +241,7 @@ namespace System.Threading
         }
 
         /*====================================================================
-        *  Unpacks an unmanaged native Overlapped struct. 
+        *  Unpacks an unmanaged native Overlapped struct.
         *  Unpins the native Overlapped struct
         ====================================================================*/
         [CLSCompliant(false)]

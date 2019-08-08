@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
             m_parameterTypeRequiredCustomModifiers = parameterTypeRequiredCustomModifiers;
             m_parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
 
-            //            m_signature = SignatureHelper.GetMethodSigHelper(mod, callingConvention, 
+            //            m_signature = SignatureHelper.GetMethodSigHelper(mod, callingConvention,
             //                returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
             //                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
@@ -679,7 +679,7 @@ namespace System.Reflection.Emit
             // The change also introduced race conditions. Before the code change GetToken is called from
             // the MethodBuilder .ctor which is protected by lock(ModuleBuilder.SyncRoot). Now it
             // could be called more than once on the the same method introducing duplicate (invalid) tokens.
-            // I don't fully understand this change. So I will keep the logic and only fix the recursion and 
+            // I don't fully understand this change. So I will keep the logic and only fix the recursion and
             // the race condition.
 
             if (m_tkMethod.Token != 0)
@@ -948,7 +948,7 @@ namespace System.Reflection.Emit
 
     internal class LocalSymInfo
     {
-        // This class tracks the local variable's debugging information 
+        // This class tracks the local variable's debugging information
         // and namespace information with a given active lexical scope.
 
         #region Internal Data Members
@@ -1079,7 +1079,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct ExceptionHandler : IEquatable<ExceptionHandler>
     {
-        // Keep in sync with unmanged structure. 
+        // Keep in sync with unmanged structure.
         internal readonly int m_exceptionClass;
         internal readonly int m_tryStartOffset;
         internal readonly int m_tryEndOffset;
@@ -1164,13 +1164,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-
-
-
-
-
-
-
-
-
-

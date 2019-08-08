@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System.Buffers.Binary;
@@ -111,7 +111,7 @@ namespace System.Diagnostics.Tracing
                 else if (parameterType == typeof(string))
                 {
                     // Try to find null terminator (0x00) from the byte span
-                    // NOTE: we do this by hand instead of using IndexOf because payload may be unaligned due to 
+                    // NOTE: we do this by hand instead of using IndexOf because payload may be unaligned due to
                     // mixture of different types being stored in the same buffer. (see eventpipe.cpp:CopyData)
                     int byteCount = -1;
                     for (int j = 1; j < payload.Length; j+=2)

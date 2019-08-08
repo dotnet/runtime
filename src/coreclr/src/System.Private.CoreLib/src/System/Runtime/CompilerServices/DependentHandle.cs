@@ -19,7 +19,7 @@ namespace System.Runtime.CompilerServices
     //        (! Right now, we get this guarantee for free because (IntPtr)0 == NULL unmanaged handle.
     //         ! If that assertion ever becomes false, we'll have to add an _isAllocated field
     //         ! to compensate.)
-    //        
+    //
     //
     //    IsAllocated == true
     //        There's a handle allocated underneath. You must call Free() on this eventually

@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //
         // Creates a ICustomProperty implementation for Jupiter
         // Called from ICustomPropertyProvider_GetIndexedProperty from within runtime
-        //               
+        //
         internal static unsafe ICustomProperty? CreateIndexedProperty(object target, string propertyName, TypeNameNative* pIndexedParamType)
         {
             Debug.Assert(target != null);
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // This serves two purposes:
     //
     // 1. Delegate data binding interfaces to another object
-    // Note that this proxy implements the native interfaces directly to avoid unnecessary overhead 
+    // Note that this proxy implements the native interfaces directly to avoid unnecessary overhead
     // (such as the adapter code that addresses behavior differences between IBindableVector & List
     // as well as simplify forwarding code (except for IEnumerable)
     //
@@ -168,7 +168,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Verify IEnumerable last because the first few QIs might succeed and we need
             // IEnumerable cast to use that cache (instead of having ICustomPropertyProvider to
             // forward it manually)
-            // For example, if we try to shoot in the dark by trying IVector<IInspectable> and it 
+            // For example, if we try to shoot in the dark by trying IVector<IInspectable> and it
             // succeeded, IEnumerable needs to know that
             if (target is IEnumerable)
                 supportFlags |= InterfaceForwardingSupport.IBindableIterableOrIIterable;
@@ -187,15 +187,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         //
         // IGetProxyTarget - unwraps the target object and use it for data binding
-        // 
+        //
         object IGetProxyTarget.GetTarget()
         {
             return _target;
         }
 
-        // 
+        //
         // ICustomQueryInterface methods
-        //    
+        //
         public CustomQueryInterfaceResult GetInterface([In]ref Guid iid, out IntPtr ppv)
         {
             ppv = IntPtr.Zero;
@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         //
         // IBindableVector implementation (forwards to IBindableVector / IVector<T>)
-        //        
+        //
         object? IBindableVector.GetAt(uint index)
         {
             IBindableVector? bindableVector = GetIBindableVectorNoThrow();
@@ -523,4 +523,3 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
     }
 }
-

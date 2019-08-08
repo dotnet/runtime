@@ -86,10 +86,10 @@ namespace System.Reflection
         }
         internal bool EqualsSig(RuntimePropertyInfo target)
         {
-            //@Asymmetry - Legacy policy is to remove duplicate properties, including hidden properties. 
-            //             The comparison is done by name and by sig. The EqualsSig comparison is expensive 
+            //@Asymmetry - Legacy policy is to remove duplicate properties, including hidden properties.
+            //             The comparison is done by name and by sig. The EqualsSig comparison is expensive
             //             but forutnetly it is only called when an inherited property is hidden by name or
-            //             when an interfaces declare properies with the same signature. 
+            //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
             //             down side of treating overriding and overriden properties as different properties
@@ -340,7 +340,7 @@ namespace System.Reflection
                     }
                 }
 
-                // Now copy over the parameter info's and change their 
+                // Now copy over the parameter info's and change their
                 // owning member info to the current property info.
 
                 ParameterInfo[] propParams = new ParameterInfo[numParams];

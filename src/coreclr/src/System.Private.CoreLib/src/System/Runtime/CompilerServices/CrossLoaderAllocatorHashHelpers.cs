@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>
     /// Managed structure used by CrossLoaderAllocatorHeap to isolate per LoaderAllocator
-    /// data. 
+    /// data.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal class LAHashDependentHashTracker

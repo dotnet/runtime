@@ -443,7 +443,7 @@ namespace System.Reflection.Emit
             }
             else if (!method.Module.Equals(this))
             {
-                // Use typeRef as parent because the method's declaringType lives in a different assembly                
+                // Use typeRef as parent because the method's declaringType lives in a different assembly
                 tkParent = GetTypeToken(method.DeclaringType).Token;
             }
             else
@@ -579,13 +579,13 @@ namespace System.Reflection.Emit
         private Type? GetTypeNoLock(string className, bool throwOnError, bool ignoreCase)
         {
             // public API to to a type. The reason that we need this function override from module
-            // is because clients might need to get foo[] when foo is being built. For example, if 
+            // is because clients might need to get foo[] when foo is being built. For example, if
             // foo class contains a data member of type foo[].
-            // This API first delegate to the Module.GetType implementation. If succeeded, great! 
+            // This API first delegate to the Module.GetType implementation. If succeeded, great!
             // If not, we have to look up the current module to find the TypeBuilder to represent the base
             // type and form the Type object for "foo[,]".
 
-            // Module.GetType() will verify className.                
+            // Module.GetType() will verify className.
             Type? baseType = InternalModule.GetType(className, throwOnError, ignoreCase);
             if (baseType != null)
                 return baseType;
@@ -959,9 +959,9 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            // This method will define an initialized Data in .sdata. 
+            // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
-            // will be the signature for the Field.         
+            // will be the signature for the Field.
 
             lock (SyncRoot)
             {
@@ -971,7 +971,7 @@ namespace System.Reflection.Emit
 
         private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
         {
-            // This method will define an initialized Data in .sdata. 
+            // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
             if (_moduleData._hasGlobalBeenCreated == true)
@@ -992,9 +992,9 @@ namespace System.Reflection.Emit
 
         private FieldBuilder DefineUninitializedDataNoLock(string name, int size, FieldAttributes attributes)
         {
-            // This method will define an uninitialized Data in .sdata. 
+            // This method will define an uninitialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
-            // will be the signature for the Field. 
+            // will be the signature for the Field.
 
             if (_moduleData._hasGlobalBeenCreated)
             {
@@ -1008,7 +1008,7 @@ namespace System.Reflection.Emit
 
         #region GetToken
 
-        // For a generic type definition, we should return the token for the generic type definition itself in two cases: 
+        // For a generic type definition, we should return the token for the generic type definition itself in two cases:
         //   1. GetTypeToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the generic type instantiated on its formal parameters.
@@ -1110,10 +1110,10 @@ namespace System.Reflection.Emit
 
         public TypeToken GetTypeToken(string name)
         {
-            // Return a token for the class relative to the Module. 
+            // Return a token for the class relative to the Module.
             // Module.GetType() verifies name
 
-            // Unfortunately, we will need to load the Type and then call GetTypeToken in 
+            // Unfortunately, we will need to load the Type and then call GetTypeToken in
             // order to correctly track the assembly reference information.
 
             return GetTypeToken(InternalModule.GetType(name, false, true)!);
@@ -1141,8 +1141,8 @@ namespace System.Reflection.Emit
         // For all other occasions we should return the method on the generic type instantiated on the formal parameters.
         private MethodToken GetMethodTokenNoLock(MethodInfo method, bool getGenericTypeDefinition)
         {
-            // Return a MemberRef token if MethodInfo is not defined in this module. Or 
-            // return the MethodDef token. 
+            // Return a MemberRef token if MethodInfo is not defined in this module. Or
+            // return the MethodDef token.
             if (method == null)
             {
                 throw new ArgumentNullException(nameof(method));
@@ -1285,7 +1285,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Create signature of method instantiation M<Bar>
-                // Create MethodSepc M<Bar> with parent G?.M<S> 
+                // Create MethodSepc M<Bar> with parent G?.M<S>
                 byte[] sigBytes = SignatureHelper.GetMethodSpecSigHelper(
                     this, methodInfo.GetGenericArguments()).InternalGetSignature(out int sigLength);
                 ModuleBuilder thisModule = this;
@@ -1347,7 +1347,7 @@ namespace System.Reflection.Emit
             CheckContext(parameterTypes);
 
             // Return a token for the MethodInfo for a method on an Array.  This is primarily
-            // used to get the LoadElementAddress method. 
+            // used to get the LoadElementAddress method.
             SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(
                 this, callingConvention, returnType, null, null, parameterTypes, null, null);
             byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
@@ -1364,9 +1364,9 @@ namespace System.Reflection.Emit
             CheckContext(returnType, arrayClass);
             CheckContext(parameterTypes);
 
-            // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and 
-            // you want to access methods defined on Array. For example, you might define a type and want to define a 
-            // method that takes an array of the type as a parameter. In order to access the elements of the array, 
+            // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and
+            // you want to access methods defined on Array. For example, you might define a type and want to define a
+            // method that takes an array of the type as a parameter. In order to access the elements of the array,
             // you will need to call methods of the Array class.
 
             MethodToken token = GetArrayMethodToken(arrayClass, methodName, callingConvention, returnType, parameterTypes);
@@ -1376,7 +1376,7 @@ namespace System.Reflection.Emit
 
         public MethodToken GetConstructorToken(ConstructorInfo con)
         {
-            // Return a token for the ConstructorInfo relative to the Module. 
+            // Return a token for the ConstructorInfo relative to the Module.
             return InternalGetConstructorToken(con, false);
         }
 
@@ -1473,7 +1473,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(str));
             }
 
-            // Returns a token representing a String constant.  If the string 
+            // Returns a token representing a String constant.  If the string
             // value has already been defined, the existing token will be returned.
             ModuleBuilder thisModule = this;
             return new StringToken(GetStringConstant(JitHelpers.GetQCallModuleOnStack(ref thisModule), str, str.Length));
@@ -1541,36 +1541,36 @@ namespace System.Reflection.Emit
             customBuilder.CreateCustomAttribute(this, 1);   // This is hard coding the module token to 1
         }
 
-        // This API returns the symbol writer being used to write debug symbols for this 
+        // This API returns the symbol writer being used to write debug symbols for this
         // module (if any).
-        // 
-        // WARNING: It is unlikely this API can be used correctly by applications in any 
+        //
+        // WARNING: It is unlikely this API can be used correctly by applications in any
         // reasonable way.  It may be called internally from within TypeBuilder.CreateType.
-        // 
+        //
         // Specifically:
         // 1. The underlying symbol writer (written in unmanaged code) is not necessarily well
         // hardenned and fuzz-tested against malicious API calls.  The security of partial-trust
         // symbol writing is improved by restricting usage of the writer APIs to the well-structured
-        // uses in ModuleBuilder. 
-        // 2. TypeBuilder.CreateType emits all the symbols for the type.  This will effectively 
-        // overwrite anything someone may have written manually about the type (specifically 
-        // ISymbolWriter.OpenMethod is specced to clear anything previously written for the 
+        // uses in ModuleBuilder.
+        // 2. TypeBuilder.CreateType emits all the symbols for the type.  This will effectively
+        // overwrite anything someone may have written manually about the type (specifically
+        // ISymbolWriter.OpenMethod is specced to clear anything previously written for the
         // specified method)
-        // 3. Someone could technically update the symbols for a method after CreateType is 
-        // called, but the debugger (which uses these symbols) assumes that they are only 
-        // updated at TypeBuilder.CreateType time.  The changes wouldn't be visible (committed 
+        // 3. Someone could technically update the symbols for a method after CreateType is
+        // called, but the debugger (which uses these symbols) assumes that they are only
+        // updated at TypeBuilder.CreateType time.  The changes wouldn't be visible (committed
         // to the underlying stream) until another type was baked.
-        // 4. Access to the writer is supposed to be synchronized (the underlying COM API is 
-        // not thread safe, and these are only thin wrappers on top of them).  Exposing this 
-        // directly allows the synchronization to be violated.  We know that concurrent symbol 
+        // 4. Access to the writer is supposed to be synchronized (the underlying COM API is
+        // not thread safe, and these are only thin wrappers on top of them).  Exposing this
+        // directly allows the synchronization to be violated.  We know that concurrent symbol
         // writer access can cause AVs and other problems.  The writer APIs should not be callable
-        // directly by partial-trust code, but if they could this would be a security hole.  
-        // Regardless, this is a reliability bug.  
+        // directly by partial-trust code, but if they could this would be a security hole.
+        // Regardless, this is a reliability bug.
         internal ISymbolWriter? GetSymWriter() => _iSymWriter;
 
         public ISymbolDocumentWriter? DefineDocument(string url, Guid language, Guid languageVendor, Guid documentType)
         {
-            // url cannot be null but can be an empty string 
+            // url cannot be null but can be an empty string
             if (url == null)
             {
                 throw new ArgumentNullException(nameof(url));
@@ -1597,6 +1597,6 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #endregion    
+        #endregion
     }
 }

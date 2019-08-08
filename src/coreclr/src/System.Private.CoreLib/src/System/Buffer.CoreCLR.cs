@@ -17,7 +17,7 @@ namespace System
     partial class Buffer
     {
         // Copies from one primitive array to another primitive array without
-        // respecting types.  This calls memmove internally.  The count and 
+        // respecting types.  This calls memmove internally.  The count and
         // offset parameters here are in bytes.  If you want to use traditional
         // array element indices and counts, use Array.Copy.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

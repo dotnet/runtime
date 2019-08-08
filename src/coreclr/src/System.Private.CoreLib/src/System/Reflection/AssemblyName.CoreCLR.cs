@@ -49,7 +49,7 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern void nInit();
-        
+
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
         [MethodImpl(MethodImplOptions.InternalCall)]

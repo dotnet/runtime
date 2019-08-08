@@ -65,20 +65,20 @@ namespace System.Reflection
             {
                 MethodAttributes methAttr = RuntimeMethodHandle.GetAttributes(associateMethodHandle);
 
-                // ECMA MethodSemantics: "All methods for a given Property or Event shall have the same accessibility 
+                // ECMA MethodSemantics: "All methods for a given Property or Event shall have the same accessibility
                 //(ie the MemberAccessMask subfield of their Flags row) and cannot be CompilerControlled  [CLS]"
                 // Consequently, a property may be composed of public and private methods. If the declared type !=
-                // the reflected type, the private methods should not be exposed. Note that this implies that the 
+                // the reflected type, the private methods should not be exposed. Note that this implies that the
                 // identity of a property includes it's reflected type.
 
                 if ((methAttr & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
                     return null;
 
-                // Note this is the first time the property was encountered walking from the most derived class 
+                // Note this is the first time the property was encountered walking from the most derived class
                 // towards the base class. It would seem to follow that any associated methods would not
                 // be overriden -- but this is not necessarily true. A more derived class may have overriden a
-                // virtual method associated with a property in a base class without associating the override with 
-                // the same or any property in the derived class. 
+                // virtual method associated with a property in a base class without associating the override with
+                // the same or any property in the derived class.
                 if ((methAttr & MethodAttributes.Virtual) != 0)
                 {
                     bool declaringTypeIsClass =

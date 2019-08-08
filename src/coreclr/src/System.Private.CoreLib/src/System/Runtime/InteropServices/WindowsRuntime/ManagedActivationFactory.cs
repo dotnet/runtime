@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // Runs the class constructor
-        // Currently only Jupiter use this to run class constructor in order to 
+        // Currently only Jupiter use this to run class constructor in order to
         // initialize DependencyProperty objects and do necessary work
         void IManagedActivationFactory.RunClassConstructor()
         {
