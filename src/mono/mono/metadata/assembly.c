@@ -1641,8 +1641,6 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	if (reference)
 		goto leave;
 
-	reference = (MonoAssembly*)REFERENCE_MISSING;
-
 leave:
 	return reference;
 }
