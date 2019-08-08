@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "platformdefines.h"
 #include "../Native/StringMarshalingNative.h"
 
-using StringType = BSTR;
-using Tests = BStrMarshalingTests<TP_SysStringByteLen, char, CoreClrBStrAlloc>;
+using StringType = LPSTR;
+using Tests = StringMarshalingTests<StringType, default_callconv_strlen>;
 
-#define FUNCTION_NAME CoreClrBStrAlloc(__func__, ARRAYSIZE(__func__) - 1)
+#define FUNCTION_NAME __func__
 
 #include "../Native/StringTestEntrypoints.inl"

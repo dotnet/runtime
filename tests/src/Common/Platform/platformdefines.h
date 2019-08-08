@@ -135,6 +135,7 @@ LPWSTR HackyConvertToWSTR(const char* pszInput);
 #define L(t) HackyConvertToWSTR(t)
 #define W(str)  u##str
 #define MAX_PATH 260
+#define __FUNCTIONW__ HackyConvertToWSTR(__func__)
 
 typedef pthread_t THREAD_ID;
 typedef void* (*MacWorker)(void*);
@@ -210,7 +211,7 @@ inline void CoreClrBStrFree(void* p)
 
 size_t TP_SysStringByteLen(BSTR bstr);
 BSTR TP_SysAllocString(LPCWSTR psz);
-DWORD TP_SysStringLen(BSTR bstr);
+size_t TP_SysStringLen(BSTR bstr);
 
 
 inline void *CoreClrAlloc(size_t cb)
