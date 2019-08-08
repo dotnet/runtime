@@ -19,8 +19,8 @@ namespace System
     public class MemberAccessException : SystemException
     {
         // Creates a new MemberAccessException with its message string set to
-        // the empty string, its HRESULT set to COR_E_MEMBERACCESS, 
-        // and its ExceptionInfo reference set to null. 
+        // the empty string, its HRESULT set to COR_E_MEMBERACCESS,
+        // and its ExceptionInfo reference set to null.
         public MemberAccessException()
             : base(SR.Arg_AccessException)
         {
@@ -28,9 +28,9 @@ namespace System
         }
 
         // Creates a new MemberAccessException with its message string set to
-        // message, its HRESULT set to COR_E_ACCESS, 
-        // and its ExceptionInfo reference set to null. 
-        // 
+        // message, its HRESULT set to COR_E_ACCESS,
+        // and its ExceptionInfo reference set to null.
+        //
         public MemberAccessException(string? message)
             : base(message)
         {

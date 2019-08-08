@@ -290,7 +290,7 @@ namespace System.Buffers.Text
                 if (number.Scale < int.MinValue + (long)absoluteExponent)
                 {
                     // A scale underflow means all non-zero digits are all so far to the right of the decimal point, no
-                    // number format we have will be able to see them. Just pin the scale at the absolute minimum 
+                    // number format we have will be able to see them. Just pin the scale at the absolute minimum
                     // and let the converter produce a 0 with the max precision available for that type.
                     number.Scale = int.MinValue;
                 }
@@ -304,7 +304,7 @@ namespace System.Buffers.Text
                 if (number.Scale > int.MaxValue - (long)absoluteExponent)
                 {
                     // A scale overflow means all non-zero digits are all so far to the right of the decimal point, no
-                    // number format we have will be able to see them. Just pin the scale at the absolute maximum 
+                    // number format we have will be able to see them. Just pin the scale at the absolute maximum
                     // and let the converter produce a 0 with the max precision available for that type.
                     number.Scale = int.MaxValue;
                 }

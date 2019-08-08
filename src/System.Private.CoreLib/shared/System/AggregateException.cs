@@ -106,7 +106,7 @@ namespace System
         /// null.</exception>
         public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
             // If it's already an IList, pass that along (a defensive copy will be made in the delegated ctor).  If it's null, just pass along
-            // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
+            // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along.
             : this(message, innerExceptions as IList<Exception> ?? (innerExceptions == null ? (List<Exception>)null! : new List<Exception>(innerExceptions)))
         {
         }
@@ -179,7 +179,7 @@ namespace System
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class with a specified error
-        /// message and references to the inner exception dispatch info objects that represent the cause of 
+        /// message and references to the inner exception dispatch info objects that represent the cause of
         /// this exception.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
@@ -192,7 +192,7 @@ namespace System
         /// null.</exception>
         internal AggregateException(string message, IEnumerable<ExceptionDispatchInfo> innerExceptionInfos)
             // If it's already an IList, pass that along (a defensive copy will be made in the delegated ctor).  If it's null, just pass along
-            // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
+            // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along.
             : this(message, innerExceptionInfos as IList<ExceptionDispatchInfo> ??
                                 (innerExceptionInfos == null ?
                                     (List<ExceptionDispatchInfo>)null! :
@@ -201,7 +201,7 @@ namespace System
         }
 
         /// <summary>
-        /// Allocates a new aggregate exception with the specified message and list of inner 
+        /// Allocates a new aggregate exception with the specified message and list of inner
         /// exception dispatch info objects.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
@@ -466,11 +466,11 @@ namespace System
 
         /// <summary>
         /// This helper property is used by the DebuggerDisplay.
-        /// 
-        /// Note that we don't want to remove this property and change the debugger display to {InnerExceptions.Count} 
-        /// because DebuggerDisplay should be a single property access or parameterless method call, so that the debugger 
+        ///
+        /// Note that we don't want to remove this property and change the debugger display to {InnerExceptions.Count}
+        /// because DebuggerDisplay should be a single property access or parameterless method call, so that the debugger
         /// can use a fast path without using the expression evaluator.
-        /// 
+        ///
         /// See https://docs.microsoft.com/en-us/visualstudio/debugger/using-the-debuggerdisplay-attribute
         /// </summary>
         private int InnerExceptionCount

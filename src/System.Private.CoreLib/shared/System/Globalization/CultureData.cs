@@ -701,7 +701,7 @@ namespace System.Globalization
             {
                 // Always map the "C" locale to Invariant to avoid mapping it to en_US_POSIX on Linux because POSIX
                 // locale collation doesn't support case insensitive comparisons.
-                // We do the same mapping on Windows for the sake of consistency. 
+                // We do the same mapping on Windows for the sake of consistency.
                 return CultureData.Invariant;
             }
 

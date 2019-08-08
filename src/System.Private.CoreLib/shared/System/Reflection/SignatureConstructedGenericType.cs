@@ -28,7 +28,7 @@ namespace System.Reflection
             _genericTypeDefinition = genericTypeDefinition;
             _genericTypeArguments = typeArguments;
         }
-    
+
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
         protected sealed override bool HasElementTypeImpl() => false;
@@ -54,7 +54,7 @@ namespace System.Reflection
                 return false;
             }
         }
-    
+
         internal sealed override SignatureType? ElementType => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => _genericTypeDefinition;
@@ -63,7 +63,7 @@ namespace System.Reflection
         public sealed override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override string Name => _genericTypeDefinition.Name;
         public sealed override string? Namespace => _genericTypeDefinition.Namespace;
-    
+
         public sealed override string ToString()
         {
             StringBuilder sb = new StringBuilder();
@@ -78,7 +78,7 @@ namespace System.Reflection
             sb.Append(']');
             return sb.ToString();
         }
-    
+
         private readonly Type _genericTypeDefinition;
         private readonly Type[] _genericTypeArguments;
     }

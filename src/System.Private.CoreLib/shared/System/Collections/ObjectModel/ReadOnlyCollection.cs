@@ -167,7 +167,7 @@ namespace System.Collections.ObjectModel
                 }
 
                 //
-                // We can't cast array of value type to object[], so we don't support 
+                // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
                 //
                 object?[]? objects = array as object[];
@@ -224,7 +224,7 @@ namespace System.Collections.ObjectModel
         private static bool IsCompatibleObject(object? value)
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
-            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             return ((value is T) || (value == null && default(T)! == null));
         }
 

@@ -381,7 +381,7 @@ namespace System
                     }
                     // Directed rounding: Round up to the next value, toward positive infinity
                     case MidpointRounding.ToPositiveInfinity:
-                    {  
+                    {
                         x = Ceiling(x);
                         break;
                     }
@@ -390,7 +390,7 @@ namespace System
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
                     }
                 }
-                
+
                 x /= power10;
             }
 

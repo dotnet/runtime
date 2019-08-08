@@ -211,7 +211,7 @@ namespace System.Globalization
                         case CorrectionAlgorithm.Year1620to1699: return EphemerisCorrection1620to1699(year);
                     }
 
-                    break; // break the loop and assert eventually 
+                    break; // break the loop and assert eventually
                 }
             }
 

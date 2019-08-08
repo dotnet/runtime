@@ -30,7 +30,7 @@ namespace System.IO
             HResult = HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileNotFoundException(string? message, string? fileName) 
+        public FileNotFoundException(string? message, string? fileName)
             : base(message)
         {
             HResult = HResults.COR_E_FILENOTFOUND;
@@ -109,4 +109,3 @@ namespace System.IO
         }
     }
 }
-

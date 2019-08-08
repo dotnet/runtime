@@ -24,4 +24,3 @@ namespace System.Reflection
         public uint AlgorithmId { get; }
     }
 }
-

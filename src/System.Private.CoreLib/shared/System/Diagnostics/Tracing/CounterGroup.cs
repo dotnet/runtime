@@ -76,9 +76,9 @@ namespace System.Diagnostics.Tracing
 
         #region Global CounterGroup Array management
 
-        // We need eventCounters to 'attach' themselves to a particular EventSource.   
-        // this table provides the mapping from EventSource -> CounterGroup 
-        // which represents this 'attached' information.   
+        // We need eventCounters to 'attach' themselves to a particular EventSource.
+        // this table provides the mapping from EventSource -> CounterGroup
+        // which represents this 'attached' information.
         private static WeakReference<CounterGroup>[]? s_counterGroups;
 
         private static void EnsureEventSourceIndexAvailable(int eventSourceIndex)
@@ -146,7 +146,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
-                    
+
                     // Create the polling thread and init all the shared state if needed
                     if (s_pollingThread == null)
                     {

@@ -364,7 +364,7 @@ namespace System
             // given range of lengths. For example, the lengths [ 4 .. 7 ] are handled by a single
             // branch, [ 2 .. 3 ] are handled by a single branch, and [ 1 ] is handled by a single
             // branch.
-            // 
+            //
             // We can write both forward and backward as a perf improvement. For example,
             // the lengths [ 4 .. 7 ] can be handled by zeroing out the first four natural
             // words and the last 3 natural words. In the best case (length = 7), there are

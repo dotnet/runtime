@@ -20,14 +20,14 @@ namespace System
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// </summary> 
+        /// </summary>
         /// <returns>Returns:
         /// - true  - The entire input span was successfully parsed.
-        /// - false - Only a part of the input span was successfully parsed. Failure causes may include embedded or trailing whitespace, 
+        /// - false - Only a part of the input span was successfully parsed. Failure causes may include embedded or trailing whitespace,
         ///           other illegal Base64 characters, trailing characters after an encoding pad ('='), an input span whose length is not divisible by 4
-        ///           or a destination span that's too small. <paramref name="consumed"/> and <paramref name="written"/> are set so that 
+        ///           or a destination span that's too small. <paramref name="consumed"/> and <paramref name="written"/> are set so that
         ///           parsing can continue with a slower whitespace-tolerant algorithm.
-        ///           
+        ///
         /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF16 chars and act as a fast-path
         /// helper for the Convert routines when the input string contains no whitespace.
         /// </returns>
@@ -214,4 +214,4 @@ namespace System
 
         private const byte EncodingPad = (byte)'='; // '=', for padding
     }
-} 
+}

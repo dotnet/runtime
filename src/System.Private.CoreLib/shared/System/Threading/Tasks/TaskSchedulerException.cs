@@ -25,7 +25,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskSchedulerException"/> class.
         /// </summary>
-        public TaskSchedulerException() : base(SR.TaskSchedulerException_ctor_DefaultMessage) // 
+        public TaskSchedulerException() : base(SR.TaskSchedulerException_ctor_DefaultMessage) //
         {
         }
 

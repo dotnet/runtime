@@ -19,19 +19,19 @@ namespace System.Diagnostics.Tracing
 {
     /// <summary>
     /// Provides the ability to collect statistics through EventSource
-    /// 
+    ///
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md
-    /// for a tutorial guide.  
-    /// 
+    /// for a tutorial guide.
+    ///
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
-    /// which shows tests, which are also useful in seeing actual use.  
+    /// which shows tests, which are also useful in seeing actual use.
     /// </summary>
     public partial class EventCounter : DiagnosticCounter
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCounter"/> class.
         /// EVentCounters live as long as the EventSource that they are attached to unless they are
-        /// explicitly Disposed.   
+        /// explicitly Disposed.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
@@ -44,8 +44,8 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Writes 'value' to the stream of values tracked by the counter.  This updates the sum and other statistics that will 
-        /// be logged on the next timer interval.  
+        /// Writes 'value' to the stream of values tracked by the counter.  This updates the sum and other statistics that will
+        /// be logged on the next timer interval.
         /// </summary>
         /// <param name="value">The value.</param>
         public void WriteMetric(float value)
@@ -162,7 +162,7 @@ namespace System.Diagnostics.Tracing
 
                 if (result == UnusedBufferSlotValue)
                 {
-                    // CompareExchange succeeded 
+                    // CompareExchange succeeded
                     _bufferedValuesIndex = i;
                     return;
                 }

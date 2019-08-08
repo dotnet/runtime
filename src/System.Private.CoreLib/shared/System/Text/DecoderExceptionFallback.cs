@@ -79,7 +79,7 @@ namespace System.Text
         {
             bytesUnknown = bytesUnknown ?? Array.Empty<byte>();
 
-            // Create a string representation of our bytes.            
+            // Create a string representation of our bytes.
             StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);
 
             int i;

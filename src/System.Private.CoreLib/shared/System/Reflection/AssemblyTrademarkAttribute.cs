@@ -15,4 +15,3 @@ namespace System.Reflection
         public string Trademark { get; }
     }
 }
-

@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices
         /// +-----------------------------------------------------------+---+---+
         /// |                           Ref count                       | D | C |
         /// +-----------------------------------------------------------+---+---+
-        /// 
+        ///
         /// Where D = 1 means a Dispose has been performed and C = 1 means the
         /// underlying handle has been (or will be shortly) released.
         /// </remarks>
@@ -165,7 +165,7 @@ namespace System.Runtime.InteropServices
                 // the state moves to closed.
                 newState = oldState + StateBits.RefCountOne;
             } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
-            
+
             // If we got here we managed to update the ref count while the state
             // remained non closed. So we're done.
             success = true;

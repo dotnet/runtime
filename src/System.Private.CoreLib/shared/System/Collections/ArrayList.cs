@@ -23,7 +23,7 @@ namespace System.Collections
     // of the internal array. As elements are added to a ArrayList, the capacity
     // of the ArrayList is automatically increased as required by reallocating the
     // internal array.
-    // 
+    //
     [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -53,7 +53,7 @@ namespace System.Collections
         // Constructs a ArrayList with a given initial capacity. The list is
         // initially empty, but will have room for the given number of elements
         // before any reallocations are required.
-        // 
+        //
         public ArrayList(int capacity)
         {
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(capacity)));
@@ -67,7 +67,7 @@ namespace System.Collections
         // Constructs a ArrayList, copying the contents of the given collection. The
         // size and capacity of the new list will both be equal to the size of the
         // given collection.
-        // 
+        //
         public ArrayList(ICollection c)
         {
             if (c == null)
@@ -86,9 +86,9 @@ namespace System.Collections
         }
 
         // Gets and sets the capacity of this list.  The capacity is the size of
-        // the internal array used to hold items.  When set, the internal 
+        // the internal array used to hold items.  When set, the internal
         // array of the list is reallocated to the given capacity.
-        // 
+        //
         public virtual int Capacity
         {
             get
@@ -154,7 +154,7 @@ namespace System.Collections
         public virtual object SyncRoot => this;
 
         // Sets or Gets the element at the given index.
-        // 
+        //
         public virtual object? this[int index]
         {
             get
@@ -222,10 +222,10 @@ namespace System.Collections
         // is larger than the given search value. This is also the index at which
         // the search value should be inserted into the list in order for the list
         // to remain sorted.
-        // 
+        //
         // The method uses the Array.BinarySearch method to perform the
         // search.
-        // 
+        //
         public virtual int BinarySearch(int index, int count, object? value, IComparer? comparer)
         {
             if (index < 0)
@@ -261,7 +261,7 @@ namespace System.Collections
         }
 
         // Clones this ArrayList, doing a shallow copy.  (A copy is made of all
-        // Object references in the ArrayList, but the Objects pointed to 
+        // Object references in the ArrayList, but the Objects pointed to
         // are not cloned).
         public virtual object Clone()
         {
@@ -295,16 +295,16 @@ namespace System.Collections
             }
         }
 
-        // Copies this ArrayList into array, which must be of a 
-        // compatible array type.  
+        // Copies this ArrayList into array, which must be of a
+        // compatible array type.
         //
         public virtual void CopyTo(Array array)
         {
             CopyTo(array, 0);
         }
 
-        // Copies this ArrayList into array, which must be of a 
-        // compatible array type.  
+        // Copies this ArrayList into array, which must be of a
+        // compatible array type.
         //
         public virtual void CopyTo(Array array, int arrayIndex)
         {
@@ -316,9 +316,9 @@ namespace System.Collections
         }
 
         // Copies a section of this list to the given array at the given index.
-        // 
+        //
         // The method uses the Array.Copy method to copy the elements.
-        // 
+        //
         public virtual void CopyTo(int index, Array array, int arrayIndex, int count)
         {
             if (_size - index < count)
@@ -368,8 +368,8 @@ namespace System.Collections
         }
 
         // Returns an enumerator for this list with the given
-        // permission for removal of elements. If modifications made to the list 
-        // while an enumeration is in progress, the MoveNext and 
+        // permission for removal of elements. If modifications made to the list
+        // while an enumeration is in progress, the MoveNext and
         // GetObject methods of the enumerator will throw an exception.
         //
         public virtual IEnumerator GetEnumerator()
@@ -378,8 +378,8 @@ namespace System.Collections
         }
 
         // Returns an enumerator for a section of this list with the given
-        // permission for removal of elements. If modifications made to the list 
-        // while an enumeration is in progress, the MoveNext and 
+        // permission for removal of elements. If modifications made to the list
+        // while an enumeration is in progress, the MoveNext and
         // GetObject methods of the enumerator will throw an exception.
         //
         public virtual IEnumerator GetEnumerator(int index, int count)
@@ -397,10 +397,10 @@ namespace System.Collections
         // this list. The list is searched forwards from beginning to end.
         // The elements of the list are compared to the given value using the
         // Object.Equals method.
-        // 
+        //
         // This method uses the Array.IndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int IndexOf(object? value)
         {
             return Array.IndexOf((Array)_items, value, 0, _size);
@@ -411,10 +411,10 @@ namespace System.Collections
         // startIndex and ending at count number of elements. The
         // elements of the list are compared to the given value using the
         // Object.Equals method.
-        // 
+        //
         // This method uses the Array.IndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int IndexOf(object? value, int startIndex)
         {
             if (startIndex > _size)
@@ -427,10 +427,10 @@ namespace System.Collections
         // startIndex and up to count number of elements. The
         // elements of the list are compared to the given value using the
         // Object.Equals method.
-        // 
+        //
         // This method uses the Array.IndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int IndexOf(object? value, int startIndex, int count)
         {
             if (startIndex > _size)
@@ -442,7 +442,7 @@ namespace System.Collections
         // Inserts an element into this list at a given index. The size of the list
         // is increased by one. If required, the capacity of the list is doubled
         // before inserting the new element.
-        // 
+        //
         public virtual void Insert(int index, object? value)
         {
             // Note that insertions at the end are legal.
@@ -488,13 +488,13 @@ namespace System.Collections
         }
 
         // Returns the index of the last occurrence of a given value in a range of
-        // this list. The list is searched backwards, starting at the end 
-        // and ending at the first element in the list. The elements of the list 
+        // this list. The list is searched backwards, starting at the end
+        // and ending at the first element in the list. The elements of the list
         // are compared to the given value using the Object.Equals method.
-        // 
+        //
         // This method uses the Array.LastIndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int LastIndexOf(object? value)
         {
             return LastIndexOf(value, _size - 1, _size);
@@ -502,13 +502,13 @@ namespace System.Collections
 
         // Returns the index of the last occurrence of a given value in a range of
         // this list. The list is searched backwards, starting at index
-        // startIndex and ending at the first element in the list. The 
-        // elements of the list are compared to the given value using the 
+        // startIndex and ending at the first element in the list. The
+        // elements of the list are compared to the given value using the
         // Object.Equals method.
-        // 
+        //
         // This method uses the Array.LastIndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int LastIndexOf(object? value, int startIndex)
         {
             if (startIndex >= _size)
@@ -521,10 +521,10 @@ namespace System.Collections
         // startIndex and up to count elements. The elements of
         // the list are compared to the given value using the Object.Equals
         // method.
-        // 
+        //
         // This method uses the Array.LastIndexOf method to perform the
         // search.
-        // 
+        //
         public virtual int LastIndexOf(object? value, int startIndex, int count)
         {
             if (Count != 0 && (startIndex < 0 || count < 0))
@@ -559,7 +559,7 @@ namespace System.Collections
 
         // Removes the element at the given index. The size of the list is
         // decreased by one.
-        // 
+        //
         public virtual void Remove(object? obj)
         {
             int index = IndexOf(obj);
@@ -569,7 +569,7 @@ namespace System.Collections
 
         // Removes the element at the given index. The size of the list is
         // decreased by one.
-        // 
+        //
         public virtual void RemoveAt(int index)
         {
             if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
@@ -584,7 +584,7 @@ namespace System.Collections
         }
 
         // Removes a range of elements from this list.
-        // 
+        //
         public virtual void RemoveRange(int index, int count)
         {
             if (index < 0)
@@ -630,10 +630,10 @@ namespace System.Collections
         // method, an element in the range given by index and count
         // which was previously located at index i will now be located at
         // index index + (index + count - i - 1).
-        // 
+        //
         // This method uses the Array.Reverse method to reverse the
         // elements.
-        // 
+        //
         public virtual void Reverse(int index, int count)
         {
             if (index < 0)
@@ -673,7 +673,7 @@ namespace System.Collections
             return new Range(this, index, count);
         }
 
-        // Sorts the elements in this list.  Uses the default comparer and 
+        // Sorts the elements in this list.  Uses the default comparer and
         // Array.Sort.
         public virtual void Sort()
         {
@@ -692,9 +692,9 @@ namespace System.Collections
         // comparer is null, the elements are compared to each other using
         // the IComparable interface, which in that case must be implemented by all
         // elements of the list.
-        // 
+        //
         // This method uses the Array.Sort method to sort the elements.
-        // 
+        //
         public virtual void Sort(int index, int count, IComparer? comparer)
         {
             if (index < 0)
@@ -738,7 +738,7 @@ namespace System.Collections
             return array;
         }
 
-        // ToArray returns a new array of a particular type containing the contents 
+        // ToArray returns a new array of a particular type containing the contents
         // of the ArrayList.  This requires copying the ArrayList and potentially
         // downcasting all elements.  This copy may fail and is an O(n) operation.
         // Internally, this implementation calls Array.Copy.
@@ -758,10 +758,10 @@ namespace System.Collections
         // new elements will be added to the list. To completely clear a list and
         // release all memory referenced by the list, execute the following
         // statements:
-        // 
+        //
         // list.Clear();
         // list.TrimToSize();
-        // 
+        //
         public virtual void TrimToSize()
         {
             Capacity = _size;
@@ -986,7 +986,7 @@ namespace System.Collections
                     ArrayList? al = _list as ArrayList;
                     if (al != null)
                     {
-                        // We need to special case ArrayList. 
+                        // We need to special case ArrayList.
                         // When c is a range of _list, we need to handle this in a special way.
                         // See ArrayList.InsertRange for details.
                         al.InsertRange(index, c);
@@ -2728,7 +2728,7 @@ namespace System.Collections
 
                 InternalUpdateRange();
                 // No need to call _bastList.RemoveRange if count is 0.
-                // In addition, _baseList won't change the version number if count is 0. 
+                // In addition, _baseList won't change the version number if count is 0.
                 if (count > 0)
                 {
                     _baseList.RemoveRange(_baseIndex + index, count);

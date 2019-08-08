@@ -4,19 +4,19 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 **
 ** Purpose: Marker for types in .resources files
 **
-** 
+**
 ===========================================================*/
 
 namespace System.Resources
 {
     /* An internal implementation detail for .resources files, describing
-       what type an object is.  
+       what type an object is.
        Ranges:
        0 - 0x1F     Primitives and reserved values
        0x20 - 0x3F  Specially recognized types, like byte[] and Streams

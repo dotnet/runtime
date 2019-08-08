@@ -176,7 +176,7 @@ namespace System
                 // If the buffer is 1 or 3 bytes in length, let's read a single byte now
                 // and merge it into our partial result. This will result in partialResult
                 // having one of the two values below, where AA BB CC are the buffer bytes.
-                // 
+                //
                 //                  (little-endian / big-endian)
                 // [ AA          ]  -> 0x0000_80AA / 0xAA80_0000
                 // [ AA BB CC    ]  -> 0x0000_80CC / 0xCC80_0000
@@ -199,7 +199,7 @@ namespace System
                 // If the buffer is 2 or 3 bytes in length, let's read a single ushort now
                 // and merge it into the partial result. This will result in partialResult
                 // having one of the two values below, where AA BB CC are the buffer bytes.
-                // 
+                //
                 //                  (little-endian / big-endian)
                 // [ AA BB       ]  -> 0x0080_BBAA / 0xAABB_8000
                 // [ AA BB CC    ]  -> 0x80CC_BBAA / 0xAABB_CC80 (carried over from above)

@@ -189,7 +189,7 @@ namespace System
                 0xC1D238D9,
                 0x633415D4,
                 0x0000001C,
-                
+
                 // 10^1024
                 107,        // _length
                 0x00000000, // _blocks
@@ -862,18 +862,18 @@ namespace System
                 // s_Pow10UInt32Table stores the results of 10^0 to 10^7.
                 // s_Pow10BigNumTable stores the results of 10^8, 10^16, 10^32, 10^64, 10^128, 10^256, and 10^512
                 //
-                // For example, let's say exp = 0b111111. We can split the exp to two parts, one is small exp, 
-                // which 10^smallExp can be represented as uint, another part is 10^bigExp, which must be represented as BigNum. 
+                // For example, let's say exp = 0b111111. We can split the exp to two parts, one is small exp,
+                // which 10^smallExp can be represented as uint, another part is 10^bigExp, which must be represented as BigNum.
                 // So the result should be 10^smallExp * 10^bigExp.
                 //
-                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from s_Pow10UInt32Table. 
-                // But here's a bad news: although uint can represent 10^9, exp 9's binary representation is 1001. 
-                // That means 10^(1011), 10^(1101), 10^(1111) all cannot be stored as uint, we cannot easily say something like: 
-                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to s_Pow10UInt32Table, 
-                // consider 10^8 and 10^9 as a bigNum, so they fall into s_Pow10BigNumTable. Now we can have a simple rule: 
+                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from s_Pow10UInt32Table.
+                // But here's a bad news: although uint can represent 10^9, exp 9's binary representation is 1001.
+                // That means 10^(1011), 10^(1101), 10^(1111) all cannot be stored as uint, we cannot easily say something like:
+                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to s_Pow10UInt32Table,
+                // consider 10^8 and 10^9 as a bigNum, so they fall into s_Pow10BigNumTable. Now we can have a simple rule:
                 // "Any bits <= 3 is small exp, any bits > 3 is big exp".
                 //
-                // For 0b111111, we first calculate 10^(smallExp), which is 10^(7), now we can shift right 3 bits, prepare to calculate the bigExp part, 
+                // For 0b111111, we first calculate 10^(smallExp), which is 10^(7), now we can shift right 3 bits, prepare to calculate the bigExp part,
                 // the exp now becomes 0b000111.
                 //
                 // Apparently the lowest bit of bigExp should represent 10^8 because we have already shifted 3 bits for smallExp, so s_Pow10BigNumTable[0] = 10^8.

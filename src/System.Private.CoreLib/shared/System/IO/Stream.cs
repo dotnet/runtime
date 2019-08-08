@@ -4,8 +4,8 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 **
 ** Purpose: Abstract base class for all Streams.  Provides
@@ -209,11 +209,11 @@ namespace System.IO
 
         // Stream used to require that all cleanup logic went into Close(),
         // which was thought up before we invented IDisposable.  However, we
-        // need to follow the IDisposable pattern so that users can write 
-        // sensible subclasses without needing to inspect all their base 
+        // need to follow the IDisposable pattern so that users can write
+        // sensible subclasses without needing to inspect all their base
         // classes, and without worrying about version brittleness, from a
         // base class switching to the Dispose pattern.  We're moving
-        // Stream to the Dispose(bool) pattern - that's where all subclasses 
+        // Stream to the Dispose(bool) pattern - that's where all subclasses
         // should put their cleanup now.
         public virtual void Close()
         {
@@ -229,7 +229,7 @@ namespace System.IO
         protected virtual void Dispose(bool disposing)
         {
             // Note: Never change this to call other virtual methods on Stream
-            // like Write, since the state on subclasses has already been 
+            // like Write, since the state on subclasses has already been
             // torn down.  This is the last code to run on cleanup for a stream.
         }
 
@@ -276,9 +276,9 @@ namespace System.IO
         {
             if (!CanRead) throw Error.GetReadNotSupported();
 
-            // To avoid a race with a stream's position pointer & generating race conditions 
-            // with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // To avoid a race with a stream's position pointer & generating race conditions
+            // with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
             var semaphore = EnsureAsyncActiveSemaphoreInitialized();
@@ -439,9 +439,9 @@ namespace System.IO
         {
             if (!CanWrite) throw Error.GetWriteNotSupported();
 
-            // To avoid a race condition with a stream's position pointer & generating conditions 
-            // with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // To avoid a race condition with a stream's position pointer & generating conditions
+            // with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
             var semaphore = EnsureAsyncActiveSemaphoreInitialized();
@@ -755,10 +755,10 @@ namespace System.IO
             finally { ArrayPool<byte>.Shared.Return(sharedBuffer); }
         }
 
-        // Reads one byte from the stream by calling Read(byte[], int, int). 
+        // Reads one byte from the stream by calling Read(byte[], int, int).
         // Will return an unsigned byte cast to an int or -1 on end of stream.
         // This implementation does not perform well because it allocates a new
-        // byte[] each time you call it, and should be overridden by any 
+        // byte[] each time you call it, and should be overridden by any
         // subclass that maintains an internal buffer.  Then, it can help perf
         // significantly for people who are reading one byte at a time.
         public virtual int ReadByte()
@@ -785,7 +785,7 @@ namespace System.IO
 
         // Writes one byte from the stream by calling Write(byte[], int, int).
         // This implementation does not perform well because it allocates a new
-        // byte[] each time you call it, and should be overridden by any 
+        // byte[] each time you call it, and should be overridden by any
         // subclass that maintains an internal buffer.  Then, it can help perf
         // significantly for people who are writing one byte at a time.
         public virtual void WriteByte(byte value)
@@ -813,10 +813,10 @@ namespace System.IO
         internal IAsyncResult BlockingBeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             // To avoid a race with a stream's position pointer & generating conditions
-            // with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
-            // thread and do the IO synchronously.  
+            // thread and do the IO synchronously.
             // This can't perform well - use a different approach.
             SynchronousAsyncResult asyncResult;
             try
@@ -844,11 +844,11 @@ namespace System.IO
 
         internal IAsyncResult BlockingBeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
-            // To avoid a race condition with a stream's position pointer & generating conditions 
-            // with internal buffer indexes in our own streams that 
-            // don't natively support async IO operations when there are multiple 
+            // To avoid a race condition with a stream's position pointer & generating conditions
+            // with internal buffer indexes in our own streams that
+            // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
-            // thread and do the IO synchronously.  
+            // thread and do the IO synchronously.
             // This can't perform well - use a different approach.
             SynchronousAsyncResult asyncResult;
             try
@@ -1110,7 +1110,7 @@ namespace System.IO
         }   // class SynchronousAsyncResult
 
 
-        // SyncStream is a wrapper around a stream that takes 
+        // SyncStream is a wrapper around a stream that takes
         // a lock for every operation making it thread safe.
         private sealed class SyncStream : Stream, IDisposable
         {
@@ -1184,7 +1184,7 @@ namespace System.IO
                 }
             }
 
-            // In the off chance that some wrapped stream has different 
+            // In the off chance that some wrapped stream has different
             // semantics for Close vs. Dispose, let's preserve that.
             public override void Close()
             {

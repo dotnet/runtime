@@ -26,4 +26,3 @@ namespace System.Reflection.Emit
         public static bool operator !=(TypeToken a, TypeToken b) => !(a == b);
     }
 }
-

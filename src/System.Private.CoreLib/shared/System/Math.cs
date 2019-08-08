@@ -12,7 +12,7 @@
 **
 ** Purpose: Some floating-point math operations
 **
-** 
+**
 ===========================================================*/
 
 //This class contains only static members and doesn't require serialization.
@@ -319,7 +319,7 @@ namespace System
             {
                 return max;
             }
-            
+
             return value;
         }
 
@@ -586,7 +586,7 @@ namespace System
         {
             return (val1 >= val2) ? val1 : val2;
         }
-        
+
         public static float Max(float val1, float val2)
         {
             // This matches the IEEE 754:2019 `maximum` function
@@ -936,7 +936,7 @@ namespace System
                     }
                     // Directed rounding: Round up to the next value, toward positive infinity
                     case MidpointRounding.ToPositiveInfinity:
-                    {  
+                    {
                         value = Ceiling(value);
                         break;
                     }
@@ -945,7 +945,7 @@ namespace System
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
                     }
                 }
-                
+
                 value /= power10;
             }
 

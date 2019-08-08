@@ -40,7 +40,7 @@ namespace System.Reflection
         ExactBinding = 0x010000,    // Bind with Exact Type matching, No Change type
         SuppressChangeType = 0x020000,
 
-        // DefaultValueBinding will return the set of methods having ArgCount or 
+        // DefaultValueBinding will return the set of methods having ArgCount or
         //    more parameters.  This is used for default values, etc.
         OptionalParamBinding = 0x040000,
 

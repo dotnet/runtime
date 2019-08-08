@@ -21,13 +21,13 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     /// <summary>
-    /// EventPayload class holds the list of parameters and their corresponding values for user defined types passed to 
+    /// EventPayload class holds the list of parameters and their corresponding values for user defined types passed to
     /// EventSource APIs.
     /// Preserving the order of the elements as they were found inside user defined types is the most important characteristic of this class.
     /// </summary>
     internal class EventPayload : IDictionary<string, object?>
     {
-        internal EventPayload(List<string> payloadNames, List<object?> payloadValues) 
+        internal EventPayload(List<string> payloadNames, List<object?> payloadValues)
         {
             Debug.Assert(payloadNames.Count == payloadValues.Count);
 
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tracing
 
                 int position = 0;
                 foreach(var name in m_names)
-                { 
+                {
                     if (name == key)
                     {
                         return m_values[position];
@@ -118,7 +118,7 @@ namespace System.Diagnostics.Tracing
         {
             throw new System.NotSupportedException();
         }
-       
+
         public bool Remove(string key)
         {
             throw new System.NotSupportedException();
@@ -128,7 +128,7 @@ namespace System.Diagnostics.Tracing
         {
             throw new System.NotSupportedException();
         }
-       
+
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
         {
             if (key == null)

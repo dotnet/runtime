@@ -537,7 +537,7 @@ namespace System
             try
             {
                 EnumerateFilesRecursively(timeZoneDirectory, (string filePath) =>
-                {                
+                {
                     // skip the localtime and posixrules file, since they won't give us the correct id
                     if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
                         && !string.Equals(filePath, posixrulesFilePath, StringComparison.OrdinalIgnoreCase))
@@ -1241,27 +1241,27 @@ namespace System
             {
                 if (date[0] != 'J')
                 {
-                    // should be n Julian day format which we don't support. 
-                    // 
+                    // should be n Julian day format which we don't support.
+                    //
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
-                    // n would be a relative number from the begining of the year. which should handle if the 
+                    // n would be a relative number from the begining of the year. which should handle if the
                     // the year is a leap year or not.
-                    // 
+                    //
                     // In leap year, n would be counted as:
-                    // 
+                    //
                     // 0                30 31              59 60              90      335            365
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    // while in non leap year we'll have 
-                    // 
+                    // while in non leap year we'll have
+                    //
                     // 0                30 31              58 59              89      334            364
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    // 
+                    //
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
-                    // 
+                    //
                     // If we need to support n format, we'll have to have a floating adjustment rule support this case.
 
                     throw new InvalidTimeZoneException(SR.InvalidTimeZone_NJulianDayNotSupported);

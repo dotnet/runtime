@@ -11,4 +11,3 @@ namespace System.Security
         Everything = 0x1
     }
 }
-

@@ -211,7 +211,7 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Initializes a block of memory at the given location with a given initial value 
+        /// Initializes a block of memory at the given location with a given initial value
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
         [Intrinsic]

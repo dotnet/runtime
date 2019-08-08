@@ -388,52 +388,52 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB xmm, m8
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<byte> BroadcastScalarToVector128(byte* source) => BroadcastScalarToVector128(source);
         /// <summary>
         /// __m128i _mm_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB xmm, m8
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<sbyte> BroadcastScalarToVector128(sbyte* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
         /// __m128i _mm_broadcastw_epi16 (__m128i a)
         ///   VPBROADCASTW xmm, m16
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<short> BroadcastScalarToVector128(short* source) => BroadcastScalarToVector128(source);
         /// <summary>
         /// __m128i _mm_broadcastw_epi16 (__m128i a)
         ///   VPBROADCASTW xmm, m16
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<ushort> BroadcastScalarToVector128(ushort* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
         /// __m128i _mm_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD xmm, m32
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<int> BroadcastScalarToVector128(int* source) => BroadcastScalarToVector128(source);
         /// <summary>
         /// __m128i _mm_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD xmm, m32
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<uint> BroadcastScalarToVector128(uint* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
         /// __m128i _mm_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ xmm, m64
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<long> BroadcastScalarToVector128(long* source) => BroadcastScalarToVector128(source);
         /// <summary>
         /// __m128i _mm_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ xmm, m64
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) => BroadcastScalarToVector128(source);
 
@@ -500,101 +500,101 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m256i _mm256_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB ymm, m8
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<byte> BroadcastScalarToVector256(byte* source) => BroadcastScalarToVector256(source);
         /// <summary>
         /// __m256i _mm256_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB ymm, m8
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<sbyte> BroadcastScalarToVector256(sbyte* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
         /// __m256i _mm256_broadcastw_epi16 (__m128i a)
         ///   VPBROADCASTW ymm, m16
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<short> BroadcastScalarToVector256(short* source) => BroadcastScalarToVector256(source);
         /// <summary>
         /// __m256i _mm256_broadcastw_epi16 (__m128i a)
         ///   VPBROADCASTW ymm, m16
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<ushort> BroadcastScalarToVector256(ushort* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
         /// __m256i _mm256_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD ymm, m32
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<int> BroadcastScalarToVector256(int* source) => BroadcastScalarToVector256(source);
         /// <summary>
         /// __m256i _mm256_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD ymm, m32
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<uint> BroadcastScalarToVector256(uint* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
         /// __m256i _mm256_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ ymm, m64
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<long> BroadcastScalarToVector256(long* source) => BroadcastScalarToVector256(source);
         /// <summary>
         /// __m256i _mm256_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ ymm, m64
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<ushort> BroadcastVector128ToVector256(ushort* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<int> BroadcastVector128ToVector256(int* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<uint> BroadcastVector128ToVector256(uint* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<long> BroadcastVector128ToVector256(long* address) => BroadcastVector128ToVector256(address);
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
-        /// The above native signature does not directly correspond to the managed signature. 
+        /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) => BroadcastVector128ToVector256(address);
 
@@ -1308,7 +1308,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   VGATHERQPS xmm, vm64y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, byte scale) 
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, byte scale)
         {
             switch (scale)
             {

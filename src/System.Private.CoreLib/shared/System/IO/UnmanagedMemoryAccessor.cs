@@ -4,10 +4,10 @@
 
 /*============================================================
 **
-** 
-** 
 **
-** Purpose: Provides a fast, AV free, cross-language way of 
+**
+**
+** Purpose: Provides a fast, AV free, cross-language way of
 **          accessing unmanaged memory in a random fashion.
 **
 **
@@ -18,7 +18,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    /// Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the 
+    /// Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
     /// SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
     /// this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
@@ -288,12 +288,12 @@ namespace System.IO
         [CLSCompliant(false)]
         public ulong ReadUInt64(long position) => unchecked((ulong)ReadInt64(position));
 
-        // Reads a struct of type T from unmanaged memory, into the reference pointed to by ref value.  
-        // Note: this method is not safe, since it overwrites the contents of a structure, it can be 
+        // Reads a struct of type T from unmanaged memory, into the reference pointed to by ref value.
+        // Note: this method is not safe, since it overwrites the contents of a structure, it can be
         // used to modify the private members of a struct.
         // This method is most performant when used with medium to large sized structs
-        // (larger than 8 bytes -- though this is number is JIT and architecture dependent).   As 
-        // such, it is best to use the ReadXXX methods for small standard types such as ints, longs, 
+        // (larger than 8 bytes -- though this is number is JIT and architecture dependent).   As
+        // such, it is best to use the ReadXXX methods for small standard types such as ints, longs,
         // bools, etc.
         public void Read<T>(long position, out T structure) where T : struct
         {
@@ -327,8 +327,8 @@ namespace System.IO
             structure = _buffer.Read<T>((ulong)(_offset + position));
         }
 
-        // Reads 'count' structs of type T from unmanaged memory, into 'array' starting at 'offset'.  
-        // Note: this method is not safe, since it overwrites the contents of structures, it can 
+        // Reads 'count' structs of type T from unmanaged memory, into 'array' starting at 'offset'.
+        // Note: this method is not safe, since it overwrites the contents of structures, it can
         // be used to modify the private members of a struct.
         public int ReadArray<T>(long position, T[] array, int offset, int count) where T : struct
         {
@@ -537,8 +537,8 @@ namespace System.IO
         public void Write(long position, ulong value) => Write(position, unchecked((long)value));
 
         // Writes the struct pointed to by ref value into unmanaged memory.  Note that this method
-        // is most performant when used with medium to large sized structs (larger than 8 bytes 
-        // though this is number is JIT and architecture dependent).   As such, it is best to use 
+        // is most performant when used with medium to large sized structs (larger than 8 bytes
+        // though this is number is JIT and architecture dependent).   As such, it is best to use
         // the WriteX methods for small standard types such as ints, longs, bools, etc.
         public void Write<T>(long position, ref T structure) where T : struct
         {
@@ -571,7 +571,7 @@ namespace System.IO
             _buffer.Write<T>((ulong)(_offset + position), structure);
         }
 
-        // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory. 
+        // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory.
         public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct
         {
             if (array == null)

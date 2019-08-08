@@ -48,7 +48,7 @@ namespace System.IO
             // Translate the arguments into arguments for an open call.
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, _access, share, options);
 
-            // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and 
+            // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
             // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
             // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
             // actual permissions will typically be less than what we select here.
@@ -70,8 +70,8 @@ namespace System.IO
         {
             _fileHandle.IsAsync = _useAsyncIO;
 
-            // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive 
-            // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory, 
+            // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
+            // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
             Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
             if (Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
@@ -359,7 +359,7 @@ namespace System.IO
                 return Task.FromException(e);
             }
 
-            // We then separately flush to disk asynchronously.  This is only 
+            // We then separately flush to disk asynchronously.  This is only
             // necessary if we support writing; otherwise, we're done.
             if (CanWrite)
             {
@@ -461,11 +461,11 @@ namespace System.IO
 
             // We may not have had enough data in the buffer to completely satisfy the user's request.
             // While Read doesn't require that we return as much data as the user requested (any amount
-            // up to the requested count is fine), FileStream on Windows tries to do so by doing a 
-            // subsequent read from the file if we tried to satisfy the request with what was in the 
-            // buffer but the buffer contained less than the requested count. To be consistent with that 
-            // behavior, we do the same thing here on Unix.  Note that we may still get less the requested 
-            // amount, as the OS may give us back fewer than we request, either due to reaching the end of 
+            // up to the requested count is fine), FileStream on Windows tries to do so by doing a
+            // subsequent read from the file if we tried to satisfy the request with what was in the
+            // buffer but the buffer contained less than the requested count. To be consistent with that
+            // behavior, we do the same thing here on Unix.  Note that we may still get less the requested
+            // amount, as the OS may give us back fewer than we request, either due to reaching the end of
             // file, or due to its own whims.
             if (!readFromOS && bytesRead < destination.Length)
             {
@@ -480,7 +480,7 @@ namespace System.IO
         /// <summary>Unbuffered, reads a block of bytes from the file handle into the given buffer.</summary>
         /// <param name="buffer">The buffer into which data from the file is read.</param>
         /// <returns>
-        /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
+        /// The total number of bytes read into the buffer. This might be less than the number of bytes requested
         /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
         /// </returns>
         private unsafe int ReadNative(Span<byte> buffer)
@@ -558,13 +558,13 @@ namespace System.IO
             _asyncState.Memory = destination;
             return waitTask.ContinueWith((t, s) =>
             {
-                // The options available on Unix for writing asynchronously to an arbitrary file 
-                // handle typically amount to just using another thread to do the synchronous write, 
+                // The options available on Unix for writing asynchronously to an arbitrary file
+                // handle typically amount to just using another thread to do the synchronous write,
                 // which is exactly  what this implementation does. This does mean there are subtle
-                // differences in certain FileStream behaviors between Windows and Unix when multiple 
-                // asynchronous operations are issued against the stream to execute concurrently; on 
-                // Unix the operations will be serialized due to the usage of a semaphore, but the 
-                // position /length information won't be updated until after the write has completed, 
+                // differences in certain FileStream behaviors between Windows and Unix when multiple
+                // asynchronous operations are issued against the stream to execute concurrently; on
+                // Unix the operations will be serialized due to the usage of a semaphore, but the
+                // position /length information won't be updated until after the write has completed,
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
@@ -717,13 +717,13 @@ namespace System.IO
             _asyncState.ReadOnlyMemory = source;
             return new ValueTask(waitTask.ContinueWith((t, s) =>
             {
-                // The options available on Unix for writing asynchronously to an arbitrary file 
-                // handle typically amount to just using another thread to do the synchronous write, 
+                // The options available on Unix for writing asynchronously to an arbitrary file
+                // handle typically amount to just using another thread to do the synchronous write,
                 // which is exactly  what this implementation does. This does mean there are subtle
-                // differences in certain FileStream behaviors between Windows and Unix when multiple 
-                // asynchronous operations are issued against the stream to execute concurrently; on 
-                // Unix the operations will be serialized due to the usage of a semaphore, but the 
-                // position/length information won't be updated until after the write has completed, 
+                // differences in certain FileStream behaviors between Windows and Unix when multiple
+                // asynchronous operations are issued against the stream to execute concurrently; on
+                // Unix the operations will be serialized due to the usage of a semaphore, but the
+                // position/length information won't be updated until after the write has completed,
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
@@ -747,7 +747,7 @@ namespace System.IO
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">
-        /// Specifies the beginning, the end, or the current position as a reference 
+        /// Specifies the beginning, the end, or the current position as a reference
         /// point for offset, using a value of type SeekOrigin.
         /// </param>
         /// <returns>The new position in the stream.</returns>
@@ -769,9 +769,9 @@ namespace System.IO
             VerifyOSHandlePosition();
 
             // Flush our write/read buffer.  FlushWrite will output any write buffer we have and reset _bufferWritePos.
-            // We don't call FlushRead, as that will do an unnecessary seek to rewind the read buffer, and since we're 
-            // about to seek and update our position, we can simply update the offset as necessary and reset our read 
-            // position and length to 0. (In the future, for some simple cases we could potentially add an optimization 
+            // We don't call FlushRead, as that will do an unnecessary seek to rewind the read buffer, and since we're
+            // about to seek and update our position, we can simply update the offset as necessary and reset our read
+            // position and length to 0. (In the future, for some simple cases we could potentially add an optimization
             // here to just move data around in the buffer for short jumps, to avoid re-reading the data from disk.)
             FlushWriteBuffer();
             if (origin == SeekOrigin.Current)
@@ -804,7 +804,7 @@ namespace System.IO
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">
-        /// Specifies the beginning, the end, or the current position as a reference 
+        /// Specifies the beginning, the end, or the current position as a reference
         /// point for offset, using a value of type SeekOrigin.
         /// </param>
         /// <returns>The new position in the stream.</returns>

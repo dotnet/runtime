@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 
 namespace System
 {
-    // The Object is the root class for all object in the CLR System. Object 
+    // The Object is the root class for all object in the CLR System. Object
     // is the super class for all other CLR objects and provide a set of methods and low level
     // services to subclasses.  These services include object synchronization and support for clone
     // operations.
@@ -40,7 +40,7 @@ namespace System
             return GetType().ToString();
         }
 
-        // Returns a boolean indicating if the passed in object obj is 
+        // Returns a boolean indicating if the passed in object obj is
         // Equal to this.  Equality is defined as object equality for reference
         // types and bitwise equality for value types using a loader trick to
         // replace Equals with EqualsValue for value types).

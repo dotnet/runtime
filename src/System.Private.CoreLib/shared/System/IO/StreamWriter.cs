@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     // This class implements a TextWriter for writing characters to a Stream.
-    // This is designed for character output in a particular Encoding, 
-    // whereas the Stream class is designed for byte input and output.  
+    // This is designed for character output in a particular Encoding,
+    // whereas the Stream class is designed for byte input and output.
     public class StreamWriter : TextWriter
     {
         // For UTF-8, the values of 1K for the default buffer size and 4K for the
@@ -22,7 +22,7 @@ namespace System.IO
         // performance for in terms of construction time for the StreamWriter and
         // write perf.  Note that for UTF-8, we end up allocating a 4K byte buffer,
         // which means we take advantage of adaptive buffering code.
-        // The performance using UnicodeEncoding is acceptable.  
+        // The performance using UnicodeEncoding is acceptable.
         private const int DefaultBufferSize = 1024;   // char[]
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
@@ -42,14 +42,14 @@ namespace System.IO
         private readonly bool _closable;
         private bool _disposed;
 
-        // We don't guarantee thread safety on StreamWriter, but we should at 
+        // We don't guarantee thread safety on StreamWriter, but we should at
         // least prevent users from trying to write anything while an Async
         // write from the same thread is in progress.
         private Task _asyncWriteTask = Task.CompletedTask;
 
         private void CheckAsyncTaskInProgress()
         {
-            // We are not locking the access to _asyncWriteTask because this is not meant to guarantee thread safety. 
+            // We are not locking the access to _asyncWriteTask because this is not meant to guarantee thread safety.
             // We are simply trying to deter calling any Write APIs while an async Write from the same thread is in progress.
             if (!_asyncWriteTask.IsCompleted)
             {
@@ -61,14 +61,14 @@ namespace System.IO
         private static void ThrowAsyncIOInProgress() =>
             throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
 
-        // The high level goal is to be tolerant of encoding errors when we read and very strict 
-        // when we write. Hence, default StreamWriter encoding will throw on encoding error.   
-        // Note: when StreamWriter throws on invalid encoding chars (for ex, high surrogate character 
-        // D800-DBFF without a following low surrogate character DC00-DFFF), it will cause the 
-        // internal StreamWriter's state to be irrecoverable as it would have buffered the 
-        // illegal chars and any subsequent call to Flush() would hit the encoding error again. 
-        // Even Close() will hit the exception as it would try to flush the unwritten data. 
-        // Maybe we can add a DiscardBufferedData() method to get out of such situation (like 
+        // The high level goal is to be tolerant of encoding errors when we read and very strict
+        // when we write. Hence, default StreamWriter encoding will throw on encoding error.
+        // Note: when StreamWriter throws on invalid encoding chars (for ex, high surrogate character
+        // D800-DBFF without a following low surrogate character DC00-DFFF), it will cause the
+        // internal StreamWriter's state to be irrecoverable as it would have buffered the
+        // illegal chars and any subsequent call to Flush() would hit the encoding error again.
+        // Even Close() will hit the exception as it would try to flush the unwritten data.
+        // Maybe we can add a DiscardBufferedData() method to get out of such situation (like
         // StreamReader though for different reason). Either way, the buffered data will be lost!
         private static Encoding UTF8NoBOM => EncodingCache.UTF8NoBOM;
 
@@ -82,10 +82,10 @@ namespace System.IO
         {
         }
 
-        // Creates a new StreamWriter for the given stream.  The 
-        // character encoding is set by encoding and the buffer size, 
-        // in number of 16-bit characters, is set by bufferSize.  
-        // 
+        // Creates a new StreamWriter for the given stream.  The
+        // character encoding is set by encoding and the buffer size,
+        // in number of 16-bit characters, is set by bufferSize.
+        //
         public StreamWriter(Stream stream, Encoding encoding, int bufferSize)
             : this(stream, encoding, bufferSize, false)
         {
@@ -153,7 +153,7 @@ namespace System.IO
 
         public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
             this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
-        { 
+        {
         }
 
         private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
@@ -181,8 +181,8 @@ namespace System.IO
             try
             {
                 // We need to flush any buffered data if we are being closed/disposed.
-                // Also, we never close the handles for stdout & friends.  So we can safely 
-                // write any buffered data to those streams even during finalization, which 
+                // Also, we never close the handles for stdout & friends.  So we can safely
+                // write any buffered data to those streams even during finalization, which
                 // is generally the right thing to do.
                 if (!_disposed && disposing)
                 {
@@ -199,15 +199,15 @@ namespace System.IO
 
         private void CloseStreamFromDispose(bool disposing)
         {
-            // Dispose of our resources if this StreamWriter is closable. 
+            // Dispose of our resources if this StreamWriter is closable.
             if (_closable && !_disposed)
             {
                 try
                 {
                     // Attempt to close the stream even if there was an IO error from Flushing.
                     // Note that Stream.Close() can potentially throw here (may or may not be
-                    // due to the same Flush error). In this case, we still need to ensure 
-                    // cleaning up internal resources, hence the finally block.  
+                    // due to the same Flush error). In this case, we still need to ensure
+                    // cleaning up internal resources, hence the finally block.
                     if (disposing)
                     {
                         _stream.Close();
@@ -256,7 +256,7 @@ namespace System.IO
         {
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
-            // This is required to flush any dangling characters from our UTF-7 
+            // This is required to flush any dangling characters from our UTF-7
             // and UTF-8 encoders.
             ThrowIfDisposed();
 
@@ -609,7 +609,7 @@ namespace System.IO
         public override Task WriteAsync(char value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -672,7 +672,7 @@ namespace System.IO
         public override Task WriteAsync(string? value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -778,7 +778,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -870,7 +870,7 @@ namespace System.IO
         public override Task WriteLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -891,7 +891,7 @@ namespace System.IO
         public override Task WriteLineAsync(char value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -917,7 +917,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -955,7 +955,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() which a subclass might have overridden.  
+            // since it does not call through to Write() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -997,7 +997,7 @@ namespace System.IO
         public override Task FlushAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
+            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(StreamWriter))
@@ -1007,8 +1007,8 @@ namespace System.IO
 
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
-            // This is required to flush any dangling characters from our UTF-7 
-            // and UTF-8 encoders.  
+            // This is required to flush any dangling characters from our UTF-7
+            // and UTF-8 encoders.
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
