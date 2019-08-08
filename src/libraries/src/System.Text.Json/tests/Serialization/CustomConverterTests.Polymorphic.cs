@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         // A polymorphic POCO converter using a type discriminator.
-        private class PersonConverter : JsonConverter<Person>
+        private class PersonConverterWithTypeDiscriminator : JsonConverter<Person>
         {
             enum TypeDiscriminator
             {
@@ -117,13 +117,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void PersonConverterPolymorphic()
+        public static void PersonConverterPolymorphicTypeDiscriminator()
         {
             const string customerJson = @"{""TypeDiscriminator"":1,""CreditLimit"":100.00,""Name"":""C""}";
             const string employeeJson = @"{""TypeDiscriminator"":2,""OfficeNumber"":""77a"",""Name"":""E""}";
 
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new PersonConverter());
+            options.Converters.Add(new PersonConverterWithTypeDiscriminator());
 
             {
                 Person person = JsonSerializer.Deserialize<Person>(customerJson, options);
@@ -147,13 +147,74 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NullPersonConverterPolymorphic()
+        public static void NullPersonConverterPolymorphicTypeDiscriminator()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new PersonConverter());
+            options.Converters.Add(new PersonConverterWithTypeDiscriminator());
 
             Person person = JsonSerializer.Deserialize<Person>("null");
             Assert.Null(person);
+        }
+
+        // A converter that can serialize an abstract Person type.
+        private class PersonPolymorphicSerializerConverter : JsonConverter<Person>
+        {
+            public override Person Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException($"Deserializing not supported. Type={typeToConvert}.");
+            }
+
+            public override void Write(Utf8JsonWriter writer, Person value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value, value.GetType(), options);
+            }
+        }
+
+        [Fact]
+        public static void PersonConverterSerializerPolymorphic()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new PersonPolymorphicSerializerConverter());
+
+            Customer customer = new Customer
+            {
+                Name = "C",
+                CreditLimit = 100
+            };
+
+            {
+                // Verify the polymorphic case.
+                Person person = customer;
+
+                string json = JsonSerializer.Serialize(person, options);
+                Assert.Contains(@"""CreditLimit"":100", json);
+                Assert.Contains(@"""Name"":""C""", json);
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Person>(json, options));
+
+                string arrayJson = JsonSerializer.Serialize(new Person[] { person }, options);
+                Assert.Contains(@"""CreditLimit"":100", arrayJson);
+                Assert.Contains(@"""Name"":""C""", arrayJson);
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Person[]>(arrayJson, options));
+            }
+
+            {
+                // Ensure (de)serialization still works when using a Person-derived type. This does not call the custom converter.
+                string json = JsonSerializer.Serialize(customer, options);
+                Assert.Contains(@"""CreditLimit"":100", json);
+                Assert.Contains(@"""Name"":""C""", json);
+
+                customer = JsonSerializer.Deserialize<Customer>(json, options);
+                Assert.Equal(100, customer.CreditLimit);
+                Assert.Equal("C", customer.Name);
+
+                string arrayJson = JsonSerializer.Serialize(new Customer[] { customer }, options);
+                Assert.Contains(@"""CreditLimit"":100", arrayJson);
+                Assert.Contains(@"""Name"":""C""", arrayJson);
+
+                Customer[] customers = JsonSerializer.Deserialize<Customer[]>(arrayJson, options);
+                Assert.Equal(100, customers[0].CreditLimit);
+                Assert.Equal("C", customers[0].Name);
+            }
         }
     }
 }
