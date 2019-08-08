@@ -21,7 +21,7 @@ namespace System.Diagnostics
 
         private int _numOfFrames;
         private int _methodsToSkip;
-        
+
         /// <summary>
         /// Stack frames comprising this stack trace.
         /// </summary>
@@ -181,7 +181,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// TraceFormat is used to specify options for how the 
+        /// TraceFormat is used to specify options for how the
         /// string-representation of a StackTrace should be generated.
         /// </summary>
         internal enum TraceFormat
@@ -192,7 +192,7 @@ namespace System.Diagnostics
 
 #if !CORERT
         /// <summary>
-        /// Builds a readable representation of the stack trace, specifying 
+        /// Builds a readable representation of the stack trace, specifying
         /// the format for backwards compatibility.
         /// </summary>
         internal string ToString(TraceFormat traceFormat)
@@ -206,7 +206,7 @@ namespace System.Diagnostics
             {
                 StackFrame? sf = GetFrame(iFrameIndex);
                 MethodBase? mb = sf?.GetMethod();
-                if (mb != null && (ShowInStackTrace(mb) || 
+                if (mb != null && (ShowInStackTrace(mb) ||
                                    (iFrameIndex == _numOfFrames - 1))) // Don't filter last frame
                 {
                     // We want a newline at the end of every line except for the last
@@ -343,7 +343,7 @@ namespace System.Diagnostics
             if ((mb.MethodImplementationFlags & MethodImplAttributes.AggressiveInlining) != 0)
             {
                 // Aggressive Inlines won't normally show in the StackTrace; however for Tier0 Jit and
-                // cross-assembly AoT/R2R these inlines will be blocked until Tier1 Jit re-Jits 
+                // cross-assembly AoT/R2R these inlines will be blocked until Tier1 Jit re-Jits
                 // them when they will inline. We don't show them in the StackTrace to bring consistency
                 // between this first-pass asm and fully optimized asm.
                 return false;
@@ -357,7 +357,7 @@ namespace System.Diagnostics
 
             Type? declaringType = mb.DeclaringType;
             // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-            if (declaringType != null && 
+            if (declaringType != null &&
                 declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
             {
                 // Don't show where StackTraceHidden is applied to the containing Type of the method.

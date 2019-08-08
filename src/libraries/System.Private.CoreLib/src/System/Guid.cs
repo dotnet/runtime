@@ -155,10 +155,10 @@ namespace System
                     {
                         throw new OverflowException(SR.GetResourceString(failureMessageID));
                     }
-                    
+
                     throw new FormatException(SR.Format_GuidUnrecognized);
                 }
-                
+
                 throw new FormatException(SR.GetResourceString(failureMessageID));
             }
         }
@@ -1070,7 +1070,7 @@ namespace System
             return guidString;
         }
 
-        // Returns whether the guid is successfully formatted as a span. 
+        // Returns whether the guid is successfully formatted as a span.
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
         {
             if (format.Length == 0)
@@ -1078,7 +1078,7 @@ namespace System
                 format = "D";
             }
             // all acceptable format strings are of length 1
-            if (format.Length != 1) 
+            if (format.Length != 1)
             {
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }

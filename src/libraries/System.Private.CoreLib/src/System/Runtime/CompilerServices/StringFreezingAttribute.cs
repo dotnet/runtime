@@ -5,7 +5,7 @@
 namespace System.Runtime.CompilerServices
 {
     // Custom attribute to indicate that strings should be frozen.
-    
+
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class StringFreezingAttribute : Attribute
     {

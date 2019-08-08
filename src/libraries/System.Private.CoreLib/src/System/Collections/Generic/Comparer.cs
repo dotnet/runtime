@@ -9,7 +9,7 @@ using System.Runtime.Serialization;
 namespace System.Collections.Generic
 {
     [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
         // public static Comparer<T> Default is runtime-specific
@@ -70,7 +70,7 @@ namespace System.Collections.Generic
             return 0;
         }
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
             obj != null && GetType() == obj.GetType();
 
@@ -94,7 +94,7 @@ namespace System.Collections.Generic
             return 0;
         }
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
             obj != null && GetType() == obj.GetType();
 
@@ -112,7 +112,7 @@ namespace System.Collections.Generic
             return System.Collections.Comparer.Default.Compare(x, y);
         }
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
             obj != null && GetType() == obj.GetType();
 
@@ -130,7 +130,7 @@ namespace System.Collections.Generic
 
         // public override int Compare(T x, T y) is runtime-specific
 
-        // Equals method for the comparer itself. 
+        // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
             obj != null && GetType() == obj.GetType();
 

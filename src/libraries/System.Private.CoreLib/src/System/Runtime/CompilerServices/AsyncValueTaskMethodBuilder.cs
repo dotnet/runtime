@@ -187,7 +187,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="awaiter">the awaiter</param>
         /// <param name="stateMachine">The state machine.</param>
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
-            where TAwaiter : ICriticalNotifyCompletion 
+            where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
             _useBuilder = true;

@@ -679,7 +679,7 @@ namespace System.Collections.Generic
 
             if (siInfo == null)
             {
-                // We can return immediately if this function is called twice. 
+                // We can return immediately if this function is called twice.
                 // Note we remove the serialization info from the table at the end of this method.
                 return;
             }
@@ -999,12 +999,12 @@ namespace System.Collections.Generic
 
         /// <summary>
         /// Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its entries
-        /// 
-        /// This method can be used to minimize the memory overhead 
-        /// once it is known that no new elements will be added. 
-        /// 
+        ///
+        /// This method can be used to minimize the memory overhead
+        /// once it is known that no new elements will be added.
+        ///
         /// To allocate minimum size storage array, execute the following statements:
-        /// 
+        ///
         /// dictionary.Clear();
         /// dictionary.TrimExcess();
         /// </summary>
@@ -1013,9 +1013,9 @@ namespace System.Collections.Generic
 
         /// <summary>
         /// Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing storage
-        /// 
-        /// This method can be used to minimize the memory overhead 
-        /// once it is known that no new elements will be added. 
+        ///
+        /// This method can be used to minimize the memory overhead
+        /// once it is known that no new elements will be added.
         /// </summary>
         public void TrimExcess(int capacity)
         {

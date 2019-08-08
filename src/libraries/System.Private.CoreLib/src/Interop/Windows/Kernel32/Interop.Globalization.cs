@@ -115,7 +115,7 @@ internal static partial class Interop
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
-  
+
         internal delegate BOOL EnumTimeFormatsProcEx(char* lpTimeFormatString, void* lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
@@ -126,7 +126,7 @@ internal static partial class Interop
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
-        
+
         internal delegate BOOL EnumCalendarInfoProcExEx(char* lpCalendarInfoString, uint Calendar, IntPtr lpReserved, void* lParam);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -138,7 +138,7 @@ internal static partial class Interop
             internal int dwEffectiveId;
             internal Guid guidCustomVersion;
         }
-        
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern unsafe bool GetNLSVersionEx(int function, string localeName, NlsVersionInfoEx* lpVersionInformation);
     }

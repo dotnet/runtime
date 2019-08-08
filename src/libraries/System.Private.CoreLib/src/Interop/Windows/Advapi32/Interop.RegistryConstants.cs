@@ -11,7 +11,7 @@ internal partial class Interop
             internal const int REG_OPTION_NON_VOLATILE = 0x0000;     // (default) keys are persisted beyond reboot/unload
             internal const int REG_OPTION_VOLATILE = 0x0001;        // All keys created by the function are volatile
             internal const int REG_OPTION_CREATE_LINK = 0x0002;     // They key is a symbolic link
-            internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges         
+            internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges
         }
 
         internal static class RegistryView

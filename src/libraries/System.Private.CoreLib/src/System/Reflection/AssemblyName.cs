@@ -12,7 +12,7 @@ namespace System.Reflection
 {
     public sealed partial class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
-        // If you modify any of these fields, you must also update the 
+        // If you modify any of these fields, you must also update the
         // AssemblyBaseObject structure in object.h
         private string? _name;
         private byte[]? _publicKey;
@@ -34,7 +34,7 @@ namespace System.Reflection
         }
 
         // Set and get the name of the assembly. If this is a weak Name
-        // then it optionally contains a site. For strong assembly names, 
+        // then it optionally contains a site. For strong assembly names,
         // the name partitions up the strong name's namespace
         public string? Name
         {
@@ -487,7 +487,7 @@ namespace System.Reflection
         private static readonly char[] s_hexUpperChars = {
                                    '0', '1', '2', '3', '4', '5', '6', '7',
                                    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-        internal const char c_DummyChar = (char)0xFFFF;     //An Invalid Unicode character used as a dummy char passed into the parameter                                   
+        internal const char c_DummyChar = (char)0xFFFF;     //An Invalid Unicode character used as a dummy char passed into the parameter
         private const short c_MaxAsciiCharsReallocate = 40;
         private const short c_MaxUnicodeCharsReallocate = 40;
         private const short c_MaxUTF_8BytesPerUnicodeChar = 4;

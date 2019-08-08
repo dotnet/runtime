@@ -5,10 +5,10 @@
 /*============================================================
 **
 **
-** Purpose: 
-** Contains eventing constants defined by the Windows 
+** Purpose:
+** Contains eventing constants defined by the Windows
 ** environment.
-** 
+**
 ============================================================*/
 #if ES_BUILD_STANDALONE
 #define FEATURE_MANAGED_ETW_CHANNELS
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         Informational,
         /// <summary>
-        /// All events, including previous levels 
+        /// All events, including previous levels
         /// </summary>
         Verbose
     }
@@ -76,7 +76,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         Start,
         /// <summary>
-        /// An activity end event 
+        /// An activity end event
         /// </summary>
         Stop,
         /// <summary>
@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         Send,
         /// <summary>
-        /// An event representing receiving an activity transfer from another component 
+        /// An event representing receiving an activity transfer from another component
         /// </summary>
         Receive = 240
     }
@@ -143,11 +143,11 @@ namespace System.Diagnostics.Tracing
     public enum EventKeywords : long
     {
         /// <summary>
-        /// No events. 
+        /// No events.
         /// </summary>
         None = 0x0,
         /// <summary>
-        /// All Events 
+        /// All Events
         /// </summary>
         All = ~0,
         /// <summary>

@@ -12,4 +12,3 @@ namespace System.Reflection
         ARM = 0x01c4,
     }
 }
-

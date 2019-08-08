@@ -4,7 +4,7 @@
 
 /*============================================================
 **
-** 
+**
 **
 ** Purpose: The contract class allows for expressing preconditions,
 ** postconditions, and object invariants about methods in source
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Contracts
     /// method for a class. The method can have any name, but it must
     /// return "void" and take no parameters. The body of the method
     /// must consist solely of one or more calls to the method
-    /// Contract.Invariant. A suggested name for the method is 
+    /// Contract.Invariant. A suggested name for the method is
     /// "ObjectInvariant".
     /// </summary>
     [Conditional("CONTRACTS_FULL")]
@@ -227,7 +227,7 @@ namespace System.Diagnostics.Contracts
     /// WARNING: A binary rewriter must be used to insert runtime enforcement of these contracts.
     /// Otherwise some contracts like Ensures can only be checked statically and will not throw exceptions during runtime when contracts are violated.
     /// Please note this class uses conditional compilation to help avoid easy mistakes.  Defining the preprocessor
-    /// symbol CONTRACTS_PRECONDITIONS will include all preconditions expressed using Contract.Requires in your 
+    /// symbol CONTRACTS_PRECONDITIONS will include all preconditions expressed using Contract.Requires in your
     /// build.  The symbol CONTRACTS_FULL will include postconditions and object invariants, and requires the binary rewriter.
     /// </remarks>
     public static partial class Contract
@@ -527,13 +527,13 @@ namespace System.Diagnostics.Contracts
         #region ForAll
 
         /// <summary>
-        /// Returns whether the <paramref name="predicate"/> returns <c>true</c> 
+        /// Returns whether the <paramref name="predicate"/> returns <c>true</c>
         /// for all integers starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.
         /// </summary>
         /// <param name="fromInclusive">First integer to pass to <paramref name="predicate"/>.</param>
         /// <param name="toExclusive">One greater than the last integer to pass to <paramref name="predicate"/>.</param>
         /// <param name="predicate">Function that is evaluated from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</param>
-        /// <returns><c>true</c> if <paramref name="predicate"/> returns <c>true</c> for all integers 
+        /// <returns><c>true</c> if <paramref name="predicate"/> returns <c>true</c> for all integers
         /// starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
@@ -551,7 +551,7 @@ namespace System.Diagnostics.Contracts
 
 
         /// <summary>
-        /// Returns whether the <paramref name="predicate"/> returns <c>true</c> 
+        /// Returns whether the <paramref name="predicate"/> returns <c>true</c>
         /// for all elements in the <paramref name="collection"/>.
         /// </summary>
         /// <param name="collection">The collection from which elements will be drawn from to pass to <paramref name="predicate"/>.</param>
@@ -577,7 +577,7 @@ namespace System.Diagnostics.Contracts
         #region Exists
 
         /// <summary>
-        /// Returns whether the <paramref name="predicate"/> returns <c>true</c> 
+        /// Returns whether the <paramref name="predicate"/> returns <c>true</c>
         /// for any integer starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.
         /// </summary>
         /// <param name="fromInclusive">First integer to pass to <paramref name="predicate"/>.</param>
@@ -600,7 +600,7 @@ namespace System.Diagnostics.Contracts
         }
 
         /// <summary>
-        /// Returns whether the <paramref name="predicate"/> returns <c>true</c> 
+        /// Returns whether the <paramref name="predicate"/> returns <c>true</c>
         /// for any element in the <paramref name="collection"/>.
         /// </summary>
         /// <param name="collection">The collection from which elements will be drawn from to pass to <paramref name="predicate"/>.</param>
@@ -676,7 +676,7 @@ namespace System.Diagnostics.Contracts
         /// <summary>
         /// Without contract rewriting, failing Assert/Assumes end up calling this method.
         /// Code going through the contract rewriter never calls this method. Instead, the rewriter produced failures call
-        /// System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent, followed by 
+        /// System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent, followed by
         /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
@@ -696,10 +696,10 @@ namespace System.Diagnostics.Contracts
 
         /// <summary>
         /// Allows a managed application environment such as an interactive interpreter (IronPython)
-        /// to be notified of contract failures and 
+        /// to be notified of contract failures and
         /// potentially "handle" them, either by throwing a particular exception type, etc.  If any of the
         /// event handlers sets the Cancel flag in the ContractFailedEventArgs, then the Contract class will
-        /// not pop up an assert dialog box or trigger escalation policy.  Hooking this event requires 
+        /// not pop up an assert dialog box or trigger escalation policy.  Hooking this event requires
         /// full trust, because it will inform you of bugs in the appdomain and because the event handler
         /// could allow you to continue execution.
         /// </summary>
@@ -729,4 +729,3 @@ namespace System.Diagnostics.Contracts
         Assume,
     }
 }  // namespace System.Runtime.CompilerServices
-

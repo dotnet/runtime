@@ -140,8 +140,8 @@ namespace System.IO
             if (PathInternal.IsDirectorySeparator(path[skip - 1]))
                 skip--;
 
-            // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
-            // except the ones we're removing, such that the builder contains the normalized path 
+            // Remove "//", "/./", and "/../" from the path by copying each character to the output,
+            // except the ones we're removing, such that the builder contains the normalized path
             // at the end.
             if (skip > 0)
             {

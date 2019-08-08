@@ -16,4 +16,3 @@ namespace System.Reflection
         public bool StripAfterObfuscation { get; set; } = true;
     }
 }
-

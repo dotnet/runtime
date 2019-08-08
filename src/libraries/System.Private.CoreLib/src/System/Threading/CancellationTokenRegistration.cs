@@ -24,7 +24,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// Disposes of the registration and unregisters the target callback from the associated
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// If the target callback is currently executing, this method will wait until it completes, except
         /// in the degenerate cases where a callback method unregisters itself.
@@ -39,7 +39,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// Disposes of the registration and unregisters the target callback from the associated
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// The returned <see cref="ValueTask"/> will complete once the associated callback
         /// is unregistered without having executed or once it's finished executing, except
@@ -70,7 +70,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// Disposes of the registration and unregisters the target callback from the associated
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
         public bool Unregister()
@@ -138,26 +138,26 @@ namespace System.Threading
         public static bool operator !=(CancellationTokenRegistration left, CancellationTokenRegistration right) => !left.Equals(right);
 
         /// <summary>
-        /// Determines whether the current <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the 
+        /// Determines whether the current <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the
         /// specified <see cref="T:System.Object"/>.
-        /// </summary> 
+        /// </summary>
         /// <param name="obj">The other object to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="obj"/> are equal. False, otherwise.
         /// Two <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
-        /// they both refer to the output of a single call to the same Register method of a 
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
+        /// they both refer to the output of a single call to the same Register method of a
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </returns>
         public override bool Equals(object? obj) => obj is CancellationTokenRegistration && Equals((CancellationTokenRegistration)obj);
 
         /// <summary>
-        /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the 
+        /// Determines whether the current <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
         /// specified <see cref="T:System.Object"/>.
-        /// </summary> 
+        /// </summary>
         /// <param name="other">The other <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="other"/> are equal. False, otherwise.
         /// Two <see cref="T:System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
-        /// they both refer to the output of a single call to the same Register method of a 
-        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>. 
+        /// they both refer to the output of a single call to the same Register method of a
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </returns>
         public bool Equals(CancellationTokenRegistration other) => _node == other._node && _id == other._id;
 

@@ -23,11 +23,11 @@ namespace System
         // of the target.  If the target OR is an interface, the object must implement
         // that interface.  There are a couple of exceptions
         // thrown when a method cannot be returned.  If no method matchs the args and
-        // ArgumentException is thrown.  If multiple methods match the args then 
+        // ArgumentException is thrown.  If multiple methods match the args then
         // an AmbiguousMatchException is thrown.
-        // 
-        // The most specific match will be selected.  
-        // 
+        //
+        // The most specific match will be selected.
+        //
         public sealed override MethodBase BindToMethod(
             BindingFlags bindingAttr, MethodBase[] match, ref object?[] args,
             ParameterModifier[]? modifiers, CultureInfo? cultureInfo, string[]? names, out object? state)
@@ -78,7 +78,7 @@ namespace System
             Type[] argTypes = new Type[args.Length];
 
 #region Cache the type of the provided arguments
-            // object that contain a null are treated as if they were typeless (but match either object 
+            // object that contain a null are treated as if they were typeless (but match either object
             // references or value classes).  We mark this condition by placing a null in the argTypes array.
             for (i = 0; i < args.Length; i++)
             {
@@ -128,7 +128,7 @@ namespace System
                 else if (par.Length > args.Length)
                 {
 #region Shortage of provided parameters
-                    // If the number of parameters is greater than the number of args then 
+                    // If the number of parameters is greater than the number of args then
                     // we are in the situation were we may be using default values.
                     for (j = args.Length; j < par.Length - 1; j++)
                     {
@@ -282,7 +282,7 @@ namespace System
             }
 #endregion
 
-            // If we didn't find a method 
+            // If we didn't find a method
             if (CurIdx == 0)
                 throw new MissingMethodException(SR.MissingMember);
 
@@ -322,7 +322,7 @@ namespace System
                         objs[i] = parms[i].DefaultValue;
 
                     if (paramArrayTypes[0] != null)
-                        objs[i] = Array.CreateInstance(paramArrayTypes[0], 0); // create an empty array for the 
+                        objs[i] = Array.CreateInstance(paramArrayTypes[0], 0); // create an empty array for the
 
                     else
                         objs[i] = parms[i].DefaultValue;
@@ -541,7 +541,7 @@ namespace System
 
             MethodBase[] candidates = (MethodBase[])match.Clone();
 
-            // Find all the methods that can be described by the types parameter. 
+            // Find all the methods that can be described by the types parameter.
             //  Remove all of them that cannot.
             int CurIdx = 0;
             for (i = 0; i < candidates.Length; i++)
@@ -1167,7 +1167,7 @@ namespace System
             // Mark which parameters have not been found in the names list
             for (int i = 0; i < pars.Length; i++)
                 paramOrder[i] = -1;
-            // Find the parameters with names. 
+            // Find the parameters with names.
             for (int i = 0; i < names.Length; i++)
             {
                 int j;

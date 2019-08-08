@@ -9,7 +9,7 @@
 ** (i.e. the finalizer is guaranteed to run, won't be aborted by the host and is
 ** run after the finalizers of other objects collected at the same time).
 **
-** 
+**
 ===========================================================*/
 
 namespace System.Runtime.ConstrainedExecution

@@ -8,7 +8,7 @@ namespace System.IO
 {
     // Contains constants for specifying the access you want for a file.
     // You can have Read, Write or ReadWrite access.
-    // 
+    //
     [Flags]
     public enum FileAccess
     {
@@ -21,7 +21,7 @@ namespace System.IO
         Write = 2,
 
         // Specifies read and write access to the file. Data can be written to the
-        // file and the file pointer can be moved. Data can also be read from the 
+        // file and the file pointer can be moved. Data can also be read from the
         // file.
         ReadWrite = 3,
     }

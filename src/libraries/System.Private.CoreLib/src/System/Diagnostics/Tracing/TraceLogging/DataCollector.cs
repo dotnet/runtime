@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
         private GCHandle* pins;
         private byte[]? buffer;
         private int bufferPos;
-        private int bufferNesting;          // We may merge many fields int a single blob.   If we are doing this we increment this. 
+        private int bufferNesting;          // We may merge many fields int a single blob.   If we are doing this we increment this.
         private bool writingScalars;
 
         internal void Enable(

@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
         private ScalarTypeInfo(
             Type type,
             Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc,
-            TraceLoggingDataType nativeFormat) 
+            TraceLoggingDataType nativeFormat)
             : base(type)
         {
             this.formatFunc = formatFunc;
@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tracing
             Type type,
             Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc,
             TraceLoggingDataType nativeFormat,
-            int elementSize) 
+            int elementSize)
             : base(type)
         {
             this.formatFunc = formatFunc;
@@ -158,14 +158,14 @@ namespace System.Diagnostics.Tracing
         {
             collector.AddNullTerminatedString((string?)value.ReferenceValue);
         }
-        
+
         public override object GetData(object? value)
         {
             if (value == null)
             {
                 return "";
             }
-            
+
             return value;
         }
     }

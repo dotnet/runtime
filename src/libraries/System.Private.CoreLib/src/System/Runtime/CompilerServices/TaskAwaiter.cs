@@ -6,9 +6,9 @@
 //
 //
 //
-// Types for awaiting Task and Task<T>. These types are emitted from Task{<T>}.GetAwaiter 
+// Types for awaiting Task and Task<T>. These types are emitted from Task{<T>}.GetAwaiter
 // and Task{<T>}.ConfigureAwait.  They are meant to be used only by the compiler, e.g.
-// 
+//
 //   await nonGenericTask;
 //   =====================
 //       var $awaiter = nonGenericTask.GetAwaiter();
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Ensures the task is completed, triggers any necessary debugger breakpoints for completing 
+        /// Ensures the task is completed, triggers any necessary debugger breakpoints for completing
         /// the await on the task, and throws an exception if the task did not complete successfully.
         /// </summary>
         /// <param name="task">The awaited task.</param>
@@ -417,9 +417,9 @@ namespace System.Runtime.CompilerServices
             // Its layout must remain the same.
 
             /// <summary>The task being awaited.</summary>
-            internal readonly Task m_task; 
+            internal readonly Task m_task;
             /// <summary>Whether to attempt marshaling back to the original context.</summary>
-            internal readonly bool m_continueOnCapturedContext; 
+            internal readonly bool m_continueOnCapturedContext;
 
             /// <summary>Initializes the <see cref="ConfiguredTaskAwaiter"/>.</summary>
             /// <param name="task">The <see cref="System.Threading.Tasks.Task"/> to await.</param>

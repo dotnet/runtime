@@ -44,7 +44,7 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Write a message to the system logger, which in turn writes the message to the system console, log files, etc. 
+        /// Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
         /// See man 3 syslog for more info
         /// </summary>
         /// <param name="priority">

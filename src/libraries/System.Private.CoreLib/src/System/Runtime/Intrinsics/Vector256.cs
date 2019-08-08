@@ -464,7 +464,7 @@ namespace System.Runtime.Intrinsics
 
             if (Avx.IsSupported)
             {
-                Vector128<float> result = Vector128.Create(value);                      // < v, v, v, v, ?, ?, ?, ? >   
+                Vector128<float> result = Vector128.Create(value);                      // < v, v, v, v, ?, ?, ?, ? >
                 return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v >
             }
 

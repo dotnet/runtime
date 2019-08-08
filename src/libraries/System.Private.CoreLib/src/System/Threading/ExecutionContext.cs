@@ -305,7 +305,7 @@ namespace System.Threading
             currentThread._synchronizationContext = null;
             if (currentExecutionCtx != null)
             {
-                // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs 
+                // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs
                 // extra work prior to returning to the Dispatch loop. For example for Task-likes it will flow out of await points
                 RestoreChangedContextToThread(currentThread, contextToRestore: null, currentExecutionCtx);
             }
@@ -316,8 +316,8 @@ namespace System.Threading
 
         internal static void RunForThreadPoolUnsafe<TState>(ExecutionContext executionContext, Action<TState> callback, in TState state)
         {
-            // We aren't running in try/catch as if an exception is directly thrown on the ThreadPool either process 
-            // will crash or its a ThreadAbortException. 
+            // We aren't running in try/catch as if an exception is directly thrown on the ThreadPool either process
+            // will crash or its a ThreadAbortException.
 
             CheckThreadPoolAndContextsAreDefault();
             Debug.Assert(executionContext != null && !executionContext.m_isDefault, "ExecutionContext argument is Default.");
@@ -381,7 +381,7 @@ namespace System.Threading
         {
             Debug.Assert(previousExecutionCtx != nextExecutionCtx);
 
-            // Collect Change Notifications 
+            // Collect Change Notifications
             IAsyncLocal[]? previousChangeNotifications = previousExecutionCtx?.m_localChangeNotifications;
             IAsyncLocal[]? nextChangeNotifications = nextExecutionCtx?.m_localChangeNotifications;
 
@@ -413,7 +413,7 @@ namespace System.Threading
                         // Check for additional notifications in nextExecutionCtx
                         foreach (IAsyncLocal local in nextChangeNotifications)
                         {
-                            // If the local has a value in the previous context, we already fired the event 
+                            // If the local has a value in the previous context, we already fired the event
                             // for that local in the code above.
                             if (!previousExecutionCtx.m_localValues.TryGetValue(local, out object? previousValue))
                             {
@@ -550,7 +550,7 @@ namespace System.Threading
                 }
             }
 
-            Thread.CurrentThread._executionContext = 
+            Thread.CurrentThread._executionContext =
                 (!isFlowSuppressed && AsyncLocalValueMap.IsEmpty(newValues)) ?
                 null : // No values, return to Default context
                 new ExecutionContext(newValues, newChangeNotifications, isFlowSuppressed);

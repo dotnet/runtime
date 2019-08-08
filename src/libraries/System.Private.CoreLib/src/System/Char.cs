@@ -21,7 +21,7 @@ namespace System
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible
     {
         //
@@ -85,7 +85,7 @@ namespace System
             return (uint)ch <= '\x007f';
         }
 
-        // Return the Unicode category for Unicode character <= 0x00ff.      
+        // Return the Unicode category for Unicode character <= 0x00ff.
         private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
         {
             Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 007f");
@@ -124,7 +124,7 @@ namespace System
         }
 
         // Compares this object to another object, returning an integer that
-        // indicates the relationship. 
+        // indicates the relationship.
         // Returns a value less than zero if this  object
         // null is considered to be less than any instance.
         // If object is not of type Char, this method throws an ArgumentException.
@@ -419,7 +419,7 @@ namespace System
 
         //
         // IConvertible implementation
-        //    
+        //
         public TypeCode GetTypeCode()
         {
             return TypeCode.Char;
@@ -940,7 +940,7 @@ namespace System
 
 
         /*=============================ConvertToUtf32===================================
-        ** Convert a surrogate pair to UTF32 value                                    
+        ** Convert a surrogate pair to UTF32 value
         ==============================================================================*/
 
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate)
@@ -986,7 +986,7 @@ namespace System
         }
 
         /*=============================ConvertToUtf32===================================
-        ** Convert a character or a surrogate pair starting at index of the specified string 
+        ** Convert a character or a surrogate pair starting at index of the specified string
         ** to UTF32 value.
         ** The char pointed by index should be a surrogate pair or a BMP character.
         ** This method throws if a high-surrogate is not followed by a low surrogate.

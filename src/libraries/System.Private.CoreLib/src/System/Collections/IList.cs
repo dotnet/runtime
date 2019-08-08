@@ -18,7 +18,7 @@ namespace System.Collections
             set;
         }
 
-        // Adds an item to the list.  The exact position in the list is 
+        // Adds an item to the list.  The exact position in the list is
         // implementation-dependent, so while ArrayList may always insert
         // in the last available location, a SortedList most likely would not.
         // The return value is the position the new element was inserted in.
@@ -45,7 +45,7 @@ namespace System.Collections
         int IndexOf(object? value);
 
         // Inserts value into the list at position index.
-        // index must be non-negative and less than or equal to the 
+        // index must be non-negative and less than or equal to the
         // number of elements in the list.  If index equals the number
         // of items in the list, then value is appended to the end.
         void Insert(int index, object? value);

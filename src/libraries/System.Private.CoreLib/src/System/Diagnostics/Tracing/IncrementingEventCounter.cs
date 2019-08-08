@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     /// <summary>
-    /// IncrementingEventCounter is a variant of EventCounter for variables that are ever-increasing. 
+    /// IncrementingEventCounter is a variant of EventCounter for variables that are ever-increasing.
     /// Ex) # of exceptions in the runtime.
     /// It does not calculate statistics like mean, standard deviation, etc. because it only accumulates
     /// the counter value.
@@ -28,7 +28,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Initializes a new instance of the <see cref="IncrementingEventCounter"/> class.
         /// IncrementingEventCounter live as long as the EventSource that they are attached to unless they are
-        /// explicitly Disposed.   
+        /// explicitly Disposed.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
@@ -37,8 +37,8 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Writes 'value' to the stream of values tracked by the counter.  This updates the sum and other statistics that will 
-        /// be logged on the next timer interval.  
+        /// Writes 'value' to the stream of values tracked by the counter.  This updates the sum and other statistics that will
+        /// be logged on the next timer interval.
         /// </summary>
         /// <param name="increment">The value to increment by.</param>
         public void Increment(double increment = 1)

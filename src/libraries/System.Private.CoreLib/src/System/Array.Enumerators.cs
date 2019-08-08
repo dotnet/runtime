@@ -41,9 +41,9 @@ namespace System
             // handling all the multiple dimension & bounds correctly.
             // Think of it like an odometer in your car - we start with
             // the last digit, increment it, and check for rollover.  If
-            // it rolls over, we set all digits to the right and including 
+            // it rolls over, we set all digits to the right and including
             // the current to the appropriate lower bound.  Do these overflow
-            // checks for each dimension, and if the most significant digit 
+            // checks for each dimension, and if the most significant digit
             // has rolled over it's upper bound, we're done.
             //
             int rank = array.Rank;
@@ -152,7 +152,7 @@ namespace System
         {
             _index = -1;
         }
-    }    
+    }
 
     internal sealed class SZGenericArrayEnumerator<T> : IEnumerator<T>
     {

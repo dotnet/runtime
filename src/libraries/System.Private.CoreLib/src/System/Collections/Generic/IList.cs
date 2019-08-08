@@ -10,7 +10,7 @@ namespace System.Collections.Generic
 {
     // An IList is an ordered collection of objects.  The exact ordering
     // is up to the implementation of the list, ranging from a sorted
-    // order to insertion order.  
+    // order to insertion order.
     public interface IList<T> : ICollection<T>
     {
         // The Item property provides methods to read and edit entries in the List.
@@ -25,7 +25,7 @@ namespace System.Collections.Generic
         int IndexOf(T item);
 
         // Inserts value into the list at position index.
-        // index must be non-negative and less than or equal to the 
+        // index must be non-negative and less than or equal to the
         // number of elements in the list.  If index equals the number
         // of items in the list, then value is appended to the end.
         void Insert(int index, T item);

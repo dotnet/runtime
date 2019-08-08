@@ -13,9 +13,9 @@ using System.Security;
 using Internal.Win32.SafeHandles;
 
 //
-// A minimal version of RegistryKey that supports just what CoreLib needs. 
+// A minimal version of RegistryKey that supports just what CoreLib needs.
 //
-// Internal.Win32 namespace avoids confusion with the public standalone Microsoft.Win32.Registry implementation 
+// Internal.Win32 namespace avoids confusion with the public standalone Microsoft.Win32.Registry implementation
 // that lives in corefx.
 //
 namespace Internal.Win32
@@ -49,7 +49,7 @@ namespace Internal.Win32
             int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
-            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
+            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE
             // This still means the name doesn't exist. We need to be consistent with previous OS.
             //
             if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
@@ -89,7 +89,7 @@ namespace Internal.Win32
             int ret = Interop.Advapi32.RegOpenKeyEx(_hkey,
                 name,
                 0,
-                writable ? 
+                writable ?
                     Interop.Advapi32.RegistryOperations.KEY_READ | Interop.Advapi32.RegistryOperations.KEY_WRITE :
                     Interop.Advapi32.RegistryOperations.KEY_READ,
                 out SafeRegistryHandle result);
@@ -232,8 +232,8 @@ namespace Internal.Win32
             if (ret != 0)
             {
                 // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
-                // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
-                // want to continue on through the function. 
+                // Some OS's returned ERROR_MORE_DATA even in success cases, so we
+                // want to continue on through the function.
                 if (ret != Interop.Errors.ERROR_MORE_DATA)
                     return data;
             }
@@ -311,7 +311,7 @@ namespace Internal.Win32
                         }
                         else
                         {
-                            // in the very unlikely case the data is missing null termination, 
+                            // in the very unlikely case the data is missing null termination,
                             // pass in the whole char[] to prevent truncating a character
                             data = new string(blob);
                         }
@@ -342,7 +342,7 @@ namespace Internal.Win32
                         }
                         else
                         {
-                            // in the very unlikely case the data is missing null termination, 
+                            // in the very unlikely case the data is missing null termination,
                             // pass in the whole char[] to prevent truncating a character
                             data = new string(blob);
                         }

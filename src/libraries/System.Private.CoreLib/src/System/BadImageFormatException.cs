@@ -8,7 +8,7 @@
 **
 ** Purpose: Exception to an invalid dll or executable format.
 **
-** 
+**
 ===========================================================*/
 
 using System.Globalization;

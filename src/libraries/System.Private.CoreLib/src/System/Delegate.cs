@@ -35,7 +35,7 @@ namespace System
             return d;
         }
 
-        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true)!;
 
         // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.

@@ -17,4 +17,3 @@ namespace System.Reflection
         public virtual IList<ExceptionHandlingClause> ExceptionHandlingClauses => throw new ArgumentNullException("array");
     }
 }
-

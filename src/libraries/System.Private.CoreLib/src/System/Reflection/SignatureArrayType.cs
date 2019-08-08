@@ -13,20 +13,20 @@ namespace System.Reflection
         {
             Debug.Assert(rank > 0);
             Debug.Assert(rank == 1 || isMultiDim);
-    
+
             _rank = rank;
             _isMultiDim = isMultiDim;
         }
-    
+
         protected sealed override bool IsArrayImpl() => true;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
-    
+
         public sealed override bool IsSZArray => !_isMultiDim;
         public sealed override bool IsVariableBoundArray => _isMultiDim;
-    
+
         public sealed override int GetArrayRank() => _rank;
-    
+
         protected sealed override string Suffix
         {
             get
@@ -39,7 +39,7 @@ namespace System.Reflection
                     return "[" + new string(',', _rank - 1) + "]";
             }
         }
-    
+
         private readonly int _rank;
         private readonly bool _isMultiDim;
     }

@@ -6,18 +6,18 @@
 **
 **
 **
-** Purpose: An exception for OS 'access denied' types of 
-**          errors, including IO and limited security types 
+** Purpose: An exception for OS 'access denied' types of
+**          errors, including IO and limited security types
 **          of errors.
 **
-** 
+**
 ===========================================================*/
 
 using System.Runtime.Serialization;
 
 namespace System
 {
-    // The UnauthorizedAccessException is thrown when access errors 
+    // The UnauthorizedAccessException is thrown when access errors
     // occur from IO or other OS methods.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

@@ -484,7 +484,7 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentQueue{T}"/>.</returns>
         /// <remarks>
         /// The enumeration represents a moment-in-time snapshot of the contents
-        /// of the queue.  It does not reflect any updates to the collection after 
+        /// of the queue.  It does not reflect any updates to the collection after
         /// <see cref="GetEnumerator"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the queue.
         /// </remarks>

@@ -234,9 +234,8 @@ namespace System.Text
                 }
             }
 
-            // Char wasn't in our table            
+            // Char wasn't in our table
             return '\0';
         }
     }
 }
-
