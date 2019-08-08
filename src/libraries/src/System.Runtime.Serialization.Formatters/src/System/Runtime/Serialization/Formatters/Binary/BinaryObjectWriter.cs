@@ -81,7 +81,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 WriteObjectInfo objectInfo = null;
 
-                // GetNext will return either an object or a WriteObjectInfo. 
+                // GetNext will return either an object or a WriteObjectInfo.
                 // A WriteObjectInfo is returned if this object was member of another object
                 if (obj is WriteObjectInfo)
                 {
@@ -367,7 +367,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     outType = GetType(outObj);
                 }
-                
+
                 // outObj is an array. It can never be a value type..
                 arrayId = Schedule(outObj, false, null, memberObjectInfo);
                 if (arrayId > 0)
@@ -436,7 +436,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             //Type arrayType = array.GetType();
             Type arrayType = objectInfo._objectType;
 
-            // Get type of array element 
+            // Get type of array element
             Type arrayElemType = arrayType.GetElementType();
             WriteObjectInfo arrayElemObjectInfo = null;
             if (!arrayElemType.IsPrimitive)
@@ -517,7 +517,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     object[] objectA = null;
                     if (!arrayElemType.IsValueType)
                     {
-                        // Non-primitive type array                 
+                        // Non-primitive type array
                         objectA = (object[])array;
                     }
 
@@ -791,7 +791,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // We get an ID for obj and put it on the queue for later serialization
         // if this is a new object id.
 
-        private long Schedule(object obj, bool assignUniqueIdToValueType, Type type) => 
+        private long Schedule(object obj, bool assignUniqueIdToValueType, Type type) =>
             Schedule(obj, assignUniqueIdToValueType, type, null);
 
         private long Schedule(object obj, bool assignUniqueIdToValueType, Type type, WriteObjectInfo objectInfo)
@@ -930,7 +930,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return nameInfo;
         }
 
-        private NameInfo TypeToNameInfo(Type type) => 
+        private NameInfo TypeToNameInfo(Type type) =>
             TypeToNameInfo(type, null, ToCode(type), null);
 
         private NameInfo TypeToNameInfo(WriteObjectInfo objectInfo) =>
@@ -987,7 +987,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             else if (assemblyString.Equals(Converter.s_urtAssemblyString) || assemblyString.Equals(Converter.s_urtAlternativeAssemblyString))
             {
                 // Urt type is an assemId of 0. No assemblyString needs
-                // to be sent 
+                // to be sent
                 assemId = 0;
             }
             else

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -26,11 +26,11 @@ namespace System.Net.Test.Common
                 {
                     int bufferSize;
                     byte[] writeFrame;
-                    
+
                     bufferSize = rnd.Next(1, 2048);
                     writeFrame = new byte[bufferSize];
                     rnd.NextBytes(writeFrame);
-                    
+
                     uint writeChecksum = Fletcher32.Checksum(writeFrame, 0, writeFrame.Length);
                     client.Write(writeFrame, 0, writeFrame.Length);
 
@@ -89,7 +89,7 @@ namespace System.Net.Test.Common
                 {
                     bytesRead += server.Read(readFrame, bytesRead, expectedReceivedBytes - bytesRead);
                 }
-                while (bytesRead < expectedReceivedBytes); 
+                while (bytesRead < expectedReceivedBytes);
 
                 Assert.Equal(writeFrame, readFrame);
             }
@@ -103,7 +103,7 @@ namespace System.Net.Test.Common
 
             var rnd = new Random();
             var rndLock = new object();
-            
+
             var network = new VirtualNetwork();
             var checksumAndLengths = new ConcurrentDictionary<int, Tuple<uint, int>>();
 
@@ -117,12 +117,12 @@ namespace System.Net.Test.Common
                     int bufferSize;
                     int delayMilliseconds;
                     byte[] writeFrame;
-                    
+
                     lock (rndLock)
                     {
                         bufferSize = rnd.Next(sizeof(int) + 1, maxFrameSize);
                         delayMilliseconds = rnd.Next(0, 10);
-                        
+
                         writeFrame = new byte[bufferSize];
                         rnd.NextBytes(writeFrame);
                     }

@@ -33,7 +33,7 @@ namespace System.Globalization.Tests
 
             yield return new object[] { 1600, 1, 1, 0, 0, 0 , 0 };
         }
-        
+
         [Theory]
         [MemberData(nameof(ToDateTime_TestData))]
         public void ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)

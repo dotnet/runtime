@@ -10,7 +10,7 @@ namespace System.Reflection.TypeLoading.Ecma
     /// <summary>
     /// Helpers to generate ToString() output for Type objects that occur as part of MemberInfo objects. Not used to generate ToString() for
     /// System.Type itself.
-    /// 
+    ///
     /// Though this may seem like something that belongs at the format-agnostic layer, it is not acceptable for ToString() to
     /// trigger resolving. Thus, ToString() must be built up using only the raw data in the metadata and without creating or
     /// resolving Type objects.

@@ -20,7 +20,7 @@ namespace System.Buffers.Text
     {
         /// <summary>
         /// Encode the span of binary data into UTF-8 encoded text represented as base 64.
-        /// </summary> 
+        /// </summary>
         /// <param name="bytes">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="utf8">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in base 64.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>

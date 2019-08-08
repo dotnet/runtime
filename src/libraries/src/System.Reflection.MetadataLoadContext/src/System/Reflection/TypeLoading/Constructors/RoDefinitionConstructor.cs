@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
         private readonly RoInstantiationProviderType _declaringType;
         private readonly TMethodDecoder _decoder;
 
-        internal RoDefinitionConstructor(RoInstantiationProviderType declaringType, TMethodDecoder decoder) 
+        internal RoDefinitionConstructor(RoInstantiationProviderType declaringType, TMethodDecoder decoder)
             : base()
         {
             Debug.Assert(declaringType != null);
@@ -49,7 +49,7 @@ namespace System.Reflection.TypeLoading
 
             // Constructors are never inherited or acquirable from derived classes so their ReflectedType is hard-wired to their DeclaringType.
             // There is no need to compare it separately.
-            Debug.Assert(ReflectedType == other.ReflectedType); 
+            Debug.Assert(ReflectedType == other.ReflectedType);
 
             return true;
         }

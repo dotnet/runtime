@@ -17,8 +17,8 @@ namespace System.ComponentModel.Composition
             _exception = exception;
         }
 
-        public Exception InnerException 
-        { 
+        public Exception InnerException
+        {
             get { return _exception.InnerException; }
         }
 

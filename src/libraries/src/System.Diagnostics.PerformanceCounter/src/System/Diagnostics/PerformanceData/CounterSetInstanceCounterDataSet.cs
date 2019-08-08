@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,7 +12,7 @@ namespace System.Diagnostics.PerformanceData
     /// <summary>
     /// CounterData class is used to store actual raw counter data. It is the value element within
     /// CounterSetInstanceCounterDataSet, which is part of CounterSetInstance.
-    /// </summary>    
+    /// </summary>
     public sealed class CounterData
     {
         private unsafe long* _offset;
@@ -20,7 +20,7 @@ namespace System.Diagnostics.PerformanceData
         /// <summary>
         /// CounterData constructor
         /// </summary>
-        /// <param name="pCounterData"> The memory location to store raw counter data </param>        
+        /// <param name="pCounterData"> The memory location to store raw counter data </param>
         internal unsafe CounterData(long* pCounterData)
         {
             _offset = pCounterData;
@@ -74,7 +74,7 @@ namespace System.Diagnostics.PerformanceData
 
         /// <summary>
         /// RawValue property it used to query/update actual raw counter data.
-        /// This property is not thread-safe and should only be used 
+        /// This property is not thread-safe and should only be used
         /// for performance-critical single-threaded access.
         /// </summary>
         public long RawValue
@@ -99,14 +99,14 @@ namespace System.Diagnostics.PerformanceData
     /// <summary>
     /// CounterSetInstanceCounterDataSet is part of CounterSetInstance class, and is used to store raw counter data
     /// for all counters added in CounterSet.
-    /// </summary>    
+    /// </summary>
     public sealed class CounterSetInstanceCounterDataSet : IDisposable
     {
         internal CounterSetInstance _instance;
         private Dictionary<int, CounterData> _counters;
         private int _disposed;
         internal unsafe byte* _dataBlock;
-        
+
         internal CounterSetInstanceCounterDataSet(CounterSetInstance thisInst)
         {
             _instance = thisInst;
@@ -223,7 +223,7 @@ namespace System.Diagnostics.PerformanceData
         /// CounterName indexer to access specific CounterData object.
         /// </summary>
         /// <param name="counterName">CounterName that matches one CounterSet::AddCounter() call</param>
-        /// <returns>CounterData object with matched counterName</returns>        
+        /// <returns>CounterData object with matched counterName</returns>
         public CounterData this[string counterName]
         {
             get

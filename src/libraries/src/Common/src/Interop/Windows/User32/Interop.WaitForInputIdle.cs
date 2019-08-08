@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class User32
     {
         [DllImport(Libraries.User32)]
-        public static extern int WaitForInputIdle(SafeProcessHandle handle, int milliseconds); 
+        public static extern int WaitForInputIdle(SafeProcessHandle handle, int milliseconds);
     }
 }

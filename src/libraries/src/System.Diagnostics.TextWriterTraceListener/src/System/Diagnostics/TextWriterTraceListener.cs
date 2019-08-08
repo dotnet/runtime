@@ -21,7 +21,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with
-        /// <see cref='System.IO.TextWriter'/> 
+        /// <see cref='System.IO.TextWriter'/>
         /// as the output recipient.</para>
         /// </devdoc>
         public TextWriterTraceListener()
@@ -29,7 +29,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class, using the 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class, using the
         ///    stream as the recipient of the debugging and tracing output.</para>
         /// </devdoc>
         public TextWriterTraceListener(Stream stream)
@@ -38,7 +38,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and using the stream as the recipient of the debugging and tracing output.</para>
         /// </devdoc>
         public TextWriterTraceListener(Stream stream, string name)
@@ -49,7 +49,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class using the 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class using the
         ///    specified writer as recipient of the tracing or debugging output.</para>
         /// </devdoc>
         public TextWriterTraceListener(TextWriter writer)
@@ -58,7 +58,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and using the specified writer as recipient of the tracing or
         ///    debugging
         ///    output.</para>
@@ -71,7 +71,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified file name.</para>
         /// </devdoc>
         public TextWriterTraceListener(string fileName)
@@ -80,7 +80,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and the specified file name.</para>
         /// </devdoc>
         public TextWriterTraceListener(string fileName, string name)
@@ -115,7 +115,7 @@ namespace System.Diagnostics
         {
             if (_writer != null)
             {
-                try 
+                try
                 {
                     _writer.Close();
                 }
@@ -129,7 +129,7 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        /// <devdoc>        
+        /// <devdoc>
         /// </devdoc>
         protected override void Dispose(bool disposing)
         {
@@ -160,7 +160,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Writes a message 
+        ///    <para>Writes a message
         ///       to this instance's <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/>.</para>
         /// </devdoc>
         public override void Write(string message)
@@ -178,7 +178,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Writes a message 
+        ///    <para>Writes a message
         ///       to this instance's <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/> followed by a line terminator. The
         ///       default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
@@ -219,17 +219,17 @@ namespace System.Diagnostics
                     return;
 
                 // StreamWriter by default uses UTF8Encoding which will throw on invalid encoding errors.
-                // This can cause the internal StreamWriter's state to be irrecoverable. It is bad for tracing 
-                // APIs to throw on encoding errors. Instead, we should provide a "?" replacement fallback  
-                // encoding to substitute illegal chars. For ex, In case of high surrogate character 
+                // This can cause the internal StreamWriter's state to be irrecoverable. It is bad for tracing
+                // APIs to throw on encoding errors. Instead, we should provide a "?" replacement fallback
+                // encoding to substitute illegal chars. For ex, In case of high surrogate character
                 // D800-DBFF without a following low surrogate character DC00-DFFF
                 // NOTE: We also need to use an encoding that does't emit BOM which is StreamWriter's default
                 Encoding noBOMwithFallback = GetEncodingWithFallback(new System.Text.UTF8Encoding(false));
 
 
                 // To support multiple appdomains/instances tracing to the same file,
-                // we will try to open the given file for append but if we encounter 
-                // IO errors, we will prefix the file name with a unique GUID value 
+                // we will try to open the given file for append but if we encounter
+                // IO errors, we will prefix the file name with a unique GUID value
                 // and try one more time
                 string fullPath = Path.GetFullPath(_fileName);
                 string dirPath = Path.GetDirectoryName(fullPath);
@@ -264,11 +264,11 @@ namespace System.Diagnostics
                 {
                     // Disable tracing to this listener. Every Write will be nop.
                     // We need to think of a central way to deal with the listener
-                    // init errors in the future. The default should be that we eat 
+                    // init errors in the future. The default should be that we eat
                     // up any errors from listener and optionally notify the user
                     _fileName = null;
                 }
-            }            
+            }
         }
 
         internal bool IsEnabled(TraceOptions opts)

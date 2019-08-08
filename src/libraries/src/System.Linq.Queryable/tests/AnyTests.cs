@@ -21,7 +21,7 @@ namespace System.Linq.Tests
         public void OnlyLastTrue()
         {
             int[] source = { 5, 9, 3, 7, 4 };
-            
+
             Assert.True(source.AsQueryable().Any(i => i % 2 == 0));
         }
 

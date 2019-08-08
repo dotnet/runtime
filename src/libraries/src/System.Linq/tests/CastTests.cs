@@ -109,7 +109,7 @@ namespace System.Linq.Tests
             IEnumerable<double> cast = source.Cast<double>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
         }
-        
+
         private static void TestCastThrow<T>(object o)
         {
             byte? i = 10;

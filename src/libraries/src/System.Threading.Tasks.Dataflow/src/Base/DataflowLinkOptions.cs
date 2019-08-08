@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Dataflow
     /// Provides options used to configure a link between dataflow blocks.
     /// </summary>
     /// <remarks>
-    /// <see cref="DataflowLinkOptions"/> is mutable and can be configured through its properties.  
+    /// <see cref="DataflowLinkOptions"/> is mutable and can be configured through its properties.
     /// When specific configuration options are not set, the following defaults are used:
     /// <list type="table">
     ///     <listheader>
@@ -48,7 +48,7 @@ namespace System.Threading.Tasks.Dataflow
     public class DataflowLinkOptions
     {
         /// <summary>
-        /// A constant used to specify an unlimited quantity for <see cref="DataflowLinkOptions"/> members 
+        /// A constant used to specify an unlimited quantity for <see cref="DataflowLinkOptions"/> members
         /// that provide an upper bound. This field is a constant tied to <see cref="DataflowLinkOptions.Unbounded"/>.
         /// </summary>
         internal const int Unbounded = DataflowBlockOptions.Unbounded;

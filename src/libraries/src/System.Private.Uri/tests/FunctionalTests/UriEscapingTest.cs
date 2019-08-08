@@ -401,7 +401,7 @@ namespace System.PrivateUri.Tests
         public void UriAbsoluteEscaping_SurrogatePair_LocaleIndependent()
         {
             string uriString = "http://contosotest.conto.soco.ntosoco.com/surrgtest()?$filter=";
-            string expectedString = uriString + "%E6%95%B0%E6%8D%AE%20eq%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0" + 
+            string expectedString = uriString + "%E6%95%B0%E6%8D%AE%20eq%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0" +
                                                 "%AA%9B%91%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27";
 
             using (ThreadCultureChange iriHelper = new ThreadCultureChange())

@@ -234,7 +234,7 @@ namespace System.Runtime.Caching
 
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
         {
-            // if the CLR is terminating, dispose the cache. 
+            // if the CLR is terminating, dispose the cache.
             // This will dispose the perf counters
             if (eventArgs.IsTerminating)
             {
@@ -767,7 +767,7 @@ namespace System.Runtime.Caching
             }
             changeMonitors.Add(expensiveObjectDep);
 
-            // Insert sentinel entry for the updatable cache entry 
+            // Insert sentinel entry for the updatable cache entry
             MemoryCacheKey sentinelCacheKey = new MemoryCacheKey("OnUpdateSentinel" + key);
             MemoryCacheStore sentinelStore = GetStore(sentinelCacheKey);
             MemoryCacheEntry sentinelCacheEntry = new MemoryCacheEntry(sentinelCacheKey.Key,

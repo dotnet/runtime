@@ -71,5 +71,3 @@ namespace System.Data.ProviderBase
         }
     }
 }
-
-

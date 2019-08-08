@@ -149,7 +149,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             AssertExtensions.Throws<ArgumentException>("fullname", () => type.DefineNestedType(new string('a', 1024)));
         }
-        
+
         [Theory]
         [InlineData(TypeAttributes.Public, "attr")]
         [InlineData(TypeAttributes.NotPublic, "attr")]
@@ -164,7 +164,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             AssertExtensions.Throws<ArgumentException>(paramName, () => type.DefineNestedType("Name", attributes));
         }
-        
+
         [Fact]
         public void DefineNestedType_InvalidParent_ThrowsArgumentException()
         {
@@ -172,7 +172,7 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentException>("attr", () => type.DefineNestedType("Name", TypeAttributes.Public, typeof(int).MakeByRefType()));
             AssertExtensions.Throws<ArgumentException>("attr", () => type.DefineNestedType("Name", TypeAttributes.Public, typeof(EmptyNonGenericInterface1)));
         }
-        
+
         [Theory]
         [InlineData(typeof(void))]
         [InlineData(typeof(EmptyNonGenericStruct))]

@@ -296,7 +296,7 @@ namespace System.Data.Tests
         {
             // For reading, DataTable.ReadXml only supports reading in xml with
             // the schema included.  This means that we can only read in XML
-            // that was generated with the WriteSchema flag.  
+            // that was generated with the WriteSchema flag.
             DataSet ds;
             DataTable dtMainInDS, dtChildInDS, dtMain;
 

@@ -58,7 +58,7 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             IQueryable<int> source = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty());
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty(42));
         }

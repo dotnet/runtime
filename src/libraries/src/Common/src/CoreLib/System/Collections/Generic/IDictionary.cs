@@ -14,7 +14,7 @@ namespace System.Collections.Generic
     public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>> where TKey : notnull
     {
         // Interfaces are not serializable
-        // The Item property provides methods to read and edit entries 
+        // The Item property provides methods to read and edit entries
         // in the Dictionary.
         TValue this[TKey key]
         {
@@ -39,7 +39,7 @@ namespace System.Collections.Generic
         bool ContainsKey(TKey key);
 
         // Adds a key-value pair to the dictionary.
-        // 
+        //
         void Add(TKey key, TValue value);
 
         // Removes a particular key from the dictionary.

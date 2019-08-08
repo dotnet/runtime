@@ -256,4 +256,3 @@ namespace System.Transactions.Tests
 
     public enum ResourceManagerType { Volatile, Durable, Promotable };
 }
-

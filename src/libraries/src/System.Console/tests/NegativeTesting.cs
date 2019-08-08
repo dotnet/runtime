@@ -31,7 +31,7 @@ public class NegativeTesting
         Assert.Equal(0, stream.Read(new byte[] { 0, 1 }, 0, -1));
         Assert.Equal(0, stream.Read(new byte[] { 0, 1 }, 0, 50));
         Assert.Equal(0, stream.Read(new byte[] { 0, 1 }, 0, 2));
-        
+
         stream.Write(null, 0, 1);
         stream.Write(new byte[] { 0, 1 }, -1, 0);
         stream.Write(new byte[] { 0, 1 }, 0, -1);

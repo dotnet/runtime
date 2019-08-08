@@ -12,7 +12,7 @@ namespace System.Linq.Tests
         public void IndexNegative()
         {
             int?[] source = { 9, 8 };
-            
+
             Assert.Null(source.AsQueryable().ElementAtOrDefault(-1));
         }
 
@@ -20,7 +20,7 @@ namespace System.Linq.Tests
         public void IndexEqualsCount()
         {
             int[] source = { 1, 2, 3, 4 };
-            
+
             Assert.Equal(default(int), source.AsQueryable().ElementAtOrDefault(source.Length));
         }
 
@@ -28,7 +28,7 @@ namespace System.Linq.Tests
         public void EmptyIndexZero()
         {
             int[] source = { };
-            
+
             Assert.Equal(default(int), source.AsQueryable().ElementAtOrDefault(0));
         }
 
@@ -36,7 +36,7 @@ namespace System.Linq.Tests
         public void SingleElementIndexZero()
         {
             int[] source = { -4 };
-            
+
             Assert.Equal(-4, source.ElementAtOrDefault(0));
         }
 
@@ -44,7 +44,7 @@ namespace System.Linq.Tests
         public void ManyElementsIndexTargetsLast()
         {
             int[] source = { 9, 8, 0, -5, 10 };
-            
+
             Assert.Equal(10, source.AsQueryable().ElementAtOrDefault(source.Length - 1));
         }
 

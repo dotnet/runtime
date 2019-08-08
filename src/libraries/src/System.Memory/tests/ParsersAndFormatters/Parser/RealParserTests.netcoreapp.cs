@@ -13,7 +13,7 @@ namespace System.Buffers.Text.Tests
         // The actual tests are defined in: src\Common\tests\System\RealParserTestsBase.netcoreapp.cs
 
         //  We need 1 additional byte, per length, for the terminating null
-        private const int DoubleNumberBufferLength = 767 + 1 + 1;  // 767 for the longest input + 1 for rounding: 4.9406564584124654E-324 
+        private const int DoubleNumberBufferLength = 767 + 1 + 1;  // 767 for the longest input + 1 for rounding: 4.9406564584124654E-324
         private const int SingleNumberBufferLength = 112 + 1 + 1;  // 112 for the longest input + 1 for rounding: 1.40129846E-45
 
         protected override string InvariantToStringDouble(double d)
@@ -43,4 +43,3 @@ namespace System.Buffers.Text.Tests
         }
     }
 }
-

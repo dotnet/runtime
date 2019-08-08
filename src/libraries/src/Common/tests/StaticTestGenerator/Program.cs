@@ -331,7 +331,7 @@ namespace StaticTestGenerator
                     Type testMethodType = testMethod.ReflectedType;
 
                     var cases = new List<TestCase>();
-                    
+
                     if (testMethod.GetParameters().Length > 0)
                     {
                         // The test method has arguments, so look for all of the standard data attributes we can use to invoke the theory.

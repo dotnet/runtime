@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -214,7 +214,7 @@ namespace System.IO
         }
 
         internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
-        
+
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
@@ -250,7 +250,7 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 
-            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);          
+            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
 
             _fileStatusInitialized = -1;
         }

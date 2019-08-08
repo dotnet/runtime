@@ -60,7 +60,7 @@ namespace System.Text.Tests
 
             int ret1 = encoder.GetByteCount(chars, 0, chars.Length, true);
             int ret2 = encoder.GetByteCount(chars, 0, chars.Length, false);
-            // If the last character is a surrogate and the encoder is flushing its state, it will return a fallback character. 
+            // If the last character is a surrogate and the encoder is flushing its state, it will return a fallback character.
             // When the encoder isn't flushing its state then it holds on to the remnant bytes between calls so that if the next
             // bytes passed in form a valid character you'd get that char as a result
             if (IsHighSurrogate(chars[chars.Length - 1]))
@@ -118,7 +118,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, chars.Length - 1, 1, false, 2, "005.4");
         }
         #endregion
-        
+
         private void VerificationHelper(Encoder encoder, char[] chars, int index, int count, bool flush, int expected, string errorno)
         {
             int ret = encoder.GetByteCount(chars, index, count, flush);

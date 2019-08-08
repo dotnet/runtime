@@ -21,4 +21,3 @@ namespace Internal.Cryptography
         public abstract int Version { get; }
     }
 }
-

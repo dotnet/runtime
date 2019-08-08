@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,9 +15,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
         private static extern int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
-            string oid, 
-            byte[] qx, int qxLength, 
-            byte[] qy, int qyLength, 
+            string oid,
+            byte[] qx, int qxLength,
+            byte[] qy, int qyLength,
             byte[] d, int dLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
@@ -32,7 +32,7 @@ internal static partial class Interop
             {
                 key?.Dispose();
                 Interop.Crypto.ErrClearError();
-                
+
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
             }
             return key;
@@ -100,7 +100,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_GetECKeyParameters(
-            SafeEcKeyHandle key, 
+            SafeEcKeyHandle key,
             bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
@@ -125,7 +125,7 @@ internal static partial class Interop
                     out qx_bn, out qx_cb,
                     out qy_bn, out qy_cb,
                     out d_bn_not_owned, out d_cb);
-                    
+
                 if (rc == -1)
                 {
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -212,10 +212,10 @@ internal static partial class Interop
                     out order_bn, out order_cb,
                     out cofactor_bn, out cofactor_cb,
                     out seed_bn, out seed_cb);
-                    
+
                 if (rc == -1)
                 {
-                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);                    
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
                 else if (rc != 1)
                 {
@@ -239,7 +239,7 @@ internal static partial class Interop
                     if (curveType == ECCurve.ECCurveType.Characteristic2)
                     {
                         // Match Windows semantics where a,b,gx,gy,qx,qy have same length
-                        // Treat length of m separately as it is not tied to other fields for Char2 (Char2 not supported by Windows) 
+                        // Treat length of m separately as it is not tied to other fields for Char2 (Char2 not supported by Windows)
                         cbFieldLength = GetMax(new[] { a_cb, b_cb, gx_cb, gy_cb, qx_cb, qy_cb });
                         pFieldLength = p_cb;
                     }

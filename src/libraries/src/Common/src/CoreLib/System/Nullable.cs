@@ -139,7 +139,7 @@ namespace System
 
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
-                // instantiated generic type only                
+                // instantiated generic type only
                 Type genericType = nullableType.GetGenericTypeDefinition();
                 if (object.ReferenceEquals(genericType, typeof(Nullable<>)))
                 {

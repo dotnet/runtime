@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Cng.Tests
 
                     if (persistedDecrypted.Length > plainBytes.Length)
                     {
-                        // This should only ever happen in 
+                        // This should only ever happen in
                         Assert.Equal(PaddingMode.Zeros, paddingMode);
 
                         expectedBytes = new byte[persistedDecrypted.Length];

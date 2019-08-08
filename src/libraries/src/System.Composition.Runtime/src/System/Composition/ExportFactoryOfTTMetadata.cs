@@ -28,4 +28,3 @@ namespace System.Composition
         public TMetadata Metadata { get; }
     }
 }
-

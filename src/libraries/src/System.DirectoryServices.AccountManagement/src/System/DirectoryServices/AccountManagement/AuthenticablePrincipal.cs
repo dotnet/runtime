@@ -504,7 +504,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         if (_passwordInfo == null)
                         {
-                            // Should never happen, since GetChangeStatusForProperty returned false                
+                            // Should never happen, since GetChangeStatusForProperty returned false
                             Debug.Fail("AuthenticablePrincipal.GetValueForProperty(PwdInfo): shouldn't be here");
                             throw new InvalidOperationException();
                         }
@@ -610,7 +610,7 @@ namespace System.DirectoryServices.AccountManagement
                 string thumbprint = certificate.Thumbprint;
 
                 // If we found a cert whose thumbprint wasn't in the thumbprints list,
-                // it was inserted --> collection has changed                
+                // it was inserted --> collection has changed
                 if (!remainingOriginalThumbprints.Contains(thumbprint))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "RefreshOriginalThumbprintList: found inserted cert");

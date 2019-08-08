@@ -16,13 +16,13 @@ namespace System.IO.Packaging
 
         /// <summary>
         /// This method is used to create a valid part Uri given a relative URI
-        /// Makes sure that the URI -  
-        /// 1. Relative 
+        /// Makes sure that the URI -
+        /// 1. Relative
         /// 2. Begins with '/'
         /// 3. Does not begin with two "//"
         /// 4. Does not end with "/"
         /// 5. Does not have a fragment component
-        /// 6. Does the correct escaping 
+        /// 6. Does the correct escaping
         /// 7. And is refined correctly
         /// </summary>
         /// <param name="partUri">The relative uri that represents the part within a package</param>
@@ -60,12 +60,12 @@ namespace System.IO.Packaging
         /// <summary>
         /// This method is used to resolve part Uris
         /// Constructs resolved relative URI from two relative URIs
-        /// This method should be used in places where we have a 
-        /// a target URI in the PackageRelationship and we want to get the 
+        /// This method should be used in places where we have a
+        /// a target URI in the PackageRelationship and we want to get the
         /// name of the part it targets with respect to the source part
         /// </summary>
-        /// <param name="sourcePartUri">This should be a valid partName. 
-        /// The only exception to this rule is an Uri of the form "/". This uri 
+        /// <param name="sourcePartUri">This should be a valid partName.
+        /// The only exception to this rule is an Uri of the form "/". This uri
         /// will only be used to resolve package level relationships. This Uri
         /// indicates that the relative Uri is being resolved against the root of the
         /// package.</param>
@@ -106,8 +106,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If either sourcePartUri or targetPartUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri GetRelativeUri(Uri sourcePartUri, Uri targetPartUri)
         {
-            //although we do expect the subsequent ValidatePartUri call to throw in case of null 
-            // as well, it dosn't have the right parameter namer for ValidatePartUri function 
+            //although we do expect the subsequent ValidatePartUri call to throw in case of null
+            // as well, it dosn't have the right parameter namer for ValidatePartUri function
             if (sourcePartUri == null)
                 throw new ArgumentNullException(nameof(sourcePartUri));
 
@@ -236,10 +236,10 @@ namespace System.IO.Packaging
 
 
         /// <summary>
-        /// Given a valid relationship Part Uri, this method returns the source Part Uri for 
-        /// this relationship Part Uri. 
+        /// Given a valid relationship Part Uri, this method returns the source Part Uri for
+        /// this relationship Part Uri.
         /// If the relationship part name is for the Package Level relationships [/_rels/.rels],
-        /// we return a relative Uri of the form "/" indicating that it has no part as the parent, 
+        /// we return a relative Uri of the form "/" indicating that it has no part as the parent,
         /// but is at the package level
         /// Example Input - Relationship Uri  - /files/_rels/document.xaml.rels
         /// Returns -Source Part Uri - /files/document.xaml
@@ -290,7 +290,7 @@ namespace System.IO.Packaging
                 path = path.Replace(BackwardSlashChar, ForwardSlashChar);
 
                 // convert to Uri - We could use PackUriHelper.Create, but since we know that this is a
-                //valid Part Uri we can just call the Uri constructor.            
+                //valid Part Uri we can just call the Uri constructor.
                 return new ValidatedPartUri(path, isRelationshipUri: false);
             }
         }
@@ -308,7 +308,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Properties
-        
+
         #region Internal Methods
 
         internal static bool TryValidatePartUri(Uri partUri, out ValidatedPartUri validatedPartUri)
@@ -424,13 +424,13 @@ namespace System.IO.Packaging
                 new Uri(s_defaultUri, partName).GetComponents(UriComponents.Path |
                                                              UriComponents.KeepDelimiter, UriFormat.UriEscaped);
 
-            //Note - For Relative Uris the output of ToString() and OriginalString property 
+            //Note - For Relative Uris the output of ToString() and OriginalString property
             //are the same as per the current implementation of System.Uri
-            //Need to use OriginalString property or ToString() here as we are want to 
+            //Need to use OriginalString property or ToString() here as we are want to
             //validate that the input uri given to us was valid in the first place.
             //We do not want to use GetComponents in this case as it might lead to
-            //performing escaping or unescaping as per the UriFormat enum value and that 
-            //may alter the string that the user created the Uri with and we may not be able 
+            //performing escaping or unescaping as per the UriFormat enum value and that
+            //may alter the string that the user created the Uri with and we may not be able
             //to verify the uri correctly.
             //We perform the comparison in a case-insensitive manner, as at this point,
             //only escaped hex digits (A-F) might vary in casing.
@@ -497,7 +497,7 @@ namespace System.IO.Packaging
         }
 
         // A relative reference that begins with two slash characters is termed
-        // a network-path reference; such references are rarely used. 
+        // a network-path reference; such references are rarely used.
         // However, when they are resolved they represent the authority part of the URI
         // Absolute URI - `http://a/b/c/d;p?q
         // Relative URI - //m
@@ -566,14 +566,14 @@ namespace System.IO.Packaging
         {
             Debug.Assert(partName != null, "Null reference check for this partName parameter should have been made earlier");
 
-            // Uri.GetComponents may return a single forward slash when there is no absolute path.  
+            // Uri.GetComponents may return a single forward slash when there is no absolute path.
             // This is Whidbey PS399695.  Until that is changed, we check for both cases - either an entirely empty string,
             // or a single forward slash character.  Either case means there is no part name.
             return (partName.Length == 0 || ((partName.Length == 1) && (partName[0] == ForwardSlashChar)));
         }
 
         #endregion Private Methods
-        
+
         #region Private Members
 
         //we use this dummy URI to resolve relative URIs treating the container as the authority.
@@ -605,8 +605,8 @@ namespace System.IO.Packaging
         /// <summary>
         /// ValidatedPartUri class
         /// Once the partUri has been validated as per the syntax in the OPC spec
-        /// we create a ValidatedPartUri, this way we do not have to re-validate 
-        /// this. 
+        /// we create a ValidatedPartUri, this way we do not have to re-validate
+        /// this.
         /// This class is heavily used throughout the Packaging APIs and in order
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
@@ -696,7 +696,7 @@ namespace System.IO.Packaging
                 }
             }
 
-            //Returns the normalized string for the part uri.            
+            //Returns the normalized string for the part uri.
             internal string NormalizedPartUriString
             {
                 get
@@ -720,7 +720,7 @@ namespace System.IO.Packaging
                 }
             }
 
-            //Returns true, if the original string passed to create 
+            //Returns true, if the original string passed to create
             //this object was normalized
             internal bool IsNormalized
             {
@@ -833,9 +833,9 @@ namespace System.IO.Packaging
                 return result;
             }
 
-            //Returns the normalized string for the part uri.            
-            //Currently normalizing the PartUriString consists of only one step - 
-            //1. Take the well-formed and escaped partUri string and case fold to UpperInvariant            
+            //Returns the normalized string for the part uri.
+            //Currently normalizing the PartUriString consists of only one step -
+            //1. Take the well-formed and escaped partUri string and case fold to UpperInvariant
             private string GetNormalizedPartUriString()
             {
                 //Case Fold the partUri string to Invariant Upper case (this helps us perform case insensitive comparison)
@@ -887,7 +887,7 @@ namespace System.IO.Packaging
             private const string RelationshipPartUpperCaseSegmentName = "_RELS";
             private const string RelsrelsUpperCaseExtension = RelationshipPartUpperCaseExtension + RelationshipPartUpperCaseExtension;
 
-            //need to use the private constructor to initialize this particular partUri as we need this in the 
+            //need to use the private constructor to initialize this particular partUri as we need this in the
             //IsRelationshipPartUri, that is called from the constructor.
             private static readonly Uri s_containerRelationshipNormalizedPartUri = new ValidatedPartUri("/_RELS/.RELS",
                                                                                                         isNormalized: true,

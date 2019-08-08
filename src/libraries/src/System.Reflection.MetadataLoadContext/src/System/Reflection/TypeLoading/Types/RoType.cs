@@ -133,14 +133,14 @@ namespace System.Reflection.TypeLoading
         private volatile RoType _lazyBaseType = Sentinels.RoType;
 
         //
-        // This internal method implements BaseType without the following NETFX quirk: 
+        // This internal method implements BaseType without the following NETFX quirk:
         //
-        //     class Foo<X,Y> 
+        //     class Foo<X,Y>
         //       where X:Y
         //       where Y:MyReferenceClass
         //
         // NETFX reports "X"'s base type as "System.Object" rather than "Y", even though it does
-        // report any interfaces that are in MyReferenceClass's interface list. 
+        // report any interfaces that are in MyReferenceClass's interface list.
         //
         // This seriously messes up the implementation of Type.GetInterfaces() which assumes
         // that it can recover the transitive interface closure by combining the directly mentioned interfaces and
@@ -255,7 +255,7 @@ namespace System.Reflection.TypeLoading
                 if (attribute != null)
                 {
                     IList<CustomAttributeTypedArgument> fixedArguments = attribute.ConstructorArguments;
-                    if (fixedArguments.Count == 1 && fixedArguments[0].Value is string memberName) 
+                    if (fixedArguments.Count == 1 && fixedArguments[0].Value is string memberName)
                         return memberName;
                 }
             }
@@ -267,7 +267,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
-                throw new IndexOutOfRangeException(); // This is an impressively uninformative exception, unfortunately, this is the compatible behavior. 
+                throw new IndexOutOfRangeException(); // This is an impressively uninformative exception, unfortunately, this is the compatible behavior.
 
             return this.GetUniqueArrayType(rank);
         }
@@ -295,7 +295,7 @@ namespace System.Reflection.TypeLoading
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
 
         // Low level support for the BindingFlag-driven enumerator apis. These return members declared (not inherited) on the current
-        // type, possibly doing case-sensitive/case-insensitive filtering on a supplied name. 
+        // type, possibly doing case-sensitive/case-insensitive filtering on a supplied name.
         internal abstract IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter filter);
         internal abstract IEnumerable<MethodInfo> GetMethodsCore(NameFilter filter, Type reflectedType);
         internal abstract IEnumerable<EventInfo> GetEventsCore(NameFilter filter, Type reflectedType);

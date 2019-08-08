@@ -133,4 +133,3 @@ namespace System.Diagnostics.Eventing.Reader
         protected EventLogInvalidDataException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 }
-

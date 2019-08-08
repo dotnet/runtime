@@ -41,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    // Indexed assignment. Here we need to find the instance of the object, create the 
+                    // Indexed assignment. Here we need to find the instance of the object, create the
                     // PropInfo for the thing, and get the array of expressions that make up the index arguments.
                     //
                     // The LHS becomes Expression.Property(instance, indexerInfo, arguments).
@@ -144,7 +144,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return Visit(pArgument);
             }
 
-            // If we have a cast to PredefinedType.PT_G_EXPRESSION and the thing that we're casting is 
+            // If we have a cast to PredefinedType.PT_G_EXPRESSION and the thing that we're casting is
             // a EXPRBOUNDLAMBDA that is an expression tree, then just visit the expression tree.
             if (pExpr.Type != null &&
                     pExpr.Type.IsPredefType(PredefinedType.PT_G_EXPRESSION) &&
@@ -262,7 +262,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // source code then it will be an EXPLICITCAST and we will visit it normally.
                 //
                 // It might be better to rewrite the expression tree API so that it
-                // can handle in the general case all implicit boxing conversions. Right now it 
+                // can handle in the general case all implicit boxing conversions. Right now it
                 // requires that all arguments to a call that need to be boxed be explicitly boxed.
 
                 if (pObject != null && pObject is ExprCast cast && cast.IsBoxingCast)
@@ -663,9 +663,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // that we convert the enum? to its nullable underlying CType.
             if (isEnumToDecimalConversion(arg.Type, CType))
             {
-                // Special case: If we have enum? to decimal? then we need to emit 
+                // Special case: If we have enum? to decimal? then we need to emit
                 // a conversion from enum? to its nullable underlying CType first.
-                // This is unfortunate; we ought to reorganize how conversions are 
+                // This is unfortunate; we ought to reorganize how conversions are
                 // represented in the Expr tree so that this is more transparent.
 
                 // converting an enum to its underlying CType never fails, so no need to check it.
@@ -677,7 +677,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // If the methodinfo does not return the target CType AND this is not a lifted conversion
             // from one value CType to another, then we need to wrap the whole thing in another conversion,
-            // e.g. if we have a user-defined conversion from int to S? and we have (S)myint, then we need to generate 
+            // e.g. if we have a user-defined conversion from int to S? and we have (S)myint, then we need to generate
             // Convert(Convert(myint, typeof(S?), op_implicit), typeof(S))
 
             CType pMethodReturnType = TypeManager.SubstType(method.Meth().RetType,
@@ -732,7 +732,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return GenerateConversionWithSource(pConversionSource, pCastCall.Type, call.isChecked());
                     }
 
-                    // This can happen if we have a UD conversion from C to, say, int, 
+                    // This can happen if we have a UD conversion from C to, say, int,
                     // and we have an explicit cast to decimal?. The conversion should
                     // then be bound as two chained user-defined conversions.
                     Debug.Assert(pUDConversion is ExprUserDefinedConversion);
@@ -855,7 +855,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
-            // this should be enforced in an earlier pass and the transform pass should not 
+            // this should be enforced in an earlier pass and the transform pass should not
             // be handling this error
             if (method == null)
                 return null;

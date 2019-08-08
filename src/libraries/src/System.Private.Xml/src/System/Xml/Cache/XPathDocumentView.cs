@@ -26,11 +26,11 @@ namespace System.Xml.XPath.DataBinding
         //
         // Constructors
         //
-        
-        public XPathDocumentView(XPathDocument document) 
+
+        public XPathDocumentView(XPathDocument document)
             : this(document, (IXmlNamespaceResolver)null) {
         }
-        
+
         public XPathDocumentView(XPathDocument document, IXmlNamespaceResolver namespaceResolver) {
             if (null == document)
                 throw new ArgumentNullException(nameof(document));
@@ -44,13 +44,13 @@ namespace System.Xml.XPath.DataBinding
             Debug.Assert(XPathNodeType.Root == this.ndRoot.NodeType);
             XPathNode nd = this.ndRoot.Child;
             while (null != nd) {
-                if (XPathNodeType.Element == nd.NodeType) 
+                if (XPathNodeType.Element == nd.NodeType)
                     rows.Add(nd);
                 nd = nd.Sibling;
             }
             DeriveShapeFromRows();
         }
-            
+
         public XPathDocumentView(XPathDocument document, string xpath)
             : this(document, xpath, null, true) {
         }
@@ -82,9 +82,9 @@ namespace System.Xml.XPath.DataBinding
             this.ndRoot = root;
         }
 
-        // 
+        //
         // public properties
-        
+
         public XPathDocument Document { get { return this.document; } }
 
         public String XPath { get { return xpath; } }
@@ -98,7 +98,7 @@ namespace System.Xml.XPath.DataBinding
 
         //
         // ICollection implementation
-        
+
         public int Count {
             get { return this.rows.Count; }
         }
@@ -136,17 +136,17 @@ namespace System.Xml.XPath.DataBinding
 
         bool IList.IsFixedSize {
             get { return true; }
-        }        
+        }
 
         bool IList.Contains(object value) {
             return this.rows.Contains(value);
         }
 
-        void IList.Remove(object value) {            
+        void IList.Remove(object value) {
             throw new NotSupportedException("IList.Remove");
         }
 
-        void IList.RemoveAt(int index) {            
+        void IList.RemoveAt(int index) {
             throw new NotSupportedException("IList.RemoveAt");
         }
 
@@ -167,7 +167,7 @@ namespace System.Xml.XPath.DataBinding
         }
 
         object IList.this[int index] {
-            get { 
+            get {
                 object val = this.rows[index];
                 if (val is XPathNodeView)
                     return val;
@@ -175,11 +175,11 @@ namespace System.Xml.XPath.DataBinding
                 this.rows[index] = xiv;
                 return xiv;
             }
-            set { 
+            set {
                 throw new NotSupportedException("IList.this[]");
             }
         }
-        
+
         public bool Contains(XPathNodeView value) {
             return this.rows.Contains(value);
         }
@@ -196,12 +196,12 @@ namespace System.Xml.XPath.DataBinding
             return this.rows.IndexOf(value);
         }
 
-        public void Remove(XPathNodeView value) {            
+        public void Remove(XPathNodeView value) {
             throw new NotSupportedException("IList.Remove");
         }
 
         public XPathNodeView this[int index] {
-            get { 
+            get {
                 object val = this.rows[index];
                 XPathNodeView nodeView;
                 nodeView = val as XPathNodeView;
@@ -212,7 +212,7 @@ namespace System.Xml.XPath.DataBinding
                 this.rows[index] = nodeView;
                 return nodeView;
             }
-            set { 
+            set {
                 throw new NotSupportedException("IList.this[]");
             }
         }
@@ -226,15 +226,15 @@ namespace System.Xml.XPath.DataBinding
 
         public bool AllowAdd {
             get { return false; }
-        }  
+        }
 
         public bool AllowRemove {
             get { return false; }
-        }          
+        }
 
         public bool AllowNew {
             get { return false; }
-        }  
+        }
 
         public object AddNew() {
             throw new NotSupportedException("IBindingList.AddNew");
@@ -297,7 +297,7 @@ namespace System.Xml.XPath.DataBinding
         //
         // ITypedList Implementation
 
-        public string GetListName(PropertyDescriptor[] listAccessors) {            
+        public string GetListName(PropertyDescriptor[] listAccessors) {
             if( listAccessors == null ) {
                 return this.rowShape.Name;
             }
@@ -578,8 +578,8 @@ namespace System.Xml.XPath.DataBinding
 
 
         // This is the limited grammar we support
-        //  Path ::= '/ ' ( Step '/')* ( QName | '@' QName ) 
-        //  Step ::= '.' | QName 
+        //  Path ::= '/ ' ( Step '/')* ( QName | '@' QName )
+        //  Step ::= '.' | QName
         // This is encoded as an array of XPathStep structs
         struct XPathStep {
             internal XmlQualifiedName name;
@@ -663,7 +663,7 @@ namespace System.Xml.XPath.DataBinding
             return this.document.NameTable.Add(nm);
         }
 
-        
+
         //
         // Helper classes
         //
@@ -690,12 +690,12 @@ namespace System.Xml.XPath.DataBinding
 
             public XPathNode Node { get { return this.node; } }
             public object Particle { get { return this.currentParticle; } }
-            
+
             public bool Next() {
                 if (null != this.node) {
                     this.node = TreeNavigationHelper.GetContentSibling(this.node, XPathNodeType.Element);
                     if (node != null)
-                        Advance();                    
+                        Advance();
                     return null != this.node;
                 }
                 return false;

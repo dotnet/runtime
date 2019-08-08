@@ -120,9 +120,9 @@ namespace System.Runtime.CompilerServices.Tests
             var cwt = new ConditionalWeakTable<object, object>();
             var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
-            // Delegate to add collectible items to the table, separated out 
+            // Delegate to add collectible items to the table, separated out
             // to avoid the JIT extending the lifetimes of the temporaries
-            Action<ConditionalWeakTable<object, object>> addItem = 
+            Action<ConditionalWeakTable<object, object>> addItem =
                 t => t.Add(new object(), new object());
 
             for (int i = 0; i < 10; i++) addItem(cwt);

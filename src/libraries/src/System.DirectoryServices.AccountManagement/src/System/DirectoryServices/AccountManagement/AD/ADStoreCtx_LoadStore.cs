@@ -27,7 +27,7 @@ namespace System.DirectoryServices.AccountManagement
         // Native <--> Principal
         //
 
-        // For modified object, pushes any changes (including IdentityClaim changes) 
+        // For modified object, pushes any changes (including IdentityClaim changes)
         // into the underlying store-specific object (e.g., DirectoryEntry) and returns the underlying object.
         // For unpersisted object, creates a  underlying object if one doesn't already exist (in
         // Principal.UnderlyingObject), then pushes any changes into the underlying object.
@@ -213,7 +213,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Given a underlying store object (e.g., DirectoryEntry), further narrowed down a discriminant
-        // (if applicable for the StoreCtx type), returns a fresh instance of a Principal 
+        // (if applicable for the StoreCtx type), returns a fresh instance of a Principal
         // object based on it.  The WinFX Principal API follows ADSI-style semantics, where you get multiple
         // in-memory objects all referring to the same store pricipal, rather than WinFS semantics, where
         // multiple searches all return references to the same in-memory object.
@@ -226,12 +226,12 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
         // This method works for native objects from the store corresponding to _this_ StoreCtx.
-        // Each StoreCtx will also have its own internal algorithms used for dealing with cross-store objects, e.g., 
-        // for use when iterating over group membership.  These routines are exposed as 
+        // Each StoreCtx will also have its own internal algorithms used for dealing with cross-store objects, e.g.,
+        // for use when iterating over group membership.  These routines are exposed as
         // ResolveCrossStoreRefToPrincipal, and will be called by the StoreCtx's associated ResultSet
         // classes when iterating over a representation of a "foreign" principal.
 
-        // This method will either be passed a DirectoryEntry or SearchResult object if this is the result of a search.  
+        // This method will either be passed a DirectoryEntry or SearchResult object if this is the result of a search.
         // We need to determine the type and then use the appropriate object.
         internal override Principal GetAsPrincipal(object storeObject, object discriminant)
         {
@@ -270,7 +270,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // if the object was obtained from a GC, we have to construct a new context, and build a new DirectoryEntry
                 // if the object is not from a GC but belongs to another domain, we just have to construct a new context. We can still use the storeObject or searchresult's DirectoryEntry.
-                // if our context is not a domain (that is, it's ADLDS) we don't build a new context unless the object was obtained from a GC. 
+                // if our context is not a domain (that is, it's ADLDS) we don't build a new context unless the object was obtained from a GC.
                 if (targetIsFromGC || OwningContext.ContextType == ContextType.Domain)
                 {
                     string dnsDomainName = SDSUtils.ConstructDnsDomainNameFromDn(distinguishedName);
@@ -559,7 +559,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Are they perhaps searching for a fake group?
                     // If they passed in a valid SID for a fake group, construct and return the fake
-                    // group.                
+                    // group.
                     if (principalType == typeof(Principal) || principalType == typeof(GroupPrincipal) || principalType.IsSubclassOf(typeof(GroupPrincipal)))
                     {
                         SecurityIdentifier sid = null;
@@ -748,11 +748,11 @@ namespace System.DirectoryServices.AccountManagement
         };
         /*/
         ///*******  Mapping table for perf testing...
-                static object[,] propertyMappingTableRaw = 
+                static object[,] propertyMappingTableRaw =
                 {
                     // PropertyName                          AD property             Converter(LDAP->PAPI)                                    Converter(PAPI->LDAP)
                     {PropertyNames.PrincipalDisplayName,     "displayName",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
-                    {PropertyNames.PrincipalDescription,     "description",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},  
+                    {PropertyNames.PrincipalDescription,     "description",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
         //            {PropertyNames.PrincipalDistinguishedName,  "distinguishedName",    null, null},
                     {PropertyNames.PrincipalSid,  "objectSid",            new FromLdapConverterDelegate(SidFromLdapConverter),  null},
                     {PropertyNames.PrincipalSamAccountName,  "samAccountName",       new FromLdapConverterDelegate(StringFromLdapConverter), new ToLdapConverterDelegate(StringToLdapConverter)},
@@ -760,14 +760,14 @@ namespace System.DirectoryServices.AccountManagement
                     {PropertyNames.PrincipalGuid,  "objectGuid",           new FromLdapConverterDelegate(GuidFromLdapConverter),   null},
                     {PropertyNames.PrincipalStructuralObjectClass,  "objectClass",           null, null},
                     {PropertyNames.PrincipalName,  "name",           new FromLdapConverterDelegate(StringFromLdapConverter), new ToLdapConverterDelegate(StringToLdapConverter)},
-                    {PropertyNames.PrincipalExtensionCache,  null,  null, null},                
+                    {PropertyNames.PrincipalExtensionCache,  null,  null, null},
 
                     {PropertyNames.AuthenticablePrincipalEnabled,      "userAccountControl", null, null},
                   {PropertyNames.AuthenticablePrincipalCertificates, "userCertificate",    null, null},
 
                     {PropertyNames.GroupIsSecurityGroup,   "groupType", null, null},
                                 {PropertyNames.GroupGroupScope, "groupType", null, null},
-                   // 
+                   //
                               {PropertyNames.UserGivenName,             "givenName",        null, null},
                                {PropertyNames.UserMiddleName,            "middleName",       null, null},
                                 {PropertyNames.UserSurname,               "sn",               null, null},

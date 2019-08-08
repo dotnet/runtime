@@ -13,7 +13,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     public abstract partial class MemoryMappedFilesTestBase : FileCleanupTestBase
     {
         /// <summary>Gets the system's page size.</summary>
-        protected static Lazy<int> s_pageSize = new Lazy<int>(() => 
+        protected static Lazy<int> s_pageSize = new Lazy<int>(() =>
         {
             int pageSize;
             const int _SC_PAGESIZE_FreeBSD = 47;

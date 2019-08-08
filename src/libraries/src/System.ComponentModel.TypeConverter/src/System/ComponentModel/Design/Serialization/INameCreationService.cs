@@ -7,7 +7,7 @@ namespace System.ComponentModel.Design.Serialization
     /// <summary>
     /// This service may be provided by a designer loader to provide
     /// a way for the designer to fabricate new names for objects.
-    /// If this service isn't available the designer will choose a 
+    /// If this service isn't available the designer will choose a
     /// default implementation.
     /// </summary>
     public interface INameCreationService
@@ -22,7 +22,7 @@ namespace System.ComponentModel.Design.Serialization
         string CreateName(IContainer container, Type dataType);
 
         /// <summary>
-        /// Determines if the given name is valid. A name 
+        /// Determines if the given name is valid. A name
         /// creation service may have rules defining a valid
         /// name, and this method allows the service to enforce
         /// those rules.
@@ -30,7 +30,7 @@ namespace System.ComponentModel.Design.Serialization
         bool IsValidName(string name);
 
         /// <summary>
-        /// Determines if the given name is valid. A name 
+        /// Determines if the given name is valid. A name
         /// creation service may have rules defining a valid
         /// name, and this method allows the service to enforce
         /// those rules. It is similar to IsValidName, except
@@ -41,4 +41,3 @@ namespace System.ComponentModel.Design.Serialization
         void ValidateName(string name);
     }
 }
-

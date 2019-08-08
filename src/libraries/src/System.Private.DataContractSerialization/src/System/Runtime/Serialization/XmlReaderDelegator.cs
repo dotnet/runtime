@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization
             return -1;
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public bool IsStartElement()
 #else
         internal bool IsStartElement()
@@ -130,7 +130,7 @@ namespace System.Runtime.Serialization
             return !isEndOfEmptyElement && reader.IsStartElement(localname, ns);
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
 #else
         internal bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
@@ -174,7 +174,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.MoveToNextAttribute();
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public XmlNodeType NodeType
 #else
         internal XmlNodeType NodeType
@@ -212,7 +212,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.ReadAttributeValue();
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public void ReadEndElement()
 #else
         internal void ReadEndElement()
@@ -1102,7 +1102,7 @@ namespace System.Runtime.Serialization
         public bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
 #else
         internal bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
-#endif   
+#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out double[] array)
         {
@@ -1234,4 +1234,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

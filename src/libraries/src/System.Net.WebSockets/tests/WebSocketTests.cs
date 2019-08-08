@@ -99,7 +99,7 @@ namespace System.Net.WebSockets.Tests
             Assert.True(WebSocket.IsApplicationTargeting45());
 #pragma warning restore 0618
         }
-#endif // netcoreapp 
+#endif // netcoreapp
 
         [Theory]
         [InlineData(WebSocketState.None)]
@@ -147,7 +147,7 @@ namespace System.Net.WebSockets.Tests
 
         public abstract class ExposeProtectedWebSocket : WebSocket
         {
-            public static new bool IsStateTerminal(WebSocketState state) => 
+            public static new bool IsStateTerminal(WebSocketState state) =>
                 WebSocket.IsStateTerminal(state);
             public static new void ThrowOnInvalidState(WebSocketState state, params WebSocketState[] validStates) =>
                 WebSocket.ThrowOnInvalidState(state, validStates);

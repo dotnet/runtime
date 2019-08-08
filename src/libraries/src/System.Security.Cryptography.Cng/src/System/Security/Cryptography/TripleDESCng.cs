@@ -7,7 +7,7 @@
 // for the algorithm name. If you make a change to this file, there's a good chance you'll have to make
 // the same change to the other files so please check. This is a pain but given that the contracts demand
 // that each of these derive from a different class, it can't be helped.
-// 
+//
 
 using Internal.Cryptography;
 using Internal.NativeCrypto;
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
         {
             return _core.CreateEncryptor(rgbKey, rgbIV);
         }
- 
+
         public override void GenerateKey()
         {
             _core.GenerateKey();

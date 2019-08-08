@@ -170,7 +170,7 @@ namespace System.Text
         public static bool IsValidUnicodeScalar(uint value)
         {
             // This is an optimized check that on x86 is just three instructions: lea, xor, cmp.
-            // 
+            //
             // After the subtraction operation, the input value is modified as such:
             // [ 00000000..0010FFFF ] -> [ FFEF0000..FFFFFFFF ]
             //

@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;
             Console.WriteLine($"### LIBC: Release={lcr} Version={lcv}");
-            
+
             Console.WriteLine($"### FRAMEWORK: Version={Environment.Version} Description={RuntimeInformation.FrameworkDescription.Trim()}");
 
             string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);

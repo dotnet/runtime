@@ -46,9 +46,9 @@ namespace System.ComponentModel.Composition
             }
 
             return CompositionError.Create(
-                CompositionErrorId.ImportEngine_ImportCardinalityMismatch, 
+                CompositionErrorId.ImportEngine_ImportCardinalityMismatch,
                 exception.Message,
-                definition.ToElement(), 
+                definition.ToElement(),
                 (Exception)null);
         }
 

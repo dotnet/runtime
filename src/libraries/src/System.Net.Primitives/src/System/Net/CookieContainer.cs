@@ -12,16 +12,16 @@ using System.Text;
 // Relevant cookie specs:
 //
 // PERSISTENT CLIENT STATE HTTP COOKIES (1996)
-// From <http:// web.archive.org/web/20020803110822/http://wp.netscape.com/newsref/std/cookie_spec.html> 
+// From <http:// web.archive.org/web/20020803110822/http://wp.netscape.com/newsref/std/cookie_spec.html>
 //
 // RFC2109 HTTP State Management Mechanism (February 1997)
-// From <http:// tools.ietf.org/html/rfc2109> 
+// From <http:// tools.ietf.org/html/rfc2109>
 //
 // RFC2965 HTTP State Management Mechanism (October 2000)
-// From <http:// tools.ietf.org/html/rfc2965> 
+// From <http:// tools.ietf.org/html/rfc2965>
 //
 // RFC6265 HTTP State Management Mechanism (April 2011)
-// From <http:// tools.ietf.org/html/rfc6265> 
+// From <http:// tools.ietf.org/html/rfc6265>
 //
 // The Version attribute of the cookie header is defined and used only in RFC2109 and RFC2965 cookie
 // specs and specifies Version=1. The Version attribute is not used in the  Netscape cookie spec
@@ -42,13 +42,13 @@ using System.Text;
 // According to RFC2109/RFC2965, the cookie will be rejected for matching if:
 // * The value for the Domain attribute contains no embedded dots or does not start with a dot.
 // * The value for the request-host does not domain-match the Domain attribute.
-// " The request-host is a FQDN (not IP address) and has the form HD, where D is the value of the Domain 
+// " The request-host is a FQDN (not IP address) and has the form HD, where D is the value of the Domain
 //  attribute, and H is a string that contains one or more dots.
 //
 // Examples:
-// * A cookie from request-host y.x.foo.com for Domain=.foo.com would be rejected, because H is y.x 
+// * A cookie from request-host y.x.foo.com for Domain=.foo.com would be rejected, because H is y.x
 //  and contains a dot.
-// 
+//
 // * A cookie from request-host x.foo.com for Domain=.foo.com would be accepted.
 //
 // * A cookie with Domain=.com or Domain=.com., will always be rejected, because there is no embedded dot.

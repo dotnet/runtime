@@ -53,4 +53,3 @@ namespace System.Xml.Schema
         }
     }
 }
-

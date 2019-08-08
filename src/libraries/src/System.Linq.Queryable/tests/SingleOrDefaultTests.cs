@@ -36,7 +36,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(target, Enumerable.Range(0, range).AsQueryable().SingleOrDefault(i => i == target));
         }
-        
+
         [Fact]
         public void ThrowsOnNullSource()
         {

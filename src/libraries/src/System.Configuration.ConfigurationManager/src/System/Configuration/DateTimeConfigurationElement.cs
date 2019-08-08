@@ -37,7 +37,7 @@ namespace System.Configuration
             base.Init();
 
             // We cannot initialize configuration properties in the constructor,
-            // because Properties is an overridable virtual property that 
+            // because Properties is an overridable virtual property that
             // hence may not be available in the constructor.
             if (_needsInit)
             {

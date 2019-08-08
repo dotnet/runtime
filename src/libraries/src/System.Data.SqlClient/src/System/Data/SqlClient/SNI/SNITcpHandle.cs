@@ -460,7 +460,7 @@ namespace System.Data.SqlClient.SNI
                         _socket.ReceiveTimeout = timeoutInMilliseconds;
                     }
                     else if (timeoutInMilliseconds == -1)
-                    {   // SqlCient internally represents infinite timeout by -1, and for TcpClient this is translated to a timeout of 0 
+                    {   // SqlCient internally represents infinite timeout by -1, and for TcpClient this is translated to a timeout of 0
                         _socket.ReceiveTimeout = 0;
                     }
                     else
@@ -561,15 +561,15 @@ namespace System.Data.SqlClient.SNI
         {
             try
             {
-                // _socket.Poll method with argument SelectMode.SelectRead returns 
+                // _socket.Poll method with argument SelectMode.SelectRead returns
                 //      True : if Listen has been called and a connection is pending, or
                 //      True : if data is available for reading, or
                 //      True : if the connection has been closed, reset, or terminated, i.e no active connection.
                 //      False : otherwise.
                 // _socket.Available property returns the number of bytes of data available to read.
                 //
-                // Since _socket.Connected alone doesn't guarantee if the connection is still active, we use it in 
-                // combination with _socket.Poll method and _socket.Available == 0 check. When both of them 
+                // Since _socket.Connected alone doesn't guarantee if the connection is still active, we use it in
+                // combination with _socket.Poll method and _socket.Available == 0 check. When both of them
                 // return true we can safely determine that the connection is no longer active.
                 if (!_socket.Connected || (_socket.Poll(100, SelectMode.SelectRead) && _socket.Available == 0))
                 {

@@ -58,16 +58,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="startOffset">Start offset of the region.</param>
         /// <param name="length">Length of the region.</param>
-        public static bool IsSmallExceptionRegion(int startOffset, int length) => 
+        public static bool IsSmallExceptionRegion(int startOffset, int length) =>
             unchecked((uint)startOffset) <= ushort.MaxValue && unchecked((uint)length) <= byte.MaxValue;
 
-        internal static bool IsSmallExceptionRegionFromBounds(int startOffset, int endOffset) => 
+        internal static bool IsSmallExceptionRegionFromBounds(int startOffset, int endOffset) =>
             IsSmallExceptionRegion(startOffset, endOffset - startOffset);
 
-        internal static int GetExceptionTableSize(int exceptionRegionCount, bool isSmallFormat) => 
+        internal static int GetExceptionTableSize(int exceptionRegionCount, bool isSmallFormat) =>
             TableHeaderSize + exceptionRegionCount * (isSmallFormat ? SmallRegionSize : FatRegionSize);
 
-        internal static bool IsExceptionRegionCountInBounds(int exceptionRegionCount) => 
+        internal static bool IsExceptionRegionCountInBounds(int exceptionRegionCount) =>
             unchecked((uint)exceptionRegionCount) <= MaxExceptionRegions;
 
         internal static bool IsValidCatchTypeHandle(EntityHandle catchType)
@@ -188,7 +188,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="handlerOffset">Handler start offset.</param>
         /// <param name="handlerLength">Handler length.</param>
         /// <param name="catchType">
-        /// <see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/>, 
+        /// <see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/>,
         /// or nil if <paramref name="kind"/> is not <see cref="ExceptionRegionKind.Catch"/>
         /// </param>
         /// <param name="filterOffset">

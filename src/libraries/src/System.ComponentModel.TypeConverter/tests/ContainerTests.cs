@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information. 
+// See the LICENSE file in the project root for more information.
 
 //
 // System.ComponentModel.Container test cases
@@ -288,7 +288,7 @@ namespace System.ComponentModel.Tests
         {
             var container = new Container();
             var components = new Component[] { new Component(), new Component(), new Component(), new Component(), new Component() };
-            
+
             for (int i = 0; i < components.Length; i++)
             {
                 container.Add(components[i]);

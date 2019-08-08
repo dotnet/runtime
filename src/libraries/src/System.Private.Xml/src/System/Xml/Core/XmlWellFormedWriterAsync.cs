@@ -210,7 +210,7 @@ namespace System.Xml
         {
             try
             {
-                // lookup prefix / namespace  
+                // lookup prefix / namespace
                 if (prefix == null)
                 {
                     if (ns != null)
@@ -489,7 +489,7 @@ namespace System.Xml
         {
             try
             {
-                // lookup prefix / namespace  
+                // lookup prefix / namespace
                 if (prefix == null)
                 {
                     if (namespaceName != null)
@@ -1474,4 +1474,3 @@ namespace System.Xml
         }
     }
 }
-

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     public class X509Store : IDisposable
     {
         private bool _disposed;
-        
+
         public X509Store(StoreName storeName, StoreLocation storeLocation)
         {
             Debug.Assert(storeName == StoreName.My);

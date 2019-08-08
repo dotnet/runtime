@@ -6,7 +6,7 @@
 //
 // A barrier allows multiple tasks to cooperatively work on some algorithm in parallel.
 // A group of tasks cooperate by moving through a series of phases, where each in the group signals it has arrived at
-// the barrier in a given phase and implicitly waits for all others to arrive. 
+// the barrier in a given phase and implicitly waits for all others to arrive.
 // The same barrier can be used for multiple phases.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -91,8 +91,8 @@ namespace System.Threading
     [DebuggerDisplay("Participant Count={ParticipantCount},Participants Remaining={ParticipantsRemaining}")]
     public class Barrier : IDisposable
     {
-        //This variable holds the basic barrier variables: 
-        // 1- The current participants count 
+        //This variable holds the basic barrier variables:
+        // 1- The current participants count
         // 2- The total participants count
         // 3- The sense flag (true if the current phase is even, false otherwise)
         // The first 15 bits are for the total count which means the maximum participants for the barrier is about 32K
@@ -276,7 +276,7 @@ namespace System.Threading
         /// <returns>The phase number of the barrier in which the new participants will first
         /// participate.</returns>
         /// <exception cref="System.InvalidOperationException">
-        /// Adding a participant would cause the barrier's participant count to 
+        /// Adding a participant would cause the barrier's participant count to
         /// exceed <see cref="short.MaxValue"/>.
         /// </exception>
         /// <exception cref="System.InvalidOperationException">
@@ -352,7 +352,7 @@ namespace System.Threading
                 if (SetCurrentTotal(currentTotal, current, total + participantCount, sense))
                 {
                     // Calculating the first phase for that participant, if the current phase already finished return the next phase else return the current phase
-                    // To know that the current phase is  the sense doesn't match the 
+                    // To know that the current phase is  the sense doesn't match the
                     // phase odd even, so that means it didn't yet change the phase count, so currentPhase +1 is returned, otherwise currentPhase is returned
                     long currPhase = CurrentPhaseNumber;
                     newPhase = (sense != (currPhase % 2 == 0)) ? currPhase + 1 : currPhase;
@@ -419,7 +419,7 @@ namespace System.Threading
         /// disposed.</exception>
         public void RemoveParticipants(int participantCount)
         {
-            // check dispose 
+            // check dispose
             ThrowIfDisposed();
 
             // Validate input
@@ -749,7 +749,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Finish the phase by invoking the post phase action, and setting the event, this must be called by the 
+        /// Finish the phase by invoking the post phase action, and setting the event, this must be called by the
         /// last arrival thread
         /// </summary>
         /// <param name="observedSense">The current phase sense</param>
@@ -846,7 +846,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// The reason of discontinuous waiting instead of direct waiting on the event is to avoid the race where the sense is 
+        /// The reason of discontinuous waiting instead of direct waiting on the event is to avoid the race where the sense is
         /// changed twice because the next phase is finished (due to either RemoveParticipant is called or another thread joined
         /// the next phase instead of the current thread) so the current thread will be stuck on the event because it is reset back
         /// The maxWait and the shift numbers are arbitrarily chosen, there were no references picking them

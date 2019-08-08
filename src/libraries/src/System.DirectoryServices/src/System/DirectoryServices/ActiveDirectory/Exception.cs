@@ -87,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         public int ErrorCode { get; }
-        
+
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return s;
             }
         }
-        
+
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -193,7 +193,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 return tempError;
             }
         }
-        
+
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -220,7 +220,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         public ForestTrustRelationshipCollisionCollection Collisions { get; } = new ForestTrustRelationshipCollisionCollection();
-        
+
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);

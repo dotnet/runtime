@@ -6,7 +6,7 @@ namespace System.Drawing.Imaging
 {
     /// <summary>
     /// Specifies a EncoderParameter data type.
-    /// </summary>    
+    /// </summary>
     public enum EncoderParameterValueType
     {
         /// <summary>

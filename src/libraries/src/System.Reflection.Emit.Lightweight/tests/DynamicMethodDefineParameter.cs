@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -24,10 +24,10 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Call, typeof(Math).GetMethod("Pow"));
             il.Emit(OpCodes.Ret);
-            
+
             powerOf.DefineParameter(1, ParameterAttributes.In, "base");
             powerOf.DefineParameter(2, ParameterAttributes.Out, "exponent");
-            
+
             object[] invokeArgs = { 2, 5 };
             object objRet = powerOf.Invoke(null, BindingFlags.ExactBinding, null, invokeArgs, new CultureInfo("en-us"));
 

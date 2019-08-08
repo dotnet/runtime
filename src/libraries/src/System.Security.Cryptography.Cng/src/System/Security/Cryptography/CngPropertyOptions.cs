@@ -14,8 +14,7 @@ namespace System.Security.Cryptography
     public enum CngPropertyOptions : int
     {
         None = 0,
-        CustomProperty = 0x40000000,              //NCRYPT_PERSIST_ONLY_FLAG (The property is not specified by CNG. Use this option to avoid future name conflicts with CNG properties.)        
+        CustomProperty = 0x40000000,              //NCRYPT_PERSIST_ONLY_FLAG (The property is not specified by CNG. Use this option to avoid future name conflicts with CNG properties.)
         Persist = unchecked((int)0x80000000),     //NCRYPT_PERSIST_FLAG (The property should be persisted.)
     }
 }
-

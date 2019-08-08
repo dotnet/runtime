@@ -8,7 +8,7 @@ namespace System.Collections.Immutable
 {
     /// <summary>
     /// An interface that must be implemented by collections that want to avoid
-    /// boxing their own enumerators when using the 
+    /// boxing their own enumerators when using the
     /// <see cref="ImmutableExtensions.GetEnumerableDisposable{T, TEnumerator}(IEnumerable{T})"/>
     /// method.
     /// </summary>

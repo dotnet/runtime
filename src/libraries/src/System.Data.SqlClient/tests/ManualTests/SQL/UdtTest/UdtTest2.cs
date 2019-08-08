@@ -348,7 +348,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // the type and sproc must be commited to the database or this test will deadlock with a schema lock violation
             // if you are missing these database entities then you should look for an updated version of the database creation script
 
-            string sprocName = "sp_insert_customers"; 
+            string sprocName = "sp_insert_customers";
             string typeName = "CustomerAddress";
             string customerAddressTypeIncorrectName = $"{DataTestUtility.UdtTestDbName}.dbo.{typeName.Trim('[',']')}";
             string customerAddressTypeCorrectedName = $"[dbo].[{typeName.Trim('[',']')}]";
@@ -393,12 +393,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             transaction.Rollback();
                         }
                         catch
-                        { 
+                        {
                             // ignore rollback failure exceptions to preserve original thrown error in test result
                         }
                     }
                 }
-                
+
             }
         }
 
@@ -709,4 +709,3 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
     }
 }
-

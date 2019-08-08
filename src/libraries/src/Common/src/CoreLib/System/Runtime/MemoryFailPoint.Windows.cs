@@ -29,9 +29,9 @@ namespace System.Runtime
             return true;
         }
 
-        // Based on the shouldThrow parameter, this will throw an exception, or 
+        // Based on the shouldThrow parameter, this will throw an exception, or
         // returns whether there is enough space.  In all cases, we update
-        // our last known free address space, hopefully avoiding needing to 
+        // our last known free address space, hopefully avoiding needing to
         // probe again.
         private static unsafe bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
         {
@@ -44,7 +44,7 @@ namespace System.Runtime
             // Console.WriteLine($"MemoryFailPoint: Checked for free VA space.  Found enough? {(freeSpaceAfterGCHeap >= size)}  Asked for: {size}  Found: {freeSpaceAfterGCHeap}");
 
             // We may set these without taking a lock - I don't believe
-            // this will hurt, as long as we never increment this number in 
+            // this will hurt, as long as we never increment this number in
             // the Dispose method.  If we do an extra bit of checking every
             // once in a while, but we avoid taking a lock, we may win.
             LastKnownFreeAddressSpace = (long)freeSpaceAfterGCHeap;
@@ -56,8 +56,8 @@ namespace System.Runtime
         }
 
         // Returns the amount of consecutive free memory available in a block
-        // of pages.  If we didn't have enough address space, we still return 
-        // a positive value < size, to help potentially avoid the overhead of 
+        // of pages.  If we didn't have enough address space, we still return
+        // a positive value < size, to help potentially avoid the overhead of
         // this check if we use a MemoryFailPoint with a smaller size next.
         private static unsafe ulong MemFreeAfterAddress(void* address, ulong size)
         {

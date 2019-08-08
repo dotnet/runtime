@@ -35,8 +35,8 @@ namespace System.ComponentModel.Composition
             yield return new CultureInfo("es-ES");      // Spanish (Spain)
             yield return new CultureInfo("ko-KR");      // Korean (Korea)
             yield return new CultureInfo("zh-TW");      // Chinese (Taiwan)
-            yield return new CultureInfo("zh-CN");      // Chinese (People's Republic of China)            
-        }     
+            yield return new CultureInfo("zh-CN");      // Chinese (People's Republic of China)
+        }
 
         public static IEnumerable<Assembly> GetAssemblies()
         {
@@ -75,7 +75,7 @@ namespace System.ComponentModel.Composition
         public static IEnumerable<ComposablePartCatalog> GetCatalogs()
         {
             yield return CatalogFactory.Create();
-            yield return CatalogFactory.CreateDefaultAttributed();            
+            yield return CatalogFactory.CreateDefaultAttributed();
         }
 
         public static IEnumerable<IEnumerable<CompositionError>> GetCompositionErrors()
@@ -167,7 +167,7 @@ namespace System.ComponentModel.Composition
             {
                 yield return requiredMetadata;
             }
-            
+
             yield return new Dictionary<string, Type>();
         }
 
@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition
             metadata.Add("Three", 10);
             metadata.Add("Four", 1.0);
             metadata.Add("Five", null);
-            
+
             yield return metadata;
         }
 
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition
             {
                 yield return exception;
             }
-            
+
             yield return null;
         }
 
@@ -283,7 +283,7 @@ namespace System.ComponentModel.Composition
             yield return AddEnum(bounds.Item2, 2);
             yield return AddEnum(bounds.Item2, 3);
             yield return (TEnum)(object)(int.MinValue + 1);
-            yield return (TEnum)(object)int.MinValue;  
+            yield return (TEnum)(object)int.MinValue;
             yield return (TEnum)(object)int.MaxValue;
             yield return (TEnum)(object)(int.MaxValue - 1);
         }

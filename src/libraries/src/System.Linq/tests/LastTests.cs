@@ -33,9 +33,9 @@ namespace System.Linq.Tests
         private static void TestEmptyIList<T>()
         {
             T[] source = { };
-            
+
             Assert.NotNull(source as IList<T>);
-            
+
             Assert.Throws<InvalidOperationException>(() => source.RunOnce().Last());
         }
 
@@ -55,7 +55,7 @@ namespace System.Linq.Tests
             int expected = 5;
 
             Assert.NotNull(source as IList<int>);
-            
+
             Assert.Equal(expected, source.Last());
         }
 
@@ -66,7 +66,7 @@ namespace System.Linq.Tests
             int? expected = null;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
-            
+
             Assert.Equal(expected, source.Last());
         }
 
@@ -77,7 +77,7 @@ namespace System.Linq.Tests
             int? expected = 19;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
-            
+
             Assert.Equal(expected, source.Last());
         }
 
@@ -91,7 +91,7 @@ namespace System.Linq.Tests
             var source = EmptySource<T>();
 
             Assert.Null(source as IList<T>);
-            
+
             Assert.Throws<InvalidOperationException>(() => source.RunOnce().Last());
         }
 
@@ -111,7 +111,7 @@ namespace System.Linq.Tests
             int expected = -5;
 
             Assert.Null(source as IList<int>);
-            
+
             Assert.Equal(expected, source.Last());
         }
 
@@ -122,7 +122,7 @@ namespace System.Linq.Tests
             int expected = 12;
 
             Assert.Null(source as IList<int>);
-            
+
             Assert.Equal(expected, source.Last());
         }
 
@@ -141,7 +141,7 @@ namespace System.Linq.Tests
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
             int expected = 4;
-            
+
             Assert.Equal(expected, source.Last(predicate));
         }
 
@@ -199,7 +199,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(4, 1);
             Func<int, bool> predicate = IsEven;
             int expected = 4;
-            
+
             Assert.Equal(expected, source.Last(predicate));
         }
 

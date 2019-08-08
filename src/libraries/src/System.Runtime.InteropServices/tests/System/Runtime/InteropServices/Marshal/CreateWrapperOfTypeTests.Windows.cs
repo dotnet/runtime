@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     public partial class CreateWrapperOfTypeTests
-    {        
+    {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void CreateWrapperOfType_SameType_ReturnsSameInstance()

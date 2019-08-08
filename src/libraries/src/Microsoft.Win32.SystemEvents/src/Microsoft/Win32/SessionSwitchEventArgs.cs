@@ -8,7 +8,7 @@ namespace Microsoft.Win32
 {
     /// <devdoc>
     /// <para>Provides data for the <see cref='Microsoft.Win32.SystemEvents.SessionSwitch'/> event.</para>
-    /// </devdoc>    
+    /// </devdoc>
     public class SessionSwitchEventArgs : EventArgs
     {
         private readonly SessionSwitchReason _reason;
@@ -33,4 +33,3 @@ namespace Microsoft.Win32
         }
     }
 }
-

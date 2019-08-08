@@ -194,10 +194,10 @@ namespace OLEDB.Test.ModuleCore
             //int idPrev = Int32.MinValue;
             bool bSort = false;
 
-            //Normally the reflection Type.GetMethods() api returns the methods in order 
-            //of how they appear in the code.  But it will change that order depending 
+            //Normally the reflection Type.GetMethods() api returns the methods in order
+            //of how they appear in the code.  But it will change that order depending
             //upon if there are virtual functions, which are returned first before other
-            //non-virtual functions.  Then there are also many times were people want multiple 
+            //non-virtual functions.  Then there are also many times were people want multiple
             //source files, so its totally up the compiler on how it pulls in the files (*.cs).
             //So we have added the support of specifying an id=x, as an attribute so you can have
             //then sorted and displayed however your see fit.
@@ -216,7 +216,7 @@ namespace OLEDB.Test.ModuleCore
         protected virtual string FilterScope(string xpath)
         {
             //Basically we want to allow either simply filtering at the variation node (i.e.: no scope),
-            //in which case we'll just add the 'assumed' scope, or allow filtering at any level.  
+            //in which case we'll just add the 'assumed' scope, or allow filtering at any level.
             //We also want to be consistent with the XmlDriver in which all filters are predicates only.
             string varfilter = "//Variation[{0}]";
             if (xpath != null)
@@ -236,7 +236,7 @@ namespace OLEDB.Test.ModuleCore
         public CTestCase CurTestCase
         {
             //Return the current test case:
-            //Note: We do this so that within global functions (i.e.: at the module level) the user can 
+            //Note: We do this so that within global functions (i.e.: at the module level) the user can
             //have know which test case/variation were in, without having to pass this state from
             //execute around
             get { return _curtestcase; }

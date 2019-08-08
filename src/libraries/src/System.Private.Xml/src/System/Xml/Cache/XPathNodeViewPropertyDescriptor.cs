@@ -19,22 +19,22 @@ namespace System.Xml.XPath.DataBinding
         Shape colShape;
         int colIndex;
 
-        internal XPathNodeViewPropertyDescriptor(Shape rowShape) 
+        internal XPathNodeViewPropertyDescriptor(Shape rowShape)
             : base( rowShape.Name, null) {
             this.rowShape = rowShape;
             this.colShape = rowShape;
             this.colIndex = 0;
         }
 
-        internal XPathNodeViewPropertyDescriptor(Shape rowShape, Shape colShape, int colIndex) 
+        internal XPathNodeViewPropertyDescriptor(Shape rowShape, Shape colShape, int colIndex)
             : base( colShape.Name, null) {
             this.rowShape = rowShape;
             this.colShape = colShape;
             this.colIndex = colIndex;
         }
 
-        public Shape Shape { 
-            get { return colShape; } 
+        public Shape Shape {
+            get { return colShape; }
         }
 
         public override Type ComponentType {
@@ -50,10 +50,10 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public override Type PropertyType {
-            get { 
-                return this.colShape.IsNestedTable 
-                    ? typeof(XPathDocumentView) 
-                    : typeof(string); 
+            get {
+                return this.colShape.IsNestedTable
+                    ? typeof(XPathDocumentView)
+                    : typeof(string);
             }
         }
 

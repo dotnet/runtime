@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.Diagnostics.PerformanceData
         internal string _instName;
         private int _active;
         internal unsafe Interop.PerfCounter.PerfCounterSetInstanceStruct* _nativeInst;
-        
+
         internal unsafe CounterSetInstance(CounterSet counterSetDefined, string instanceName)
         {
             if (counterSetDefined == null)

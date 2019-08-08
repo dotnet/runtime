@@ -49,4 +49,3 @@ namespace System.ComponentModel.Design
         void PreFilterProperties(IDictionary properties);
     }
 }
-

@@ -600,7 +600,7 @@ namespace System.Xml.Schema
                 if (schemaInfo.ElementDecls[itemName] == null) {
                     schemaInfo.AttributeDecls.Add(itemName, attribute.AttDef);
                 }
-            }    
+            }
             foreach (XmlSchemaType type in types.Values) {
                 itemName = type.QualifiedName;
                 schemaInfo.TargetNamespaces[itemName.Namespace] = true;

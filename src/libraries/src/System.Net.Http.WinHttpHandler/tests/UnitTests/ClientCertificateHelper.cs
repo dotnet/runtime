@@ -219,7 +219,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     AgIH0A=="),
                 "password");
 
-        private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_NoPrivateKey = 
+        private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_NoPrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
                   @"MIIDFjCCAf6gAwIBAgIQTm8+EF94L4FJ0nBFl5LICzANBgkqhkiG9w0BAQsFADAb
@@ -263,7 +263,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 X509Certificate2Collection certs = new X509Certificate2Collection();
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_PrivateKey);
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_NoEKU_PrivateKey);
-                
+
                 return certs;
             }
         }
@@ -279,7 +279,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                         new object[] { _cert_KeyUsageIncludesDigitalSignature_EKUMissingClientAuth_PrivateKey }
                     };
             }
-        } 
+        }
 
         public X509Certificate2Collection InvalidClientCertificateCollection
         {
@@ -289,7 +289,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_NoPrivateKey);
                 certs.Add(_cert_KeyUsageMissingDigitalSignature_EKUIncludesClientAuth_PrivateKey);
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_EKUMissingClientAuth_PrivateKey);
-                
+
                 return certs;
             }
         }
@@ -303,7 +303,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 certs.Add(_cert_KeyUsageMissingDigitalSignature_EKUIncludesClientAuth_PrivateKey);
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_PrivateKey);
                 certs.Add(_cert_KeyUsageIncludesDigitalSignature_EKUMissingClientAuth_PrivateKey);
-                
+
                 return certs;
             }
         }

@@ -29,9 +29,9 @@ namespace System.Security.Principal
 
             AddIdentityWithRoles(m_identity, m_roles);
         }
-        
+
         /// <summary>
-        /// helper method to add roles 
+        /// helper method to add roles
         /// </summary>
         private void AddIdentityWithRoles(IIdentity identity, string[] roles)
         {

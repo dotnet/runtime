@@ -17,7 +17,7 @@ namespace System.Net
         {
             TaskCompletionSource<TResult> tcs = new TaskCompletionSource<TResult>(state);
 
-            task.ContinueWith(completedTask => 
+            task.ContinueWith(completedTask =>
             {
                 bool shouldInvokeCallback = false;
 

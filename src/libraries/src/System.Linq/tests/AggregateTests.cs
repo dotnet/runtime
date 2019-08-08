@@ -34,7 +34,7 @@ namespace System.Linq.Tests
         public void EmptySource()
         {
             int[] source = { };
-            
+
             Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
         }
 

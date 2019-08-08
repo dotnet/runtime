@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Factories
 {
     partial class PartDefinitionFactory
     {
-        // NOTE: Do not add any more behavior to this class, as ComposablePartDefinitionTests.cs 
+        // NOTE: Do not add any more behavior to this class, as ComposablePartDefinitionTests.cs
         // uses this to verify default behavior of the base class.
         private class NoOverridesComposablePartDefinition : ComposablePartDefinition
         {

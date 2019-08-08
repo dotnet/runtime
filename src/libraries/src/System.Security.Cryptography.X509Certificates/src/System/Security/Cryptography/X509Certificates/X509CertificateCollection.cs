@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
             AddRange(value);
         }
 
-        public X509Certificate this[int index] 
+        public X509Certificate this[int index]
         {
             get
             {

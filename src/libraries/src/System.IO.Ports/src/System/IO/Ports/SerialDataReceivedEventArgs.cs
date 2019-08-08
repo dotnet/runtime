@@ -14,4 +14,3 @@ namespace System.IO.Ports
         public SerialData EventType { get; private set; }
     }
 }
-

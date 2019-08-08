@@ -95,7 +95,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.NotEqual(oldErrorMessage, newErrorMessage);
             Assert.Contains("CustomDisplayName", newErrorMessage);
         }
-        
+
         private class DerivedCompareAttribute : CompareAttribute
         {
             public DerivedCompareAttribute(string otherProperty) : base(otherProperty) { }

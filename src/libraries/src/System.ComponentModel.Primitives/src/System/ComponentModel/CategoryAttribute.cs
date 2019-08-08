@@ -148,7 +148,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/>
         /// class with the default category.
         /// </summary>
         public CategoryAttribute() : this(nameof(Default))

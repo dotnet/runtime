@@ -97,7 +97,7 @@ namespace System.IO.Pipes
                     {
                         throw CreateExceptionForLastError(_instance?.PipeName);
                     }
-                    
+
                     if (serverEUID != peerID)
                     {
                         throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_ClientIsNotCurrentUser, peerID, serverEUID));
@@ -128,9 +128,9 @@ namespace System.IO.Pipes
             InitializeHandle(null, false, false);
         }
 
-        // Gets the username of the connected client.  Not that we will not have access to the client's 
-        // username until it has written at least once to the pipe (and has set its impersonationLevel 
-        // argument appropriately). 
+        // Gets the username of the connected client.  Not that we will not have access to the client's
+        // username until it has written at least once to the pipe (and has set its impersonationLevel
+        // argument appropriately).
         public string GetImpersonationUserName()
         {
             CheckWriteOperations();

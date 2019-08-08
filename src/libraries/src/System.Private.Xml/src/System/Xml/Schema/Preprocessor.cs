@@ -278,7 +278,7 @@ namespace System.Xml.Schema
             for (int i = 0; i < schema.Includes.Count; ++i)
             {
                 Uri includeLocation = null;
-                //CASE 1: If the Schema object of the include has been set 
+                //CASE 1: If the Schema object of the include has been set
                 XmlSchemaExternal include = (XmlSchemaExternal)schema.Includes[i];
                 XmlSchema includedSchema = include.Schema;
                 if (includedSchema != null)
@@ -506,7 +506,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            //Add the schema's targetnamespace 
+            //Add the schema's targetnamespace
             string tns = schema.TargetNamespace;
             if (tns == null)
             {
@@ -634,7 +634,7 @@ namespace System.Xml.Schema
                     case Compositor.Redefine:
                         if (externalSchema != null)
                         {
-                            //SetParent(externalSchema, include); 
+                            //SetParent(externalSchema, include);
                             CleanupRedefine(include);
                             goto default;
                         }
@@ -1345,7 +1345,7 @@ namespace System.Xml.Schema
             }
             else
             { // ref
-                PreprocessAnnotation(element); //Check annotation child for ref and set parent 
+                PreprocessAnnotation(element); //Check annotation child for ref and set parent
                 if (element.RefName.IsEmpty)
                 {
                     SendValidationEvent(SR.Sch_ElementNameRef, element);

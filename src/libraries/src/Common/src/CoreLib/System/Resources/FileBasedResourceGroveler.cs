@@ -8,7 +8,7 @@
 ** Purpose: Searches for resources on disk, used for file-
 ** based resource lookup.
 **
-** 
+**
 ===========================================================*/
 
 using System.Collections.Generic;
@@ -31,8 +31,8 @@ namespace System.Resources
             _mediator = mediator;
         }
 
-        // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
-        // serialization compat story for moving ResourceManager members to either file-based or 
+        // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out
+        // serialization compat story for moving ResourceManager members to either file-based or
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
         public ResourceSet? GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
@@ -65,10 +65,10 @@ namespace System.Resources
             return rs;
         }
 
-        // Given a CultureInfo, it generates the path &; file name for 
+        // Given a CultureInfo, it generates the path &; file name for
         // the .resources file for that CultureInfo.  This method will grovel
         // the disk looking for the correct file name & path.  Uses CultureInfo's
-        // Name property.  If the module directory was set in the ResourceManager 
+        // Name property.  If the module directory was set in the ResourceManager
         // constructor, we'll look there first.  If it couldn't be found in the module
         // diretory or the module dir wasn't provided, look in the current
         // directory.
@@ -77,7 +77,7 @@ namespace System.Resources
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            // If we have a moduleDir, check there first.  Get module fully 
+            // If we have a moduleDir, check there first.  Get module fully
             // qualified name, append path to that.
             if (_mediator.ModuleDir != null)
             {

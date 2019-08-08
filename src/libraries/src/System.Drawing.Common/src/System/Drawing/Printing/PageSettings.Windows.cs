@@ -301,7 +301,7 @@ namespace System.Drawing.Printing
 
                 if ((mode.dmFields & SafeNativeMethods.DM_PAPERLENGTH) == SafeNativeMethods.DM_PAPERLENGTH)
                 {
-                    // dmPaperLength is always in tenths of millimeter but paperSizes are in hundredth of inch .. 
+                    // dmPaperLength is always in tenths of millimeter but paperSizes are in hundredth of inch ..
                     // so we need to convert :: use PrinterUnitConvert.Convert(value, PrinterUnit.TenthsOfAMillimeter /*fromUnit*/, PrinterUnit.Display /*ToUnit*/)
                     int length = PrinterUnitConvert.Convert(_paperSize.Height, PrinterUnit.Display, PrinterUnit.TenthsOfAMillimeter);
                     mode.dmPaperLength = unchecked((short)length);
@@ -360,9 +360,9 @@ namespace System.Drawing.Printing
 
             Marshal.StructureToPtr(mode, modePointer, false);
 
-            // It's possible this page has a DEVMODE for a different printer than the DEVMODE passed in here 
+            // It's possible this page has a DEVMODE for a different printer than the DEVMODE passed in here
             // (Ex: occurs when Doc.DefaultPageSettings.PrinterSettings.PrinterName != Doc.PrinterSettings.PrinterName)
-            // 
+            //
             // if the passed in devmode has fewer bytes than our buffer for the extrainfo, we want to skip the merge as it will cause
             // a buffer overrun
             if (mode.dmDriverExtra >= ExtraBytes)

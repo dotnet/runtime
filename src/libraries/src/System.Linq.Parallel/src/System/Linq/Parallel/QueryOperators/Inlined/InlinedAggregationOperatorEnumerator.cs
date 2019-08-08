@@ -26,7 +26,7 @@ namespace System.Linq.Parallel
     //
 
     /// <summary>
-    /// A class with some shared implementation between all aggregation enumerators. 
+    /// A class with some shared implementation between all aggregation enumerators.
     /// </summary>
     /// <typeparam name="TIntermediate"></typeparam>
     internal abstract class InlinedAggregationOperatorEnumerator<TIntermediate> : QueryOperatorEnumerator<TIntermediate, int>

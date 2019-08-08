@@ -1271,7 +1271,7 @@ namespace System.Xml.Tests
         [Variation("Call ReadValueChunk on two or more nodes and whitespace")]
         public int TestReadValue_7()
         {
-            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123 
+            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123
 <elem2>
 123  </elem2>" + "\r\n" + @"  123</elem1>          123           </elem0>";
             ReloadSource(new StringReader(xml));
@@ -1301,7 +1301,7 @@ namespace System.Xml.Tests
         [Variation("Call ReadValueChunk on two or more nodes and whitespace after call Value")]
         public int TestReadValue_8()
         {
-            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123 
+            string xml = @"<elem0>   123" + "\n" + @" <elem1>" + "\r" + @"123
 <elem2>
 123  </elem2>" + "\r\n" + @"  123</elem1>          123           </elem0>";
             ReloadSource(new StringReader(xml));

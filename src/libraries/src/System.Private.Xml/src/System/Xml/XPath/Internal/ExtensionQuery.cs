@@ -95,8 +95,8 @@ namespace MS.Internal.Xml.XPath
             ResetableIterator resetable = value as ResetableIterator;
             if (resetable != null)
             {
-                // We need Clone() value because variable may be used several times 
-                // and they shouldn't 
+                // We need Clone() value because variable may be used several times
+                // and they shouldn't
                 _queryIterator = (ResetableIterator)resetable.Clone();
                 return this;
             }

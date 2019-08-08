@@ -29,7 +29,7 @@ namespace System.ComponentModel
         {
             return long.Parse(value, NumberStyles.Integer, formatInfo);
         }
-        
+
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>

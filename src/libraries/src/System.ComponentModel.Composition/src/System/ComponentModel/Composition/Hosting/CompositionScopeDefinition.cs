@@ -142,7 +142,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 return _publicSurface;
             }
-        } 
+        }
 
         /// <summary>
         /// Gets an Enumerator for the ComposablePartDefinitions

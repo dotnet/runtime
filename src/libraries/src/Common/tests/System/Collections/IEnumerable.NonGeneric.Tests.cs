@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -43,7 +43,7 @@ namespace System.Collections.Tests
         /// <summary>
         /// The Reset method is provided for COM interoperability. It does not necessarily need to be
         /// implemented; instead, the implementer can simply throw a NotSupportedException.
-        /// 
+        ///
         /// If Reset is not implemented, this property must return False. The default value is true.
         /// </summary>
         protected virtual bool ResetImplemented => true;
@@ -54,7 +54,7 @@ namespace System.Collections.Tests
         /// to cover two behavioral scenarios:
         ///   - Throwing an InvalidOperationException
         ///   - Returning an undefined value.
-        /// 
+        ///
         /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
         /// false.
         /// </summary>

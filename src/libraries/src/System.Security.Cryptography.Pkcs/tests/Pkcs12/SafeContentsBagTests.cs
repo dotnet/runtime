@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 readContents.ConfidentialityMode);
 
             Assert.True(readContents.IsReadOnly);
-            
+
             List<Pkcs12SafeBag> bags1 = builtContents.GetBags().ToList();
             List<Pkcs12SafeBag> bags2 = readContents.GetBags().ToList();
 

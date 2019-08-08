@@ -14,7 +14,7 @@ internal static partial class Interop
         {
             internal CMsgCmsRecipientChoice dwRecipientChoice;
 
-            //union 
+            //union
             //{
             //   CMSG_KEY_TRANS_RECIPIENT
             //     PCMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO pKeyTrans;

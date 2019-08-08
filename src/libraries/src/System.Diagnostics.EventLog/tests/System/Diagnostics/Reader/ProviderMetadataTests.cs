@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tests
                 try
                 {
                     EventLog.CreateEventSource(source, log);
-                    
+
                     string providerName = noProviderName ? "" : source;
                     using (var providerMetadata = new ProviderMetadata(providerName))
                     {

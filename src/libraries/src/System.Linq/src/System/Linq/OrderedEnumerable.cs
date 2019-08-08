@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -357,7 +357,7 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
-        
+
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>

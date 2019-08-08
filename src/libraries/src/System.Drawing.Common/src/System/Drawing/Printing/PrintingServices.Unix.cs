@@ -41,7 +41,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 namespace System.Drawing.Printing
 {
     /// <summary>
-    /// This class is designed to cache the values retrieved by the 
+    /// This class is designed to cache the values retrieved by the
     /// native printing services, as opposed to GlobalPrintingServices, which
     /// doesn't cache any values.
     /// </summary>
@@ -337,7 +337,7 @@ namespace System.Drawing.Printing
         }
 
         /// <summary>
-        /// Loads the global options of a printer. 
+        /// Loads the global options of a printer.
         /// </summary>
         /// <param name="options">The options field of a printer's CUPS_DESTS structure</param>
         /// <param name="numOptions">The number of options of the printer</param>

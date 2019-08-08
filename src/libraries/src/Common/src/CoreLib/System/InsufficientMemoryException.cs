@@ -8,9 +8,9 @@ namespace System
 {
     /// <summary>
     /// Purpose: The exception class for running out of memory
-    /// but most likely in a non-fatal way that shouldn't 
+    /// but most likely in a non-fatal way that shouldn't
     /// be affected by escalation policy.  Use this for cases
-    /// like MemoryFailPoint or a TryAllocate method, where you 
+    /// like MemoryFailPoint or a TryAllocate method, where you
     /// expect OOM's with no shared state corruption and you
     /// want to recover from these errors.
     /// </summary>

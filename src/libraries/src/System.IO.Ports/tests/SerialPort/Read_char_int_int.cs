@@ -22,7 +22,7 @@ namespace System.IO.Ports.Tests
         private const int largeNumRndCharsToRead = 2048;
 
         //When we test Read and do not care about actually reading anything we must still
-        //create an byte array to pass into the method the following is the size of the 
+        //create an byte array to pass into the method the following is the size of the
         //byte array used in this situation
         private const int defaultCharArraySize = 1;
         private const int defaultCharOffset = 0;
@@ -337,7 +337,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
                 Assert.Equal(1, com1.BytesToRead);
@@ -537,7 +537,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(byteXmitBuffer, 3, byteXmitBuffer.Length - 3);
 
-                //        retValue &= TCSupport.WaitForPredicate(delegate() {return com1.BytesToRead == byteXmitBuffer.Length; }, 
+                //        retValue &= TCSupport.WaitForPredicate(delegate() {return com1.BytesToRead == byteXmitBuffer.Length; },
                 //            5000, "Err_91818aheid Expected BytesToRead={0} actual={1}", byteXmitBuffer.Length, com1.BytesToRead);
 
                 TCSupport.WaitForExpected(() => com1.BytesToRead, byteXmitBuffer.Length,
@@ -812,7 +812,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 500;
 
-            //This is pretty silly but we will have to live with if for now becuase we can not 
+            //This is pretty silly but we will have to live with if for now becuase we can not
             //gaurentee the number of bytes Write will add
             Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 
@@ -984,10 +984,10 @@ namespace System.IO.Ports.Tests
                 for(int i=0; i<xmitCharBuffer.Length; ++i) {
                     Debug.WriteLine("(char){0}, ", (int)xmitCharBuffer[i]);
                 }
-    
+
                 for(int i=0; i<xmitCharBuffer.Length; ++i) {
                     Debug.WriteLine("{0}, ", (int)xmitByteBuffer[i]);
-                }            
+                }
             }*/
             }
         }

@@ -15,9 +15,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public static ApiControl WinHttpReadData { get; private set; }
         public static ApiControl WinHttpReceiveResponse { get; private set; }
         public static ApiControl WinHttpWriteData { get; private set; }
-        
+
         public static int LastWin32Error { get; set; }
-        
+
         public static bool WinHttpAutomaticProxySupport { get; set; }
         public static bool WinHttpDecompressionSupport { get; set; }
 
@@ -32,14 +32,14 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             WinHttpReadData = new ApiControl();
             WinHttpReceiveResponse = new ApiControl();
             WinHttpWriteData = new ApiControl();
-            
+
             WinHttpAutomaticProxySupport = true;
             WinHttpDecompressionSupport = true;
-            
+
             LastWin32Error = 0;
-            
+
             PACFileNotDetectedOnNetwork = false;
-            
+
             CurrentUserCertificateStore = new X509Certificate2Collection();
         }
 
@@ -56,16 +56,16 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
     {
         private bool _disposed = false;
         private ManualResetEvent _callbackCompletionEvent;
-        
+
         public ApiControl()
         {
             ErrorWithApiCall = false;
             ErrorOnCompletion = false;
             Delay = 0;
-            
+
             _callbackCompletionEvent = new ManualResetEvent(true);
         }
-        
+
         public bool ErrorWithApiCall { get; set; }
         public bool ErrorOnCompletion { get; set; }
         public int Delay { get; set; }

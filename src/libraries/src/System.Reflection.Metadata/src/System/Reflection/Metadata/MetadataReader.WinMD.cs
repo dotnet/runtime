@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata
                 return s_projectionInfos[index].Treatment;
             }
 
-            // TODO: we can avoid this comparison if info.DotNetNamespace == info.WinRtNamespace 
+            // TODO: we can avoid this comparison if info.DotNetNamespace == info.WinRtNamespace
             if (StringHeap.EqualsRaw(namespaceName, s_projectionInfos[index].WinRTNamespace))
             {
                 return s_projectionInfos[index].Treatment | TypeDefTreatment.MarkInternalFlag;
@@ -297,7 +297,7 @@ namespace System.Reflection.Metadata
             else if (_metadataKind == MetadataKind.ManagedWindowsMetadata && IsClrImplementationType(handle))
             {
                 // <CLR> implementation classes are not marked WindowsRuntime, but still need to be modified
-                // by the adapter. 
+                // by the adapter.
                 treatment = TypeDefTreatment.UnmangleWinRTName;
             }
             else
@@ -599,11 +599,11 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// We want to know if a given method implements a redirected interface.
-        /// For example, if we are given the method RemoveAt on a class "A" 
+        /// For example, if we are given the method RemoveAt on a class "A"
         /// which implements the IVector interface (which is redirected
-        /// to IList in .NET) then this method would return true. The most 
+        /// to IList in .NET) then this method would return true. The most
         /// likely reason why we would want to know this is that we wish to hide
-        /// (mark private) all methods which implement methods on a redirected 
+        /// (mark private) all methods which implement methods on a redirected
         /// interface.
         /// </summary>
         /// <param name="memberRef">The declaration token for the method</param>
@@ -679,7 +679,7 @@ namespace System.Reflection.Metadata
             var parent = CustomAttributeTable.GetParent(handle);
 
             // Check for Windows.Foundation.Metadata.AttributeUsageAttribute.
-            // WinMD rules: 
+            // WinMD rules:
             //   - The attribute is only applicable on TypeDefs.
             //   - Constructor must be a MemberRef with TypeRef.
             if (!IsWindowsAttributeUsageAttribute(parent, handle))
@@ -708,7 +708,7 @@ namespace System.Reflection.Metadata
         private bool IsWindowsAttributeUsageAttribute(EntityHandle targetType, CustomAttributeHandle attributeHandle)
         {
             // Check for Windows.Foundation.Metadata.AttributeUsageAttribute.
-            // WinMD rules: 
+            // WinMD rules:
             //   - The attribute is only applicable on TypeDefs.
             //   - Constructor must be a MemberRef with TypeRef.
 

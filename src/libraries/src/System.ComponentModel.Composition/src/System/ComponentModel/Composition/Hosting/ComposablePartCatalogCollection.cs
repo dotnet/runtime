@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
             using (var atomicComposition = new AtomicComposition())
             {
                 RaiseChangingEvent(addedParts, null, atomicComposition);
- 
+
                 using (new WriteLock(_lock))
                 {
                     if (_isCopyNeeded)
@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition.Hosting
                     _hasChanged = true;
                     _catalogs.Add(item);
                 }
-                
+
                 SubscribeToCatalogNotifications(item);
 
                 // Complete after the catalog changes are written
@@ -99,7 +99,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // We are doing this outside of the lock, so it's possible that the catalog will continute propagating events from things
-            // we are about to unsubscribe from. Given the non-specificity of our event, in the worst case scenario we would simply fire 
+            // we are about to unsubscribe from. Given the non-specificity of our event, in the worst case scenario we would simply fire
             // unnecessary events.
             var removedParts = new Lazy<IEnumerable<ComposablePartDefinition>>(() => catalogs.SelectMany(catalog => catalog).ToArray(), LazyThreadSafetyMode.PublicationOnly);
 
@@ -148,7 +148,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         public int Count
         {
-            get 
+            get
             {
                 ThrowIfDisposed();
 

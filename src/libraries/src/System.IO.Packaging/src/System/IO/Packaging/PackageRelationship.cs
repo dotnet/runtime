@@ -11,10 +11,10 @@ using System.Diagnostics;
 namespace System.IO.Packaging
 {
     /// <summary>
-    /// This class is used to express a relationship between a source and a target part. 
+    /// This class is used to express a relationship between a source and a target part.
     /// The only way to create a PackageRelationship, is to call the PackagePart.CreateRelationship()
-    /// or Package.CreateRelationship(). A relationship is owned by a part or by the package itself. 
-    /// If the source part is deleted all the relationships it owns are also deleted. 
+    /// or Package.CreateRelationship(). A relationship is owned by a part or by the package itself.
+    /// If the source part is deleted all the relationships it owns are also deleted.
     /// A target of the relationship need not be present.
     /// This class is part of the MMCF Packaging layer.
     /// </summary>
@@ -161,7 +161,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Constructor
-        
+
         #region Internal Properties
 
         internal static Uri ContainerRelationshipPartName
@@ -173,7 +173,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Properties
-        
+
         #region Private Members
 
         private Package _package;

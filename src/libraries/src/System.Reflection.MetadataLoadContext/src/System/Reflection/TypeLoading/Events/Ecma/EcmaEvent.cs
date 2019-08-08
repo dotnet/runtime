@@ -18,7 +18,7 @@ namespace System.Reflection.TypeLoading.Ecma
         private readonly EcmaModule _module;
         private readonly EventDefinitionHandle _handle;
 
-        internal EcmaEvent(RoInstantiationProviderType declaringType, EventDefinitionHandle handle, Type reflectedType) 
+        internal EcmaEvent(RoInstantiationProviderType declaringType, EventDefinitionHandle handle, Type reflectedType)
             : base(declaringType, reflectedType)
         {
             Debug.Assert(!handle.IsNil);
@@ -85,7 +85,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 return disposedString;
 
             StringBuilder sb = new StringBuilder();
-            string typeString = EventDefinition.Type.ToTypeString(TypeContext, Reader); 
+            string typeString = EventDefinition.Type.ToTypeString(TypeContext, Reader);
             sb.Append(typeString);
             sb.Append(' ');
             sb.Append(Name);

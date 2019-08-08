@@ -29,4 +29,3 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         private static readonly IECDiffieHellmanProvider s_provider = new ECDiffieHellmanProvider();
     }
 }
-

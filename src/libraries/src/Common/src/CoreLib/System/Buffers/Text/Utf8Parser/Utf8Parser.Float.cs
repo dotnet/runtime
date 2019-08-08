@@ -17,11 +17,11 @@ namespace System.Buffers.Text
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
         /// <returns>
         /// true for success. "bytesConsumed" contains the length in bytes of the substring that was parsed.
-        /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0. 
+        /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0.
         /// </returns>
         /// <remarks>
         /// Formats supported:
-        ///     G/g  (default)  
+        ///     G/g  (default)
         ///     F/f             12.45       Fixed point
         ///     E/e             1.245000e1  Exponential
         /// </remarks>
@@ -51,11 +51,11 @@ namespace System.Buffers.Text
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
         /// <returns>
         /// true for success. "bytesConsumed" contains the length in bytes of the substring that was parsed.
-        /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0. 
+        /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0.
         /// </returns>
         /// <remarks>
         /// Formats supported:
-        ///     G/g  (default)  
+        ///     G/g  (default)
         ///     F/f             12.45       Fixed point
         ///     E/e             1.245000e1  Exponential
         /// </remarks>
@@ -114,7 +114,7 @@ namespace System.Buffers.Text
         // Assuming the text doesn't look like a normal floating point, we attempt to parse it as one the special floating point values.
         //
         private static bool TryParseAsSpecialFloatingPoint<T>(ReadOnlySpan<byte> source, T positiveInfinity, T negativeInfinity, T nan, out T value, out int bytesConsumed) where T : struct
-        {            
+        {
             int srcIndex = 0;
             int remaining = source.Length;
             bool isNegative = false;

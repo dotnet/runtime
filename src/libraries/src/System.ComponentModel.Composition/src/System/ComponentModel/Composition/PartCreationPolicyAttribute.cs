@@ -25,8 +25,8 @@ namespace System.ComponentModel.Composition
         ///     Gets or sets a value indicating the creation policy of the attributed part.
         /// </summary>
         /// <value>
-        ///     One of the <see cref="CreationPolicy"/> values indicating the creation policy of the 
-        ///     attributed part. The default is 
+        ///     One of the <see cref="CreationPolicy"/> values indicating the creation policy of the
+        ///     attributed part. The default is
         ///     <see cref="System.ComponentModel.Composition.CreationPolicy.Any"/>.
         /// </value>
         public CreationPolicy CreationPolicy { get; private set; }

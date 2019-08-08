@@ -24,7 +24,7 @@ namespace System.Net.Http
         private static int s_dbg_operationHandleFree = 0;
 
         private IntPtr s_dbg_requestHandle;
-#endif        
+#endif
 
         // A GCHandle for this operation object.
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
@@ -64,7 +64,7 @@ namespace System.Net.Http
         // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
         // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
         // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
-        // The lock object must be used during the execution of any WinHttp function to ensure no race conditions with 
+        // The lock object must be used during the execution of any WinHttp function to ensure no race conditions with
         // calling WinHttpCloseHandle.
         public object Lock => this;
 

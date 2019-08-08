@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // NOTE: These are extension methods in the contract, but plain static methods
-// in this implementation. This is done to avoid confusion around what would 
+// in this implementation. This is done to avoid confusion around what would
 // look like infinite recursion in the implementation. Callers compiled against
 // the contract will still be able to invoke them as extension methods and get
 // source compatibility with classic reflection code.
@@ -292,7 +292,7 @@ namespace System.Reflection
             }
             catch (InvalidOperationException)
             {
-                // Thrown for unbaked ref-emit members/types. 
+                // Thrown for unbaked ref-emit members/types.
                 // Other cases such as typeof(byte[]).MetadataToken will be handled by comparison to zero above.
                 return false;
             }
@@ -308,7 +308,7 @@ namespace System.Reflection
         {
             Requires.NotNull(member, nameof(member));
 
-            int token = GetMetadataTokenOrZeroOrThrow(member); 
+            int token = GetMetadataTokenOrZeroOrThrow(member);
 
             if (token == 0)
             {
@@ -323,7 +323,7 @@ namespace System.Reflection
             int token = member.MetadataToken;
 
             // Tokens have MSB = table index, 3 LSBs = row index
-            // row index of 0 is a nil token 
+            // row index of 0 is a nil token
             const int rowMask = 0x00FFFFFF;
             if ((token & rowMask) == 0)
             {

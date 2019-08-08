@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 
 namespace System.Net.Test.Common
-{    
+{
     public enum FrameType : byte
     {
         Data = 0,

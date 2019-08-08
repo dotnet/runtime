@@ -376,8 +376,8 @@ namespace System.Net.NetworkInformation
             public ushort SequenceNumber;
         }
 
-        // Since this is private should be safe to trust that the calling code 
-        // will behave. To get a little performance boost raw fields are exposed 
+        // Since this is private should be safe to trust that the calling code
+        // will behave. To get a little performance boost raw fields are exposed
         // and no validation is performed.
         private class SocketConfig
         {

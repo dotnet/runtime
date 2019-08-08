@@ -106,8 +106,8 @@ namespace System.Data.ProviderBase
                     txnFound = _transactedCxns.TryGetValue(transaction, out connections);
                 }
 
-                // NOTE: GetTransactedObject is only used when AutoEnlist = True and the ambient transaction 
-                //   (Sys.Txns.Txn.Current) is still valid/non-null. This, in turn, means that we don't need 
+                // NOTE: GetTransactedObject is only used when AutoEnlist = True and the ambient transaction
+                //   (Sys.Txns.Txn.Current) is still valid/non-null. This, in turn, means that we don't need
                 //   to worry about a pending asynchronous TransactionCompletedEvent to trigger processing in
                 //   TransactionEnded below and potentially wipe out the connections list underneath us. It
                 //   is similarly alright if a pending addition to the connections list in PutTransactedObject
@@ -129,7 +129,7 @@ namespace System.Data.ProviderBase
                         }
                     }
                 }
-                
+
                 return transactedObject;
             }
 
@@ -142,7 +142,7 @@ namespace System.Data.ProviderBase
                 bool txnFound = false;
 
                 // NOTE: because TransactionEnded is an asynchronous notification, there's no guarantee
-                //   around the order in which PutTransactionObject and TransactionEnded are called. 
+                //   around the order in which PutTransactionObject and TransactionEnded are called.
 
                 lock (_transactedCxns)
                 {
@@ -160,7 +160,7 @@ namespace System.Data.ProviderBase
                     }
                 }
 
-                // CONSIDER: the following code is more complicated than it needs to be to avoid cloning the 
+                // CONSIDER: the following code is more complicated than it needs to be to avoid cloning the
                 //   transaction and allocating memory within a lock. Is that complexity really necessary?
                 if (!txnFound)
                 {
@@ -176,9 +176,9 @@ namespace System.Data.ProviderBase
 
                         lock (_transactedCxns)
                         {
-                            // NOTE: in the interim between the locks on the transacted pool (this) during 
-                            //   execution of this method, another thread (threadB) may have attempted to 
-                            //   add a different connection to the transacted pool under the same 
+                            // NOTE: in the interim between the locks on the transacted pool (this) during
+                            //   execution of this method, another thread (threadB) may have attempted to
+                            //   add a different connection to the transacted pool under the same
                             //   transaction. As a result, threadB may have completed creating the
                             //   transacted pool while threadA was processing the above instructions.
                             if (txnFound = _transactedCxns.TryGetValue(transaction, out connections))
@@ -198,7 +198,7 @@ namespace System.Data.ProviderBase
                                 newConnections.Add(transactedObject);
 
                                 _transactedCxns.Add(transactionClone, newConnections);
-                                transactionClone = null; // we've used it -- don't throw it or the TransactedConnectionList that references it away.                                
+                                transactionClone = null; // we've used it -- don't throw it or the TransactedConnectionList that references it away.
                             }
                         }
                     }
@@ -208,7 +208,7 @@ namespace System.Data.ProviderBase
                         {
                             if (newConnections != null)
                             {
-                                // another thread created the transaction pool and thus the new 
+                                // another thread created the transaction pool and thus the new
                                 //   TransactedConnectionList was not used, so dispose of it and
                                 //   the transaction clone that it incorporates.
                                 newConnections.Dispose();
@@ -260,7 +260,7 @@ namespace System.Data.ProviderBase
                             {
                                 _transactedCxns.Remove(transaction);
 
-                                // we really need to dispose our connection list; it may have 
+                                // we really need to dispose our connection list; it may have
                                 // native resources via the tx and GC may not happen soon enough.
                                 shouldDisposeConnections = true;
                             }
@@ -569,7 +569,7 @@ namespace System.Data.ProviderBase
                         //   ONLY touch obj after lock release if shouldDestroy is false!!!  Otherwise, it may be destroyed
                         //   by transaction-end thread!
 
-                        // Note that there is a minor race condition between this task and the transaction end event, if the latter runs 
+                        // Note that there is a minor race condition between this task and the transaction end event, if the latter runs
                         //  between the lock above and the SetInStasis call below. The reslult is that the stasis counter may be
                         //  incremented without a corresponding decrement (the transaction end task is normally expected
                         //  to decrement, but will only do so if the stasis flag is set when it runs). I've minimized the size
@@ -760,7 +760,7 @@ namespace System.Data.ProviderBase
             return newObj;
         }
 
-        //This method is implemented in DbConnectionPool.NetCoreApp 
+        //This method is implemented in DbConnectionPool.NetCoreApp
         partial void CheckPoolBlockingPeriod(Exception e);
 
         private void DeactivateObject(DbConnectionInternal obj)
@@ -788,16 +788,16 @@ namespace System.Data.ProviderBase
                     // be returned to a different customer until the transaction
                     // actually completes, so we send it into Stasis -- the SysTx
                     // transaction object will ensure that it is owned (not lost),
-                    // and it will be certain to put it back into the pool.                    
+                    // and it will be certain to put it back into the pool.
 
                     if (_state == State.ShuttingDown)
                     {
                         if (obj.IsTransactionRoot)
                         {
-                            // SQLHotfix# 50003503 - connections that are affiliated with a 
-                            //   root transaction and that also happen to be in a connection 
-                            //   pool that is being shutdown need to be put in stasis so that 
-                            //   the root transaction isn't effectively orphaned with no 
+                            // SQLHotfix# 50003503 - connections that are affiliated with a
+                            //   root transaction and that also happen to be in a connection
+                            //   pool that is being shutdown need to be put in stasis so that
+                            //   the root transaction isn't effectively orphaned with no
                             //   means to promote itself to a full delegated transaction or
                             //   Commit or Rollback
                             obj.SetInStasis();
@@ -829,7 +829,7 @@ namespace System.Data.ProviderBase
                             {
                                 // NOTE: we're not locking on _state, so it's possible that its
                                 //   value could change between the conditional check and here.
-                                //   Although perhaps not ideal, this is OK because the 
+                                //   Although perhaps not ideal, this is OK because the
                                 //   DelegatedTransactionEnded event will clean up the
                                 //   connection appropriately regardless of the pool state.
                                 Debug.Assert(_transactedConnectionPool != null, "Transacted connection pool was not expected to be null.");
@@ -848,13 +848,13 @@ namespace System.Data.ProviderBase
                             {
                                 // SQLHotfix# 50003503 - if the object cannot be pooled but is a transaction
                                 //   root, then we must have hit one of two race conditions:
-                                //       1) PruneConnectionPoolGroups shutdown the pool and marked this connection 
+                                //       1) PruneConnectionPoolGroups shutdown the pool and marked this connection
                                 //          as non-poolable while we were processing within this lock
                                 //       2) The LoadBalancingTimeout expired on this connection and marked this
                                 //          connection as DoNotPool.
                                 //
                                 //   This connection needs to be put in stasis so that the root transaction isn't
-                                //   effectively orphaned with no means to promote itself to a full delegated 
+                                //   effectively orphaned with no means to promote itself to a full delegated
                                 //   transaction or Commit or Rollback
                                 obj.SetInStasis();
                                 rootTxn = true;
@@ -928,7 +928,7 @@ namespace System.Data.ProviderBase
 
         private Exception TryCloneCachedException()
         // Cached exception can be of any type, so is not always cloneable.
-        // This functions clones SqlException 
+        // This functions clones SqlException
         // OleDb and Odbc connections are not passing throw this code
         {
             if (_resError == null)
@@ -1284,8 +1284,8 @@ namespace System.Data.ProviderBase
                 Debug.Assert(obj != null, "null connection is not expected");
             }
 
-            // When another thread is clearing this pool,  
-            // it will remove all connections in this pool which causes the 
+            // When another thread is clearing this pool,
+            // it will remove all connections in this pool which causes the
             // following assert to fire, which really mucks up stress against
             //  checked bits.
 
@@ -1386,7 +1386,7 @@ namespace System.Data.ProviderBase
                                         }
                                         catch
                                         {
-                                            // Catch all the exceptions occurring during CreateObject so that they 
+                                            // Catch all the exceptions occurring during CreateObject so that they
                                             // don't emerge as unhandled on the thread pool and don't crash applications
                                             // The error is handled in CreateObject and surfaced to the caller of the Connection Pool
                                             // using the ErrorEvent. Hence it is OK to swallow all exceptions here.
@@ -1582,7 +1582,7 @@ namespace System.Data.ProviderBase
 
         // TransactionEnded merely provides the plumbing for DbConnectionInternal to access the transacted pool
         //   that is implemented inside DbConnectionPool. This method's counterpart (PutTransactedObject) should
-        //   only be called from DbConnectionPool.DeactivateObject and thus the plumbing to provide access to 
+        //   only be called from DbConnectionPool.DeactivateObject and thus the plumbing to provide access to
         //   other objects is unnecessary (hence the asymmetry of Ended but no Begin)
         internal void TransactionEnded(Transaction transaction, DbConnectionInternal transactedObject)
         {

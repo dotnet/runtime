@@ -123,7 +123,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Checks whether the list contains the specified 
+        ///    <para>Checks whether the list contains the specified
         ///       listener.</para>
         /// </devdoc>
         public bool Contains(TraceListener listener)
@@ -132,7 +132,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        /// <para>Copies a section of the current <see cref='System.Diagnostics.TraceListenerCollection'/> list to the specified array at the specified 
+        /// <para>Copies a section of the current <see cref='System.Diagnostics.TraceListenerCollection'/> list to the specified array at the specified
         ///    index.</para>
         /// </devdoc>
         public void CopyTo(TraceListener[] listeners, int index)
@@ -190,7 +190,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>Removes the first listener in the list that has the 
+        ///    <para>Removes the first listener in the list that has the
         ///       specified name.</para>
         /// </devdoc>
         public void Remove(string name)

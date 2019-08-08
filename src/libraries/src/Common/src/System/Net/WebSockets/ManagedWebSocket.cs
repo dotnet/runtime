@@ -150,7 +150,7 @@ namespace System.Net.WebSockets
         /// <summary>
         /// We need to coordinate between receives and close operations happening concurrently, as a ReceiveAsync may
         /// be pending while a Close{Output}Async is issued, which itself needs to loop until a close frame is received.
-        /// As such, we need thread-safety in the management of <see cref="_lastReceiveAsync"/>. 
+        /// As such, we need thread-safety in the management of <see cref="_lastReceiveAsync"/>.
         /// </summary>
         private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
@@ -1198,7 +1198,7 @@ namespace System.Net.WebSockets
             // If we don't have enough data in the buffer to satisfy the minimum required, read some more.
             if (_receiveBufferCount < minimumRequiredBytes)
             {
-                // If there's any data in the buffer, shift it down.  
+                // If there's any data in the buffer, shift it down.
                 if (_receiveBufferCount > 0)
                 {
                     _receiveBuffer.Span.Slice(_receiveBufferOffset, _receiveBufferCount).CopyTo(_receiveBuffer.Span);

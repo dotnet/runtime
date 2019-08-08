@@ -262,7 +262,7 @@ namespace System.ComponentModel.Tests
             public ConvertTest()
             {
             }
-  
+
             protected ConvertTest(SerializationInfo info, StreamingContext context)
             {
                 string sourceType = (string)info.GetValue("SourceType", typeof(string));
@@ -337,7 +337,7 @@ namespace System.ComponentModel.Tests
 
                 info.AddValue(nameof(CanConvert), CanConvert);
             }
-   
+
             public static ConvertTest FromSerializedString(string s)
             {
                 byte[] bytes = Convert.FromBase64String(s);
@@ -353,7 +353,7 @@ namespace System.ComponentModel.Tests
             {
                 using (var stream = new MemoryStream())
                 {
-                    new BinaryFormatter().Serialize(stream, this);         
+                    new BinaryFormatter().Serialize(stream, this);
                     return Convert.ToBase64String(stream.ToArray());
                 }
             }

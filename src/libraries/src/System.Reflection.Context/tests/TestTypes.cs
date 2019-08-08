@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,11 +14,11 @@ namespace System.Reflection.Context.Tests
             { "text", "abc" },
             { "boolean", true }
         };
-        
+
         protected override IEnumerable<PropertyInfo> AddProperties(Type type)
         {
             base.AddProperties(type);
-            
+
             if (type == typeof(TestObject))
             {
                 foreach (KeyValuePair<string, object> prop in _properties)

@@ -33,11 +33,11 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly Lazy<IDictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TypeCatalog"/> class 
+        ///     Initializes a new instance of the <see cref="TypeCatalog"/> class
         ///     with the specified types.
         /// </summary>
         /// <param name="types">
-        ///     An <see cref="Array"/> of attributed <see cref="Type"/> objects to add to the 
+        ///     An <see cref="Array"/> of attributed <see cref="Type"/> objects to add to the
         ///     <see cref="TypeCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -59,7 +59,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified types.
         /// </summary>
         /// <param name="types">
-        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add 
+        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add
         ///     to the <see cref="TypeCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -87,7 +87,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified types.
         /// </summary>
         /// <param name="types">
-        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add 
+        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add
         ///     to the <see cref="TypeCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -115,14 +115,14 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified types.
         /// </summary>
         /// <param name="types">
-        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add 
+        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add
         ///     to the <see cref="TypeCatalog"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="types"/> is <see langword="null"/>.
         /// </exception>
         /// <param name="reflectionContext">
-        ///     The <see cref="ReflectionContext"/> a context used by the catalog when 
+        ///     The <see cref="ReflectionContext"/> a context used by the catalog when
         ///     interpreting the types to inject attributes into the type definition.
         /// </param>
         /// <exception cref="ArgumentException">
@@ -144,11 +144,11 @@ namespace System.ComponentModel.Composition.Hosting
         ///     with the specified types.
         /// </summary>
         /// <param name="types">
-        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add 
+        ///     An <see cref="IEnumerable{T}"/> of attributed <see cref="Type"/> objects to add
         ///     to the <see cref="TypeCatalog"/>.
         /// </param>
         /// <param name="reflectionContext">
-        ///     The <see cref="ReflectionContext"/> a context used by the catalog when 
+        ///     The <see cref="ReflectionContext"/> a context used by the catalog when
         ///     interpreting the types to inject attributes into the type definition.
         /// </param>
         /// <param name="definitionOrigin">
@@ -388,7 +388,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             if (count > displayCount)
-            {   // Add an elipse to indicate that there 
+            {   // Add an elipse to indicate that there
                 // are more types than actually listed
                 builder.Append(CultureInfo.CurrentCulture.TextInfo.ListSeparator);
                 builder.Append(" ...");

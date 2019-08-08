@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -121,7 +121,7 @@ UCouQg==",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes128Cbc,
                     HashAlgorithmName.SHA256,
-                    12345), 
+                    12345),
                 DSATestData.Dsa512Parameters);
         }
 
@@ -238,7 +238,7 @@ dOwrkyNhKY+C3S3Hrg+1jGkxn95eJRPX7giU2GBUdc535JhKZH4=",
                 "watchX",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
-                    HashAlgorithmName.SHA1, 
+                    HashAlgorithmName.SHA1,
                     0x0101),
                 DSATestData.Dsa2048DeficientXParameters);
         }

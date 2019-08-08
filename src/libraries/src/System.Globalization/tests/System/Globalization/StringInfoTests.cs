@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -40,7 +40,7 @@ namespace System.Globalization.Tests
             Assert.Same(value, stringInfo.String);
             Assert.Equal(lengthInTextElements, stringInfo.LengthInTextElements);
         }
-        
+
         [Fact]
         public void Ctor_NullValue_ThrowsArgumentNullException()
         {
@@ -57,7 +57,7 @@ namespace System.Globalization.Tests
             stringInfo.String = value;
             Assert.Same(value, stringInfo.String);
         }
-        
+
         [Fact]
         public void String_SetNull_ThrowsArgumentNullException()
         {
@@ -109,7 +109,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new StringInfo("stringinfo1"), 123, false };
             yield return new object[] { new StringInfo("stringinfo1"), null, false };
         }
-        
+
         [Theory]
         [MemberData(nameof(Equals_TestData))]
         public void Equals(StringInfo stringInfo, object value, bool expected)
@@ -146,7 +146,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0300\u0300", 0, "\u0300" };
             yield return new object[] { "\u0300\u0300", 1, "\u0300" };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetNextTextElement_TestData))]
         public void GetNextTextElement(string str, int index, string expected)
@@ -157,7 +157,7 @@ namespace System.Globalization.Tests
             }
             Assert.Equal(expected, StringInfo.GetNextTextElement(str, index));
         }
-        
+
         [Fact]
         public void GetNextTextElement_Invalid()
         {
@@ -256,7 +256,7 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(expected, StringInfo.ParseCombiningCharacters(str));
         }
-        
+
         [Fact]
         public void ParseCombiningCharacters_Null_ThrowsArgumentNullException()
         {

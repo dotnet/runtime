@@ -55,4 +55,3 @@ namespace System.ComponentModel.Design
         void OnComponentChanging(object component, MemberDescriptor member);
     }
 }
-

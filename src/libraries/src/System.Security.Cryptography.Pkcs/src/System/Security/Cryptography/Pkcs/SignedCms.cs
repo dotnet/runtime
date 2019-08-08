@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
-        { 
+        {
             // Windows (and thus NetFx) reads the leading data and ignores extra.
             // So use the Decode overload which doesn't throw on extra data.
             ContentInfoAsn.Decode(
@@ -287,7 +287,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_Empty_Content);
             }
-            
+
             if (_hasData && signer.SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
                 // Even if all signers have been removed, throw if doing a NoSignature signature

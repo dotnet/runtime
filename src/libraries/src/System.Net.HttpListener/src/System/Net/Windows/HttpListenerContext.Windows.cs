@@ -124,7 +124,7 @@ namespace System.Net
             return Interop.HttpApi.GetKnownVerb(Request.RequestBuffer, Request.OriginalBlobAddress);
         }
 
-        // This is only called while processing incoming requests.  We don't have to worry about cancelling 
+        // This is only called while processing incoming requests.  We don't have to worry about cancelling
         // any response writes.
         internal static void CancelRequest(SafeHandle requestQueueHandle, ulong requestId)
         {

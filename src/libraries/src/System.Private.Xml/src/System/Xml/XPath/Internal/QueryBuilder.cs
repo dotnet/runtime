@@ -16,7 +16,7 @@ namespace MS.Internal.Xml.XPath
         // Note: Up->Down, Down->Up:
         //       For operators order is normal: 1 + 2 --> Operator+(1, 2)
         //       For paths order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
-        // Input flags. We pass them Up->Down. 
+        // Input flags. We pass them Up->Down.
         // Using them upper query set states which controls how inner query will be built.
         private enum Flags
         {
@@ -25,10 +25,10 @@ namespace MS.Internal.Xml.XPath
             PosFilter = 0x02,  // Node has this flag set when it has position predicate applied to it
             Filter = 0x04,  // Subtree we compiling will be filtered. i.e. Flag not set on rightmost filter.
         }
-        // Output props. We return them Down->Up. 
+        // Output props. We return them Down->Up.
         // These are properties of Query tree we have built already.
         // These properties are closely related to QueryProps exposed by Query node itself.
-        // They have the following difference: 
+        // They have the following difference:
         //      QueryProps describe property of node they are (belong like Reverse)
         //      these Props describe accumulated properties of the tree (like nonFlat)
         private enum Props
@@ -233,7 +233,7 @@ namespace MS.Internal.Xml.XPath
             // So we clean this flag here:
             flags &= ~Flags.SmartDesc;
             // Suggestion: Instead it would be nice to wrap descendent::foo[expr] into special query that will flatten it -- i.e.
-            //       remove all nodes that are descendant of other nodes. This is very easy because for sorted nodesets all children 
+            //       remove all nodes that are descendant of other nodes. This is very easy because for sorted nodesets all children
             //       follow its parent. One step caching. This can be easily done by rightmost DescendantQuery itself.
             //       Interesting note! Can we guarantee that DescendantOverDescendant returns flat nodeset? This definitely true if it's input is flat.
 
@@ -241,7 +241,7 @@ namespace MS.Internal.Xml.XPath
 
             if (root.Input.Type != AstNode.AstType.Filter)
             {
-                // Props.PosFilter is for nested filters only. 
+                // Props.PosFilter is for nested filters only.
                 // We clean it here to avoid cleaning it in all other ast nodes.
                 props &= ~Props.PosFilter;
             }

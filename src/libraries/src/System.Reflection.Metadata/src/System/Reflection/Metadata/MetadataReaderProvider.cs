@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -119,15 +119,15 @@ namespace System.Reflection.Metadata
         /// <param name="size">Size of the metadata blob in the stream. If not specified the metadata blob is assumed to span to the end of the stream.</param>
         /// <param name="options">
         /// Options specifying how sections of the image are read from the stream.
-        /// 
-        /// Unless <see cref="MetadataStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="MetadataReaderProvider"/> 
+        ///
+        /// Unless <see cref="MetadataStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="MetadataReaderProvider"/>
         /// upon successful argument validation. It will be disposed by the <see cref="MetadataReaderProvider"/> and the caller must not manipulate it.
-        /// 
-        /// Unless <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified no data 
+        ///
+        /// Unless <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified no data
         /// is read from the stream during the construction of the <see cref="MetadataReaderProvider"/>. Furthermore, the stream must not be manipulated
         /// by caller while the <see cref="MetadataReaderProvider"/> is alive and undisposed.
-        /// 
-        /// If <see cref="MetadataStreamOptions.PrefetchMetadata"/>, the <see cref="MetadataReaderProvider"/> 
+        ///
+        /// If <see cref="MetadataStreamOptions.PrefetchMetadata"/>, the <see cref="MetadataReaderProvider"/>
         /// will have read all of the data requested during construction. As such, if <see cref="MetadataStreamOptions.LeaveOpen"/> is also
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="MetadataReaderProvider"/>
         /// after construction.
@@ -144,15 +144,15 @@ namespace System.Reflection.Metadata
         /// <param name="size">Size of the metadata blob in the stream. If not specified the metadata blob is assumed to span to the end of the stream.</param>
         /// <param name="options">
         /// Options specifying how sections of the image are read from the stream.
-        /// 
-        /// Unless <see cref="MetadataStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="MetadataReaderProvider"/> 
+        ///
+        /// Unless <see cref="MetadataStreamOptions.LeaveOpen"/> is specified, ownership of the stream is transferred to the <see cref="MetadataReaderProvider"/>
         /// upon successful argument validation. It will be disposed by the <see cref="MetadataReaderProvider"/> and the caller must not manipulate it.
-        /// 
-        /// Unless <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified no data 
+        ///
+        /// Unless <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified no data
         /// is read from the stream during the construction of the <see cref="MetadataReaderProvider"/>. Furthermore, the stream must not be manipulated
         /// by caller while the <see cref="MetadataReaderProvider"/> is alive and undisposed.
-        /// 
-        /// If <see cref="MetadataStreamOptions.PrefetchMetadata"/>, the <see cref="MetadataReaderProvider"/> 
+        ///
+        /// If <see cref="MetadataStreamOptions.PrefetchMetadata"/>, the <see cref="MetadataReaderProvider"/>
         /// will have read all of the data requested during construction. As such, if <see cref="MetadataStreamOptions.LeaveOpen"/> is also
         /// specified, the caller retains full ownership of the stream and is assured that it will not be manipulated by the <see cref="MetadataReaderProvider"/>
         /// after construction.
@@ -196,7 +196,7 @@ namespace System.Reflection.Metadata
                 {
                     // Read in the entire image or metadata blob:
                     result = new MetadataReaderProvider(StreamMemoryBlockProvider.ReadMemoryBlockNoLock(stream, isFileStream, start, actualSize));
-                   
+
                     // We read all we need, the stream is going to be closed.
                 }
             }
@@ -235,8 +235,8 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <remarks>
         /// The caller must keep the <see cref="MetadataReaderProvider"/> undisposed throughout the lifetime of the metadata reader.
-        /// 
-        /// If this method is called multiple times each call with arguments equal to the arguments passed to the previous successful call 
+        ///
+        /// If this method is called multiple times each call with arguments equal to the arguments passed to the previous successful call
         /// returns the same instance of <see cref="MetadataReader"/> as the previous call.
         /// </remarks>
         /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
@@ -252,8 +252,8 @@ namespace System.Reflection.Metadata
                 return cachedReader;
             }
 
-            // If multiple threads attempt to open a metadata reader with the same options and decoder 
-            // it's cheaper to wait for the other thread to finish initializing the reader than to open 
+            // If multiple threads attempt to open a metadata reader with the same options and decoder
+            // it's cheaper to wait for the other thread to finish initializing the reader than to open
             // two readers and discard one.
             // Note that it's rare to reader the same metadata using different options.
             lock (_metadataReaderGuard)

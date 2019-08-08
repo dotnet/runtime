@@ -142,7 +142,7 @@ namespace System.UnitTesting
                 AssertCore(retryCount, prefix + ".Errors[" + i + "]", exception.Errors[i], expectations[i]);
             }
         }
-        
+
         private static void AssertCore(int retryCount, string prefix, ComposablePartException error, CompositionErrorExpectation expectation)
         {
             if (expectation.ElementSpecified)
@@ -174,7 +174,7 @@ namespace System.UnitTesting
                 }
             }
         }
-        
+
         private static void AssertCore(int retryCount, string prefix, CompositionError error, CompositionErrorExpectation expectation)
         {
             if (expectation.IdSpecified)
@@ -264,7 +264,7 @@ namespace System.UnitTesting
             {
                 return GetRootErrorId(composablePartException);
             }
-            
+
             CompositionException composition = exception as CompositionException;
             if (composition != null)
             {

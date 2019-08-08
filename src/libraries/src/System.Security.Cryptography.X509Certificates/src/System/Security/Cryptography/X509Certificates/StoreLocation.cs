@@ -13,4 +13,3 @@ namespace System.Security.Cryptography.X509Certificates
         LocalMachine = 0x02,
     }
 }
-

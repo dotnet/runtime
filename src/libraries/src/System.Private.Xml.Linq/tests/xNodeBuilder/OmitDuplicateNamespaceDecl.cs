@@ -43,7 +43,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Desc = "Xml namespace III.", Priority = 3, Params = new object[] { "<p:A xmlns:p='nsp'><p:B xmlns:xml='http://www.w3.org/XML/1998/namespace' xmlns:p='nsp'><p:C xmlns:p='nsp' xmlns:xml='http://www.w3.org/XML/1998/namespace'/></p:B></p:A>" })]
                 //[Variation(Desc = "Default namespaces", Priority = 1, Params = new object[] { "<A xmlns='nsp'><p:B xmlns:p='nsp'><C xmlns='nsp' /></p:B></A>" })]
                 //[Variation(Desc = "Not used NS declarations", Priority = 2, Params = new object[] { "<A xmlns='nsp' xmlns:u='not-used'><p:B xmlns:p='nsp'><C xmlns:u='not-used' xmlns='nsp' /></p:B></A>" })]
-                //[Variation(Desc = "SameNS, different prefix", Priority = 2, Params = new object[] { "<p:A xmlns:p='nsp'><B xmlns:q='nsp'><p:C xmlns:p='nsp'/></B></p:A>" })]     
+                //[Variation(Desc = "SameNS, different prefix", Priority = 2, Params = new object[] { "<p:A xmlns:p='nsp'><B xmlns:q='nsp'><p:C xmlns:p='nsp'/></B></p:A>" })]
                 public void testFromTheRootNodeSimple()
                 {
                     string xml = CurrentChild.Params[0] as string;
@@ -76,11 +76,11 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Desc = "Conflicts: NS redefinition", Priority = 2, Params = new object[] {   "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D xmlns:p='nsp'/></p:C></p:B></p:A>",
                 //                                                                                        "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D/></p:C></p:B></p:A>" })]
-                //[Variation(Desc = "Conflicts: NS redefinition, default NS", Priority = 2, Params = new object[] {   "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS redefinition, default NS", Priority = 2, Params = new object[] {   "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
                 //                                                                                                    "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D/></C></B></A>" })]
-                //[Variation(Desc = "Conflicts: NS redefinition, default NS II.", Priority = 2, Params = new object[] {   "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xmlns=''/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS redefinition, default NS II.", Priority = 2, Params = new object[] {   "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xmlns=''/></C></B></A>",
                 //                                                                                                        "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A>" })]
-                //[Variation(Desc = "Conflicts: NS undeclaration, default NS", Priority = 2, Params = new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>", 
+                //[Variation(Desc = "Conflicts: NS undeclaration, default NS", Priority = 2, Params = new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
                 //                                                                                                    "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C></B></A>" })]
                 public void testConflicts()
                 {
@@ -157,7 +157,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Desc = "Write into used reader I. (def. ns.)", Priority = 0, Params = new object[] { "<A xmlns='nsp'/>", "<root xmlns='nsp'><A/></root>" })]
-                //[Variation(Desc = "Write into used reader II. (def. ns.)", Priority = 2, Params = new object[] { "<A xmlns='ns-other'><B xmlns='nsp'><C xmlns='nsp'/></B></A>", 
+                //[Variation(Desc = "Write into used reader II. (def. ns.)", Priority = 2, Params = new object[] { "<A xmlns='ns-other'><B xmlns='nsp'><C xmlns='nsp'/></B></A>",
                 //                                                                                                 "<root xmlns='nsp'><A xmlns='ns-other'><B xmlns='nsp'><C/></B></A></root>" })]
                 public void testIntoOpenedWriterDefaultNS()
                 {
@@ -181,8 +181,8 @@ namespace CoreXml.Test.XLinq
                 }
 
 
-                //[Variation(Desc = "Write into used reader (Xlinq lookup + existing hint in the Writer; different prefix)", 
-                //          Priority = 2, 
+                //[Variation(Desc = "Write into used reader (Xlinq lookup + existing hint in the Writer; different prefix)",
+                //          Priority = 2,
                 //           Params = new object[] { "<p1:root xmlns:p1='nsp'><p2:B xmlns:p2='nsp'/></p1:root>" })]
                 public void testIntoOpenedWriterXlinqLookup1()
                 {

@@ -9,7 +9,7 @@ namespace System.Drawing
 {
     /// <summary>
     ///    <para>
-    ///       Stores the location and size of a rectangular region. 
+    ///       Stores the location and size of a rectangular region.
     ///    </para>
     /// </summary>
     [Serializable]
@@ -18,10 +18,10 @@ namespace System.Drawing
     {
         public static readonly Rectangle Empty = new Rectangle();
 
-        private int x; // Do not rename (binary serialization) 
-        private int y; // Do not rename (binary serialization) 
-        private int width; // Do not rename (binary serialization) 
-        private int height; // Do not rename (binary serialization) 
+        private int x; // Do not rename (binary serialization)
+        private int y; // Do not rename (binary serialization)
+        private int width; // Do not rename (binary serialization)
+        private int height; // Do not rename (binary serialization)
 
         /// <summary>
         ///    <para>
@@ -268,7 +268,7 @@ namespace System.Drawing
         /// <summary>
         ///    <para>
         ///       Determines if the rectangular region represented by
-        ///    <paramref name="rect"/> is entirely contained within the rectangular region represented by 
+        ///    <paramref name="rect"/> is entirely contained within the rectangular region represented by
         ///       this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>

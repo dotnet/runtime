@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
             // If multiple values are supported (i.e. list of values), then accept an empty string: The header may
             // be added multiple times to the request/response message. E.g.
             //  Accept: text/xml; q=1
-            //  Accept: 
+            //  Accept:
             //  Accept: text/plain; q=0.2
             if (string.IsNullOrEmpty(value) || (index == value.Length))
             {

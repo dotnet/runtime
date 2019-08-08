@@ -122,7 +122,7 @@ namespace System.IO.Tests
             // CopyTo is not virtual, so we can't override it in
             // CallTrackingStream and record the arguments directly.
             // Instead, validate the arguments passed to Read.
-            
+
             Assert.Equal(1, trackingStream.TimesCalled(nameof(trackingStream.Read)));
 
             byte[] outerBuffer = trackingStream.ReadBuffer;
@@ -177,7 +177,7 @@ namespace System.IO.Tests
             // CopyTo is not virtual, so we can't override it in
             // CallTrackingStream and record the arguments directly.
             // Instead, validate the arguments passed to Read.
-            
+
             Assert.Equal(1, trackingStream.TimesCalled(nameof(trackingStream.Read)));
 
             byte[] outerBuffer = trackingStream.ReadBuffer;
@@ -237,7 +237,7 @@ namespace System.IO.Tests
                     Assert.InRange(count, 1, int.MaxValue);
 
                     // CopyTo should always pass in the same buffer/offset/count
-                    
+
                     if (outerBuffer != null) Assert.Same(outerBuffer, buffer);
                     else outerBuffer = buffer;
 
@@ -247,7 +247,7 @@ namespace System.IO.Tests
                     if (outerCount != null) Assert.Equal(outerCount, count);
                     else outerCount = count;
 
-                    return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping 
+                    return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping
                 });
 
             var src = new CallTrackingStream(srcBase);
@@ -292,7 +292,7 @@ namespace System.IO.Tests
                     Assert.InRange(count, 1, int.MaxValue);
 
                     // CopyTo should always pass in the same buffer/offset/count
-                    
+
                     if (outerBuffer != null) Assert.Same(outerBuffer, buffer);
                     else outerBuffer = buffer;
 
@@ -302,7 +302,7 @@ namespace System.IO.Tests
                     if (outerCount != null) Assert.Equal(outerCount, count);
                     else outerCount = count;
 
-                    return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping 
+                    return --readsLeft; // CopyTo will call Read on this ReadLimit times before stopping
                 });
 
             var src = new CallTrackingStream(srcBase);

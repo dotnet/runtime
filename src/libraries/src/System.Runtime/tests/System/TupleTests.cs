@@ -214,7 +214,7 @@ namespace System.Tests
                 IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException();
                 IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException();
             }
-            
+
             public void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
             {
                 // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
@@ -235,7 +235,7 @@ namespace System.Tests
                 Assert.Equal(expectedStructuralResult, ((IStructuralComparable)Tuple).CompareTo(other.Tuple, TestComparer.Instance));
                 Assert.Equal(1, ((IComparable)Tuple).CompareTo(null));
 
-                IStructuralComparable_NullComparer_ThrowsNullReferenceException();  
+                IStructuralComparable_NullComparer_ThrowsNullReferenceException();
             }
 
             public void IStructuralComparable_NullComparer_ThrowsNullReferenceException()

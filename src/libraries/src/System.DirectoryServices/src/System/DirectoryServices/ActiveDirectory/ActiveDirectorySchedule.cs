@@ -118,7 +118,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if ((int)fromHour * 60 + (int)fromMinute > (int)toHour * 60 + (int)toMinute)
                 throw new ArgumentException(SR.InvalidTime);
 
-            // set the availability            
+            // set the availability
             int startPoint = (int)day * 24 * 4 + (int)fromHour * 4 + (int)fromMinute / 15;
             int endPoint = (int)day * 24 * 4 + (int)toHour * 4 + (int)toMinute / 15;
             for (int i = startPoint; i <= endPoint; i++)

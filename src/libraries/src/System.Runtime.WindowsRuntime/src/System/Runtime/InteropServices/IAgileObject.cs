@@ -17,6 +17,6 @@ namespace System.Runtime.InteropServices
         // this is an empty marker interface
 
     }  // interface IAgileObject
-}  // namespace 
+}  // namespace
 
 // IAgileObject.cs

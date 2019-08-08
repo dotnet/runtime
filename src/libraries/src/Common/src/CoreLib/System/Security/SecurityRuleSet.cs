@@ -11,4 +11,3 @@ namespace System.Security
         Level2 = 2,    // v4.0 transparency model
     }
 }
-

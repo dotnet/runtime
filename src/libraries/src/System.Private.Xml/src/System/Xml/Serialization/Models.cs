@@ -10,8 +10,8 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
     using System.Collections.Generic;
 
-    // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.  
-    // The answer of HOW the values are serialized is answered by a particular reflection importer 
+    // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.
+    // The answer of HOW the values are serialized is answered by a particular reflection importer
     // by looking for a particular set of custom attributes specific to the serialization format
     // and building an appropriate set of accessors/mappings.
 
@@ -430,4 +430,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-

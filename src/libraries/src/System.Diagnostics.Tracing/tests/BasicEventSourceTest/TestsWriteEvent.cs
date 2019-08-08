@@ -19,8 +19,8 @@ namespace BasicEventSourceTests
     public partial class TestsWriteEvent
     {
         /// <summary>
-        /// Tests WriteEvent using the manifest based mechanism.   
-        /// Tests bTraceListener path. 
+        /// Tests WriteEvent using the manifest based mechanism.
+        /// Tests bTraceListener path.
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
@@ -33,8 +33,8 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests WriteEvent using the manifest based mechanism.   
-        /// Tests bTraceListener path using events instead of virtual callbacks. 
+        /// Tests WriteEvent using the manifest based mechanism.
+        /// Tests bTraceListener path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
@@ -45,8 +45,8 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests WriteEvent using the self-describing mechanism.   
-        /// Tests both the ETW and TraceListener paths. 
+        /// Tests WriteEvent using the self-describing mechanism.
+        /// Tests both the ETW and TraceListener paths.
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
@@ -59,9 +59,9 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests WriteEvent using the self-describing mechanism.   
-        /// Tests both the ETW and TraceListener paths using events 
-        /// instead of virtual callbacks. 
+        /// Tests WriteEvent using the self-describing mechanism.
+        /// Tests both the ETW and TraceListener paths using events
+        /// instead of virtual callbacks.
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
@@ -97,7 +97,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Helper method for the two tests above.  
+        /// Helper method for the two tests above.
         /// </summary>
         private void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents, bool isEtwListener = false)
         {
@@ -322,7 +322,7 @@ namespace BasicEventSourceTests
                         }));
                 }
 
-                // Probably belongs in the user TestUsersErrors.cs.  
+                // Probably belongs in the user TestUsersErrors.cs.
                 if (!useSelfDescribingEvents)
                 {
                     tests.Add(new SubTest("WriteEvent/Basic/EventWithIncorrectNumberOfParameters",
@@ -334,7 +334,7 @@ namespace BasicEventSourceTests
                         {
                             Assert.True(0 < evts.Count);
 
-                            // We give an error message in EventListener case but not the ETW case. 
+                            // We give an error message in EventListener case but not the ETW case.
                             if (1 < evts.Count)
                             {
                                 Assert.Equal(2, evts.Count);
@@ -351,11 +351,11 @@ namespace BasicEventSourceTests
                         }));
                 }
 
-                // If you only wish to run one or several of the tests you can filter them here by 
-                // Uncommenting the following line.  
+                // If you only wish to run one or several of the tests you can filter them here by
+                // Uncommenting the following line.
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
 
-                // Next run the same tests with the TraceLogging path.  
+                // Next run the same tests with the TraceLogging path.
                 EventTestHarness.RunTests(tests, listener, logger);
             }
         }
@@ -364,7 +364,7 @@ namespace BasicEventSourceTests
 
         /**********************************************************************/
         /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
+        /// Tests sending complex data (class, arrays etc) from WriteEvent
         /// Tests the EventListener case
         /// </summary>
         [Fact]
@@ -478,20 +478,20 @@ namespace BasicEventSourceTests
                         Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(nullableDate2));
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
-                
-                // If you only wish to run one or several of the tests you can filter them here by 
-                // Uncommenting the following line.  
+
+                // If you only wish to run one or several of the tests you can filter them here by
+                // Uncommenting the following line.
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
 
-                // Next run the same tests with the TraceLogging path.  
+                // Next run the same tests with the TraceLogging path.
                 EventTestHarness.RunTests(tests, listener, logger);
             }
         }
 
         /**********************************************************************/
         /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
-        /// Uses Manifest format      
+        /// Tests sending complex data (class, arrays etc) from WriteEvent
+        /// Uses Manifest format
         /// Tests the EventListener case
         /// </summary>
         [Fact]
@@ -504,8 +504,8 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
-        /// Uses Manifest format      
+        /// Tests sending complex data (class, arrays etc) from WriteEvent
+        /// Uses Manifest format
         /// Tests the EventListener case using events instead of virtual
         /// callbacks.
         /// </summary>
@@ -516,7 +516,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
+        /// Tests sending complex data (class, arrays etc) from WriteEvent
         /// Uses Self-Describing format
         /// Tests the EventListener case
         /// </summary>
@@ -541,7 +541,7 @@ namespace BasicEventSourceTests
                 /*************************************************************************/
                 /**************************** byte[] TESTING *****************************/
                 /*************************************************************************/
-                // We only support arrays of any type with the SelfDescribing case.  
+                // We only support arrays of any type with the SelfDescribing case.
                 /*************************************************************************/
                 byte[] blob = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
                 tests.Add(new SubTest("Write/Array/EventWithByteArrayArg",
@@ -649,17 +649,17 @@ namespace BasicEventSourceTests
                         Assert.Equal(0, (int)evt.PayloadValue(1, "n"));
                     }));
 
-                // If you only wish to run one or several of the tests you can filter them here by 
-                // Uncommenting the following line.  
+                // If you only wish to run one or several of the tests you can filter them here by
+                // Uncommenting the following line.
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
 
-                // Next run the same tests with the TraceLogging path.  
+                // Next run the same tests with the TraceLogging path.
                 EventTestHarness.RunTests(tests, listener, logger);
             }
         }
 
         /**********************************************************************/
-        // Helper that compares two arrays for equality. 
+        // Helper that compares two arrays for equality.
         private static bool Equal(byte[] blob1, byte[] blob2)
         {
             if (blob1.Length != blob2.Length)
@@ -679,7 +679,7 @@ namespace BasicEventSourceTests
     }
 
     /// <summary>
-    /// Used to show the more complex data type that 
+    /// Used to show the more complex data type that
     /// </summary>
     public sealed class EventSourceTestSelfDescribingOnly : EventSource
     {
@@ -693,7 +693,7 @@ namespace BasicEventSourceTests
     public sealed class EventSourceTestByteArray : EventSource
     {
         public EventSourceTestByteArray(EventSourceSettings settings) : base(settings) { }
-        
+
         // byte[] args not supported on 4.5
         [Event(1, Level = EventLevel.Informational, Message = "Int arg after byte array: {1}")]
         public void EventWithByteArrayArg(byte[] blob, int n)
@@ -725,7 +725,7 @@ namespace BasicEventSourceTests
                 }
             }
         }
-        
+
         [Event(3, Level = EventLevel.Informational, Message = "long after byte array: {1}")]
         public void EventWithLongByteArray(byte[] blob, long lng)
         { WriteEvent(3, blob, lng); }

@@ -117,7 +117,7 @@ namespace System.DirectoryServices.AccountManagement
                             if (_removedValuesCompleted.Contains(principal) || _removedValuesPending.Contains(principal))
                             {
                                 // It's a value that's been removed (either a pending remove that hasn't completed, or a remove
-                                // that completed _after_ we loaded the ResultSet from the store).    
+                                // that completed _after_ we loaded the ResultSet from the store).
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollectionEnumerator", "MoveNext: ResultSet mode, found remove, skipping");
 
                                 needToRepeat = true;
@@ -127,7 +127,7 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 // insertedValuesCompleted: We must have gotten the ResultSet after the inserted committed.
                                 // We don't want to return
-                                // the principal twice, so we'll skip it here and later return it in 
+                                // the principal twice, so we'll skip it here and later return it in
                                 // the CurrentEnumeratorMode.InsertedValuesCompleted mode.
                                 //
                                 // insertedValuesPending: The principal must have been originally in the ResultSet, but then
@@ -325,4 +325,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-

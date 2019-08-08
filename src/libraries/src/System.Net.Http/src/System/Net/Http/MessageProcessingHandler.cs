@@ -36,9 +36,9 @@ namespace System.Net.Http
             }
 
             // ProcessRequest() and ProcessResponse() are supposed to be fast, so we call ProcessRequest() on the same
-            // thread SendAsync() was invoked to avoid context switches. However, if ProcessRequest() throws, we have 
-            // to catch the exception since the caller doesn't expect exceptions when calling SendAsync(): The 
-            // expectation is that the returned task will get faulted on errors, but the async call to SendAsync() 
+            // thread SendAsync() was invoked to avoid context switches. However, if ProcessRequest() throws, we have
+            // to catch the exception since the caller doesn't expect exceptions when calling SendAsync(): The
+            // expectation is that the returned task will get faulted on errors, but the async call to SendAsync()
             // should complete.
             var tcs = new SendState(this, cancellationToken);
             try
@@ -53,7 +53,7 @@ namespace System.Net.Http
                     var sendState = (SendState)state;
                     MessageProcessingHandler self = sendState._handler;
                     CancellationToken token = sendState._token;
-                    
+
                     if (task.IsFaulted)
                     {
                         sendState.TrySetException(task.Exception.GetBaseException());
@@ -89,7 +89,7 @@ namespace System.Net.Http
                     }
                     // We don't pass the cancellation token to the continuation task, since we want to get called even
                     // if the operation was canceled: We'll set the Task returned to the user to canceled. Passing the
-                    // cancellation token here would result in the continuation task to not be called at all. I.e. we 
+                    // cancellation token here would result in the continuation task to not be called at all. I.e. we
                     // would never complete the task returned to the caller of SendAsync().
                 });
             }
@@ -108,7 +108,7 @@ namespace System.Net.Http
         private static void HandleCanceledOperations(CancellationToken cancellationToken,
             TaskCompletionSource<HttpResponseMessage> tcs, OperationCanceledException e)
         {
-            // Check if the exception was due to a cancellation. If so, check if the OperationCanceledException is 
+            // Check if the exception was due to a cancellation. If so, check if the OperationCanceledException is
             // related to our CancellationToken. If it was indeed caused due to our cancellation token being
             // canceled, set the Task as canceled. Set it to faulted otherwise, since the OperationCanceledException
             // is not related to our cancellation token.
@@ -121,18 +121,18 @@ namespace System.Net.Http
                 tcs.TrySetException(e);
             }
         }
-        
+
         // Private class used to capture the SendAsync state in
         // a closure, while simultaneously avoiding a tuple allocation.
         private sealed class SendState : TaskCompletionSource<HttpResponseMessage>
         {
             internal readonly MessageProcessingHandler _handler;
             internal readonly CancellationToken _token;
-            
+
             public SendState(MessageProcessingHandler handler, CancellationToken token)
             {
                 Debug.Assert(handler != null);
-                
+
                 _handler = handler;
                 _token = token;
             }

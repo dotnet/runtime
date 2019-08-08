@@ -113,7 +113,7 @@ namespace System.Net.Test.Common
                     new Uri(BaseUri, $"/{EchoHandler}?auth=basic&user={userName}&password={password}");
 
                 public Uri RedirectUriForDestinationUri(int statusCode, Uri destinationUri, int hops, bool relative = false)
-                { 
+                {
                     string destination = Uri.EscapeDataString(relative ? destinationUri.PathAndQuery : destinationUri.AbsoluteUri);
 
                     if (hops > 1)

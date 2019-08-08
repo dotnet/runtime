@@ -72,16 +72,16 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10 };
-            
+
             // Platform differences
             yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsWindows ? 5 : -1 };
-            
+
         }
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
             bool isWindows = PlatformDetection.IsWindows;
-            
+
             // Searches for the ligature Æ
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, isWindows ? 24 : -1 };

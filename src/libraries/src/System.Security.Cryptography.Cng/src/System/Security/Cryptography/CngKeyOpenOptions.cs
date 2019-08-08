@@ -14,9 +14,8 @@ namespace System.Security.Cryptography
     public enum CngKeyOpenOptions : int
     {
         None = 0x00000000,
-        UserKey = 0x00000000,      
+        UserKey = 0x00000000,
         MachineKey = 0x00000020,   // NCRYPT_MACHINE_KEY_FLAG
         Silent = 0x00000040,       // NCRYPT_SILENT_FLAG
     }
 }
-

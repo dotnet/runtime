@@ -93,7 +93,6 @@
     <Rule Id="SA1024" Action="None" /> <!-- Colon should be followed by a space -->
     <Rule Id="SA1025" Action="None" /> <!-- Code should not contain multiple whitespace characters in a row -->
     <Rule Id="SA1026" Action="None" /> <!-- The keyword 'new' should not be followed by a space or a blank line -->
-    <Rule Id="SA1028" Action="None" /> <!-- Code should not contain trailing whitespace -->
     <Rule Id="SA1100" Action="None" /> <!-- Do not prefix calls with base unless local implementation exists -->
     <Rule Id="SA1101" Action="None" /> <!-- Prefix local calls with this -->
     <Rule Id="SA1106" Action="None" /> <!-- Code should not contain empty statements -->
@@ -173,7 +172,6 @@
     <Rule Id="SA1514" Action="None" /> <!-- Element documentation header should be preceded by blank line -->
     <Rule Id="SA1515" Action="None" /> <!-- Single-line comment should be preceded by blank line -->
     <Rule Id="SA1516" Action="None" /> <!-- Elements should be separated by blank line -->
-    <Rule Id="SA1518" Action="None" /> <!-- Code should not contain blank lines at the end of the file -->
     <Rule Id="SA1519" Action="None" /> <!-- Braces should not be omitted from multi-line child statement -->
     <Rule Id="SA1520" Action="None" /> <!-- Use braces consistently -->
     <Rule Id="SA1600" Action="None" /> <!-- Elements should be documented -->

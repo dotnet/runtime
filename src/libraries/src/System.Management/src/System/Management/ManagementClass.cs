@@ -11,14 +11,14 @@ namespace System.Management
 {
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
-    ///    <para> Represents a CIM management class from WMI. CIM (Common Information Model) classes 
+    ///    <para> Represents a CIM management class from WMI. CIM (Common Information Model) classes
     ///            represent management information including hardware, software, processes, etc.
     ///            For more information about the CIM classes available in Windows search for �win32 classes�.</para>
     /// </summary>
     /// <example>
     ///    <code lang='C#'>using System;
     /// using System.Management;
-    /// 
+    ///
     /// // This example demonstrates getting information about a class using the ManagementClass object
     /// class Sample_ManagementClass
     /// {
@@ -32,7 +32,7 @@ namespace System.Management
     ///    </code>
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
-    /// 
+    ///
     /// ' This example demonstrates getting information about a class using the ManagementClass object
     /// Class Sample_ManagementClass
     ///     Overloads Public Shared Function Main(args() As String) As Integer
@@ -64,7 +64,7 @@ namespace System.Management
         internal static ManagementClass GetManagementClass(
             IWbemClassObjectFreeThreaded wbemObject,
             ManagementClass mgObj)
-        { 
+        {
             ManagementClass newClass = new ManagementClass();
             newClass.wbemObject = wbemObject;
 
@@ -113,14 +113,14 @@ namespace System.Management
 
         internal static ManagementClass GetManagementClass(
             IWbemClassObjectFreeThreaded wbemObject,
-            ManagementScope scope) 
+            ManagementScope scope)
         {
             ManagementClass newClass = new ManagementClass();
             newClass.path = new ManagementPath(ManagementPath.GetManagementPath(wbemObject));
 
             if (null != scope)
                 newClass.scope = ManagementScope._Clone(scope);
-            
+
             newClass.wbemObject = wbemObject;
 
             return newClass;
@@ -185,7 +185,7 @@ namespace System.Management
         /// <example>
         ///    <code lang='C#'>ManagementPath p = new ManagementPath("Win32_Process");
         /// //Options specify that amended qualifiers are to be retrieved along with the class
-        /// ObjectGetOptions o = new ObjectGetOptions(null, true);    
+        /// ObjectGetOptions o = new ObjectGetOptions(null, true);
         /// ManagementClass c = new ManagementClass(p,o);
         ///    </code>
         ///    <code lang='VB'>Dim p As New ManagementPath("Win32_Process")
@@ -197,14 +197,14 @@ namespace System.Management
         public ManagementClass(ManagementPath path, ObjectGetOptions options) : this(null, path, options) {}
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class initialized to the given WMI class path 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class initialized to the given WMI class path
         ///    using the specified options.</para>
         /// </summary>
         /// <param name='path'>The path to the WMI class.</param>
         /// <param name=' options'>An <see cref='System.Management.ObjectGetOptions'/> representing the options to use when retrieving the WMI class.</param>
         /// <example>
         ///    <code lang='C#'>//Options specify that amended qualifiers should be retrieved along with the class
-        /// ObjectGetOptions o = new ObjectGetOptions(null, true); 
+        /// ObjectGetOptions o = new ObjectGetOptions(null, true);
         /// ManagementClass c = new ManagementClass("Win32_ComputerSystem",o);
         ///    </code>
         ///    <code lang='VB'>' Options specify that amended qualifiers should be retrieved along with the class
@@ -212,7 +212,7 @@ namespace System.Management
         /// Dim c As New ManagementClass("Win32_ComputerSystem",o)
         ///    </code>
         /// </example>
-        public ManagementClass(string path, ObjectGetOptions options) 
+        public ManagementClass(string path, ObjectGetOptions options)
             : this(null, new ManagementPath(path), options) {}
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace System.Management
             : base (scope, path, options) {}
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class for the specified WMI class, in the 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class for the specified WMI class, in the
         ///    specified scope, and with the specified options.</para>
         /// </summary>
         /// <param name='scope'>The scope in which the WMI class resides.</param>
@@ -255,8 +255,8 @@ namespace System.Management
         ///       override the first portion of the full path.</para>
         /// </remarks>
         /// <example>
-        ///    <code lang='C#'>ManagementClass c = new ManagementClass("\\\\MyBox\\root\\cimv2", 
-        ///                                         "Win32_Environment", 
+        ///    <code lang='C#'>ManagementClass c = new ManagementClass("\\\\MyBox\\root\\cimv2",
+        ///                                         "Win32_Environment",
         ///                                         new ObjectGetOptions(null, true));
         ///    </code>
         ///    <code lang='VB'>Dim c As New ManagementClass("\\MyBox\root\cimv2", _
@@ -273,7 +273,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///    <para>Gets or sets the path of the WMI class to 
+        ///    <para>Gets or sets the path of the WMI class to
         ///       which the <see cref='System.Management.ManagementClass'/>
         ///       object is bound.</para>
         /// </summary>
@@ -281,20 +281,20 @@ namespace System.Management
         ///    <para>The path of the object's class.</para>
         /// </value>
         /// <remarks>
-        ///    <para> When the property is set to a new value, 
+        ///    <para> When the property is set to a new value,
         ///       the <see cref='System.Management.ManagementClass'/>
         ///       object will be
         ///       disconnected from any previously-bound WMI class. Reconnect to the new WMI class path.</para>
         /// </remarks>
         /// <example>
-        ///    <code lang='C#'>ManagementClass c = new ManagementClass(); 
+        ///    <code lang='C#'>ManagementClass c = new ManagementClass();
         /// c.Path = "Win32_Environment";
         ///    </code>
         ///    <code lang='VB'>Dim c As New ManagementClass()
         /// c.Path = "Win32_Environment"
         ///    </code>
         /// </example>
-        public override ManagementPath Path 
+        public override ManagementPath Path
         {
             get
             {
@@ -309,9 +309,9 @@ namespace System.Management
                     throw new ArgumentOutOfRangeException(nameof(value));
             }
         }
-                
+
         /// <summary>
-        ///    <para> Gets or sets an array containing all WMI classes in the 
+        ///    <para> Gets or sets an array containing all WMI classes in the
         ///       inheritance hierarchy from this class to the top.</para>
         /// </summary>
         /// <value>
@@ -333,8 +333,8 @@ namespace System.Management
         /// Next s
         ///    </code>
         /// </example>
-        public StringCollection Derivation 
-        { 
+        public StringCollection Derivation
+        {
             get
             {
                 StringCollection result = new StringCollection();
@@ -343,7 +343,7 @@ namespace System.Management
                 object val = null;
 
                 int status = wbemObject.Get_("__DERIVATION", 0, ref val, ref dummy1, ref dummy2);
-                
+
                 if (status < 0)
                 {
                     if ((status & 0xfffff000) == 0x80041000)
@@ -355,8 +355,8 @@ namespace System.Management
                 if (null != val)
                     result.AddRange((string [])val);
 
-                return result; 
-            } 
+                return result;
+            }
         }
 
 
@@ -378,8 +378,8 @@ namespace System.Management
         ///      Console.WriteLine("This class contains this method : " &amp; m.Name)
         ///    </code>
         /// </example>
-        public MethodDataCollection Methods 
-        { 
+        public MethodDataCollection Methods
+        {
             get
             {
                 Initialize ( true ) ;
@@ -406,7 +406,7 @@ namespace System.Management
         ///    <para>Returns the collection of all instances of the class.</para>
         /// </summary>
         /// <returns>
-        /// <para>A collection of the <see cref='System.Management.ManagementObject'/> objects 
+        /// <para>A collection of the <see cref='System.Management.ManagementObject'/> objects
         ///    representing the instances of the class.</para>
         /// </returns>
         /// <example>
@@ -426,13 +426,13 @@ namespace System.Management
             return GetInstances((EnumerationOptions)null);
         }
 
-        
+
         /// <summary>
         ///    <para>Returns the collection of all instances of the class using the specified options.</para>
         /// </summary>
         /// <param name='options'>The additional operation options.</param>
         /// <returns>
-        /// <para>A collection of the <see cref='System.Management.ManagementObject'/> objects 
+        /// <para>A collection of the <see cref='System.Management.ManagementObject'/> objects
         ///    representing the instances of the class, according to the specified options.</para>
         /// </returns>
         /// <example>
@@ -453,7 +453,7 @@ namespace System.Management
         /// Next o
         ///    </code>
         /// </example>
-        public ManagementObjectCollection GetInstances(EnumerationOptions options) 
+        public ManagementObjectCollection GetInstances(EnumerationOptions options)
         {
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
@@ -472,8 +472,8 @@ namespace System.Management
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).CreateInstanceEnum_(ClassName, 
-                                                            o.Flags, 
+                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).CreateInstanceEnum_(ClassName,
+                                                            o.Flags,
                                                             o.GetContext(),
                                                             ref enumWbem
                                                              );
@@ -505,29 +505,29 @@ namespace System.Management
         /// ManagementOperationObserver ob = new ManagementOperationObserver();
         /// ob.ObjectReady += new ObjectReadyEventHandler (h.NewObject);
         /// ob.Completed += new CompletedEventHandler (h.Done);
-        /// 
+        ///
         /// c.GetInstances(ob);
-        /// 
+        ///
         /// while (!h.Completed)
         ///     System.Threading.Thread.Sleep (1000);
-        /// 
+        ///
         /// //Here you can use the object
         /// Console.WriteLine(o["SomeProperty"]);
-        ///      
+        ///
         /// public class MyHandler
         /// {
         ///     private bool completed = false;
-        /// 
+        ///
         ///     public void NewObject(object sender, ObjectReadyEventArgs e) {
         ///         Console.WriteLine("New result arrived !", ((ManagementObject)(e.NewObject))["Name"]);
         ///     }
-        /// 
+        ///
         ///     public void Done(object sender, CompletedEventArgs e) {
         ///         Console.WriteLine("async Get completed !");
         ///         completed = true;
         ///     }
-        /// 
-        ///     public bool Completed { 
+        ///
+        ///     public bool Completed {
         ///         get {
         ///             return completed;
         ///         }
@@ -539,24 +539,24 @@ namespace System.Management
         /// Dim ob As New ManagementOperationObserver()
         /// ob.ObjectReady += New ObjectReadyEventHandler(h.NewObject)
         /// ob.Completed += New CompletedEventHandler(h.Done)
-        /// 
+        ///
         /// c.GetInstances(ob)
-        /// 
+        ///
         /// While Not h.Completed
         ///     System.Threading.Thread.Sleep(1000)
         /// End While
-        /// 
+        ///
         /// 'Here you can use the object
         /// Console.WriteLine(o("SomeProperty"))
-        ///      
+        ///
         /// Public Class MyHandler
         ///     Private completed As Boolean = false
-        /// 
+        ///
         ///     Public Sub Done(sender As Object, e As EventArrivedEventArgs)
         ///         Console.WriteLine("async Get completed !")
         ///     completed = True
-        ///     End Sub    
-        /// 
+        ///     End Sub
+        ///
         ///     Public ReadOnly Property Completed() As Boolean
         ///         Get
         ///             Return completed
@@ -565,23 +565,23 @@ namespace System.Management
         /// End Class
         ///    </code>
         /// </example>
-        public void GetInstances(ManagementOperationObserver watcher) 
+        public void GetInstances(ManagementOperationObserver watcher)
         {
             GetInstances(watcher, (EnumerationOptions)null);
         }
-        
+
 
         /// <summary>
-        ///    <para>Returns the collection of all instances of the class, asynchronously, using 
+        ///    <para>Returns the collection of all instances of the class, asynchronously, using
         ///       the specified options.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
         /// <param name=' options'>The specified additional options for getting the instances.</param>
-        public void GetInstances(ManagementOperationObserver watcher, EnumerationOptions options) 
+        public void GetInstances(ManagementOperationObserver watcher, EnumerationOptions options)
         {
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
-            
+
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
@@ -592,14 +592,14 @@ namespace System.Management
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
             //The only flags in EnumerationOptions not valid for enumerations are EnsureLocatable & PrototypeOnly.
             o.EnsureLocatable = false; o.PrototypeOnly = false;
-            
+
             // Ensure we switch off ReturnImmediately as this is invalid for async calls
             o.ReturnImmediately = false;
 
             // If someone has registered for progress, make sure we flag it
             if (watcher.HaveListenersForProgress)
                 o.SendStatus = true;
-            
+
             WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
             SecurityHandler securityHandler = null;
@@ -645,8 +645,8 @@ namespace System.Management
         {
             return GetSubclasses((EnumerationOptions)null);
         }
-        
-        
+
+
         /// <summary>
         ///    <para>Retrieves the subclasses of the class using the specified
         ///       options.</para>
@@ -659,26 +659,26 @@ namespace System.Management
         /// </returns>
         /// <example>
         ///    <code lang='C#'>EnumerationOptions opt = new EnumerationOptions();
-        ///    
+        ///
         /// //Causes return of deep subclasses as opposed to only immediate ones.
-        /// opt.enumerateDeep = true;  
-        ///   
+        /// opt.enumerateDeep = true;
+        ///
         /// ManagementObjectCollection c = (new
         ///       ManagementClass("Win32_Share")).GetSubclasses(opt);
         ///    </code>
         ///    <code lang='VB'>Dim opt As New EnumerationOptions()
-        /// 
+        ///
         /// 'Causes return of deep subclasses as opposed to only immediate ones.
         /// opt.enumerateDeep = true
-        /// 
+        ///
         /// Dim cls As New ManagementClass("Win32_Share")
         /// Dim c As ManagementObjectCollection
-        /// 
+        ///
         /// c = cls.GetSubClasses(opt)
         ///    </code>
         /// </example>
-        public ManagementObjectCollection GetSubclasses(EnumerationOptions options) 
-        { 
+        public ManagementObjectCollection GetSubclasses(EnumerationOptions options)
+        {
             if (null == Path)
                 throw new InvalidOperationException();
 
@@ -696,8 +696,8 @@ namespace System.Management
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                            status = scope.GetSecuredIWbemServicesHandler( Scope.GetIWbemServices() ).CreateClassEnum_(ClassName, 
-                    o.Flags, 
+                            status = scope.GetSecuredIWbemServicesHandler( Scope.GetIWbemServices() ).CreateClassEnum_(ClassName,
+                    o.Flags,
                     o.GetContext(),
                     ref enumWbem);
             }
@@ -722,30 +722,30 @@ namespace System.Management
         ///    <para>Returns the collection of all classes derived from this class, asynchronously.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
-        public void GetSubclasses(ManagementOperationObserver watcher) 
-        { 
+        public void GetSubclasses(ManagementOperationObserver watcher)
+        {
             GetSubclasses(watcher, (EnumerationOptions)null);
         }
 
 
         /// <summary>
-        ///    <para>Retrieves all classes derived from this class, asynchronously, using the specified 
+        ///    <para>Retrieves all classes derived from this class, asynchronously, using the specified
         ///       options.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
         /// <param name='options'>The specified additional options to use in the derived class retrieval.</param>
         public void GetSubclasses(ManagementOperationObserver watcher,
-                                        EnumerationOptions options) 
+                                        EnumerationOptions options)
         {
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
-            
+
             if (null == Path)
                 throw new InvalidOperationException();
 
             Initialize ( false ) ;
 
-            EnumerationOptions o = (null == options) ? new EnumerationOptions() : 
+            EnumerationOptions o = (null == options) ? new EnumerationOptions() :
                                       (EnumerationOptions)options.Clone();
 
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
@@ -793,11 +793,11 @@ namespace System.Management
         /// </summary>
         /// <param name='newClassName'>The name of the new class to be derived.</param>
         /// <returns>
-        /// <para>A new <see cref='System.Management.ManagementClass'/> 
+        /// <para>A new <see cref='System.Management.ManagementClass'/>
         /// that represents a new WMI class derived from the original class.</para>
         /// </returns>
         /// <remarks>
-        ///    <para>Note that the newly returned class has not been committed 
+        ///    <para>Note that the newly returned class has not been committed
         ///       until the <see cref='System.Management.ManagementObject.Put()'/> method is explicitly called.</para>
         /// </remarks>
         /// <example>
@@ -807,7 +807,7 @@ namespace System.Management
         ///    </code>
         ///    <code lang='VB'>Dim existingClass As New ManagementClass("CIM_Service")
         /// Dim newClass As ManagementClass
-        /// 
+        ///
         /// newClass = existingClass.Derive("My_Service")
         /// newClass.Put()  'to commit the new class to the WMI repository.
         ///    </code>
@@ -818,7 +818,7 @@ namespace System.Management
 
             if (null == newClassName)
                 throw new ArgumentNullException(nameof(newClassName));
-            else 
+            else
             {
                 // Check the path is valid
                 ManagementPath path = new ManagementPath();
@@ -841,18 +841,18 @@ namespace System.Management
                 Get();
                 PutButNotGot = false;
             }
-                
+
             IWbemClassObjectFreeThreaded newWbemClass = null;
             int status = this.wbemObject.SpawnDerivedClass_(0, out newWbemClass);
-                
+
             if (status >= 0)
             {
                 object val = newClassName;
                 status = newWbemClass.Put_("__CLASS", 0, ref val, 0);
-                    
+
                 if (status >= 0)
                     newClass = ManagementClass.GetManagementClass(newWbemClass, this);
-            } 
+            }
 
             if (status < 0)
             {
@@ -876,20 +876,20 @@ namespace System.Management
         ///    instance of the WMI class.</para>
         /// </returns>
         /// <remarks>
-        ///    <para>Note that the new instance is not committed until the 
+        ///    <para>Note that the new instance is not committed until the
         ///    <see cref='System.Management.ManagementObject.Put()'/> method is called. Before committing it, the key properties must
         ///       be specified.</para>
         /// </remarks>
         /// <example>
         ///    <code lang='C#'>ManagementClass envClass = new ManagementClass("Win32_Environment");
-        ///    ManagementObject newInstance = 
+        ///    ManagementObject newInstance =
         ///       existingClass.CreateInstance("My_Service");
         ///    newInstance["Name"] = "Cori";
         ///    newInstance.Put(); //to commit the new instance.
         ///    </code>
         ///    <code lang='VB'>Dim envClass As New ManagementClass("Win32_Environment")
         /// Dim newInstance As ManagementObject
-        /// 
+        ///
         /// newInstance = existingClass.CreateInstance("My_Service")
         /// newInstance("Name") = "Cori"
         /// newInstance.Put()  'to commit the new instance.
@@ -925,7 +925,7 @@ namespace System.Management
         ///    <para>Returns a copy of the object.</para>
         /// </summary>
         /// <returns>
-        ///    <para> The cloned 
+        ///    <para> The cloned
         ///       object.</para>
         /// </returns>
         /// <remarks>
@@ -960,7 +960,7 @@ namespace System.Management
         ///    <para> Retrieves classes related to the WMI class.</para>
         /// </summary>
         /// <returns>
-        /// <para>A collection of the <see cref='System.Management.ManagementClass'/> or <see cref='System.Management.ManagementObject'/> 
+        /// <para>A collection of the <see cref='System.Management.ManagementClass'/> or <see cref='System.Management.ManagementObject'/>
         /// objects that represents WMI classes or instances related to
         /// the WMI class.</para>
         /// </returns>
@@ -971,14 +971,14 @@ namespace System.Management
         /// </remarks>
         /// <example>
         ///    <code lang='C#'>ManagementClass c = new ManagementClass("Win32_LogicalDisk");
-        /// 
+        ///
         /// foreach (ManagementClass r in c.GetRelatedClasses())
         ///     Console.WriteLine("Instances of {0} may have
         ///                        relationships to this class", r["__CLASS"]);
         ///    </code>
         ///    <code lang='VB'>Dim c As New ManagementClass("Win32_LogicalDisk")
         /// Dim r As ManagementClass
-        /// 
+        ///
         /// For Each r In c.GetRelatedClasses()
         ///     Console.WriteLine("Instances of {0} may have relationships _
         ///                        to this class", r("__CLASS"))
@@ -999,14 +999,14 @@ namespace System.Management
         ///    this class.
         /// </returns>
         public ManagementObjectCollection GetRelatedClasses(
-            string relatedClass) 
-        { 
-            return GetRelatedClasses(relatedClass, null, null, null, null, null, null); 
+            string relatedClass)
+        {
+            return GetRelatedClasses(relatedClass, null, null, null, null, null, null);
         }
 
-    
+
         /// <summary>
-        ///    <para> Retrieves classes related to the WMI class based on the specified 
+        ///    <para> Retrieves classes related to the WMI class based on the specified
         ///       options.</para>
         /// </summary>
         /// <param name=' relatedClass'><para>The class from which resulting classes have to be derived.</para></param>
@@ -1040,11 +1040,11 @@ namespace System.Management
             //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
-            RelatedObjectQuery q = new RelatedObjectQuery(true,    Path.Path, 
+            RelatedObjectQuery q = new RelatedObjectQuery(true,    Path.Path,
                                                             relatedClass,
-                                                            relationshipClass, 
+                                                            relationshipClass,
                                                             relatedQualifier,
-                                                            relationshipQualifier, 
+                                                            relationshipQualifier,
                                                             relatedRole, thisRole);
 
             SecurityHandler securityHandler = null;
@@ -1054,10 +1054,10 @@ namespace System.Management
             {
                 securityHandler = Scope.GetSecurityHandler();
                 status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQuery_(
-                    q.QueryLanguage, 
-                    q.QueryString, 
-                    o.Flags, 
-                    o.GetContext(), 
+                    q.QueryLanguage,
+                    q.QueryString,
+                    o.Flags,
+                    o.GetContext(),
                     ref enumWbem);
 
             }
@@ -1066,7 +1066,7 @@ namespace System.Management
                 if (securityHandler != null)
                     securityHandler.Reset();
             }
-            
+
             if (status < 0)
             {
                 if ((status & 0xfffff000) == 0x80041000)
@@ -1081,7 +1081,7 @@ namespace System.Management
 
 
         /// <summary>
-        ///    <para> Retrieves classes 
+        ///    <para> Retrieves classes
         ///       related to the WMI class, asynchronously.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
@@ -1092,21 +1092,21 @@ namespace System.Management
         }
 
         /// <summary>
-        ///    <para> Retrieves classes related to the WMI class, asynchronously, given the related 
+        ///    <para> Retrieves classes related to the WMI class, asynchronously, given the related
         ///       class name.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
         /// <param name=' relatedClass'>The name of the related class.</param>
         public void GetRelatedClasses(
-            ManagementOperationObserver watcher, 
-            string relatedClass) 
+            ManagementOperationObserver watcher,
+            string relatedClass)
         {
             GetRelatedClasses(watcher, relatedClass, null, null, null, null, null, null);
         }
 
-        
+
         /// <summary>
-        ///    <para> Retrieves classes related to the 
+        ///    <para> Retrieves classes related to the
         ///       WMI class, asynchronously, using the specified options.</para>
         /// </summary>
         /// <param name='watcher'>Handler for progress and results of the asynchronous operation.</param>
@@ -1118,7 +1118,7 @@ namespace System.Management
         /// <param name=' thisRole'>The source class must have this role in the relationship.</param>
         /// <param name=' options'>The options for retrieving the resulting classes.</param>
         public void GetRelatedClasses(
-            ManagementOperationObserver watcher, 
+            ManagementOperationObserver watcher,
             string relatedClass,
             string relationshipClass,
             string relationshipQualifier,
@@ -1136,7 +1136,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                EnumerationOptions o = (null != options) 
+                EnumerationOptions o = (null != options)
                                 ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
 
                 //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
@@ -1148,26 +1148,26 @@ namespace System.Management
                 // If someone has registered for progress, make sure we flag it
                 if (watcher.HaveListenersForProgress)
                     o.SendStatus = true;
-            
+
                 WmiEventSink sink = watcher.GetNewSink(
-                    Scope, 
+                    Scope,
                     o.Context);
 
-                RelatedObjectQuery q = new RelatedObjectQuery(true, Path.Path, 
-                                                                relatedClass, relationshipClass, 
-                                                                relatedQualifier, relationshipQualifier, 
+                RelatedObjectQuery q = new RelatedObjectQuery(true, Path.Path,
+                                                                relatedClass, relationshipClass,
+                                                                relatedQualifier, relationshipQualifier,
                                                                 relatedRole, thisRole);
-            
+
                 SecurityHandler securityHandler = null;
                 int status                      = (int)ManagementStatus.NoError;
 
                 securityHandler = Scope.GetSecurityHandler();
 
                             status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQueryAsync_(
-                        q.QueryLanguage, 
-                        q.QueryString, 
-                        o.Flags, 
-                        o.GetContext(), 
+                        q.QueryLanguage,
+                        q.QueryString,
+                        o.Flags,
+                        o.GetContext(),
                         sink.Stub);
 
 
@@ -1205,7 +1205,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///    <para>Retrieves relationship classes that relate the class to others, where the 
+        ///    <para>Retrieves relationship classes that relate the class to others, where the
         ///       endpoint class is the specified class.</para>
         /// </summary>
         /// <param name='relationshipClass'>The endpoint class for all relationship classes returned.</param>
@@ -1215,13 +1215,13 @@ namespace System.Management
         /// </returns>
         public ManagementObjectCollection GetRelationshipClasses(
             string relationshipClass)
-        { 
-            return GetRelationshipClasses(relationshipClass, null, null, null); 
+        {
+            return GetRelationshipClasses(relationshipClass, null, null, null);
         }
 
 
         /// <summary>
-        ///    <para> Retrieves relationship classes that relate this class to others, according to 
+        ///    <para> Retrieves relationship classes that relate this class to others, according to
         ///       specified options.</para>
         /// </summary>
         /// <param name='relationshipClass'><para> All resulting relationship classes must derive from this class.</para></param>
@@ -1249,10 +1249,10 @@ namespace System.Management
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
-            
-            RelationshipQuery q = new RelationshipQuery(true, Path.Path, relationshipClass,  
+
+            RelationshipQuery q = new RelationshipQuery(true, Path.Path, relationshipClass,
                                                         relationshipQualifier, thisRole);
-            
+
             SecurityHandler securityHandler = null;
             int status                      = (int)ManagementStatus.NoError;
 
@@ -1261,10 +1261,10 @@ namespace System.Management
             {
                 securityHandler = Scope.GetSecurityHandler();
                             status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQuery_(
-                    q.QueryLanguage, 
-                    q.QueryString, 
-                    o.Flags, 
-                    o.GetContext(), 
+                    q.QueryLanguage,
+                    q.QueryString,
+                    o.Flags,
+                    o.GetContext(),
                     ref enumWbem);
 
             }
@@ -1288,7 +1288,7 @@ namespace System.Management
 
 
         /// <summary>
-        ///    <para>Retrieves relationship classes that relate the class to others, 
+        ///    <para>Retrieves relationship classes that relate the class to others,
         ///       asynchronously.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
@@ -1299,21 +1299,21 @@ namespace System.Management
         }
 
         /// <summary>
-        ///    <para>Retrieves relationship classes that relate the class to the specified WMI class, 
+        ///    <para>Retrieves relationship classes that relate the class to the specified WMI class,
         ///       asynchronously.</para>
         /// </summary>
         /// <param name='watcher'>The object to handle the asynchronous operation's progress. </param>
         /// <param name=' relationshipClass'>The WMI class to which all returned relationships should point.</param>
         public void GetRelationshipClasses(
-            ManagementOperationObserver watcher, 
+            ManagementOperationObserver watcher,
             string relationshipClass)
         {
             GetRelationshipClasses(watcher, relationshipClass, null, null, null);
         }
-        
+
 
         /// <summary>
-        ///    <para>Retrieves relationship classes that relate the class according to the specified 
+        ///    <para>Retrieves relationship classes that relate the class according to the specified
         ///       options, asynchronously.</para>
         /// </summary>
         /// <param name='watcher'>The handler for progress and results of the asynchronous operation.</param>
@@ -1322,7 +1322,7 @@ namespace System.Management
         /// <param name=' thisRole'>The role which the source class must have in the resulting relationship classes.</param>
         /// <param name=' options'> The options for retrieving the results.</param>
         public void GetRelationshipClasses(
-            ManagementOperationObserver watcher, 
+            ManagementOperationObserver watcher,
             string relationshipClass,
             string relationshipQualifier,
             string thisRole,
@@ -1335,8 +1335,8 @@ namespace System.Management
             else
             {
                 Initialize ( true ) ;
-            
-                EnumerationOptions o = 
+
+                EnumerationOptions o =
                         (null != options) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
 
                 //Ensure EnumerateDeep flag is turned off as it's invalid for queries
@@ -1348,7 +1348,7 @@ namespace System.Management
                 // If someone has registered for progress, make sure we flag it
                 if (watcher.HaveListenersForProgress)
                     o.SendStatus = true;
-                
+
                 WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
                 RelationshipQuery q = new RelationshipQuery(true, Path.Path, relationshipClass,
@@ -1360,10 +1360,10 @@ namespace System.Management
                 securityHandler = Scope.GetSecurityHandler();
 
                             status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQueryAsync_(
-                        q.QueryLanguage, 
-                        q.QueryString, 
-                        o.Flags, 
-                        o.GetContext(), 
+                        q.QueryLanguage,
+                        q.QueryString,
+                        o.Flags,
+                        o.GetContext(),
                         sink.Stub);
 
 
@@ -1381,7 +1381,7 @@ namespace System.Management
             }
         }
 
-        
+
         /// <overload>
         ///    <para>Generates a strongly-typed class for a given WMI class.</para>
         /// </overload>
@@ -1396,39 +1396,39 @@ namespace System.Management
         /// </returns>
         /// <example>
         ///    <code lang='C#'>using System;
-        /// using System.Management; 
+        /// using System.Management;
         /// using System.CodeDom;
         /// using System.IO;
         /// using System.CodeDom.Compiler;
         /// using Microsoft.CSharp;
-        /// 
+        ///
         /// void GenerateCSharpCode()
         /// {
         ///       string strFilePath = "C:\\temp\\LogicalDisk.cs";
         ///       CodeTypeDeclaration ClsDom;
-        ///     
+        ///
         ///       ManagementClass cls1 = new ManagementClass(null,"Win32_LogicalDisk",null);
         ///       ClsDom = cls1.GetStronglyTypedClassCode(false,false);
-        ///     
+        ///
         ///       ICodeGenerator cg = (new CSharpCodeProvider()).CreateGenerator ();
         ///       CodeNamespace cn = new CodeNamespace("TestNamespace");
-        ///     
+        ///
         ///       // Add any imports to the code
         ///       cn.Imports.Add (new CodeNamespaceImport("System"));
         ///       cn.Imports.Add (new CodeNamespaceImport("System.ComponentModel"));
         ///       cn.Imports.Add (new CodeNamespaceImport("System.Management"));
         ///       cn.Imports.Add(new CodeNamespaceImport("System.Collections"));
-        ///    
+        ///
         ///       // Add class to the namespace
         ///       cn.Types.Add (ClsDom);
-        ///     
+        ///
         ///       //Now create the filestream (output file)
         ///       TextWriter tw = new StreamWriter(new
         ///       FileStream (strFilePath,FileMode.Create));
-        ///     
+        ///
         ///       // And write it to the file
         ///       cg.GenerateCodeFromNamespace (cn, tw, new CodeGeneratorOptions());
-        /// 
+        ///
         ///       tw.Close();
         /// }
         ///    </code>
@@ -1440,23 +1440,23 @@ namespace System.Management
             ManagementClassGenerator classGen = new ManagementClassGenerator(this);
             return classGen.GenerateCode(includeSystemClassInClassDef,systemPropertyClass);
         }
-        
-        
+
+
         /// <summary>
-        ///    <para>Generates a strongly-typed class for a given WMI class. This function generates code for Visual Basic, 
+        ///    <para>Generates a strongly-typed class for a given WMI class. This function generates code for Visual Basic,
         ///       C#, or JScript, depending on the input parameters.</para>
         /// </summary>
         /// <param name='lang'>The language of the code to be generated.</param>
         /// <param name='filePath'>The path of the file where the code is to be written.</param>
         /// <param name='classNamespace'>The .NET namespace into which the class should be generated. If this is empty, the namespace will be generated from the WMI namespace.</param>
         /// <returns>
-        /// <para><see langword='true'/>, if the method succeeded; 
+        /// <para><see langword='true'/>, if the method succeeded;
         ///    otherwise, <see langword='false'/> .</para>
         /// </returns>
         /// <example>
         ///    <code lang='C#'>using System;
-        /// using System.Management; 
-        ///    
+        /// using System.Management;
+        ///
         /// ManagementClass cls = new ManagementClass(null,"Win32_LogicalDisk",null,"");
         /// cls.GetStronglyTypedClassCode(CodeLanguage.CSharp,"C:\temp\Logicaldisk.cs",String.Empty);
         ///    </code>

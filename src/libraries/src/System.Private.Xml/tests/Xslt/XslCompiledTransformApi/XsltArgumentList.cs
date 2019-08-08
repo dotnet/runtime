@@ -2680,7 +2680,7 @@ namespace System.Xml.Tests
         {
             int i = 1;
             m_xsltArg = new XsltArgumentList();
-            
+
             foreach (string str in szWhiteSpace)
             {
                 MyObject obj = new MyObject(i, _output);

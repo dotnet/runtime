@@ -4,7 +4,7 @@
 // (C) Copyright 2002 Franklin Wise
 // (C) Copyright 2003 Daniel Morgan
 // (C) Copyright 2003 Martin Willemoes Hansen
-// 
+//
 
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
@@ -16,10 +16,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -378,7 +378,7 @@ namespace System.Data.Tests
             Assert.Null(val);
         }
 
-        // tests item at row, column in table to be 
+        // tests item at row, column in table to be
         private void ValueTest(string message, DataTable dt, int row, int column, object value)
         {
             object val = dt.Rows[row].ItemArray[column];

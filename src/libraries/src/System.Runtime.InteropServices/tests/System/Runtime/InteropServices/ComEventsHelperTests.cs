@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.Tests
 {
 #pragma warning disable 0618 // ComEventsHelper is marked as Obsolete.
     public class ComEventsHelperTests
-    {        
+    {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Combine_Unix_ThrowsPlatformNotSupportedException()
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Remove_Unix_ThrowPlatformNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(null, Guid.Empty, 1, null));   
+            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
         }
 
         [Fact]

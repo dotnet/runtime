@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                // The IPv6 equivalent was never available on down-level platforms. 
+                // The IPv6 equivalent was never available on down-level platforms.
                 // We've kept this behavior for legacy reasons. For IPv6 use PrefixLength instead.
                 if (Address.AddressFamily != AddressFamily.InterNetwork)
                 {

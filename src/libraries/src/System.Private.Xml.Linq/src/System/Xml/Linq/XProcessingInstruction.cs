@@ -36,7 +36,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Initializes a new XML processing instruction by copying its target and data 
+        /// Initializes a new XML processing instruction by copying its target and data
         /// from another XML processing instruction.
         /// </summary>
         /// <param name="other">XML processing instruction to copy from.</param>

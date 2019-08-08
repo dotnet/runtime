@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             bool rightClass = false;
             HashAlgorithm hash = null;
             SignatureDescription sig = new SignatureDescription();
-            
+
             // null hash
             AssertExtensions.Throws<ArgumentNullException>("name", () => hash = sig.CreateDigest());
 

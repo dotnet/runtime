@@ -1304,7 +1304,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // float types
             new SqRealTypeInfo(),
             new SqFloatTypeInfo(),
-            
+
             // unique identifier (== guid)
             new SqlUniqueIdentifierTypeInfo(),
 

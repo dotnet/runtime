@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _pr.Init();
         }
 
-        //Array item entry of nulls has a count of nulls represented by that item. The first null has been 
+        //Array item entry of nulls has a count of nulls represented by that item. The first null has been
         // incremented by GetNext, the rest of the null counts are incremented here
         internal void ArrayCountIncrement(int value) => _count += value;
 

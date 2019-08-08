@@ -86,7 +86,7 @@ namespace System.Data.SqlTypes
         internal static SqlMoney SqlMoneyCtor(long value, int ignored)
         {
             var c = default(SqlMoneyCaster);
-            
+
             // Same behavior as the internal SqlMoney.ctor(long, bool) overload
             c.Fake._fNotNull = true;
             c.Fake._value = value;

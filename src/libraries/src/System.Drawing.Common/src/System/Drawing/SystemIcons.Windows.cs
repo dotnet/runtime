@@ -46,7 +46,7 @@ namespace System.Drawing
                     s_shield = new Icon(typeof(SystemIcons), "ShieldIcon.ico");
                     Debug.Assert(s_shield != null, "ShieldIcon.ico must be present as an embedded resource in System.Drawing.Common.");
                 }
-                
+
                 return s_shield;
             }
         }

@@ -58,7 +58,7 @@ namespace System.ComponentModel.Design
         public void Remove(DesignerVerb value) => List.Remove(value);
 
         public void CopyTo(DesignerVerb[] array, int index) => List.CopyTo(array, index);
-    
+
         protected override void OnValidate(object value)
         {
             // Dont perform any argument validation.

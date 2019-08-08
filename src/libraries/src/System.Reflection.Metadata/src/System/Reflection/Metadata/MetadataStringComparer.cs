@@ -22,19 +22,19 @@ namespace System.Reflection.Metadata
     ///
     /// The code is optimized such that there is no additional overhead in
     /// re-obtaining a comparer over hoisting it in to a local.
-    /// 
+    ///
     /// That is to say that a construct like:
     ///
     /// <code>
-    /// if (reader.StringComparer.Equals(typeDef.Namespace, "System") &amp;&amp; 
+    /// if (reader.StringComparer.Equals(typeDef.Namespace, "System") &amp;&amp;
     ///     reader.StringComparer.Equals(typeDef.Name, "Object")
     /// {
     ///     // found System.Object
     /// }
     /// </code>
-    /// 
+    ///
     /// is no less efficient than:
-    /// 
+    ///
     /// <code>
     /// var comparer = reader.StringComparer;
     /// if (comparer.Equals(typeDef.Namespace, "System") &amp;&amp;

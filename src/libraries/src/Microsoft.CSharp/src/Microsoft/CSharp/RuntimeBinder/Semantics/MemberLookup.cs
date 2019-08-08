@@ -32,7 +32,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     /////////////////////////////////////////////////////////////////////////////////
     // MemberLookup class handles looking for a member within a type and its
     // base types. This only handles AGGTYPESYMs and TYVARSYMs.
-    // 
+    //
     // Lookup must be called before any other methods.
 
     internal sealed class MemberLookup
@@ -92,7 +92,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /******************************************************************************
             Search just the given type (not any bases). Returns true iff it finds
             something (which will have been recorded by RecordType).
-         
+
             pfHideByName is set to true iff something was found that hides all
             members of base types (eg, a hidebyname method).
         ******************************************************************************/
@@ -347,11 +347,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /******************************************************************************
             Lookup in a class and its bases (until *ptypeEnd is hit).
-            
+
             ptypeEnd [in/out] - *ptypeEnd should be either null or object. If we find
                 something here that would hide members of object, this sets *ptypeEnd
                 to null.
-         
+
             Returns true when searching should continue to the interfaces.
         ******************************************************************************/
         private bool LookupInClass(AggregateType typeStart, ref AggregateType ptypeEnd)
@@ -503,7 +503,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /***************************************************************************************************
             Lookup must be called before anything else can be called.
-         
+
             typeSrc - Must be an AggregateType or TypeParameterType.
             obj - the expression through which the member is being accessed. This is used for accessibility
                 of protected members and for constructing a MEMGRP from the results of the lookup.
@@ -514,7 +514,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             arity - the number of type args specified. Only members that support this arity are found.
                 Note that when arity is zero, all methods are considered since we do type argument
                 inferencing.
-         
+
             flags - See MemLookFlags.
                 TypeVarsAllowed only applies to the most derived type (not base types).
         ***************************************************************************************************/

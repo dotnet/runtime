@@ -100,7 +100,7 @@ namespace System.IO.Packaging
             GC.SuppressFinalize(this);
         }
 
-        // Protected implementation of Dispose pattern. 
+        // Protected implementation of Dispose pattern.
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)

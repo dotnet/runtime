@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Net.Http.Headers
 {
-    // According to the RFC, in places where a "parameter" is required, the value is mandatory 
+    // According to the RFC, in places where a "parameter" is required, the value is mandatory
     // (e.g. Media-Type, Accept). However, we don't introduce a dedicated type for it. So NameValueHeaderValue supports
     // name-only values in addition to name/value pairs.
     public class NameValueHeaderValue : ICloneable
@@ -67,7 +67,7 @@ namespace System.Net.Http.Headers
 
             if (!string.IsNullOrEmpty(_value))
             {
-                // If we have a quoted-string, then just use the hash code. If we have a token, convert to lowercase 
+                // If we have a quoted-string, then just use the hash code. If we have a token, convert to lowercase
                 // and retrieve the hash code.
                 if (_value[0] == '"')
                 {
@@ -96,7 +96,7 @@ namespace System.Net.Http.Headers
 
             // RFC2616: 14.20: unquoted tokens should use case-INsensitive comparison; quoted-strings should use
             // case-sensitive comparison. The RFC doesn't mention how to compare quoted-strings outside the "Expect"
-            // header. We treat all quoted-strings the same: case-sensitive comparison. 
+            // header. We treat all quoted-strings the same: case-sensitive comparison.
 
             if (string.IsNullOrEmpty(_value))
             {
@@ -220,7 +220,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Parse the name, i.e. <name> in name/value string "<name>=<value>". Caller must remove 
+            // Parse the name, i.e. <name> in name/value string "<name>=<value>". Caller must remove
             // leading whitespace.
             int nameLength = HttpRuleParser.GetTokenLength(input, startIndex);
 
@@ -251,7 +251,7 @@ namespace System.Net.Http.Headers
 
             if (valueLength == 0)
             {
-                return 0; // We have an invalid value. 
+                return 0; // We have an invalid value.
             }
 
             // Use parameterless ctor to avoid double-parsing of name and value, i.e. skip public ctor validation.

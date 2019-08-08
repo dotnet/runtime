@@ -26,7 +26,7 @@ namespace System.Net.Security
         private SslAuthenticationOptions _sslAuthenticationOptions;
 
         private int _nestedAuth;
-        
+
         private SecurityStatusPal _securityStatus;
 
         private enum CachedSessionStatus : byte
@@ -886,7 +886,7 @@ namespace System.Net.Security
                 HandleQueuedCallback(ref _queuedReadStateRequest);
             }
         }
-        
+
         // Returns:
         // -1    - proceed
         // 0     - queued

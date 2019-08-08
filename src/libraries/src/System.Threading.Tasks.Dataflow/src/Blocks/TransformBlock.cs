@@ -34,7 +34,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Gets the object to use for writing to the source when multiple threads may be involved.</summary>
         /// <remarks>
-        /// If a reordering buffer is used, it is safe for multiple threads to write to concurrently and handles safe 
+        /// If a reordering buffer is used, it is safe for multiple threads to write to concurrently and handles safe
         /// access to the source. If there's no reordering buffer because no parallelism is used, then only one thread at
         /// a time will try to access the source, anyway.  But, if there's no reordering buffer and parallelism is being
         /// employed, then multiple threads may try to access the source concurrently, in which case we need to manually
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Dataflow
         { }
 
         /// <summary>
-        /// Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/> and 
+        /// Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/> and
         /// <see cref="ExecutionDataflowBlockOptions"/>.
         /// </summary>
         /// <param name="transform">The function to invoke with each data element received.</param>
@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Dataflow
         { }
 
         /// <summary>
-        /// Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/> 
+        /// Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/>
         /// and <see cref="DataflowBlockOptions"/>.
         /// </summary>
         /// <param name="transformSync">The synchronous function to invoke with each data element received.</param>
@@ -133,10 +133,10 @@ namespace System.Threading.Tasks.Dataflow
                     _reorderingBuffer, dataflowBlockOptions, TargetCoreOptions.UsesAsyncCompletion);
             }
 
-            // Link up the target half with the source half.  In doing so, 
+            // Link up the target half with the source half.  In doing so,
             // ensure exceptions are propagated, and let the source know no more messages will arrive.
             // As the target has completed, and as the target synchronously pushes work
-            // through the reordering buffer when async processing completes, 
+            // through the reordering buffer when async processing completes,
             // we know for certain that no more messages will need to be sent to the source.
             _target.Completion.ContinueWith((completed, state) =>
             {
@@ -146,7 +146,7 @@ namespace System.Threading.Tasks.Dataflow
             }, _source, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
-            // In those cases we need to fault the target half to drop its buffered messages and to release its 
+            // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
@@ -193,7 +193,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (!itemIsValid) _target.ChangeBoundingCount(-1);
 
                 // If there's no reordering buffer (because we're running sequentially or ordering was disabled),
-                // simply pass the output message through. Otherwise, there's a reordering buffer, 
+                // simply pass the output message through. Otherwise, there's a reordering buffer,
                 // so add to it instead (if a reordering buffer is used, we always need
                 // to output the message to it, even if the operation failed and outputMessage
                 // is null... this is because the reordering buffer cares about a strict sequence
@@ -286,7 +286,7 @@ namespace System.Threading.Tasks.Dataflow
                     break;
 
                 case TaskStatus.Faulted:
-                    // We must add the exception before declining and signaling completion, as the exception 
+                    // We must add the exception before declining and signaling completion, as the exception
                     // is part of the operation, and the completion conditions depend on this.
                     AggregateException aggregate = completed.Exception;
                     Common.StoreDataflowMessageValueIntoExceptionData(aggregate, messageWithId.Key, targetInnerExceptions: true);
@@ -297,8 +297,8 @@ namespace System.Threading.Tasks.Dataflow
 
             // Adjust the bounding count if necessary (we only need to decrement it for faulting
             // and cancellation, since in the case of success we still have an item that's now in the output buffer).
-            // Even though this is more costly (again, only in the non-success case, we do this before we store the 
-            // message, so that if there's a race to remove the element from the source buffer, the count is 
+            // Even though this is more costly (again, only in the non-success case, we do this before we store the
+            // message, so that if there's a race to remove the element from the source buffer, the count is
             // appropriately incremented before it's decremented.
             if (!gotOutputItem && isBounded) _target.ChangeBoundingCount(-1);
 
@@ -321,8 +321,8 @@ namespace System.Threading.Tasks.Dataflow
                     }
                 }
             }
-            // Otherwise, there's a reordering buffer, so add to it instead.  
-            // Even if something goes wrong, we need to update the 
+            // Otherwise, there's a reordering buffer, so add to it instead.
+            // Even if something goes wrong, we need to update the
             // reordering buffer, so it knows that an item isn't missing.
             else _reorderingBuffer.AddItem(messageWithId.Value, outputItem, itemIsValid: gotOutputItem);
 

@@ -1414,7 +1414,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
     public class C
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -4003,7 +4003,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         private ICollection<object> _v6;
         private IList<object> _v8;
         private IDictionary<string, dynamic> _v9;
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -4099,7 +4099,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
     {
         private static IEnumerable<dynamic> s_v3;
         private IList<object> _v6;
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

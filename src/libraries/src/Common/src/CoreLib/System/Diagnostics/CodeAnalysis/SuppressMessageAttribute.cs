@@ -6,10 +6,10 @@
 **
 **
 **
-**  An attribute to suppress violation messages/warnings   
-**  by static code analysis tools. 
+**  An attribute to suppress violation messages/warnings
+**  by static code analysis tools.
 **
-** 
+**
 ===========================================================*/
 
 namespace System.Diagnostics.CodeAnalysis

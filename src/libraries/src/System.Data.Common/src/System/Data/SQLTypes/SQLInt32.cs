@@ -552,4 +552,3 @@ namespace System.Data.SqlTypes
         public static readonly SqlInt32 MaxValue = new SqlInt32(int.MaxValue);
     } // SqlInt32
 } // namespace System.Data.SqlTypes
-

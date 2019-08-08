@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -196,7 +196,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(p.NativeCallConv, dia.CallingConvention);
             Assert.False(dia.BestFitMapping);
             Assert.False(dia.ExactSpelling);
-            Assert.True(dia.PreserveSig);  
+            Assert.True(dia.PreserveSig);
             Assert.False(dia.SetLastError);
 
             IList<Type> returnTypeOptMods = method.ReturnParameter.GetOptionalCustomModifiers();

@@ -18,4 +18,3 @@ namespace System.Security.Cryptography.X509Certificates
         EphemeralKeySet = 0x20,
     }
 }
-

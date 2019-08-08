@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
         {
             if (value.Equals(expected))
             {
-                // same instance, we don't have to test the values 
+                // same instance, we don't have to test the values
                 return;
             }
 

@@ -225,7 +225,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(totalAsyncRead, totalSyncArrayRead);
             Assert.Equal(totalAsyncRead, totalSyncSpanRead);
-            Assert.InRange(totalAsyncRead, PerContent * ContentCount, long.MaxValue); 
+            Assert.InRange(totalAsyncRead, PerContent * ContentCount, long.MaxValue);
         }
 
         [Theory]

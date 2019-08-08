@@ -18,7 +18,7 @@ namespace System.Xml
         protected XmlReader reader;
         protected IXmlLineInfo readerAsIXmlLineInfo;
 
-        // 
+        //
         // Constructor
         //
         internal XmlWrappingReader(XmlReader baseReader)
@@ -167,4 +167,3 @@ namespace System.Xml
         }
     }
 }
-

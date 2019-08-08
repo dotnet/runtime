@@ -224,7 +224,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             // Tests that the content is what it is expected to be, even if it's still encyrpted. This prevents from ambiguous definitions of content.
 
             // The encoded message was built in ASN.1 editor and tested in framework. It contains an enveloped message version 0 with one recipient of
-            // key transport type. The symmetric algorythm is 3DES and the contained type is data. 
+            // key transport type. The symmetric algorythm is 3DES and the contained type is data.
             byte[] encodedMessage =
                  ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
                 + "414b65795472616e7366657231021031d935fb63e8cfab48a0bf7b397b67c0300d06092a864886f70d010101050004818013"
@@ -371,7 +371,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
         public static void FromManagedPal_CompatWithOctetStringWrappedContents_Decrypt()
         {
             byte[] expectedContent = new byte[] { 1, 2, 3 };
-            byte[] encodedMessage = 
+            byte[] encodedMessage =
                 ("3082010C06092A864886F70D010703A081FE3081FB0201003181C83081C5020100302" +
                  "E301A311830160603550403130F5253414B65795472616E7366657231021031D935FB" +
                  "63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500048180586BCA530" +
@@ -430,5 +430,3 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
         };
     }
 }
-
-

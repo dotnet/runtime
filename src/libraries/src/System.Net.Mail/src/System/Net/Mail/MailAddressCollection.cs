@@ -95,7 +95,7 @@ namespace System.Net.Mail
                 else
                 {
                     //appending another one, append a comma to separate and then fold and add the encoded address
-                    //the charsConsumed will be 1 because only the first line needs to account for the header itself for 
+                    //the charsConsumed will be 1 because only the first line needs to account for the header itself for
                     //line length; subsequent lines have a single whitespace character because they are folded here
                     encodedAddresses += ", " + address.Encode(1, allowUnicode);
                 }

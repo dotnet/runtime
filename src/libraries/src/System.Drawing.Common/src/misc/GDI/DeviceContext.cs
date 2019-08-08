@@ -18,29 +18,29 @@ namespace System.Drawing.Internal
     internal sealed partial class DeviceContext : MarshalByRefObject, IDeviceContext, IDisposable
     {
         /// <summary>
-        /// This class is a wrapper to a Win32 device context, and the Hdc property is the way to get a 
+        /// This class is a wrapper to a Win32 device context, and the Hdc property is the way to get a
         /// handle to it.
-        /// 
-        /// The hDc is released/deleted only when owned by the object, meaning it was created internally; 
-        /// in this case, the object is responsible for releasing/deleting it. 
-        /// In the case the object is created from an existing hdc, it is not released; this is consistent 
-        /// with the Win32 guideline that says if you call GetDC/CreateDC/CreatIC/CreateEnhMetafile, you are 
+        ///
+        /// The hDc is released/deleted only when owned by the object, meaning it was created internally;
+        /// in this case, the object is responsible for releasing/deleting it.
+        /// In the case the object is created from an existing hdc, it is not released; this is consistent
+        /// with the Win32 guideline that says if you call GetDC/CreateDC/CreatIC/CreateEnhMetafile, you are
         /// responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectively.
-        /// 
-        /// This class implements some of the operations commonly performed on the properties of a dc in WinForms, 
-        /// specially for interacting with GDI+, like clipping and coordinate transformation.  
+        ///
+        /// This class implements some of the operations commonly performed on the properties of a dc in WinForms,
+        /// specially for interacting with GDI+, like clipping and coordinate transformation.
         /// Several properties are not persisted in the dc but instead they are set/reset during a more comprehensive
-        /// operation like text rendering or painting; for instance text alignment is set and reset during DrawText (GDI), 
-        /// DrawString (GDI+).  
-        /// 
-        /// Other properties are persisted from operation to operation until they are reset, like clipping, 
-        /// one can make several calls to Graphics or WindowsGraphics object after setting the dc clip area and 
+        /// operation like text rendering or painting; for instance text alignment is set and reset during DrawText (GDI),
+        /// DrawString (GDI+).
+        ///
+        /// Other properties are persisted from operation to operation until they are reset, like clipping,
+        /// one can make several calls to Graphics or WindowsGraphics object after setting the dc clip area and
         /// before resetting it; these kinds of properties are the ones implemented in this class.
-        /// This kind of properties place an extra challenge in the scenario where a DeviceContext is obtained 
-        /// from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the 
-        /// DeviceContext underlying hdc out of sync.  DeviceContext needs to support these kind of properties to 
+        /// This kind of properties place an extra challenge in the scenario where a DeviceContext is obtained
+        /// from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the
+        /// DeviceContext underlying hdc out of sync.  DeviceContext needs to support these kind of properties to
         /// be able to keep the GDI+ and GDI HDCs in sync.
-        /// 
+        ///
         /// A few other persisting properties have been implemented in DeviceContext2, among them:
         /// 1. Window origin.
         /// 2. Bounding rectangle.
@@ -48,11 +48,11 @@ namespace System.Drawing.Internal
         /// 4. View port extent.
         /// 5. View port origin.
         /// 6. Window extent
-        /// 
+        ///
         /// Other non-persisted properties just for information: Background/Foreground color, Palette, Color adjustment,
-        /// Color space, ICM mode and profile, Current pen position, Binary raster op (not supported by GDI+), 
+        /// Color space, ICM mode and profile, Current pen position, Binary raster op (not supported by GDI+),
         /// Background mode, Logical Pen, DC pen color, ARc direction, Miter limit, Logical brush, DC brush color,
-        /// Brush origin, Polygon filling mode, Bitmap stretching mode, Logical font, Intercharacter spacing, 
+        /// Brush origin, Polygon filling mode, Bitmap stretching mode, Logical font, Intercharacter spacing,
         /// Font mapper flags, Text alignment, Test justification, Layout, Path, Meta region.
         /// See book "Windows Graphics Programming - Feng Yuang", P315 - Device Context Attributes.
         /// </summary>
@@ -64,9 +64,9 @@ namespace System.Drawing.Internal
 
         private bool _disposed;
 
-        // We cache the hWnd when creating the dc from one, to provide support forIDeviceContext.GetHdc/ReleaseHdc.  
+        // We cache the hWnd when creating the dc from one, to provide support forIDeviceContext.GetHdc/ReleaseHdc.
         // This hWnd could be null, in such case it is referring to the screen.
-        private IntPtr _hWnd = (IntPtr)(-1); // Unlikely to be a valid hWnd.  
+        private IntPtr _hWnd = (IntPtr)(-1); // Unlikely to be a valid hWnd.
 
         private IntPtr _hInitialPen;
         private IntPtr _hInitialBrush;
@@ -199,7 +199,7 @@ namespace System.Drawing.Internal
         {
             // If hdc is null, the function creates a memory DC compatible with the application's current screen.
             // Win2K+: (See CreateCompatibleDC in the MSDN).
-            // In this case the thread that calls CreateCompatibleDC owns the HDC that is created. When this thread is destroyed, 
+            // In this case the thread that calls CreateCompatibleDC owns the HDC that is created. When this thread is destroyed,
             // the HDC is no longer valid.
 
             IntPtr compatibleDc = IntUnsafeNativeMethods.CreateCompatibleDC(new HandleRef(null, hdc));
@@ -277,12 +277,12 @@ namespace System.Drawing.Internal
             {
                 Debug.Assert(_dcType == DeviceContextType.Display, "Calling GetDC from a non display/window device.");
 
-                // Note: for common DCs, GetDC assigns default attributes to the DC each time it is retrieved. 
+                // Note: for common DCs, GetDC assigns default attributes to the DC each time it is retrieved.
                 // For example, the default font is System.
                 _hDC = UnsafeNativeMethods.GetDC(new HandleRef(this, _hWnd));
 #if TRACK_HDC
                 Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("hdc[0x{0:x8}]=DC.GetHdc(hWnd=0x{1:x8})", unchecked((int) _hDC), unchecked((int) _hWnd))));
-#endif            
+#endif
             }
 
             return _hDC;
@@ -297,39 +297,39 @@ namespace System.Drawing.Internal
             if (_hDC != IntPtr.Zero && _dcType == DeviceContextType.Display)
             {
 #if TRACK_HDC
-                int retVal = 
+                int retVal =
 #endif
                 UnsafeNativeMethods.ReleaseDC(new HandleRef(this, _hWnd), new HandleRef(this, _hDC));
                 // Note: retVal == 0 means it was not released but doesn't necessarily means an error; class or private DCs are never released.
 #if TRACK_HDC
                 Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("[ret={0}]=DC.ReleaseDC(hDc=0x{1:x8}, hWnd=0x{2:x8})", retVal, unchecked((int) _hDC), unchecked((int) _hWnd))));
-#endif                 
+#endif
                 _hDC = IntPtr.Zero;
             }
         }
 
         /// <summary>
-        /// Restores the device context to the specified state. The DC is restored by popping state information off a 
-        /// stack created by earlier calls to the SaveHdc function. 
-        /// The stack can contain the state information for several instances of the DC. If the state specified by the 
-        /// specified parameter is not at the top of the stack, RestoreDC deletes all state information between the top 
-        /// of the stack and the specified instance. 
-        /// Specifies the saved state to be restored. If this parameter is positive, nSavedDC represents a specific 
-        /// instance of the state to be restored. If this parameter is negative, nSavedDC represents an instance relative 
-        /// to the current state. For example, -1 restores the most recently saved state. 
+        /// Restores the device context to the specified state. The DC is restored by popping state information off a
+        /// stack created by earlier calls to the SaveHdc function.
+        /// The stack can contain the state information for several instances of the DC. If the state specified by the
+        /// specified parameter is not at the top of the stack, RestoreDC deletes all state information between the top
+        /// of the stack and the specified instance.
+        /// Specifies the saved state to be restored. If this parameter is positive, nSavedDC represents a specific
+        /// instance of the state to be restored. If this parameter is negative, nSavedDC represents an instance relative
+        /// to the current state. For example, -1 restores the most recently saved state.
         /// See MSDN for more info.
         /// </summary>
         public void RestoreHdc()
         {
 #if TRACK_HDC
-            bool result = 
+            bool result =
 #endif
             // Note: Don't use the Hdc property here, it would force handle creation.
             IntUnsafeNativeMethods.RestoreDC(new HandleRef(this, _hDC), -1);
 #if TRACK_HDC
             // Note: Winforms may call this method during app exit at which point the DC may have been finalized already causing this assert to popup.
             Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8}, state={2})", result, unchecked((int) _hDC), restoreState) ));
-#endif 
+#endif
             Debug.Assert(_contextStack != null, "Someone is calling RestoreHdc() before SaveHdc()");
 
             if (_contextStack != null)
@@ -344,19 +344,19 @@ namespace System.Drawing.Internal
 
 #if OPTIMIZED_MEASUREMENTDC
             // in this case, GDI will copy back the previously saved font into the DC.
-            // we dont actually know what the font is in our measurement DC so 
+            // we dont actually know what the font is in our measurement DC so
             // we need to clear it off.
             MeasurementDCInfo.ResetIfIsMeasurementDC(_hDC);
-#endif        
+#endif
         }
 
         /// <summary>
-        /// Saves the current state of the device context by copying data describing selected objects and graphic 
-        /// modes (such as the bitmap, brush, palette, font, pen, region, drawing mode, and mapping mode) to a 
-        /// context stack. 
-        /// The SaveDC function can be used any number of times to save any number of instances of the DC state. 
+        /// Saves the current state of the device context by copying data describing selected objects and graphic
+        /// modes (such as the bitmap, brush, palette, font, pen, region, drawing mode, and mapping mode) to a
+        /// context stack.
+        /// The SaveDC function can be used any number of times to save any number of instances of the DC state.
         /// A saved state can be restored by using the RestoreHdc method.
-        /// See MSDN for more details. 
+        /// See MSDN for more details.
         /// </summary>
         public int SaveHdc()
         {
@@ -386,9 +386,9 @@ namespace System.Drawing.Internal
         /// <summary>
         /// Selects a region as the current clipping region for the device context.
         /// Remarks (From MSDN):
-        /// - Only a copy of the selected region is used. The region itself can be selected for any number of other device contexts or it can be deleted. 
-        /// - The SelectClipRgn function assumes that the coordinates for a region are specified in device units. 
-        /// - To remove a device-context's clipping region, specify a NULL region handle. 
+        /// - Only a copy of the selected region is used. The region itself can be selected for any number of other device contexts or it can be deleted.
+        /// - The SelectClipRgn function assumes that the coordinates for a region are specified in device units.
+        /// - To remove a device-context's clipping region, specify a NULL region handle.
         /// </summary>
         public void SetClip(WindowsRegion region)
         {
@@ -399,7 +399,7 @@ namespace System.Drawing.Internal
         }
 
         ///<summary>
-        /// Creates a new clipping region from the intersection of the current clipping region and the specified rectangle. 
+        /// Creates a new clipping region from the intersection of the current clipping region and the specified rectangle.
         ///</summary>
         public void IntersectClip(WindowsRegion wr)
         {
@@ -414,7 +414,7 @@ namespace System.Drawing.Internal
             {
                 int result = IntUnsafeNativeMethods.GetClipRgn(new HandleRef(this, _hDC), new HandleRef(clip, clip.HRegion));
 
-                // If the function succeeds and there is a clipping region for the given device context, the return value is 1. 
+                // If the function succeeds and there is a clipping region for the given device context, the return value is 1.
                 if (result == 1)
                 {
                     Debug.Assert(clip.HRegion != IntPtr.Zero);

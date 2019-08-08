@@ -7,8 +7,8 @@ using System.Runtime.Serialization;
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    ///     The exception that is thrown when the underlying exported value or metadata of an 
-    ///     <see cref="Lazy{T}"/> or <see cref="Lazy{T, TMetadataView}"/> object cannot be 
+    ///     The exception that is thrown when the underlying exported value or metadata of an
+    ///     <see cref="Lazy{T}"/> or <see cref="Lazy{T, TMetadataView}"/> object cannot be
     ///     cast to <c>T</c> or <c>TMetadataView</c>, respectively.
     /// </summary>
     [Serializable]
@@ -23,11 +23,11 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class 
+        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class
         ///     with the specified error message.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionContractMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
@@ -37,17 +37,17 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class 
-        ///     with the specified error message and exception that is the cause of the  
+        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class
+        ///     with the specified error message and exception that is the cause of the
         ///     exception.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="CompositionContractMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
         /// <param name="innerException">
-        ///     The <see cref="Exception"/> that is the underlying cause of the 
+        ///     The <see cref="Exception"/> that is the underlying cause of the
         ///     <see cref="CompositionContractMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
@@ -55,17 +55,17 @@ namespace System.ComponentModel.Composition
             : base(message, innerException)
         {
         }
-        
+
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class 
+        ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class
         ///     with the specified serialization data.
         /// </summary>
         /// <param name="info">
-        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the 
+        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the
         ///     <see cref="CompositionContractMismatchException"/>.
         /// </param>
         /// <param name="context">
-        ///     The <see cref="StreamingContext"/> that contains contextual information about the 
+        ///     The <see cref="StreamingContext"/> that contains contextual information about the
         ///     source or destination.
         /// </param>
         /// <exception cref="ArgumentNullException">

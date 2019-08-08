@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -214,7 +214,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("name98", "\"\"")
                 }
             }; // Use escaped values (2)
-            
+
             yield return new object[]
             {
                 u,
@@ -227,7 +227,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Normal case
-            
+
             yield return new object[]
             {
                 uSecure,
@@ -240,7 +240,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Normal case with secure URI
-            
+
             yield return new object[]
             {
                 u,
@@ -253,7 +253,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header at the beginning
-            
+
             yield return new object[]
             {
                 uSecure,
@@ -266,7 +266,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header composed of spaces at the beginning
-            
+
             yield return new object[]
             {
                 u,
@@ -279,7 +279,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header in the middle
-            
+
             yield return new object[]
             {
                 uSecure,
@@ -292,7 +292,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header composed of spaces in the middle
-            
+
             yield return new object[]
             {
                 u,
@@ -305,7 +305,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header at the end
-            
+
             yield return new object[]
             {
                 u,
@@ -318,7 +318,7 @@ namespace System.Net.Primitives.Unit.Tests
                     new Cookie("_m_ask_fm_session", "session1")
                 }
             }; // Empty header composed of spaces at the end
-            
+
             yield return new object[]
             {
                 uSecure,
@@ -498,7 +498,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(3, cc.MaxCookieSize);
 
             cc = new CookieContainer(10, int.MaxValue, 4); // Even though PerDomainCapacity > Capacity, this shouldn't throw
-        }      
+        }
 
         [Fact]
         public void Add_ExpiredCookie_NotAdded()
@@ -639,7 +639,7 @@ namespace System.Net.Primitives.Unit.Tests
             // This test ensures that all cookies with paths (that the path specified by the uri starts with) are returned
             Cookie c1 = new Cookie("name1", "value", "/aa", ".url.com");
             Cookie c2 = new Cookie("name2", "value", "/a", ".url.com");
-            Cookie c3 = new Cookie("name3", "value", "/b", ".url.com"); // Should be ignored - no match with the URL's path 
+            Cookie c3 = new Cookie("name3", "value", "/b", ".url.com"); // Should be ignored - no match with the URL's path
             Cookie c4 = new Cookie("name4", "value", "/", ".url.com"); // Should NOT be ignored (has no path specified)
 
             CookieContainer cc1 = new CookieContainer();
@@ -762,6 +762,6 @@ namespace System.Net.Primitives.Unit.Tests
                 Assert.Equal(c1.Name, c2.Name); // Primitive check for equality
                 Assert.Equal(c1.Value, c2.Value);
             }
-        }        
+        }
     }
 }

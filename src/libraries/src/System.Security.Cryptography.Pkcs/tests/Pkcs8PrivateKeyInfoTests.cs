@@ -376,7 +376,7 @@ D9fVWpuVzYpEDfZm");
             Assert.True(info.PrivateKeyBytes.Span.SequenceEqual(keyBytes));
 
             byte[] encoded = info.Encode();
-            
+
             Pkcs8PrivateKeyInfo decoded = Pkcs8PrivateKeyInfo.Decode(encoded, out _, skipCopy: true);
 
             Assert.True(decoded.PrivateKeyBytes.Span.SequenceEqual(keyBytes));

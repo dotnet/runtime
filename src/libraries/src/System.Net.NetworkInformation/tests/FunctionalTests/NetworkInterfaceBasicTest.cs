@@ -269,7 +269,7 @@ namespace System.Net.NetworkInformation.Tests
                 server.Bind(new IPEndPoint(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0));
                 var serverEndPoint = (IPEndPoint)server.LocalEndPoint;
 
-                Task<SocketReceiveMessageFromResult> receivedTask = 
+                Task<SocketReceiveMessageFromResult> receivedTask =
                     server.ReceiveMessageFromAsync(new ArraySegment<byte>(new byte[1]), SocketFlags.None, serverEndPoint);
                 while (!receivedTask.IsCompleted)
                 {

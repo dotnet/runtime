@@ -121,7 +121,7 @@ namespace System
                     if (*(int*)(a + 4) != *(int*)(b + 4)) goto DiffOffset4;
                     if (*(int*)(a + 6) != *(int*)(b + 6)) goto DiffOffset6;
                     if (*(int*)(a + 8) != *(int*)(b + 8)) goto DiffOffset8;
-                    length -= 10; a += 10; b += 10; 
+                    length -= 10; a += 10; b += 10;
                 }
 #endif // BIT64
 
@@ -196,7 +196,7 @@ namespace System
         }
 
 
-        // Provides a more flexible function for string comparison. See StringComparison 
+        // Provides a more flexible function for string comparison. See StringComparison
         // for meaning of different comparisonType.
         public static int Compare(string? strA, string? strB, StringComparison comparisonType)
         {
@@ -523,7 +523,7 @@ namespace System
         //
         // The case-sensitive and culture-sensitive option is set by options,
         // and the default culture is used.
-        //        
+        //
         public bool EndsWith(string value)
         {
             return EndsWith(value, StringComparison.CurrentCulture);
@@ -535,7 +535,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            
+
             if ((object)this == (object)value)
             {
                 CheckStringComparison(comparisonType);

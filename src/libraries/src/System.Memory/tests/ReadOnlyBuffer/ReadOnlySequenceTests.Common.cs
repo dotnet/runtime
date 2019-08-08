@@ -151,7 +151,7 @@ namespace System.Memory.Tests
             // Verify last segment
             VerifyCanGetFirst(buffer, expectedSize: 200);
         }
-        
+
         protected void VerifyCanGetFirst(ReadOnlySequence<T> buffer, int expectedSize)
         {
             Assert.Equal(expectedSize, buffer.Length);
@@ -399,7 +399,7 @@ namespace System.Memory.Tests
 
         #endregion
 
-        #region Constructor 
+        #region Constructor
 
         [Fact]
         public void Ctor_Array_ValidatesArguments()
@@ -415,7 +415,7 @@ namespace System.Memory.Tests
         public void Ctor_SingleSegment_ValidatesArguments()
         {
             var segment = new BufferSegment<T>(new T[5]);
-            
+
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySequence<T>(null, 2, segment, 3));
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySequence<T>(segment, 2, null, 3));
             Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySequence<T>(segment, 6, segment, 3));

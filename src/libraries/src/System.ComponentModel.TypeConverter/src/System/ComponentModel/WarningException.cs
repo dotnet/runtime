@@ -14,7 +14,7 @@ namespace System.ComponentModel
     public class WarningException : SystemException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the last Win32 error 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the last Win32 error
         /// that occurred.
         /// </summary>
         public WarningException() : this(null, null, null)
@@ -22,7 +22,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with
         /// the specified message and no Help file.
         /// </summary>
         public WarningException(string message) : this(message, null, null)
@@ -30,7 +30,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with
         /// the specified message, and with access to the specified Help file.
         /// </summary>
         public WarningException(string message, string helpUrl) : this(message, helpUrl, null)
@@ -38,7 +38,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the Exception class with a specified error message and a 
+        /// Initializes a new instance of the Exception class with a specified error message and a
         /// reference to the inner exception that is the cause of this exception.
         /// FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
         /// </summary>
@@ -47,7 +47,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the
         /// specified message, and with access to the specified Help file and topic.
         /// </summary>
         public WarningException(string message, string helpUrl, string helpTopic) : base(message)
@@ -57,7 +57,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Need this constructor since Exception implements ISerializable. 
+        /// Need this constructor since Exception implements ISerializable.
         /// </summary>
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
@@ -71,7 +71,7 @@ namespace System.ComponentModel
         public string HelpUrl { get; }
 
         /// <summary>
-        /// Specifies the Help topic associated with the warning. This field is read-only. 
+        /// Specifies the Help topic associated with the warning. This field is read-only.
         /// </summary>
         public string HelpTopic { get; }
 

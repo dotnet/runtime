@@ -42,7 +42,7 @@ namespace System.Net.Sockets.Tests
             Task connectTask = client.ConnectAsync(IPAddress.Loopback, port);
 
             await (new Task[] { acceptTask, connectTask }).WhenAllOrAnyFailed();
-                        
+
             client.Dispose();
             acceptTask.Result.Dispose();
             listener.Stop();

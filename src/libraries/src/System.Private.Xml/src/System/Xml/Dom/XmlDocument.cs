@@ -32,7 +32,7 @@ namespace System.Xml
         private const string NonSignificantWhitespaceName = "#whitespace";
         private const string SignificantWhitespaceName = "#significant-whitespace";
 
-        // The seed index below requires that the constant strings above and the seed array below are 
+        // The seed index below requires that the constant strings above and the seed array below are
         // kept in the same order.
         private const int DocumentNameSeedIndex = 0;
         private const int DocumentFragmentNameSeedIndex = 1;
@@ -249,7 +249,7 @@ namespace System.Xml
 
         internal bool AddIdInfo(XmlName eleName, XmlName attrName)
         {
-            //when XmlLoader call XmlDocument.AddInfo, the element.XmlName and attr.XmlName 
+            //when XmlLoader call XmlDocument.AddInfo, the element.XmlName and attr.XmlName
             //have already been replaced with the ones that don't have namespace values (or just
             //string.Empty) because in DTD, the namespace is not supported
             if (_htElementIDAttrDecl == null || _htElementIDAttrDecl[eleName] == null)
@@ -264,7 +264,7 @@ namespace System.Xml
 
         private XmlName GetIDInfoByElement_(XmlName eleName)
         {
-            //When XmlDocument is getting the IDAttribute for a given element, 
+            //When XmlDocument is getting the IDAttribute for a given element,
             //we need only compare the prefix and localname of element.XmlName with
             //the registered htElementIDAttrDecl.
             XmlName newName = GetXmlName(eleName.Prefix, eleName.LocalName, string.Empty, null);
@@ -1340,7 +1340,7 @@ namespace System.Xml
                 IsLoading = false;
                 _actualLoadingStatus = false;
 
-                // Ensure the bit is still on after loading a dtd 
+                // Ensure the bit is still on after loading a dtd
                 _reportValidity = true;
             }
         }
@@ -1439,7 +1439,7 @@ namespace System.Xml
         }
 
         // Saves the XML document to the specified XmlWriter.
-        // 
+        //
         //Saves out the file with xmldeclaration which has encoding value equal to
         //that of textwriter's encoding
         public virtual void Save(XmlWriter w)
@@ -1473,7 +1473,7 @@ namespace System.Xml
         }
 
         // Saves the node to the specified XmlWriter.
-        // 
+        //
         //Writes out the to the file with exact content in the XmlDocument.
         public override void WriteTo(XmlWriter w)
         {
@@ -1481,7 +1481,7 @@ namespace System.Xml
         }
 
         // Saves all the children of the node to the specified XmlWriter.
-        // 
+        //
         //Writes out the to the file with exact content in the XmlDocument.
         public override void WriteContentTo(XmlWriter xw)
         {

@@ -24,7 +24,7 @@ namespace Microsoft.SqlServer.Server
 
         //
         //  Actual value accessors
-        //      valid type indicates column must be of the type or column must be variant 
+        //      valid type indicates column must be of the type or column must be variant
         //           and GetVariantType returned the type
         //
 
@@ -69,4 +69,3 @@ namespace Microsoft.SqlServer.Server
         Guid GetGuid(SmiEventSink sink, int ordinal);
     }
 }
-

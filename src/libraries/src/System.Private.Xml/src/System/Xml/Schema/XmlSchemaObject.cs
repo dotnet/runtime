@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
-{ 
+{
     using System.Diagnostics;
     using System.Xml.Serialization;
 

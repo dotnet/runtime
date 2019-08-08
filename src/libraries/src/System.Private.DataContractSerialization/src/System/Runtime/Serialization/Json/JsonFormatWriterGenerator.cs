@@ -133,7 +133,7 @@ namespace System.Runtime.Serialization.Json
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfDateTimeOffset);
                     _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetAdapterMethod);
                 }
-                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>. 
+                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>.
                 else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
                 {
                     ClassDataContract dc = (ClassDataContract)DataContract.GetDataContract(objType);
@@ -216,8 +216,8 @@ namespace System.Runtime.Serialization.Json
                     LocalBuilder memberValue = null;
 
                     _ilg.Load(_contextArg);
-                    _ilg.Call(methodInfo: member.IsGetOnlyCollection ? 
-                        XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod : 
+                    _ilg.Call(methodInfo: member.IsGetOnlyCollection ?
+                        XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod :
                         XmlFormatGeneratorStatics.ResetIsGetOnlyCollectionMethod);
 
                     if (!member.EmitDefaultValue)
@@ -489,7 +489,7 @@ namespace System.Runtime.Serialization.Json
                     _ilg.Load(_contextArg);
                     _ilg.Load(_xmlWriterArg);
                 }
-                // load primitive value 
+                // load primitive value
                 if (value != null)
                 {
                     _ilg.Load(value);

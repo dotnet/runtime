@@ -240,9 +240,9 @@ namespace System.Xml.Xsl.Xslt
             // Initialization code should be executed before any other code (global variables/parameters or root expression)
             // For this purpose we insert it as THE FIRST global variable $init (global variables are calculated before global parameters)
             // and put all initalization code in it.
-            // In retail mode global variables are calculated lasely if they don't have side effects. 
+            // In retail mode global variables are calculated lasely if they don't have side effects.
             // To mark $init as variable with side effect we put all code to function and set SideEffect flag on this function.
-            // ILGen expects that all library functions are sideeffect free. To prevent calls to RegisterDecimalFormat() to be optimized out 
+            // ILGen expects that all library functions are sideeffect free. To prevent calls to RegisterDecimalFormat() to be optimized out
             // we add results returned from these calls and return them as a result of initialization function.
             QilNode init = _f.Int32(0);
 
@@ -2705,8 +2705,8 @@ namespace System.Xml.Xsl.Xslt
                     // passed on to any templates invoked by the built-in rule. At XSLT 2.0, these parameters are
                     // passed through the built-in template rule unchanged.
 
-                    // we can't just modify current/position/last of actualArgs in XSLT 2.0 as we tried before, 
-                    // becuase flags for apply-import amy now be different then flags for apply-templates, so 
+                    // we can't just modify current/position/last of actualArgs in XSLT 2.0 as we tried before,
+                    // becuase flags for apply-import amy now be different then flags for apply-templates, so
                     // we may need to add some space for additional position/last arguments
                     QilNode body = InvokeApplyFunction(_compiler.Root, mode, /*actualArgs:*/null);
                     if (IsDebug)

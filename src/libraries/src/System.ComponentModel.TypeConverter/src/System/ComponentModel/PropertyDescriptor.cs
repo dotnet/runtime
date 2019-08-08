@@ -36,12 +36,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// 
+        ///
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with
         /// the name in the specified <see cref='System.ComponentModel.MemberDescriptor'/> and the
         /// attributes in both the <see cref='System.ComponentModel.MemberDescriptor'/> and the
-        /// <see cref='System.Attribute'/> array. 
-        /// 
+        /// <see cref='System.Attribute'/> array.
+        ///
         /// </summary>
         protected PropertyDescriptor(MemberDescriptor descr, Attribute[] attrs) : base(descr, attrs)
         {
@@ -220,7 +220,7 @@ namespace System.ComponentModel
         public PropertyDescriptorCollection GetChildProperties(object instance) => GetChildProperties(instance, null);
 
         /// <summary>
-        /// Retrieves the properties 
+        /// Retrieves the properties
         /// </summary>
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {

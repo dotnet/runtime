@@ -55,4 +55,3 @@ namespace System.Security.Cryptography.X509Certificates
         private X509KeyUsageFlags _keyUsages;
     }
 }
-

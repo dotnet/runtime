@@ -135,7 +135,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             _context = new DirectoryContext(context);
 
-            // validate the context 
+            // validate the context
             _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.SchemaNamingContext);
             _schemaEntry.Bind(true);
 
@@ -316,7 +316,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //  work with copy of the context
             context = new DirectoryContext(context);
 
-            // create a schema property 
+            // create a schema property
             schemaProperty = new ActiveDirectorySchemaProperty(context, ldapDisplayName, (DirectoryEntry)null, null);
 
             return schemaProperty;
@@ -516,7 +516,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_commonName == null)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _commonName = (string)GetValueFromCache(PropertyManager.Cn, true);
                     }
                 }
@@ -634,7 +634,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_descriptionInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _description = (string)GetValueFromCache(PropertyManager.Description, false);
                         _descriptionInitialized = true;
                     }
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    // get the distinguished name to construct the directory entry 
+                    // get the distinguished name to construct the directory entry
                     GetSchemaPropertyDirectoryEntry();
                     Debug.Assert(_propertyEntry != null);
 
@@ -831,7 +831,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_isInGlobalCatalogInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         object value = GetValueFromCache(PropertyManager.IsMemberOfPartialAttributeSet, false);
                         _isInGlobalCatalog = (value != null) ? (bool)value : false;
                         _isInGlobalCatalogInitialized = true;
@@ -845,7 +845,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    // get the distinguished name to construct the directory entry 
+                    // get the distinguished name to construct the directory entry
                     GetSchemaPropertyDirectoryEntry();
                     Debug.Assert(_propertyEntry != null);
 
@@ -866,7 +866,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_rangeLowerInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         // if the property is not set then we will return null
                         object value = GetValueFromCache(PropertyManager.RangeLower, false);
                         if (value == null)
@@ -888,7 +888,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    // get the distinguished name to construct the directory entry 
+                    // get the distinguished name to construct the directory entry
                     GetSchemaPropertyDirectoryEntry();
                     Debug.Assert(_propertyEntry != null);
 
@@ -919,7 +919,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_rangeUpperInitialized)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         // if the property is not set then we will return null
                         object value = GetValueFromCache(PropertyManager.RangeUpper, false);
                         if (value == null)
@@ -941,7 +941,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    // get the distinguished name to construct the directory entry 
+                    // get the distinguished name to construct the directory entry
                     GetSchemaPropertyDirectoryEntry();
                     Debug.Assert(_propertyEntry != null);
 
@@ -1060,7 +1060,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    // get the distinguished name to construct the directory entry 
+                    // get the distinguished name to construct the directory entry
                     GetSchemaPropertyDirectoryEntry();
                     Debug.Assert(_propertyEntry != null);
 
@@ -1093,7 +1093,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_schemaGuidBinaryForm == null)
                     {
-                        // get the property from the server 
+                        // get the property from the server
                         _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true);
                     }
                 }
@@ -1129,7 +1129,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         // This method retrieves the value of a property (single valued) from the values
         // that were retrieved from the server. The "mustExist" parameter controls whether or
-        // not an exception should be thrown if a value does not exist. If mustExist is true, this 
+        // not an exception should be thrown if a value does not exist. If mustExist is true, this
         // will throw an exception is value does not exist.
         //
         private object GetValueFromCache(string propertyName, bool mustExist)
@@ -1184,9 +1184,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         //
         // This method retrieves properties for this schema class from the schema container
-        // on the server. For non-defunct classes only properties that are not available in the abstract 
+        // on the server. For non-defunct classes only properties that are not available in the abstract
         // schema are retrieved.  For defunct classes, all the properties are retrieved.
-        // The retrieved values are stored in a class variable "propertyValuesFromServer" which is a 
+        // The retrieved values are stored in a class variable "propertyValuesFromServer" which is a
         // hashtable indexed on the property name.
         //
         internal static SearchResult GetPropertiesFromSchemaContainer(DirectoryContext context, DirectoryEntry schemaEntry, string name, bool isDefunctOnServer)
@@ -1328,12 +1328,12 @@ namespace System.DirectoryServices.ActiveDirectory
             return _propertyEntry;
         }
 
-        /// 
+        ///
         /// <summary>
-        /// Initializes the search flags attribute value i.e. fetches it from 
+        /// Initializes the search flags attribute value i.e. fetches it from
         /// the directory, if this object is bound.
         /// </summary>
-        /// 
+        ///
         private void InitializeSearchFlags()
         {
             if (isBound)
@@ -1364,7 +1364,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (isBound)
             {
-                // get the distinguished name to construct the directory entry 
+                // get the distinguished name to construct the directory entry
                 GetSchemaPropertyDirectoryEntry();
                 Debug.Assert(_propertyEntry != null);
 
@@ -1380,7 +1380,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (isBound)
             {
-                // get the distinguished name to construct the directory entry 
+                // get the distinguished name to construct the directory entry
                 GetSchemaPropertyDirectoryEntry();
                 Debug.Assert(_propertyEntry != null);
 
@@ -1391,7 +1391,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void SetProperty(string propertyName, object value)
         {
-            // get the distinguished name to construct the directory entry 
+            // get the distinguished name to construct the directory entry
             GetSchemaPropertyDirectoryEntry();
             Debug.Assert(_propertyEntry != null);
 
@@ -1427,7 +1427,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(syntax), (int)syntax, typeof(ActiveDirectorySyntax));
             }
 
-            // get the distinguished name to construct the directory entry 
+            // get the distinguished name to construct the directory entry
             GetSchemaPropertyDirectoryEntry();
             Debug.Assert(_propertyEntry != null);
 

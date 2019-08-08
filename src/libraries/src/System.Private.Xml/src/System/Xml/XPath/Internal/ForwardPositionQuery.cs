@@ -36,8 +36,3 @@ namespace MS.Internal.Xml.XPath
         public override XPathNodeIterator Clone() { return new ForwardPositionQuery(this); }
     }
 }
-
-
-
-
-

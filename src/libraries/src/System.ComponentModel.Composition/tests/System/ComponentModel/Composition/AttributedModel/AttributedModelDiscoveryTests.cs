@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // Attribute.GetCustomAttributes does find the inherited attributes
             var c2 = Attribute.GetCustomAttributes(propInfo, true);
 
-            // This seems like it should be a bug in the reflection API's... 
+            // This seems like it should be a bug in the reflection API's...
             Assert.NotEqual(c1, c2);
         }
 

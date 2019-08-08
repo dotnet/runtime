@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition
                 Assert.Same(e, exception.InnerException);
             }
         }
-        
+
         private static ImportCardinalityMismatchException CreateCardinalityMismatchException()
         {
             return CreateCardinalityMismatchException((string)null, (Exception)null);

@@ -8,18 +8,18 @@ using System.Runtime.Serialization;
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
     /// <summary>
-    /// Random number generator that tracks information necessary to reproduce a sequence of random numbers. To save the current state, 
+    /// Random number generator that tracks information necessary to reproduce a sequence of random numbers. To save the current state,
     /// tests should query the CurrentState property before execution of the test case that uses random.
     /// In addition, the test needs to capture the current state of random instance before setup steps, if random is used during setup.
-    /// 
+    ///
     /// This class also provides more helper methods, like create numbers with high probability for low numbers.
-    /// 
-    /// Use the CurrentState property to save repro information, and, when crash is detected, dump the state to file or log 
+    ///
+    /// Use the CurrentState property to save repro information, and, when crash is detected, dump the state to file or log
     /// with its ToString method. The performance of CurrentState has been optimized to ensure it does not affect the overall performance
     /// of the test app. But, the CurrentState.ToString is not optimum, so use it only when crash is detected.
-    /// 
+    ///
     /// For easy Random scope and repro management, see also RandomizerScope class.
-    /// 
+    ///
     /// Note: instances of this class are not thread-safe!
     /// <example>
     /// To remember the current state of Randomizer, use randomizerInstance.CurrentState method before its first use!
@@ -262,7 +262,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         // which is 100 times faster than using Reflection. See remarks on Serialize method for more details.
 
         //
-        // Private Constants 
+        // Private Constants
         //
         private const int MBIG = int.MaxValue;
         private const int MSEED = 161803398;
@@ -367,7 +367,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         //
         // Public Instance Methods
-        // 
+        //
 
 
         /*=====================================Next=====================================
@@ -382,7 +382,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         private double GetSampleForLargeRange()
         {
-            // The distribution of double value returned by Sample 
+            // The distribution of double value returned by Sample
             // is not distributed well enough for a large range.
             // If we use Sample for a range [int.MinValue..int.MaxValue)
             // We will end up getting even numbers only.

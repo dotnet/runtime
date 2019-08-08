@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace System.Reflection.TypeLoading.Ecma
 {
     // Low level support for the BindingFlag-driven enumerator apis. These return members declared (not inherited) on the current
-    // type, possibly doing case-sensitive/case-insensitive filtering on a supplied name. 
+    // type, possibly doing case-sensitive/case-insensitive filtering on a supplied name.
     internal sealed partial class EcmaDefinitionType
     {
         //

@@ -17,12 +17,12 @@ namespace System.Transactions
     //
     //  The legacy TransactionScope uses TLS to store the ambient transaction. TLS data doesn't flow across thread continuations and hence legacy TransactionScope does not compose well with
     //  new .NET async programming model constructs like Tasks and async/await. To enable TransactionScope to work with Task and async/await, a new TransactionScopeAsyncFlowOption
-    //  is introduced. When users opt-in the async flow option, ambient transaction will automatically flow across thread continuations and user can compose TransactionScope with Task and/or    
-    //  async/await constructs. 
-    // 
+    //  is introduced. When users opt-in the async flow option, ambient transaction will automatically flow across thread continuations and user can compose TransactionScope with Task and/or
+    //  async/await constructs.
+    //
     public enum TransactionScopeAsyncFlowOption
     {
-        Suppress, // Ambient transaction will be stored in TLS and will not flow across thread continuations. 
+        Suppress, // Ambient transaction will be stored in TLS and will not flow across thread continuations.
         Enabled,  // Ambient transaction will be stored in CallContext and will flow across thread continuations. This option will enable TransactionScope to compose well with Task and async/await.
     }
 
@@ -93,7 +93,7 @@ namespace System.Transactions
                     etwLog.TransactionScopeCreated(_expectedCurrent.TransactionTraceId, scopeResult);
                 }
             }
- 
+
             PushScope();
 
             if (etwLog.IsEnabled())
@@ -270,7 +270,7 @@ namespace System.Transactions
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
- 
+
             ValidateScopeTimeout("transactionOptions.Timeout", transactionOptions.Timeout);
             TimeSpan scopeTimeout = transactionOptions.Timeout;
 
@@ -497,7 +497,7 @@ namespace System.Transactions
         }
 
 
-        // We don't have a finalizer (~TransactionScope) because all it would be able to do is try to 
+        // We don't have a finalizer (~TransactionScope) because all it would be able to do is try to
         // operate on other managed objects (the transaction), which is not safe to do because they may
         // already have been finalized.
 
@@ -930,7 +930,7 @@ namespace System.Transactions
                             out _contextTransaction
                             );
 
-            // Calling validate here as we need to make sure the existing parent ambient transaction scope is already looked up to see if we have ES interop enabled.  
+            // Calling validate here as we need to make sure the existing parent ambient transaction scope is already looked up to see if we have ES interop enabled.
             ValidateAsyncFlowOptionAndESInteropOption();
         }
 
@@ -952,7 +952,7 @@ namespace System.Transactions
 
             if (AsyncFlowEnabled)
             {
-                // Async Flow is enabled and CallContext will be used for ambient transaction. 
+                // Async Flow is enabled and CallContext will be used for ambient transaction.
                 _threadContextData = CallContextCurrentData.CreateOrGetCurrentData(ContextKey);
 
                 if (_savedCurrentScope == null && _savedCurrent == null)
@@ -1036,7 +1036,7 @@ namespace System.Transactions
                 }
             }
 
-            // prevent restoring the context in an unexpected thread due to thread switch during TransactionScope's Dispose 
+            // prevent restoring the context in an unexpected thread due to thread switch during TransactionScope's Dispose
             if (shouldRestoreContextData)
             {
                 _threadContextData.CurrentScope = _savedCurrentScope;
@@ -1158,7 +1158,7 @@ namespace System.Transactions
             }
         }
 
-        // The validate method assumes that the existing parent ambient transaction scope is already looked up.  
+        // The validate method assumes that the existing parent ambient transaction scope is already looked up.
         private void ValidateAsyncFlowOptionAndESInteropOption()
         {
             if (AsyncFlowEnabled)
@@ -1207,7 +1207,7 @@ namespace System.Transactions
         // Store a reference to the value that this scope expects for current
         private Transaction _expectedCurrent;
 
-        // Store a reference to the committable form of this transaction if 
+        // Store a reference to the committable form of this transaction if
         // the scope made one.
         private CommittableTransaction _committableTransaction;
 

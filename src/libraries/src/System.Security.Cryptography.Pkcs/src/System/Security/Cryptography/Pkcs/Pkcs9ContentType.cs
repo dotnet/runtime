@@ -54,5 +54,3 @@ namespace System.Security.Cryptography.Pkcs
         private volatile Oid _lazyContentType = null;
     }
 }
-
-

@@ -154,7 +154,7 @@ namespace Internal.Cryptography.Pal
                         throw new CryptographicException(SR.Cryptography_X509_InvalidFindType);
                 }
             }
-           
+
             return results;
         }
 

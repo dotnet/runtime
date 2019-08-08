@@ -18,7 +18,7 @@ namespace System.Reflection.TypeLoading.Ecma
         private readonly EcmaModule _module;
         private readonly FieldDefinitionHandle _handle;
 
-        internal EcmaField(RoInstantiationProviderType declaringType, FieldDefinitionHandle handle, Type reflectedType) 
+        internal EcmaField(RoInstantiationProviderType declaringType, FieldDefinitionHandle handle, Type reflectedType)
             : base(declaringType, reflectedType)
         {
             Debug.Assert(!handle.IsNil);

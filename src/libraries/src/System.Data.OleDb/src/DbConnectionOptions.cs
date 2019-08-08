@@ -74,7 +74,7 @@ namespace System.Data.Common
         private static readonly Regex ConnectionStringValidValueRegex = new Regex("^[^\u0000]*$", RegexOptions.Compiled); // value not allowed to contain embedded null
 #endif
         private static readonly Regex ConnectionStringValidKeyRegex = new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled);// key not allowed to start with semi-colon or space or contain non-visible characters or end with space
-      
+
         internal const string DataDirectory = "|datadirectory|";
 
         private static readonly Regex ConnectionStringQuoteValueRegex = new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled); // generally do not quote the value if it matches the pattern
@@ -861,7 +861,7 @@ namespace System.Data.Common
                     bool isEquivalent = (msg1 == msg2);
                     if (!isEquivalent)
                     {
-                        // we also accept cases were Regex parser (debug only) reports "wrong format" and 
+                        // we also accept cases were Regex parser (debug only) reports "wrong format" and
                         // retail parsing code reports format exception in different location or "keyword not supported"
                         if (msg2.StartsWith(WrongFormatMessagePrefix, StringComparison.Ordinal))
                         {

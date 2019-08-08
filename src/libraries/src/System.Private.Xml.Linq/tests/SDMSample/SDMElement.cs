@@ -949,7 +949,7 @@ namespace XDocumentTests.SDMSample
         }
 
         /// <summary>
-        /// Tests that an element appended as a child element during iteration of its new 
+        /// Tests that an element appended as a child element during iteration of its new
         /// parent's content is returned in iteration.
         /// </summary>
         [Fact]

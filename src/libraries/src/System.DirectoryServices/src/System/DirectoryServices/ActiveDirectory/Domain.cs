@@ -14,7 +14,7 @@ namespace System.DirectoryServices.ActiveDirectory
     public enum DomainMode : int
     {
         Unknown = -1,
-        Windows2000MixedDomain = 0,   // win2000, win2003, NT  
+        Windows2000MixedDomain = 0,   // win2000, win2003, NT
         Windows2000NativeDomain = 1,  // win2000, win2003
         Windows2003InterimDomain = 2, // win2003, NT
         Windows2003Domain = 3,        // win2003
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             DomainMode existingDomainMode = DomainMode;
 
-            // set the forest mode on AD  
+            // set the forest mode on AD
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid domainMode      Action
@@ -218,8 +218,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         break;
                 }
 
-                // NOTE: 
-                // If the domain controller we are talking to is W2K 
+                // NOTE:
+                // If the domain controller we are talking to is W2K
                 // (more specifically the schema is a W2K schema) then the
                 // msDS-Behavior-Version attribute will not be present.
                 // If that is the case, the domain functionality cannot be raised
@@ -269,7 +269,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // get the current domain mode
             existingDomainMode = GetDomainMode();
 
-            // set the forest mode on AD  
+            // set the forest mode on AD
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid RequestedDomain      Action
@@ -280,9 +280,9 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // Windows2003Interim      Windows2003               ntMixedDomain = 0, msDS-Behavior-Version = 2
             //
-            // Windows2000Native       Windows2003 or above      
+            // Windows2000Native       Windows2003 or above
             // Windows2003             Windows2008 or above
-            // Windows2008             Windows2008R2 or above 
+            // Windows2008             Windows2008R2 or above
             // Windows2008R2           Windows2012 or above
             // Windows2012             Windows2012R2 or above
             // Windows2012R2           ERROR
@@ -376,8 +376,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                 }
 
-                // NOTE: 
-                // If the domain controller we are talking to is W2K 
+                // NOTE:
+                // If the domain controller we are talking to is W2K
                 // (more specifically the schema is a W2K schema) then the
                 // msDS-Behavior-Version attribute will not be present.
                 // If that is the case, the domain functionality cannot be raised
@@ -705,7 +705,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             string password = TrustHelper.CreateTrustPassword();
 
-            // first create trust on local side                  
+            // first create trust on local side
             TrustHelper.CreateTrust(context, Name, targetDomain.GetDirectoryContext(), targetDomain.Name, false, direction, password);
 
             // then create trust on remote side
@@ -996,7 +996,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // logic to check the domain mode
             // if domainFunctionality is 0,
-            //            then check ntMixedDomain to differentiate between 
+            //            then check ntMixedDomain to differentiate between
             //            Windows2000Native and Windows2000Mixed
             // if domainFunctionality is 1 ==> Windows2003Interim
             // if domainFunctionality is 2 ==> Windows2003
@@ -1010,7 +1010,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                // If the "domainFunctionality" attribute is not set on the rootdse, then 
+                // If the "domainFunctionality" attribute is not set on the rootdse, then
                 // this is a W2K domain (with W2K schema) so just check for mixed or native
                 switch (domainFunctionality)
                 {
@@ -1115,7 +1115,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            // create a new context object for the domain controller passing on  the 
+            // create a new context object for the domain controller passing on  the
             // credentials from the domain context
             DirectoryContext dcContext = Utils.GetNewDirectoryContext(dcName, DirectoryContextType.DirectoryServer, context);
             return new DomainController(dcContext, dcName);
@@ -1128,8 +1128,8 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
 
-                // now within the partitions container search for the 
-                // crossRef object that has it's "dnsRoot" attribute equal to the 
+                // now within the partitions container search for the
+                // crossRef object that has it's "dnsRoot" attribute equal to the
                 // dns name of the current domain
 
                 // build the filter
@@ -1221,7 +1221,7 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
-                // search for all the "crossRef" objects that have the 
+                // search for all the "crossRef" objects that have the
                 // ADS_SYSTEMFLAG_CR_NTDS_NC and SYSTEMFLAG_CR_NTDS_DOMAIN flags set
                 // (one-level search is good enough)
 
@@ -1427,7 +1427,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         if ((tmpObject.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
                         {
-                            // child domain                                  
+                            // child domain
                             if (tmpObject.ParentIndex == ((TrustObject)tmpTrustList[localDomainIndex]).OriginalIndex)
                             {
                                 tmpObject.TrustType = TrustType.ParentChild;

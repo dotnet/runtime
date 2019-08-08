@@ -50,7 +50,7 @@ namespace System.Linq.Tests
             var q = from x3 in q1
                     from x4 in q2
                     select new { a1 = x3, a2 = x4 };
-            
+
             Assert.Equal(q.ToLookup(e => e.a1), q.ToLookup(e => e.a1));
         }
 

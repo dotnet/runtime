@@ -31,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
             StaticHttpMethods = staticHttpMethods;
         }
 
-        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods); 
+        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods);
 
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
             // Positive test cases
             Assert.True(new HttpMethod("GET") == HttpMethod.Get);
             Assert.False(new HttpMethod("GET") != HttpMethod.Get);
-            Assert.True((new HttpMethod("GET")).Equals(HttpMethod.Get)); 
+            Assert.True((new HttpMethod("GET")).Equals(HttpMethod.Get));
 
             Assert.True(new HttpMethod("get") == HttpMethod.Get);
             Assert.False(new HttpMethod("get") != HttpMethod.Get);

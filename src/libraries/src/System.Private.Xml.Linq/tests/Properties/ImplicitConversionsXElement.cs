@@ -10,7 +10,7 @@ namespace CoreXml.Test.XLinq
 {
     public partial class ImplicitConversionsElem
     {
-        // these tests are duplication of the 
+        // these tests are duplication of the
         // valid cases
         //   - direct value
         //   - concat value

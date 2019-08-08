@@ -108,4 +108,3 @@ namespace System.MemoryTests
         public Memory<T> CreateMemoryForTest(int start, int length) => CreateMemory(start, length);
     }
 }
-

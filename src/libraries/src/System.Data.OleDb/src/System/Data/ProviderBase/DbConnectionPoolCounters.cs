@@ -257,7 +257,7 @@ namespace System.Data.ProviderBase
             int pid = SafeNativeMethods.GetCurrentProcessId();
 
             // there are several characters which have special meaning
-            // to PERFMON.  They recommend that we translate them as shown below, to 
+            // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
             result = string.Format((IFormatProvider)null, "{0}[{1}]", instanceName, pid);
@@ -267,7 +267,7 @@ namespace System.Data.ProviderBase
             if (result.Length > CounterInstanceNameMaxLength)
             {
                 // Replacing the middle part with "[...]"
-                // For example: if path is c:\long_path\very_(Ax200)_long__path\perftest.exe and process ID is 1234 than the resulted instance name will be: 
+                // For example: if path is c:\long_path\very_(Ax200)_long__path\perftest.exe and process ID is 1234 than the resulted instance name will be:
                 // c:\long_path\very_(AxM)[...](AxN)_long__path\perftest.exe[1234]
                 // while M and N are adjusted to make each part before and after the [...] = 61 (making the total = 61 + 5 + 61 = 127)
                 const string insertString = "[...]";

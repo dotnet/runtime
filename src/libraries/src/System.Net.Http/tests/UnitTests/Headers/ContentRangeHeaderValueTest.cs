@@ -180,7 +180,7 @@ namespace System.Net.Http.Tests
             Assert.False(result.HasLength);
 
             // Note that the final space should be skipped by GetContentRangeLength() and be considered by the returned
-            // value.            
+            // value.
             CallGetContentRangeLength(" custom * / 123 ", 1, 15, out result);
             Assert.Equal("custom", result.Unit);
             Assert.Null(result.From);
@@ -189,7 +189,7 @@ namespace System.Net.Http.Tests
             Assert.False(result.HasRange);
             Assert.True(result.HasLength);
 
-            // Note that we don't have a public constructor for value 'bytes */*' since the RFC doesn't mention a 
+            // Note that we don't have a public constructor for value 'bytes */*' since the RFC doesn't mention a
             // scenario for it. However, if a server returns this value, we're flexible and accept it.
             CallGetContentRangeLength("bytes */*", 0, 9, out result);
             Assert.Equal("bytes", result.Unit);

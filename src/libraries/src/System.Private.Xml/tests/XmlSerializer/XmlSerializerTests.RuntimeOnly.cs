@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1909,7 +1909,7 @@ public static partial class XmlSerializerTests
         Assert.False(xmp.CheckSpecified);
     }
 
-    [Fact]       
+    [Fact]
     public static void XmlSchemaExporter_ExportMembersMapping_NotSupportedDefaultValue()
     {
         XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
@@ -2669,7 +2669,7 @@ public static partial class XmlSerializerTests
         object[] value = new object[] { requestBodyValue };
         XmlReflectionMember member = GetReflectionMember<SoapComplexType>(memberName, ns);
         member.SoapAttributes.SoapElement = new SoapElementAttribute(memberName);
-        var members = new XmlReflectionMember[] { member };        
+        var members = new XmlReflectionMember[] { member };
 
         var importer = new SoapReflectionImporter(null, "http://tempuri.org/encoded");
         var membersMapping = importer.ImportMembersMapping(wrapperName, ns, members, hasWrapperElement: true, writeAccessors: true);
@@ -2863,7 +2863,7 @@ public static partial class XmlSerializerTests
         var value = new UnspecifiedRootSerializationType();
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?>\r\n<UnspecifiedRootSerializationType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <MyIntProperty>0</MyIntProperty>\r\n</UnspecifiedRootSerializationType>", () => { return new XmlSerializer(Type.GetType(typeof(UnspecifiedRootSerializationType).FullName)); });
         Assert.StrictEqual(value.MyIntProperty, actual.MyIntProperty);
-        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);     
+        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
     }
 
     [Fact]
@@ -2894,7 +2894,7 @@ public static partial class XmlSerializerTests
 
         var actual = SerializeAndDeserialize(value,
             @"<?xml version=""1.0""?>
-<anyType d1p1:type=""ItemChoiceType"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">DecimalNumber</anyType>", 
+<anyType d1p1:type=""ItemChoiceType"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"">DecimalNumber</anyType>",
             serializerFactory);
 
         Assert.StrictEqual(value, actual);

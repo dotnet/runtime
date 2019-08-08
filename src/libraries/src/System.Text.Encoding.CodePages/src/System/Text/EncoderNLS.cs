@@ -43,7 +43,7 @@ namespace System.Text
         {
             throw new PlatformNotSupportedException();
         }
-        
+
         internal new EncoderFallback Fallback
         {
             get { return m_fallback; }

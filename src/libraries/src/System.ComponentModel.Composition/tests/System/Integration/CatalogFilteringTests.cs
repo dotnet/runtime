@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition
             var aggCatalog = CatalogFactory.CreateAggregateCatalog();
             var cat1 = CatalogFactory.CreateAttributed(typeof(ScopeAComponent1), typeof(ScopeBComponent));
 
-            var filteredCatalog = CatalogFactory.CreateFiltered(aggCatalog, 
+            var filteredCatalog = CatalogFactory.CreateFiltered(aggCatalog,
                 partDef => partDef.Metadata.ContainsKey("Scope") &&
                                     partDef.Metadata["Scope"].ToString() == "A");
 

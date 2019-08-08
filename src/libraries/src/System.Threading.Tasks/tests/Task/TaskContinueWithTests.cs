@@ -62,11 +62,11 @@ namespace System.Threading.Tasks.Tests
                 // Some "cancel" continuations will be queued when the token is signaled
                 ContinueWithTortureTest(numToCancel, numToComplete, completeAfter: 1000, cancelAfter: 100);
 
-                // All "leftover" continuations should be queued when antecedent completes 
+                // All "leftover" continuations should be queued when antecedent completes
                 // There may or may not be leftover "cancel" continuations when the antecedent completes
                 ContinueWithTortureTest(numToCancel, numToComplete, completeAfter: 10000, cancelAfter: 9900);
 
-                // All continuations should be queued when antecedent completes 
+                // All continuations should be queued when antecedent completes
                 ContinueWithTortureTest(numToCancel, numToComplete, completeAfter: 10000, cancelAfter: 10000);
             }
         }
@@ -716,7 +716,7 @@ namespace System.Threading.Tasks.Tests
             //// Test against buggy schedulers
             ////
             //
-            //// More specifically, ensure that inline execution via synchronous continuations 
+            //// More specifically, ensure that inline execution via synchronous continuations
             //// causes the predictable exception from the NonInliningTaskScheduler.
             //
             //Task<Task> t1 = null;
@@ -724,7 +724,7 @@ namespace System.Threading.Tasks.Tests
             //Task hanging1 = new TaskFactory(new NonInliningTaskScheduler()).StartNew(() =>
             //{
             //    // To avoid fast-path optimizations in Unwrap, ensure that both inner
-            //    // and outer tasks are not completed before Unwrap is called.  (And a 
+            //    // and outer tasks are not completed before Unwrap is called.  (And a
             //    // good way to do this is to ensure that they are not even started!)
             //    Task inner = new Task(() => { });
             //    t1 = new Task<Task>(() => inner, TaskCreationOptions.AttachedToParent);
@@ -749,7 +749,7 @@ namespace System.Threading.Tasks.Tests
             //Task hanging2 = new TaskFactory(new NonInliningTaskScheduler()).StartNew(() =>
             //{
             //    // To avoid fast-path optimizations in Unwrap, ensure that both inner
-            //    // and outer tasks are not completed before Unwrap is called.  (And a 
+            //    // and outer tasks are not completed before Unwrap is called.  (And a
             //    // good way to do this is to ensure that they are not even started!)
             //    Task<int> inner = new Task<int>(() => 10);
             //    Task<Task<int>> f1 = new Task<Task<int>>(() => inner, TaskCreationOptions.AttachedToParent);
@@ -788,7 +788,7 @@ namespace System.Threading.Tasks.Tests
             Task c8 = null;
 
             Action doExc = delegate { throw new Exception("some exception"); };
-            // 
+            //
             // Exception tests
             //
             taskRoot = new Task(delegate { });
@@ -1267,7 +1267,7 @@ namespace System.Threading.Tasks.Tests
             Task task1 = new Task(() => { });
 
             var barrier = new Barrier(2);
-            Task task2 = task1.ContinueWith((_task) => 
+            Task task2 = task1.ContinueWith((_task) =>
             {
                 barrier.SignalAndWait(); // alert caller that we've started running
                 barrier.SignalAndWait(); // wait for caller to be done waiting
@@ -1276,7 +1276,7 @@ namespace System.Threading.Tasks.Tests
             task1.Start();
             barrier.SignalAndWait(); // wait for task to start running
 
-            // Wait should return once the task is complete, regardless of what other 
+            // Wait should return once the task is complete, regardless of what other
             // continuations were scheduled off of it.
             if (useWaitAll)
             {
@@ -1335,7 +1335,7 @@ namespace System.Threading.Tasks.Tests
                         // Use both synchronous and asynchronous continuations
                         TaskContinuationOptions tco = ((i % 2) == 0) ? TaskContinuationOptions.None : TaskContinuationOptions.ExecuteSynchronously;
 
-                        // The cancelAction should run exactly once per "to be canceled" continuation -- either in the first continuation or, 
+                        // The cancelAction should run exactly once per "to be canceled" continuation -- either in the first continuation or,
                         // if the first continuation is canceled, in the second continuation.
                         cancelContinuations[i] = antecedent.ContinueWith(cancelAction, cts.Token, tco, TaskScheduler.Default)
                             .ContinueWith(cancelAction, tco | TaskContinuationOptions.OnlyOnCanceled);

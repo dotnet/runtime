@@ -25,7 +25,7 @@ namespace System.Net.Sockets
         // since it is Windows specific. However, leave this enum value reserved
         // to prevent future numbering conflicts.
         // MaxIOVectorLength = 0x0010
-        
+
         // Partial send or recv for message.
         Truncated = 0x0100,
         ControlDataTruncated = 0x0200,

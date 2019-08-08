@@ -38,7 +38,7 @@ namespace System.Runtime.Caching
             InitDisposableMembers();
         }
 
-        // private members        
+        // private members
 
         private void AddToCache(MemoryCacheEntry entry)
         {
@@ -203,7 +203,7 @@ namespace System.Runtime.Caching
             // update outside of lock
             UpdateExpAndUsage(existingEntry);
 
-            // Call Release after the new entry has been completely added so 
+            // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
             if (toBeReleasedEntry != null)
             {
@@ -362,7 +362,7 @@ namespace System.Runtime.Caching
                 AddToCache(entry);
             }
 
-            // Call Release after the new entry has been completely added so 
+            // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
             if (existingEntry != null)
             {

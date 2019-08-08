@@ -1249,7 +1249,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 EnvelopedCms envelopedCms = new EnvelopedCms(new ContentInfo(new byte[] { 3 }));
                 envelopedCms.Encrypt(new CmsRecipient(signerType, cert));
-                
+
                 SignedCms signedCms = new SignedCms(
                     new ContentInfo(new Oid(Oids.Pkcs7Enveloped), envelopedCms.Encode()));
 

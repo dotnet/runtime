@@ -43,7 +43,7 @@ namespace System.IO
             AsyncReadState state;
             try
             {
-                // Start ignoring all events that were initiated before this, and 
+                // Start ignoring all events that were initiated before this, and
                 // allocate the buffer to be pinned and used for the duration of the operation
                 int session = Interlocked.Increment(ref _currentSession);
                 byte[] buffer = AllocateBuffer();
@@ -84,7 +84,7 @@ namespace System.IO
 
             // Close the directory handle.  This will cause the async operation to stop processing.
             // This operation doesn't need to be atomic because the API will deal with a closed
-            // handle appropriately. If we get here while asynchronously waiting on a change notification, 
+            // handle appropriately. If we get here while asynchronously waiting on a change notification,
             // closing the directory handle should cause ReadDirectoryChangesCallback be called,
             // cleaning up the operation.  Note that it's critical to also null out the handle.  If the
             // handle is currently in use in a P/Invoke, it will have its reference count temporarily
@@ -127,9 +127,9 @@ namespace System.IO
         private unsafe void Monitor(AsyncReadState state)
         {
             // This method should only ever access the directory handle via the state object passed in, and not access it
-            // via _directoryHandle.  While this function is executing asynchronously, another thread could set 
-            // EnableRaisingEvents to false and then back to true, restarting the FSW and causing a new directory handle 
-            // and thread pool binding to be stored.  This function could then get into an inconsistent state by doing some 
+            // via _directoryHandle.  While this function is executing asynchronously, another thread could set
+            // EnableRaisingEvents to false and then back to true, restarting the FSW and causing a new directory handle
+            // and thread pool binding to be stored.  This function could then get into an inconsistent state by doing some
             // operations against the old handles and some against the new.
 
             NativeOverlapped* overlappedPointer = null;
@@ -180,7 +180,7 @@ namespace System.IO
                     state.PreAllocatedOverlapped.Dispose();
                     state.ThreadPoolBinding.Dispose();
 
-                    // Finally, if the handle was for some reason changed or closed during this call, 
+                    // Finally, if the handle was for some reason changed or closed during this call,
                     // then don't throw an exception.  Otherwise, it's a valid error.
                     if (!IsHandleInvalid(state.DirectoryHandle))
                     {
@@ -215,7 +215,7 @@ namespace System.IO
 
                 // Ignore any events that occurred before this "session",
                 // so we don't get changed or error events after we
-                // told FSW to stop.  Even with this check, though, there's a small 
+                // told FSW to stop.  Even with this check, though, there's a small
                 // race condition, as immediately after we do the check, raising
                 // events could be disabled.
                 if (state.Session != Volatile.Read(ref _currentSession))

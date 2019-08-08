@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return (hash << 5) - hash + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
             }
         }
-        
+
         // The RuntimeBinder uses a global lock when Binding that keeps these dictionary safe.
         // Two way hashes
         private static readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> s_aggregateTable =

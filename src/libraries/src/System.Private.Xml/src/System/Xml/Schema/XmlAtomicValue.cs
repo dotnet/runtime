@@ -412,4 +412,3 @@ namespace System.Xml.Schema
         }
     }
 }
-

@@ -141,11 +141,11 @@ namespace System.Linq.Parallel
 
                 if (_cancellationState.MergedCancellationToken.IsCancellationRequested)
                 {
-                    // cancellation has occurred but no user-delegate exceptions were detected 
+                    // cancellation has occurred but no user-delegate exceptions were detected
 
                     // NOTE: it is important that we see other state variables correctly here, and that
-                    // read-reordering hasn't played havoc. 
-                    // This is OK because 
+                    // read-reordering hasn't played havoc.
+                    // This is OK because
                     //   1. all the state writes (e,g. in the Initiate* methods) are volatile writes (standard .NET MM)
                     //   2. tokenCancellationRequested is backed by a volatile field, hence the reads below
                     //   won't get reordered about the read of token.IsCancellationRequested.

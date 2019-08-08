@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         //  ShortSha1: The keyIdentifier is composed of a four bit type field with
                         //  the value 0100 followed by the least significant 60 bits of the
-                        //  SHA-1 hash of the value of the BIT STRING subjectPublicKey 
+                        //  SHA-1 hash of the value of the BIT STRING subjectPublicKey
                         // (excluding the tag, length, and number of unused bit string bits)
                         byte[] shortSha1 = new byte[8];
                         Buffer.BlockCopy(sha1, sha1.Length - 8, shortSha1, 0, shortSha1.Length);
@@ -139,4 +139,3 @@ namespace System.Security.Cryptography.X509Certificates
         private bool _decoded;
     }
 }
-

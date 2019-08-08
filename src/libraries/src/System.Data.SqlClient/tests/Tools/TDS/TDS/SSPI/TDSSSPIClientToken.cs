@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,7 +8,7 @@ using System.IO;
 namespace Microsoft.SqlServer.TDS.SSPI
 {
     /// <summary>
-    /// Token that carries client's SSPI payload during login sequence 
+    /// Token that carries client's SSPI payload during login sequence
     /// </summary>
     public class TDSSSPIClientToken : TDSPacketToken
     {

@@ -43,16 +43,16 @@ namespace System.Security.Cryptography
                 // by the CLR, then we don't have anything to do as the IsEphemeral CLR property will already
                 // be setup.  However, if the key was created outside of the CLR we will need to setup our
                 // ephemeral detection property.
-                // 
+                //
                 // This enables consumers of CngKey objects to always be able to rely on the result of
                 // calling IsEphemeral, and also allows them to safely access the Name property.
-                // 
+                //
                 // Finally, if we detect that this is an ephemeral key that the CLR created but we were not
                 // told that it was an ephemeral key we'll throw an exception.  This prevents us from having
                 // to decide who to believe -- the key property or the caller of the API.  Since other code
                 // relies on the ephemeral flag being set properly to avoid tripping over bugs in CNG, we
                 // need to reject the case that we suspect that the flag is incorrect.
-                // 
+                //
 
                 if (!key.IsEphemeral && openingEphemeralKey)
                 {
@@ -76,4 +76,3 @@ namespace System.Security.Cryptography
         }
     }
 }
-

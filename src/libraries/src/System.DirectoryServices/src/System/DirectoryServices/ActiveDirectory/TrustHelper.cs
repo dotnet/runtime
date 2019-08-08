@@ -397,7 +397,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // validate the trust existence
-                    ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction                
+                    ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction
 
                     if (preferredTargetServer == null)
                         data = Marshal.StringToHGlobalUni(targetName);
@@ -633,7 +633,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
-                    // get the trusted domain information                
+                    // get the trusted domain information
                     int result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         AuthInfoEx.OutgoingPreviousAuthenticationInformation = (IntPtr)0;
                     }
 
-                    // reconstruct the unmanaged structure to set it back              
+                    // reconstruct the unmanaged structure to set it back
                     domainInfo.AuthInformation = AuthInfoEx;
                     newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
@@ -766,7 +766,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
-                    // get the trusted domain information                
+                    // get the trusted domain information
                     int result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
@@ -837,7 +837,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         AuthInfoEx.OutgoingPreviousAuthenticationInformation = (IntPtr)0;
                     }
 
-                    // reconstruct the unmanaged structure to set it back              
+                    // reconstruct the unmanaged structure to set it back
                     domainInfo.AuthInformation = AuthInfoEx;
                     // reset the trust direction
                     domainInfo.Information.TrustDirection = (int)newTrustDirection;
@@ -1013,7 +1013,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             Utils.Revert();
                             impersonated = false;
                         }
-                        // try anonymous          
+                        // try anonymous
                         Utils.ImpersonateAnonymous();
                         impersonated = true;
                         policyHandle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
@@ -1025,7 +1025,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             Utils.Revert();
                             impersonated = false;
                         }
-                        // try anonymous          
+                        // try anonymous
                         Utils.ImpersonateAnonymous();
                         impersonated = true;
                         policyHandle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));

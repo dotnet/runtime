@@ -101,7 +101,7 @@ namespace System.Runtime.Serialization.Json
                         _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetMethod);
                         _ilg.ConvertValue(Globals.TypeOfDateTimeOffset, _ilg.CurrentMethod.ReturnType);
                     }
-                    //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>. 
+                    //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>.
                     else if (classContract.IsKeyValuePairAdapter)
                     {
                         _ilg.Call(classContract.GetKeyValuePairMethodInfo);

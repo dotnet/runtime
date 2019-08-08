@@ -9,7 +9,7 @@ namespace System.ComponentModel.Composition
 {
     /// <summary>
     ///     The exception that is thrown when the cardinality of a <see cref="Primitives.ImportDefinition"/>
-    ///     does not match the cardinality of the <see cref="Primitives.Export"/> objects available in an 
+    ///     does not match the cardinality of the <see cref="Primitives.Export"/> objects available in an
     ///     <see cref="Hosting.ExportProvider"/>.
     /// </summary>
     [DebuggerTypeProxy(typeof(ImportCardinalityMismatchExceptionDebuggerProxy))]
@@ -26,11 +26,11 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class 
+        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class
         ///     with the specified error message.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="ImportCardinalityMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
@@ -40,17 +40,17 @@ namespace System.ComponentModel.Composition
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class 
-        ///     with the specified error message and exception that is the cause of the  
+        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class
+        ///     with the specified error message and exception that is the cause of the
         ///     exception.
         /// </summary>
         /// <param name="message">
-        ///     A <see cref="string"/> containing a message that describes the 
+        ///     A <see cref="string"/> containing a message that describes the
         ///     <see cref="ImportCardinalityMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
         /// <param name="innerException">
-        ///     The <see cref="Exception"/> that is the underlying cause of the 
+        ///     The <see cref="Exception"/> that is the underlying cause of the
         ///     <see cref="ImportCardinalityMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
@@ -58,17 +58,17 @@ namespace System.ComponentModel.Composition
             : base(message, innerException)
         {
         }
-        
+
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class 
+        ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class
         ///     with the specified serialization data.
         /// </summary>
         /// <param name="info">
-        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the 
+        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the
         ///     <see cref="ImportCardinalityMismatchException"/>.
         /// </param>
         /// <param name="context">
-        ///     The <see cref="StreamingContext"/> that contains contextual information about the 
+        ///     The <see cref="StreamingContext"/> that contains contextual information about the
         ///     source or destination.
         /// </param>
         /// <exception cref="ArgumentNullException">

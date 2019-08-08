@@ -28,7 +28,7 @@ public static partial class DataContractJsonSerializerTests
     {
         MethodInfo method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
         Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
-        method.Invoke(null, new object[] { 1 }); 
+        method.Invoke(null, new object[] { 1 });
     }
 #endif
     [Fact]
@@ -1970,7 +1970,7 @@ public static partial class DataContractJsonSerializerTests
             DoubleMember = 123.456,
             FloatMember = 456.789f,
             GuidMember = Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"),
-            //public byte[] HexBinaryMember 
+            //public byte[] HexBinaryMember
             StringMember = "abc",
             IntMember = 123
         };
@@ -2591,13 +2591,13 @@ public static partial class DataContractJsonSerializerTests
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_DMMMM };
         var actual3 = SerializeAndDeserialize(graph, "{\"DateTime\":\"1, mayo\",\"OffsetMinutes\":60}", dcjsSettings);
         var expected3 = new DateTimeOffset(DateTime.Now.Year, 5, 1, 0, 0, 0, new TimeSpan(1, 0, 0));
-        Assert.True(actual3 == expected3, 
+        Assert.True(actual3 == expected3,
             $"{nameof(actual3)} was not as expected.\r\nExpected: {expected3} \r\n Actual: {actual3}");
 
         var dt35832 = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 3, 58, 32);
         var dt = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_hmsFt };
-        string actualam = GetAmString(jsonTypes.DTF_hmsFt); 
+        string actualam = GetAmString(jsonTypes.DTF_hmsFt);
         string baselinelist = $"[\"03:58:32.00 {actualam}\",\"12:00:00.00 {actualam}\",\"12:00:00.00 {actualam}\",\"03:58:32.00 {actualam}\"]";
         var actual4 = SerializeAndDeserialize(jsonTypes.DT_List, baselinelist, dcjsSettings);
         Assert.NotNull(actual4);
@@ -2640,7 +2640,7 @@ public static partial class DataContractJsonSerializerTests
         {
             DateTimeFormat = jsonTypes.DTF_hmsFt,
             UseSimpleDictionaryFormat = true,
-            EmitTypeInformation = EmitTypeInformation.AsNeeded, 
+            EmitTypeInformation = EmitTypeInformation.AsNeeded,
             KnownTypes = new List<Type>()
         };
         string actualam = GetAmString(jsonTypes.DTF_hmsFt);
@@ -2919,7 +2919,7 @@ public static partial class DataContractJsonSerializerTests
         var value = new UnspecifiedRootSerializationType();
         string baseline = "{\"MyIntProperty\":0,\"MyStringProperty\":null}";
         var actual = SerializeAndDeserialize(value, baseline);
-        
+
         Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
         Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
     }

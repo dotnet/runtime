@@ -4,11 +4,11 @@
 
 /*============================================================
 **
-** 
-** 
 **
 **
-** Purpose: Specifies which version of a satellite assembly 
+**
+**
+** Purpose: Specifies which version of a satellite assembly
 **          the ResourceManager should ask for.
 **
 **

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -51,7 +51,7 @@ namespace System.Text.Json
         /// then skipping validation (by setting it to true) could improve performance.
         /// An example of invalid JSON where the writer will throw (when SkipValidation
         /// is set to false) is when you write a value within a JSON object
-        /// without a property name. 
+        /// without a property name.
         /// </remarks>
         public bool SkipValidation
         {

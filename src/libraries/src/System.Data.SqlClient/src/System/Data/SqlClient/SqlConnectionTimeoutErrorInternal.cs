@@ -18,7 +18,7 @@ namespace System.Data.SqlClient
         InitializeConnection,       // [PRE-LOGIN PHASE]        Create and initialize socket.
         SendPreLoginHandshake,      // [PRE-LOGIN PHASE]        Make pre-login handshake request.
         ConsumePreLoginHandshake,   // [PRE-LOGIN PHASE]        Receive pre-login handshake response and consume it; Establish an SSL channel.
-        LoginBegin,                 // [LOGIN PHASE]            End of the pre-login phase; Start of the login phase; 
+        LoginBegin,                 // [LOGIN PHASE]            End of the pre-login phase; Start of the login phase;
         ProcessConnectionAuth,      // [LOGIN PHASE]            Process SSPI or SQL Authenticate.
         PostLogin,                  // [POST-LOGIN PHASE]       End of the login phase; And post-login phase;
         Complete,                   // Marker for the successful completion of the connection
@@ -194,7 +194,7 @@ namespace System.Data.SqlClient
                     break;
             }
 
-            // This message is to be added only when within the various stages of a connection. 
+            // This message is to be added only when within the various stages of a connection.
             // In all other cases, it will default to the original error message.
             if ((_currentPhase != SqlConnectionTimeoutErrorPhase.Undefined) && (_currentPhase != SqlConnectionTimeoutErrorPhase.Complete))
             {

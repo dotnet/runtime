@@ -20,9 +20,9 @@ namespace System.Text.Encodings.Tests
             Encoding utf8 = Encoding.UTF8;
             Encoder encoder = utf8.GetEncoder();
 
-            byte [] bytes1 = utf8.GetBytes(s1); 
-            byte [] bytes2 = utf8.GetBytes(s2); 
-            byte [] bytes3 = utf8.GetBytes(s3); 
+            byte [] bytes1 = utf8.GetBytes(s1);
+            byte [] bytes2 = utf8.GetBytes(s2);
+            byte [] bytes3 = utf8.GetBytes(s3);
 
             byte [] bytes = new byte[50];
 
@@ -38,37 +38,37 @@ namespace System.Text.Encodings.Tests
                 encoder.Convert(pChars1, s1.Length, pBytes, bytes.Length, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(s1.Length, charsUsed);
                 Assert.Equal(bytes1.Length, bytesUsed);
-                Assert.True(completed, "Expected to have the full operation compeleted with bytes1");                
+                Assert.True(completed, "Expected to have the full operation compeleted with bytes1");
                 for (int i=0; i<bytes1.Length; i++) { Assert.Equal(bytes1[i], pBytes[i]); }
 
                 encoder.Convert(pChars2, s2.Length, pBytes, bytes.Length, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(s2.Length, charsUsed);
                 Assert.Equal(bytes2.Length, bytesUsed);
-                Assert.True(completed, "Expected to have the full operation compeleted with bytes2");                
+                Assert.True(completed, "Expected to have the full operation compeleted with bytes2");
                 for (int i=0; i<bytes2.Length; i++) { Assert.Equal(bytes2[i], pBytes[i]); }
 
                 encoder.Convert(pChars3, s3.Length, pBytes, bytes.Length, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(s3.Length, charsUsed);
                 Assert.Equal(bytes3.Length, bytesUsed);
-                Assert.True(completed, "Expected to have the full operation compeleted with bytes3");                
+                Assert.True(completed, "Expected to have the full operation compeleted with bytes3");
                 for (int i=0; i<bytes3.Length; i++) { Assert.Equal(bytes3[i], pBytes[i]); }
 
                 encoder.Convert(pChars3 + s1.Length, s3.Length - s1.Length, pBytes, bytes.Length, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(s2.Length, charsUsed);
                 Assert.Equal(bytes2.Length, bytesUsed);
-                Assert.True(completed, "Expected to have the full operation compeleted with bytes3+bytes1.Length");                
+                Assert.True(completed, "Expected to have the full operation compeleted with bytes3+bytes1.Length");
                 for (int i=0; i<bytes2.Length; i++) { Assert.Equal(bytes2[i], pBytes[i]); }
 
                 encoder.Convert(pChars3 + s1.Length, s3.Length - s1.Length, pBytes, 4, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(2, charsUsed);
                 Assert.True(bytes2.Length > bytesUsed, "Expected to use less bytes when there is not enough char buffer");
-                Assert.False(completed, "Expected to have the operation not fully completed");                
+                Assert.False(completed, "Expected to have the operation not fully completed");
                 for (int i=0; i<bytesUsed; i++) { Assert.Equal(bytes2[i], pBytes[i]); }
 
                 encoder.Convert(pChars3 + s3.Length - 1, 1, pBytes, 2, true, out charsUsed, out bytesUsed, out completed);
                 Assert.Equal(1, charsUsed);
                 Assert.Equal(2, bytesUsed);
-                Assert.True(completed, "expected to flush the remaining character");                
+                Assert.True(completed, "expected to flush the remaining character");
                 Assert.Equal(bytes2[bytes2.Length - 2], pBytes[0]);
                 Assert.Equal(bytes2[bytes2.Length - 1], pBytes[1]);
             }
@@ -107,7 +107,7 @@ namespace System.Text.Encodings.Tests
             {
                 byte *pBytes = bytesPtr;
                 char *pChars = charsPtr;
-                
+
                 Assert.Throws<EncoderFallbackException>(() => encoder.Convert(pChars, 1, pBytes, 2, true, out charsUsed, out bytesUsed, out completed));
             }
         }
@@ -136,7 +136,7 @@ namespace System.Text.Encodings.Tests
                 Assert.Equal(bytes1.Length, bytesUsed);
                 Assert.Equal(bytes1.Length, encoder.GetByteCount(pChars1, s1.Length, true));
                 for (int i=0; i<bytesUsed; i++) { Assert.Equal(bytes1[i], pBytes[i]); }
-                
+
                 bytesUsed = encoder.GetBytes(pChars2, s2.Length, pBytes, bytes.Length, true);
                 Assert.Equal(bytes2.Length, bytesUsed);
                 Assert.Equal(bytes2.Length, encoder.GetByteCount(pChars2, s2.Length, true));
@@ -184,7 +184,7 @@ namespace System.Text.Encodings.Tests
             {
                 byte *pBytes = bytesPtr;
                 char *pChars = charsPtr;
-                
+
                 Assert.Throws<EncoderFallbackException>(() => encoder.GetBytes(pChars, 1, pBytes, 2, true));
                 Assert.Throws<EncoderFallbackException>(() => encoder.GetByteCount(pChars, 1, true));
             }
@@ -215,7 +215,7 @@ namespace System.Text.Encodings.Tests
 
             Assert.Equal(0, fallbackBuffer.Remaining);
             Assert.Equal('\u0000', fallbackBuffer.GetNextChar());
-            
+
         }
 
         [Theory]

@@ -110,8 +110,8 @@ namespace Internal.Cryptography
         private static char NibbleToHex(byte b)
         {
             Debug.Assert(b >= 0 && b <= 15);
-            return (char)(b >= 0 && b <= 9 ? 
-                '0' + b : 
+            return (char)(b >= 0 && b <= 9 ?
+                '0' + b :
                 'A' + (b - 10));
         }
 
@@ -233,7 +233,7 @@ namespace Internal.Cryptography
                     // NULL character which was literally embedded in the DER would cause a
                     // failure in .NET whereas it wouldn't have with strcmp.
                     return tavReader.ReadCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
-                    
+
                 default:
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

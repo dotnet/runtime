@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Hosting
         private static readonly string[] reservedMetadataNames = new string[]
         {
             CompositionConstants.PartCreationPolicyMetadataName
-        };  
+        };
 
         internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
@@ -83,7 +83,7 @@ namespace System.ComponentModel.Composition.Hosting
                         return specifiedContractType.MakeGenericType(typeGenericArguments);
                     }
                 }
-                // if both member type and the contract type are open generic types, make sure that their parameters are ordered the same way 
+                // if both member type and the contract type are open generic types, make sure that their parameters are ordered the same way
                 else if(specifiedContractType.ContainsGenericParameters && memberType.ContainsGenericParameters)
                 {
                     var memberGenericParameters = memberType.GetPureGenericParameters();
@@ -116,7 +116,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
 internal static string GetTypeIdentityFromExport(this MemberInfo member, Type typeIdentityType)
-        {   
+        {
             if (typeIdentityType != null)
             {
                 string typeIdentity = AttributedModelServices.GetTypeIdentity(typeIdentityType);
@@ -129,7 +129,7 @@ internal static string GetTypeIdentityFromExport(this MemberInfo member, Type ty
             else
             {
                 MethodInfo method = member as MethodInfo;
-                if (method == null) 
+                if (method == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -173,7 +173,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
 
             Type contractType = import.GetContractTypeFromImport(importType);
 
-            return AttributedModelServices.GetContractName(contractType); 
+            return AttributedModelServices.GetContractName(contractType);
         }
 
         internal static string GetTypeIdentityFromImport(this IAttributedImport import, ImportType importType)
@@ -186,7 +186,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
                 return null;
             }
 
-            return AttributedModelServices.GetTypeIdentity(contractType); 
+            return AttributedModelServices.GetTypeIdentity(contractType);
         }
 
         internal static IDictionary<string, object> GetPartMetadataForType(this Type type, CreationPolicy creationPolicy)
@@ -200,7 +200,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
 
             foreach (PartMetadataAttribute partMetadata in type.GetAttributes<PartMetadataAttribute>())
             {
-                if (reservedMetadataNames.Contains(partMetadata.Name, StringComparers.MetadataKeyNames) 
+                if (reservedMetadataNames.Contains(partMetadata.Name, StringComparers.MetadataKeyNames)
                     || dictionary.ContainsKey(partMetadata.Name))
                 {
                     // Perhaps we should log an error here so that people know this value is being ignored.
@@ -436,7 +436,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
             {
                 if (_arrayType == null)
                 {
-                    // if the array type has not been set, assume Object 
+                    // if the array type has not been set, assume Object
                     _arrayType = ObjectType;
                 }
                 else if (_containsNulls && _arrayType.IsValueType)
@@ -455,7 +455,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
             }
         }
 
-        //UNDONE: Need to add these warnings somewhere...Dev10:472538 should address 
+        //UNDONE: Need to add these warnings somewhere...Dev10:472538 should address
         //internal static CompositionResult MatchRequiredMetadata(this IDictionary<string, object> metadata, IEnumerable<string> requiredMetadata, string contractName)
         //{
         //    Assumes.IsTrue(metadata != null);
@@ -506,7 +506,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
         internal static IDictionary<string, object> GetImportMetadata(Type type, IAttributedImport attributedImport)
         {
             Dictionary<string, object> metadata = null;
-            
+
             //Prior to V4.5 MEF did not support ImportMetadata
             if (type.IsGenericType)
             {
@@ -566,7 +566,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
                 throw ExceptionBuilder.CreateCannotGetExportedValue(part, definition, ex);
             }
         }
-        
+
         internal static bool IsRecomposable(this ComposablePart part)
         {
             return part.ImportDefinitions.Any(import => import.IsRecomposable);
@@ -617,8 +617,8 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
         }
 
         /// <summary>
-        ///     Returns a value indicating whether cardinality is 
-        ///     <see cref="ImportCardinality.ZeroOrOne"/> or 
+        ///     Returns a value indicating whether cardinality is
+        ///     <see cref="ImportCardinality.ZeroOrOne"/> or
         ///     <see cref="ImportCardinality.ExactlyOne"/>.
         /// </summary>
         internal static bool IsAtMostOne(this ImportCardinality cardinality)
@@ -651,7 +651,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
                 return true;
             }
 
-            // An enum type, provided it has public accessibility and the types in which it is nested (if any) also have public accessibility 
+            // An enum type, provided it has public accessibility and the types in which it is nested (if any) also have public accessibility
             if (type.IsEnum && type.IsVisible)
             {
                 return true;
@@ -663,7 +663,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
             }
 
             // Single-dimensional arrays of the above types.
-            if (arrayAllowed && type.IsArray && 
+            if (arrayAllowed && type.IsArray &&
                 type.GetArrayRank() == 1 &&
                 IsValidAttributeType(type.GetElementType(), false))
             {

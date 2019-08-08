@@ -273,7 +273,7 @@ namespace System.Tests
             yield return new object[] { "+0", NumberStyles.AllowLeadingSign, null, 0 };
             yield return new object[] { "-0", NumberStyles.AllowLeadingSign, null, 0 };
             yield return new object[] { "+123", NumberStyles.AllowLeadingSign, null, 123 };
-            
+
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "|123", NumberStyles.AllowLeadingSign, samePositiveNegativeFormat, 123 };
 

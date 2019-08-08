@@ -257,7 +257,7 @@ namespace System.IO.Packaging
                 }
             }
 
-            // if the element is empty (e.g. "<a ... />" and we pushed a scope then we need to set a flag 
+            // if the element is empty (e.g. "<a ... />" and we pushed a scope then we need to set a flag
             // to get rid of the scope when we hit the next element.
             // We also need to store the current elementDepth.
             if (isEmpty)

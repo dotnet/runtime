@@ -109,7 +109,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.False(size.Equals(null));
             Assert.False(size.Equals(0));
 
-            // If SizeF implements IEquatable<SizeF> (e.g in .NET Core), then classes that are implicitly 
+            // If SizeF implements IEquatable<SizeF> (e.g in .NET Core), then classes that are implicitly
             // convertible to SizeF can potentially be equal.
             // See https://github.com/dotnet/corefx/issues/5255.
             bool expectsImplicitCastToSizeF = typeof(IEquatable<SizeF>).IsAssignableFrom(size.GetType());

@@ -371,7 +371,7 @@ namespace System.Data
                         {
                             if (_candidateColumns[i] != null)
                             {
-                                _candidateColumns[i].flag = false;// same as before, it is false when it returns 
+                                _candidateColumns[i].flag = false;// same as before, it is false when it returns
                             }
                         }
 
@@ -433,7 +433,7 @@ namespace System.Data
                         {
                             if (_candidateColumns[i] != null)
                             {
-                                _candidateColumns[i].flag = false;// same as before, it is false when it returns 
+                                _candidateColumns[i].flag = false;// same as before, it is false when it returns
                             }
                         }
                     }

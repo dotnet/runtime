@@ -10,12 +10,12 @@ namespace System.ComponentModel.Composition
 {
     public class CompositionServiceExportFactoryTests
     {
-        public interface IFoo 
+        public interface IFoo
         {
             void DoWork();
             Child FooChild { get; set; }
         }
-    
+
         [Export(typeof(IFoo))]
         class Foo1 : IFoo
         {
@@ -23,17 +23,17 @@ namespace System.ComponentModel.Composition
             {
                 Console.WriteLine("HelloWorld : {0}", FooChild.FooValue);
             }
-    
+
             [Import("FooChild")]
             public Child FooChild { get; set; }
         }
-    
+
         [Export("FooChild")]
         public class Child
         {
             public int FooValue { get; set; }
         }
-    
+
         [Export]
         public class App
         {
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Composition
         public void ComposeAppInRootScope_ShouldSucceed()
         {
             var catalog = new TypeCatalog(typeof(Foo1), typeof(Child));
- 
+
             var cs = catalog.CreateCompositionService();
             var app = new App();
 

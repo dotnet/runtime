@@ -11,13 +11,13 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// The id of the containing body.  This could be a regular
         /// object, another value type, or an array.  For obvious reasons,
-        /// the containing body can never have both a FieldInfo and 
+        /// the containing body can never have both a FieldInfo and
         /// an array index.
         /// </summary>
         private readonly long _containerID;
 
         /// <summary>
-        /// The FieldInfo into the containing body.  This will only 
+        /// The FieldInfo into the containing body.  This will only
         /// apply if the containing body is a field info or another
         /// value type.
         /// </summary>
@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization
             }
 
             // If the member isn't null, we know that they supplied a MemberInfo as the parent.  This means
-            // that the arrayIndex must be null because we can't have a FieldInfo into an array. 
+            // that the arrayIndex must be null because we can't have a FieldInfo into an array.
             if (member != null)
             {
                 if (parentIndex != null)

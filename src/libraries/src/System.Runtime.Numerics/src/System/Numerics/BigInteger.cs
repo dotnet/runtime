@@ -265,7 +265,7 @@ namespace System.Numerics
 
                 if (mostSignificantByte == 0)
                 {
-                    // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
+                    // Try to conserve space as much as possible by checking for wasted leading byte[] entries
                     if (isBigEndian)
                     {
                         int offset = 1;
@@ -467,7 +467,7 @@ namespace System.Numerics
             _bits = rgu;
             AssertValid();
         }
-        
+
         /// <summary>
         /// Constructor used during bit manipulation and arithmetic.
         /// When possible the uint[] will be packed into  _sign to conserve space.
@@ -481,7 +481,7 @@ namespace System.Numerics
 
             int len;
 
-            // Try to conserve space as much as possible by checking for wasted leading uint[] entries 
+            // Try to conserve space as much as possible by checking for wasted leading uint[] entries
             // sometimes the uint[] has leading zeros from bit manipulation operations & and ^
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--) ;
 
@@ -519,7 +519,7 @@ namespace System.Numerics
             int dwordCount = value.Length;
             bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & 0x80000000) == 0x80000000);
 
-            // Try to conserve space as much as possible by checking for wasted leading uint[] entries 
+            // Try to conserve space as much as possible by checking for wasted leading uint[] entries
             while (dwordCount > 0 && value[dwordCount - 1] == 0) dwordCount--;
 
             if (dwordCount == 0)
@@ -560,7 +560,7 @@ namespace System.Numerics
                     _bits = new uint[dwordCount];
                     Array.Copy(value, 0, _bits, 0, dwordCount);
                 }
-                // No trimming is possible.  Assign value directly to _bits.  
+                // No trimming is possible.  Assign value directly to _bits.
                 else
                 {
                     _sign = +1;
@@ -602,7 +602,7 @@ namespace System.Numerics
                 _bits = new uint[len];
                 Array.Copy(value, 0, _bits, 0, len);
             }
-            // No trimming is possible.  Assign value directly to _bits.  
+            // No trimming is possible.  Assign value directly to _bits.
             else
             {
                 _sign = -1;
@@ -611,7 +611,7 @@ namespace System.Numerics
             AssertValid();
             return;
         }
-        
+
         public static BigInteger Zero { get { return s_bnZeroInt; } }
 
         public static BigInteger One { get { return s_bnOneInt; } }
@@ -782,7 +782,7 @@ namespace System.Numerics
         {
             return -value;
         }
-        
+
         public static double Log(BigInteger value)
         {
             return Log(value, Math.E);
@@ -1824,7 +1824,7 @@ namespace System.Numerics
                 return right;
             if (right.IsZero)
                 return left;
-            
+
             if (left._bits == null && right._bits == null)
             {
                 return left._sign | right._sign;
@@ -2012,7 +2012,7 @@ namespace System.Numerics
             {
                 return (long)left._sign * right._sign;
             }
-            
+
             if (trivialLeft)
             {
                 uint[] bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
@@ -2062,7 +2062,7 @@ namespace System.Numerics
                 // and therefore the bigger one
                 return s_bnZeroInt;
             }
-            
+
             if (trivialDivisor)
             {
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
@@ -2099,7 +2099,7 @@ namespace System.Numerics
                 // and therefore the bigger one
                 return dividend;
             }
-            
+
             if (trivialDivisor)
             {
                 uint remainder = BigIntegerCalculator.Remainder(dividend._bits, NumericsHelpers.Abs(divisor._sign));
@@ -2277,7 +2277,7 @@ namespace System.Numerics
 
         /// <summary>
         /// Encapsulate the logic of normalizing the "small" and "large" forms of BigInteger
-        /// into the "large" form so that Bit Manipulation algorithms can be simplified. 
+        /// into the "large" form so that Bit Manipulation algorithms can be simplified.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="xd">

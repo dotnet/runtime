@@ -28,7 +28,7 @@ namespace System.Data.OleDb.Tests
             {
                 cmd.CommandType = commandType;
                 AssertExtensions.Throws<InvalidOperationException>(
-                    () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                    () => OleDbCommandBuilder.DeriveParameters(cmd),
                     $"{nameof(OleDbCommand)} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{cmd.CommandType.ToString()}.");
             }
         }
@@ -41,7 +41,7 @@ namespace System.Data.OleDb.Tests
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = null;
                 AssertExtensions.Throws<InvalidOperationException>(
-                    () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                    () => OleDbCommandBuilder.DeriveParameters(cmd),
                     $"{nameof(OleDbCommandBuilder.DeriveParameters)}: {nameof(cmd.CommandText)} property has not been initialized");
             }
         }
@@ -54,11 +54,11 @@ namespace System.Data.OleDb.Tests
                 using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.CommandText = @"SELECT * FROM " + tableName;  
+                    cmd.CommandText = @"SELECT * FROM " + tableName;
                     cmd.Connection = null;
-                    
+
                     AssertExtensions.Throws<InvalidOperationException>(
-                        () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                        () => OleDbCommandBuilder.DeriveParameters(cmd),
                         $"{nameof(OleDbCommandBuilder.DeriveParameters)}: {nameof(cmd.Connection)} property has not been initialized.");
                 }
             });
@@ -95,21 +95,21 @@ namespace System.Data.OleDb.Tests
                     if (PlatformDetection.IsFullFramework)
                     {
                         AssertExtensions.Throws<ArgumentNullException>(
-                            () => builder.QuoteIdentifier(null, command.Connection), 
+                            () => builder.QuoteIdentifier(null, command.Connection),
                             $"Value cannot be null.\r\nParameter name: unquotedIdentifier");
 
                         AssertExtensions.Throws<ArgumentNullException>(
-                            () => builder.UnquoteIdentifier(null, command.Connection), 
+                            () => builder.UnquoteIdentifier(null, command.Connection),
                             $"Value cannot be null.\r\nParameter name: quotedIdentifier");
                     }
                     else
                     {
                         AssertExtensions.Throws<ArgumentNullException>(
-                            () => builder.QuoteIdentifier(null, command.Connection), 
+                            () => builder.QuoteIdentifier(null, command.Connection),
                             $"Value cannot be null. (Parameter \'unquotedIdentifier\')");
 
                         AssertExtensions.Throws<ArgumentNullException>(
-                            () => builder.UnquoteIdentifier(null, command.Connection), 
+                            () => builder.UnquoteIdentifier(null, command.Connection),
                             $"Value cannot be null. (Parameter \'quotedIdentifier\')");
                     }
                 }
@@ -136,7 +136,7 @@ namespace System.Data.OleDb.Tests
                     Assert.Equal("'Te''st'", builder.QuoteIdentifier("Te'st", connection));
                     Assert.Equal("Test", builder.UnquoteIdentifier("'Test'", connection));
                     Assert.Equal("Te'st", builder.UnquoteIdentifier("'Te''st'", connection));
-                    
+
                     // Ensure we don't need active connection:
                     Assert.Equal("'Test'", builder.QuoteIdentifier("Test", null));
                     Assert.Equal("Test", builder.UnquoteIdentifier("'Test'", null));
@@ -167,10 +167,10 @@ namespace System.Data.OleDb.Tests
             command.CommandText =
                 @"CREATE TABLE " + tableName + @" (
                     Firstname NVARCHAR(5),
-                    Lastname NVARCHAR(40), 
+                    Lastname NVARCHAR(40),
                     Nickname NVARCHAR(30))";
             try
-            { 
+            {
                 command.ExecuteNonQuery();
             }
             catch (SEHException sehEx)
@@ -181,14 +181,14 @@ namespace System.Data.OleDb.Tests
                 Console.WriteLine($"Base Exception error code : {baseException.HResult}");
                 Console.WriteLine($"Base Exception message : {baseException}");
                 Console.WriteLine($"Base Inner Exception: {sehEx.InnerException}");
-                
+
                 // This exception is not expected. So rethrow to indicate test failure.
                 throw;
             }
             Assert.True(File.Exists(Path.Combine(TestDirectory, tableName)));
 
             command.CommandText =
-                @"INSERT INTO " + tableName + @" ( 
+                @"INSERT INTO " + tableName + @" (
                     Firstname,
                     Lastname,
                     Nickname)

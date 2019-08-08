@@ -176,7 +176,7 @@ namespace System.Drawing.Imaging
 
             SetNativeImage(metafile);
         }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>

@@ -15,7 +15,7 @@ using System.Threading;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// An inlined sum aggregation and its enumerator, for nullable decimals. 
+    /// An inlined sum aggregation and its enumerator, for nullable decimals.
     /// </summary>
     internal sealed class NullableDecimalSumAggregationOperator : InlinedAggregationOperator<decimal?, decimal?, decimal?>
     {
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
 
         protected override decimal? InternalAggregate(ref Exception singularExceptionToThrow)
         {
-            // Because the final reduction is typically much cheaper than the intermediate 
+            // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
             // will do a lot of work to produce a single output element, we prefer to turn off
             // pipelining, and process the final reductions serially.

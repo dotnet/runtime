@@ -127,7 +127,7 @@ namespace System.ComponentModel
             {
                 return GetType().FullName;
             }
-            
+
             return s.Name + " [" + GetType().FullName + "]";
         }
     }

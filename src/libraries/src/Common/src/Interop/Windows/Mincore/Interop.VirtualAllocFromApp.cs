@@ -12,9 +12,9 @@ internal partial class Interop
     {
         [DllImport(Libraries.Memory_L1_3, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern IntPtr VirtualAllocFromApp(
-            SafeHandle BaseAddress, 
-            UIntPtr Size, 
-            int AllocationType, 
+            SafeHandle BaseAddress,
+            UIntPtr Size,
+            int AllocationType,
             int Protection);
     }
 }

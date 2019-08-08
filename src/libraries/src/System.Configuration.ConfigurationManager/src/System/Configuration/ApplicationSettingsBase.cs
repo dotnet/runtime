@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,7 +38,7 @@ namespace System.Configuration
 
         /// <summary>
         /// Constructor that takes an IComponent. The IComponent acts as the "owner" of this settings class. One
-        /// of the things we do is query the component's site to see if it has a SettingsProvider service. If it 
+        /// of the things we do is query the component's site to see if it has a SettingsProvider service. If it
         /// does, we allow it to override the providers specified in the metadata.
         /// </summary>
         protected ApplicationSettingsBase(IComponent owner) : this(owner, string.Empty)
@@ -120,8 +120,8 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// The SettingsBase class queries this to get the collection of SettingsProperty objects. We reflect over 
-        /// the properties defined on the current object's type and use the metadata on those properties to form 
+        /// The SettingsBase class queries this to get the collection of SettingsProperty objects. We reflect over
+        /// the properties defined on the current object's type and use the metadata on those properties to form
         /// this collection.
         /// </summary>
         [Browsable(false)]
@@ -448,7 +448,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Creates a SettingsProperty object using the metadata on the given property 
+        /// Creates a SettingsProperty object using the metadata on the given property
         /// and returns it.
         /// </summary>
         private SettingsProperty CreateSetting(PropertyInfo propertyInfo)
@@ -704,10 +704,10 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Retrieves the value of a setting. We need this method so we can fire the SettingsLoaded event 
-        /// when settings are loaded from the providers.Ideally, this should be fired from SettingsBase, 
-        /// but unfortunately that will not happen in Whidbey. Instead, we check to see if the value has already 
-        /// been retrieved. If not, we fire the load event, since we expect SettingsBase to load all the settings 
+        /// Retrieves the value of a setting. We need this method so we can fire the SettingsLoaded event
+        /// when settings are loaded from the providers.Ideally, this should be fired from SettingsBase,
+        /// but unfortunately that will not happen in Whidbey. Instead, we check to see if the value has already
+        /// been retrieved. If not, we fire the load event, since we expect SettingsBase to load all the settings
         /// from this setting's provider.
         /// </summary>
         private object GetPropertyValue(string propertyName)
@@ -765,7 +765,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Only those settings class properties that have a SettingAttribute on them are 
+        /// Only those settings class properties that have a SettingAttribute on them are
         /// treated as settings. This routine filters out other properties.
         /// </summary>
         private PropertyInfo[] SettingsFilter(PropertyInfo[] allProps)

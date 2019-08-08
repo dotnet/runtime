@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -20,34 +20,34 @@ namespace System.Collections.Concurrent
     {
         // Design:
         //
-        // SingleProducerSingleConsumerQueue (SPSCQueue) is a concurrent queue designed to be used 
-        // by one producer thread and one consumer thread. SPSCQueue does not work correctly when used by 
+        // SingleProducerSingleConsumerQueue (SPSCQueue) is a concurrent queue designed to be used
+        // by one producer thread and one consumer thread. SPSCQueue does not work correctly when used by
         // multiple producer threads concurrently or multiple consumer threads concurrently.
-        // 
-        // SPSCQueue is based on segments that behave like circular buffers. Each circular buffer is represented 
-        // as an array with two indexes: _first and _last. _first is the index of the array slot for the consumer 
-        // to read next, and _last is the slot for the producer to write next. The circular buffer is empty when 
+        //
+        // SPSCQueue is based on segments that behave like circular buffers. Each circular buffer is represented
+        // as an array with two indexes: _first and _last. _first is the index of the array slot for the consumer
+        // to read next, and _last is the slot for the producer to write next. The circular buffer is empty when
         // (_first == _last), and full when ((_last+1) % _array.Length == _first).
         //
-        // Since _first is only ever modified by the consumer thread and _last by the producer, the two indices can 
-        // be updated without interlocked operations. As long as the queue size fits inside a single circular buffer, 
-        // enqueues and dequeues simply advance the corresponding indices around the circular buffer. If an enqueue finds 
-        // that there is no room in the existing buffer, however, a new circular buffer is allocated that is twice as big 
-        // as the old buffer. From then on, the producer will insert values into the new buffer. The consumer will first 
+        // Since _first is only ever modified by the consumer thread and _last by the producer, the two indices can
+        // be updated without interlocked operations. As long as the queue size fits inside a single circular buffer,
+        // enqueues and dequeues simply advance the corresponding indices around the circular buffer. If an enqueue finds
+        // that there is no room in the existing buffer, however, a new circular buffer is allocated that is twice as big
+        // as the old buffer. From then on, the producer will insert values into the new buffer. The consumer will first
         // empty out the old buffer and only then follow the producer into the new (larger) buffer.
         //
-        // As described above, the enqueue operation on the fast path only modifies the _first field of the current segment. 
-        // However, it also needs to read _last in order to verify that there is room in the current segment. Similarly, the 
-        // dequeue operation on the fast path only needs to modify _last, but also needs to read _first to verify that the 
+        // As described above, the enqueue operation on the fast path only modifies the _first field of the current segment.
+        // However, it also needs to read _last in order to verify that there is room in the current segment. Similarly, the
+        // dequeue operation on the fast path only needs to modify _last, but also needs to read _first to verify that the
         // queue is non-empty. This results in true cache line sharing between the producer and the consumer.
         //
-        // The cache line sharing issue can be mitigating by having a possibly stale copy of _first that is owned by the producer, 
-        // and a possibly stale copy of _last that is owned by the consumer. So, the consumer state is described using 
-        // (_first, _lastCopy) and the producer state using (_firstCopy, _last). The consumer state is separated from 
-        // the producer state by padding, which allows fast-path enqueues and dequeues from hitting shared cache lines. 
-        // _lastCopy is the consumer's copy of _last. Whenever the consumer can tell that there is room in the buffer 
-        // simply by observing _lastCopy, the consumer thread does not need to read _last and thus encounter a cache miss. Only 
-        // when the buffer appears to be empty will the consumer refresh _lastCopy from _last. _firstCopy is used by the producer 
+        // The cache line sharing issue can be mitigating by having a possibly stale copy of _first that is owned by the producer,
+        // and a possibly stale copy of _last that is owned by the consumer. So, the consumer state is described using
+        // (_first, _lastCopy) and the producer state using (_firstCopy, _last). The consumer state is separated from
+        // the producer state by padding, which allows fast-path enqueues and dequeues from hitting shared cache lines.
+        // _lastCopy is the consumer's copy of _last. Whenever the consumer can tell that there is room in the buffer
+        // simply by observing _lastCopy, the consumer thread does not need to read _last and thus encounter a cache miss. Only
+        // when the buffer appears to be empty will the consumer refresh _lastCopy from _last. _firstCopy is used by the producer
         // in the same way to avoid reading _first on the hot path.
 
         /// <summary>The initial size to use for segments (in number of elements).</summary>
@@ -118,7 +118,7 @@ namespace System.Collections.Concurrent
             try { }
             finally
             {
-                // Finally block to protect against corruption due to a thread abort 
+                // Finally block to protect against corruption due to a thread abort
                 // between setting _next and setting _tail.
                 Volatile.Write(ref _tail._next, newSegment); // ensure segment not published until item is fully stored
                 _tail = newSegment;

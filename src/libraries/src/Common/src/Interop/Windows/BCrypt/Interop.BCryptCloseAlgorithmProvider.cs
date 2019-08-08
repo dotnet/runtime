@@ -14,4 +14,3 @@ internal partial class Interop
         internal static extern NTSTATUS BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
 }
-

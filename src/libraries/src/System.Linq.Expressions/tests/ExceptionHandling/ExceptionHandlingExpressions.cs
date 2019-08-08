@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1402,7 +1402,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CatchesMustReturnVoidWithVoidBody()
         {
-            Assert.Throws<ArgumentException>(null, () => 
+            Assert.Throws<ArgumentException>(null, () =>
                 Expression.TryCatch(
                     Expression.Empty(),
                     Expression.Catch(typeof(InvocationExpression), Expression.Constant("hello")),

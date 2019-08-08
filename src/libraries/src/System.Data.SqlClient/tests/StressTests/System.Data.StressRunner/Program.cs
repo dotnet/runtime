@@ -119,7 +119,7 @@ namespace DPStressHarness
             if (TestFinder.AssemblyName != null)
             {
                 Console.WriteLine("Assembly Found for the Assembly Name " + TestFinder.AssemblyName);
-                
+
                 if (TestFinder.AssemblyName != null)
                 {
                     // get and load all the tests
@@ -274,4 +274,3 @@ namespace DPStressHarness
     }
 
 }
-

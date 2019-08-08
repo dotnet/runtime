@@ -213,7 +213,7 @@ namespace System.IO.Tests
             byte[] ByteOrderMaskUtf16_LE = new byte[] { 0xFF, 0xFE, 0x20, 0x20 };
             byte[] ByteOrderMaskUtf32 = new byte[] { 0x00, 0x00, 0xFE, 0xFF };
 
-            // check enabled leaveOpen and default encoding 
+            // check enabled leaveOpen and default encoding
             using (var tempStream = new MemoryStream())
             {
                 using (var sr = new StreamReader(tempStream, leaveOpen: true))
@@ -263,7 +263,7 @@ namespace System.IO.Tests
                 }
                 Assert.True(tempStream.CanRead);
 
-                // check enabled BOM and leaveOpen 
+                // check enabled BOM and leaveOpen
                 tempStream.Seek(0, SeekOrigin.Begin);
                 using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: true))
                 {

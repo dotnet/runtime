@@ -552,7 +552,7 @@ namespace System.Xml.XPath
         //-----------------------------------------------
 
         // Returns an object of type IKeyComparer. Using this the navigators can be hashed
-        // on the basis of actual position it represents rather than the clr reference of 
+        // on the basis of actual position it represents rather than the clr reference of
         // the navigator object.
         public static IEqualityComparer NavigatorComparer
         {
@@ -789,7 +789,7 @@ namespace System.Xml.XPath
                 {
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
-                        // Scan until we come to the next content-typed node 
+                        // Scan until we come to the next content-typed node
                         // after the attribute or namespace node
                         end = end.Clone();
                         end.MoveToNonDescendant();
@@ -856,7 +856,7 @@ namespace System.Xml.XPath
                 {
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
-                        // Scan until we come to the next content-typed node 
+                        // Scan until we come to the next content-typed node
                         // after the attribute or namespace node
                         end = end.Clone();
                         end.MoveToNonDescendant();
@@ -1878,7 +1878,7 @@ namespace System.Xml.XPath
             return depth;
         }
 
-        // XPath based comparison for namespaces, attributes and other 
+        // XPath based comparison for namespaces, attributes and other
         // items with the same parent element.
         //
         //                 n2
@@ -2034,7 +2034,7 @@ namespace System.Xml.XPath
             return false;
         }
 
-        // Lax check for potential sibling item. 
+        // Lax check for potential sibling item.
         private bool IsValidSiblingType(XPathNodeType type)
         {
             switch (NodeType)

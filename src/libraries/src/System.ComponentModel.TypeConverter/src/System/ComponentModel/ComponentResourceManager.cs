@@ -47,7 +47,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// This method examines all the resources for the current culture.
-        /// When it finds a resource with a key in the format of 
+        /// When it finds a resource with a key in the format of
         /// &quot;[objectName].[property name]&quot; it will apply that resource's value
         /// to the corresponding property on the object. If there is no matching
         /// property the resource will be ignored.
@@ -56,7 +56,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// This method examines all the resources for the provided culture.
-        /// When it finds a resource with a key in the format of 
+        /// When it finds a resource with a key in the format of
         /// &quot;[objectName].[property name]&quot; or &quot;[objectName]-[property name]&quot; it will apply that resource's value
         /// to the corresponding property on the object. If there is no matching
         /// property the resource will be ignored.
@@ -81,12 +81,12 @@ namespace System.ComponentModel
             // a sorted dictionary that contains ALL the culture values (so it traverses up
             // the parent culture chain) for that culture. This means that if ApplyResources
             // is called with different cultures there could be some redundancy in the
-            // table, but it allows the normal case of calling with a single culture to 
+            // table, but it allows the normal case of calling with a single culture to
             // be much faster.
             //
 
             // The reason we use a SortedDictionary here is to ensure the resources are applied
-            // in an order consistent with codedom deserialization. 
+            // in an order consistent with codedom deserialization.
             SortedList<string, object> resources;
 
             if (_resourceSets == null)
@@ -218,11 +218,11 @@ namespace System.ComponentModel
             }
 
             // Now walk culture's resource set. Another thing we
-            // do here is ask ResourceManager to traverse up the 
+            // do here is ask ResourceManager to traverse up the
             // parent chain. We do NOT want to do this because
             // we are trawling up the parent chain ourselves, but by
             // passing in true for the second parameter the resource
-            // manager will cache the culture it did find, so when we 
+            // manager will cache the culture it did find, so when we
             // do recurse all missing resources will be filled in
             // so we are very fast. That's why we remember what our
             // parent resource set's instance was -- if they are the

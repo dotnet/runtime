@@ -17,10 +17,10 @@ namespace System.Management
     {
         internal const string DotNetVersion = "v4.0.30319";
         private const string RegKeyLocation =@"SOFTWARE\Microsoft\.NETFramework\" + DotNetVersion;
- 
+
         private static readonly object s_syncLock = new object();
         private static int s_allowManagementObjectQI;
- 
+
         private const string c_WMIDisableCOMSecurity = "WMIDisableCOMSecurity";
 
         public static bool AllowIManagementObjectQI
@@ -41,22 +41,22 @@ namespace System.Management
                 return s_allowManagementObjectQI == 1 ? true : false;
             }
         }
- 
+
         private static bool GetSwitchValueFromRegistry()
-        { 
+        {
            RegistryKey s_switchesRegKey = null;
            try
            {
               s_switchesRegKey = Registry.LocalMachine.OpenSubKey(RegKeyLocation);
- 
+
               if (s_switchesRegKey == null)
               {
                   return false;
               }
- 
+
               return ((int)s_switchesRegKey.GetValue(c_WMIDisableCOMSecurity, -1 /* default */) == 1);
            }
-          
+
            // ignore exceptions so that we don't crash the process if we can't read the switch value
            catch (Exception e)
            {
@@ -74,7 +74,7 @@ namespace System.Management
                    s_switchesRegKey.Dispose();
                }
            }
- 
+
            // if for any reason we cannot retrieve the value of the switch from the Registry,
            // fallback to 'false' which is the secure behavior
            return false;
@@ -84,14 +84,14 @@ namespace System.Management
     internal static class WmiNetUtilsHelper
     {
         internal delegate int ResetSecurity(IntPtr hToken);
-        internal delegate int SetSecurity([In][Out] ref bool pNeedtoReset, [In][Out] ref IntPtr pHandle);    
-        internal delegate int BlessIWbemServices([MarshalAs(UnmanagedType.Interface)] IWbemServices pIUnknown, 
+        internal delegate int SetSecurity([In][Out] ref bool pNeedtoReset, [In][Out] ref IntPtr pHandle);
+        internal delegate int BlessIWbemServices([MarshalAs(UnmanagedType.Interface)] IWbemServices pIUnknown,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                         IntPtr password,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority,
                                                                         int impersonationLevel,
                                                                         int authenticationLevel);
-        internal delegate int BlessIWbemServicesObject([MarshalAs(UnmanagedType.IUnknown)] object pIUnknown, 
+        internal delegate int BlessIWbemServicesObject([MarshalAs(UnmanagedType.IUnknown)] object pIUnknown,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                         IntPtr password,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority,
@@ -132,11 +132,11 @@ namespace System.Management
          internal delegate int QualifierSet_Next(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrName, [Out] out object pVal, [Out] out int plFlavor);
          internal delegate int QualifierSet_EndEnumeration(int vFunc, IntPtr pWbemClassObject);
          internal delegate int GetCurrentApartmentType(int vFunc, IntPtr pComThreadingInfo, [Out] out APTTYPE aptType);
-         internal delegate void VerifyClientKey();  
-         internal delegate int  GetDemultiplexedStub([In,MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out,MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);         
-         internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, 
-                                                                                            [In] int lFlags, 
-                                                                                            [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
+         internal delegate void VerifyClientKey();
+         internal delegate int  GetDemultiplexedStub([In,MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out,MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);
+         internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter,
+                                                                                            [In] int lFlags,
+                                                                                            [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                                             [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
                                                                                             [In] int impLevel,
                                                                                             [In] int authnLevel,
@@ -156,10 +156,10 @@ namespace System.Management
                                                                                         [In]IntPtr   strPassword,
                                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                                         );
-         internal delegate int ExecQueryWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
-                                                                            [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, 
-                                                                            [In] int lFlags, 
-                                                                            [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
+         internal delegate int ExecQueryWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage,
+                                                                            [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery,
+                                                                            [In] int lFlags,
+                                                                            [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                             [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
                                                                             [In] int impLevel,
                                                                             [In] int authnLevel,
@@ -168,10 +168,10 @@ namespace System.Management
                                                                             [In]IntPtr   strPassword,
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                             );
-        internal delegate int ExecNotificationQueryWmi( [In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
-                                                                                                [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, 
-                                                                                                [In] int lFlags, 
-                                                                                                [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
+        internal delegate int ExecNotificationQueryWmi( [In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage,
+                                                                                                [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery,
+                                                                                                [In] int lFlags,
+                                                                                                [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                                                 [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
                                                                                                 [In] int impLevel,
                                                                                                 [In] int authnLevel,
@@ -230,7 +230,7 @@ namespace System.Management
 
 
 
-        // 'Apartment Type' returned by IComThreadingInfo::GetCurrentApartmentType()         
+        // 'Apartment Type' returned by IComThreadingInfo::GetCurrentApartmentType()
          internal enum APTTYPE
         {
             APTTYPE_CURRENT = -1,
@@ -242,9 +242,9 @@ namespace System.Management
         internal static ResetSecurity ResetSecurity_f;
         internal static SetSecurity SetSecurity_f;
         internal static BlessIWbemServices BlessIWbemServices_f;
-        internal static BlessIWbemServicesObject BlessIWbemServicesObject_f;        
+        internal static BlessIWbemServicesObject BlessIWbemServicesObject_f;
         internal static GetPropertyHandle GetPropertyHandle_f27;
-        internal static WritePropertyValue  WritePropertyValue_f28;        
+        internal static WritePropertyValue  WritePropertyValue_f28;
         internal static GetQualifierSet GetQualifierSet_f;
         internal static Get Get_f;
         internal static Put Put_f;
@@ -277,12 +277,12 @@ namespace System.Management
         internal static QualifierSet_Next QualifierNext_f;
         internal static QualifierSet_EndEnumeration QualifierEndEnumeration_f;
         internal static GetCurrentApartmentType GetCurrentApartmentType_f;
-        internal static VerifyClientKey VerifyClientKey_f;        
+        internal static VerifyClientKey VerifyClientKey_f;
         internal static Clone Clone_f12;
-        internal static GetDemultiplexedStub GetDemultiplexedStub_f;     
+        internal static GetDemultiplexedStub GetDemultiplexedStub_f;
         internal static CreateInstanceEnumWmi CreateInstanceEnumWmi_f;
         internal static CreateClassEnumWmi CreateClassEnumWmi_f;
-        internal static  ExecQueryWmi ExecQueryWmi_f;       
+        internal static  ExecQueryWmi ExecQueryWmi_f;
         internal static ExecNotificationQueryWmi ExecNotificationQueryWmi_f;
         internal static PutInstanceWmi PutInstanceWmi_f;
         internal static PutClassWmi PutClassWmi_f;
@@ -447,7 +447,7 @@ namespace System.Management
     /// <example>
     ///    <code lang='C#'>using System;
     /// using System.Management;
-    /// 
+    ///
     /// // This sample demonstrates how to connect to root/default namespace
     /// // using ManagmentScope object.
     /// class Sample_ManagementScope
@@ -466,7 +466,7 @@ namespace System.Management
     ///    </code>
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
-    /// 
+    ///
     /// ' This sample demonstrates how to connect to root/default namespace
     /// ' using ManagmentScope object.
     /// Class Sample_ManagementScope
@@ -484,7 +484,7 @@ namespace System.Management
     [TypeConverter(typeof(ManagementScopeConverter))]
     public class ManagementScope : ICloneable
     {
-        private ManagementPath      validatedPath;        
+        private ManagementPath      validatedPath;
         private IWbemServices        wbemServices;
         private ConnectionOptions    options;
         internal event IdentifierChangedEventHandler IdentifierChanged;
@@ -536,11 +536,11 @@ namespace System.Management
             }
         }
 
-        internal IWbemServices GetIWbemServices () 
+        internal IWbemServices GetIWbemServices ()
         {
             IWbemServices localCopy = wbemServices;
             //IWbemServices is always created in MTA context. Only if call is made through non MTA context we need to use IWbemServices in right context.
-            // Lets start by assuming that we'll return the RCW that we already have. When WMINet_Utils.dll wraps the real COM proxy, credentials don't get 
+            // Lets start by assuming that we'll return the RCW that we already have. When WMINet_Utils.dll wraps the real COM proxy, credentials don't get
             // lost when the CLR marshals the wrapped object to a different COM apartment. The wrap was added to prevent marshalling of IManagedObject from native
             // to managed code.
 
@@ -583,26 +583,26 @@ namespace System.Management
         ///    WMI server and namespace.</para>
         /// </summary>
         /// <value>
-        /// <para><see langword='true'/> if a connection is alive (bound 
+        /// <para><see langword='true'/> if a connection is alive (bound
         ///    to a server and namespace); otherwise, <see langword='false'/>.</para>
         /// </value>
         /// <remarks>
-        ///    <para> A scope is disconnected after creation until someone 
+        ///    <para> A scope is disconnected after creation until someone
         ///       explicitly calls <see cref='System.Management.ManagementScope.Connect'/>(), or uses the scope for any
         ///       operation that requires a live connection. Also, the scope is
         ///       disconnected from the previous connection whenever the identifying properties of the scope are
         ///       changed.</para>
         /// </remarks>
-        public bool IsConnected  
+        public bool IsConnected
         {
-            get 
-            { 
-                return (null != wbemServices); 
+            get
+            {
+                return (null != wbemServices);
             }
         }
 
         //Internal constructor
-        internal ManagementScope (ManagementPath path, IWbemServices wbemServices, 
+        internal ManagementScope (ManagementPath path, IWbemServices wbemServices,
             ConnectionOptions options)
         {
             if (null != path)
@@ -689,8 +689,8 @@ namespace System.Management
         ///    <code lang='VB'>Dim s As New ManagementScope()
         ///    </code>
         /// </example>
-        public ManagementScope () : 
-            this (new ManagementPath (ManagementPath.DefaultPath.Path)) 
+        public ManagementScope () :
+            this (new ManagementPath (ManagementPath.DefaultPath.Path))
         {
             //Flag that this scope uses the default path
             IsDefaulted = true;
@@ -712,7 +712,7 @@ namespace System.Management
         public ManagementScope (ManagementPath path) : this(path, (ConnectionOptions)null) {}
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope
         ///    path.</para>
         /// </summary>
         /// <param name='path'>The server and namespace path for the <see cref='System.Management.ManagementScope'/>.</param>
@@ -724,7 +724,7 @@ namespace System.Management
         /// </example>
         public ManagementScope (string path) : this(new ManagementPath(path), (ConnectionOptions)null) {}
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope path, 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope path,
         ///    with the specified options.</para>
         /// </summary>
         /// <param name='path'>The server and namespace for the <see cref='System.Management.ManagementScope'/>.</param>
@@ -744,7 +744,7 @@ namespace System.Management
         public ManagementScope (string path, ConnectionOptions options) : this (new ManagementPath(path), options) {}
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope path, 
+        /// <para>Initializes a new instance of the <see cref='System.Management.ManagementScope'/> class representing the specified scope path,
         ///    with the specified options.</para>
         /// </summary>
         /// <param name='path'>A <see cref='System.Management.ManagementPath'/> containing the path to the server and namespace for the <see cref='System.Management.ManagementScope'/>.</param>
@@ -753,14 +753,14 @@ namespace System.Management
         ///    <code lang='C#'>ConnectionOptions opt = new ConnectionOptions();
         /// opt.Username = "Me";
         /// opt.Password = "MyPassword";
-        /// 
-        /// ManagementPath p = new ManagementPath("\\\\MyServer\\root\\default");   
+        ///
+        /// ManagementPath p = new ManagementPath("\\\\MyServer\\root\\default");
         /// ManagementScope = new ManagementScope(p, opt);
         ///    </code>
         ///    <code lang='VB'>Dim opt As New ConnectionOptions()
         /// opt.UserName = "Me"
         /// opt.Password = "MyPassword"
-        /// 
+        ///
         /// Dim p As New ManagementPath("\\MyServer\root\default")
         /// Dim s As New ManagementScope(p, opt)
         ///    </code>
@@ -786,20 +786,20 @@ namespace System.Management
         ///    <para> Gets or sets options for making the WMI connection.</para>
         /// </summary>
         /// <value>
-        /// <para>The valid <see cref='System.Management.ConnectionOptions'/> 
+        /// <para>The valid <see cref='System.Management.ConnectionOptions'/>
         /// containing options for the WMI connection.</para>
         /// </value>
         /// <example>
         ///    <code lang='C#'>//This constructor creates a scope object with default options
-        /// ManagementScope s = new ManagementScope("root\\MyApp"); 
-        /// 
+        /// ManagementScope s = new ManagementScope("root\\MyApp");
+        ///
         /// //Change default connection options -
         /// //In this example, set the system privileges to enabled for operations that require system privileges.
         /// s.Options.EnablePrivileges = true;
         ///    </code>
         ///    <code lang='VB'>'This constructor creates a scope object with default options
         /// Dim s As New ManagementScope("root\\MyApp")
-        /// 
+        ///
         /// 'Change default connection options -
         /// 'In this example, set the system privileges to enabled for operations that require system privileges.
         /// s.Options.EnablePrivileges = True
@@ -830,7 +830,7 @@ namespace System.Management
                     throw new ArgumentNullException (nameof(value));
             }
         }
-    
+
         /// <summary>
         /// <para>Gets or sets the path for the <see cref='System.Management.ManagementScope'/>.</para>
         /// </summary>
@@ -846,7 +846,7 @@ namespace System.Management
         /// s.Path = New ManagementPath("root\MyApp")
         ///    </code>
         /// </example>
-        public ManagementPath Path 
+        public ManagementPath Path
         {
             get
             {
@@ -908,18 +908,18 @@ namespace System.Management
         /// </remarks>
         /// <example>
         ///    <code lang='C#'>ManagementScope s = new ManagementScope("root\\MyApp");
-        /// 
+        ///
         /// //Explicit call to connect the scope object to the WMI namespace
         /// s.Connect();
-        /// 
+        ///
         /// //The following doesn't do any implicit scope connections because s is already connected.
         /// ManagementObject o = new ManagementObject(s, "Win32_LogicalDisk='C:'", null);
         ///    </code>
         ///    <code lang='VB'>Dim s As New ManagementScope("root\\MyApp")
-        /// 
+        ///
         /// 'Explicit call to connect the scope object to the WMI namespace
         /// s.Connect()
-        /// 
+        ///
         /// 'The following doesn't do any implicit scope connections because s is already connected.
         /// Dim o As New ManagementObject(s, "Win32_LogicalDisk=""C:""", null)
         ///    </code>
@@ -941,7 +941,7 @@ namespace System.Management
              * the state to prevent 2 threads simultaneously doing the same
              * connection. To avoid taking the lock unnecessarily we examine
              * isConnected first
-             */ 
+             */
             if (!IsConnected)
             {
 #pragma warning disable CA2002
@@ -987,7 +987,7 @@ namespace System.Management
                 // NB: we use a special method to set the namespace
                 // path here as we do NOT want to trigger an
                 // IdentifierChanged event as a result of this set
-                        
+
                 bool bUnused;
                 nsPath = threadParam.prvpath.SetNamespacePath(ManagementPath.DefaultPath.Path, out bUnused);
             }
@@ -998,21 +998,21 @@ namespace System.Management
             //If we're on XP or higher, always use the "max_wait" flag to avoid hanging
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                
+
                 if( ((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor >= 1)) || (Environment.OSVersion.Version.Major >= 6) )
                 {
                     threadParam.options.Flags |= (int)tag_WBEM_CONNECT_OPTIONS.WBEM_FLAG_CONNECT_USE_MAX_WAIT;
                 }
             }
 
-            try 
+            try
             {
                 status = GetSecuredConnectHandler().ConnectNSecureIWbemServices(nsPath, ref  threadParam.wbemServices);
-            } 
-            catch (COMException e) 
+            }
+            catch (COMException e)
             {
                 ManagementException.ThrowWithExtendedInfo (e);
-            } 
+            }
 
             if ((status & 0xfffff000) == 0x80041000)
             {
@@ -1040,21 +1040,21 @@ namespace System.Management
         {
             return new SecuredIWbemServicesHandler(this, pWbemServiecs);
         }
-        
-    }//ManagementScope    
 
-    internal class SecuredIEnumWbemClassObjectHandler 
-    {  
+    }//ManagementScope
+
+    internal class SecuredIEnumWbemClassObjectHandler
+    {
         private IEnumWbemClassObject pEnumWbemClassObjectsecurityHelper;
         private ManagementScope scope;
-        internal SecuredIEnumWbemClassObjectHandler  (ManagementScope theScope, IEnumWbemClassObject pEnumWbemClassObject) 
+        internal SecuredIEnumWbemClassObjectHandler  (ManagementScope theScope, IEnumWbemClassObject pEnumWbemClassObject)
         {
             this.scope = theScope;
             pEnumWbemClassObjectsecurityHelper = pEnumWbemClassObject;
         }
         internal int Reset_()
         {
-            int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;            
+            int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             status = pEnumWbemClassObjectsecurityHelper.Reset_();
             return status;
         }
@@ -1077,10 +1077,10 @@ namespace System.Management
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CloneEnumWbemClassObject_f(
-                    out ppEnum, 
-                    (int)scope.Options.Authentication, 
+                    out ppEnum,
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pEnumWbemClassObjectsecurityHelper, 
+                    pEnumWbemClassObjectsecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1100,8 +1100,8 @@ namespace System.Management
     internal class SecuredConnectHandler
     {
         private ManagementScope scope;
-        
-        internal SecuredConnectHandler (ManagementScope theScope) 
+
+        internal SecuredConnectHandler (ManagementScope theScope)
         {
             this.scope = theScope;
         }
@@ -1124,7 +1124,7 @@ namespace System.Management
                     status = WmiNetUtilsHelper.ConnectServerWmi_f(
                         path,
                         scope.Options.Username,
-                        password, 
+                        password,
                         scope.Options.Locale,
                         scope.Options.Flags,
                         scope.Options.Authority,
@@ -1148,10 +1148,10 @@ namespace System.Management
     }
 
     internal class SecuredIWbemServicesHandler
-    {              
+    {
         private IWbemServices pWbemServiecsSecurityHelper;
         private ManagementScope scope;
-        internal SecuredIWbemServicesHandler (ManagementScope theScope, IWbemServices pWbemServiecs) 
+        internal SecuredIWbemServicesHandler (ManagementScope theScope, IWbemServices pWbemServiecs)
         {
             this.scope = theScope;
             pWbemServiecsSecurityHelper = pWbemServiecs;
@@ -1178,7 +1178,7 @@ namespace System.Management
         internal int GetObject_(string strObjectPath, int lFlags, IWbemContext pCtx, ref IWbemClassObjectFreeThreaded ppObject,  IntPtr ppCallResult)
         {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
+            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
@@ -1201,9 +1201,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     ppCallResult,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1220,7 +1220,7 @@ namespace System.Management
          internal int DeleteClass_( string strClass, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
+            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
@@ -1242,9 +1242,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     out ppEnum,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1268,9 +1268,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     ppCallResult,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1287,7 +1287,7 @@ namespace System.Management
          internal int DeleteInstance_(string strObjectPath, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
+            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
@@ -1310,9 +1310,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     out ppEnum,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1337,9 +1337,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     out ppEnum,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1364,9 +1364,9 @@ namespace System.Management
                     lFlags,
                     pCtx,
                     out ppEnum,
-                    (int)scope.Options.Authentication, 
+                    (int)scope.Options.Authentication,
                     (int)scope.Options.Impersonation,
-                    pWbemServiecsSecurityHelper, 
+                    pWbemServiecsSecurityHelper,
                     scope.Options.Username,
                     password,
                     scope.Options.Authority);
@@ -1398,13 +1398,13 @@ namespace System.Management
     }
 
 
-    internal class SecurityHandler 
+    internal class SecurityHandler
     {
         private bool needToReset = false;
         private IntPtr handle;
         private ManagementScope scope;
-        
-        internal SecurityHandler (ManagementScope theScope) 
+
+        internal SecurityHandler (ManagementScope theScope)
         {
             this.scope = theScope;
             if (null != scope)
@@ -1421,14 +1421,14 @@ namespace System.Management
             if (needToReset)
             {
                 needToReset = false;
-                
+
                 if (null != scope)
                 {
                     WmiNetUtilsHelper.ResetSecurity_f ( handle);
                 }
             }
 
-        }            
+        }
 
 
        internal void Secure (IWbemServices services)
@@ -1480,32 +1480,32 @@ namespace System.Management
         }
 
 
-    } //SecurityHandler    
+    } //SecurityHandler
 
 
     /// <summary>
     /// Converts a String to a ManagementScope
     /// </summary>
-    class ManagementScopeConverter : ExpandableObjectConverter 
+    class ManagementScopeConverter : ExpandableObjectConverter
     {
-        
+
         /// <summary>
-        /// Determines if this converter can convert an object in the given source type to the native type of the converter. 
+        /// Determines if this converter can convert an object in the given source type to the native type of the converter.
         /// </summary>
         /// <param name='context'>An ITypeDescriptorContext that provides a format context.</param>
         /// <param name='sourceType'>A Type that represents the type you wish to convert from.</param>
         /// <returns>
         ///    <para>true if this converter can perform the conversion; otherwise, false.</para>
         /// </returns>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) 
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if ((sourceType == typeof(ManagementScope))) 
+            if ((sourceType == typeof(ManagementScope)))
             {
                 return true;
             }
             return base.CanConvertFrom(context,sourceType);
         }
-        
+
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given destination type using the context.
         /// </summary>
@@ -1514,15 +1514,15 @@ namespace System.Management
         /// <returns>
         ///    <para>true if this converter can perform the conversion; otherwise, false.</para>
         /// </returns>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) 
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if ((destinationType == typeof(InstanceDescriptor))) 
+            if ((destinationType == typeof(InstanceDescriptor)))
             {
                 return true;
             }
             return base.CanConvertTo(context,destinationType);
         }
-        
+
         /// <summary>
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
@@ -1535,19 +1535,19 @@ namespace System.Management
         /// <param name='value'>The Object to convert.</param>
         /// <param name='destinationType'>The Type to convert the value parameter to.</param>
         /// <returns>An Object that represents the converted value.</returns>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType) 
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null) 
+            if (destinationType == null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (value is ManagementScope && destinationType == typeof(InstanceDescriptor)) 
+            if (value is ManagementScope && destinationType == typeof(InstanceDescriptor))
             {
                 ManagementScope obj = ((ManagementScope)(value));
                 ConstructorInfo ctor = typeof(ManagementScope).GetConstructor(new Type[] {typeof(string)});
-                if (ctor != null) 
+                if (ctor != null)
                 {
                     return new InstanceDescriptor(ctor, new object[] {obj.Path.Path});
                 }

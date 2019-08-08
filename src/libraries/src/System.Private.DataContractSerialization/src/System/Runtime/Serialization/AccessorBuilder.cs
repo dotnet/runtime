@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -51,7 +51,7 @@ namespace System.Runtime.Serialization
             else
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType), memberInfo.Name)));
-            }        
+            }
         }
 
         public static Setter CreateSetter(MemberInfo memberInfo)

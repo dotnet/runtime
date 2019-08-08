@@ -60,5 +60,5 @@ namespace System.Net.Sockets
         }
 
         internal bool DoDisconnect => _doDisconnect;
-    } 
+    }
 }

@@ -15,5 +15,3 @@ namespace System.Security.Cryptography.Pkcs
         PublicKeyInfo = 3,          // PublicKeyInfo
     }
 }
-
-

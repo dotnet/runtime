@@ -12,7 +12,7 @@ namespace System.Runtime.CompilerServices
     {
         /// <summary>
         /// Allows a managed application environment such as an interactive interpreter (IronPython) or a
-        /// web browser host (Jolt hosting Silverlight in IE) to be notified of contract failures and 
+        /// web browser host (Jolt hosting Silverlight in IE) to be notified of contract failures and
         /// potentially "handle" them, either by throwing a particular exception type, etc.  If any of the
         /// event handlers sets the Cancel flag in the ContractFailedEventArgs, then the Contract class will
         /// not pop up an assert dialog box or trigger escalation policy.
@@ -128,11 +128,11 @@ namespace System.Runtime.CompilerServices
         {
             string failureMessage;
             // Well-formatted English messages will take one of four forms.  A sentence ending in
-            // either a period or a colon, the condition string, then the message tacked 
+            // either a period or a colon, the condition string, then the message tacked
             // on to the end with two spaces in front.
-            // Note that both the conditionText and userMessage may be null.  Also, 
+            // Note that both the conditionText and userMessage may be null.  Also,
             // on Silverlight we may not be able to look up a friendly string for the
-            // error message.  Let's leverage Silverlight's default error message there. 
+            // error message.  Let's leverage Silverlight's default error message there.
             if (!string.IsNullOrEmpty(conditionText))
             {
                 failureMessage = GetFailureMessage(failureKind, conditionText);

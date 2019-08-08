@@ -19,4 +19,3 @@ namespace System.Configuration
         public override SecurityElement ToXml() { return default(SecurityElement); }
     }
 }
-

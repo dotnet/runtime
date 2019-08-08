@@ -208,9 +208,9 @@ namespace System.Net
 
         public override void OnDeserialization(object sender)
         {
-            // Nop in desktop 
+            // Nop in desktop
         }
-             
+
         public static bool IsRestricted(string headerName)
         {
             return IsRestricted(headerName, false);

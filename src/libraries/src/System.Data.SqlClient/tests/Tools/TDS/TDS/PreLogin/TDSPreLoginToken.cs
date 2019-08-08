@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -55,7 +55,7 @@ namespace Microsoft.SqlServer.TDS.PreLogin
         public byte[] ActivityID { get; set; }
 
         /// <summary>
-        /// Nonce to be encrypted using session key from federated authentication key 
+        /// Nonce to be encrypted using session key from federated authentication key
         /// from federated handshake.
         /// </summary>
         public byte[] Nonce { get; set; }
@@ -160,7 +160,7 @@ namespace Microsoft.SqlServer.TDS.PreLogin
             // For the most cases this should not change the order of the options in the stream, but just in case
             options = options.OrderBy(o => o.Position).ToList();
 
-            // Calculate current inflation offset 
+            // Calculate current inflation offset
             ushort inflationOffset = (ushort)options.Sum(o => o.TokenLength);
 
             // Iterate through each option and inflate it

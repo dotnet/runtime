@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
             _keySize = dwKeySize;
             _sha1 = SHA1.Create();
 
-            // If this is not a random container we generate, create it eagerly 
+            // If this is not a random container we generate, create it eagerly
             // in the constructor so we can report any errors now.
             if (!_randomKeyContainer)
             {

@@ -47,7 +47,7 @@ namespace System
         CanonicalizeAsFilePath = 0x1000000, // remove/convert sequences /.../ /x../ /x./ dangerous for a DOS path
         UnEscapeDotsAndSlashes = 0x2000000, // additionally unescape dots and slashes before doing path compression
         AllowIdn = 0x4000000,    // IDN host conversion allowed
-        AllowIriParsing = 0x10000000,   // Iri parsing. String is normalized, bidi control 
+        AllowIriParsing = 0x10000000,   // Iri parsing. String is normalized, bidi control
                                         // characters are removed, unicode char limits are checked etc.
 
         //      KeepTailLWS             = 0x8000000,
@@ -184,7 +184,7 @@ namespace System
         {
             if (syntax.SchemeName.Length != 0)
                 throw new InvalidOperationException(SR.Format(SR.net_uri_NeedFreshParser, syntax.SchemeName));
- 
+
             lock (s_table)
             {
                 syntax._flags &= ~UriSyntaxFlags.V1_UnknownUri;
@@ -199,15 +199,15 @@ namespace System
                     lwrCaseSchemeName = oldSyntax._scheme;
                     s_tempTable.Remove(lwrCaseSchemeName);
                 }
- 
+
                 syntax.OnRegister(lwrCaseSchemeName, defaultPort);
                 syntax._scheme = lwrCaseSchemeName;
                 syntax.CheckSetIsSimpleFlag();
                 syntax._port = defaultPort;
- 
+
                 s_table[syntax.SchemeName] = syntax;
             }
-        } 
+        }
 
         private const int c_MaxCapacity = 512;
         //schemeStr must be in lower case!
@@ -253,15 +253,15 @@ namespace System
         internal void CheckSetIsSimpleFlag()
         {
             Type type  = this.GetType();
- 
-            if (    type == typeof(GenericUriParser)     
-                ||  type == typeof(HttpStyleUriParser)   
-                ||  type == typeof(FtpStyleUriParser)   
-                ||  type == typeof(FileStyleUriParser)   
-                ||  type == typeof(NewsStyleUriParser)   
-                ||  type == typeof(GopherStyleUriParser) 
-                ||  type == typeof(NetPipeStyleUriParser) 
-                ||  type == typeof(NetTcpStyleUriParser) 
+
+            if (    type == typeof(GenericUriParser)
+                ||  type == typeof(HttpStyleUriParser)
+                ||  type == typeof(FtpStyleUriParser)
+                ||  type == typeof(FileStyleUriParser)
+                ||  type == typeof(NewsStyleUriParser)
+                ||  type == typeof(GopherStyleUriParser)
+                ||  type == typeof(NetPipeStyleUriParser)
+                ||  type == typeof(NetTcpStyleUriParser)
                 ||  type == typeof(LdapStyleUriParser)
                 )
             {

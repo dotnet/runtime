@@ -53,7 +53,7 @@ namespace System.Numerics.Tests
 
             // Large Negative Odd Number
             VerifyIsEven(((BigInteger)long.MaxValue + 2) * -1, false);
-            
+
 
             // Large Negative Random Even Number
             for (int i = 0; i < Reps; i++)
@@ -79,7 +79,7 @@ namespace System.Numerics.Tests
             // Negative One
             VerifyIsEven(BigInteger.MinusOne, false);
         }
-        
+
         private static void VerifyIsEven(BigInteger bigInt, bool expectedAnswer)
         {
             Assert.Equal(expectedAnswer, bigInt.IsEven);

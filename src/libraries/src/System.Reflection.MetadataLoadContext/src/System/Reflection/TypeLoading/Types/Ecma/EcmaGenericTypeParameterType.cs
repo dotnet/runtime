@@ -11,7 +11,7 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed class EcmaGenericTypeParameterType : EcmaGenericParameterType
     {
-        internal EcmaGenericTypeParameterType(GenericParameterHandle handle, EcmaModule module) 
+        internal EcmaGenericTypeParameterType(GenericParameterHandle handle, EcmaModule module)
             : base(handle, module)
         {
         }

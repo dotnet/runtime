@@ -10,7 +10,7 @@ namespace System.DirectoryServices.AccountManagement
     {
         Machine = 0,
         Domain = 1,
-#if TESTHOOK        
+#if TESTHOOK
         ApplicationDirectory = 2,
         Test            =   3
 #else
@@ -18,4 +18,3 @@ namespace System.DirectoryServices.AccountManagement
 #endif // TESTHOOK
     }
 }
-

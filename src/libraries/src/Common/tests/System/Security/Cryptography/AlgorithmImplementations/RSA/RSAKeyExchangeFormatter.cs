@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
-                byte[] encrypted = 
+                byte[] encrypted =
                     ( "19134ffba4025a1c651120ca07258a46e005a327c3927f615465060734dc0339114cabfd13803288883abf9329296a3e3a5cb1587927"
                     + "a6e8a2e736f0a756e342b4adb0f1de5bba9ba5faee30456fb7409678eb71a70185606eda3303d9425fbeb730ab7803bea50e208b563f"
                     + "e9bfa97a8966deefb211a3bd6abe08cd15e0b927").HexToByteArray();

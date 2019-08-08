@@ -43,7 +43,7 @@ namespace System.Net.Http.Tests
             // This test verifies that Parse() correctly calls TryParse().
             Int32NumberHeaderParser parser = Int32NumberHeaderParser.Parser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue("a", null, ref index); });
         }
 
@@ -52,7 +52,7 @@ namespace System.Net.Http.Tests
         {
             Int32NumberHeaderParser parser = Int32NumberHeaderParser.Parser;
             int index = 0;
-            
+
             Assert.Throws<FormatException>(() => { parser.ParseValue(null, null, ref index); });
         }
 

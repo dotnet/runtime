@@ -14,7 +14,7 @@ using System.Diagnostics;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// Partitioned stream recipient that will merge the results. 
+    /// Partitioned stream recipient that will merge the results.
     /// </summary>
     internal class PartitionedStreamMerger<TOutput> : IPartitionedStreamRecipient<TOutput>
     {

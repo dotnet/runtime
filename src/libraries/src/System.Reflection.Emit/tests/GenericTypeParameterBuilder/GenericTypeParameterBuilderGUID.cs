@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
+
             Assert.Throws<NotSupportedException>(() => typeParams[0].GUID);
         }
     }

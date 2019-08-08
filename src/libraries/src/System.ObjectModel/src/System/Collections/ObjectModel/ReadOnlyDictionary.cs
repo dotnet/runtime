@@ -410,7 +410,7 @@ namespace System.Collections.ObjectModel
             }
             else
             {
-                // We can't cast array of value type to object[], so we don't support 
+                // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
                 object[] objects = array as object[];
                 if (objects == null)

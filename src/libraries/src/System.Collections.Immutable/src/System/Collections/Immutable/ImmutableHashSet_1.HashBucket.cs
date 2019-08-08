@@ -42,7 +42,7 @@ namespace System.Collections.Immutable
             /// Any other elements that hash to the same value.
             /// </summary>
             /// <value>
-            /// This is null if and only if the entire bucket is empty (including <see cref="_firstValue"/>).  
+            /// This is null if and only if the entire bucket is empty (including <see cref="_firstValue"/>).
             /// It's empty if <see cref="_firstValue"/> has an element but no additional elements.
             /// </value>
             private readonly ImmutableList<T>.Node _additionalElements;

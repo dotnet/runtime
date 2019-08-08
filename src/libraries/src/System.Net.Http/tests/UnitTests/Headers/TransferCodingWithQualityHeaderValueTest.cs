@@ -56,7 +56,7 @@ namespace System.Net.Http.Tests
             CheckValidParse("custom", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a 
+            // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
             CheckValidParse("\r\n custom ;  name =   value ", expected);
@@ -107,7 +107,7 @@ namespace System.Net.Http.Tests
             CheckValidTryParse("custom", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a 
+            // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
             CheckValidTryParse("\r\n custom ;  name =   value ", expected);

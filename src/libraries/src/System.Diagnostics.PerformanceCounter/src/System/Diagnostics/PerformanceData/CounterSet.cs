@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ namespace System.Diagnostics.PerformanceData
     /// counters, where each counter defines measurable matrix. In the new performance counter
     /// infrastructure, CounterSet is defined by GUID called CounterSetGuid, and is hosted inside
     /// provider application, which is also defined by another GUID called ProviderGuid.
-    /// </summary>    
+    /// </summary>
     public class CounterSet : IDisposable
     {
         internal PerfProvider _provider;
@@ -31,7 +31,7 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         /// <param name="providerGuid">ProviderGuid identifies the provider application. A provider identified by ProviderGuid could publish several CounterSets defined by different CounterSetGuids</param>
         /// <param name="counterSetGuid">CounterSetGuid identifies the specific CounterSet. CounterSetGuid should be unique.</param>
-        /// <param name="instanceType">One of defined CounterSetInstanceType values</param>                
+        /// <param name="instanceType">One of defined CounterSetInstanceType values</param>
         public CounterSet(Guid providerGuid, Guid counterSetGuid, CounterSetInstanceType instanceType)
         {
             if (!PerfProviderCollection.ValidateCounterSetInstanceType(instanceType))
@@ -88,7 +88,7 @@ namespace System.Diagnostics.PerformanceData
         /// Add non-displayable new counter to CounterSet; that is, perfmon would not display the counter.
         /// </summary>
         /// <param name="counterId">CounterId uniquely identifies the counter within CounterSet</param>
-        /// <param name="counterType">One of defined CounterType values</param>        
+        /// <param name="counterType">One of defined CounterType values</param>
         public void AddCounter(int counterId, CounterType counterType)
         {
             if (_provider == null)
@@ -124,7 +124,7 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         /// <param name="counterId">CounterId uniquely identifies the counter within CounterSet</param>
         /// <param name="counterType">One of defined CounterType values</param>
-        /// <param name="counterName">This is friendly name to help provider developers as indexer. and it might not match what is displayed in counter consumption applications lie perfmon.</param>        
+        /// <param name="counterName">This is friendly name to help provider developers as indexer. and it might not match what is displayed in counter consumption applications lie perfmon.</param>
         public void AddCounter(int counterId, CounterType counterType, string counterName)
         {
             if (counterName == null)
@@ -172,7 +172,7 @@ namespace System.Diagnostics.PerformanceData
         /// Create instances of the CounterSet. Created CounterSetInstance identifies active identity and tracks raw counter data for that identity.
         /// </summary>
         /// <param name="instanceName">Friendly name identifies the instance. InstanceName would be shown in counter consumption applications like perfmon.</param>
-        /// <returns>CounterSetInstance object</returns>        
+        /// <returns>CounterSetInstance object</returns>
         public CounterSetInstance CreateCounterSetInstance(string instanceName)
         {
             if (instanceName == null)

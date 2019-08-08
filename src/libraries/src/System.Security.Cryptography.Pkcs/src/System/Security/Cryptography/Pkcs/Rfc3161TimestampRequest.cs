@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Pkcs
             X509ExtensionCollection extensions = null)
         {
             string oidStr = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm);
-            
+
             return CreateFromHash(
                 hash,
                 new Oid(oidStr, oidStr),

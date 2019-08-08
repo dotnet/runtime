@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    // A simple Queue of generic objects.  Internally it is implemented as a 
+    // A simple Queue of generic objects.  Internally it is implemented as a
     // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
@@ -218,13 +218,13 @@ namespace System.Collections.Generic
         }
 
         // Removes the object at the head of the queue and returns it. If the queue
-        // is empty, this method throws an 
+        // is empty, this method throws an
         // InvalidOperationException.
         public T Dequeue()
         {
             int head = _head;
             T[] array = _array;
-            
+
             if (_size == 0)
             {
                 ThrowForEmptyQueue();
@@ -264,7 +264,7 @@ namespace System.Collections.Generic
         }
 
         // Returns the object at the head of the queue. The object remains in the
-        // queue. If the queue is empty, this method throws an 
+        // queue. If the queue is empty, this method throws an
         // InvalidOperationException.
         public T Peek()
         {
@@ -272,7 +272,7 @@ namespace System.Collections.Generic
             {
                 ThrowForEmptyQueue();
             }
-            
+
             return _array[_head];
         }
 
@@ -448,7 +448,7 @@ namespace System.Collections.Generic
 
                     arrayIndex -= capacity; // wrap around if needed
                 }
-                
+
                 _currentElement = array[arrayIndex];
                 return true;
             }

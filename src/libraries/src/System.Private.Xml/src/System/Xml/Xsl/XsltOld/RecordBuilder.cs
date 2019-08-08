@@ -347,8 +347,8 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else if (Ref.Equal(_mainNode.NamespaceURI, _atoms.Empty))
                 {
-                    // http://www.w3.org/1999/11/REC-xslt-19991116-errata/ E25 
-                    // Should throw an error but ingnoring it in Everett. 
+                    // http://www.w3.org/1999/11/REC-xslt-19991116-errata/ E25
+                    // Should throw an error but ingnoring it in Everett.
                     // Would be a breaking change
                 }
                 else

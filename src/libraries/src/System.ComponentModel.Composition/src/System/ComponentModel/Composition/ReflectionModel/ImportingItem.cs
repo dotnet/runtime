@@ -76,13 +76,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 throw new ArgumentNullException(nameof(exports));
             }
 
-            if (exports.Length >= 2) 
+            if (exports.Length >= 2)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
             if (exports.Length == 0)
-            {   
+            {
                 return null;
             }
 

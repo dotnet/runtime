@@ -2392,8 +2392,8 @@ namespace System.Data.SqlClient
                             source = new TaskCompletionSource<object>();
                         }
 
-                        AsyncHelper.ContinueTask(commandTask, source, 
-                            () => 
+                        AsyncHelper.ContinueTask(commandTask, source,
+                            () =>
                             {
                                 Task continuedTask = CopyBatchesAsyncContinued(internalResults, updateBulkCommandText, cts, source);
                                 if (continuedTask == null)
@@ -2450,7 +2450,7 @@ namespace System.Data.SqlClient
                     {   // First time only
                         source = new TaskCompletionSource<object>();
                     }
-                    AsyncHelper.ContinueTask(task, source, 
+                    AsyncHelper.ContinueTask(task, source,
                         onSuccess: () =>
                         {
                             Task continuedTask = CopyBatchesAsyncContinuedOnSuccess(internalResults, updateBulkCommandText, cts, source);
@@ -2459,8 +2459,8 @@ namespace System.Data.SqlClient
                                 // Continuation finished sync, recall into CopyBatchesAsync to continue
                                 CopyBatchesAsync(internalResults, updateBulkCommandText, cts, source);
                             }
-                        }, 
-                        onFailure: (_) => CopyBatchesAsyncContinuedOnError(cleanupParser: false), 
+                        },
+                        onFailure: (_) => CopyBatchesAsyncContinuedOnError(cleanupParser: false),
                         onCancellation: () => CopyBatchesAsyncContinuedOnError(cleanupParser: true)
                     );
 
@@ -2509,7 +2509,7 @@ namespace System.Data.SqlClient
                         source = new TaskCompletionSource<object>();
                     }
 
-                    AsyncHelper.ContinueTask(writeTask, source, 
+                    AsyncHelper.ContinueTask(writeTask, source,
                         onSuccess: () =>
                         {
                             try
@@ -2525,7 +2525,7 @@ namespace System.Data.SqlClient
 
                             // Always call back into CopyBatchesAsync
                             CopyBatchesAsync(internalResults, updateBulkCommandText, cts, source);
-                        }, 
+                        },
                         onFailure: (_) => CopyBatchesAsyncContinuedOnError(cleanupParser: false)
                     );
                     return source.Task;
@@ -2646,7 +2646,7 @@ namespace System.Data.SqlClient
                     {
                         source = new TaskCompletionSource<object>();
                     }
-                    AsyncHelper.ContinueTask(task, source, 
+                    AsyncHelper.ContinueTask(task, source,
                         () =>
                         {
                             // Bulk copy task is completed at this moment.
@@ -2779,7 +2779,7 @@ namespace System.Data.SqlClient
                         {
                             regReconnectCancel = cts.Register(s => ((TaskCompletionSource<object>)s).TrySetCanceled(), cancellableReconnectTS);
                         }
-                        AsyncHelper.ContinueTaskWithState(reconnectTask, cancellableReconnectTS, 
+                        AsyncHelper.ContinueTaskWithState(reconnectTask, cancellableReconnectTS,
                             state: cancellableReconnectTS,
                             onSuccess: (state) => { ((TaskCompletionSource<object>)state).SetResult(null); }
                         );
@@ -2920,7 +2920,7 @@ namespace System.Data.SqlClient
                 else
                 {
                     Debug.Assert(_isAsyncBulkCopy, "Read must not return a Task in the Sync mode");
-                    AsyncHelper.ContinueTask(readTask, source, 
+                    AsyncHelper.ContinueTask(readTask, source,
                         () =>
                         {
                             if (!_hasMoreRowToCopy)

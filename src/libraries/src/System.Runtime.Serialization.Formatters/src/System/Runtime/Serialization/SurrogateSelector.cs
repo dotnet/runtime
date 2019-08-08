@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
                 throw new ArgumentException(SR.Serialization_SurrogateCycleInArgument, nameof(selector));
             }
 
-            // Check for a cycle that would lead back to this.  We find the end of the list that we're being asked to 
+            // Check for a cycle that would lead back to this.  We find the end of the list that we're being asked to
             // insert for use later.
             ISurrogateSelector tempCurr = selector.GetNextSelector();
             ISurrogateSelector tempEnd = selector;
@@ -136,7 +136,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            // Add the new selector and it's entire chain of selectors as the next thing that we check.  
+            // Add the new selector and it's entire chain of selectors as the next thing that we check.
             ISurrogateSelector temp = _nextSelector;
             _nextSelector = selector;
             if (temp != null)
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
         }
 
         // Removes the surrogate associated with a given type.  Does not
-        // check chained surrogates.  
+        // check chained surrogates.
         public virtual void RemoveSurrogate(Type type, StreamingContext context)
         {
             if (type == null)
@@ -211,7 +211,7 @@ namespace System.Runtime.Serialization
         // Must return true if the context to serialize for (givenContext)
         // is a subset of the context for which the serialization selector is provided (presentContext)
         // Note: This is done by overriding KeyEquals rather than overriding Equals() in the SurrogateKey
-        // class because Equals() method must be commutative. 
+        // class because Equals() method must be commutative.
         protected override bool KeyEquals(object key, object item)
         {
             SurrogateKey givenValue = (SurrogateKey)item;

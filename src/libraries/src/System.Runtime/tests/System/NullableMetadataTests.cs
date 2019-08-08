@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,7 +81,7 @@ namespace System.Runtime.Tests
             Assert.True(type.CustomAttributes.GetNullableAttributes().Any());
 
             bool foundAtLeastOneNullableAttribute = type.CustomAttributes.Where(a => a.AttributeType.Name.Equals(NullableContextAttributeFullName)).Any();
-            
+
             // If there is a NullableContextAttribute there is no guarantee that its members will have
             // nullable attributes, if a class declare all reference types with the same nullability
             // none will contain an attribute and will take the type's NullableContextAttribute value.

@@ -171,7 +171,7 @@ namespace System.IO.Tests
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeFileHandle CreateFileW(
-            string lpFileName, int dwDesiredAccess, FileShare dwShareMode, 
+            string lpFileName, int dwDesiredAccess, FileShare dwShareMode,
             IntPtr securityAttrs, FileMode dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
 
         internal const int GENERIC_READ = unchecked((int)0x80000000);

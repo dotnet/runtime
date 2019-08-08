@@ -20,4 +20,3 @@ namespace System.ComponentModel.Design
         void RemoveExtenderProvider(IExtenderProvider provider);
     }
 }
-

@@ -95,4 +95,3 @@ namespace System.Security.Cryptography.X509Certificates
         private bool _decoded;
     }
 }
-

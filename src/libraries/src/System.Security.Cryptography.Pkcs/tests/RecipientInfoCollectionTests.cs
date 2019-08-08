@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         private static RecipientInfoCollection CreateTestCollection()
         {
             // Creates a RecipientInfoCollection with three items.
-            //     
+            //
             // Because RecipientInfoCollection can only be created by the framework, we have to do this the hard way...
             //
             byte[] encodedMessage =
@@ -199,5 +199,3 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
     }
 }
-
-

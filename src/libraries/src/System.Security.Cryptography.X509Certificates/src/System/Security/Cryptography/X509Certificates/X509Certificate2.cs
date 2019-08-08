@@ -251,7 +251,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get { return GetNotBefore(); }
         }
-        
+
         public PublicKey PublicKey
         {
             get

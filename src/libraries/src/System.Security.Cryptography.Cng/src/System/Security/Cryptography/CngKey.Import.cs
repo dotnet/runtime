@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle = null;
             ErrorCode errorCode;
-            
+
             if (curveName == null)
             {
                 errorCode = Interop.NCrypt.NCryptImportKey(

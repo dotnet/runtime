@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         Hmac,
         Tls
     }
-    
+
     /// <summary>
     ///     Wrapper for CNG's implementation of elliptic curve Diffie-Hellman key exchange
     /// </summary>

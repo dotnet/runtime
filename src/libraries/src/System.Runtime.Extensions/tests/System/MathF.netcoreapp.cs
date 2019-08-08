@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1406,7 +1406,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Round_Digits_TestData
         {
-            get 
+            get
             {
                 yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.ToEven};
                 yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.ToEven};

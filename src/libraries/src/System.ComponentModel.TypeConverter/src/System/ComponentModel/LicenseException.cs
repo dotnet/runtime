@@ -21,21 +21,21 @@ namespace System.ComponentModel
         private object _instance;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the
         /// specified type.
         /// </summary>
         public LicenseException(Type type) : this(type, null, SR.Format(SR.LicExceptionTypeOnly, type?.FullName))
         {
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the
         /// specified type and instance.
         /// </summary>
         public LicenseException(Type type, object instance) : this(type, null, SR.Format(SR.LicExceptionTypeAndInstance, type?.FullName, instance?.GetType().FullName))
         {
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the
         /// specified type and instance with the specified message.
         /// </summary>
         public LicenseException(Type type, object instance, string message) : base(message)
@@ -46,7 +46,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the
         /// specified innerException, type and instance with the specified message.
         /// </summary>
         public LicenseException(Type type, object instance, string message, Exception innerException) : base(message, innerException)
@@ -57,7 +57,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Need this constructor since Exception implements ISerializable. 
+        /// Need this constructor since Exception implements ISerializable.
         /// </summary>
         protected LicenseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {

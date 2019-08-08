@@ -275,7 +275,7 @@ namespace System.Net.Http.Headers
             // This method just parses the disposition type string, it does not parse parameters.
             dispositionType = null;
 
-            // Parse the disposition type, i.e. <dispositiontype> in content-disposition string 
+            // Parse the disposition type, i.e. <dispositiontype> in content-disposition string
             // "<dispositiontype>; param1=value1; param2=value2".
             int typeLength = HttpRuleParser.GetTokenLength(input, startIndex);
 
@@ -487,12 +487,12 @@ namespace System.Net.Http.Headers
             {
                 return false;
             }
-            
+
             string[] parts = processedInput.Split('?');
             // "=, encodingName, encodingType, encodedData, ="
             if (parts.Length != 5 || parts[0] != "\"=" || parts[4] != "=\"" || parts[2].ToLowerInvariant() != "b")
             {
-                // Not encoded.  
+                // Not encoded.
                 // This does not support multi-line encoding.
                 // Only base64 encoding is supported, not quoted printable.
                 return false;
@@ -522,19 +522,19 @@ namespace System.Net.Http.Headers
         private static bool TryDecode5987(string input, out string output)
         {
             output = null;
-            
+
             int quoteIndex = input.IndexOf('\'');
             if (quoteIndex == -1)
             {
                 return false;
             }
-            
+
             int lastQuoteIndex = input.LastIndexOf('\'');
             if (quoteIndex == lastQuoteIndex || input.IndexOf('\'', quoteIndex + 1) != lastQuoteIndex)
             {
                 return false;
             }
-            
+
             string encodingString = input.Substring(0, quoteIndex);
             string dataString = input.Substring(lastQuoteIndex + 1, input.Length - (lastQuoteIndex + 1));
 

@@ -219,7 +219,7 @@ namespace System.Reflection.Tests
             return type.GetTypeInfo().GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Select(m => m.HasMetadataToken() ? m.MetadataToken : 0);
         }
 
-        private MemberInfo[] GetOrderedMembers(Type type) => GetMembers(type).OrderBy(member => member.Name).ToArray();        
+        private MemberInfo[] GetOrderedMembers(Type type) => GetMembers(type).OrderBy(member => member.Name).ToArray();
 
         private class Base
         {

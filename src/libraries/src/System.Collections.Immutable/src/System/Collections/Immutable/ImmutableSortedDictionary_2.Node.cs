@@ -750,7 +750,7 @@ namespace System.Collections.Immutable
                         // We have a match.
                         mutated = true;
 
-                        // If this is a leaf, just remove it 
+                        // If this is a leaf, just remove it
                         // by returning Empty.  If we have only one child,
                         // replace the node with the child.
                         if (_right.IsEmpty && _left.IsEmpty)

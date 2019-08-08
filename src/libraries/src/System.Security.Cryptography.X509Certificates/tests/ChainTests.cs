@@ -463,10 +463,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop(/* Modifies user certificate store */)]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
-            // Verifies that when the same root cert is placed in both a user and machine root certificate store, 
+            // Verifies that when the same root cert is placed in both a user and machine root certificate store,
             // any certs chain building to that root cert will build correctly
-            // 
-            // We use a copy of the microsoft.com SSL certs and root certs to validate that the chain can build 
+            //
+            // We use a copy of the microsoft.com SSL certs and root certs to validate that the chain can build
             // successfully
 
             bool shouldInstallCertToUserStore = true;
@@ -494,9 +494,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.True(foundCert, string.Format("Did not find expected certificate with thumbprint '{0}' in the machine root store", microsoftDotComRoot.Thumbprint));
                 }
 
-                // Concievably at this point there could still be something wrong and we still don't chain build correctly - if that's 
-                // the case, then there's likely something wrong with the machine. Validating that happy path is out of scope 
-                // of this particular test. 
+                // Concievably at this point there could still be something wrong and we still don't chain build correctly - if that's
+                // the case, then there's likely something wrong with the machine. Validating that happy path is out of scope
+                // of this particular test.
 
                 // Check that microsoft.com's root certificate is NOT installed on in the user cert store as a sanity step
                 // We won't try to install the microsoft.com root cert into the user root store if it's already there
@@ -648,7 +648,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // The root CA is not expected to be installed on everyone's machines,
                 // so allow for it to report UntrustedRoot, but nothing else..
                 X509ChainStatus[] rootElementStatus = onlineChain.ChainElements[2].ChainElementStatus;
-                
+
                 if (rootElementStatus.Length != 0)
                 {
                     Assert.Equal(1, rootElementStatus.Length);

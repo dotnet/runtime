@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -173,7 +173,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal("ftp://username:password@", parser.GetComponents(ftp2, UriComponents.Scheme | UriComponents.UserInfo, UriFormat.Unescaped));
             Assert.Equal(":21/with some spaces/mono.tgz", parser.GetComponents(ftp2, UriComponents.Path | UriComponents.StrongPort, UriFormat.Unescaped));
         }
-        
+
         [Fact]
         public static void TestParseUserPath()
         {
@@ -215,15 +215,15 @@ namespace System.PrivateUri.Tests
             parser.InitializeAndValidate(http, out error);
             Assert.NotNull(error);
         }
-        
+
         [Fact]
         public static void InitializeAndValidate_Null()
         {
             UriFormatException error = null;
             TestUriParser parser = new TestUriParser();
-            Assert.Throws<System.NullReferenceException>(() => { parser.InitializeAndValidate(null, out error); }); 
+            Assert.Throws<System.NullReferenceException>(() => { parser.InitializeAndValidate(null, out error); });
         }
-        
+
         [Fact]
         public static void IsBaseOf()
         {
@@ -295,14 +295,14 @@ namespace System.PrivateUri.Tests
             TestUriParser parser = new TestUriParser();
             Assert.True(parser.IsWellFormedOriginalString(http), "http");
         }
-        
+
         [Fact]
         public static void IsWellFormedOriginalString_Null()
         {
             TestUriParser parser = new TestUriParser();
             Assert.Throws<System.NullReferenceException>(() => { parser.IsWellFormedOriginalString(null); } );
         }
-        
+
         [Fact]
         public static void OnRegister()
         {
@@ -321,7 +321,7 @@ namespace System.PrivateUri.Tests
             // if true then the registration is done before calling OnRegister
             Assert.True(UriParser.IsKnownScheme(scheme), "IsKnownScheme-true");
         }
-        
+
         [Fact]
         public static void OnRegister2()
         {
@@ -344,7 +344,7 @@ namespace System.PrivateUri.Tests
             // if true then the registration is done before calling OnRegister
             Assert.True(UriParser.IsKnownScheme(scheme), "IsKnownScheme-true");
         }
-        
+
         [Fact]
         public static void Resolve()
         {
@@ -353,7 +353,7 @@ namespace System.PrivateUri.Tests
             TestUriParser parser = new TestUriParser();
             Assert.Equal(full_http, parser.Resolve(http, http, out error));
         }
-        
+
         [Fact]
         public static void Resolve_UriNull()
         {
@@ -362,7 +362,7 @@ namespace System.PrivateUri.Tests
             TestUriParser parser = new TestUriParser();
             Assert.Equal(full_http, parser.Resolve(http, null, out error));
         }
-        
+
         [Fact]
         public static void Resolve_NullUri()
         {
@@ -372,7 +372,7 @@ namespace System.PrivateUri.Tests
             Assert.Throws<System.NullReferenceException>(() => { parser.Resolve(null, http, out error); } );
             parser.Resolve(http, null, out error);
         }
-        
+
         [Fact]
         public static void IsKnownScheme_WellKnown()
         {
@@ -393,25 +393,25 @@ namespace System.PrivateUri.Tests
             Assert.True(UriParser.IsKnownScheme("FTP"), "ftp");
             Assert.False(UriParser.IsKnownScheme("tcp"), "tcp");
         }
-        
+
         [Fact]
         public static void IsKnownScheme_ExtraSpace()
         {
             Assert.Throws<System.ArgumentOutOfRangeException>(() => { UriParser.IsKnownScheme("ht tp"); });
         }
-        
+
         [Fact]
         public static void IsKnownScheme_Null()
         {
             Assert.Throws<System.ArgumentNullException>(() => { UriParser.IsKnownScheme(null); });
         }
-        
+
         [Fact]
         public static void IsKnownScheme_Empty()
         {
             Assert.Throws<System.ArgumentOutOfRangeException>(() => { UriParser.IsKnownScheme(string.Empty); });
         }
-        
+
         [Fact]
         public static void Register()
         {
@@ -433,7 +433,7 @@ namespace System.PrivateUri.Tests
             prefix = "unit.test.";
             Assert.Throws<System.ArgumentNullException>(() => { UriParser.Register(null, prefix + "null.parser", 2006); } );
         }
-        
+
         [Fact]
         public static void Register_NullScheme()
         {
@@ -464,7 +464,7 @@ namespace System.PrivateUri.Tests
             TestUriParser parser = new TestUriParser();
             UriParser.Register(parser, prefix + "uint16.minus.1.port", ushort.MaxValue - 1);
         }
-        
+
         [Fact]
         public static void Register_TooBigPort()
         {
@@ -492,8 +492,8 @@ namespace System.PrivateUri.Tests
         public static void GenericUriParser_ctor()
         {
             // Make sure that constructor doesn't throw when using different types of  Parser Options
-            GenericUriParser parser; 
-            
+            GenericUriParser parser;
+
             parser = new GenericUriParser(GenericUriParserOptions.AllowEmptyAuthority);
             parser = new GenericUriParser(GenericUriParserOptions.Default);
             parser = new GenericUriParser(GenericUriParserOptions.DontCompressPath);

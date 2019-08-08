@@ -2064,7 +2064,7 @@ namespace System.Collections.Generic
         /// <param name="actualValue">The value from the set that the search found, or the default value of <typeparamref name="T"/> when the search yielded no match.</param>
         /// <returns>A value indicating whether the search was successful.</returns>
         /// <remarks>
-        /// This can be useful when you want to reuse a previously stored reference instead of 
+        /// This can be useful when you want to reuse a previously stored reference instead of
         /// a newly constructed one (so that more sharing of references can occur) or to look up
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.

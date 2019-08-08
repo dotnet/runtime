@@ -255,7 +255,7 @@ namespace System.Collections.Tests
                     queue2.Enqueue(i);
                 }
 
-                // Insert and Remove 75 items in the Queue. This should wrap the queue 
+                // Insert and Remove 75 items in the Queue. This should wrap the queue
                 // where there is 25 at the end of the array and 25 at the beginning
                 for (int i = 0; i < 75; i++)
                 {
@@ -302,7 +302,7 @@ namespace System.Collections.Tests
                 Assert.False(queue2.Contains(null));
 
                 queue2.Enqueue(null);
-                Assert.False(queue2.Contains(-1)); // We have a null item in the list, so the algorithm may use a different branch 
+                Assert.False(queue2.Contains(-1)); // We have a null item in the list, so the algorithm may use a different branch
             });
         }
 
@@ -353,7 +353,7 @@ namespace System.Collections.Tests
                 queue1.Enqueue(i);
             }
 
-            // Insert and Remove 75 items in the Queue. This should wrap the queue 
+            // Insert and Remove 75 items in the Queue. This should wrap the queue
             // where there is 25 at the end of the array and 25 at the beginning
             for (int i = 0; i < 75; i++)
             {
@@ -740,7 +740,7 @@ namespace System.Collections.Tests
                 Assert.Equal(0, arr.Length);
             });
         }
-        
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -792,7 +792,7 @@ namespace System.Collections.Tests
                 Assert.Equal(1, queue2.Dequeue());
             });
         }
-        
+
         [Fact]
         public static void TrimToSize_Wrapped()
         {
@@ -804,7 +804,7 @@ namespace System.Collections.Tests
                 queue.Enqueue(i);
             }
 
-            // Insert and Remove 75 items in the Queue. This should wrap the queue 
+            // Insert and Remove 75 items in the Queue. This should wrap the queue
             // where there is 25 at the end of the array and 25 at the beginning
             for (int i = 0; i < 75; i++)
             {
@@ -827,7 +827,7 @@ namespace System.Collections.Tests
             {
                 IntValue = intValue;
             }
-            
+
             public int IntValue { get; set; }
         }
     }

@@ -2420,5 +2420,5 @@ namespace System.Numerics.Tensors.Tests
             int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
             Assert.Equal(expectedIndexValue, tensorList[1]);
         }
-    }        
+    }
 }

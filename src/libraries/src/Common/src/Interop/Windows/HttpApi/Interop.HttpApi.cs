@@ -684,7 +684,7 @@ internal static partial class Interop
                 NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue} RawValueLength:{pKnownHeader->RawValueLength}");
             }
 
-            // For known headers, when header value is empty, RawValueLength will be 0 and 
+            // For known headers, when header value is empty, RawValueLength will be 0 and
             // pRawValue will point to empty string
             if (pKnownHeader->pRawValue != null)
             {
@@ -734,7 +734,7 @@ internal static partial class Interop
 
             // Return value.
             WebHeaderCollection headerCollection = new WebHeaderCollection();
-            byte* pMemoryBlob = (byte*)memoryBlob;       
+            byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             long fixup = pMemoryBlob - (byte*)originalAddress;
             int index;
@@ -745,7 +745,7 @@ internal static partial class Interop
                 HTTP_UNKNOWN_HEADER* pUnknownHeader = (HTTP_UNKNOWN_HEADER*)(fixup + (byte*)request->Headers.pUnknownHeaders);
                 for (index = 0; index < request->Headers.UnknownHeaderCount; index++)
                 {
-                    // For unknown headers, when header value is empty, RawValueLength will be 0 and 
+                    // For unknown headers, when header value is empty, RawValueLength will be 0 and
                     // pRawValue will be null.
                     if (pUnknownHeader->pName != null && pUnknownHeader->NameLength > 0)
                     {
@@ -769,7 +769,7 @@ internal static partial class Interop
             HTTP_KNOWN_HEADER* pKnownHeader = &request->Headers.KnownHeaders;
             for (index = 0; index < HttpHeaderRequestMaximum; index++)
             {
-                // For known headers, when header value is empty, RawValueLength will be 0 and 
+                // For known headers, when header value is empty, RawValueLength will be 0 and
                 // pRawValue will point to empty string ("\0")
                 if (pKnownHeader->pRawValue != null)
                 {
@@ -792,7 +792,7 @@ internal static partial class Interop
 
             // Return value.
             uint dataRead = 0;
-            byte* pMemoryBlob = (byte*)memoryBlob;            
+            byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             long fixup = pMemoryBlob - (byte*)originalAddress;
 
@@ -836,7 +836,7 @@ internal static partial class Interop
             {
                 dataChunkIndex = -1;
             }
-            
+
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Exit(null);
@@ -868,7 +868,7 @@ internal static partial class Interop
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
-            byte* pMemoryBlob = (byte*)memoryBlob;       
+            byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
@@ -894,7 +894,7 @@ internal static partial class Interop
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
-            byte* pMemoryBlob = (byte*)memoryBlob;        
+            byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
@@ -943,4 +943,3 @@ internal static partial class Interop
         }
     }
 }
-

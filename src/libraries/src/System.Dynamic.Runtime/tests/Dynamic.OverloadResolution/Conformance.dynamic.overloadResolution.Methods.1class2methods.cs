@@ -120,7 +120,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -680,7 +680,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -775,7 +775,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -915,7 +915,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -962,7 +962,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -1009,7 +1009,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -1103,7 +1103,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata.Tests
             var assemblyRef = reader.GetAssemblyReference(handle);
             var assemblyDef = reader.GetAssemblyDefinition();
             var assemblyName = assemblyRef.GetAssemblyName();
-            
+
             // Validate against input assembly
             Assert.Equal("System.Runtime", assemblyName.Name);
             Assert.Equal(new Version(4, 0, 0, 0), assemblyName.Version);
@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata.Tests
 
                 // Validate against AssemblyDefinition
                 ValidateReferenceAssemblyNameAgainst(assemblyName, reader, assemblyDef);
-                
+
                 i++;
             }
         }
@@ -98,6 +98,6 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.NotEqual(reader.GetString(assemblyDef.Name), assemblyName.Name);
             Assert.NotEqual(assemblyDef.Version, assemblyName.Version);
-        } 
+        }
     }
 }

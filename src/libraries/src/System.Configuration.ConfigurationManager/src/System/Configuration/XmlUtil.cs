@@ -12,7 +12,7 @@ using System.Xml;
 namespace System.Configuration
 {
     // XmlTextReader Helper class.
-    // 
+    //
     // Provides the following services:
     //
     //      * Reader methods that verify restrictions on the XML that can be contained in a config file.
@@ -375,7 +375,7 @@ namespace System.Configuration
                         Reader.Skip();
 
                         // We need to skip all the whitespace following a skipped element.
-                        // - If the whitespace doesn't contain /r/n, then it's okay to skip them 
+                        // - If the whitespace doesn't contain /r/n, then it's okay to skip them
                         //   as part of the element.
                         // - If the whitespace contains /r/n, not skipping them will result
                         //   in a redundant emtpy line being copied.
@@ -527,8 +527,8 @@ namespace System.Configuration
         // and at designtime to copy an entire XML document.
         //
         // At designtime, this function needs to be able to copy a <!DOCTYPE declaration.
-        // Copying a <!DOCTYPE declaration is expensive, because due to limitations of the 
-        // XmlReader API, we must track the position of the writer to accurately format it. 
+        // Copying a <!DOCTYPE declaration is expensive, because due to limitations of the
+        // XmlReader API, we must track the position of the writer to accurately format it.
         // Tracking the position of the writer is expensive, as it requires examining every
         // character that is written for newline characters, and maintaining the seek position
         // of the underlying stream at each new line, which in turn requires a stream flush.
@@ -859,7 +859,7 @@ namespace System.Configuration
         //   * The contents of the start element string need updating.
         //   * The element needs to contain child elements.
         //
-        // If the element is empty and is replaced with a start/end element pair, return a 
+        // If the element is empty and is replaced with a start/end element pair, return a
         // end element string with whitespace formatting; otherwise return null.
         internal string UpdateStartElement(XmlUtilWriter utilWriter, string updatedStartElement, bool needsChildren,
             int linePosition, int indent)
@@ -917,7 +917,7 @@ namespace System.Configuration
             return endElement;
         }
 
-        // Create the cached string writer if it does not exist, 
+        // Create the cached string writer if it does not exist,
         // otherwise reuse the existing buffer.
         private void ResetCachedStringWriter()
         {

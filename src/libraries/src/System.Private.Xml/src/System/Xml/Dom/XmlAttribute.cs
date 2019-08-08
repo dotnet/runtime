@@ -50,7 +50,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            // CloneNode for attributes is deep irrespective of parameter 'deep' value     
+            // CloneNode for attributes is deep irrespective of parameter 'deep' value
             Debug.Assert(OwnerDocument != null);
             XmlDocument doc = OwnerDocument;
             XmlAttribute attr = doc.CreateAttribute(Prefix, LocalName, NamespaceURI);

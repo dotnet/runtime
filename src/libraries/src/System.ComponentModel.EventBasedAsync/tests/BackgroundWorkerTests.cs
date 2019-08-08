@@ -108,7 +108,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             bool ret = manualResetEvent3.Wait(TimeoutLong);
             Assert.True(ret);
-            // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false 
+            // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false
             // if it is completed already, we don't check cancellation
             if (bw.IsBusy) // not complete
             {

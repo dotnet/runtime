@@ -90,14 +90,14 @@ namespace System.Data.SqlClient
 
         private static void ReadDispatcher(IntPtr key, IntPtr packet, uint error)
         {
-            // This is the app-domain dispatcher for all async read callbacks, It 
-            // simply gets the state object from the key that it is passed, and 
+            // This is the app-domain dispatcher for all async read callbacks, It
+            // simply gets the state object from the key that it is passed, and
             // calls the state object's read callback.
             Debug.Assert(IntPtr.Zero != key, "no key passed to read callback dispatcher?");
             if (IntPtr.Zero != key)
             {
                 // NOTE: we will get a null ref here if we don't get a key that
-                //       contains a GCHandle to TDSParserStateObject; that is 
+                //       contains a GCHandle to TDSParserStateObject; that is
                 //       very bad, and we want that to occur so we can catch it.
                 GCHandle gcHandle = (GCHandle)key;
                 TdsParserStateObject stateObj = (TdsParserStateObject)gcHandle.Target;
@@ -111,14 +111,14 @@ namespace System.Data.SqlClient
 
         private static void WriteDispatcher(IntPtr key, IntPtr packet, uint error)
         {
-            // This is the app-domain dispatcher for all async write callbacks, It 
-            // simply gets the state object from the key that it is passed, and 
+            // This is the app-domain dispatcher for all async write callbacks, It
+            // simply gets the state object from the key that it is passed, and
             // calls the state object's write callback.
             Debug.Assert(IntPtr.Zero != key, "no key passed to write callback dispatcher?");
             if (IntPtr.Zero != key)
             {
                 // NOTE: we will get a null ref here if we don't get a key that
-                //       contains a GCHandle to TDSParserStateObject; that is 
+                //       contains a GCHandle to TDSParserStateObject; that is
                 //       very bad, and we want that to occur so we can catch it.
                 GCHandle gcHandle = (GCHandle)key;
                 TdsParserStateObject stateObj = (TdsParserStateObject)gcHandle.Target;

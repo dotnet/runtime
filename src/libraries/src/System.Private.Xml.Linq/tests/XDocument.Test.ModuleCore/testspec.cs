@@ -197,7 +197,7 @@ namespace Microsoft.Test.ModuleCore
                            <Description>Tests for FLWR expressions</description>
                         <Variation id="1" Implemented="true" Priority="2">
                             <Description>Simple 1 FLWR expression</description>
-                            <FilterCriteria>  
+                            <FilterCriteria>
                                             <!-- Recommended place for filter criteria -->
                                             <Os>NT</Os>
                                             <Language>English</Language>
@@ -206,10 +206,10 @@ namespace Microsoft.Test.ModuleCore
                                             <!-- Override global data -->
                                             <xml>http://webdata/data/mytest/specialptest.xml</xml>
                             </Data>
-                            <SoapData>  
+                            <SoapData>
                                             <!-- Additional data for SOAP tests -->
                                             <wsdl>http://webdata/data/mytest/test.wsdl</wsdl>
-                            </SoapData>  
+                            </SoapData>
                         </Variation>
                         </TestCase>
                 </TestModule>

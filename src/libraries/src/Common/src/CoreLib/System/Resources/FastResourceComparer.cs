@@ -4,14 +4,14 @@
 
 /*============================================================
 **
-** 
-** 
 **
 **
-** Purpose: A collection of quick methods for comparing 
+**
+**
+** Purpose: A collection of quick methods for comparing
 **          resource keys (strings)
 **
-** 
+**
 ===========================================================*/
 
 #nullable enable
@@ -39,11 +39,11 @@ namespace System.Resources
         }
 
         // This hash function MUST be publically documented with the resource
-        // file format, AND we may NEVER change this hash function's return 
+        // file format, AND we may NEVER change this hash function's return
         // value (without changing the file format).
         internal static int HashFunction(string key)
         {
-            // Never change this hash function.  We must standardize it so that 
+            // Never change this hash function.  We must standardize it so that
             // others can read & write our .resources files.  Additionally, we
             // have a copy of it in InternalResGen as well.
             uint hash = 5381;
@@ -79,7 +79,7 @@ namespace System.Resources
             return string.Equals(sa, sb);
         }
 
-        // Input is one string to compare with, and a byte[] containing chars in 
+        // Input is one string to compare with, and a byte[] containing chars in
         // little endian unicode.  Pass in the number of valid chars.
         public static unsafe int CompareOrdinal(string a, byte[] bytes, int bCharLength)
         {
@@ -140,4 +140,3 @@ namespace System.Resources
         }
     }
 }
-

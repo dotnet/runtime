@@ -11,9 +11,9 @@ namespace System.Xml
     // IDtdInfo interface
     //
     /// <summary>
-    /// This is an interface for a compiled DTD information. 
+    /// This is an interface for a compiled DTD information.
     /// It exposes information and functionality that XmlReader need in order to be able
-    /// to expand entities, add default attributes and correctly normalize attribute values 
+    /// to expand entities, add default attributes and correctly normalize attribute values
     /// according to their data types.
     /// </summary>
     internal interface IDtdInfo
@@ -34,13 +34,13 @@ namespace System.Xml
         bool HasDefaultAttributes { get; }
 
         /// <summary>
-        /// Returns true if the DTD contains any declaration of an attribute 
+        /// Returns true if the DTD contains any declaration of an attribute
         /// whose type is other than CDATA
         /// </summary>
         bool HasNonCDataAttributes { get; }
 
         /// <summary>
-        /// Looks up a DTD attribute list definition by its name. 
+        /// Looks up a DTD attribute list definition by its name.
         /// </summary>
         /// <param name="prefix">The prefix of the attribute list to look for</param>
         /// <param name="localName">The local name of the attribute list to look for</param>
@@ -64,8 +64,8 @@ namespace System.Xml
     // IDtdAttributeListInfo interface
     //
     /// <summary>
-    /// Exposes information about attributes declared in an attribute list in a DTD 
-    /// that XmlReader need in order to be able to add default attributes 
+    /// Exposes information about attributes declared in an attribute list in a DTD
+    /// that XmlReader need in order to be able to add default attributes
     /// and correctly normalize attribute values according to their data types.
     /// </summary>
     internal interface IDtdAttributeListInfo
@@ -107,8 +107,8 @@ namespace System.Xml
     // IDtdAttributeInfo interface
     //
     /// <summary>
-    /// Exposes information about an attribute declared in a DTD 
-    /// that XmlReader need in order to be able to correctly normalize 
+    /// Exposes information about an attribute declared in a DTD
+    /// that XmlReader need in order to be able to correctly normalize
     /// the attribute value according to its data types.
     /// </summary>
     internal interface IDtdAttributeInfo
@@ -147,9 +147,9 @@ namespace System.Xml
     // IDtdDefaultAttributeInfo interface
     //
     /// <summary>
-    /// Exposes information about a default attribute 
-    /// declared in a DTD that XmlReader need in order to be able to add 
-    /// this attribute to the XML document (it is not present already) 
+    /// Exposes information about a default attribute
+    /// declared in a DTD that XmlReader need in order to be able to add
+    /// this attribute to the XML document (it is not present already)
     /// or correctly normalize the attribute value according to its data types.
     /// </summary>
     internal interface IDtdDefaultAttributeInfo : IDtdAttributeInfo
@@ -178,7 +178,7 @@ namespace System.Xml
     // IDtdEntityInfo interface
     //
     /// <summary>
-    /// Exposes information about a general entity 
+    /// Exposes information about a general entity
     /// declared in a DTD that XmlReader need in order to be able
     /// to expand the entity.
     /// </summary>

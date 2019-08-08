@@ -1378,4 +1378,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-

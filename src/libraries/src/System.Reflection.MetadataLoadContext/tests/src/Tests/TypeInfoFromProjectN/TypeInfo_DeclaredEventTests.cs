@@ -88,7 +88,7 @@ namespace System.Reflection.Tests
 
     public class TypeInfoEventSubClass : TypeInfoEventBaseClass
     {
-        public new event EventHandler EventPublic; //overrides event                
+        public new event EventHandler EventPublic; //overrides event
         public event EventHandler EventPublicNew;  // new event
     }
 }

@@ -31,7 +31,7 @@ namespace System.Collections.Specialized.Tests
         {
             AssertExtensions.Throws<ArgumentException>("action", () => new NotifyCollectionChangedEventArgs(action));
         }
-        
+
         public static IEnumerable<object[]> Ctor_NotifyCollectionChangedAction_Object_TestData()
         {
             yield return new object[] { NotifyCollectionChangedAction.Add, "item" };
@@ -52,7 +52,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(action == NotifyCollectionChangedAction.Remove ? new object[] { changedItem } : null, e.OldItems);
             Assert.Equal(-1, e.OldStartingIndex);
         }
-        
+
         public static IEnumerable<object[]> Ctor_NotifyCollectionChangedAction_Object_Int_TestData()
         {
             yield return new object[] { NotifyCollectionChangedAction.Add, "item", 10 };

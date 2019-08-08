@@ -251,7 +251,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                // Instead of the WriteRaw use the WriteNode. As Tds sends a binary stream - Create a XmlReader to convert 
+                // Instead of the WriteRaw use the WriteNode. As Tds sends a binary stream - Create a XmlReader to convert
                 // get the Xml string value from the binary and call WriteNode to pass that out to the XmlWriter.
                 XmlReader reader = CreateReader();
                 if (reader.ReadState == ReadState.Initial)
@@ -272,7 +272,7 @@ namespace System.Data.SqlTypes
     } // SqlXml
 
     // two purposes for this class
-    // 1) keep its internal position so one reader positions on the orginial stream 
+    // 1) keep its internal position so one reader positions on the orginial stream
     //    will not interface with the other
     // 2) when xmlreader calls close, do not close the orginial stream
     //
@@ -302,7 +302,7 @@ namespace System.Data.SqlTypes
         //      Public properties
         // --------------------------------------------------------------
 
-        // Always can read/write/seek, unless stream is null, 
+        // Always can read/write/seek, unless stream is null,
         // which means the stream has been closed.
 
         public override bool CanRead
@@ -535,4 +535,3 @@ namespace System.Data.SqlTypes
         }
     } // class SqlXmlStreamWrapper
 }
-

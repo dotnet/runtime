@@ -26,7 +26,7 @@ namespace System.Configuration
         }
 
         public SettingsPropertyWrongTypeException()
-        {            
+        {
         }
     }
 }

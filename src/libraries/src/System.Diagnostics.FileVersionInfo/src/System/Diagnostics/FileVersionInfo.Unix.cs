@@ -91,7 +91,7 @@ namespace System.Diagnostics
             }
             _internalName = _originalFilename = assemblyName;
 
-            // Set the product version based on the assembly's version (this may be overwritten 
+            // Set the product version based on the assembly's version (this may be overwritten
             // later in the method).
             Version productVersion = assemblyDefinition.Version;
             _productVersion = productVersion.ToString();
@@ -170,14 +170,14 @@ namespace System.Diagnostics
                 }
             }
 
-            // When the managed compiler sees an [AssemblyVersion(...)] attribute, it uses that to set 
-            // both the assembly version and the product version in the Win32 resources. If it doesn't 
-            // see an [AssemblyVersion(...)], then it sets the assembly version to 0.0.0.0, however it 
-            // sets the product version in the Win32 resources to whatever was defined in the 
+            // When the managed compiler sees an [AssemblyVersion(...)] attribute, it uses that to set
+            // both the assembly version and the product version in the Win32 resources. If it doesn't
+            // see an [AssemblyVersion(...)], then it sets the assembly version to 0.0.0.0, however it
+            // sets the product version in the Win32 resources to whatever was defined in the
             // [AssemblyFileVersionAttribute(...)] if there was one (unless there is an AssemblyInformationalVersionAttribute,
             // in which case it always uses that for the product version).  Without parsing the Win32 resources,
-            // we can't differentiate these two cases, so given the rarity of explicitly setting an 
-            // assembly's version number to 0.0.0.0, we assume that if it is 0.0.0.0 then the attribute 
+            // we can't differentiate these two cases, so given the rarity of explicitly setting an
+            // assembly's version number to 0.0.0.0, we assume that if it is 0.0.0.0 then the attribute
             // wasn't specified and we use the file version.
 
             if (!sawAssemblyInformationalVersionAttribute && _productVersion == "0.0.0.0")

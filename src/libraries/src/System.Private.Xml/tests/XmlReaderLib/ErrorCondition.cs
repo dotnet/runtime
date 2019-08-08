@@ -100,8 +100,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation("XmlReader.Create(String.Empty)",  Param = 1)]
-        //[Variation("XmlReader.Create(String.Empty, null)",  Param = 2)]      
-        //[Variation("XmlReader.Create(String.Empty, null, (XmlParserContext)null)",  Param = 3)]       
+        //[Variation("XmlReader.Create(String.Empty, null)",  Param = 2)]
+        //[Variation("XmlReader.Create(String.Empty, null, (XmlParserContext)null)",  Param = 3)]
         //[Variation("XmlReader.Create(new Stream(), null, (string)null)",  Param = 4)]
         //[Variation("XmlReader.Create(new Stream(), null, (XmlParserContext)null)",  Param = 5)]
         public int v1a()
@@ -133,7 +133,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("XmlReader.Create(Stream)",  Param = 1)]
-        //[Variation("XmlReader.Create(String)",  Param = 2)]      
+        //[Variation("XmlReader.Create(String)",  Param = 2)]
         //[Variation("XmlReader.Create(TextReader)",  Param = 3)]
         //[Variation("XmlReader.Create(Stream, XmlReaderSettings)",  Param = 4)]
         //[Variation("XmlReader.Create(String, XmlReaderSettings)",  Param = 5)]
@@ -709,7 +709,7 @@ namespace System.Xml.Tests
         //[Variation("XmlReader.MoveToAttribute(String.Empty)",  Param = 5)]
         //[Variation("XmlReader.MoveToAttribute(String.Empty, String.Empty)",  Param = 6)]
         //[Variation("XmlReader.ReadElementContentAs(String.Empty, String.Empty, String.Empty, String.Empty)",  Param = 9)]
-        //[Variation("XmlReader.ReadElementContentAs(String.Empty, String.Empty, 'a', String.Empty)",  Param = 10)]        
+        //[Variation("XmlReader.ReadElementContentAs(String.Empty, String.Empty, 'a', String.Empty)",  Param = 10)]
         //[Variation("XmlReader.ReadElementContentAsBoolean(String.Empty, String.Empty)",  Param = 13)]
         //[Variation("XmlReader.ReadElementContentAsBoolean('a', String.Empty)",  Param = 14)]
         //[Variation("XmlReader.ReadElementContentAsDateTime(String.Empty, String.Empty)",  Param = 15)]
@@ -851,18 +851,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("XmlReader.ReadContentAsBase64(b, -1, 0)",  Param = 1)]
-        //[Variation("XmlReader.ReadContentAsBinHex(b, -1, 0)",  Param = 2)]     
+        //[Variation("XmlReader.ReadContentAsBinHex(b, -1, 0)",  Param = 2)]
         //[Variation("XmlReader.ReadContentAsBase64(b, 0, -1)",  Param = 3)]
         //[Variation("XmlReader.ReadContentAsBinHex(b, 0, -1)",  Param = 4)]
         //[Variation("XmlReader.ReadContentAsBase64(b, 0, 2)",  Param = 5)]
         //[Variation("XmlReader.ReadContentAsBinHex(b, 0, 2)",  Param = 6)]
 
         //[Variation("XmlReader.ReadElementContentAsBase64(b, -1, 0)",  Param = 7)]
-        //[Variation("XmlReader.ReadElementContentAsBinHex(b, -1, 0)",  Param = 8)] 
-        //[Variation("XmlReader.ReadValueChunk(c, 0, -1)",  Param = 9)]        
+        //[Variation("XmlReader.ReadElementContentAsBinHex(b, -1, 0)",  Param = 8)]
+        //[Variation("XmlReader.ReadValueChunk(c, 0, -1)",  Param = 9)]
         //[Variation("XmlReader.ReadElementContentAsBase64(b, 0, -1)",  Param = 10)]
         //[Variation("XmlReader.ReadElementContentAsBinHex(b, 0, -1)",  Param = 11)]
-        //[Variation("XmlReader.ReadValueChunk(c, 0, -1)",  Param = 12)]        
+        //[Variation("XmlReader.ReadValueChunk(c, 0, -1)",  Param = 12)]
         //[Variation("XmlReader.ReadElementContentAsBase64(b, 0, 2)",  Param = 13)]
         //[Variation("XmlReader.ReadElementContentAsBinHex(b, 0, 2)",  Param = 14)]
         //[Variation("XmlReader.ReadValueChunk(c, 0, 2)",  Param = 15)]

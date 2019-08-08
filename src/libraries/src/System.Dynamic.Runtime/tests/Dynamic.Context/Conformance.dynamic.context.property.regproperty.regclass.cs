@@ -720,7 +720,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -846,7 +846,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
     public class Test : MemberClass
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1043,7 +1043,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1986,7 +1986,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -62,4 +62,3 @@ namespace System.Net.Mail
         }
     }
 }
-

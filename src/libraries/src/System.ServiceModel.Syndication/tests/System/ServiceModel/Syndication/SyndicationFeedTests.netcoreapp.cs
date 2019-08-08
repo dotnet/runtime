@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -127,7 +127,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Null(clone.TextInput);
             Assert.Null(clone.TimeToLive);
         }
-        
+
         [Fact]
         public void SkipHours_GetWithElementExtension_ReturnsExpected()
         {
@@ -146,7 +146,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(new int[] { 0, 10, 23 }, feed.SkipHours);
             Assert.Same(feed.SkipHours, feed.SkipHours);
         }
-        
+
         [Theory]
         [InlineData("-1")]
         [InlineData("24")]
@@ -168,7 +168,7 @@ namespace System.ServiceModel.Syndication.Tests
 
             Assert.Throws<FormatException>(() => feed.SkipHours);
         }
-        
+
         [Fact]
         public void SkipDays_GetWithElementExtension_ReturnsExpected()
         {
@@ -193,7 +193,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(new string[] { "monday", "tuesday", "wednesday", "thursday", "friday", "SATURDAY", "sunday"  }, feed.SkipDays);
             Assert.Same(feed.SkipDays, feed.SkipDays);
         }
-        
+
         [Fact]
         public void TextInput_GetWithElementExtension_ReturnsExpected()
         {
@@ -268,7 +268,7 @@ namespace System.ServiceModel.Syndication.Tests
             feed.ElementExtensions.Add(extension);
             Assert.Null(feed.TextInput);
         }
-        
+
         public static IEnumerable<object[]> TimeToLive_GetWithElementExtension_TestData()
         {
             yield return new object[] { 10, TimeSpan.FromMinutes(10) };

@@ -73,7 +73,7 @@ namespace System.Data.Odbc
 
             if ((ADP.PtrZero == base.handle) || (ODBC32.RetCode.SUCCESS != retcode))
             {
-                // 
+                //
                 throw ODBC.CantAllocateEnvironmentHandle(retcode);
             }
         }
@@ -249,4 +249,3 @@ namespace System.Data.Odbc
         }
     }
 }
-

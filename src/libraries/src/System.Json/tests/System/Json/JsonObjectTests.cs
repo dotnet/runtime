@@ -65,7 +65,7 @@ namespace System.Json.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("items", () => new JsonObject((IEnumerable<KeyValuePair<string, JsonValue>>)null));
         }
-        
+
         [Fact]
         public void JsonType_Get_ReturnsObject()
         {

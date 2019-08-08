@@ -46,12 +46,12 @@ namespace System.Net.Primitives.Functional.Tests
 
             cc.Remove(c1);
             cc.Remove(c2);
-            
+
             Assert.Equal(3, cc.Count);
-            
+
             Assert.False(cc.Remove(c1));
             Assert.False(cc.Remove(c2));
-            
+
             Assert.Equal(3, cc.Count);
         }
     }

@@ -45,7 +45,7 @@ namespace System.Xml.Linq
                         {
                             if (_parent is XElement)
                             {
-                                // Change in the serialization of an empty element: 
+                                // Change in the serialization of an empty element:
                                 // from empty tag to start/end tag pair
                                 _parent.NotifyChanging(_parent, XObjectChangeEventArgs.Value);
                                 if (_parent.content != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
@@ -347,7 +347,7 @@ namespace System.Xml.Linq
             _writer.WriteEndElement();
             _resolver.PopScope();
         }
-        
+
         private async Task WriteEndElementAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -486,7 +486,7 @@ namespace System.Xml.Linq
             _rover = null;
         }
 
-        // Only elements allow default namespace declarations. The rover 
+        // Only elements allow default namespace declarations. The rover
         // caches the last namespace declaration used by an element.
         public string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
@@ -672,7 +672,7 @@ namespace System.Xml.Linq
         Name,
 
         /// <summary>
-        /// The value of an <see cref="XObject"/> has been or will be changed. 
+        /// The value of an <see cref="XObject"/> has been or will be changed.
         /// There is a special case for elements. Change in the serialization
         /// of an empty element (either from an empty tag to start/end tag
         /// pair or vice versa) raises this event.
@@ -681,7 +681,7 @@ namespace System.Xml.Linq
     }
 
     /// <summary>
-    /// Specifies a set of options for Load(). 
+    /// Specifies a set of options for Load().
     /// </summary>
     [Flags()]
     public enum LoadOptions

@@ -155,7 +155,7 @@ namespace System.Net.Mail.Tests
             ma = new MailAddress("<foo@bar.com>", "");
             Assert.Equal("", ma.DisplayName);
         }
-        
+
         [Fact]
         public void Address_QuoteFirst()
         {

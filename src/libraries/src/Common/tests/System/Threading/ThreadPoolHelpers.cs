@@ -8,7 +8,7 @@ namespace System.Threading
 {
     internal static class ThreadPoolHelpers
     {
-        // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection. 
+        // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection.
 
         private static readonly Type _threadPool = typeof(object).GetTypeInfo().Assembly.GetType("System.Threading.ThreadPool");
         private static readonly MethodInfo _getMinThreads = _threadPool?.GetTypeInfo().GetMethod("GetMinThreads");

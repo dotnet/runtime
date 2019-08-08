@@ -10,7 +10,7 @@ namespace System.Diagnostics
         {
             if (s_FailCore != null)
             {
-                s_FailCore(stackTrace, message, detailMessage, errorSource); 
+                s_FailCore(stackTrace, message, detailMessage, errorSource);
                 return;
             }
 
@@ -34,12 +34,12 @@ namespace System.Diagnostics
         {
             if (s_WriteCore != null)
             {
-                s_WriteCore(message); 
+                s_WriteCore(message);
                 return;
             }
 
-            // really huge messages mess up both VS and dbmon, so we chop it up into 
-            // reasonable chunks if it's too big. This is the number of characters 
+            // really huge messages mess up both VS and dbmon, so we chop it up into
+            // reasonable chunks if it's too big. This is the number of characters
             // that OutputDebugstring chunks at.
             const int WriteChunkLength = 4091;
 

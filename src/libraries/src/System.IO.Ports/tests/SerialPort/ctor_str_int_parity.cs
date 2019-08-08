@@ -265,4 +265,3 @@ namespace System.IO.Ports.Tests
         }
     }
 }
-

@@ -266,7 +266,7 @@ namespace System.Diagnostics
         public void TraceEvent(TraceEventType eventType, int id, string format, params object[] args)
         {
             Initialize();
-            
+
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
                 TraceEventCache manager = new TraceEventCache();
@@ -414,7 +414,7 @@ namespace System.Diagnostics
         [Conditional("TRACE")]
         public void TraceTransfer(int id, string message, Guid relatedActivityId)
         {
-            // Ensure that config is loaded 
+            // Ensure that config is loaded
             Initialize();
 
             TraceEventCache manager = new TraceEventCache();
@@ -430,7 +430,7 @@ namespace System.Diagnostics
                         {
                             TraceListener listener = _listeners[i];
                             listener.TraceTransfer(manager, Name, id, message, relatedActivityId);
-                            
+
                             if (Trace.AutoFlush)
                             {
                                 listener.Flush();
@@ -438,12 +438,12 @@ namespace System.Diagnostics
                         }
                     }
                 }
-                else 
+                else
                 {
                     for (int i = 0; i < _listeners.Count; i++)
                     {
                         TraceListener listener = _listeners[i];
-                        
+
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -455,7 +455,7 @@ namespace System.Diagnostics
                                 }
                             }
                         }
-                        else 
+                        else
                         {
                             listener.TraceTransfer(manager, Name, id, message, relatedActivityId);
                             if (Trace.AutoFlush)
@@ -470,7 +470,7 @@ namespace System.Diagnostics
 
         public StringDictionary Attributes {
             get {
-                // Ensure that config is loaded 
+                // Ensure that config is loaded
                 Initialize();
 
                 if (_attributes == null)

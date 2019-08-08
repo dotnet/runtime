@@ -13,8 +13,8 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            // Does not appear to be a POSIX API to do this on macOS. 
-            // Considered the posix pthread_getschedparam, and pthread_setschedparam, 
+            // Does not appear to be a POSIX API to do this on macOS.
+            // Considered the posix pthread_getschedparam, and pthread_setschedparam,
             // but those seems to specify the scheduling policy with the priority.
             get { throw new PlatformNotSupportedException(SR.ThreadPriorityNotSupported); }
             set { throw new PlatformNotSupportedException(SR.ThreadPriorityNotSupported); }

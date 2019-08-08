@@ -618,7 +618,7 @@ namespace System.IO.Compression
                 default:
                     compressorStream = new DeflateStream(backingStream, _compressionLevel ?? CompressionLevel.Optimal, leaveBackingStreamOpen);
                     break;
-                
+
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(

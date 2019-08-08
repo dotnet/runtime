@@ -10,7 +10,7 @@ namespace System.ComponentModel
     public interface ICustomTypeDescriptor
     {
         /// <summary>
-        /// Gets a collection of type <see cref='System.Attribute'/> with the attributes 
+        /// Gets a collection of type <see cref='System.Attribute'/> with the attributes
         /// for this object.
         /// </summary>
         AttributeCollection GetAttributes();

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    // 
+    //
     // Abstract base for a handle that can be either HCRYPTPROV or NCRYPT_KEY_HANDLE. The CNG api NCryptIsKeyHandle() determines which it is.
     //
     // Unfortunately, NCryptIsKeyHandle() is a prohibited api on UWP. This means that packages that want to run on both UWP and non-UWP must
@@ -33,4 +33,3 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 }
-

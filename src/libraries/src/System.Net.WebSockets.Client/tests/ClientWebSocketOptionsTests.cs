@@ -78,9 +78,9 @@ namespace System.Net.WebSockets.Client.Tests
                 _output.WriteLine("Skipping test...no proxy server defined.");
                 return;
             }
-            
+
             _output.WriteLine($"ProxyServer: {proxyServerUri}");
-            
+
             IWebProxy proxy = new WebProxy(new Uri(proxyServerUri));
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
                 server,

@@ -4,8 +4,8 @@
 
 // --------------------------------------------------------------------------------------
 //
-// A class that provides a simple, lightweight implementation of lazy initialization, 
-// obviating the need for a developer to implement a custom, thread-safe lazy initialization 
+// A class that provides a simple, lightweight implementation of lazy initialization,
+// obviating the need for a developer to implement a custom, thread-safe lazy initialization
 // solution.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -197,7 +197,7 @@ namespace System
         private T _value = default!;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that 
+        /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that
         /// uses <typeparamref name="T"/>'s default constructor for lazy initialization.
         /// </summary>
         /// <remarks>
@@ -392,7 +392,7 @@ namespace System
             // we have to create a copy of state here, and use the copy exclusively from here on in
             // so as to ensure thread safety.
             LazyHelper? state = _state;
-            if (state != null) 
+            if (state != null)
             {
                 switch (state.State)
                 {
@@ -475,7 +475,7 @@ namespace System
         /// otherwise, false.</value>
         /// <remarks>
         /// The initialization of a <see cref="T:System.Lazy{T}"/> instance may result in either
-        /// a value being produced or an exception being thrown.  If an exception goes unhandled during initialization, 
+        /// a value being produced or an exception being thrown.  If an exception goes unhandled during initialization,
         /// <see cref="IsValueCreated"/> will return false.
         /// </remarks>
         public bool IsValueCreated => _state == null;
@@ -485,11 +485,11 @@ namespace System
         /// <value>The lazily initialized value of the current <see
         /// cref="T:System.Threading.Lazy{T}"/>.</value>
         /// <exception cref="T:System.MissingMemberException">
-        /// The <see cref="T:System.Threading.Lazy{T}"/> was initialized to use the default constructor 
+        /// The <see cref="T:System.Threading.Lazy{T}"/> was initialized to use the default constructor
         /// of the type being lazily initialized, and that type does not have a public, parameterless constructor.
         /// </exception>
         /// <exception cref="T:System.MemberAccessException">
-        /// The <see cref="T:System.Threading.Lazy{T}"/> was initialized to use the default constructor 
+        /// The <see cref="T:System.Threading.Lazy{T}"/> was initialized to use the default constructor
         /// of the type being lazily initialized, and permissions to access the constructor were missing.
         /// </exception>
         /// <exception cref="T:System.InvalidOperationException">
@@ -505,7 +505,7 @@ namespace System
         public T Value => _state == null ? _value : CreateValue();
     }
 
-    /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and 
+    /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and
     /// to ensure that the Lazy&lt;T&gt; does not become initialized if it was not already.</summary>
     internal sealed class LazyDebugView<T>
     {

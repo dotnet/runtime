@@ -13,7 +13,7 @@ namespace System.Linq.Tests
         public void IndexNegative()
         {
             int?[] source = { 9, 8 };
-            
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(-1));
         }
 
@@ -21,7 +21,7 @@ namespace System.Linq.Tests
         public void IndexEqualsCount()
         {
             int[] source = { 1, 2, 3, 4 };
-            
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(source.Length));
         }
 
@@ -29,7 +29,7 @@ namespace System.Linq.Tests
         public void EmptyIndexZero()
         {
             int[] source = { };
-            
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(0));
         }
 
@@ -37,7 +37,7 @@ namespace System.Linq.Tests
         public void SingleElementIndexZero()
         {
             int[] source = { -4 };
-            
+
             Assert.Equal(-4, source.AsQueryable().ElementAt(0));
         }
 
@@ -45,7 +45,7 @@ namespace System.Linq.Tests
         public void ManyElementsIndexTargetsLast()
         {
             int[] source = { 9, 8, 0, -5, 10 };
-            
+
             Assert.Equal(10, source.AsQueryable().ElementAt(source.Length - 1));
         }
 

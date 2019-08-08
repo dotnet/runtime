@@ -8,46 +8,46 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    // The SortedDictionary class implements a generic sorted list of keys 
-    // and values. Entries in a sorted list are sorted by their keys and 
+    // The SortedDictionary class implements a generic sorted list of keys
+    // and values. Entries in a sorted list are sorted by their keys and
     // are accessible both by key and by index. The keys of a sorted dictionary
-    // can be ordered either according to a specific IComparer 
-    // implementation given when the sorted dictionary is instantiated, or 
-    // according to the IComparable implementation provided by the keys 
+    // can be ordered either according to a specific IComparer
+    // implementation given when the sorted dictionary is instantiated, or
+    // according to the IComparable implementation provided by the keys
     // themselves. In either case, a sorted dictionary does not allow entries
     // with duplicate or null keys.
-    // 
+    //
     // A sorted list internally maintains two arrays that store the keys and
     // values of the entries. The capacity of a sorted list is the allocated
     // length of these internal arrays. As elements are added to a sorted list, the
     // capacity of the sorted list is automatically increased as required by
-    // reallocating the internal arrays.  The capacity is never automatically 
-    // decreased, but users can call either TrimExcess or 
+    // reallocating the internal arrays.  The capacity is never automatically
+    // decreased, but users can call either TrimExcess or
     // Capacity explicitly.
-    // 
+    //
     // The GetKeyList and GetValueList methods of a sorted list
     // provides access to the keys and values of the sorted list in the form of
     // List implementations. The List objects returned by these
     // methods are aliases for the underlying sorted list, so modifications
     // made to those lists are directly reflected in the sorted list, and vice
     // versa.
-    // 
+    //
     // The SortedList class provides a convenient way to create a sorted
     // copy of another dictionary, such as a Hashtable. For example:
-    // 
+    //
     // Hashtable h = new Hashtable();
     // h.Add(...);
     // h.Add(...);
     // ...
     // SortedList s = new SortedList(h);
-    // 
+    //
     // The last line above creates a sorted list that contains a copy of the keys
     // and values stored in the hashtable. In this particular example, the keys
     // will be ordered according to the IComparable interface, which they
     // all must implement. To impose a different ordering, SortedList also
     // has a constructor that allows a specific IComparer implementation to
     // be specified.
-    // 
+    //
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -104,7 +104,7 @@ namespace System.Collections.Generic
         // elements are compared to each other using the IComparable
         // interface, which in that case must be implemented by the keys of all
         // entries added to the sorted list.
-        // 
+        //
         public SortedList(IComparer<TKey>? comparer)
             : this()
         {
@@ -122,7 +122,7 @@ namespace System.Collections.Generic
         // comparer is null, the elements are compared to each other using
         // the IComparable interface, which in that case must be implemented
         // by the keys of all entries added to the sorted list.
-        // 
+        //
         public SortedList(int capacity, IComparer<TKey>? comparer)
             : this(comparer)
         {
@@ -134,7 +134,7 @@ namespace System.Collections.Generic
         // to the IComparable interface, which must be implemented by the
         // keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
-        // 
+        //
         public SortedList(IDictionary<TKey, TValue> dictionary)
             : this(dictionary, null)
         {
@@ -147,7 +147,7 @@ namespace System.Collections.Generic
         // IComparable interface, which in that case must be implemented
         // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
-        // 
+        //
         public SortedList(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
             : this((dictionary != null ? dictionary.Count : 0), comparer)
         {
@@ -180,7 +180,7 @@ namespace System.Collections.Generic
 
         // Adds an entry with the given key and value to this sorted list. An
         // ArgumentException is thrown if the key is already present in the sorted list.
-        // 
+        //
         public void Add(TKey key, TValue value)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
@@ -221,7 +221,7 @@ namespace System.Collections.Generic
         // keys and values of the list, and thus also indicates the maximum number
         // of entries the list can contain before a reallocation of the internal
         // arrays is required.
-        // 
+        //
         public int Capacity
         {
             get
@@ -330,7 +330,7 @@ namespace System.Collections.Generic
         // Returns a collection representing the values of this sorted list. This
         // method returns the same object as GetValueList, but typed as an
         // ICollection instead of an IList.
-        // 
+        //
         public IList<TValue> Values
         {
             get
@@ -643,7 +643,7 @@ namespace System.Collections.Generic
         // key is located through a binary search, and thus the average execution
         // time of this method is proportional to Log2(size), where
         // size is the size of this sorted list. The returned value is -1 if
-        // the given key does not occur in this sorted list. Null is an invalid 
+        // the given key does not occur in this sorted list. Null is an invalid
         // key value.
         public int IndexOfKey(TKey key)
         {
@@ -738,7 +738,7 @@ namespace System.Collections.Generic
         // it is known that no new elements will be added to the sorted list. To
         // completely clear a sorted list and release all memory referenced by the
         // sorted list, execute the following statements:
-        // 
+        //
         // SortedList.Clear();
         // SortedList.TrimExcess();
         public void TrimExcess()
@@ -759,7 +759,7 @@ namespace System.Collections.Generic
 
             return (key is TKey);
         }
-        
+
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;

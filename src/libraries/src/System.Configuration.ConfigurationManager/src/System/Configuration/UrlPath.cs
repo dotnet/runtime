@@ -126,7 +126,7 @@ namespace System.Configuration
                 else
                 {
                     // We should never get here, but if we do we are likely to have
-                    // serious security problems, so throw an exception rather than simply 
+                    // serious security problems, so throw an exception rather than simply
                     // asserting.
                     throw ExceptionUtil.ParameterInvalid(nameof(fileName));
                 }

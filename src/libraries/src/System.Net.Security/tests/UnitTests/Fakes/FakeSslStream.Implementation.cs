@@ -96,7 +96,7 @@ namespace System.Net.Security
     {
         public ProtocolToken()
         {
-            Payload = null; 
+            Payload = null;
         }
         internal byte[] Payload;
     }

@@ -13,11 +13,11 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public unsafe void GetString1()
         {
-            var blobHeapData = new byte[] 
+            var blobHeapData = new byte[]
             {
                 0,          // 0
 
-                2,          // 1: blob size 
+                2,          // 1: blob size
                 (byte)'a',  // 2
                 (byte)'b',  // 3
 
@@ -28,8 +28,8 @@ namespace System.Reflection.Metadata.Tests
 
                 3,          // 8: blob size
                 (byte)'\\', // 9: separator
-                1,          // 10: part #1 
-                4,          // 11: part #2 
+                1,          // 10: part #1
+                4,          // 11: part #2
             };
 
             fixed (byte* ptr = blobHeapData)
@@ -63,16 +63,16 @@ namespace System.Reflection.Metadata.Tests
             {
                 0,          // 0
 
-                1,          // 1: blob size 
+                1,          // 1: blob size
                 (byte)'a',  // 2
 
                 6,          // 3: blob size
                 (byte)'\\', // 4: separator
-                0,          // 5: part #1 
-                1,          // 6: part #2 
-                0,          // 7: part #3 
-                1,          // 8: part #4 
-                0,          // 9: part #5 
+                0,          // 5: part #1
+                1,          // 6: part #2
+                0,          // 7: part #3
+                1,          // 8: part #4
+                0,          // 9: part #5
             };
 
             fixed (byte* ptr = blobHeapData)
@@ -105,16 +105,16 @@ namespace System.Reflection.Metadata.Tests
             {
                 0,          // 0
 
-                1,          // 1: blob size 
+                1,          // 1: blob size
                 (byte)'a',  // 2
 
                 6,          // 3: blob size
                 0,          // 4: separator
-                0,          // 5: part #1 
-                1,          // 6: part #2 
-                0,          // 7: part #3 
-                1,          // 8: part #4 
-                0,          // 9: part #5 
+                0,          // 5: part #1
+                1,          // 6: part #2
+                0,          // 7: part #3
+                1,          // 8: part #4
+                0,          // 9: part #5
             };
 
             fixed (byte* ptr = blobHeapData)
@@ -141,16 +141,16 @@ namespace System.Reflection.Metadata.Tests
             {
                 0,          // 0
 
-                1,          // 1: blob size 
+                1,          // 1: blob size
                 (byte)'a',  // 2
 
                 6,          // 3: blob size
                 0,          // 4: separator
-                0,          // 5: part #1 
-                0,          // 6: part #2 
-                0,          // 7: part #3 
-                0,          // 8: part #4 
-                0,          // 9: part #5 
+                0,          // 5: part #1
+                0,          // 6: part #2
+                0,          // 7: part #3
+                0,          // 8: part #4
+                0,          // 9: part #5
             };
 
             fixed (byte* ptr = blobHeapData)
@@ -174,12 +174,12 @@ namespace System.Reflection.Metadata.Tests
             {
                 0,          // 0
 
-                1,          // 1: blob size 
+                1,          // 1: blob size
                 (byte)'b',  // 2
 
                 3,          // 3: blob size
                 (byte)'a',  // 4: separator
-                1,          // 5: part #1 
+                1,          // 5: part #1
                 1,          // 6: part #2
             };
 
@@ -211,18 +211,18 @@ namespace System.Reflection.Metadata.Tests
             {
                 0,          // 0
 
-                3,          // 1: blob size 
+                3,          // 1: blob size
                 0xe1,       // 2: U+1234 in UTF8
                 0x88,       // 3
                 0xb4,       // 4
 
-                1,          // 5: blob size 
+                1,          // 5: blob size
                 (byte)'b',  // 6
 
                 4,          // 7: blob size
                 (byte)'a',  // 8: separator
-                5,          // 9: part #1 
-                1,          // 10: part #2 
+                5,          // 9: part #1
+                1,          // 10: part #2
                 5,          // 11: part #3
             };
 
@@ -253,7 +253,7 @@ namespace System.Reflection.Metadata.Tests
 
                 2,          // 1: blob size
                 0x80,       // 2: separator
-                0,          // 3: part #1 
+                0,          // 3: part #1
             };
 
             fixed (byte* ptr = blobHeapData)

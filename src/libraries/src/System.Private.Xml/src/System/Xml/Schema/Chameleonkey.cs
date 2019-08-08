@@ -59,7 +59,7 @@ namespace System.Xml.Schema
             ChameleonKey cKey = obj as ChameleonKey;
             if (cKey != null)
             {
-                // We want to compare the target NS and the schema location. 
+                // We want to compare the target NS and the schema location.
                 // If the location is empty (but only then) we also want to compare the original schema instance.
                 // As noted above the originalSchema is null if the chameleonLocation is non-empty. As a result we
                 // can simply compare the reference to the original schema always (regardless of the schemalocation).

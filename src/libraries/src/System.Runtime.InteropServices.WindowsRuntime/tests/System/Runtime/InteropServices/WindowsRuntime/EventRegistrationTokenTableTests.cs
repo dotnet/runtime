@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
             EventHandler handler1 = new EventHandler(EventHandlerMethod1);
             EventHandler handler2 = new EventHandler(EventHandlerMethod2);
             EventHandler combinedHandler = (EventHandler)Delegate.Combine(handler1, handler2);
-            
+
             var tokenTable = new EventRegistrationTokenTable<Delegate>();
 
             EventRegistrationToken token = tokenTable.AddEventHandler(combinedHandler);
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
 
             tokenTable.RemoveEventHandler(handler);
             Assert.Equal(new Delegate[] { handler }, tokenTable.InvocationList.GetInvocationList());
- 
+
             tokenTable.RemoveEventHandler(handler);
             Assert.Null(tokenTable.InvocationList);
         }
@@ -168,7 +168,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
         {
             Delegate invocationList = new EventHandler(EventHandlerMethod1);
             var tokenTable = new EventRegistrationTokenTable<Delegate>() { InvocationList = invocationList };
-            
+
             Assert.Equal(new Delegate[] { invocationList }, tokenTable.InvocationList.GetInvocationList());
         }
 

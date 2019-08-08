@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(value));
 
             ReferenceType = value.LocalName;
-            
+
             string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             if (uri == null)
                 throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);

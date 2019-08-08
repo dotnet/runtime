@@ -27,8 +27,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public virtual CType BaseOrParameterOrElementType => null;
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Given a symbol, determine its fundamental type. This is the type that 
-        // indicate how the item is stored and what instructions are used to reference 
+        // Given a symbol, determine its fundamental type. This is the type that
+        // indicate how the item is stored and what instructions are used to reference
         // if. The fundamental types are:
         // one of the integral/float types (includes enums with that underlying type)
         // reference type

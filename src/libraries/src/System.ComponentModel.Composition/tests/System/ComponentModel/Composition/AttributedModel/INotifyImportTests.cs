@@ -596,7 +596,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public int ImportCompletedCallCount { get; set; }
 
-        // This method gets called whenever a bind is completed and any of 
+        // This method gets called whenever a bind is completed and any of
         // of the imports have changed, but ar safe to use now.
         public void OnImportsSatisfied()
         {

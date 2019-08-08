@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Dataflow
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            // This method exists purely to pass default DataflowLinkOptions 
+            // This method exists purely to pass default DataflowLinkOptions
             // to increase usability of the "90%" case.
             return source.LinkTo(target, DataflowLinkOptions.Default);
         }
@@ -237,10 +237,10 @@ namespace System.Threading.Tasks.Dataflow
         /// but unless otherwise dictated by special semantics of the target block, it does not wait
         /// for the item to actually be processed (for example, <see cref="System.Threading.Tasks.Dataflow.ActionBlock{T}"/>
         /// will return from Post as soon as it has stored the posted item into its input queue).  From the perspective
-        /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages, 
+        /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages,
         /// or for blocks that may do more processing in their Post implementation, consider using
-        /// <see cref="System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync{TInput}(ITargetBlock{TInput}, TInput)">SendAsync</see>, 
-        /// which will return immediately and will enable the target to postpone the posted message and later consume it 
+        /// <see cref="System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync{TInput}(ITargetBlock{TInput}, TInput)">SendAsync</see>,
+        /// which will return immediately and will enable the target to postpone the posted message and later consume it
         /// after SendAsync returns.
         /// </remarks>
         public static bool Post<TInput>(this ITargetBlock<TInput> target, TInput item)
@@ -256,7 +256,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <returns>
         /// A <see cref="System.Threading.Tasks.Task{Boolean}"/> that represents the asynchronous send.  If the target
         /// accepts and consumes the offered element during the call to SendAsync, upon return
-        /// from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see> 
+        /// from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see>
         /// property will return true.  If the target declines the offered element during the call, upon return from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will
         /// be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see> property will return false. If the target
         /// postpones the offered element, the element will be buffered until such time that the target consumes or releases it, at which
@@ -278,7 +278,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <para>
         /// A <see cref="System.Threading.Tasks.Task{Boolean}"/> that represents the asynchronous send.  If the target
         /// accepts and consumes the offered element during the call to SendAsync, upon return
-        /// from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see> 
+        /// from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see>
         /// property will return true.  If the target declines the offered element during the call, upon return from the call the resulting <see cref="System.Threading.Tasks.Task{Boolean}"/> will
         /// be completed and its <see cref="System.Threading.Tasks.Task{Boolean}.Result">Result</see> property will return false. If the target
         /// postpones the offered element, the element will be buffered until such time that the target consumes or releases it, at which
@@ -286,7 +286,7 @@ namespace System.Threading.Tasks.Dataflow
         /// never attempts to consume or release the message, the returned task will never complete.
         /// </para>
         /// <para>
-        /// If cancellation is requested before the target has successfully consumed the sent data, 
+        /// If cancellation is requested before the target has successfully consumed the sent data,
         /// the returned task will complete in the Canceled state and the data will no longer be available to the target.
         /// </para>
         /// </returns>
@@ -371,7 +371,7 @@ namespace System.Threading.Tasks.Dataflow
             // is provided in the initial OfferToTarget call.  As such, unless a token is provided,
             // all synchronization related to cancellation will be avoided.  Once a token is provided,
             // the state transitions to REGISTERED.  If cancellation then is requested or if the target
-            // calls back to consume the message, the state will transition to COMPLETING prior to 
+            // calls back to consume the message, the state will transition to COMPLETING prior to
             // actually committing the action; if it can't transition to COMPLETING, then the action doesn't
             // take effect (e.g. if cancellation raced with the target consuming, such that the cancellation
             // action was able to transition to COMPLETING but the consumption wasn't, then ConsumeMessage
@@ -430,7 +430,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Finalizer that completes the returned task if all references to this source are dropped.</summary>
             ~SendAsyncSource()
             {
-                // CompleteAsDeclined uses synchronization, which is dangerous for a finalizer 
+                // CompleteAsDeclined uses synchronization, which is dangerous for a finalizer
                 // during shutdown or appdomain unload.
                 if (!Environment.HasShutdownStarted)
                 {
@@ -455,7 +455,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 RunCompletionAction(state =>
                 {
-                    // The try/catch for ObjectDisposedException handles the case where the 
+                    // The try/catch for ObjectDisposedException handles the case where the
                     // user disposes of the returned task before we're done with it.
                     try { ((SendAsyncSource<TOutput>)state).TrySetResult(false); }
                     catch (ObjectDisposedException) { }
@@ -551,7 +551,7 @@ namespace System.Threading.Tasks.Dataflow
                         "If cancellation is in play, we must have already moved out of the NONE state.");
 
                     // Try to reserve completion, and if we can, complete as canceled.  Note that we can only
-                    // achieve cancellation when in the REGISTERED state, and not when in the RESERVED state, 
+                    // achieve cancellation when in the REGISTERED state, and not when in the RESERVED state,
                     // as if a target has reserved the message, we must allow the message to be consumed successfully.
                     if (source._cancellationState == CANCELLATION_STATE_REGISTERED && // fast check to avoid the interlocked if we can
                         Interlocked.CompareExchange(ref source._cancellationState, CANCELLATION_STATE_COMPLETING, CANCELLATION_STATE_REGISTERED) == CANCELLATION_STATE_REGISTERED)
@@ -649,8 +649,8 @@ namespace System.Threading.Tasks.Dataflow
                         curState == CANCELLATION_STATE_RESERVED || curState == CANCELLATION_STATE_COMPLETING,
                         "The current cancellation state is not valid.");
 
-                    // If we're not dealing with cancellation, then if we're currently registered or reserved, try to transition 
-                    // to completing. If we're able to, allow the message to be consumed, and we're done.  At this point, we 
+                    // If we're not dealing with cancellation, then if we're currently registered or reserved, try to transition
+                    // to completing. If we're able to, allow the message to be consumed, and we're done.  At this point, we
                     // support transitioning out of REGISTERED or RESERVED.
                     if (curState == CANCELLATION_STATE_NONE || // no synchronization necessary if there's no cancellation
                         (curState != CANCELLATION_STATE_COMPLETING && // fast check to avoid unnecessary synchronization
@@ -952,7 +952,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             // Get a TCS to represent the receive operation and wait for it to complete.
-            // If it completes successfully, return the result. Otherwise, throw the 
+            // If it completes successfully, return the result. Otherwise, throw the
             // original inner exception representing the cause.  This could be an OCE.
             Task<TOutput> task = ReceiveCore(source, false, timeout, cancellationToken);
             try
@@ -962,7 +962,7 @@ namespace System.Threading.Tasks.Dataflow
             catch
             {
                 // Special case cancellation in order to ensure the exception contains the token.
-                // The public TrySetCanceled, used by ReceiveCore, is parameterless and doesn't 
+                // The public TrySetCanceled, used by ReceiveCore, is parameterless and doesn't
                 // accept the token to use.  Thus the exception that we're catching here
                 // won't contain the cancellation token we want propagated.
                 if (task.IsCanceled) cancellationToken.ThrowIfCancellationRequested();
@@ -1057,7 +1057,7 @@ namespace System.Threading.Tasks.Dataflow
             // Keep cancellation registrations inside the try/catch in case the underlying CTS is disposed in which case an exception is thrown
             try
             {
-                // Create a cancellation token that will be canceled when either the provided token 
+                // Create a cancellation token that will be canceled when either the provided token
                 // is canceled or the source block completes.
                 if (cancellationToken.CanBeCanceled)
                 {
@@ -1073,7 +1073,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Note that there's a potential race here, in that the cleanup delegate could be executed
                 // from the timer before the timer variable is set, but that's ok, because then timer variable
                 // will just show up as null in the cleanup and there will be nothing to dispose (nor will anything
-                // need to be disposed, since it's the timer that fired.  Timer.Dispose is also thread-safe to be 
+                // need to be disposed, since it's the timer that fired.  Timer.Dispose is also thread-safe to be
                 // called multiple times concurrently.)
                 if (millisecondsTimeout > 0)
                 {
@@ -1214,7 +1214,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>
-            /// Attempts to reserve the right to cleanup and complete, and if successfully, 
+            /// Attempts to reserve the right to cleanup and complete, and if successfully,
             /// continues to cleanup and complete.
             /// </summary>
             /// <param name="reason">The reason we're completing and cleaning up.</param>
@@ -1337,7 +1337,7 @@ namespace System.Threading.Tasks.Dataflow
                         if (_receivedException == null) _receivedException = CreateExceptionForTimeout();
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.SourceProtocolError:
-                    case ReceiveCoreByLinkingCleanupReason.ErrorDuringCleanup:                        
+                    case ReceiveCoreByLinkingCleanupReason.ErrorDuringCleanup:
                         System.Threading.Tasks.Task.Factory.StartNew(state =>
                         {
                             // Complete with the received exception
@@ -1393,16 +1393,16 @@ namespace System.Threading.Tasks.Dataflow
 
         #region OutputAvailableAsync
         /// <summary>
-        /// Provides a <see cref="System.Threading.Tasks.Task{TResult}"/> 
+        /// Provides a <see cref="System.Threading.Tasks.Task{TResult}"/>
         /// that asynchronously monitors the source for available output.
         /// </summary>
         /// <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
         /// <param name="source">The source to monitor.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks.Task{Boolean}"/> that informs of whether and when
-        /// more output is available.  When the task completes, if its <see cref="System.Threading.Tasks.Task{Boolean}.Result"/> is true, more output 
-        /// is available in the source (though another consumer of the source may retrieve the data).  
-        /// If it returns false, more output is not and will never be available, due to the source 
+        /// more output is available.  When the task completes, if its <see cref="System.Threading.Tasks.Task{Boolean}.Result"/> is true, more output
+        /// is available in the source (though another consumer of the source may retrieve the data).
+        /// If it returns false, more output is not and will never be available, due to the source
         /// completing prior to output being available.
         /// </returns>
         public static Task<bool> OutputAvailableAsync<TOutput>(this ISourceBlock<TOutput> source)
@@ -1411,7 +1411,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>
-        /// Provides a <see cref="System.Threading.Tasks.Task{TResult}"/> 
+        /// Provides a <see cref="System.Threading.Tasks.Task{TResult}"/>
         /// that asynchronously monitors the source for available output.
         /// </summary>
         /// <typeparam name="TOutput">Specifies the type of data contained in the source.</typeparam>
@@ -1419,9 +1419,9 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="cancellationToken">The cancellation token with which to cancel the asynchronous operation.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks.Task{Boolean}"/> that informs of whether and when
-        /// more output is available.  When the task completes, if its <see cref="System.Threading.Tasks.Task{Boolean}.Result"/> is true, more output 
-        /// is available in the source (though another consumer of the source may retrieve the data).  
-        /// If it returns false, more output is not and will never be available, due to the source 
+        /// more output is available.  When the task completes, if its <see cref="System.Threading.Tasks.Task{Boolean}.Result"/> is true, more output
+        /// is available in the source (though another consumer of the source may retrieve the data).
+        /// If it returns false, more output is not and will never be available, due to the source
         /// completing prior to output being available.
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
@@ -1508,7 +1508,7 @@ namespace System.Threading.Tasks.Dataflow
 
             /// <summary>
             /// Cached delegate that cancels the target and unlinks the target from the source.
-            /// Expects an OutputAvailableAsyncTarget as the state argument. 
+            /// Expects an OutputAvailableAsyncTarget as the state argument.
             /// </summary>
             internal static readonly Action<object> s_cancelAndUnlink = CancelAndUnlink;
 
@@ -1745,8 +1745,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <returns>
         /// <para>
         /// A <see cref="System.Threading.Tasks.Task{Int32}"/> that represents the asynchronous choice.
-        /// If both sources are completed prior to the choice completing, 
-        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates 
+        /// If both sources are completed prior to the choice completing,
+        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates
         /// it to the choice, the resulting task will complete when the handler completes: if the handler throws an exception,
         /// the task will end in the <see cref="System.Threading.Tasks.TaskStatus.Faulted"/> state containing the unhandled exception, otherwise the task
         /// will end with its <see cref="System.Threading.Tasks.Task{Int32}.Result"/> set to either 0 or 1 to
@@ -1781,7 +1781,7 @@ namespace System.Threading.Tasks.Dataflow
         /// A <see cref="System.Threading.Tasks.Task{Int32}"/> that represents the asynchronous choice.
         /// If both sources are completed prior to the choice completing, or if the CancellationToken
         /// provided as part of <paramref name="dataflowBlockOptions"/> is canceled prior to the choice completing,
-        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates 
+        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates
         /// it to the choice, the resulting task will complete when the handler completes: if the handler throws an exception,
         /// the task will end in the <see cref="System.Threading.Tasks.TaskStatus.Faulted"/> state containing the unhandled exception, otherwise the task
         /// will end with its <see cref="System.Threading.Tasks.Task{Int32}.Result"/> set to either 0 or 1 to
@@ -1790,7 +1790,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <para>
         /// This method will only consume an element from one of the two data sources, never both.
         /// If cancellation is requested after an element has been received, the cancellation request will be ignored,
-        /// and the relevant handler will be allowed to execute. 
+        /// and the relevant handler will be allowed to execute.
         /// </para>
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source1"/> is null (Nothing in Visual Basic).</exception>
@@ -1830,8 +1830,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <returns>
         /// <para>
         /// A <see cref="System.Threading.Tasks.Task{Int32}"/> that represents the asynchronous choice.
-        /// If all sources are completed prior to the choice completing, 
-        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates 
+        /// If all sources are completed prior to the choice completing,
+        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates
         /// it to the choice, the resulting task will complete when the handler completes: if the handler throws an exception,
         /// the task will end in the <see cref="System.Threading.Tasks.TaskStatus.Faulted"/> state containing the unhandled exception, otherwise the task
         /// will end with its <see cref="System.Threading.Tasks.Task{Int32}.Result"/> set to the 0-based index of the source.
@@ -1871,7 +1871,7 @@ namespace System.Threading.Tasks.Dataflow
         /// A <see cref="System.Threading.Tasks.Task{Int32}"/> that represents the asynchronous choice.
         /// If all sources are completed prior to the choice completing, or if the CancellationToken
         /// provided as part of <paramref name="dataflowBlockOptions"/> is canceled prior to the choice completing,
-        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates 
+        /// the resulting task will be canceled. When one of the sources has data available and successfully propagates
         /// it to the choice, the resulting task will complete when the handler completes: if the handler throws an exception,
         /// the task will end in the <see cref="System.Threading.Tasks.TaskStatus.Faulted"/> state containing the unhandled exception, otherwise the task
         /// will end with its <see cref="System.Threading.Tasks.Task{Int32}.Result"/> set to the 0-based index of the source.
@@ -1879,7 +1879,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <para>
         /// This method will only consume an element from one of the data sources, never more than one.
         /// If cancellation is requested after an element has been received, the cancellation request will be ignored,
-        /// and the relevant handler will be allowed to execute. 
+        /// and the relevant handler will be allowed to execute.
         /// </para>
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source1"/> is null (Nothing in Visual Basic).</exception>
@@ -2117,7 +2117,7 @@ namespace System.Threading.Tasks.Dataflow
             if (cts.IsCancellationRequested)
                 return Common.CreateTaskFromCancellation<int>(cts.Token);
 
-            // Proceed with creating and linking a hidden target. Also get the source's completion task, 
+            // Proceed with creating and linking a hidden target. Also get the source's completion task,
             // as we need it to know when the source completes.  Both of these operations
             // could throw an exception if the block is faulty.
             var target = new ChooseTarget<T>(boxedCompleted, cts.Token);
@@ -2140,7 +2140,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 try
                 {
-                    // If the target ran to completion, i.e. it got a message, 
+                    // If the target ran to completion, i.e. it got a message,
                     // cancel the other branch(es) and proceed with the user callback.
                     if (completed.Status == TaskStatus.RanToCompletion)
                     {
@@ -2498,7 +2498,7 @@ namespace System.Threading.Tasks.Dataflow
                     Observable = observable;
                     Target = new ActionBlock<TOutput>((Func<TOutput, Task>)ProcessItemAsync, DataflowBlock._nonGreedyExecutionOptions);
 
-                    // If the target block fails due to an unexpected exception (e.g. it calls back to the source and the source throws an error), 
+                    // If the target block fails due to an unexpected exception (e.g. it calls back to the source and the source throws an error),
                     // we fault currently registered observers and reset the observable.
                     Target.Completion.ContinueWith(
                         (t, state) => ((ObserversState)state).NotifyObserversOfCompletion(t.Exception), this,
@@ -2506,7 +2506,7 @@ namespace System.Threading.Tasks.Dataflow
                         Common.GetContinuationOptions(TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
                         TaskScheduler.Default);
 
-                    // When the source completes, complete the target. Then when the target completes, 
+                    // When the source completes, complete the target. Then when the target completes,
                     // send completion messages to any observers still registered.
                     Task sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(Observable._source);
                     if (sourceCompletionTask != null)
@@ -2578,7 +2578,7 @@ namespace System.Threading.Tasks.Dataflow
                         return Common.CreateTaskFromException<VoidResult>(exc);
                     }
 
-                    // All observers accepted normally. 
+                    // All observers accepted normally.
                     // Return a completed task.
                     return Common.CompletedTaskWithTrueResult;
                 }
@@ -2598,8 +2598,8 @@ namespace System.Threading.Tasks.Dataflow
                     ImmutableArray<IObserver<TOutput>> currentObservers;
                     lock (Observable._SubscriptionLock)
                     {
-                        // Get the currently registered set of observers. Then, if we're being called due to the target 
-                        // block failing from an unexpected exception, reset the observer state so that subsequent 
+                        // Get the currently registered set of observers. Then, if we're being called due to the target
+                        // block failing from an unexpected exception, reset the observer state so that subsequent
                         // subscribed observers will get a new target block.  Finally clear out our observer list.
                         currentObservers = Observers;
                         if (targetException != null) Observable.ResetObserverState();

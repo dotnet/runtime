@@ -20,4 +20,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

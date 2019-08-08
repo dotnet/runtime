@@ -1833,7 +1833,7 @@ namespace System.Xml
                 {
                     foreach (NamespaceDecl nsdecl in _namespaces.Values)
                     {
-                        // don't add predefined decls unless scope == all, then only add 'xml'                       
+                        // don't add predefined decls unless scope == all, then only add 'xml'
                         if (nsdecl.scope != -1 || (XmlNamespaceScope.All == scope && "xml" == nsdecl.prefix))
                         {
                             // xmlns="" only ever reported via scope==local
@@ -2045,7 +2045,7 @@ namespace System.Xml
             return (cbRead > 0);
         }
 
-        // require must be < 1/8 buffer, or else Fill might not actually 
+        // require must be < 1/8 buffer, or else Fill might not actually
         // grab that much data
         private void Fill_(int require)
         {
@@ -2106,7 +2106,7 @@ namespace System.Xml
                     if (b > 127)
                     {
                         b = ReadByte();
-                        // bottom 4 bits are all that are needed, 
+                        // bottom 4 bits are all that are needed,
                         // but we are mapping to 'int', which only
                         // actually has space for 3 more bits.
                         t = (uint)b & (uint)0x07;
@@ -2157,7 +2157,7 @@ namespace System.Xml
             return (int)u;
         }
 
-        // we don't actually support MB64, since we use int for 
+        // we don't actually support MB64, since we use int for
         // all our math anyway...
         private int ParseMB64()
         {
@@ -2489,7 +2489,7 @@ namespace System.Xml
                 else
                     _namespaces[decl.prefix] = decl.prevLink;
                 NamespaceDecl next = decl.scopeLink;
-                // unlink chains for better gc behaviour 
+                // unlink chains for better gc behaviour
                 decl.prevLink = null;
                 decl.scopeLink = null;
                 decl = next;
@@ -3076,7 +3076,7 @@ namespace System.Xml
                     _mark = _pos;
                 // skip over token byte
                 _pos++;
-                // is this a zero-length string?  if yes, skip it.  
+                // is this a zero-length string?  if yes, skip it.
                 // (It just indicates that this is _not_ an empty element)
                 // Also make sure that the following token is an EndElem
                 if (0 == ReadByte())

@@ -121,15 +121,15 @@ namespace System.IO
         private sealed class RunningInstance
         {
             // Flags used to create the event stream
-            private const Interop.EventStream.FSEventStreamCreateFlags EventStreamFlags = (Interop.EventStream.FSEventStreamCreateFlags.kFSEventStreamCreateFlagFileEvents | 
-                                                                       Interop.EventStream.FSEventStreamCreateFlags.kFSEventStreamCreateFlagNoDefer   | 
+            private const Interop.EventStream.FSEventStreamCreateFlags EventStreamFlags = (Interop.EventStream.FSEventStreamCreateFlags.kFSEventStreamCreateFlagFileEvents |
+                                                                       Interop.EventStream.FSEventStreamCreateFlags.kFSEventStreamCreateFlagNoDefer   |
                                                                        Interop.EventStream.FSEventStreamCreateFlags.kFSEventStreamCreateFlagWatchRoot);
 
             // Weak reference to the associated watcher. A weak reference is used so that the FileSystemWatcher may be collected and finalized,
             // causing an active operation to be torn down.
             private readonly WeakReference<FileSystemWatcher> _weakWatcher;
 
-            // The user can input relative paths, which can muck with our path comparisons. Save off the 
+            // The user can input relative paths, which can muck with our path comparisons. Save off the
             // actual full path so we can use it for comparing
             private string _fullDirectory;
 
@@ -143,7 +143,7 @@ namespace System.IO
             private SafeEventStreamHandle _eventStream;
 
 
-            // Callback delegate for the EventStream events 
+            // Callback delegate for the EventStream events
             private Interop.EventStream.FSEventStreamCallback _callback;
 
             // Token to monitor for cancellation requests, upon which processing is stopped and all
@@ -209,7 +209,7 @@ namespace System.IO
                     lock (s_lockObject)
                     {
                         if (s_watcherRunLoop != IntPtr.Zero)
-                        { 
+                        {
                             // Always unschedule the RunLoop before cleaning up
                             Interop.EventStream.FSEventStreamUnscheduleFromRunLoop(eventStream, s_watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
                             s_scheduledStreamsCount--;
@@ -268,7 +268,7 @@ namespace System.IO
                         // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
                         Interop.EventStream.FSEventStreamStop(_eventStream);
                     }
-                    finally 
+                    finally
                     {
                         StaticWatcherRunLoopManager.UnscheduleFromRunLoop(_eventStream);
                     }
@@ -337,7 +337,7 @@ namespace System.IO
 
                 bool started = Interop.EventStream.FSEventStreamStart(_eventStream);
                 if (!started)
-                {  
+                {
                     // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
                     FileSystemWatcher watcher;
                     if (_weakWatcher.TryGetTarget(out watcher))
@@ -419,7 +419,7 @@ namespace System.IO
                     }
                     else if (CheckIfPathIsNested(path) && ((eventType = FilterEvents(eventFlags[i])) != 0))
                     {
-                        // The base FileSystemWatcher does a match check against the relative path before combining with 
+                        // The base FileSystemWatcher does a match check against the relative path before combining with
                         // the root dir; however, null is special cased to signify the root dir, so check if we should use that.
                         ReadOnlySpan<char> relativePath = ReadOnlySpan<char>.Empty;
                         if (!path.Equals(_fullDirectory, StringComparison.OrdinalIgnoreCase))
@@ -447,7 +447,7 @@ namespace System.IO
                             int pairedId = FindRenameChangePairedChange(i, eventFlags, numEvents);
                             if (pairedId == int.MinValue)
                             {
-                                // Getting here means we have a rename without a pair, meaning it should be a create for the 
+                                // Getting here means we have a rename without a pair, meaning it should be a create for the
                                 // move from unwatched folder to watcher folder scenario or a move from the watcher folder out.
                                 // Check if the item exists on disk to check which it is
                                 // Don't send a new notification if we already sent one for this event.
@@ -465,8 +465,8 @@ namespace System.IO
                             }
                             else
                             {
-                                // Remove the base directory prefix and add the paired event to the list of 
-                                // events to skip and notify the user of the rename 
+                                // Remove the base directory prefix and add the paired event to the list of
+                                // events to skip and notify the user of the rename
                                 ReadOnlySpan<char> newPathRelativeName = events[pairedId].Span.Slice(_fullDirectory.Length);
                                 watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, newPathRelativeName, relativePath);
 
@@ -578,7 +578,7 @@ namespace System.IO
             }
 
             private unsafe int FindRenameChangePairedChange(
-                int currentIndex, 
+                int currentIndex,
                 FSEventStreamEventFlags* eventFlags,
                 int numEvents)
             {

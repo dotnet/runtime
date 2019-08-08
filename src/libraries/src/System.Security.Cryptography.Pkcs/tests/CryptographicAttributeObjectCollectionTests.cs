@@ -262,5 +262,3 @@ namespace System.Security.Cryptography.Pkcs.Tests
         private static readonly CryptographicEqualityComparer s_CryptographicAttributeObjectComparer = new CryptographicEqualityComparer();
     }
 }
-
-

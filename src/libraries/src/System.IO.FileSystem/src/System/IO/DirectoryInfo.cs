@@ -55,11 +55,11 @@ namespace System.IO
         {
             get
             {
-                // FullPath might end in either "parent\child" or "parent\child\", and in either case we want 
+                // FullPath might end in either "parent\child" or "parent\child\", and in either case we want
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
                 string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : Path.TrimEndingDirectorySeparator(FullPath));
-                return parentName != null ? 
+                return parentName != null ?
                     new DirectoryInfo(parentName, isNormalized: true) :
                     null;
             }
@@ -97,7 +97,7 @@ namespace System.IO
         // Returns an array of Files in the DirectoryInfo specified by path
         public FileInfo[] GetFiles() => GetFiles("*", enumerationOptions: EnumerationOptions.Compatible);
 
-        // Returns an array of Files in the current DirectoryInfo matching the 
+        // Returns an array of Files in the current DirectoryInfo matching the
         // given search criteria (i.e. "*.txt").
         public FileInfo[] GetFiles(string searchPattern) => GetFiles(searchPattern, enumerationOptions: EnumerationOptions.Compatible);
 
@@ -125,7 +125,7 @@ namespace System.IO
         // Returns an array of Directories in the current directory.
         public DirectoryInfo[] GetDirectories() => GetDirectories("*", enumerationOptions: EnumerationOptions.Compatible);
 
-        // Returns an array of Directories in the current DirectoryInfo matching the 
+        // Returns an array of Directories in the current DirectoryInfo matching the
         // given search criteria (i.e. "System*" could match the System & System32 directories).
         public DirectoryInfo[] GetDirectories(string searchPattern) => GetDirectories(searchPattern, enumerationOptions: EnumerationOptions.Compatible);
 

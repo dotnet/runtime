@@ -235,7 +235,7 @@ namespace System.Reflection
                 // Add this assembly level attribute:
                 // [assembly: System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute(assemblyName)]
                 ConstructorInfo attributeConstructor = IgnoresAccessChecksAttributeConstructor;
-                CustomAttributeBuilder customAttributeBuilder = 
+                CustomAttributeBuilder customAttributeBuilder =
                     new CustomAttributeBuilder(attributeConstructor, new object[] { assemblyName });
                 _ab.SetCustomAttribute(customAttributeBuilder);
             }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,13 +16,13 @@ namespace System.IO.IsolatedStorage
         /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"
         /// and a set of random directory names if not roaming. (The random directories aren't created for WinRT as
         /// the FolderPath locations for WinRT are app isolated already.)
-        /// 
+        ///
         /// Examples:
-        /// 
+        ///
         ///     User: @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\"
         ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\IsolatedStorage\"
         ///     Machine: @"C:\ProgramData\IsolatedStorage\nin03cyc.wr0\o3j0urs3.0sn\"
-        /// 
+        ///
         /// Identity for the current store gets tacked on after this.
         /// </summary>
         internal static string GetRootDirectory(IsolatedStorageScope scope)

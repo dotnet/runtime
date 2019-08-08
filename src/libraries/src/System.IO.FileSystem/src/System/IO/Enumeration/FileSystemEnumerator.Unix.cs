@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -103,7 +103,7 @@ namespace System.IO.Enumeration
 
                 // If HAVE_READDIR_R is defined for the platform FindNextEntry depends on _entryBuffer being fixed since
                 // _entry will point to a string in the middle of the array. If the array is not fixed GC can move it after
-                // the native call and _entry will point to a bogus file name. 
+                // the native call and _entry will point to a bogus file name.
                 fixed (byte* entryBufferPtr = _entryBuffer)
                 {
                     do

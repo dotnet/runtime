@@ -69,7 +69,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
                 Assert.Equal(a, b);
             }
         }
-        
+
         private static void CompareValues(XPathNavigator a, XPathNavigator b)
         {
             // In order to account for Desktop vs CoreCLR difference in implementation of XmlDocument we need to normalize line endings to conform XML specification.

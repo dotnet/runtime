@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Xml.Tests
             foreach (var clause in info)
             {
                 i++;
-                
+
                 if (clause is KeyInfoName)
                 {
                     pathsCovered |= 1 << 0;

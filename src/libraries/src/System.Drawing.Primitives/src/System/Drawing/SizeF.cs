@@ -24,8 +24,8 @@ namespace System.Drawing
         ///    Initializes a new instance of the <see cref='System.Drawing.SizeF'/> class.
         /// </summary>
         public static readonly SizeF Empty = new SizeF();
-        private float width; // Do not rename (binary serialization) 
-        private float height; // Do not rename (binary serialization) 
+        private float width; // Do not rename (binary serialization)
+        private float height; // Do not rename (binary serialization)
 
         /**
          * Create a new SizeF object from another size object
@@ -81,7 +81,7 @@ namespace System.Drawing
         ///    <para>
         ///       Contracts a <see cref='System.Drawing.SizeF'/> by another <see cref='System.Drawing.SizeF'/>
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static SizeF operator -(SizeF sz1, SizeF sz2) => Subtract(sz1, sz2);
 
         /// <summary>
@@ -183,13 +183,13 @@ namespace System.Drawing
         ///       Contracts a <see cref='System.Drawing.SizeF'/> by another <see cref='System.Drawing.SizeF'/>
         ///       .
         ///    </para>
-        /// </summary>        
+        /// </summary>
         public static SizeF Subtract(SizeF sz1, SizeF sz2) => new SizeF(sz1.Width - sz2.Width, sz1.Height - sz2.Height);
 
         /// <summary>
         ///    <para>
         ///       Tests to see whether the specified object is a
-        ///    <see cref='System.Drawing.SizeF'/> 
+        ///    <see cref='System.Drawing.SizeF'/>
         ///    with the same dimensions as this <see cref='System.Drawing.SizeF'/>.
         /// </para>
         /// </summary>
@@ -221,4 +221,3 @@ namespace System.Drawing
             new SizeF(size.width * multiplier, size.height * multiplier);
     }
 }
-

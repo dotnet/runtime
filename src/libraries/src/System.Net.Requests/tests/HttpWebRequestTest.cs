@@ -1185,7 +1185,7 @@ namespace System.Net.Tests
         [InlineData(false)]
         public async Task GetResponseAsync_GetResponseStream_ContainsHost(bool useSsl)
         {
-            var options = new LoopbackServer.Options { UseSsl = useSsl }; 
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -1197,7 +1197,7 @@ namespace System.Net.Tests
                 {
                     Assert.Equal(uri.Host + ":" + uri.Port, response.Headers["Host"]);
                 }
-            }, async server => 
+            }, async server =>
             {
                 string host = server.Uri.Host + ":" + server.Uri.Port;
                 HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Host", host) });

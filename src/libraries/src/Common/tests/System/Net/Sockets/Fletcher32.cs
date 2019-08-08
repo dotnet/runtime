@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
         private ushort _sum1, _sum2;
         private byte? _leftover;
 
-        public uint Sum 
+        public uint Sum
         {
             get
             {

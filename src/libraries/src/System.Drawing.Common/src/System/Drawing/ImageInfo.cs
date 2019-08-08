@@ -40,7 +40,7 @@ namespace System.Drawing
 
                     PropertyItem frameDelayItem = image.GetPropertyItem(PropertyTagFrameDelay);
 
-                    // If the image does not have a frame delay, we just return 0.                                     
+                    // If the image does not have a frame delay, we just return 0.
                     //
                     if (frameDelayItem != null)
                     {

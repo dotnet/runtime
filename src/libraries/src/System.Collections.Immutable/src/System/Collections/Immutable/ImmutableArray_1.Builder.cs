@@ -103,7 +103,7 @@ namespace System.Collections.Immutable
                         // truncation mode
                         // Clear the elements of the elements that are effectively removed.
 
-                        // PERF: Array.Clear works well for big arrays, 
+                        // PERF: Array.Clear works well for big arrays,
                         //       but may have too much overhead with small ones (which is the common case here)
                         if (_count - value > 64)
                         {
@@ -198,10 +198,10 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Extracts the internal array as an <see cref="ImmutableArray{T}"/> and replaces it 
+            /// Extracts the internal array as an <see cref="ImmutableArray{T}"/> and replaces it
             /// with a zero length array.
             /// </summary>
-            /// <exception cref="InvalidOperationException">When <see cref="ImmutableArray{T}.Builder.Count"/> doesn't 
+            /// <exception cref="InvalidOperationException">When <see cref="ImmutableArray{T}.Builder.Count"/> doesn't
             /// equal <see cref="ImmutableArray{T}.Builder.Capacity"/>.</exception>
             public ImmutableArray<T> MoveToImmutable()
             {

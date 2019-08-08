@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -53,7 +53,7 @@ namespace System.Net.Http
 
             /// <summary>
             /// The core logic for the IValueTaskSource implementation.
-            /// 
+            ///
             /// Thread-safety:
             /// _waitSource is used to coordinate between a producer indicating that something is available to process (either the connection's event loop
             /// or a cancellation request) and a consumer doing that processing.  There must only ever be a single consumer, namely this stream reading
@@ -190,7 +190,7 @@ namespace System.Net.Http
                         if (_requestBodyAbandoned)
                         {
                             // See comments on _requestBodyAbandoned.
-                            // In this case, the request is still considered successful and we do not want to send a RST_STREAM, 
+                            // In this case, the request is still considered successful and we do not want to send a RST_STREAM,
                             // and we also don't want to propagate any error to the caller, in particular for non-duplex scenarios.
                             Debug.Assert(_responseCompletionState == StreamCompletionState.Completed);
                             _requestCompletionState = StreamCompletionState.Completed;
@@ -687,7 +687,7 @@ namespace System.Net.Http
                     // but the request body is still sending, and we then receive a RST_STREAM with errorCode = NO_ERROR,
                     // we treat this specially and simply cancel sending the request body, rather than treating
                     // the entire request as failed.
-                    if (resetStreamErrorCode == Http2ProtocolErrorCode.NoError && 
+                    if (resetStreamErrorCode == Http2ProtocolErrorCode.NoError &&
                         _responseCompletionState == StreamCompletionState.Completed)
                     {
                         if (_requestCompletionState == StreamCompletionState.InProgress)

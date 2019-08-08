@@ -9,10 +9,10 @@ namespace System.Runtime.InteropServices
     public class StandardOleMarshalObject : MarshalByRefObject, IMarshal
     {
         private static readonly Guid CLSID_StdMarshal = new Guid("00000017-0000-0000-c000-000000000046");
-        
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int GetMarshalSizeMaxDelegate(IntPtr _this, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize);
-        
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int MarshalInterfaceDelegate(IntPtr _this, IntPtr pStm, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags);
 
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
                 // manager object) does not really handle these well and we would
                 // risk triggering an AppVerifier break
                 IntPtr vtable = *(IntPtr*)pStandardMarshal.ToPointer();
-                
+
                 // GetMarshalSizeMax is 4th slot
                 IntPtr method = *((IntPtr*)vtable.ToPointer() + 4);
 

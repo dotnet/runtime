@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -126,7 +126,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             int dataSize = WriteCodeViewData(_dataBuilder, pdbPath, pdbContentId.Guid, age);
-            
+
             AddEntry(
                 type: DebugDirectoryEntryType.CodeView,
                 version: (portablePdbVersion == 0) ? 0 : PortablePdbVersions.DebugDirectoryEntryVersion(portablePdbVersion),
@@ -195,8 +195,8 @@ namespace System.Reflection.PortableExecutable
 
             AddEntry(
                 type: DebugDirectoryEntryType.PdbChecksum,
-                version: 0x00000001, 
-                stamp: 0x00000000, 
+                version: 0x00000001,
+                stamp: 0x00000000,
                 dataSize);
         }
 
@@ -215,7 +215,7 @@ namespace System.Reflection.PortableExecutable
         }
 
         internal int TableSize => DebugDirectoryEntry.Size * _entries.Count;
-        internal int Size => TableSize + _dataBuilder?.Count ?? 0; 
+        internal int Size => TableSize + _dataBuilder?.Count ?? 0;
 
         /// <summary>
         /// Serialize the Debug Table and Data.

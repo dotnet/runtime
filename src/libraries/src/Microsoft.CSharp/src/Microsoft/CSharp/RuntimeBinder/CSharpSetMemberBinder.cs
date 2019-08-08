@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private bool IsChecked => _binder.IsChecked;
 
-        //////////////////////////////////////////////////////////////////////        
+        //////////////////////////////////////////////////////////////////////
         /// <summary>
         /// Initializes a new instance of the <see cref="SetMemberBinder" />.
         /// </summary>

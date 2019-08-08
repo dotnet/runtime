@@ -292,7 +292,7 @@ namespace Internal.NativeCrypto
             // Write out the BLOBHEADER (or PUBLICKEYSTRUC).
             isV3 = false;
 
-            // If Y is present and this is a private key, 
+            // If Y is present and this is a private key,
             // or Y and J are present and this is a public key, this should be a v3 blob.
             byte version = BLOBHEADER_CURRENT_BVERSION;
             if (((dsaParameters.Y != null) && isPrivate) ||

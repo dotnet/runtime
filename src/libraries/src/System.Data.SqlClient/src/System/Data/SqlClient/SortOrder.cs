@@ -15,4 +15,3 @@ namespace System.Data.SqlClient
         Descending = 1
     }
 }
-

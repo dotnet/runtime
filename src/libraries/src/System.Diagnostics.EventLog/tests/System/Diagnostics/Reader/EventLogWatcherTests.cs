@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
                 Assert.False(eventLogWatcher.Enabled);
             }
         }
-            
+
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void Ctor_UsingBookmark()
         {

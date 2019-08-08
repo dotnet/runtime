@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // declaration it is contained in.
     //
     //
-    // NamespaceSymbol - a symbol representing a name space. 
+    // NamespaceSymbol - a symbol representing a name space.
     // parent is the containing namespace.
     // ----------------------------------------------------------------------------
 

@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             //      contentEncryptionAlgorithm ContentEncryptionAlgorithmIdentifier,
             //      encryptedContent[0] IMPLICIT EncryptedContent OPTIONAL }
             // The input was created with ASN1 editor and verified with .NET framework. It's an enveloped message, version 0,
-            // with one Key Transport recipient and holds data encrypted with 3DES. 
+            // with one Key Transport recipient and holds data encrypted with 3DES.
             byte[] content =
                  ("3082010206092A864886F70D010703A081F43081F10201003181C83081C5020100302E301A311830160603550403130F"
                  + "5253414B65795472616E7366657231021031D935FB63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500"
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             // You don't have the private key? No message for you.
 
             // This is the private key that "we don't have." We want to force it to load anyway, though, to trigger
-            // the "fail the test due to bad machine config" exception if someone left this cert in the MY store check. 
+            // the "fail the test due to bad machine config" exception if someone left this cert in the MY store check.
             using (X509Certificate2 ignore = Certificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
             { }
 
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             // You don't have the private key? No message for you.
 
             // This is the private key that "we don't have." We want to force it to load anyway, though, to trigger
-            // the "fail the test due to bad machine config" exception if someone left this cert in the MY store check. 
+            // the "fail the test due to bad machine config" exception if someone left this cert in the MY store check.
             using (X509Certificate2 ignore = Certificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
             { }
 
@@ -551,5 +551,3 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
     }
 }
-
-

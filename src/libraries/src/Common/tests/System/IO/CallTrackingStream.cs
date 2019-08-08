@@ -99,7 +99,7 @@ namespace System.IO.Tests
             CopyToAsyncCancellationToken = cancellationToken;
             return Inner.CopyToAsync(destination, bufferSize, cancellationToken);
         }
-        
+
         // Skip Dispose; it's not accessible to us since the virtual overload is protected
 
         public override void Flush()

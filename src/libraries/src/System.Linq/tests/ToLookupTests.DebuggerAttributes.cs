@@ -17,7 +17,7 @@ namespace System.Linq.Tests
         public void DebuggerAttributesValid<TKey, TElement>(ILookup<TKey, TElement> lookup)
         {
             Assert.Equal($"Count = {lookup.Count}", DebuggerAttributes.ValidateDebuggerDisplayReferences(lookup));
-            
+
             object proxyObject = DebuggerAttributes.GetProxyObject(lookup);
 
             // Validate proxy fields

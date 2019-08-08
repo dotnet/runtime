@@ -15,7 +15,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         Default = 0,
         /// <summary>
-        /// Defines color adjustment information for <see cref='Drawing.Bitmap'/> 
+        /// Defines color adjustment information for <see cref='Drawing.Bitmap'/>
         /// objects.
         /// </summary>
         Bitmap,

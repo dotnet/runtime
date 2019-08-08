@@ -21,9 +21,9 @@ namespace System.Data.Common
         /*
             Left quote strings need to correspond 1 to 1 with the right quote strings
             example: "ab" "cd",  passed in for the left and the right quote
-            would set a or b as a starting quote character.  
+            would set a or b as a starting quote character.
             If a is the starting quote char then c would be the ending quote char
-            otherwise if b is the starting quote char then d would be the ending quote character.                        
+            otherwise if b is the starting quote char then d would be the ending quote character.
         */
         internal static string[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, string property, bool ThrowOnEmptyMultipartName)
         {
@@ -46,7 +46,7 @@ namespace System.Data.Common
             * rightquote: set of characters which are valid to stop a quote, array index's correspond to the leftquote array.
             * separator:  separator to use
             * limit:      number of names to parse out
-            * removequote:to remove the quotes on the returned string 
+            * removequote:to remove the quotes on the returned string
             */
         private static void IncrementStringCount(string name, string[] ary, ref int position, string property)
         {
@@ -76,7 +76,7 @@ namespace System.Data.Common
                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
 
-            string[] parsedNames = new string[limit];   // return string array                     
+            string[] parsedNames = new string[limit];   // return string array
             int stringCount = 0;                        // index of current string in the buffer
             MPIState state = MPIState.MPI_Value;        // Initialize the starting state
 
@@ -104,7 +104,7 @@ namespace System.Data.Common
                             }
                             else
                             if (-1 != (quoteIndex = leftQuote.IndexOf(testchar)))
-                            { // If we are a left quote                                                                                                                          
+                            { // If we are a left quote
                                 rightQuoteChar = rightQuote[quoteIndex]; // record the corresponding right quote for the left quote
                                 sb.Length = 0;
                                 if (!removequotes)
@@ -147,7 +147,7 @@ namespace System.Data.Common
                             }
                             else
                             if (IsWhitespace(testchar))
-                            { // If it is Whitespace 
+                            { // If it is Whitespace
                                 parsedNames[stringCount] = sb.ToString(); // Set the currently parsed string
                                 if (null == whitespaceSB)
                                 {
@@ -191,7 +191,7 @@ namespace System.Data.Common
                     case MPIState.MPI_ParseQuote:
                         {
                             if (testchar == rightQuoteChar)
-                            {    // if se are on a right quote see if we are escaping the right quote or ending the quoted string                            
+                            {    // if se are on a right quote see if we are escaping the right quote or ending the quoted string
                                 if (!removequotes)
                                 {
                                     sb.Append(testchar);
@@ -237,7 +237,7 @@ namespace System.Data.Common
                             if (!IsWhitespace(testchar))
                             { // If it is not whitespace
                                 if (testchar == separator)
-                                { // If it is a separator 
+                                { // If it is a separator
                                     IncrementStringCount(name, parsedNames, ref stringCount, property);
                                     state = MPIState.MPI_Value;
                                 }
@@ -251,7 +251,7 @@ namespace System.Data.Common
                 }
             }
 
-            // Resolve final states after parsing the string            
+            // Resolve final states after parsing the string
             switch (state)
             {
                 case MPIState.MPI_Value:       // These states require no extra action

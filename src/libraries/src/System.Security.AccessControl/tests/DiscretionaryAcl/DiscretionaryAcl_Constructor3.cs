@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -253,7 +253,7 @@ namespace System.Security.AccessControl.Tests
             Assert.True(VerifyACL(discretionaryAcl, isContainer, isDS, true, rawAcl));
 
 
-            //case 8, all Aces from case 1, and 3 to 6 
+            //case 8, all Aces from case 1, and 3 to 6
             revision = 127;
             capacity = 5;
             sid = new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid("BG")).ToString();

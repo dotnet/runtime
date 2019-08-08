@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition
 
             foreach (string contractName in contractNames)
             {
-                var definition = ImportDefinitionFactory.Create(contractName, 
+                var definition = ImportDefinitionFactory.Create(contractName,
                                                                 cardinality,
                                                                 isRecomposable,
                                                                 false);
@@ -74,7 +74,7 @@ namespace System.ComponentModel.Composition
 
         public object Value
         {
-            get 
+            get
             {
                 Assert.Equal(1, _importValues.Count);
 
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Composition
                 if (definition.ContractName == contractName)
                 {
                     return pair.Value;
-                }                
+                }
             }
 
             return null;

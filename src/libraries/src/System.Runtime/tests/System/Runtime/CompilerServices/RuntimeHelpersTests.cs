@@ -134,7 +134,7 @@ namespace System.Runtime.CompilerServices.Tests
             //
 
             // Generic definition with instantiation is valid
-            RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle, 
+            RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
                 new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle });
 
             // Instantiated method without instantiation is valid

@@ -5,7 +5,7 @@
 namespace System.IO.Packaging
 {
     /// <summary>
-    /// This class is used to control Encryption RM for package parts.  
+    /// This class is used to control Encryption RM for package parts.
     /// </summary>
     public enum EncryptionOption : int
     {

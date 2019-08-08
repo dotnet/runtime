@@ -89,7 +89,7 @@ namespace Microsoft.Test.ModuleCore
                                 break;
                             builder.Length = 0;
 
-                            //Note: Since we allow you to alter the tokens, these are not 
+                            //Note: Since we allow you to alter the tokens, these are not
                             //constant values, so we cannot use a switch statement...
                             if (tokens.SingleQuote.IndexOf(ch) >= 0)
                             {
@@ -207,5 +207,3 @@ namespace Microsoft.Test.ModuleCore
         }
     }
 }
-
-

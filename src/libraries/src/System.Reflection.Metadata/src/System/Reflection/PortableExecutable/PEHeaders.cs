@@ -166,7 +166,7 @@ namespace System.Reflection.PortableExecutable
         }
 
         /// <summary>
-        /// Gets the byte offset from the start of the image to 
+        /// Gets the byte offset from the start of the image to
         /// </summary>
         public int PEHeaderStartOffset
         {
@@ -254,8 +254,8 @@ namespace System.Reflection.PortableExecutable
 
             if (dosSig != DosSignature)
             {
-                // If image doesn't start with DOS signature, let's assume it is a 
-                // COFF (Common Object File Format), aka .OBJ file. 
+                // If image doesn't start with DOS signature, let's assume it is a
+                // COFF (Common Object File Format), aka .OBJ file.
                 // See CLiteWeightStgdbRW::FindObjMetaData in ndp\clr\src\MD\enc\peparse.cpp
 
                 if (dosSig != 0 || reader.ReadUInt16() != 0xffff)

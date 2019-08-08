@@ -45,7 +45,7 @@ namespace System.Reflection.TypeLoading
 
             // If the accessor is virtual, NETFX tries to look for a overriding member starting from ReflectedType - a situation
             // which probably isn't expressible in any known language. Detecting overrides veers into vtable-building business which
-            // is something this library tries to avoid. If anyone ever cares about this, welcome to fix. 
+            // is something this library tries to avoid. If anyone ever cares about this, welcome to fix.
 
             return accessor;
         }
@@ -358,7 +358,7 @@ namespace System.Reflection.TypeLoading
         public static string ToUtf16(this ReadOnlySpan<byte> utf8) => ToUtf16(utf8.ToArray());
         public static string ToUtf16(this byte[] utf8) => Encoding.UTF8.GetString(utf8);
 
-        // Guards ToString() implementations. Sample usage: 
+        // Guards ToString() implementations. Sample usage:
         //
         //    public sealed override string ToString() => Loader.GetDisposedString() ?? <your real ToString() code>;"
         //

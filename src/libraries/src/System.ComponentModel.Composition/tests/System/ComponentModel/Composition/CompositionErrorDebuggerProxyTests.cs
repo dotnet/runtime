@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition
                 var proxy = new CompositionErrorDebuggerProxy(error);
 
                 Assert.Same(error.Exception, proxy.Exception);
-            }            
+            }
         }
 
         [Fact]

@@ -153,7 +153,7 @@ internal static class Utils
         if (!baselineXElement.Name.Equals(actualXElement.Name))
         {
             // Two nodes could be same even if their localName is not the same.
-            // For example- 
+            // For example-
 
             // Desktop
             //<GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2zbP0weY4 xmlns:i="http://www.w3.org/2001/XMLSchema-instance" z:Id="i1" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/" xmlns="http://schemas.datacontract.org/2004/07/SerializationTypes">
@@ -302,7 +302,7 @@ internal static class Utils
     {
         if (deskElemValue.Equals(coreCLRElemValue)) return true;
 
-        // For text of the form 
+        // For text of the form
         // <z:QName xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/" xmlns:a="def">a:abc</z:QName>
 
         // In the above XML text the XElement.Value is a:abc which in CoreCLR could be something like d1p1:abc

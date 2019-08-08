@@ -57,12 +57,12 @@ namespace System.Net.Sockets.Performance.Tests
         private void RandomizeBufferConfiguration(Random rnd, SocketAsyncEventArgs args, byte[] buffer, int offset, int count)
         {
             // Randomize the way that we configure the buffers to the SocketAsyncEventArgs,
-            // so that sometimes we use single-buffer, sometimes we use multi-buffer. 
+            // so that sometimes we use single-buffer, sometimes we use multi-buffer.
             // The actual buffer layout is still contiguous.
 
             int r = rnd.Next(4);
 
-            // Can't split more ways than we have bytes in the buffer            
+            // Can't split more ways than we have bytes in the buffer
             r = (r > count ? count : r);
 
             // Need to clear these both, or it will complain if we switch from one to the other
@@ -73,7 +73,7 @@ namespace System.Net.Sockets.Performance.Tests
             {
                 args.SetBuffer(buffer, offset, count);
             }
-            else 
+            else
             {
                 // Note this intentionally includes bufferLists with only a single buffer
                 var bufferList = new ArraySegment<byte>[r];

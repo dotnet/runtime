@@ -31,7 +31,7 @@ namespace System.Xml
             return false;
         }
 
-        // Creates a new XmlDocument. All documents created from the same 
+        // Creates a new XmlDocument. All documents created from the same
         // XmlImplementation object share the same name table.
         public virtual XmlDocument CreateDocument()
         {

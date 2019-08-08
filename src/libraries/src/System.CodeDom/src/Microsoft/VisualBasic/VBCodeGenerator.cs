@@ -53,7 +53,7 @@ namespace Microsoft.VisualBasic
         // and then alphabetically for use by FixedStringLookup.Contains.
         private static readonly string[][] s_keywords = new string[][] {
             null,           // 1 character
-            new string[] {  // 2 characters            
+            new string[] {  // 2 characters
                 "as",
                 "do",
                 "if",
@@ -114,7 +114,7 @@ namespace Microsoft.VisualBasic
                 "when",
                 "with",
             },
-            new string[] {  // 5 characters  
+            new string[] {  // 5 characters
                 "alias",
                 "byref",
                 "byval",
@@ -299,7 +299,7 @@ namespace Microsoft.VisualBasic
                 switch (ch)
                 {
                     case '\"':
-                    // These are the inward sloping quotes used by default in some cultures like CHS. 
+                    // These are the inward sloping quotes used by default in some cultures like CHS.
                     // VBC.EXE does a mapping ANSI that results in it treating these as syntactically equivalent to a
                     // regular double quote.
                     case '\u201C':
@@ -346,9 +346,9 @@ namespace Microsoft.VisualBasic
 
                 if (i > 0 && i % MaxLineLength == 0)
                 {
-                    // If current character is a high surrogate and the following 
+                    // If current character is a high surrogate and the following
                     // character is a low surrogate, don't break them.
-                    // Otherwise when we write the string to a file, we might lose 
+                    // Otherwise when we write the string to a file, we might lose
                     // the characters.
                     if (char.IsHighSurrogate(value[i])
                         && (i < value.Length - 1)
@@ -665,7 +665,7 @@ namespace Microsoft.VisualBasic
 
         protected override string GetResponseFileCmdArgs(CompilerParameters options, string cmdArgs)
         {
-            // Always specify the /noconfig flag (outside of the response file) 
+            // Always specify the /noconfig flag (outside of the response file)
             return "/noconfig " + base.GetResponseFileCmdArgs(options, cmdArgs);
         }
 
@@ -1199,7 +1199,7 @@ namespace Microsoft.VisualBasic
             // since the compiler emits a warning if XML DocComment blocks appear before
             //  normal comments, we need to output non-DocComments first, followed by
             //  DocComments.
-            //            
+            //
             foreach (CodeCommentStatement comment in e)
             {
                 if (!IsDocComment(comment))
@@ -1993,7 +1993,7 @@ namespace Microsoft.VisualBasic
                 Indent++;
                 foreach (CodeTypeReference typeRef in e.BaseTypes)
                 {
-                    // if we're generating an interface, we always want to use Inherits because interfaces can't Implement anything. 
+                    // if we're generating an interface, we always want to use Inherits because interfaces can't Implement anything.
                     if (!writtenInherits && (e.IsInterface || !typeRef.IsInterface))
                     {
                         Output.WriteLine();
@@ -2375,7 +2375,7 @@ namespace Microsoft.VisualBasic
                 value = value.Substring(1, value.Length - 2);
             }
 
-            // just _ as an identifier is not valid. 
+            // just _ as an identifier is not valid.
             if (value.Length == 1 && value[0] == '_')
                 return false;
 
@@ -2483,8 +2483,8 @@ namespace Microsoft.VisualBasic
                             GetTypeArgumentsOutput(typeRef.TypeArguments, currentTypeArgStart, numTypeArgs, sb);
                             currentTypeArgStart += numTypeArgs;
 
-                            // Arity can be in the middle of a nested type name, so we might have a . or + after it. 
-                            // Skip it if so. 
+                            // Arity can be in the middle of a nested type name, so we might have a . or + after it.
+                            // Skip it if so.
                             if (i < baseType.Length && (baseType[i] == '+' || baseType[i] == '.'))
                             {
                                 sb.Append('.');
@@ -2541,7 +2541,7 @@ namespace Microsoft.VisualBasic
                 }
 
                 // it's possible that we call GetTypeArgumentsOutput with an empty typeArguments collection.  This is the case
-                // for open types, so we want to just output the brackets and commas. 
+                // for open types, so we want to just output the brackets and commas.
                 if (i < typeArguments.Count)
                     sb.Append(GetTypeOutput(typeArguments[i]));
             }

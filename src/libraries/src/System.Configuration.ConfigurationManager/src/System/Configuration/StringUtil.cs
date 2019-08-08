@@ -9,7 +9,7 @@ namespace System.Configuration
         internal static bool EqualsOrBothNullOrEmpty(string s1, string s2)
         {
             return string.Equals(s1 ?? string.Empty, s2 ?? string.Empty, StringComparison.Ordinal);
-        }   
+        }
 
         internal static bool EqualsIgnoreCase(string s1, string s2)
         {

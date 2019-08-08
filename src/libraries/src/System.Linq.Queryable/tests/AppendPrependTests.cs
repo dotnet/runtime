@@ -85,7 +85,7 @@ namespace System.Linq.Tests
             third = appends.Count() < prepends.Count() ?
                 PrependRange(third, prepends.SkipLast(appends.Count())) :
                 AppendRange(third, appends.Skip(prepends.Count()));
-            
+
             IQueryable<int> expected = prepends.Concat(source).Concat(appends).AsQueryable();
 
             Assert.Equal(expected, first);

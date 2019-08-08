@@ -216,7 +216,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 return ValidationResult.Success;
             }
-            
+
             public static ValidationResult ValidationMethodThrowsException(object o)
             {
                 throw new ArgumentException();
@@ -300,7 +300,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
 
             public static readonly DerivedValidationResult SomeError =
-                new DerivedValidationResult("Some Error") { AdditionalData = "Additional Data" }; 
+                new DerivedValidationResult("Some Error") { AdditionalData = "Additional Data" };
 
             public string AdditionalData { get; set; }
         }
@@ -315,7 +315,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method2))]
         [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method3))]
         [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method3))]
-        public class AllowMultipleClass 
+        public class AllowMultipleClass
         {
             public void Method1() { }
             public void Method2() { }

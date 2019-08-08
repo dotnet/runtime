@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectName, subjectQualifier);
         }
-        
+
         [Theory]
         [InlineData("")]
         [InlineData("Nothing")]

@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections
 {
-    // A vector of bits.  Use this to store bits efficiently, without having to do bit 
+    // A vector of bits.  Use this to store bits efficiently, without having to do bit
     // shifting yourself.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -73,7 +73,7 @@ namespace System.Collections
             }
 
             // this value is chosen to prevent overflow when computing m_length.
-            // m_length is of type int32 and is exposed as a property, so 
+            // m_length is of type int32 and is exposed as a property, so
             // type of m_length can't be changed to accommodate.
             if (bytes.Length > int.MaxValue / BitsPerByte)
             {
@@ -270,7 +270,7 @@ namespace System.Collections
             // to be thread-safe; we only care about avoiding buffer overruns.
             int[] thisArray = m_array;
             int[] valueArray = value.m_array;
-            
+
             int count = GetInt32ArrayLengthFromBitLength(Length);
             if (Length != value.Length || (uint)count > (uint)thisArray.Length || (uint)count > (uint)valueArray.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
@@ -437,7 +437,7 @@ namespace System.Collections
         /*=========================================================================
         ** Shift all the bit values to right on count bits. The current instance is
         ** updated and returned.
-        * 
+        *
         ** Exceptions: ArgumentOutOfRangeException if count < 0
         =========================================================================*/
         public BitArray RightShift(int count)
@@ -504,7 +504,7 @@ namespace System.Collections
         /*=========================================================================
         ** Shift all the bit values to left on count bits. The current instance is
         ** updated and returned.
-        * 
+        *
         ** Exceptions: ArgumentOutOfRangeException if count < 0
         =========================================================================*/
         public BitArray LeftShift(int count)
@@ -706,7 +706,7 @@ namespace System.Collections
 
         public IEnumerator GetEnumerator() => new BitArrayEnumeratorSimple(this);
 
-        // XPerY=n means that n Xs can be stored in 1 Y. 
+        // XPerY=n means that n Xs can be stored in 1 Y.
         private const int BitsPerInt32 = 32;
         private const int BitsPerByte = 8;
 
@@ -715,17 +715,17 @@ namespace System.Collections
         private const int BitShiftForBytesPerInt32 = 2;
 
         /// <summary>
-        /// Used for conversion between different representations of bit array. 
-        /// Returns (n + (32 - 1)) / 32, rearranged to avoid arithmetic overflow. 
-        /// For example, in the bit to int case, the straightforward calc would 
-        /// be (n + 31) / 32, but that would cause overflow. So instead it's 
+        /// Used for conversion between different representations of bit array.
+        /// Returns (n + (32 - 1)) / 32, rearranged to avoid arithmetic overflow.
+        /// For example, in the bit to int case, the straightforward calc would
+        /// be (n + 31) / 32, but that would cause overflow. So instead it's
         /// rearranged to ((n - 1) / 32) + 1.
         /// Due to sign extension, we don't need to special case for n == 0, if we use
         /// bitwise operations (since ((n - 1) >> 5) + 1 = 0).
         /// This doesn't hold true for ((n - 1) / 32) + 1, which equals 1.
-        /// 
+        ///
         /// Usage:
-        /// GetArrayLength(77): returns how many ints must be 
+        /// GetArrayLength(77): returns how many ints must be
         /// allocated to store 77 bits.
         /// </summary>
         /// <param name="n"></param>

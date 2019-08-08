@@ -20,7 +20,7 @@ namespace System.Reflection
         {
             get
             {
-                // This check is necessary because for some reason, Type adds a new "Module" property that hides the inherited one instead 
+                // This check is necessary because for some reason, Type adds a new "Module" property that hides the inherited one instead
                 // of overriding.
 
                 if (this is Type type)

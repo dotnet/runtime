@@ -102,9 +102,9 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    // if there are any managed or unmanaged 
+                    // if there are any managed or unmanaged
                     // resources to be freed, those should be done here
-                    // if disposing = true, only unmanaged resources should 
+                    // if disposing = true, only unmanaged resources should
                     // be freed, else both managed and unmanaged.
                     FreeDSHandle();
                     _disposed = true;
@@ -145,7 +145,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                // Get dns name of the dc 
+                // Get dns name of the dc
                 // by binding to root dse and getting the "dnsHostName" attribute
                 directoryEntryMgr = new DirectoryEntryManager(context);
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
@@ -316,7 +316,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 DirectoryEntry serverNtdsaEntry = directoryEntryMgr.GetCachedDirectoryEntry(NtdsaObjectName);
                 serverNtdsaEntry.RefreshCache();
-                // check if the NTDSDSA_OPT_IS_GC flag is set in the 
+                // check if the NTDSDSA_OPT_IS_GC flag is set in the
                 // "options" attribute (lowest bit)
                 int options = 0;
                 if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
@@ -349,7 +349,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                // set the appropriate attribute on the rootDSE 
+                // set the appropriate attribute on the rootDSE
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 rootDSE.Properties[_becomeRoleOwnerAttrs[(int)role]].Value = 1;
                 rootDSE.CommitChanges();
@@ -738,7 +738,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                     }
-                    // For domain controllers this is always the 
+                    // For domain controllers this is always the
                     // domain naming context
                     // create a new domain context for the domain
                     DirectoryContext domainContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
@@ -1032,7 +1032,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(domainControllerInfo.DomainControllerName.Length > 2);
             string domainControllerName = domainControllerInfo.DomainControllerName.Substring(2);
 
-            // create a new context object for the domain controller 
+            // create a new context object for the domain controller
             DirectoryContext dcContext = Utils.GetNewDirectoryContext(domainControllerName, DirectoryContextType.DirectoryServer, context);
 
             return new DomainController(dcContext, domainControllerName);
@@ -1084,7 +1084,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int dcInfoLevel = 0;
             bool initialized = false;
 
-            // get the handle 
+            // get the handle
             GetDSHandle();
 
             // call DsGetDomainControllerInfo

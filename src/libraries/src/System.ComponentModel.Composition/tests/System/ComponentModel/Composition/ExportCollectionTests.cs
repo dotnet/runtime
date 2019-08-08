@@ -88,7 +88,7 @@ namespace System.ComponentModel.Composition
                 Assert.Empty(CollectionPlainEmptyRawMetadata);
 
                 // Add a new Export to this collection to ensure that it doesn't
-                // modifiy the other collections because they should each have there 
+                // modifiy the other collections because they should each have there
                 // own collection instance
                 CollectionPlain.Add(ExportFactory.Create<object>("Value"));
 

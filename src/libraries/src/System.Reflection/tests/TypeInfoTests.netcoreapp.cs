@@ -56,5 +56,5 @@ namespace System.Reflection.Tests
     public class OutsideTypeInfoNetcoreTests<T>
     {
         public class InsideTypeInfoNetcoreTests<U> { }
-    }    
+    }
 }

@@ -174,8 +174,8 @@ namespace System.Runtime.Serialization
                 if (this.knownDataContracts == null && this.knownTypeList != null)
                 {
                     // This assignment may be performed concurrently and thus is a race condition.
-                    // It's safe, however, because at worse a new (and identical) dictionary of 
-                    // data contracts will be created and re-assigned to this field.  Introduction 
+                    // It's safe, however, because at worse a new (and identical) dictionary of
+                    // data contracts will be created and re-assigned to this field.  Introduction
                     // of a lock here could lead to deadlocks.
                     this.knownDataContracts = XmlObjectSerializerContext.GetDataContractsForKnownTypes(this.knownTypeList);
                 }

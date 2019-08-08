@@ -353,7 +353,7 @@ namespace System.ComponentModel.Composition
                 requiredMetadata[metadataKeys[i]] = metadataTypes[i];
             }
             return new ContractBasedImportDefinition(contractName, typeIdentity, requiredMetadata, ImportCardinality.ZeroOrMore, false, false, CreationPolicy.Any);
-            
+
         }
 
         private class NoOverridesContractBasedImportDefinition : ContractBasedImportDefinition
@@ -391,4 +391,3 @@ namespace System.ComponentModel.Composition
         }
     }
 }
-

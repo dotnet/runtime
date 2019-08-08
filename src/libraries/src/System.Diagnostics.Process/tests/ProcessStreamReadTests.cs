@@ -98,7 +98,7 @@ namespace System.Diagnostics.Tests
         {
             // This test might have some false negatives due to possible race condition in System.Diagnostics.AsyncStreamReader.ReadBufferAsync
             // There is not way to know if parent process has processed async output from child process
-            
+
             using (AnonymousPipeServerStream pipeWrite = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
             using (AnonymousPipeServerStream pipeRead = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable))
             {
@@ -215,7 +215,7 @@ namespace System.Diagnostics.Tests
                         try
                         {
                             List<int> expectedValue123 = new List<int>() { 1, 2, 3 };
-                            foreach (int value in dataReceived.GetConsumingEnumerable(cts.Token)) 
+                            foreach (int value in dataReceived.GetConsumingEnumerable(cts.Token))
                             {
                                 expectedValue123.Remove(value);
                                 if (expectedValue123.Count == 0)
@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tests
                             Assert.False(cts.IsCancellationRequested, "Values 1,2,3 not arrived");
                         }
                     }
-                    
+
                     // Cancel and signal child
                     p.CancelOutputRead();
                     await pipeWrite.WriteAsync(new byte[1], 0, 1);

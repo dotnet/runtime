@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
                 var bytes = new byte[channelBinding.Size];
                 Marshal.Copy(channelBinding.DangerousGetHandle(), bytes, 0, channelBinding.Size);
                 Assert.Equal(channelBinding.Size, bytes.Length);
-                
+
                 string cbt = Encoding.ASCII.GetString(bytes);
                 string expectedPrefix = (kind == ChannelBindingKind.Endpoint) ? PrefixEndpoint : PrefixUnique;
                 Assert.Contains(expectedPrefix, cbt);

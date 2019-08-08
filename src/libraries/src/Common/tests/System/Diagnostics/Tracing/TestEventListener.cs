@@ -78,7 +78,7 @@ namespace System.Diagnostics.Tracing
 
         private void EnableSourceIfMatch(EventSource source)
         {
-            if (source.Name.Equals(_targetSourceName) || 
+            if (source.Name.Equals(_targetSourceName) ||
                 source.Guid.Equals(_targetSourceGuid))
             {
                 EnableEvents(source, _level);

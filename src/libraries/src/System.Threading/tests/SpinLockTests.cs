@@ -167,7 +167,7 @@ namespace System.Threading.Tests
                         slock.TryEnter(ref lockTaken);
                         if (lockTaken)
                         {
-                            // Increment succeeded counter 
+                            // Increment succeeded counter
                             Interlocked.Increment(ref succeeded);
                             slock.Exit(useMemoryBarrier);
                         }

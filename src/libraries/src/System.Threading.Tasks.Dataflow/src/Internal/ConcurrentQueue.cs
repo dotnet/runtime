@@ -233,7 +233,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                 else
                 //slow route:
                 //current head is empty and it is NOT the last segment,
-                //it means another thread is growing new segment 
+                //it means another thread is growing new segment
                 {
                     SpinWait spin = new SpinWait();
                     while (head.IsEmpty)
@@ -267,15 +267,15 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// elements copied from the <see cref="ConcurrentQueue{T}"/>.</returns>
         private List<T> ToList()
         {
-            // Increments the number of active snapshot takers. This increment must happen before the snapshot is 
+            // Increments the number of active snapshot takers. This increment must happen before the snapshot is
             // taken. At the same time, Decrement must happen after list copying is over. Only in this way, can it
-            // eliminate race condition when Segment.TryRemove() checks whether _numSnapshotTakers == 0. 
+            // eliminate race condition when Segment.TryRemove() checks whether _numSnapshotTakers == 0.
             Interlocked.Increment(ref _numSnapshotTakers);
 
             List<T> list = new List<T>();
             try
             {
-                //store head and tail positions in buffer, 
+                //store head and tail positions in buffer,
                 Segment head, tail;
                 int headLow, tailHigh;
                 GetHeadTailPositions(out head, out tail, out headLow, out tailHigh);
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             }
             finally
             {
-                // This Decrement must happen after copying is over. 
+                // This Decrement must happen after copying is over.
                 Interlocked.Decrement(ref _numSnapshotTakers);
             }
             return list;
@@ -321,7 +321,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             tailHigh = tail.High;
             SpinWait spin = new SpinWait();
 
-            //we loop until the observed values are stable and sensible.  
+            //we loop until the observed values are stable and sensible.
             //This ensures that any update order by other methods can be tolerated.
             while (
                 //if head and tail changed, retry
@@ -353,7 +353,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         {
             get
             {
-                //store head and tail positions in buffer, 
+                //store head and tail positions in buffer,
                 Segment head, tail;
                 int headLow, tailHigh;
                 GetHeadTailPositions(out head, out tail, out headLow, out tailHigh);
@@ -421,36 +421,36 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// cref="ConcurrentQueue{T}"/>.</returns>
         /// <remarks>
         /// The enumeration represents a moment-in-time snapshot of the contents
-        /// of the queue.  It does not reflect any updates to the collection after 
+        /// of the queue.  It does not reflect any updates to the collection after
         /// <see cref="GetEnumerator()"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the queue.
         /// </remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            // Increments the number of active snapshot takers. This increment must happen before the snapshot is 
+            // Increments the number of active snapshot takers. This increment must happen before the snapshot is
             // taken. At the same time, Decrement must happen after the enumeration is over. Only in this way, can it
-            // eliminate race condition when Segment.TryRemove() checks whether _numSnapshotTakers == 0. 
+            // eliminate race condition when Segment.TryRemove() checks whether _numSnapshotTakers == 0.
             Interlocked.Increment(ref _numSnapshotTakers);
 
-            // Takes a snapshot of the queue. 
-            // A design flaw here: if a Thread.Abort() happens, we cannot decrement _numSnapshotTakers. But we cannot 
-            // wrap the following with a try/finally block, otherwise the decrement will happen before the yield return 
-            // statements in the GetEnumerator (head, tail, headLow, tailHigh) method.           
+            // Takes a snapshot of the queue.
+            // A design flaw here: if a Thread.Abort() happens, we cannot decrement _numSnapshotTakers. But we cannot
+            // wrap the following with a try/finally block, otherwise the decrement will happen before the yield return
+            // statements in the GetEnumerator (head, tail, headLow, tailHigh) method.
             Segment head, tail;
             int headLow, tailHigh;
             GetHeadTailPositions(out head, out tail, out headLow, out tailHigh);
 
             //If we put yield-return here, the iterator will be lazily evaluated. As a result a snapshot of
             // the queue is not taken when GetEnumerator is initialized but when MoveNext() is first called.
-            // This is inconsistent with existing generic collections. In order to prevent it, we capture the 
+            // This is inconsistent with existing generic collections. In order to prevent it, we capture the
             // value of _head in a buffer and call out to a helper method.
-            //The old way of doing this was to return the ToList().GetEnumerator(), but ToList() was an 
+            //The old way of doing this was to return the ToList().GetEnumerator(), but ToList() was an
             // unnecessary performance hit.
             return GetEnumerator(head, tail, headLow, tailHigh);
         }
 
         /// <summary>
-        /// Helper method of GetEnumerator to separate out yield return statement, and prevent lazy evaluation. 
+        /// Helper method of GetEnumerator to separate out yield return statement, and prevent lazy evaluation.
         /// </summary>
         private IEnumerator<T> GetEnumerator(Segment head, Segment tail, int headLow, int tailHigh)
         {
@@ -520,7 +520,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             }
             finally
             {
-                // This Decrement must happen after the enumeration is over. 
+                // This Decrement must happen after the enumeration is over.
                 Interlocked.Decrement(ref _numSnapshotTakers);
             }
         }
@@ -598,33 +598,33 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
 
         /// <summary>
-        /// private class for ConcurrentQueue. 
+        /// private class for ConcurrentQueue.
         /// a queue is a linked list of small arrays, each node is called a segment.
         /// A segment contains an array, a pointer to the next segment, and _low, _high indices recording
         /// the first and last valid elements of the array.
         /// </summary>
         private class Segment
         {
-            //we define two volatile arrays: _array and _state. Note that the accesses to the array items 
-            //do not get volatile treatment. But we don't need to worry about loading adjacent elements or 
-            //store/load on adjacent elements would suffer reordering. 
+            //we define two volatile arrays: _array and _state. Note that the accesses to the array items
+            //do not get volatile treatment. But we don't need to worry about loading adjacent elements or
+            //store/load on adjacent elements would suffer reordering.
             // - Two stores:  these are at risk, but CLRv2 memory model guarantees store-release hence we are safe.
             // - Two loads: because one item from two volatile arrays are accessed, the loads of the array references
             //          are sufficient to prevent reordering of the loads of the elements.
             internal volatile T[] _array;
 
-            // For each entry in _array, the corresponding entry in _state indicates whether this position contains 
-            // a valid value. _state is initially all false. 
+            // For each entry in _array, the corresponding entry in _state indicates whether this position contains
+            // a valid value. _state is initially all false.
             internal volatile VolatileBool[] _state;
 
             //pointer to the next segment. null if the current segment is the last segment
             private volatile Segment _next;
 
             //We use this zero based index to track how many segments have been created for the queue, and
-            //to compute how many active segments are there currently. 
+            //to compute how many active segments are there currently.
             // * The number of currently active segments is : _tail._index - _head._index + 1;
-            // * _index is incremented with every Segment.Grow operation. We use Int64 type, and we can safely 
-            //   assume that it never overflows. To overflow, we need to do 2^63 increments, even at a rate of 4 
+            // * _index is incremented with every Segment.Grow operation. We use Int64 type, and we can safely
+            //   assume that it never overflows. To overflow, we need to do 2^63 increments, even at a rate of 4
             //   billion (2^32) increments per second, it takes 2^31 seconds, which is about 64 years.
             internal readonly long _index;
 
@@ -633,7 +633,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             //      _low >= SEGMENT_SIZE implies the segment is disposable
             // - _high points to the position of the latest pushed element, range [-1, infinity)
             //      _high == -1 implies the segment is new and empty
-            //      _high >= SEGMENT_SIZE-1 means this segment is ready to grow. 
+            //      _high >= SEGMENT_SIZE-1 means this segment is ready to grow.
             //        and the thread who sets _high to SEGMENT_SIZE-1 is responsible to grow the segment
             // - Math.Min(_low, SEGMENT_SIZE) > Math.Min(_high, SEGMENT_SIZE-1) implies segment is empty
             // - initially _low =0 and _high=-1;
@@ -665,7 +665,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
 
             /// <summary>
-            /// return true if the current segment is empty (doesn't have any element available to dequeue, 
+            /// return true if the current segment is empty (doesn't have any element available to dequeue,
             /// false otherwise
             /// </summary>
             internal bool IsEmpty
@@ -724,7 +724,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             /// </summary>
             /// <param name="value">the element to append</param>
             /// <returns>true if the element is appended, false if the current segment is full</returns>
-            /// <remarks>if appending the specified element succeeds, and after which the segment is full, 
+            /// <remarks>if appending the specified element succeeds, and after which the segment is full,
             /// then grow the segment</remarks>
             internal bool TryAppend(T value)
             {
@@ -736,10 +736,10 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
 
                 //Now we will use a CAS to increment _high, and store the result in newhigh.
                 //Depending on how many free spots left in this segment and how many threads are doing this Increment
-                //at this time, the returning "newhigh" can be 
+                //at this time, the returning "newhigh" can be
                 // 1) < SEGMENT_SIZE - 1 : we took a spot in this segment, and not the last one, just insert the value
                 // 2) == SEGMENT_SIZE - 1 : we took the last spot, insert the value AND grow the segment
-                // 3) > SEGMENT_SIZE - 1 : we failed to reserve a spot in this segment, we return false to 
+                // 3) > SEGMENT_SIZE - 1 : we failed to reserve a spot in this segment, we return false to
                 //    Queue.Enqueue method, telling it to try again in the next segment.
 
                 int newhigh = SEGMENT_SIZE; //initial value set to be over the boundary
@@ -796,23 +796,23 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                         result = _array[lowLocal];
 
                         // If there is no other thread taking snapshot (GetEnumerator(), ToList(), etc), reset the deleted entry to null.
-                        // It is ok if after this conditional check _numSnapshotTakers becomes > 0, because new snapshots won't include 
-                        // the deleted entry at _array[lowLocal]. 
+                        // It is ok if after this conditional check _numSnapshotTakers becomes > 0, because new snapshots won't include
+                        // the deleted entry at _array[lowLocal].
                         if (_source._numSnapshotTakers <= 0)
                         {
-                            _array[lowLocal] = default(T); //release the reference to the object. 
+                            _array[lowLocal] = default(T); //release the reference to the object.
                         }
 
                         //if the current thread sets _low to SEGMENT_SIZE, which means the current segment becomes
-                        //disposable, then this thread is responsible to dispose this segment, and reset _head 
+                        //disposable, then this thread is responsible to dispose this segment, and reset _head
                         if (lowLocal + 1 >= SEGMENT_SIZE)
                         {
                             //  Invariant: we only dispose the current _head, not any other segment
                             //  In usual situation, disposing a segment is simply setting _head to _head._next
                             //  But there is one special case, where _head and _tail points to the same and ONLY
                             //segment of the queue: Another thread A is doing Enqueue and finds that it needs to grow,
-                            //while the *current* thread is doing *this* Dequeue operation, and finds that it needs to 
-                            //dispose the current (and ONLY) segment. Then we need to wait till thread A finishes its 
+                            //while the *current* thread is doing *this* Dequeue operation, and finds that it needs to
+                            //dispose the current (and ONLY) segment. Then we need to wait till thread A finishes its
                             //Grow operation, this is the reason of having the following while loop
                             spinLocal = new SpinWait();
                             while (_next == null)
@@ -838,7 +838,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             /// <summary>
             /// try to peek the current segment
             /// </summary>
-            /// <param name="result">holds the return value of the element at the head position, 
+            /// <param name="result">holds the return value of the element at the head position,
             /// value set to default(T) if there is no such an element</param>
             /// <returns>true if there are elements in the current segment, false otherwise</returns>
             internal bool TryPeek(out T result)
@@ -888,7 +888,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             }
 
             /// <summary>
-            /// return the logical position of the tail of the current segment      
+            /// return the logical position of the tail of the current segment
             /// Value range [-1, SEGMENT_SIZE-1]. When it's -1, it means this is a new segment and has no element yet
             /// </summary>
             internal int High

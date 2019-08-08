@@ -23,7 +23,7 @@ internal static partial class Interop
             int err = GetNodeName(name, out len);
             if (err != 0)
             {
-                // max domain name can be 255 chars. 
+                // max domain name can be 255 chars.
                 Debug.Fail($"{nameof(GetNodeName)} failed with error {err}");
                 throw new InvalidOperationException($"{nameof(GetNodeName)}: {err}");
             }

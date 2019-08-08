@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static bool IsEnabled
         {
-            // SxS: This property poses potential SxS issue. However the class is used only in debug builds (it won't 
+            // SxS: This property poses potential SxS issue. However the class is used only in debug builds (it won't
             // get compiled into ret build) so it's OK to suppress the SxS warning.
             get
             {

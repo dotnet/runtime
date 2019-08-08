@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.XPath
         Node JoinStep(Node left, Node right);
 
         // http://www.w3.org/TR/xquery-semantics/#id-axis-steps
-        // reverseStep is how parser comunicates to builder diference between "ansestor[1]" and "(ansestor)[1]" 
+        // reverseStep is how parser comunicates to builder diference between "ansestor[1]" and "(ansestor)[1]"
         Node Predicate(Node node, Node condition, bool reverseStep);
 
         Node Variable(string prefix, string name);

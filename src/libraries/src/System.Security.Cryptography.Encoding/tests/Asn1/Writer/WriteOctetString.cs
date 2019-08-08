@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Verify(writer, expectedHex);
             }
         }
-        
+
         [Theory]
         [InlineData(1001, "2480048203E8", "0401")]
         [InlineData(1999, "2480048203E8", "048203E7")]

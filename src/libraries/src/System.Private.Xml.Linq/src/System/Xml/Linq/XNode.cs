@@ -406,7 +406,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Determines if the current node appears after a specified node 
+        /// Determines if the current node appears after a specified node
         /// in terms of document order.
         /// </summary>
         /// <param name="node">The node to compare for document order.</param>
@@ -417,7 +417,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Determines if the current node appears before a specified node 
+        /// Determines if the current node appears before a specified node
         /// in terms of document order.
         /// </summary>
         /// <param name="node">The node to compare for document order.</param>
@@ -681,15 +681,15 @@ namespace System.Xml.Linq
         internal abstract int GetDeepHashCode();
 
         // The settings simulate a non-validating processor with the external
-        // entity resolution disabled. The processing of the internal subset is 
-        // enabled by default. In order to prevent DoS attacks, the expanded 
+        // entity resolution disabled. The processing of the internal subset is
+        // enabled by default. In order to prevent DoS attacks, the expanded
         // size of the internal subset is limited to 10 million characters.
         internal static XmlReaderSettings GetXmlReaderSettings(LoadOptions o)
         {
             XmlReaderSettings rs = new XmlReaderSettings();
             if ((o & LoadOptions.PreserveWhitespace) == 0) rs.IgnoreWhitespace = true;
 
-            // DtdProcessing.Parse; Parse is not defined in the public contract 
+            // DtdProcessing.Parse; Parse is not defined in the public contract
             rs.DtdProcessing = (DtdProcessing)2;
             rs.MaxCharactersFromEntities = (long)1e7;
             // rs.XmlResolver = null;

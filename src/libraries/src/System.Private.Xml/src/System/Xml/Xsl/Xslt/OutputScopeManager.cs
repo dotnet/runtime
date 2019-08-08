@@ -79,8 +79,8 @@ namespace System.Xml.Xsl.Xslt
             _records[_lastRecord].nsUri = uri;
         }
 
-        // There are some cases where we can't predict namespace content. To garantee correct results we should output all 
-        // literal namespaces once again. 
+        // There are some cases where we can't predict namespace content. To garantee correct results we should output all
+        // literal namespaces once again.
         // <xsl:element name="{}" namespace="{}"> all prefixes should be invalidated
         // <xsl:element name="{}" namespace="FOO"> all prefixes should be invalidated
         // <xsl:element name="foo:A" namespace="{}"> prefixe "foo" should be invalidated
@@ -102,7 +102,7 @@ namespace System.Xml.Xsl.Xslt
         //public void InvalidatePrefix(string prefix) {
         //    Debug.Assert(prefix != null);
         //    if (LookupNamespace(prefix) == null) { // This is optimisation. May be better just add this record?
-        //        return;                            
+        //        return;
         //    }
         //    AddRecord(prefix, null);
         //}
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(prefix != null);
             for (
-                int record = _lastRecord;              // from last record 
+                int record = _lastRecord;              // from last record
                  _records[record].prefix != null;      // till lookup barrier
                 --record                             // in reverce direction
             )

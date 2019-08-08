@@ -129,7 +129,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                 {
                     first = false;
                 }
-                
+
                 string operation = obj.ToString();
                 EscapeMessage(operation, sb);
             }

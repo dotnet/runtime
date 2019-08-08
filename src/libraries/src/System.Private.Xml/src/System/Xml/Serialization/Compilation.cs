@@ -147,10 +147,10 @@ namespace System.Xml.Serialization
             object[] attrs = type.GetCustomAttributes(typeof(System.Xml.Serialization.XmlSerializerAssemblyAttribute), false);
             if (attrs.Length == 0)
             {
-                // Guess serializer name: if parent assembly signed use strong name 
+                // Guess serializer name: if parent assembly signed use strong name
                 AssemblyName name = type.Assembly.GetName();
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
-                // use strong name 
+                // use strong name
                 name.Name = serializerName;
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
@@ -693,4 +693,3 @@ namespace System.Xml.Serialization
         internal const string InformationalVersion = "1.0.0.0";
     }
 }
-

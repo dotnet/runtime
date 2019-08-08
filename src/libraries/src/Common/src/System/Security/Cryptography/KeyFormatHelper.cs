@@ -267,7 +267,7 @@ namespace System.Security.Cryptography
             //   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
             //   privateKey                PrivateKey,
             //   attributes           [0]  IMPLICIT Attributes OPTIONAL }
-            // 
+            //
             // Version ::= INTEGER
             // PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
             // PrivateKey ::= OCTET STRING
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography
 
             // PKI.Algorithm (AlgorithmIdentifier)
             writer.WriteEncodedValue(algorithmIdentifier);
-            
+
             // PKI.privateKey
             writer.WriteOctetString(privateKey);
 

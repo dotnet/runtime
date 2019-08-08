@@ -54,4 +54,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-

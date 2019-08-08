@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,9 +22,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
         }
 
-        private DynamicBindingFailedException(SerializationInfo info, StreamingContext context) 
-            : base(info, context) 
-        { 
+        private DynamicBindingFailedException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
     }
 
@@ -107,8 +107,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static readonly ParameterExpression parameter = Expression.Parameter(typeof(object), "debug");
 
         public static object TryEvalBinaryOperators<T1, T2>(
-            T1 arg1, 
-            T2 arg2, 
+            T1 arg1,
+            T2 arg2,
             CSharpArgumentInfoFlags arg1Flags,
             CSharpArgumentInfoFlags arg2Flags,
             ExpressionType opKind,
@@ -155,7 +155,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         /// <summary>
-        /// Creates array of types that describes delegate's signature and array of 
+        /// Creates array of types that describes delegate's signature and array of
         /// CSharpArgumentInfoFlags that describe each of the arguments.
         /// </summary>
         private static void CreateDelegateSignatureAndArgumentInfos(
@@ -224,11 +224,11 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="typeArguments">Generic type arguments if there are any.</param>
         /// <returns>Result of method invocation.</returns>
         public static object TryEvalMethodVarArgs(
-            object[] methodArgs, 
+            object[] methodArgs,
             Type[] argTypes,
-            CSharpArgumentInfoFlags[] argFlags, 
-            string methodName, 
-            Type accessibilityContext, 
+            CSharpArgumentInfoFlags[] argFlags,
+            string methodName,
+            Type accessibilityContext,
             Type[] typeArguments)
         {
             Type[] delegateSignatureTypes = null;
@@ -246,7 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 //null or empty indicates delegate invocation.
                 binder = new CSharpInvokeBinder(
-                    CSharpCallFlags.ResultDiscarded, 
+                    CSharpCallFlags.ResultDiscarded,
                     accessibilityContext,
                     argInfos);
             }
@@ -276,10 +276,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         public static object TryGetMemberValue<T>(T obj, string propName, Type accessibilityContext, bool isResultIndexed)
         {
             // In most cases it's ok to use CSharpArgumentInfoFlags.None since target of property call is dynamic.
-            // The only possible case when target is not dynamic but we still treat is as dynamic access is when 
-            // one of arguments is dynamic. This is only possible for indexed properties since we call this method and 
-            // TryGetMemberValueVarArgs afterwards. 
-             
+            // The only possible case when target is not dynamic but we still treat is as dynamic access is when
+            // one of arguments is dynamic. This is only possible for indexed properties since we call this method and
+            // TryGetMemberValueVarArgs afterwards.
+
             CSharpGetMemberBinder binder = new CSharpGetMemberBinder(
                 propName,
                 isResultIndexed,
@@ -293,7 +293,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// DynamicOperatorRewriter in EE generates call to this method to dynamically invoke a property/indexer getter.
         /// </summary>
-        /// <param name="propArgs">Array that contains property arguments. The first element is an object on 
+        /// <param name="propArgs">Array that contains property arguments. The first element is an object on
         /// which indexer should be called or call to TryGetMemberValue that selects the right property in case of
         /// indexed properties.</param>
         /// <param name="argTypes">Type of each argument in propArgs.</param>
@@ -334,10 +334,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
         public static object TrySetMemberValue<TObject, TValue>(
-            TObject obj, 
-            string propName, 
-            TValue value, 
-            CSharpArgumentInfoFlags valueFlags, 
+            TObject obj,
+            string propName,
+            TValue value,
+            CSharpArgumentInfoFlags valueFlags,
             Type accessibilityContext)
         {
             CSharpArgumentInfo targetArgInfo = CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null);
@@ -345,8 +345,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             CSharpSetMemberBinder binder = new CSharpSetMemberBinder(
                 propName,
-                false, // isCompoundAssignment 
-                false, // isChecked 
+                false, // isCompoundAssignment
+                false, // isChecked
                 accessibilityContext,
                 new CSharpArgumentInfo[] { targetArgInfo, valueArgInfo });
 
@@ -357,7 +357,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// DynamicOperatorRewriter in EE generates call to this method to dynamically invoke a property/indexer setter.
         /// </summary>
-        /// <param name="propArgs">Array that contains property arguments. The first element is an object on 
+        /// <param name="propArgs">Array that contains property arguments. The first element is an object on
         /// which indexer should be called or call to TrySetMemberValue that selects the right property in case of
         /// indexed properties. The last argument is value that property should be set to.</param>
         /// <param name="argTypes">Type of each argument in propArgs.</param>

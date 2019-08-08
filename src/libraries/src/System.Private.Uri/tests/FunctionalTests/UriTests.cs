@@ -267,7 +267,7 @@ namespace System.PrivateUri.Tests
         {
             Uri absoluteUri = new Uri("http://www.contoso.com/");
 
-            // Create a relative Uri from a string.  allowRelative = true to allow for 
+            // Create a relative Uri from a string.  allowRelative = true to allow for
             // creating a relative Uri.
             Uri relativeUri = new Uri("/catalog/shownew.htm?date=today", UriKind.Relative);
 
@@ -608,7 +608,7 @@ namespace System.PrivateUri.Tests
             // Create a new Uri from a string.
             Uri address2 = new Uri("http://www.contoso.com/index.htm?date=today");
 
-            // Determine the relative Uri.  
+            // Determine the relative Uri.
             Uri uri = address1.MakeRelativeUri(address2);
 
             string s;
@@ -776,7 +776,7 @@ namespace System.PrivateUri.Tests
             b = uri.IsWellFormedOriginalString();
             Assert.False(b);
         }
-      
+
         [Fact]
         public static void TestCompare()
         {

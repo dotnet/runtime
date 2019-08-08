@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
-    // Don't derive from BaseHeaderParser since parsing is delegated to Uri.TryCreate() 
+    // Don't derive from BaseHeaderParser since parsing is delegated to Uri.TryCreate()
     // which will remove leading and trailing whitespace.
     internal class UriHeaderParser : HttpHeaderParser
     {

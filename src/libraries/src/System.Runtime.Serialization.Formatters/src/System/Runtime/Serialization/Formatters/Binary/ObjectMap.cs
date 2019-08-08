@@ -5,7 +5,7 @@
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     // When an ObjectWithMap or an ObjectWithMapTyped is read off the stream, an ObjectMap class is created
-    // to remember the type information. 
+    // to remember the type information.
     internal sealed class ObjectMap
     {
         internal string _objectName;
@@ -105,9 +105,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int objectId, BinaryAssemblyInfo assemblyInfo) =>
             new ObjectMap(name, objectType, memberNames, objectReader, objectId, assemblyInfo);
 
-        // Member type information 
+        // Member type information
         internal static ObjectMap Create(
-            string name, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object[] typeInformationA, 
+            string name, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object[] typeInformationA,
             int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable) =>
             new ObjectMap(name, memberNames, binaryTypeEnumA, typeInformationA, memberAssemIds, objectReader, objectId, assemblyInfo, assemIdToAssemblyTable);
     }

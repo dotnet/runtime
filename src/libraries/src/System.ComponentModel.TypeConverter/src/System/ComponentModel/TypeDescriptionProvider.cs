@@ -7,8 +7,8 @@ using System.Collections;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// The TypeDescriptionProvider class can be thought of as a "plug-in" for 
-    /// TypeDescriptor. There can be multiple type description provider classes 
+    /// The TypeDescriptionProvider class can be thought of as a "plug-in" for
+    /// TypeDescriptor. There can be multiple type description provider classes
     /// all offering metadata to TypeDescriptor
     /// </summary>
     public abstract class TypeDescriptionProvider
@@ -17,11 +17,11 @@ namespace System.ComponentModel
         private EmptyCustomTypeDescriptor _emptyDescriptor;
 
         /// <summary>
-        /// There are two versions of the constructor for this class. The empty 
-        /// constructor is identical to using TypeDescriptionProvider(null). 
-        /// If a child type description provider is passed into the constructor, 
-        /// the "base" versions of all methods will call to this parent provider. 
-        /// If no such provider is given, the base versions of the methods will 
+        /// There are two versions of the constructor for this class. The empty
+        /// constructor is identical to using TypeDescriptionProvider(null).
+        /// If a child type description provider is passed into the constructor,
+        /// the "base" versions of all methods will call to this parent provider.
+        /// If no such provider is given, the base versions of the methods will
         /// return empty, but valid values.
         /// </summary>
         protected TypeDescriptionProvider()
@@ -29,11 +29,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// There are two versions of the constructor for this class. The empty 
-        /// constructor is identical to using TypeDescriptionProvider(null). 
-        /// If a child type description provider is passed into the constructor, 
-        /// the "base" versions of all methods will call to this parent provider. 
-        /// If no such provider is given, the base versions of the methods will 
+        /// There are two versions of the constructor for this class. The empty
+        /// constructor is identical to using TypeDescriptionProvider(null).
+        /// If a child type description provider is passed into the constructor,
+        /// the "base" versions of all methods will call to this parent provider.
+        /// If no such provider is given, the base versions of the methods will
         /// return empty, but valid values.
         /// </summary>
         protected TypeDescriptionProvider(TypeDescriptionProvider parent)
@@ -42,12 +42,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method is used to create an instance that can substitute for another 
-        /// data type. If the method is not interested in providing a substitute 
+        /// This method is used to create an instance that can substitute for another
+        /// data type. If the method is not interested in providing a substitute
         /// instance, it should call base.
         ///
-        /// This method is prototyped as virtual, and by default returns null if no 
-        /// parent provider was passed. If a parent provider was passed, this 
+        /// This method is prototyped as virtual, and by default returns null if no
+        /// parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's CreateInstance method.
         /// </summary>
         public virtual object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
@@ -66,30 +66,30 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// TypeDescriptor may need to perform complex operations on collections of metadata. 
-        /// Since types are not unloaded for the life of a domain, TypeDescriptor will 
-        /// automatically cache the results of these operations based on type. There are a 
-        /// number of operations that use live object instances, however. These operations 
-        /// cannot be cached within TypeDescriptor because caching them would prevent the 
-        /// object from garbage collecting. Instead, TypeDescriptor allows for a per-object 
-        /// cache, accessed as an IDictionary of key/value pairs, to exist on an object. 
-        /// The GetCache method returns an instance of this cache. GetCache will return 
+        /// TypeDescriptor may need to perform complex operations on collections of metadata.
+        /// Since types are not unloaded for the life of a domain, TypeDescriptor will
+        /// automatically cache the results of these operations based on type. There are a
+        /// number of operations that use live object instances, however. These operations
+        /// cannot be cached within TypeDescriptor because caching them would prevent the
+        /// object from garbage collecting. Instead, TypeDescriptor allows for a per-object
+        /// cache, accessed as an IDictionary of key/value pairs, to exist on an object.
+        /// The GetCache method returns an instance of this cache. GetCache will return
         /// null if there is no supported cache for an object.
         /// </summary>
         public virtual IDictionary GetCache(object instance) => _parent?.GetCache(instance);
 
         /// <summary>
-        /// This method returns an extended custom type descriptor for the given object. 
-        /// An extended type descriptor is a custom type descriptor that offers properties 
-        /// that other objects have added to this object, but are not actually defined on 
-        /// the object. For example, in the .NET Framework Component Model, objects that 
-        /// implement the interface IExtenderProvider can "attach" properties to other 
-        /// objects that reside in the same logical container. The GetTypeDescriptor 
-        /// method does not return a type descriptor that provides these extra extended 
-        /// properties. GetExtendedTypeDescriptor returns the set of these extended 
-        /// properties. TypeDescriptor will automatically merge the results of these 
-        /// two property collections. Note that while the .NET Framework component 
-        /// model only supports extended properties this API can be used for extended 
+        /// This method returns an extended custom type descriptor for the given object.
+        /// An extended type descriptor is a custom type descriptor that offers properties
+        /// that other objects have added to this object, but are not actually defined on
+        /// the object. For example, in the .NET Framework Component Model, objects that
+        /// implement the interface IExtenderProvider can "attach" properties to other
+        /// objects that reside in the same logical container. The GetTypeDescriptor
+        /// method does not return a type descriptor that provides these extra extended
+        /// properties. GetExtendedTypeDescriptor returns the set of these extended
+        /// properties. TypeDescriptor will automatically merge the results of these
+        /// two property collections. Note that while the .NET Framework component
+        /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
         public virtual ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
@@ -137,19 +137,19 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetReflection method is a lower level version of GetTypeDescriptor. 
-        /// If no custom type descriptor can be located for an object, GetReflectionType 
+        /// The GetReflection method is a lower level version of GetTypeDescriptor.
+        /// If no custom type descriptor can be located for an object, GetReflectionType
         /// is called to perform normal reflection against the object.
         /// </summary>
         public Type GetReflectionType(Type objectType) => GetReflectionType(objectType, null);
 
         /// <summary>
-        /// The GetReflection method is a lower level version of GetTypeDescriptor. 
-        /// If no custom type descriptor can be located for an object, GetReflectionType 
+        /// The GetReflection method is a lower level version of GetTypeDescriptor.
+        /// If no custom type descriptor can be located for an object, GetReflectionType
         /// is called to perform normal reflection against the object.
         ///
         /// This method is prototyped as virtual, and by default returns the
-        /// object type if no parent provider was passed. If a parent provider was passed, this 
+        /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
         public Type GetReflectionType(object instance)
@@ -163,12 +163,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetReflection method is a lower level version of GetTypeDescriptor. 
-        /// If no custom type descriptor can be located for an object, GetReflectionType 
+        /// The GetReflection method is a lower level version of GetTypeDescriptor.
+        /// If no custom type descriptor can be located for an object, GetReflectionType
         /// is called to perform normal reflection against the object.
         ///
         /// This method is prototyped as virtual, and by default returns the
-        /// object type if no parent provider was passed. If a parent provider was passed, this 
+        /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
         public virtual Type GetReflectionType(Type objectType, object instance)
@@ -208,11 +208,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method returns a custom type descriptor for the given type / object. 
-        /// The objectType parameter is always valid, but the instance parameter may 
-        /// be null if no instance was passed to TypeDescriptor. The method should 
-        /// return a custom type descriptor for the object. If the method is not 
-        /// interested in providing type information for the object it should 
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
         public ICustomTypeDescriptor GetTypeDescriptor(Type objectType)
@@ -221,11 +221,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method returns a custom type descriptor for the given type / object. 
-        /// The objectType parameter is always valid, but the instance parameter may 
-        /// be null if no instance was passed to TypeDescriptor. The method should 
-        /// return a custom type descriptor for the object. If the method is not 
-        /// interested in providing type information for the object it should 
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
         public ICustomTypeDescriptor GetTypeDescriptor(object instance)
@@ -239,17 +239,17 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method returns a custom type descriptor for the given type / object. 
-        /// The objectType parameter is always valid, but the instance parameter may 
-        /// be null if no instance was passed to TypeDescriptor. The method should 
-        /// return a custom type descriptor for the object. If the method is not 
-        /// interested in providing type information for the object it should 
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
         /// return base.
         ///
         /// This method is prototyped as virtual, and by default returns a
         /// custom type descriptor that returns empty collections for all values
-        /// if no parent provider was passed. If a parent provider was passed, 
-        /// this method will invoke the parent provider's GetTypeDescriptor 
+        /// if no parent provider was passed. If a parent provider was passed,
+        /// this method will invoke the parent provider's GetTypeDescriptor
         /// method.
         /// </summary>
         public virtual ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)

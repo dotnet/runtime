@@ -14,7 +14,7 @@ namespace System.Net
         public delegate ExtendedProtectionPolicy ExtendedProtectionSelector(HttpListenerRequest request);
 
         private readonly object _internalLock;
-        private volatile State _state; // _state is set only within lock blocks, but often read outside locks. 
+        private volatile State _state; // _state is set only within lock blocks, but often read outside locks.
         private readonly HttpListenerPrefixCollection _prefixes;
         internal Hashtable _uriPrefixes = new Hashtable();
         private bool _ignoreWriteExceptions;
@@ -39,7 +39,7 @@ namespace System.Net
             _timeoutManager = new HttpListenerTimeoutManager(this);
             _prefixes = new HttpListenerPrefixCollection(this);
 
-            // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement 
+            // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement
             // config element
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
 
@@ -198,7 +198,7 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
             }
         }
-        
+
         internal bool ContainsPrefix(string uriPrefix) => _uriPrefixes.Contains(uriPrefix);
 
         internal bool RemovePrefix(string uriPrefix)

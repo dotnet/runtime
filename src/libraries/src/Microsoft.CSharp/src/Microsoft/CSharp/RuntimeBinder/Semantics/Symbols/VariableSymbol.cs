@@ -8,9 +8,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // VariableSymbol
     //
-    // VariableSymbol - a symbol representing a variable. Specific subclasses are 
+    // VariableSymbol - a symbol representing a variable. Specific subclasses are
     // used - FieldSymbol for member variables, LocalVariableSymbol for local variables
-    // and formal parameters, 
+    // and formal parameters,
     // ----------------------------------------------------------------------------
 
     internal abstract class VariableSymbol : Symbol

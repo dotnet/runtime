@@ -181,7 +181,7 @@ namespace System.IO.Packaging
         /// The type of content represented, generally defined by a specific
         /// use and intended audience. Example values include "Whitepaper",
         /// "Security Bulletin", and "Exam". (This property is distinct from
-        /// MIME content types as defined in RFC 2045.) 
+        /// MIME content types as defined in RFC 2045.)
         /// </summary>
         public abstract string ContentType
         {

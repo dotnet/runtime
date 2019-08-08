@@ -8,7 +8,7 @@ namespace System.Xml.Schema
     public enum XmlSeverityType
     {
         /// <summary>
-        /// Errors that can be recovered from. 
+        /// Errors that can be recovered from.
         /// </summary>
         Error,
         /// <summary>
@@ -17,4 +17,3 @@ namespace System.Xml.Schema
         Warning
     }
 }
-

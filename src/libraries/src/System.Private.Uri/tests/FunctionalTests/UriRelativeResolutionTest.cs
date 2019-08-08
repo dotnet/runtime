@@ -266,7 +266,7 @@ namespace System.PrivateUri.Tests
 
             return cartesian.ToList();
         }
-        
+
         [Fact]
         public void Uri_Relative_BaseVsDoubleCharColinChar_ReturnsCharColinChar()
         {

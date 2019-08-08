@@ -130,7 +130,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         public static bool IsAccessTokenSetup() => string.IsNullOrEmpty(getAccessToken()) ? false : true;
-        
+
         public static bool IsFileStreamSetup() => int.TryParse(Environment.GetEnvironmentVariable("TEST_FILESTREAM_SETUP"), out int result) ? result == 1 : false;
 
         // This method assumes dataSource parameter is in TCP connection string format.

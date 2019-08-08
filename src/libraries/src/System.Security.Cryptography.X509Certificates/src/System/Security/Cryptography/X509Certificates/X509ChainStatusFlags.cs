@@ -38,4 +38,3 @@ namespace System.Security.Cryptography.X509Certificates
         HasWeakSignature = 0x00100000,
     }
 }
-

@@ -18,13 +18,13 @@ namespace System.Net.Http.Headers
 
         // We simplify parameters by just considering them one string. The caller is responsible for correctly parsing
         // the string.
-        // The reason is that we can't determine the format of parameters. According to Errata 1959 in RFC 2617 
-        // parameters can be "token", "quoted-string", or "#auth-param" where "auth-param" is defined as 
+        // The reason is that we can't determine the format of parameters. According to Errata 1959 in RFC 2617
+        // parameters can be "token", "quoted-string", or "#auth-param" where "auth-param" is defined as
         // "token "=" ( token | quoted-string )". E.g. take the following BASIC example:
         // Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
         // Due to Base64 encoding we have two final "=". The value is neither a token nor a quoted-string, so it must
-        // be an auth-param according to the RFC definition. But that's also incorrect: auth-param means that we 
-        // consider the value before the first "=" as "name" and the final "=" as "value". 
+        // be an auth-param according to the RFC definition. But that's also incorrect: auth-param means that we
+        // consider the value before the first "=" as "name" and the final "=" as "value".
         public string Parameter
         {
             get { return _parameter; }
@@ -169,8 +169,8 @@ namespace System.Net.Http.Headers
             }
 
             // If we get here, we have a <scheme> followed by a whitespace. Now we expect the following:
-            // '<scheme> <blob>[,<name>=<value>]*[, <otherscheme>...]*': <blob> potentially contains one 
-            // or more '=' characters, optionally followed by additional name/value pairs, optionally followed by 
+            // '<scheme> <blob>[,<name>=<value>]*[, <otherscheme>...]*': <blob> potentially contains one
+            // or more '=' characters, optionally followed by additional name/value pairs, optionally followed by
             // other schemes. <blob> may be a quoted string.
             // We look at the value after ',': if it is <token>=<value> then we have a parameter for <scheme>.
             // If we have either a <token>-only or <token><whitespace><blob> then we have another scheme.
@@ -252,8 +252,8 @@ namespace System.Net.Http.Headers
                     return true;
                 }
 
-                // Now we have to determine if after ',' we have a list of <name>=<value> pairs that are part of 
-                // the auth scheme parameters OR if we have another auth scheme. Either way, after ',' we expect a 
+                // Now we have to determine if after ',' we have a list of <name>=<value> pairs that are part of
+                // the auth scheme parameters OR if we have another auth scheme. Either way, after ',' we expect a
                 // valid token that is either the <name> in a <name>=<value> pair OR <scheme> of another scheme.
                 int tokenLength = HttpRuleParser.GetTokenLength(input, current);
                 if (tokenLength == 0)
@@ -264,8 +264,8 @@ namespace System.Net.Http.Headers
                 current = current + tokenLength;
                 current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
-                // If we reached the end of the string or the token is followed by anything but '=', then the parsed 
-                // token is another scheme name. The string representing parameters ends before the token (e.g. 
+                // If we reached the end of the string or the token is followed by anything but '=', then the parsed
+                // token is another scheme name. The string representing parameters ends before the token (e.g.
                 // "Digest a=b, c=d, NTLM": return scheme "Digest" with parameters string "a=b, c=d").
                 if ((current == input.Length) || (input[current] != '='))
                 {

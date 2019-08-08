@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 new X509Extension("1.2.3.4.5", new byte[] { 0x05, 0x00 }, false),
                 new X509Extension("0.1.2", new byte[] { 0x04, 0x00 }, false),
             };
-            
+
             Rfc3161TimestampRequest req = Rfc3161TimestampRequest.CreateFromData(
                 data,
                 HashAlgorithmName.SHA512,
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.NotSame(extensionsIn[0], extensionsOut[1]);
             Assert.NotSame(extensionsIn[1], extensionsOut[0]);
             Assert.NotSame(extensionsIn[1], extensionsOut[1]);
-            
+
             // Extensions is order-preserving
             Assert.Equal(extensionsIn[0].Oid.Value, extensionsOut[0].Oid.Value);
             Assert.Equal(extensionsIn[0].RawData, extensionsOut[0].RawData);
@@ -412,7 +412,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 if (variant == 0)
                 {
                     // Change the PkiStatus from a SEQUENCE to a SET.
-                    
+
                     // Address determined by data inspection
                     Assert.Equal(0x30, inputBytes[4]);
                     inputBytes[4] = 0x31;
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 else if (variant == 5)
                 {
                     // Alter a byte in the certificate required hash value, ESSCertId mismatches
-                    
+
                     // Address determined by data inspection
                     Assert.Equal(0xD8, inputBytes[2829]);
                     inputBytes[2829] ^= 0xFF;

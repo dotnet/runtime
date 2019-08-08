@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,7 +8,7 @@ namespace System.Runtime.Loader.Tests
 {
     public class TestClass
     {
-        // Used to check that the value is actually reset to 0 
+        // Used to check that the value is actually reset to 0
         // when loading multiple times this assembly
         public static int StaticInt;
 
@@ -25,7 +25,7 @@ namespace System.Runtime.Loader.Tests
 
         public static void TestDelegateMarshalling()
         {
-            EnumWindows((IntPtr wnd, IntPtr param) => 
+            EnumWindows((IntPtr wnd, IntPtr param) =>
             {
                 return true;
             }, IntPtr.Zero);

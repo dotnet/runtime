@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "uz-Arab"   , DigitShapes.NativeNational };
             yield return new object[] { "uz-Arab-AF", DigitShapes.NativeNational };
         }
-        
+
         [Fact]
         public void DigitSubstitutionTest()
         {
@@ -86,7 +86,7 @@ namespace System.Globalization.Tests
 
             Assert.Equal(newDigits, nfi.NativeDigits);
         }
-        
+
         [Theory]
         [MemberData(nameof(DigitSubstitution_TestData))]
         public void DigitSubstitutionListTest(string cultureName, DigitShapes shape)
@@ -101,6 +101,6 @@ namespace System.Globalization.Tests
                 // ignore the cultures that we cannot create as it is not supported on the platforms
             }
         }
-        
+
     }
 }

@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             //
             // When RecipientEncryptedKeys has more than one sequence in it, then different KeyAgreement recipients are created, where each
             // recipient hold the information from one RecipientEncryptedKey. This message has one KeyAgreeRecipientInfo object that has two
-            // RecipientEncryptedKeys so it needs to have two recipients in the end.   
+            // RecipientEncryptedKeys so it needs to have two recipients in the end.
 
             byte[] encodedMessage =
                 ("3082019206092A864886F70D010703A08201833082017F0201023182014BA1820147020103A08196A18193300906072A"
@@ -423,5 +423,3 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             + "f70d010701301406082a864886f70d030704088aadc286f258f6d78008fc304f518a653f83").HexToByteArray();
     }
 }
-
-

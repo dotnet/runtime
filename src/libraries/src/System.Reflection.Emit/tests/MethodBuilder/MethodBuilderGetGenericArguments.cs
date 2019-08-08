@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
 
             VerifyGenericArguments(method, genericParams);
         }
-        
+
         [Fact]
         public void GetGenericArguments_SingleParameters()
         {

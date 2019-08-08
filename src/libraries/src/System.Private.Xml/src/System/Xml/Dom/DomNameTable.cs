@@ -106,7 +106,7 @@ namespace System.Xml
             XmlName[] oldEntries = _entries;
             XmlName[] newEntries = new XmlName[newMask + 1];
 
-            // use oldEntries.Length to eliminate the range check            
+            // use oldEntries.Length to eliminate the range check
             for (int i = 0; i < oldEntries.Length; i++)
             {
                 XmlName name = oldEntries[i];

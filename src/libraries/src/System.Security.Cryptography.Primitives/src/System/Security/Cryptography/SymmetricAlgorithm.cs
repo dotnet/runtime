@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
             GC.SuppressFinalize(this);
         }
 
-        public void Clear() 
+        public void Clear()
         {
             (this as IDisposable).Dispose();
         }
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography
                 return false;
             return bitLength.IsLegalSize(validSizes);
         }
-        
+
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
         protected byte[] KeyValue;

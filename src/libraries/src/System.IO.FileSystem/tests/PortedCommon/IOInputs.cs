@@ -26,7 +26,7 @@ internal static class IOInputs
     // Does not include the trailing \0.
     // We now do the appropriate wrapping to allow creating longer directories. Like MaxPath, this is a legacy restriction.
     public static readonly int MaxDirectory = 247;
-    
+
     public const int MaxComponent = 255;
 
     public const string ExtendedPrefix = @"\\?\";

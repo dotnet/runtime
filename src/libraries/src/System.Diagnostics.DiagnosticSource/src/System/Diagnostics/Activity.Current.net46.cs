@@ -11,7 +11,7 @@ namespace System.Diagnostics
         private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
 
         /// <summary>
-        /// Gets or sets the current operation (Activity) for the current thread.  This flows 
+        /// Gets or sets the current operation (Activity) for the current thread.  This flows
         /// across async calls.
         /// </summary>
         public static Activity Current

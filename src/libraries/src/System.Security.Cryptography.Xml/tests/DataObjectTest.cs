@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Xml.Tests
             obj.Encoding = "euc-kr";
             XmlElement el1 = obj.GetXml();
             Assert.Equal("<Object Id=\"hoge\" MimeType=\"application/octet-stream\" Encoding=\"euc-kr\" xmlns=\"http://www.w3.org/2000/09/xmldsig#\">test</Object>", el1.OuterXml);
-            /* looks curious? but the element does not look to 
+            /* looks curious? but the element does not look to
                be appended to the document.
                Just commented out since it is not fixed.
             Assert.AreEqual (String.Empty, el1.OwnerDocument.OuterXml);

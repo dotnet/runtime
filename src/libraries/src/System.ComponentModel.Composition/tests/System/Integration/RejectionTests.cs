@@ -267,9 +267,9 @@ namespace Tests.Integration
         [Fact]
         public void Rejection_SwitchPromiseFromManualToCatalog()
         {
-            // This test shows how the priority list in the AggregateCatalog can actually play with 
-            // the rejection work. Until the actual object is actually pulled on and satisfied the 
-            // promise can be moved around even for not-recomposable imports but once the object is 
+            // This test shows how the priority list in the AggregateCatalog can actually play with
+            // the rejection work. Until the actual object is actually pulled on and satisfied the
+            // promise can be moved around even for not-recomposable imports but once the object is
             // pulled on it is fixed from that point on.
 
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(Needy), typeof(NoImportPart));

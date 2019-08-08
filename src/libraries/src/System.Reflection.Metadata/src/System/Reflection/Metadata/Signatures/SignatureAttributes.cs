@@ -6,7 +6,7 @@ namespace System.Reflection.Metadata
 {
     /// <summary>
     /// Specified additional flags that can be applied to method signatures.
-    /// Underlying values correspond to the representation in the leading signature 
+    /// Underlying values correspond to the representation in the leading signature
     /// byte represented by <see cref="SignatureHeader"/>.
     /// </summary>
     [Flags]

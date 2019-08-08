@@ -70,20 +70,20 @@ namespace System
         }
 
         // Checks whether stdout or stderr are writable.  Do NOT pass
-        // stdin here! The console handles are set to values like 3, 7, 
+        // stdin here! The console handles are set to values like 3, 7,
         // and 11 OR if you've been created via CreateProcess, possibly -1
         // or 0.  -1 is definitely invalid, while 0 is probably invalid.
         // Also note each handle can independently be invalid or good.
-        // For Windows apps, the console handles are set to values like 3, 7, 
+        // For Windows apps, the console handles are set to values like 3, 7,
         // and 11 but are invalid handles - you may not write to them.  However,
         // you can still spawn a Windows app via CreateProcess and read stdout
         // and stderr. So, we always need to check each handle independently for validity
         // by trying to write or read to it, unless it is -1.
         private static unsafe bool ConsoleHandleIsWritable(IntPtr outErrHandle)
         {
-            // Windows apps may have non-null valid looking handle values for 
-            // stdin, stdout and stderr, but they may not be readable or 
-            // writable.  Verify this by calling WriteFile in the 
+            // Windows apps may have non-null valid looking handle values for
+            // stdin, stdout and stderr, but they may not be readable or
+            // writable.  Verify this by calling WriteFile in the
             // appropriate modes. This must handle console-less Windows apps.
             int bytesWritten;
             byte junkByte = 0x41;
@@ -188,15 +188,15 @@ namespace System
         // ReadLine & Read can't use this because they need to use ReadFile
         // to be able to handle redirected input.  We have to accept that
         // we will lose repeated keystrokes when someone switches from
-        // calling ReadKey to calling Read or ReadLine.  Those methods should 
+        // calling ReadKey to calling Read or ReadLine.  Those methods should
         // ideally flush this cache as well.
         private static Interop.InputRecord _cachedInputRecord;
 
-        // Skip non key events. Generally we want to surface only KeyDown event 
+        // Skip non key events. Generally we want to surface only KeyDown event
         // and suppress KeyUp event from the same Key press but there are cases
-        // where the assumption of KeyDown-KeyUp pairing for a given key press 
+        // where the assumption of KeyDown-KeyUp pairing for a given key press
         // is invalid. For example in IME Unicode keyboard input, we often see
-        // only KeyUp until the key is released.  
+        // only KeyUp until the key is released.
         private static bool IsKeyDownEvent(Interop.InputRecord ir)
         {
             return (ir.eventType == Interop.KEY_EVENT && ir.keyEvent.keyDown != Interop.BOOL.FALSE);
@@ -205,7 +205,7 @@ namespace System
         private static bool IsModKey(Interop.InputRecord ir)
         {
             // We should also skip over Shift, Control, and Alt, as well as caps lock.
-            // Apparently we don't need to check for 0xA0 through 0xA5, which are keys like 
+            // Apparently we don't need to check for 0xA0 through 0xA5, which are keys like
             // Left Control & Right Control. See the ConsoleKey enum for these values.
             short keyCode = ir.keyEvent.virtualKeyCode;
             return ((keyCode >= 0x10 && keyCode <= 0x12)
@@ -226,11 +226,11 @@ namespace System
             EnhancedKey = 0x0100
         }
 
-        // For tracking Alt+NumPad unicode key sequence. When you press Alt key down 
+        // For tracking Alt+NumPad unicode key sequence. When you press Alt key down
         // and press a numpad unicode decimal sequence and then release Alt key, the
-        // desired effect is to translate the sequence into one Unicode KeyPress. 
+        // desired effect is to translate the sequence into one Unicode KeyPress.
         // We need to keep track of the Alt+NumPad sequence and surface the final
-        // unicode char alone when the Alt key is released. 
+        // unicode char alone when the Alt key is released.
         private static bool IsAltKeyDown(Interop.InputRecord ir)
         {
             return (((ControlKeyState)ir.keyEvent.controlKeyState)
@@ -349,8 +349,8 @@ namespace System
                         r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
                         if (!r || numEventsRead == 0)
                         {
-                            // This will fail when stdin is redirected from a file or pipe. 
-                            // We could theoretically call Console.Read here, but I 
+                            // This will fail when stdin is redirected from a file or pipe.
+                            // We could theoretically call Console.Read here, but I
                             // think we might do some things incorrectly then.
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
                         }
@@ -358,9 +358,9 @@ namespace System
                         short keyCode = ir.keyEvent.virtualKeyCode;
 
                         // First check for non-keyboard events & discard them. Generally we tap into only KeyDown events and ignore the KeyUp events
-                        // but it is possible that we are dealing with a Alt+NumPad unicode key sequence, the final unicode char is revealed only when 
-                        // the Alt key is released (i.e when the sequence is complete). To avoid noise, when the Alt key is down, we should eat up 
-                        // any intermediate key strokes (from NumPad) that collectively forms the Unicode character.  
+                        // but it is possible that we are dealing with a Alt+NumPad unicode key sequence, the final unicode char is revealed only when
+                        // the Alt key is released (i.e when the sequence is complete). To avoid noise, when the Alt key is down, we should eat up
+                        // any intermediate key strokes (from NumPad) that collectively forms the Unicode character.
 
                         if (!IsKeyDownEvent(ir))
                         {
@@ -371,10 +371,10 @@ namespace System
 
                         char ch = (char)ir.keyEvent.uChar;
 
-                        // In a Alt+NumPad unicode sequence, when the alt key is released uChar will represent the final unicode character, we need to 
-                        // surface this. VirtualKeyCode for this event will be Alt from the Alt-Up key event. This is probably not the right code, 
-                        // especially when we don't expose ConsoleKey.Alt, so this will end up being the hex value (0x12). VK_PACKET comes very 
-                        // close to being useful and something that we could look into using for this purpose... 
+                        // In a Alt+NumPad unicode sequence, when the alt key is released uChar will represent the final unicode character, we need to
+                        // surface this. VirtualKeyCode for this event will be Alt from the Alt-Up key event. This is probably not the right code,
+                        // especially when we don't expose ConsoleKey.Alt, so this will end up being the hex value (0x12). VK_PACKET comes very
+                        // close to being useful and something that we could look into using for this purpose...
 
                         if (ch == 0)
                         {
@@ -881,7 +881,7 @@ namespace System
         {
             get
             {
-                // Note this varies based on current screen resolution and 
+                // Note this varies based on current screen resolution and
                 // current console font.  Do not cache this value.
                 Interop.Kernel32.COORD bounds = Interop.Kernel32.GetLargestConsoleWindowSize(OutputHandle);
                 return bounds.X;
@@ -892,7 +892,7 @@ namespace System
         {
             get
             {
-                // Note this varies based on current screen resolution and 
+                // Note this varies based on current screen resolution and
                 // current console font.  Do not cache this value.
                 Interop.Kernel32.COORD bounds = Interop.Kernel32.GetLargestConsoleWindowSize(OutputHandle);
                 return bounds.Y;
@@ -1087,7 +1087,7 @@ namespace System
                 return new Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
             }
 
-            // Note that if stdout is redirected to a file, the console handle may be a file.  
+            // Note that if stdout is redirected to a file, the console handle may be a file.
             // First try stdout; if this fails, try stderr and then stdin.
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi;
             if (!Interop.Kernel32.GetConsoleScreenBufferInfo(outputHandle, out csbi) &&
@@ -1115,7 +1115,7 @@ namespace System
         private sealed class WindowsConsoleStream : ConsoleStream
         {
             // We know that if we are using console APIs rather than file APIs, then the encoding
-            // is Encoding.Unicode implying 2 bytes per character:                
+            // is Encoding.Unicode implying 2 bytes per character:
             const int BytesPerWChar = 2;
 
             private readonly bool _isPipe; // When reading from pipes, we need to properly handle EOF cases.
@@ -1136,7 +1136,7 @@ namespace System
                 // We're probably better off not closing the OS handle here.  First,
                 // we allow a program to get multiple instances of ConsoleStreams
                 // around the same OS handle, so closing one handle would invalidate
-                // them all.  Additionally, we want a second AppDomain to be able to 
+                // them all.  Additionally, we want a second AppDomain to be able to
                 // write to stdout if a second AppDomain quits.
                 _handle = IntPtr.Zero;
                 base.Dispose(disposing);

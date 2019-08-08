@@ -201,7 +201,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     using (MemoryMappedViewStream s = mmf.CreateViewStream(MapLength, 0))
                     {
                         Assert.Equal(
-                            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MapLength : 0, 
+                            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MapLength : 0,
                             s.PointerOffset);
                     }
                 }

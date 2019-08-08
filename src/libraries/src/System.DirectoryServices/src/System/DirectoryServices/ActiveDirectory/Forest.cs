@@ -124,7 +124,7 @@ namespace System.DirectoryServices.ActiveDirectory
             context = new DirectoryContext(context);
 
             directoryEntryMgr = new DirectoryEntryManager(context);
-            // at this point we know that the target is either a 
+            // at this point we know that the target is either a
             // valid forest name or a server (may be a bogus server name -- to check bind to rootdse)
             // bind to the rootDSE of the forest specified in the context
             try
@@ -178,7 +178,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.InvalidMode, nameof(forestMode));
             }
 
-            // set the forest mode on AD 
+            // set the forest mode on AD
             DirectoryEntry partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(_context, _directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
             // NOTE:
             // If the domain is a W2K domain (W2K schema) then the msDS-Behavior-Version attribute will not be present.
@@ -512,7 +512,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             string password = TrustHelper.CreateTrustPassword();
 
-            // first create trust on local side                  
+            // first create trust on local side
             TrustHelper.CreateTrust(_context, Name, targetForest.GetDirectoryContext(), targetForest.Name, true, direction, password);
 
             // then create trust on remote side
@@ -732,7 +732,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
                 if (_cachedRootDomain == null)
                 {
-                    // Domain context is created by passing the name of the forest 
+                    // Domain context is created by passing the name of the forest
                     // (since the root domain and the forest have the same name)
                     DirectoryContext domainContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.Domain, _context);
                     _cachedRootDomain = new Domain(domainContext, Name);
@@ -864,7 +864,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            // create a new context object for the domain controller passing on  the 
+            // create a new context object for the domain controller passing on  the
             // credentials from the forest context
             DirectoryContext dcContext = Utils.GetNewDirectoryContext(dcName, DirectoryContextType.DirectoryServer, _context);
             return new DomainController(dcContext, dcName);
@@ -961,7 +961,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             DirectoryEntry partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(_context, _directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
 
-            // search for all the "crossRef" objects that have the 
+            // search for all the "crossRef" objects that have the
             // ADS_SYSTEMFLAG_CR_NTDS_NC set and the SYSTEMFLAG_CR_NTDS_DOMAIN flag not set
             // (one-level search is good enough)
 
@@ -997,7 +997,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 foreach (SearchResult res in resCol)
                 {
-                    // add the name of the appNC only if it is not 
+                    // add the name of the appNC only if it is not
                     // the Schema or Configuration partition
                     string nCName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.NCName);
                     if ((!(nCName.Equals(schemaNamingContext)))
@@ -1031,7 +1031,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ArrayList domains = new ArrayList();
             DirectoryEntry partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(_context, _directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
 
-            // search for all the "crossRef" objects that have the 
+            // search for all the "crossRef" objects that have the
             // ADS_SYSTEMFLAG_CR_NTDS_NC and SYSTEMFLAG_CR_NTDS_DOMAIN flags set
             // (one-level search is good enough)
 

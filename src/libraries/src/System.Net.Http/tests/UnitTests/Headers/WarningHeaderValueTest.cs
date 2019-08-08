@@ -155,7 +155,7 @@ namespace System.Net.Http.Tests
                     new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)));
 
             // The parser reads until it reaches an invalid/unexpected character. If until then it was able to create
-            // a valid WarningHeaderValue, it will return the length of the parsed string. Therefore a string like 
+            // a valid WarningHeaderValue, it will return the length of the parsed string. Therefore a string like
             // the following is considered valid (until '[')
             CheckGetWarningLength("1 h \"t\"[", 0, 7, new WarningHeaderValue(1, "h", "\"t\""));
             CheckGetWarningLength("1 h \"t\" \"Tue, 20 Jul 2010 01:02:03 GMT\"[", 0, 39,

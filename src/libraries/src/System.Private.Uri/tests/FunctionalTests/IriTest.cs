@@ -419,21 +419,21 @@ namespace System.PrivateUri.Tests
             {"http://user@ser%5Dver.srv:123/path/path/resource.ext?query=expression#fragment", null},
 
             // [ ] in userinfo.
-            {"http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment",  
+            {"http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment",
                 "http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment"},
-            {"http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment", 
+            {"http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment",
                 "http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment"},
-            {"http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment", 
+            {"http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment",
                 "http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment"},
-            
+
             // [ ] : ' in path.
-            {"http://user@server.srv:123/path/pa%5B%3A%27th/resource.ext?query=expression#fragment", 
+            {"http://user@server.srv:123/path/pa%5B%3A%27th/resource.ext?query=expression#fragment",
                 "http://user@server.srv:123/path/pa%5B%3A%27th/resource.ext?query=expression#fragment"},
-            {"http://user@server.srv:123/pa%5D%3A%27th/path%5D%3A%27/resource.ext?query=expression#fragment", 
+            {"http://user@server.srv:123/pa%5D%3A%27th/path%5D%3A%27/resource.ext?query=expression#fragment",
                 "http://user@server.srv:123/pa%5D%3A%27th/path%5D%3A%27/resource.ext?query=expression#fragment"},
-            {"http://user@server.srv:123/path/p%5B%3A%27a%5D%3A%27th/resource.ext?query=expression#fragment", 
+            {"http://user@server.srv:123/path/p%5B%3A%27a%5D%3A%27th/resource.ext?query=expression#fragment",
                 "http://user@server.srv:123/path/p%5B%3A%27a%5D%3A%27th/resource.ext?query=expression#fragment"},
-            
+
             // [ ] : ' in query.
             {"http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=expression#fragment",
                 "http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=expression#fragment"},
@@ -441,7 +441,7 @@ namespace System.PrivateUri.Tests
                 "http://user@server.srv:123/path/path/resource.ext?query=exp%5D%3A%27ression#fragment"},
             {"http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=exp%5D%3A%27ression#fragment",
                 "http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=exp%5D%3A%27ression#fragment"},
-            
+
             // [ ] : ' in fragment.
             {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment",
                 "http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment"},

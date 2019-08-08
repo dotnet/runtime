@@ -201,7 +201,7 @@ namespace System.Collections.Tests
                 IntValue = intValue;
                 StringValue = stringValue;
             }
-            
+
             public int IntValue { get; set; }
             public string StringValue { get; set; }
 

@@ -51,7 +51,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             _allowedCharacters.ForbidCharacter(c);
         }
-        
+
         /// <summary>
         /// Entry point to the encoder.
         /// </summary>

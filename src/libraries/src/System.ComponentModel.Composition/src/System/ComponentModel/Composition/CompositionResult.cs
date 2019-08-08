@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition
 
         public CompositionResult(params CompositionError[] errors)
             : this((IEnumerable<CompositionError>)errors)
-        {            
+        {
         }
 
         public CompositionResult(IEnumerable<CompositionError> errors)
@@ -59,7 +59,7 @@ namespace System.ComponentModel.Composition
 
         public CompositionResult<T> ToResult<T>(T value)
         {
-            return new CompositionResult<T>(value, _errors); 
+            return new CompositionResult<T>(value, _errors);
         }
 
         public void ThrowOnErrors()

@@ -69,7 +69,7 @@ namespace System.ComponentModel.Design
 
         /// <summary>
         /// A toggle selection.
-        /// This selection toggles the current selection with the provided selection. So, if 
+        /// This selection toggles the current selection with the provided selection. So, if
         /// a component is already selected and is passed into SetSelectedComponents with a
         /// selection type of Toggle, it will be unselected.
         /// </summary>
@@ -77,14 +77,14 @@ namespace System.ComponentModel.Design
 
         /// <summary>
         /// An Add selection.
-        /// This selection adds the selected components to the current selection, 
+        /// This selection adds the selected components to the current selection,
         /// maintaining the current set of selected components.
         /// </summary>
         Add = 0x0040,
 
         /// <summary>
         /// A Remove selection.
-        /// This selection removes the selected components from the current selection, 
+        /// This selection removes the selected components from the current selection,
         /// maintaining the current set of selected components.
         /// </summary>
         Remove = 0x0080,

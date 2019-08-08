@@ -14,6 +14,6 @@ namespace System.Runtime.Versioning.Tests
         {
             string str1 = VersioningHelper.MakeVersionSafeName("TestFile", ResourceScope.Process, ResourceScope.AppDomain);
             Assert.Equal($"TestFile_r3_ad{AppDomain.CurrentDomain.Id}", str1);
-        }      
+        }
     }
 }

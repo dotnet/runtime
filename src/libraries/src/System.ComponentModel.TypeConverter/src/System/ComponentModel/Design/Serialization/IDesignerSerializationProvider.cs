@@ -12,7 +12,7 @@ namespace System.ComponentModel.Design.Serialization
     public interface IDesignerSerializationProvider
     {
         /// <summary>
-        /// This will be called by the serialization manager when it 
+        /// This will be called by the serialization manager when it
         /// is trying to locate a serializer for an object type.
         /// If this serialization provider can provide a serializer
         /// that is of the correct type, it should return it.
@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design.Serialization
         ///
         /// In order to break order dependencies between multiple
         /// serialization providers the serialization manager will
-        /// loop through all serialization providers until the 
+        /// loop through all serialization providers until the
         /// serializer returned reaches steady state. Because
         /// of this you should always check currentSerializer
         /// before returning a new serializer. If currentSerializer
@@ -31,4 +31,3 @@ namespace System.ComponentModel.Design.Serialization
         object GetSerializer(IDesignerSerializationManager manager, object currentSerializer, Type objectType, Type serializerType);
     }
 }
-

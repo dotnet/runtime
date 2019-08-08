@@ -724,7 +724,7 @@ namespace System.Collections.Tests
             {
                 IList keys1 = sortList2.GetKeyList();
                 IList keys2 = sortList2.GetKeyList();
-                
+
                 // Test we have copied the correct keys
                 Assert.Equal(count, keys1.Count);
                 Assert.Equal(count, keys2.Count);
@@ -1498,7 +1498,7 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => sortList2.SetByIndex(sortList2.Count, 101)); // Index >= list.Count
             });
         }
-        
+
         [Fact]
         public void Synchronized_IsSynchronized()
         {
@@ -1580,7 +1580,7 @@ namespace System.Collections.Tests
             Assert.Equal(sortListSon.SyncRoot, sortListMother.SyncRoot);
 
             //we are going to rumble with the SortedLists with some threads
-            
+
             var workers = new Task[4];
             for (int i = 0; i < workers.Length; i += 2)
             {

@@ -46,9 +46,9 @@ namespace System.Net.Http
         public static void ResetCookieRequestHeaders(WinHttpRequestState state, Uri redirectUri)
         {
             SafeWinHttpHandle requestHandle = state.RequestHandle;
-            
+
             Debug.Assert(state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer);
-            
+
             // Clear cookies.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(
                 requestHandle,
@@ -78,7 +78,7 @@ namespace System.Net.Http
                 }
             }
         }
-        
+
         public static string GetCookieHeader(Uri uri, CookieContainer cookies)
         {
             string cookieHeader = null;
@@ -88,10 +88,10 @@ namespace System.Net.Http
             string cookieValues = cookies.GetCookieHeader(uri);
             if (!string.IsNullOrEmpty(cookieValues))
             {
-                cookieHeader = CookieHeaderNameWithColon + " " + cookieValues;                
+                cookieHeader = CookieHeaderNameWithColon + " " + cookieValues;
             }
 
             return cookieHeader;
-        }        
+        }
     }
 }

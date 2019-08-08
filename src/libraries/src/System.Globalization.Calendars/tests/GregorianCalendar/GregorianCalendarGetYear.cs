@@ -24,7 +24,7 @@ namespace System.Globalization.Tests
 
             // Any month other than February in a common year
             yield return new object[] { new DateTime(RandomCommonYear(), RandomMonthNotFebruary(), 28, 10, 30, 12) };
-            
+
             // Any month in the minimum supported year
             yield return new object[] { new DateTime(1, RandomMonth(), 20, 8, 20, 30) };
 

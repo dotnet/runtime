@@ -49,4 +49,3 @@ namespace System.Security.Cryptography
         private int _current;
     }
 }
-

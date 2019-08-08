@@ -142,7 +142,7 @@ namespace XPathTests.XPathExpressionTests
         }
 
         /// <summary>
-        /// Pass in valid XPath Expression 
+        /// Pass in valid XPath Expression
         /// Priority: 1
         /// </summary>
         [Fact]

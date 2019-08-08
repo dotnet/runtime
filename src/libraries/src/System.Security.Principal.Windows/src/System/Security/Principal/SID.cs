@@ -174,7 +174,7 @@ namespace System.Security.Principal
         WinBuiltinTerminalServerLicenseServersSid = 60,
         [Obsolete("This member has been depcreated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        MaxDefined = WinBuiltinTerminalServerLicenseServersSid, 
+        MaxDefined = WinBuiltinTerminalServerLicenseServersSid,
         /// <summary>Indicates a SID that matches the distributed COM user group.</summary>
         WinBuiltinDCOMUsersSid = 61,
         /// <summary>Indicates a SID that matches the Internet built-in user group.</summary>
@@ -318,7 +318,7 @@ namespace System.Security.Principal
             }
 
             //
-            // Check the number of subauthorities passed in 
+            // Check the number of subauthorities passed in
             //
 
             if (subAuthorities.Length > MaxSubAuthorities)
@@ -557,7 +557,7 @@ nameof(binaryForm));
         }
 
         //
-        // Constructs a SecurityIdentifier object from an IntPtr 
+        // Constructs a SecurityIdentifier object from an IntPtr
         //
 
         public SecurityIdentifier(IntPtr binaryForm)
@@ -848,7 +848,7 @@ nameof(binaryForm));
         {
             return IsValidTargetTypeStatic(targetType);
         }
-        
+
 
         internal SecurityIdentifier GetAccountDomainSid()
         {

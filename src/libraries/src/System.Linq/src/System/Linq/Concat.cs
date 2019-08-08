@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -97,7 +97,7 @@ namespace System.Linq
             /// The linked list of previous sources.
             /// </summary>
             private readonly ConcatIterator<TSource> _tail;
-            
+
             /// <summary>
             /// The source associated with this iterator.
             /// </summary>
@@ -141,7 +141,7 @@ namespace System.Linq
             }
 
             private ConcatNIterator<TSource> PreviousN => _tail as ConcatNIterator<TSource>;
-            
+
             public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
@@ -153,7 +153,7 @@ namespace System.Linq
                     // So we use the naïve approach of just having a left and right sequence.
                     return new Concat2Iterator<TSource>(this, next);
                 }
-                
+
                 bool hasOnlyCollections = _hasOnlyCollections && next is ICollection<TSource>;
                 return new ConcatNIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
             }

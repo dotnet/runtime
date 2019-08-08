@@ -16,7 +16,7 @@ namespace System.Linq
         /// The stored items.
         /// </summary>
         internal readonly TElement[] _items;
-        
+
         /// <summary>
         /// The number of stored items.
         /// </summary>

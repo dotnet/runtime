@@ -60,18 +60,18 @@ namespace System
             }
         }
 
-        // 
+        //
         // The innocent looking construct:
         //
         //    Assert.Throws<E>( () => new Span() );
         //
-        // generates a hidden box of the Span as the return value of the lambda. This makes the IL illegal and unloadable on 
+        // generates a hidden box of the Span as the return value of the lambda. This makes the IL illegal and unloadable on
         // runtimes that enforce the actual Span rules (never mind that we expect never to reach the box instruction...)
         //
         // The workaround is to code it like this:
         //
         //    Assert.Throws<E>( () => new Span().DontBox() );
-        // 
+        //
         // which turns the lambda return type back to "void" and eliminates the troublesome box instruction.
         //
         public static void DontBox<T>(this Span<T> span)
@@ -124,18 +124,18 @@ namespace System
             }
         }
 
-        // 
+        //
         // The innocent looking construct:
         //
         //    Assert.Throws<E>( () => new Span() );
         //
-        // generates a hidden box of the Span as the return value of the lambda. This makes the IL illegal and unloadable on 
+        // generates a hidden box of the Span as the return value of the lambda. This makes the IL illegal and unloadable on
         // runtimes that enforce the actual Span rules (never mind that we expect never to reach the box instruction...)
         //
         // The workaround is to code it like this:
         //
         //    Assert.Throws<E>( () => new Span().DontBox() );
-        // 
+        //
         // which turns the lambda return type back to "void" and eliminates the troublesome box instruction.
         //
         public static void DontBox<T>(this ReadOnlySpan<T> span)

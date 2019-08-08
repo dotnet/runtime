@@ -434,7 +434,7 @@ namespace System.ComponentModel.Composition
                 Assert.Same(e, exception.Element);
             }
         }
-   
+
         private static ComposablePartException CreateComposablePartException()
         {
             return CreateComposablePartException(CompositionErrorId.Unknown, (string)null, (ICompositionElement)null, (Exception)null);

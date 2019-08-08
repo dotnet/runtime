@@ -16,4 +16,3 @@ internal partial class Interop
         internal static extern unsafe NTSTATUS BCryptGetProperty(SafeBCryptHandle hObject, string pszProperty, void* pbOutput, int cbOutput, out int pcbResult, int dwFlags);
     }
 }
-

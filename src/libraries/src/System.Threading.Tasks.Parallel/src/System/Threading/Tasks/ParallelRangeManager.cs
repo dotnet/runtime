@@ -23,7 +23,7 @@ namespace System.Threading.Tasks
         internal long _nFromInclusive;
         internal long _nToExclusive;
 
-        // The shared index, stored as the offset from nFromInclusive. Using an offset rather than the actual 
+        // The shared index, stored as the offset from nFromInclusive. Using an offset rather than the actual
         // value saves us from overflows that can happen due to multiple workers racing to increment this.
         // All updates to this field need to be interlocked.  To avoid split interlockeds across cache-lines
         // in 32-bit processes, in 32-bit processes when the range fits in a 32-bit value, we prefer to use
@@ -52,13 +52,13 @@ namespace System.Threading.Tasks
         // the step for this loop. Duplicated here for quick access (rather than jumping to rangemanager)
         internal long _nStep;
 
-        // increment value is the current amount that this worker will use 
+        // increment value is the current amount that this worker will use
         // to increment the shared index of the range it's working on
         internal long _nIncrementValue;
 
         // the increment value is doubled each time this worker finds work, and is capped at this value
         internal readonly long _nMaxIncrementValue;
-        
+
         // whether to use 32-bits or 64-bits of current index in each range
         internal readonly bool _use32BitCurrentIndex;
 
@@ -80,15 +80,15 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Implements the core work search algorithm that will be used for this range worker. 
-        /// </summary> 
-        /// 
+        /// Implements the core work search algorithm that will be used for this range worker.
+        /// </summary>
+        ///
         /// Usage pattern is:
         ///    1) the thread associated with this rangeworker calls FindNewWork
         ///    2) if we return true, the worker uses the nFromInclusiveLocal and nToExclusiveLocal values
         ///       to execute the sequential loop
-        ///    3) if we return false it means there is no more work left. It's time to quit.        
-        ///    
+        ///    3) if we return false it means there is no more work left. It's time to quit.
+        ///
         internal bool FindNewWork(out long nFromInclusiveLocal, out long nToExclusiveLocal)
         {
             // since we iterate over index ranges circularly, we will use the
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// 32 bit integer version of FindNewWork. Assumes the ranges were initialized with 32 bit values.
-        /// </summary> 
+        /// </summary>
         internal bool FindNewWork32(out int nFromInclusiveLocal32, out int nToExclusiveLocal32)
         {
             long nFromInclusiveLocal;
@@ -196,11 +196,11 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Represents the entire loop operation, keeping track of workers and ranges.
     /// </summary>
-    /// 
+    ///
     /// The usage pattern is:
     ///    1) The Parallel loop entry function (ForWorker) creates an instance of this class
-    ///    2) Every thread joining to service the parallel loop calls RegisterWorker to grab a 
-    ///       RangeWorker struct to wrap the state it will need to find and execute work, 
+    ///    2) Every thread joining to service the parallel loop calls RegisterWorker to grab a
+    ///       RangeWorker struct to wrap the state it will need to find and execute work,
     ///       and they keep interacting with that struct until the end of the loop
     internal class RangeManager
     {
@@ -229,7 +229,7 @@ namespace System.Threading.Tasks
             ulong uSpan = (ulong)(nToExclusive - nFromInclusive);
             ulong uRangeSize = uSpan / (ulong)nNumExpectedWorkers; // rough estimate first
 
-            uRangeSize -= uRangeSize % (ulong)nStep; // snap to multiples of nStep 
+            uRangeSize -= uRangeSize % (ulong)nStep; // snap to multiples of nStep
                                                      // otherwise index range transitions will derail us from nStep
 
             if (uRangeSize == 0)
@@ -251,7 +251,7 @@ namespace System.Threading.Tasks
 
 
             // Convert to signed so the rest of the logic works.
-            // Should be fine so long as uRangeSize < Int64.MaxValue, which we guaranteed by setting #workers >= 2. 
+            // Should be fine so long as uRangeSize < Int64.MaxValue, which we guaranteed by setting #workers >= 2.
             long nRangeSize = (long)uRangeSize;
             _use32BitCurrentIndex = IntPtr.Size == 4 && nRangeSize <= int.MaxValue;
 

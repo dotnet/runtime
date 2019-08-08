@@ -36,9 +36,9 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Gets the namespace definitions that are direct children of the current
-        /// namespace definition. 
-        /// 
-        /// System.Collections and System.Linq are direct children of System. 
+        /// namespace definition.
+        ///
+        /// System.Collections and System.Linq are direct children of System.
         /// System.Collections.Generic is a direct child of System.Collections.
         /// System.Collections.Generic is *not* a direct child of System.
         /// </summary>

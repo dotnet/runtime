@@ -190,7 +190,7 @@ namespace System.Linq.Tests
 
         [Fact]
         public void Where_Array_ReturnsExpectedValues_False()
-        {            
+        {
             int[] source = new[] { 1, 2, 3, 4, 5 };
             Func<int, bool> falsePredicate = (value) => false;
 
@@ -219,7 +219,7 @@ namespace System.Linq.Tests
             Func<int, bool> truePredicate = (value) => true;
 
             IEnumerable<int> result = source.Where(truePredicate);
-            
+
             Assert.Equal(source.Count, result.Count());
             for (int i = 0; i < source.Count; i++)
             {
@@ -375,7 +375,7 @@ namespace System.Linq.Tests
             bool wasSelectorCalled = false;
 
             IEnumerable<int> result = source.Where(value => { wasSelectorCalled = true; return true; });
-            
+
             Assert.Equal(0, result.Count());
             Assert.False(wasSelectorCalled);
         }
@@ -397,7 +397,7 @@ namespace System.Linq.Tests
 
             Assert.Equal(default(int), enumerator.Current);
         }
-        
+
         [Fact]
         public void Where_List_CurrentIsDefaultOfTAfterEnumeration()
         {
@@ -466,7 +466,7 @@ namespace System.Linq.Tests
             Func<int, bool> evenPredicate = (value) => value % 2 == 0;
 
             IEnumerable<int> result = source.Where(evenPredicate).Where(evenPredicate);
-            
+
             Assert.Equal(2, result.Count());
             Assert.Equal(2, result.ElementAt(0));
             Assert.Equal(4, result.ElementAt(1));
@@ -729,7 +729,7 @@ namespace System.Linq.Tests
         #endregion
 
         #region Exceptions
-        
+
         [Fact]
         public void Where_PredicateThrowsException()
         {
@@ -767,7 +767,7 @@ namespace System.Linq.Tests
 
             // Ensure the first MoveNext call throws an exception
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
-            
+
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2, enumerator.Current);
@@ -807,7 +807,7 @@ namespace System.Linq.Tests
             // Ensure Current is set to the default value of type T
             int currentValue = enumerator.Current;
             Assert.Equal(default(int), currentValue);
-            
+
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(1, enumerator.Current);

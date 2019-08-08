@@ -20,8 +20,8 @@ namespace Internal.Cryptography
 
         /// <summary>
         /// Return the managed representation of the recipients.
-        /// 
-        /// Desktop compat: Unlike the desktop, we compute this once and then latch it. Since both RecipientInfo and RecipientInfoCollection are immutable objects, this should be 
+        ///
+        /// Desktop compat: Unlike the desktop, we compute this once and then latch it. Since both RecipientInfo and RecipientInfoCollection are immutable objects, this should be
         /// a safe optimization to make.
         /// </summary>
         public RecipientInfoCollection RecipientInfos { get; }
@@ -42,4 +42,3 @@ namespace Internal.Cryptography
         public abstract void Dispose();
     }
 }
-

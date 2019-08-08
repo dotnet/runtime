@@ -36,4 +36,3 @@ namespace System.Xml.XPath
         public abstract object ValueAs(Type returnType, IXmlNamespaceResolver nsResolver);
     }
 }
-

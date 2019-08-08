@@ -20,7 +20,7 @@ namespace System.Linq.Parallel
     /// merging. Namely, for synchronous merges, the input data is yielded from the
     /// input data streams in "depth first" left-to-right order. For asynchronous merges,
     /// on the other hand, we use a biased choice algorithm to favor input channels in
-    /// a "fair" way. No order preservation is carried out by this helper. 
+    /// a "fair" way. No order preservation is carried out by this helper.
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     /// <typeparam name="TIgnoreKey"></typeparam>

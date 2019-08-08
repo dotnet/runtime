@@ -177,7 +177,7 @@ namespace System.IO.Tests
         public void WriteAsyncBufferedCompletesSynchronously()
         {
             using (FileStream fs = new FileStream(
-                GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, 
+                GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete,
                 TestBuffer.Length * 2, useAsync: true))
             {
                 FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[TestBuffer.Length], 0, TestBuffer.Length));
@@ -391,7 +391,7 @@ namespace System.IO.Tests
                 int totalBytesWritten = 0;
 
                 using (var stream = new FileStream(writeFileName, FileMode.Create, FileAccess.Write))
-                {                    
+                {
                     do
                     {
                         // 20%: random write size

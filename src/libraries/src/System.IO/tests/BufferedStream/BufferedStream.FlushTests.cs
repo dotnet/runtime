@@ -58,7 +58,7 @@ namespace System.IO.Tests
             var wrapper = new CallTrackingStream(underlying);
 
             var buffered = new BufferedStream(wrapper);
-            
+
             buffered.Flush();
             Assert.Equal(1, wrapper.TimesCalled(nameof(wrapper.Flush)));
 
@@ -66,7 +66,7 @@ namespace System.IO.Tests
             Assert.Equal(1, wrapper.TimesCalled(nameof(wrapper.FlushAsync)));
 
             buffered.WriteByte(0);
-            
+
             buffered.Flush();
             Assert.Equal(2, wrapper.TimesCalled(nameof(wrapper.Flush)));
 

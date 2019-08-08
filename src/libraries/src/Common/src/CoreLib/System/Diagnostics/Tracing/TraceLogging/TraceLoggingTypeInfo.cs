@@ -173,7 +173,7 @@ namespace System.Diagnostics.Tracing
             PropertyValue value);
 
         /// <summary>
-        /// Fetches the event parameter data for internal serialization. 
+        /// Fetches the event parameter data for internal serialization.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>

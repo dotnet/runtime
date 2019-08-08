@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(Asn1Tag.PrimitiveOctetString, "Specified");
             ensureUniqueTag(Asn1Tag.Sequence, "OtherSource");
         }
@@ -36,13 +36,13 @@ namespace System.Security.Cryptography.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (Specified.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteOctetString(Specified.Value.Span);
                 wroteValue = true;
             }
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 OtherSource.Value.Encode(writer);
                 wroteValue = true;
             }
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Asn1
         internal static Pbkdf2SaltChoice Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-            
+
             Decode(reader, out Pbkdf2SaltChoice decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Asn1
 
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            
+
             if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
             {
 

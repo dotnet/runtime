@@ -62,7 +62,7 @@ namespace System.Drawing.Imaging
         Format16bppGrayScale = 4 | (16 << 8) | (int)Extended,
         /// <summary>
         /// Specifies that pixel format is 16 bits per pixel. The color information specifies 65536 shades of gray.
-        /// </summary>                              
+        /// </summary>
         Format16bppRgb555 = 5 | (16 << 8) | (int)Gdi,
         /// <summary>
         /// Specifies that pixel format is 16 bits per pixel. The color information specifies 32768 shades of color of
@@ -118,4 +118,3 @@ namespace System.Drawing.Imaging
         Max = 15,
     }
 }
-

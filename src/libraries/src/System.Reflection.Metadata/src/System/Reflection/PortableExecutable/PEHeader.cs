@@ -42,7 +42,7 @@ namespace System.Reflection.PortableExecutable
         public int SizeOfUninitializedData { get; }
 
         /// <summary>
-        /// The address of the entry point relative to the image base when the PE file is loaded into memory. 
+        /// The address of the entry point relative to the image base when the PE file is loaded into memory.
         /// For program images, this is the starting address. For device drivers, this is the address of the initialization function.
         /// An entry point is optional for DLLs. When no entry point is present, this field must be zero.
         /// </summary>
@@ -63,21 +63,21 @@ namespace System.Reflection.PortableExecutable
         #region Windows Specific Fields
 
         /// <summary>
-        /// The preferred address of the first byte of image when loaded into memory; 
+        /// The preferred address of the first byte of image when loaded into memory;
         /// must be a multiple of 64K.
         /// </summary>
         public ulong ImageBase { get; }
 
         /// <summary>
-        /// The alignment (in bytes) of sections when they are loaded into memory. It must be greater than or equal to <see cref="FileAlignment"/>. 
+        /// The alignment (in bytes) of sections when they are loaded into memory. It must be greater than or equal to <see cref="FileAlignment"/>.
         /// The default is the page size for the architecture.
         /// </summary>
         public int SectionAlignment { get; }
 
         /// <summary>
-        /// The alignment factor (in bytes) that is used to align the raw data of sections in the image file. 
-        /// The value should be a power of 2 between 512 and 64K, inclusive. The default is 512. 
-        /// If the <see cref="SectionAlignment"/> is less than the architecture's page size, 
+        /// The alignment factor (in bytes) that is used to align the raw data of sections in the image file.
+        /// The value should be a power of 2 between 512 and 64K, inclusive. The default is 512.
+        /// If the <see cref="SectionAlignment"/> is less than the architecture's page size,
         /// then <see cref="FileAlignment"/> must match <see cref="SectionAlignment"/>.
         /// </summary>
         public int FileAlignment { get; }
@@ -113,7 +113,7 @@ namespace System.Reflection.PortableExecutable
         public ushort MinorSubsystemVersion { get; }
 
         /// <summary>
-        /// The size (in bytes) of the image, including all headers, as the image is loaded in memory. 
+        /// The size (in bytes) of the image, including all headers, as the image is loaded in memory.
         /// It must be a multiple of <see cref="SectionAlignment"/>.
         /// </summary>
         public int SizeOfImage { get; }
@@ -124,19 +124,19 @@ namespace System.Reflection.PortableExecutable
         public int SizeOfHeaders { get; }
 
         /// <summary>
-        /// The image file checksum. 
+        /// The image file checksum.
         /// </summary>
         public uint CheckSum { get; }
 
         /// <summary>
-        /// The subsystem that is required to run this image. 
+        /// The subsystem that is required to run this image.
         /// </summary>
         public Subsystem Subsystem { get; }
 
         public DllCharacteristics DllCharacteristics { get; }
 
         /// <summary>
-        /// The size of the stack to reserve. Only <see cref="SizeOfStackCommit"/> is committed; 
+        /// The size of the stack to reserve. Only <see cref="SizeOfStackCommit"/> is committed;
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
         public ulong SizeOfStackReserve { get; }
@@ -147,7 +147,7 @@ namespace System.Reflection.PortableExecutable
         public ulong SizeOfStackCommit { get; }
 
         /// <summary>
-        /// The size of the local heap space to reserve. Only <see cref="SizeOfHeapCommit"/> is committed; 
+        /// The size of the local heap space to reserve. Only <see cref="SizeOfHeapCommit"/> is committed;
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
         public ulong SizeOfHeapReserve { get; }
@@ -164,7 +164,7 @@ namespace System.Reflection.PortableExecutable
 
         #endregion
 
-        #region Directory Entries 
+        #region Directory Entries
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_EXPORT.
@@ -187,12 +187,12 @@ namespace System.Reflection.PortableExecutable
         public DirectoryEntry ExceptionTableDirectory { get; }
 
         /// <summary>
-        /// The Certificate Table entry points to a table of attribute certificates. 
+        /// The Certificate Table entry points to a table of attribute certificates.
         /// </summary>
         /// <remarks>
         /// These certificates are not loaded into memory as part of the image.
         /// As such, the first field of this entry, which is normally an RVA, is a file pointer instead.
-        /// 
+        ///
         /// Aka IMAGE_DIRECTORY_ENTRY_SECURITY.
         /// </remarks>
         public DirectoryEntry CertificateTableDirectory { get; }
@@ -258,7 +258,7 @@ namespace System.Reflection.PortableExecutable
             sizeof(int) +                                // SizeOfUninitializedData
             sizeof(int) +                                // AddressOfEntryPoint
             sizeof(int) +                                // BaseOfCode
-            sizeof(long) +                               // PE32:  BaseOfData (int), ImageBase (int) 
+            sizeof(long) +                               // PE32:  BaseOfData (int), ImageBase (int)
                                                          // PE32+: ImageBase (long)
             sizeof(int) +                                // SectionAlignment
             sizeof(int) +                                // FileAlignment

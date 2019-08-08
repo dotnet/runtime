@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,7 +11,7 @@ namespace System.IO.Tests
 {
     public class Directory_CreateDirectory : FileSystemTest
     {
-        public static TheoryData ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData(); 
+        public static TheoryData ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
         #region Utilities
 
         public virtual DirectoryInfo Create(string path)
@@ -106,7 +106,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(dirName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer        
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         public void RootPath()
         {
             string dirName = Path.GetPathRoot(Directory.GetCurrentDirectory());
@@ -404,7 +404,7 @@ namespace System.IO.Tests
         {
             if (PlatformDetection.IsInAppContainer)
             {
-                AssertExtensions.ThrowsAny<DirectoryNotFoundException, IOException, UnauthorizedAccessException>(() => Create(Path.Combine(TestDirectory, path))); 
+                AssertExtensions.ThrowsAny<DirectoryNotFoundException, IOException, UnauthorizedAccessException>(() => Create(Path.Combine(TestDirectory, path)));
             }
             else
             {
@@ -488,7 +488,7 @@ namespace System.IO.Tests
             try
             {
                 // If this test is inherited then it's possible this call will fail due to the "C:" directory
-                // being deleted in that other test before this call. What we care about testing (proper path 
+                // being deleted in that other test before this call. What we care about testing (proper path
                 // handling) is unaffected by this race condition.
                 Directory.Delete("C:");
             }
@@ -572,4 +572,3 @@ namespace System.IO.Tests
         #endregion
     }
 }
-

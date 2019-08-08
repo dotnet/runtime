@@ -21,7 +21,7 @@ namespace System.Net.Sockets
             socket.ConnectAsync(address, port);
         public static Task ConnectAsync(this Socket socket, IPAddress[] addresses, int port) =>
             socket.ConnectAsync(addresses, port);
-        public static Task ConnectAsync(this Socket socket, string host, int port) => 
+        public static Task ConnectAsync(this Socket socket, string host, int port) =>
             socket.ConnectAsync(host, port);
 
         public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>

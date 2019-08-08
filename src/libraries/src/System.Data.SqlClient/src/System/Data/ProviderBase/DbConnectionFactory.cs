@@ -20,7 +20,7 @@ namespace System.Data.ProviderBase
             DbConnectionPool connectionPool;
             connection = null;
 
-            //  Work around race condition with clearing the pool between GetConnectionPool obtaining pool 
+            //  Work around race condition with clearing the pool between GetConnectionPool obtaining pool
             //  and GetConnection on the pool checking the pool state.  Clearing the pool in this window
             //  will switch the pool into the ShuttingDown state, and GetConnection will return null.
             //  There is probably a better solution involving locking the pool/group, but that entails a major

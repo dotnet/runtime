@@ -23,7 +23,7 @@ namespace System.Composition.Hosting.Core
         private readonly object _site;
         private readonly CompositionContract _contract;
 
-        // Carrying some information to later use in error messages - 
+        // Carrying some information to later use in error messages -
         // it may be better to just store the message.
         private readonly ExportDescriptorPromise[] _oversuppliedTargets;
 

@@ -42,8 +42,8 @@ namespace Test.Cryptography
         protected X509KeyStorageFlags KeyStorageFlags = s_defaultKeyStorageFlags;
 
         /// <summary>
-        /// Returns a freshly allocated X509Certificate2 instance that has a public key only. 
-        /// 
+        /// Returns a freshly allocated X509Certificate2 instance that has a public key only.
+        ///
         /// This method never returns null.
         /// </summary>
         public X509Certificate2 GetCertificate()
@@ -54,12 +54,12 @@ namespace Test.Cryptography
         /// <summary>
         /// Attempts to return a freshly allocated X509Certificate2 instance that has a public and private key. Only use this method if your test
         /// needs the private key to work. Otherwise, use GetCertificate() which places far fewer conditions on you.
-        /// 
+        ///
         /// The test must check the return value for null. If it is null, exit the test without reporting a failure. A null means
         /// the test host chose to disable loading private keys.
-        /// 
-        /// If this method does return a certificate, the test must Dispose() it manually and as soon it no longer needs the certificate. 
-        /// Due to the way PFX loading works on Windows, failure to dispose may leave an artifact on the test machine's disk. 
+        ///
+        /// If this method does return a certificate, the test must Dispose() it manually and as soon it no longer needs the certificate.
+        /// Due to the way PFX loading works on Windows, failure to dispose may leave an artifact on the test machine's disk.
         /// </summary>
         public X509Certificate2 TryGetCertificateWithPrivateKey(bool exportable=false)
         {
@@ -151,7 +151,7 @@ namespace Test.Cryptography
                         {
                             matches.Add(candidate);
                         }
-                    } 
+                    }
                     return matches;
                 }
             }
@@ -205,15 +205,14 @@ namespace Test.Cryptography
 
         // Load certs from PFX data. This is convenient as it requires no preparatory steps. The downside is that every time you open a CNG .PFX,
         // a temporarily key is permanently leaked to your disk. (And every time you open a CAPI PFX, a key is leaked if the test aborts before
-        // Disposing the certificate.) 
+        // Disposing the certificate.)
         //
         // Only use if you're testing on a VM or if you just don't care about your machine accumulating leaked keys.
         LoadFromPfx = 2,
 
         // Load certs from the certificate store (set StoreName to the name you want to use.) This requires that you preinstall the certificates
         // into the cert store (say by File.WriteAllByte()'ing the PFX blob into a "foo.pfx" file, then launching it and following the wizard.)
-        // but then you don't need to worry about key leaks. 
+        // but then you don't need to worry about key leaks.
         LoadFromStore = 3,
     }
 }
-

@@ -13,7 +13,7 @@ namespace System.Net.Http.Functional.Tests
         public RepeatedFlushContent(string content) : base(content)
         {
         }
-        
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             stream.Flush();

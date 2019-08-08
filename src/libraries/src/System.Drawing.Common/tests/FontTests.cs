@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
@@ -106,7 +106,7 @@ namespace System.Drawing.Tests
             yield return new object[] { FontFamily.GenericSerif, 16, (FontStyle)int.MinValue };
             yield return new object[] { FontFamily.GenericSerif, 16, (FontStyle)int.MaxValue };
         }
-        
+
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Family_Size_Style_TestData))]
         public void Ctor_Family_Size_Style(FontFamily fontFamily, float emSize, FontStyle style)

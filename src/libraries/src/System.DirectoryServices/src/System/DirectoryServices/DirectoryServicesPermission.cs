@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Security.Permissions;
- 
+
 namespace System.DirectoryServices
 {
     public sealed class DirectoryServicesPermission : ResourcePermissionBase

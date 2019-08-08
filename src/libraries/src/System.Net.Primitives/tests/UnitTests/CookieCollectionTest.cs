@@ -28,7 +28,7 @@ namespace System.Net.Primitives.Unit.Tests
             cc.Add(c5);
 
             return cc;
-        } 
+        }
 
         private static CookieCollection CreateCookieCollection2()
         {
@@ -64,6 +64,6 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => cc[cc.Count]); // Index >= Count
 
             Assert.Null(cc["no such name"]);
-        }        
+        }
     }
 }

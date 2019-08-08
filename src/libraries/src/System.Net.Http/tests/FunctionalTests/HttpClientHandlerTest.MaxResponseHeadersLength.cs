@@ -175,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
             buffer.Append(new string('c', responseHeadersSizeInBytes - (buffer.Length + 4)));
             buffer.Append("\r\n\r\n");
 
-            string response = buffer.ToString();            
+            string response = buffer.ToString();
             Assert.Equal(responseHeadersSizeInBytes, response.Length);
             return response;
         }

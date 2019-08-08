@@ -199,7 +199,7 @@ namespace System.Reflection.Tests
         //
         // Once these conditions are satisfied, it is no longer necessary to resort to Reflection to invoke the fast-path AttributeType code.
         // Invoking CustomAttributeData.AttributeType the normal way will do the trick.
-        // 
+        //
         [Fact]
         public static void TestVirtualAttributeTypeProperty()
         {

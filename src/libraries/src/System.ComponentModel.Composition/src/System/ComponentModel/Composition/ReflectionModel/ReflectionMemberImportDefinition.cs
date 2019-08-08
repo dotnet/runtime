@@ -14,15 +14,15 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionMemberImportDefinition(
             LazyMemberInfo importingLazyMember,
-            string contractName, 
+            string contractName,
             string requiredTypeIdentity,
             IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
-            ImportCardinality cardinality, 
-            bool isRecomposable, 
+            ImportCardinality cardinality,
+            bool isRecomposable,
             bool isPrerequisite,
             CreationPolicy requiredCreationPolicy,
             IDictionary<string, object> metadata,
-            ICompositionElement origin) 
+            ICompositionElement origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, metadata, origin)
         {
             if (contractName == null)
@@ -41,7 +41,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public LazyMemberInfo ImportingLazyMember
         {
-            get { return _importingLazyMember; } 
+            get { return _importingLazyMember; }
         }
 
         protected override string GetDisplayName()

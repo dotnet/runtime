@@ -20,7 +20,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         [InlineData(typeof(TypeConverter))]
         public void CanConvertTo_NegativeTests(Type destinationType)
         {
-            Assert.False(converter.CanConvertTo(null, destinationType));         
+            Assert.False(converter.CanConvertTo(null, destinationType));
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         public void ConvertTo_PositiveTests()
         {
             ExtendedProtectionPolicy policy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-            
+
             InstanceDescriptor instanceDescriptor = converter.ConvertTo(null, CultureInfo.InvariantCulture, policy, typeof(InstanceDescriptor)) as InstanceDescriptor;
             ExtendedProtectionPolicy instanceResult = instanceDescriptor.Invoke() as ExtendedProtectionPolicy;
             Assert.NotNull(instanceDescriptor);
@@ -49,9 +49,9 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
             Assert.Equal(policy.ProtectionScenario, instanceResult.ProtectionScenario);
             Assert.Null(instanceResult.CustomServiceNames);
 
-            Assert.Equal(string.Empty, 
+            Assert.Equal(string.Empty,
                 converter.ConvertTo(null, CultureInfo.InvariantCulture, null, typeof(string)) as string);
-            Assert.Equal(policy.ToString(), 
+            Assert.Equal(policy.ToString(),
                 converter.ConvertTo(null, CultureInfo.InvariantCulture, policy, typeof(string)) as string);
         }
 

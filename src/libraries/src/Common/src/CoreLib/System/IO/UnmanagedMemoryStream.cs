@@ -11,27 +11,27 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /*
-     * This class is used to access a contiguous block of memory, likely outside 
-     * the GC heap (or pinned in place in the GC heap, but a MemoryStream may 
+     * This class is used to access a contiguous block of memory, likely outside
+     * the GC heap (or pinned in place in the GC heap, but a MemoryStream may
      * make more sense in those cases).  It's great if you have a pointer and
      * a length for a section of memory mapped in by someone else and you don't
-     * want to copy this into the GC heap.  UnmanagedMemoryStream assumes these 
+     * want to copy this into the GC heap.  UnmanagedMemoryStream assumes these
      * two things:
      *
      * 1) All the memory in the specified block is readable or writable,
      *    depending on the values you pass to the constructor.
      * 2) The lifetime of the block of memory is at least as long as the lifetime
      *    of the UnmanagedMemoryStream.
-     * 3) You clean up the memory when appropriate.  The UnmanagedMemoryStream 
+     * 3) You clean up the memory when appropriate.  The UnmanagedMemoryStream
      *    currently will do NOTHING to free this memory.
      * 4) All calls to Write and WriteByte may not be threadsafe currently.
      *
-     * It may become necessary to add in some sort of 
-     * DeallocationMode enum, specifying whether we unmap a section of memory, 
-     * call free, run a user-provided delegate to free the memory, etc.  
+     * It may become necessary to add in some sort of
+     * DeallocationMode enum, specifying whether we unmap a section of memory,
+     * call free, run a user-provided delegate to free the memory, etc.
      * We'll suggest user write a subclass of UnmanagedMemoryStream that uses
      * a SafeHandle subclass to hold onto the memory.
-     * 
+     *
      */
 
     /// <summary>
@@ -47,7 +47,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync 
+        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Creates a closed stream.
@@ -225,7 +225,7 @@ namespace System.IO
             _isOpen = false;
             unsafe { _mem = null; }
 
-            // Stream allocates WaitHandles for async calls. So for correctness 
+            // Stream allocates WaitHandles for async calls. So for correctness
             // call base.Dispose(disposing) for better perf, avoiding waiting
             // for the finalizers to run on those types.
             base.Dispose(disposing);
@@ -322,7 +322,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Pointer to memory at the current Position in the stream. 
+        /// Pointer to memory at the current Position in the stream.
         /// </summary>
         [CLSCompliant(false)]
         public unsafe byte* PositionPointer
@@ -399,7 +399,7 @@ namespace System.IO
             EnsureNotClosed();
             EnsureReadable();
 
-            // Use a local variable to avoid a race where another thread 
+            // Use a local variable to avoid a race where another thread
             // changes our position after we decide we can read some bytes.
             long pos = Interlocked.Read(ref _position);
             long len = Interlocked.Read(ref _length);
@@ -453,7 +453,7 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">Buffer to read the bytes to.</param>
         /// <param name="offset">Starting index in the buffer.</param>
-        /// <param name="count">Maximum number of bytes to read.</param>       
+        /// <param name="count">Maximum number of bytes to read.</param>
         /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
         /// <returns>Task that can be used to access the number of bytes actually read.</returns>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -695,7 +695,7 @@ namespace System.IO
 
             if (_buffer == null)
             {
-                // Check to see whether we are now expanding the stream and must 
+                // Check to see whether we are now expanding the stream and must
                 // zero any memory in the middle.
                 if (pos > len)
                 {
@@ -831,7 +831,7 @@ namespace System.IO
                 if (n > _capacity)
                     throw new NotSupportedException(SR.IO_FixedCapacity);
 
-                // Check to see whether we are now expanding the stream and must 
+                // Check to see whether we are now expanding the stream and must
                 // zero any memory in the middle.
                 // don't do if created from SafeBuffer
                 if (_buffer == null)

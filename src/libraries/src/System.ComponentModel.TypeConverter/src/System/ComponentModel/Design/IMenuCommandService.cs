@@ -11,7 +11,7 @@ namespace System.ComponentModel.Design
     public interface IMenuCommandService
     {
         /// <summary>
-        /// Gets or sets an array of type <see cref='System.ComponentModel.Design.DesignerVerb'/> 
+        /// Gets or sets an array of type <see cref='System.ComponentModel.Design.DesignerVerb'/>
         /// that indicates the verbs that are currently available.
         /// </summary>
         DesignerVerbCollection Verbs { get; }
@@ -53,4 +53,3 @@ namespace System.ComponentModel.Design
         void ShowContextMenu(CommandID menuID, int x, int y);
     }
 }
-

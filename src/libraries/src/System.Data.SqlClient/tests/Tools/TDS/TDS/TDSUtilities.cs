@@ -432,7 +432,7 @@ namespace Microsoft.SqlServer.TDS
         /// Serialized write line to destination
         /// </summary>
         /// <param name="log">Destination</param>
-        /// <param name="text">Text to log</param>        
+        /// <param name="text">Text to log</param>
         public static void SerializedWriteLineToLog(TextWriter log, string text)
         {
             lock (s_logWriterLock)

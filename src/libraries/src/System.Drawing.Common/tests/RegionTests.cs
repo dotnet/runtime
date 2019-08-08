@@ -1,6 +1,6 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // Copyright (C) 2004-2008 Novell, Inc (http://www.novell.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -367,7 +367,7 @@ namespace System.Drawing.Tests
         public void Complement_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
             using (region)
-            { 
+            {
                 foreach (RectangleF rect in rectangles)
                 {
                     using (var other = new Region(rect))
@@ -643,7 +643,7 @@ namespace System.Drawing.Tests
         {
             using (region)
             using (other)
-            { 
+            {
                     Assert.Equal(expected, region.Equals(other, s_graphic));
             }
         }
@@ -2033,7 +2033,7 @@ namespace System.Drawing.Tests
                 matrix.Translate(10, 11);
                 matrix.Scale(scaleX, scaleY);
                 matrix.Rotate(angle);
-                
+
                 region.Transform(matrix);
                 Assert.True(region.IsInfinite(s_graphic));
                 Assert.Equal(new RectangleF[] { new RectangleF(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(emptyMatrix));

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -225,7 +225,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Add(left, right, result);
 
             return result;
@@ -243,7 +243,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Add(tensor, scalar, result);
 
             return result;
@@ -261,7 +261,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.And(left, right, result);
 
             return result;
@@ -279,7 +279,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.And(tensor, scalar, result);
 
             return result;
@@ -297,7 +297,7 @@ namespace System.Numerics.Tensors
             var resultDimensions = ValidateContractArgs(left, right, leftAxes, rightAxes);
 
             var result = left.CloneEmpty(resultDimensions);
-            
+
             TensorArithmetic<T>.Instance.Contract(left, right, leftAxes, rightAxes, result);
 
             return result;
@@ -315,7 +315,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.Clone();
-            
+
             TensorArithmetic<T>.Instance.Decrement(tensor, result);
 
             return result;
@@ -333,7 +333,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Divide(left, right, result);
 
             return result;
@@ -351,7 +351,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Divide(tensor, scalar, result);
 
             return result;
@@ -369,7 +369,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.Equals(left, right, result);
 
             return result;
@@ -387,7 +387,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.GreaterThan(left, right, result);
 
             return result;
@@ -405,7 +405,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.GreaterThanOrEqual(left, right, result);
 
             return result;
@@ -423,7 +423,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.Clone();
-            
+
             TensorArithmetic<T>.Instance.Increment(tensor, result);
 
             return result;
@@ -441,7 +441,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.LeftShift(tensor, value, result);
 
             return result;
@@ -459,7 +459,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.LessThan(left, right, result);
 
             return result;
@@ -477,7 +477,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.LessThanOrEqual(left, right, result);
 
             return result;
@@ -495,7 +495,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Modulo(left, right, result);
 
             return result;
@@ -513,7 +513,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Modulo(tensor, scalar, result);
 
             return result;
@@ -531,7 +531,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Multiply(left, right, result);
 
             return result;
@@ -549,7 +549,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Multiply(tensor, scalar, result);
 
             return result;
@@ -567,7 +567,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty<bool>();
-            
+
             TensorArithmetic<T>.Instance.NotEquals(left, right, result);
 
             return result;
@@ -585,7 +585,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Or(left, right, result);
 
             return result;
@@ -603,7 +603,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Or(tensor, scalar, result);
 
             return result;
@@ -621,7 +621,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.RightShift(tensor, value, result);
 
             return result;
@@ -639,7 +639,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Subtract(left, right, result);
 
             return result;
@@ -657,7 +657,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Subtract(tensor, scalar, result);
 
             return result;
@@ -675,7 +675,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.UnaryMinus(tensor, result);
 
             return result;
@@ -693,7 +693,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.UnaryPlus(tensor, result);
 
             return result;
@@ -711,7 +711,7 @@ namespace System.Numerics.Tensors
             ValidateBinaryArgs(left, right);
 
             var result = left.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Xor(left, right, result);
 
             return result;
@@ -729,7 +729,7 @@ namespace System.Numerics.Tensors
             ValidateArgs(tensor);
 
             var result = tensor.CloneEmpty();
-            
+
             TensorArithmetic<T>.Instance.Xor(tensor, scalar, result);
 
             return result;

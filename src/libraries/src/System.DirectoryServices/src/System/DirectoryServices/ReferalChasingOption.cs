@@ -10,13 +10,13 @@ namespace System.DirectoryServices
     public enum ReferralChasingOption
     {
         /// <devdoc>
-        /// Never chase the referred-to server. Setting this option 
+        /// Never chase the referred-to server. Setting this option
         /// prevents a client from contacting other servers in a referral process.
         /// </devdoc>
         None = 0,
 
         /// <devdoc>
-        /// Chase only subordinate referrals which are a subordinate naming context in a 
+        /// Chase only subordinate referrals which are a subordinate naming context in a
         /// directory tree. The ADSI LDAP provider always turns off this flag for paged
         /// searches.
         /// </devdoc>

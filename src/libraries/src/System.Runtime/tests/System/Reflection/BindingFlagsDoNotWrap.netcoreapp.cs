@@ -164,7 +164,7 @@ namespace System.Reflection.Tests
             public static bool ThrowInConstructor;
         }
 
-        private sealed class MyException1 : Exception { } 
+        private sealed class MyException1 : Exception { }
         private sealed class MyException2 : Exception { }
         private sealed class MyException3 : Exception { }
         private sealed class MyException4 : Exception { }

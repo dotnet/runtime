@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal bool _isRegistered; // Used when registering nested classes
         internal object[] _memberData; // member data is collected here before populating
         internal SerializationInfo _si;
-        
+
         internal int _consecutiveNullArrayEntryCount;
 
         internal ParseRecord() { }
@@ -406,7 +406,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case ValueFixupEnum.Array:
                     _arrayObj.SetValue(obj, _indexMap);
                     break;
-                case ValueFixupEnum.Header:  
+                case ValueFixupEnum.Header:
                     throw new PlatformNotSupportedException();
                 case ValueFixupEnum.Member:
                     if (_objectInfo._isSi)

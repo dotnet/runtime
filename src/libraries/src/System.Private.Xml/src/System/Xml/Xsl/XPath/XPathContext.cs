@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #if DontUse
-// XPathContext is not used any more but comments in it and Replacer visitor may be used to 
+// XPathContext is not used any more but comments in it and Replacer visitor may be used to
 // optimize code XSLT generates on last().
 using System;
 using System.Diagnostics;

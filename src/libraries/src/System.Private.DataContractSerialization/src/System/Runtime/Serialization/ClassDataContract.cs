@@ -744,11 +744,11 @@ namespace System.Runtime.Serialization
                     // while a pre-generated DataContract is incomplete.
                     //
                     // At this point in code, we're in the midlle of creating a new DataContract at runtime, so we need to make
-                    // sure that we create our own base type DataContract when the base type could potentially have SG generated 
-                    // DataContract. 
+                    // sure that we create our own base type DataContract when the base type could potentially have SG generated
+                    // DataContract.
                     //
                     // We wanted to enable the fix for the issue described above only when SG generated DataContracts are available.
-                    // Currently we don't have a good way of detecting usage of SG (either globally or per data contract). 
+                    // Currently we don't have a good way of detecting usage of SG (either globally or per data contract).
 
                     DataContract baseContract = DataContract.GetDataContract(baseType);
                     if (baseContract is CollectionDataContract)

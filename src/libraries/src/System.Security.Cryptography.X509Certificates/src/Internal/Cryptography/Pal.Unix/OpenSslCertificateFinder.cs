@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal
 
             return publicKeyInfoBytes;
         }
-        
+
         protected override X509Certificate2 CloneCertificate(X509Certificate2 cert)
         {
             OpenSslX509CertificateReader certPal = (OpenSslX509CertificateReader)cert.Pal;

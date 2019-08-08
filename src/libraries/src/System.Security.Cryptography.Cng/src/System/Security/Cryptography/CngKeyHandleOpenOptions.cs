@@ -21,4 +21,3 @@ namespace System.Security.Cryptography
         EphemeralKey = 1,
     }
 }
-

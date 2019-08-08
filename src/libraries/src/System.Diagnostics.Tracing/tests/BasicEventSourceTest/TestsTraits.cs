@@ -35,7 +35,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Start");
             using (var mySource = new ContractEventSourceWithTraits())
             {
-                // By default we are self-describing.  
+                // By default we are self-describing.
                 Assert.Equal(EventSourceSettings.EtwSelfDescribingEventFormat, mySource.Settings);
                 Assert.Equal("MyTraitValue", mySource.GetTrait("MyTrait"));
                 Assert.Equal("{4f50731a-89cf-4782-b3e0-dce8c90476ba}", mySource.GetTrait("ETW_GROUP"));
@@ -53,7 +53,7 @@ namespace BasicEventSourceTests
                 "MyTrait", "MyTraitValue",
                 "ETW_GROUP", "{4f50731a-89cf-4782-b3e0-dce8c90476ba}"))
             {
-                // By default we are self-describing.  
+                // By default we are self-describing.
                 Assert.Equal(EventSourceSettings.EtwSelfDescribingEventFormat, mySource.Settings);
                 Assert.Equal("MyTraitValue", mySource.GetTrait("MyTrait"));
                 Assert.Equal("{4f50731a-89cf-4782-b3e0-dce8c90476ba}", mySource.GetTrait("ETW_GROUP"));

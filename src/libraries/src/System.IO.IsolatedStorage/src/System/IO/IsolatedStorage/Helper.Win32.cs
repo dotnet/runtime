@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -23,7 +23,7 @@ namespace System.IO.IsolatedStorage
                 //  World / Everyone (S-1-1-0 / SECURITY_WORLD_RID) -> (FILE_GENERIC_WRITE | FILE_GENERIC_READ) & (~WRITE_DAC)
                 //  Creator Owner (S-1-3-0 / SECURITY_CREATOR_OWNER_RID) -> FILE_ALL_ACCESS
                 //  Local Admins (S-1-5-32 / SECURITY_BUILTIN_DOMAIN_RID & DOMAIN_ALIAS_RID_ADMINS) -> FILE_ALL_ACCESS
-                // 
+                //
                 // When looking at rights through the GUI it looks like this:
                 //
                 //  "Everyone" -> Read, Write

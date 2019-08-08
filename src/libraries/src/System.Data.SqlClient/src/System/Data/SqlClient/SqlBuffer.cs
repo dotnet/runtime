@@ -678,7 +678,7 @@ namespace System.Data.SqlClient
             {
                 if (StorageType.Guid == _type)
                 {
-                    return new SqlGuid(_value._guid); 
+                    return new SqlGuid(_value._guid);
                 }
                 else if (StorageType.SqlGuid == _type)
                 {
@@ -841,7 +841,7 @@ namespace System.Data.SqlClient
                         }
                         Debug.Assert(null != _object);
                         return (SqlXml)_object;
-                        
+
                     case StorageType.Date:
                     case StorageType.DateTime2:
                         if (_isNull)
@@ -972,7 +972,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            return null; // need to return the value as an object of some CLS type            
+            return null; // need to return the value as an object of some CLS type
         }
 
         internal static SqlBuffer[] CreateBufferArray(int length)
@@ -1133,16 +1133,16 @@ namespace System.Data.SqlClient
 
         // [Field]As<T> method explanation:
         // these methods are used to bridge generic to non-generic access to value type fields on the storage struct
-        // where typeof(T) == typeof(field) 
-        //   1) RyuJIT will recognise the pattern of (T)(object)T as being redundant and eliminate 
-        //   the T and object casts leaving T, so while this looks like it will put every value type instance in a box the 
+        // where typeof(T) == typeof(field)
+        //   1) RyuJIT will recognise the pattern of (T)(object)T as being redundant and eliminate
+        //   the T and object casts leaving T, so while this looks like it will put every value type instance in a box the
         //   enerated assembly will be short and direct
         //   2) another jit may not recognise the pattern and should emit the code as seen. this will box and then unbox the
         //   value type which is no worse than the mechanism that this code replaces
         // where typeof(T) != typeof(field)
         //   the jit will emit all the cast operations as written. this will put the value into a box and then attempt to
-        //   cast it, because it is an object even no conversions are use and this will generate the desired InvalidCastException 
-        //   so users cannot widen a short to an int preserving external expectations 
+        //   cast it, because it is an object even no conversions are use and this will generate the desired InvalidCastException
+        //   so users cannot widen a short to an int preserving external expectations
 
         internal T ByteAs<T>()
         {

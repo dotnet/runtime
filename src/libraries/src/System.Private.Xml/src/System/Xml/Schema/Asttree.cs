@@ -113,7 +113,7 @@ namespace System.Xml.Schema
             {
                 return false;
             }
-            // matched ...  
+            // matched ...
             if (this.curNode == parent.TopNode)
             {
                 this.isMatch = true;
@@ -123,7 +123,7 @@ namespace System.Xml.Schema
             DoubleLinkAxis nowNode = (DoubleLinkAxis)(this.curNode.Next);
             if (Asttree.IsAttribute(nowNode))
             {
-                this.isMatch = true;                    // for attribute 
+                this.isMatch = true;                    // for attribute
                 return false;
             }
             this.curNode = nowNode;
@@ -373,7 +373,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        // Secondly field interface 
+        // Secondly field interface
         public bool MoveToAttribute(string localname, string URN)
         {
             if (!_isActive)
@@ -384,7 +384,7 @@ namespace System.Xml.Schema
             for (int i = 0; i < _axisStack.Count; ++i)
             {
                 if (((AxisStack)_axisStack[i]).MoveToAttribute(localname, URN, _currentDepth + 1))
-                {  // don't change depth for attribute, but depth is add 1 
+                {  // don't change depth for attribute, but depth is add 1
                     result = true;
                 }
             }
@@ -675,7 +675,7 @@ namespace System.Xml.Schema
 
         // depending on axis.Name & axis.Prefix, i will set the axis.URN;
         // also, record urn from prefix during this
-        // 4 different types of element or attribute (with @ before it) combinations: 
+        // 4 different types of element or attribute (with @ before it) combinations:
         // (1) a:b (2) b (3) * (4) a:*
         // i will check xpath to be strictly conformed from these forms
         // for (1) & (4) i will have URN set properly

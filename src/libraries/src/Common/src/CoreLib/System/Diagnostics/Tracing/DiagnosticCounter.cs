@@ -19,14 +19,14 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     /// <summary>
-    /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes, 
+    /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes,
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
     public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>
         /// All Counters live as long as the EventSource that they are attached to unless they are
-        /// explicitly Disposed.   
+        /// explicitly Disposed.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tracing
         /// Removes the counter from set that the EventSource will report on.  After being disposed, this
         /// counter will do nothing and its resource will be reclaimed if all references to it are removed.
         /// If an EventCounter is not explicitly disposed it will be cleaned up automatically when the
-        /// EventSource it is attached to dies.  
+        /// EventSource it is attached to dies.
         /// </summary>
         public void Dispose()
         {

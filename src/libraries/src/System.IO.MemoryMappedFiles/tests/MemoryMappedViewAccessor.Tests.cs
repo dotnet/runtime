@@ -430,7 +430,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// Test to verify that we can dispose of an accessor multiple times.
         /// </summary>

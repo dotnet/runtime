@@ -13,7 +13,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 2, 5, 9, 1 };
             int[] expected = { 2, 5, 9 };
-            
+
             Assert.Equal(expected, source.AsQueryable().Take(3));
         }
 

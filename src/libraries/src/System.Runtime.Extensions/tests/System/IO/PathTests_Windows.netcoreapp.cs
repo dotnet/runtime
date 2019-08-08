@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -179,7 +179,7 @@ namespace System.IO.Tests
         public void GetFullPath_CommonDevice_Windows(string path, string basePath, string expected)
         {
             Assert.Equal(@"\\.\" + expected, Path.GetFullPath(path, @"\\.\" + basePath));
-            Assert.Equal(@"\\?\" + expected, Path.GetFullPath(path, @"\\?\" + basePath));            
+            Assert.Equal(@"\\?\" + expected, Path.GetFullPath(path, @"\\?\" + basePath));
         }
 
         public static TheoryData<string, string, string> GetFullPath_CommonRootedWindowsData => new TheoryData<string, string, string>

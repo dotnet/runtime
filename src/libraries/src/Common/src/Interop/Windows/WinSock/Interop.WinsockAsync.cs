@@ -48,14 +48,14 @@ internal static partial class Interop
         // Structure equivalent to TRANSMIT_PACKETS_ELEMENT
         //
         // typedef struct _TRANSMIT_PACKETS_ELEMENT {
-        //     ULONG dwElFlags;  
-        //     ULONG cLength;  
-        //     union {    
-        //         struct {      
-        //             LARGE_INTEGER nFileOffset;      
+        //     ULONG dwElFlags;
+        //     ULONG cLength;
+        //     union {
+        //         struct {
+        //             LARGE_INTEGER nFileOffset;
         //             HANDLE hFile;
-        //         };    
-        //         PVOID pBuffer;  
+        //         };
+        //         PVOID pBuffer;
         //     }
         //  };
         // } TRANSMIT_PACKETS_ELEMENT;

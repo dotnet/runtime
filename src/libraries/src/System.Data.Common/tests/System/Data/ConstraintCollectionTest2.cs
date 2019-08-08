@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -162,7 +162,7 @@ namespace System.Data.Tests
             dt.Constraints.Add(con);
             Assert.Equal(1, dt.Constraints.IndexOf(con));
 
-            //Remove it and try to look for it 
+            //Remove it and try to look for it
 
             dt.Constraints.Remove(con);
             Assert.Equal(-1, dt.Constraints.IndexOf(con));
@@ -182,7 +182,7 @@ namespace System.Data.Tests
             dt.Constraints.Add(con);
             Assert.Equal(1, dt.Constraints.IndexOf("name2"));
 
-            //Remove it and try to look for it 
+            //Remove it and try to look for it
 
             dt.Constraints.Remove(con);
             Assert.Equal(-1, dt.Constraints.IndexOf("name2"));
@@ -229,7 +229,7 @@ namespace System.Data.Tests
 
             table2.Constraints.Add("fk_cons", pcol, ccol);
 
-            // Should not throw DataException 
+            // Should not throw DataException
             ds.Relations.Add("fk_rel", pcol, ccol);
 
             Assert.Equal(1, table2.Constraints.Count);
@@ -514,9 +514,9 @@ namespace System.Data.Tests
             DataTable child = ds.Tables[1];
             Constraint[] constArray = new Constraint[2];
 
-            //Create unique 
+            //Create unique
             constArray[0] = new UniqueConstraint("Unique1", child.Columns["ChildDouble"]);
-            //Create foreign 
+            //Create foreign
             constArray[1] = new ForeignKeyConstraint(parent.Columns[0], child.Columns[1]);
 
             return constArray;

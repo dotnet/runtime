@@ -36,7 +36,7 @@ namespace System.IO
                 _position = (int)value;
             }
         }
-        
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             long pos =

@@ -7,7 +7,7 @@ using Xunit;
 namespace System.Globalization.Tests
 {
     public class JapaneseCalendarToFourDigitYear
-    {        
+    {
         [Theory]
         [InlineData(1)]
         [InlineData(99)]

@@ -16,25 +16,25 @@ internal partial class Interop
         public enum IoControlTransferType
         {
             /// <summary>
-            /// Specifies the buffered I/O method, which is typically used for transferring small amounts of data per request. 
+            /// Specifies the buffered I/O method, which is typically used for transferring small amounts of data per request.
             /// Most I/O control codes for device and intermediate drivers use this TransferType value.
             /// </summary>
             METHOD_BUFFERED,
-            
+
             /// <summary>
             /// Specifies the direct I/O method, which is typically used for reading or writing large amounts of data, using DMA or PIO, that must be transferred quickly.
             /// Specify METHOD_IN_DIRECT if the caller of DeviceIoControl or IoBuildDeviceIoControlRequest will pass data to the driver.
             /// </summary>
             METHOD_IN_DIRECT,
-            
+
             /// <summary>
             /// Specifies the direct I/O method, which is typically used for reading or writing large amounts of data, using DMA or PIO, that must be transferred quickly.
             /// Specify METHOD_OUT_DIRECT if the caller of DeviceIoControl or IoBuildDeviceIoControlRequest will receive data from the driver.
             /// </summary>
             METHOD_OUT_DIRECT,
-            
+
             /// <summary>
-            /// Specifies neither buffered nor direct I/O. The I/O manager does not provide any system buffers or MDLs. The IRP supplies the user-mode virtual addresses 
+            /// Specifies neither buffered nor direct I/O. The I/O manager does not provide any system buffers or MDLs. The IRP supplies the user-mode virtual addresses
             /// of the input and output buffers that were specified to DeviceIoControl or IoBuildDeviceIoControlRequest, without validating or mapping them.
             /// </summary>
             METHOD_NEITHER

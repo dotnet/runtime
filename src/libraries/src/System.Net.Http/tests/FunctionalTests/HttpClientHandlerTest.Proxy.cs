@@ -116,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                             await response.Content.ReadAsStringAsync(),
                             response.Content.Headers.ContentMD5,
                             false,
-                            null);                        
+                            null);
                     }
                 }
             }

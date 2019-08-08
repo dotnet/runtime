@@ -19,7 +19,7 @@ internal static partial class Interop
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle sids
         );
-        
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct MARSHALLED_UNICODE_STRING
         {

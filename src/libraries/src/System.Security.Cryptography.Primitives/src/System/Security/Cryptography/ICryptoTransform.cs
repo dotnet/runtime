@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 
         // CanTransformMultipleBlocks == true implies that TransformBlock() can accept any number
         // of whole blocks, not just a single block.  If CanTransformMultipleBlocks is false, you have
-        // to feed blocks one at a time.  
+        // to feed blocks one at a time.
         bool CanTransformMultipleBlocks { get; }
 
         // If CanReuseTransform is true, then after a call to TransformFinalBlock() the transform
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
 
         // Special function for transforming the last block or partial block in the stream.  The
         // return value is an array containing the remaining transformed bytes.
-        // We return a new array here because the amount of information we send back at the end could 
+        // We return a new array here because the amount of information we send back at the end could
         // be larger than a single block once padding is accounted for.
         byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
     }

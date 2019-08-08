@@ -25,7 +25,7 @@ namespace System.Diagnostics
             }
             set
             {
-                throw new PlatformNotSupportedException(); // We can find no API to set this on Linux 
+                throw new PlatformNotSupportedException(); // We can find no API to set this on Linux
             }
         }
 

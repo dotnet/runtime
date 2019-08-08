@@ -7,7 +7,7 @@ namespace System.Data
 {
     internal static partial class LocalDBAPI
     {
-        internal static string GetLocalDBMessage(int hrCode) => 
+        internal static string GetLocalDBMessage(int hrCode) =>
             throw new PlatformNotSupportedException(SR.LocalDBNotSupported); // LocalDB is not available for Unix and hence it cannot be supported.
     }
 }

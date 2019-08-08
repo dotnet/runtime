@@ -16,21 +16,21 @@ namespace System.Collections
     // Key and Value are undefined before the first call to
     // MoveNext and following a call to MoveNext that returned false.
     // Enumerators are typically used in while loops of the form
-    // 
+    //
     // IDictionaryEnumerator e = ...;
     // while (e.MoveNext()) {
     //     Object key = e.Key;
     //     Object value = e.Value;
     //     ...
     // }
-    // 
+    //
     // The IDictionaryEnumerator interface extends the IEnumerator
-    // inerface and can thus be used as a regular enumerator. The Current 
+    // inerface and can thus be used as a regular enumerator. The Current
     // method of an IDictionaryEnumerator returns a DictionaryEntry containing
     // the current key and value pair.  However, the GetEntry method will
     // return the same DictionaryEntry and avoids boxing the DictionaryEntry (boxing
     // is somewhat expensive).
-    // 
+    //
     public interface IDictionaryEnumerator : IEnumerator
     {
         // Returns the key of the current element of the enumeration. The returned
@@ -38,7 +38,7 @@ namespace System.Collections
         // a call to GetNext that returned false. Multiple calls to
         // GetKey with no intervening calls to GetNext will return
         // the same object.
-        // 
+        //
         object Key
         {
             get;
@@ -49,7 +49,7 @@ namespace System.Collections
         // following a call to GetNext that returned false. Multiple calls
         // to GetValue with no intervening calls to GetNext will
         // return the same object.
-        // 
+        //
         object? Value
         {
             get;
@@ -59,7 +59,7 @@ namespace System.Collections
         // fill up the array, or if there aren't enough elements, it will
         // copy as much as possible into the Array.  The number of elements
         // copied is returned.
-        // 
+        //
         DictionaryEntry Entry
         {
             get;

@@ -85,12 +85,12 @@ namespace System.SpanTests
 
                 var firstSpan = new Span<byte>(first);
                 var secondSpan = new Span<byte>(second);
-                
+
                 Assert.Equal(0, firstSpan.SequenceCompareTo<byte>(secondSpan));
                 Assert.Equal(0, secondSpan.SequenceCompareTo<byte>(firstSpan));
             }
         }
-        
+
         [Fact]
         public static void SequenceCompareToWithSingleMismatch_Byte()
         {

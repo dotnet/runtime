@@ -16,5 +16,5 @@ internal partial class Interop
         }
 
         return (errorCode & 0x0000FFFF) | unchecked((int)0x80070000);
-    } 
+    }
 }

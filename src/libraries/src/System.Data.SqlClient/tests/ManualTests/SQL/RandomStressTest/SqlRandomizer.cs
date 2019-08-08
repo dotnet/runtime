@@ -25,7 +25,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private int _maxDataSize;
 
         /// <summary>
-        /// when creating random buffers, this value is used to decide how much of random buffer 
+        /// when creating random buffers, this value is used to decide how much of random buffer
         /// will be true random data. The true random data is filled in the beginning and rest of the
         /// buffer repeats the same information
         /// </summary>
@@ -171,7 +171,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// generates size value with low probability of large size values within the given range
         /// </summary>
         /// <param name="lowValuesEnforcementLevel">
-        /// lowValuesEnforcementLevel is value between 0 and 31; 
+        /// lowValuesEnforcementLevel is value between 0 and 31;
         /// 0 means uniform distribution in the min/max range;
         /// 31 means very low chances for high values
         /// </param>
@@ -220,7 +220,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         /// <summary>
-        /// used by random table generators to select random number of columns and rows. This method will return very low numbers with high probability, 
+        /// used by random table generators to select random number of columns and rows. This method will return very low numbers with high probability,
         /// </summary>
         public void NextTableDimentions(int maxRows, int maxColumns, int maxTotalSize, out int randRows, out int randColumns)
         {

@@ -30,7 +30,7 @@ public class ReadAndWrite
             Console.SetOut(savedStandardOutput);
         }
     }
-    
+
     [Fact]
     public static void WriteToOutputStream_EmptyArray()
     {
@@ -75,7 +75,7 @@ public class ReadAndWrite
 
     private static void WriteCore()
     {
-        // We just want to ensure none of these throw exceptions, we don't actually validate 
+        // We just want to ensure none of these throw exceptions, we don't actually validate
         // what was written.
 
         Console.Write("{0}", 32);
@@ -110,7 +110,7 @@ public class ReadAndWrite
         Assert.Equal("abcd", Console.Out.NewLine);
         Console.Out.NewLine = Environment.NewLine;
 
-        // We just want to ensure none of these throw exceptions, we don't actually validate 
+        // We just want to ensure none of these throw exceptions, we don't actually validate
         // what was written.
 
         Console.WriteLine();
@@ -152,7 +152,7 @@ public class ReadAndWrite
                 Assert.NotNull(writer);
                 Assert.NotEqual(writer, sw); // the writer we provide gets wrapped
 
-                // We just want to ensure none of these throw exceptions, we don't actually validate 
+                // We just want to ensure none of these throw exceptions, we don't actually validate
                 // what was written.
 
                 writer.Write("{0}", 32);
@@ -377,7 +377,7 @@ public class ReadAndWrite
         {
             Console.SetOut(savedStandardOutput);
             Console.SetIn(savedStandardInput);
-        }        
+        }
     }
 
     [Fact]

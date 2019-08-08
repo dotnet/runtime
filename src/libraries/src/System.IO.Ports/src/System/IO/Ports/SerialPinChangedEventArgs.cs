@@ -14,4 +14,3 @@ namespace System.IO.Ports
         public SerialPinChange EventType { get; private set; }
     }
 }
-

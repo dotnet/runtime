@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
-{    
+{
     public partial class CustomLineCap
     {
         internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)

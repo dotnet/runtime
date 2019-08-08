@@ -50,7 +50,7 @@ namespace System.DirectoryServices.Protocols
 
                     if (!(value[valueCount] is int))
                     {
-                        // argument is wrong                                                                        
+                        // argument is wrong
                         Debug.WriteLine("type should be int\n");
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    // one int argument                    
+                    // one int argument
                     error = Wldap32.ber_printf_int(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
 
                     // increase the value count
@@ -100,7 +100,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    // one string argument       
+                    // one string argument
                     byte[] tempValue = null;
                     if (value[valueCount] != null)
                     {
@@ -352,7 +352,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'O')
                 {
-                    // return berval                   
+                    // return berval
                     byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
                     if (error == 0)
                     {

@@ -58,9 +58,9 @@ namespace System.IO.MemoryMappedFiles
         }
 
         // Flushes the changes such that they are in sync with the FileStream bits (ones obtained
-        // with the win32 ReadFile and WriteFile functions).  Need to call FileStream's Flush to 
+        // with the win32 ReadFile and WriteFile functions).  Need to call FileStream's Flush to
         // flush to the disk.
-        // NOTE: This will flush all bytes before and after the view up until an offset that is a 
+        // NOTE: This will flush all bytes before and after the view up until an offset that is a
         // multiple of SystemPageSize.
         public override void Flush()
         {

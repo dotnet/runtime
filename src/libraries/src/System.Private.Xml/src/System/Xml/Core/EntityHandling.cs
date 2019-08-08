@@ -7,7 +7,7 @@ namespace System.Xml
     // Specifies how entities are handled in XmlTextReader and XmlValidatingReader.
     public enum EntityHandling
     {
-        // Expand all entities. This is the default in XmlValidatingReader. No nodes with NodeType EntityReference will be returned. 
+        // Expand all entities. This is the default in XmlValidatingReader. No nodes with NodeType EntityReference will be returned.
         // The entity text is expanded in place of the entity references.
         ExpandEntities = 1,
 

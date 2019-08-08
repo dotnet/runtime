@@ -49,14 +49,14 @@ namespace System.Reflection.Tests
                     return;
                 }
             }
-            
+
             Assert.True(false, "Expected to find MyAttr Attribute");
         }
-        
+
         [MyAttr(MyKinds.First, Desc = "This is a description on a method")]
         private static void MyMethod() { }
     }
-    
+
     internal enum MyKinds {
         First,
         Second

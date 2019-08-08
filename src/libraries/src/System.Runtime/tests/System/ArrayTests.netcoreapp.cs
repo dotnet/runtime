@@ -17,11 +17,11 @@ namespace System.Tests
 
             var r = new Random(0x051778f7);
             int[] lengths = { 0, 1, 2, 3, 5, 8, 13 };
-            
+
             foreach (int length in lengths)
             {
                 IEnumerable<int> source = Enumerable.Range(1, length).Select(_ => r.Next());
-                
+
                 data = data.Concat(GenerateFillData(source, r.Next(), i => i))
                     .Concat(GenerateFillData(source, r.Next(), i => unchecked((byte)i)))
                     .Concat(GenerateFillData(source, r.Next(), i => unchecked((short)i)))

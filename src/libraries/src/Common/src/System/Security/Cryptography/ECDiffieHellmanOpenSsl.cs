@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
                 base.KeySize = keySize;
                 _key = new ECOpenSsl(this);
             }
-            
+
             public override KeySizes[] LegalKeySizes =>
                 new[] {
                     new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),

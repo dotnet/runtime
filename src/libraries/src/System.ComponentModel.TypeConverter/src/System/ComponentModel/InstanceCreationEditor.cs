@@ -6,7 +6,7 @@ namespace System.ComponentModel
 {
     /// <summary>
     /// An InstanceCreationEditor allows the user to create an instance of a particular type of property from a dropdown
-    /// Within the PropertyGrid. Usually, the text specified by InstanceCreationEditor.Text will be displayed on the 
+    /// Within the PropertyGrid. Usually, the text specified by InstanceCreationEditor.Text will be displayed on the
     /// dropdown from the PropertyGrid as a link or button. When clicked, the InstanceCreationEditor.CreateInstance
     /// method will be called with the Type of the object to create.
     /// </summary>

@@ -136,7 +136,7 @@
 // user-defined format strings. The following table describes the formatting
 // characters that are supported in user defined format strings.
 //
-// 
+//
 // 0 - Digit placeholder. If the value being
 // formatted has a digit in the position where the '0' appears in the format
 // string, then that digit is copied to the output string. Otherwise, a '0' is

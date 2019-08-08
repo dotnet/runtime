@@ -184,7 +184,7 @@ internal static partial class Interop
                 }
             }
         }
-        
+
         internal static int GetSimpleKeySizeInBits(SafeSecKeyRefHandle publicKey)
         {
             ulong keySizeInBytes = AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(publicKey);

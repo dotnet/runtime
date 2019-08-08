@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace System.ComponentModel.Composition.Primitives
 {
     /// <summary>
-    ///     Defines the <see langword="abstract"/> base class for composable parts, which 
+    ///     Defines the <see langword="abstract"/> base class for composable parts, which
     ///     import and produce exported values.
     /// </summary>
     public abstract class ComposablePart
@@ -32,15 +32,15 @@ namespace System.ComponentModel.Composition.Primitives
         /// <remarks>
         ///     <para>
         ///         <note type="inheritinfo">
-        ///             If the <see cref="ComposablePart"/> was created from a 
-        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of 
+        ///             If the <see cref="ComposablePart"/> was created from a
+        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of
         ///             <see cref="ComposablePartDefinition.ExportDefinitions"/>.
         ///         </note>
         ///      </para>
         ///      <para>
         ///         <note type="inheritinfo">
         ///             Overriders of this property should never return <see langword="null"/>.
-        ///             If the <see cref="ComposablePart"/> does not have exports, return an empty 
+        ///             If the <see cref="ComposablePart"/> does not have exports, return an empty
         ///             <see cref="IEnumerable{T}"/> instead.
         ///         </note>
         ///     </para>
@@ -60,15 +60,15 @@ namespace System.ComponentModel.Composition.Primitives
         /// <remarks>
         ///     <para>
         ///         <note type="inheritinfo">
-        ///             If the <see cref="ComposablePart"/> was created from a 
-        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of 
+        ///             If the <see cref="ComposablePart"/> was created from a
+        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of
         ///             <see cref="ComposablePartDefinition.ImportDefinitions"/>.
         ///         </note>
         ///      </para>
         ///      <para>
         ///         <note type="inheritinfo">
         ///             Overrides of this property should never return <see langword="null"/>.
-        ///             If the <see cref="ComposablePart"/> does not have imports, return an empty 
+        ///             If the <see cref="ComposablePart"/> does not have imports, return an empty
         ///             <see cref="IEnumerable{T}"/> instead.
         ///         </note>
         ///     </para>
@@ -79,7 +79,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the metadata of the part.
         /// </summary>
         /// <value>
-        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the 
+        ///     An <see cref="IDictionary{TKey, TValue}"/> containing the metadata of the
         ///     <see cref="ComposablePart"/>. The default is an empty, read-only
         ///     <see cref="IDictionary{TKey, TValue}"/>.
         /// </value>
@@ -89,27 +89,27 @@ namespace System.ComponentModel.Composition.Primitives
         /// <remarks>
         ///     <para>
         ///         <note type="inheritinfo">
-        ///             If the <see cref="ComposablePart"/> was created from a 
-        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of 
+        ///             If the <see cref="ComposablePart"/> was created from a
+        ///             <see cref="ComposablePartDefinition"/>, this property should return the result of
         ///             <see cref="ComposablePartDefinition.Metadata"/>.
         ///         </note>
         ///      </para>
         ///      <para>
         ///         <note type="inheritinfo">
         ///             Overriders of this property should return a read-only
-        ///             <see cref="IDictionary{TKey, TValue}"/> object with a case-sensitive, 
-        ///             non-linguistic comparer, such as <see cref="StringComparer.Ordinal"/>, 
-        ///             and should never return <see langword="null"/>. If the 
-        ///             <see cref="ComposablePart"/> does not contain metadata, return an 
+        ///             <see cref="IDictionary{TKey, TValue}"/> object with a case-sensitive,
+        ///             non-linguistic comparer, such as <see cref="StringComparer.Ordinal"/>,
+        ///             and should never return <see langword="null"/>. If the
+        ///             <see cref="ComposablePart"/> does not contain metadata, return an
         ///             empty <see cref="IDictionary{TKey, TValue}"/> instead.
         ///         </note>
         ///      </para>
         /// </remarks>
         public virtual IDictionary<string, object> Metadata
         {
-            get 
+            get
             {
-                return MetadataServices.EmptyMetadata; 
+                return MetadataServices.EmptyMetadata;
             }
         }
 
@@ -131,7 +131,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Gets the exported value described by the specified definition.
         /// </summary>
         /// <param name="definition">
-        ///     One of the <see cref="ExportDefinition"/> objects from the 
+        ///     One of the <see cref="ExportDefinition"/> objects from the
         ///     <see cref="ExportDefinitions"/> property describing the exported value
         ///     to return.
         /// </param>
@@ -161,11 +161,11 @@ namespace System.ComponentModel.Composition.Primitives
         ///     Sets the import described by the specified definition with the specified exports.
         /// </summary>
         /// <param name="definition">
-        ///     One of the <see cref="ImportDefinition"/> objects from the 
+        ///     One of the <see cref="ImportDefinition"/> objects from the
         ///     <see cref="ImportDefinitions"/> property describing the import to be set.
         /// </param>
         /// <param name="exports">
-        ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects of which 
+        ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects of which
         ///     to set the import described by <paramref name="definition"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -185,17 +185,17 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <para>
         ///         -or-
         ///     </para>
-        ///     <paramref name="exports"/> is empty and <see cref="ImportDefinition.Cardinality"/> is 
+        ///     <paramref name="exports"/> is empty and <see cref="ImportDefinition.Cardinality"/> is
         ///     <see cref="ImportCardinality.ExactlyOne"/>.
         ///     <para>
         ///         -or-
         ///     </para>
-        ///     <paramref name="exports"/> contains more than one element and 
-        ///     <see cref="ImportDefinition.Cardinality"/> is <see cref="ImportCardinality.ZeroOrOne"/> or 
+        ///     <paramref name="exports"/> contains more than one element and
+        ///     <see cref="ImportDefinition.Cardinality"/> is <see cref="ImportCardinality.ZeroOrOne"/> or
         ///     <see cref="ImportCardinality.ExactlyOne"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///     <see cref="Activate"/> has been previously called and 
+        ///     <see cref="Activate"/> has been previously called and
         ///     <see cref="ImportDefinition.IsRecomposable"/> is <see langword="false"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">

@@ -22,7 +22,7 @@ namespace System
         }
 
         //
-        // Check if highSurr and lowSurr are a surrogate pair then 
+        // Check if highSurr and lowSurr are a surrogate pair then
         // it checks if the combined char is in the range
         // Takes in isQuery because iri restrictions for query are different
         //
@@ -133,7 +133,7 @@ namespace System
         }
 
         //
-        // IRI normalization for strings containing characters that are not allowed or 
+        // IRI normalization for strings containing characters that are not allowed or
         // escaped characters that should be unescaped in the context of the specified Uri component.
         //
         internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
@@ -242,7 +242,7 @@ namespace System
 
                             if (charCount != 0)
                             {
-                                // If invalid sequences were present in the original escaped string, we need to 
+                                // If invalid sequences were present in the original escaped string, we need to
                                 // copy the escaped versions of those sequences.
                                 // Decoded Unicode values will be kept only when they are allowed by the URI/IRI RFC
                                 // rules.

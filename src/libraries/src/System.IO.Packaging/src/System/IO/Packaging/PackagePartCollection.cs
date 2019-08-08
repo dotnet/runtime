@@ -10,9 +10,9 @@ using System.Diagnostics;
 namespace System.IO.Packaging
 {
     /// <summary>
-    /// This class is used to get an enumerator for the Parts in a container. 
+    /// This class is used to get an enumerator for the Parts in a container.
     /// This is a part of the MMCF Packaging Layer APIs
-    /// </summary>   
+    /// </summary>
     public class PackagePartCollection : IEnumerable<PackagePart>
     {
         #region Public Methods
@@ -47,7 +47,7 @@ namespace System.IO.Packaging
             return _partList.Values.GetEnumerator();
         }
         #endregion Public Methods
-        
+
         #region Internal Constructor
 
         internal PackagePartCollection(SortedList<PackUriHelper.ValidatedPartUri, PackagePart> partList)
@@ -57,7 +57,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Constructor
-        
+
         #region Private Members
 
         private SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;

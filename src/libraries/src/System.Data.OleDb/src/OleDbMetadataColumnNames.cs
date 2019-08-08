@@ -12,4 +12,3 @@ namespace System.Data.OleDb
         public static readonly string DateTimeDigits = "DateTimeDigits";
     }
 }
-

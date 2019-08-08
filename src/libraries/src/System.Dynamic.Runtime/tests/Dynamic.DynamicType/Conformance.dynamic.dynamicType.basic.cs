@@ -1928,7 +1928,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.boxin
 
     public class Program
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2063,7 +2063,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.colle
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -2586,7 +2586,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.dlgat
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2880,7 +2880,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2921,7 +2921,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
     {
         public event EventHandler E;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -3014,7 +3014,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.evnt0
             return false;
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -3955,7 +3955,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.lambd
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -6935,7 +6935,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             {
                 foreach (bool? a2 in boolValues)
                 {
-                    if (a1 == null && a2 == null) 
+                    if (a1 == null && a2 == null)
                         continue;
                     dynamic d1 = a1;
                     dynamic d2 = a2;
@@ -6987,7 +6987,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             {
                 foreach (bool? a2 in boolValues)
                 {
-                    if (a1 == null && a2 == null) 
+                    if (a1 == null && a2 == null)
                         continue;
                     dynamic d1 = a1;
                     dynamic d2 = a2;
@@ -7039,7 +7039,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             {
                 foreach (bool? a2 in boolValues)
                 {
-                    if (a1 == null && a2 == null) 
+                    if (a1 == null && a2 == null)
                         continue;
                     dynamic d1 = a1;
                     dynamic d2 = a2;
@@ -7135,7 +7135,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
                 foreach (bool? a2 in boolValues)
                 {
                     y++;
-                    if (a1 == null || a2 == null) 
+                    if (a1 == null || a2 == null)
                         continue;
                     var b11 = a1;
                     var b12 = a2;
@@ -7206,7 +7206,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             {
                 foreach (bool? a2 in boolValues)
                 {
-                    if (a1 == null && a2 == null) 
+                    if (a1 == null && a2 == null)
                         continue;
                     var b11 = a1;
                     var b12 = a2;
@@ -7293,7 +7293,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             {
                 foreach (bool? a2 in boolValues)
                 {
-                    if (a1 == null && a2 == null) 
+                    if (a1 == null && a2 == null)
                         continue;
                     var b11 = a1;
                     var b12 = a2;
@@ -9091,7 +9091,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.common.common;
     // <Title>Equality operator when one operand is literal null</Title>
-    // <Description> 
+    // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
@@ -11356,7 +11356,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.common.common;
     // <Title>Unary operators with operand null</Title>
     // <Description>
-    // The related 
+    // The related
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>

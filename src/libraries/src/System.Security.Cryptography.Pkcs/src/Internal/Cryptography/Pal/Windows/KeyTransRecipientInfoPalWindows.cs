@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         internal int Index { get; }
 
-        // Provides access to the native CMSG_KEY_TRANS_RECIPIENT_INFO* structure. This helper is structured as taking a delegate to 
+        // Provides access to the native CMSG_KEY_TRANS_RECIPIENT_INFO* structure. This helper is structured as taking a delegate to
         // help avoid the easy trap of forgetting to prevent the underlying memory block from being GC'd early.
         private T WithCmsgCmsRecipientInfo<T>(KeyTransReceiver<T> receiver)
         {
@@ -103,8 +103,7 @@ namespace Internal.Cryptography.Pal.Windows
         private unsafe delegate T KeyTransReceiver<T>(CMSG_KEY_TRANS_RECIPIENT_INFO* recipient);
 
         // This is the backing store for the CMSG_CMS_RECIPIENT_INFO* structure for this RecipientInfo. CMSG_CMS_RECIPIENT_INFO is full of interior
-        // pointers so we store in a native heap block to keep it pinned. 
+        // pointers so we store in a native heap block to keep it pinned.
         private readonly SafeHandle _pCmsgCmsRecipientInfoMemory;
     }
 }
-

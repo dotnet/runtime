@@ -153,7 +153,7 @@ namespace System.Data
 
         /// <summary>
         /// Gets a value indicating whether the list of standard values returned from
-        /// <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list. 
+        /// <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list.
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
 

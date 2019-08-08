@@ -115,7 +115,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         {
                             Assert.True(numBatches < expectedResults.Length, "ERROR: Received more batches than were expected.");
                             object[] values = new object[r1.FieldCount];
-                            // Current "column" in expected row is (valuesChecked MOD FieldCount), since 
+                            // Current "column" in expected row is (valuesChecked MOD FieldCount), since
                             // expected rows for current batch are appended together for easy formatting
                             int valuesChecked = 0;
                             while (r1.Read())
@@ -1142,7 +1142,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                             t.Wait();
 
-                            // GetStream after Read 
+                            // GetStream after Read
                             DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(0));
 #endif
                         }
@@ -1254,7 +1254,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 }
                                 t.Wait();
 
-                                // GetTextReader after Read 
+                                // GetTextReader after Read
                                 DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(0));
 #endif
                             }
@@ -1344,7 +1344,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                             t.Wait();
 
-                            // GetXmlReader after Read 
+                            // GetXmlReader after Read
                             DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(0));
 #endif
                         }
@@ -1753,7 +1753,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
        private static void TestXEventsStreaming(string connectionString)
-        {   
+        {
             string sessionName = "xeventStreamTest";
             //Create XEvent
             SetupXevent(connectionString, sessionName);
@@ -1772,11 +1772,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         {
                             Int32 colType = reader.GetInt32(0);
                             int cb = (int)reader.GetBytes(1, 0, null, 0, 0);
-                            
-                            byte[] bytes = new byte[cb];
-                            long read = reader.GetBytes(1, 0, bytes, 0, cb);                            
 
-                            // Don't send data on the first read because there is already data in the buffer. 
+                            byte[] bytes = new byte[cb];
+                            long read = reader.GetBytes(1, 0, bytes, 0, cb);
+
+                            // Don't send data on the first read because there is already data in the buffer.
                             // Don't send data on the last iteration. We will not be reading that data.
                             if (i == 0 || i == streamXeventCount - 1) continue;
 
@@ -1793,13 +1793,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                 }
             }).Wait(10000);
-            //Delete XEvent 
+            //Delete XEvent
             DeleteXevent(connectionString, sessionName);
         }
 
         private static void SetupXevent(string connectionString, string sessionName)
-        {            
-            string xEventCreateAndStartCommandText = @"CREATE EVENT SESSION [" + sessionName + @"] ON SERVER 
+        {
+            string xEventCreateAndStartCommandText = @"CREATE EVENT SESSION [" + sessionName + @"] ON SERVER
                         ADD EVENT sqlserver.user_event(ACTION(package0.event_sequence))
                         ADD TARGET package0.ring_buffer
                         WITH (
@@ -1810,23 +1810,23 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             MEMORY_PARTITION_MODE=NONE,
                             TRACK_CAUSALITY=ON,
                             STARTUP_STATE=OFF)
-                            
+
                         ALTER EVENT SESSION [" + sessionName + "] ON SERVER STATE = START ";
-            
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (SqlCommand createXeventSession = new SqlCommand(xEventCreateAndStartCommandText, connection))
                 {
-                    createXeventSession.ExecuteNonQuery();                    
+                    createXeventSession.ExecuteNonQuery();
                 }
             }
         }
 
         private static void DeleteXevent(string connectionString, string sessionName)
-        { 
+        {
             string deleteXeventSessionCommand = @"IF EXISTS (select * from sys.server_event_sessions where name ='" + sessionName + "') DROP  EVENT SESSION [" + sessionName + "] ON SERVER";
-            
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
@@ -1835,9 +1835,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     deleteXeventSession.ExecuteNonQuery();
                 }
             }
-            
+
         }
-    
+
         private static void TimeoutDuringReadAsyncWithClosedReaderTest(string connectionString)
         {
             // Create the proxy

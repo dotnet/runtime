@@ -143,7 +143,7 @@ namespace System.Xml
 
             if (_lastChild == null
                 || _lastChild == this)
-            { // if LastNode == null 
+            { // if LastNode == null
                 newNode.next = newNode;
                 _lastChild = newNode; // LastNode = newNode;
                 newNode.SetParentForLoad(this);
@@ -399,7 +399,7 @@ namespace System.Xml
             return null;
         }
 
-        // Returns a XmlNodeList containing 
+        // Returns a XmlNodeList containing
         // a list of all descendant elements that match the specified name.
         public virtual XmlNodeList GetElementsByTagName(string localName, string namespaceURI)
         {
@@ -589,7 +589,7 @@ namespace System.Xml
                 XmlLinkedNode linkedNode = LastNode;
                 if (linkedNode != null && //there is one child
                     linkedNode.NodeType == XmlNodeType.Text && //which is text node
-                    linkedNode.next == linkedNode) // and it is the only child 
+                    linkedNode.next == linkedNode) // and it is the only child
                 {
                     //this branch is for perf reason, event fired when TextNode.Value is changed.
                     linkedNode.Value = value;

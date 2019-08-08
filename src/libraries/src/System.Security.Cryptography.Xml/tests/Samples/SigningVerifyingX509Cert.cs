@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <example>
 <test>some text node</test>
 </example>";
-        
+
         private static void SignXml(XmlDocument doc, AsymmetricAlgorithm key)
         {
             var signedXml = new SignedXml(doc)

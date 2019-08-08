@@ -48,9 +48,9 @@ namespace Microsoft.Win32.RegistryTests
         {
             // Create a name to use for this class of tests. The name includes:
             // - A "corefxtest" prefix to help make it clear to anyone looking at the registry
-            //   that these keys are test-only and can be deleted, in case the tests crash and 
+            //   that these keys are test-only and can be deleted, in case the tests crash and
             //   we end up leaving some keys behind.
-            // - The name of this test class, so as to avoid problems with tests on different test 
+            // - The name of this test class, so as to avoid problems with tests on different test
             //   classes running concurrently
             return "corefxtest_" + GetType().Name;
         }

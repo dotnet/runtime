@@ -95,7 +95,7 @@ namespace System.Reflection.Emit.Tests
                 Type createdType = type.CreateTypeInfo().AsType();
                 Assert.Equal(createdType, module.GetType(name, false, false));
                 Assert.Equal(createdType, module.GetType(name, true, false));
-                
+
                 Assert.Equal(type.AsType().GetNestedTypes(AllFlags), createdType.GetNestedTypes(AllFlags));
                 Assert.Equal(type.AsType().GetNestedType(name, AllFlags), createdType.GetNestedType(name, AllFlags));
 

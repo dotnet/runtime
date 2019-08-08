@@ -11,7 +11,7 @@ namespace System.Data.Common
 
         internal static Timer UnsafeCreateTimer(TimerCallback callback, object state, int dueTime, int period)
         {
-            // Don't capture the current ExecutionContext and its AsyncLocals onto 
+            // Don't capture the current ExecutionContext and its AsyncLocals onto
             // a global timer causing them to live forever
             bool restoreFlow = false;
             try

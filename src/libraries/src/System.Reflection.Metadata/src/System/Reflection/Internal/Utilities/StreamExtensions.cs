@@ -96,7 +96,7 @@ namespace System.Reflection.Internal
             {
                 return size;
             }
-            
+
             if (maxSize > int.MaxValue)
             {
                 throw new ArgumentException(SR.StreamTooLarge, streamParameterName);

@@ -99,7 +99,7 @@ internal static partial class Interop
         /// <param name="context">Should be IntPtr.Zero</param>
         /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
         /// <param name="sinceWhen">
-        /// The start point to receive events from. This can be to retrieve historical events or only new events. 
+        /// The start point to receive events from. This can be to retrieve historical events or only new events.
         /// To get historical events, pass in the corresponding ID of the event you want to start from.
         /// To get only new events, pass in kFSEventStreamEventIdSinceNow.
         /// </param>
@@ -123,7 +123,7 @@ internal static partial class Interop
         /// <param name="cb">A callback instance that will be called for every event batch.</param>
         /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
         /// <param name="sinceWhen">
-        /// The start point to receive events from. This can be to retrieve historical events or only new events. 
+        /// The start point to receive events from. This can be to retrieve historical events or only new events.
         /// To get historical events, pass in the corresponding ID of the event you want to start from.
         /// To get only new events, pass in kFSEventStreamEventIdSinceNow.
         /// </param>

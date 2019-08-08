@@ -78,13 +78,13 @@ namespace System.ComponentModel.Design
                 if (resourceAssembly == null)
                 {
                     Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is null");
-                    // If Assembly.EntryAssembly returns null, then we will 
+                    // If Assembly.EntryAssembly returns null, then we will
                     // try everything.
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
-                        // when walking through all the assemblies in the current app domain. This throws an 
-                        // exception on Assembly.CodeBase and we bail out. Catching exceptions here is not a 
+                        // when walking through all the assemblies in the current app domain. This throws an
+                        // exception on Assembly.CodeBase and we bail out. Catching exceptions here is not a
                         // bad thing.
                         if (asm.IsDynamic)
                             continue;
@@ -96,7 +96,7 @@ namespace System.ComponentModel.Design
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
                         if (s == null)
                         {
-                            // Since the casing may be different depending on how the assembly was loaded, 
+                            // Since the casing may be different depending on how the assembly was loaded,
                             // we'll do a case insensitive lookup for this manifest resource stream...
                             s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
                         }
@@ -154,9 +154,9 @@ namespace System.ComponentModel.Design
         }
 
         /**
-        * Looks up a .licenses file in the assembly manifest using 
+        * Looks up a .licenses file in the assembly manifest using
         * case-insensitive lookup rules. We do this because the name
-        * we are attempting to locate could have different casing 
+        * we are attempting to locate could have different casing
         * depending on how the assembly was loaded.
         **/
         private Stream CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
@@ -178,11 +178,9 @@ namespace System.ComponentModel.Design
                 }
             }
 
-            // Finally, attempt to return our stream based on the 
+            // Finally, attempt to return our stream based on the
             // case insensitive match we found.
             return satellite.GetManifestResourceStream(name);
         }
     }
 }
-
-

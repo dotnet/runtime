@@ -57,8 +57,8 @@ namespace System.SpanTests
                 bool b = firstSpan.SequenceEqual(secondSpan);
                 Assert.True(b);
 
-                // Make sure each element of the array was compared once. (Strictly speaking, it would not be illegal for 
-                // SequenceEqual to compare an element more than once but that would be a non-optimal implementation and 
+                // Make sure each element of the array was compared once. (Strictly speaking, it would not be illegal for
+                // SequenceEqual to compare an element more than once but that would be a non-optimal implementation and
                 // a red flag. So we'll stick with the stricter test.)
                 Assert.Equal(first.Length, log.Count);
                 foreach (TInt elem in first)

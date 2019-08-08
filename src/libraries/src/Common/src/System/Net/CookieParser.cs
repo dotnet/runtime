@@ -274,7 +274,7 @@ namespace System.Net
                     }
                     ++_index;
                 }
-                
+
                 if (Eof)
                 {
                     _cookieLength = _index - _cookieStartIndex;
@@ -876,7 +876,7 @@ namespace System.Net
 
             return value.Length == 2 ? string.Empty : value.Substring(1, value.Length - 2);
         }
-        
+
         internal bool EndofHeader()
         {
             return _tokenizer.Eof;

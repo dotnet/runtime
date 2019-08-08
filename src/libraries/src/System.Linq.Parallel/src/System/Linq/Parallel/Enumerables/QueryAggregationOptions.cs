@@ -14,7 +14,7 @@ namespace System.Linq.Parallel
     /// An enum to specify whether an aggregate operator is associative, commutative,
     /// neither, or both. This influences query analysis and execution: associative
     /// aggregations can run in parallel, whereas non-associative cannot; non-commutative
-    /// aggregations must be run over data in input-order. 
+    /// aggregations must be run over data in input-order.
     /// </summary>
     [Flags]
     internal enum QueryAggregationOptions

@@ -5,7 +5,7 @@
 namespace System.Reflection.TypeLoading
 {
     /// <summary>
-    /// This is used to represent a PinnedType. It is quite ill-behaved so the only time it is created is by the EcmaPinnedTypeProvider. 
+    /// This is used to represent a PinnedType. It is quite ill-behaved so the only time it is created is by the EcmaPinnedTypeProvider.
     /// It is only used to implement the MethodBody.LocalVariables property.
     /// </summary>
     internal sealed class RoPinnedType : RoWrappedType

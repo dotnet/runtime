@@ -12,7 +12,7 @@ namespace Internal.Cryptography.Pal
     internal interface IChainPal : IDisposable
     {
         /// <summary>
-        /// Does not throw on api error. Returns default(bool?) and sets "exception" instead. 
+        /// Does not throw on api error. Returns default(bool?) and sets "exception" instead.
         /// </summary>
         bool? Verify(X509VerificationFlags flags, out Exception exception);
 

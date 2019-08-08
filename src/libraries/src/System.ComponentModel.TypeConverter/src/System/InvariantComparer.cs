@@ -23,7 +23,7 @@ namespace System
             {
                 return _compareInfo.Compare(sa, sb);
             }
-            
+
             return Comparer.Default.Compare(a, b);
         }
     }

@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tests
                     configuration?.Dispose();
                     return;
                 }
-                
+
                 Assert.Equal(logName, configuration.LogName);
                 Assert.NotEmpty(configuration.ProviderNames);
                 Assert.Equal("Application", configuration.LogIsolation.ToString());

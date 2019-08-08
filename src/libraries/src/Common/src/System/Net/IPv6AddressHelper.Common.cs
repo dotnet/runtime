@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -74,7 +74,7 @@ namespace System
         //   *  an optional string of a ScopeID delimited by '%'
         //   *  the last 32 bits in an address can be represented as an IPv4 address
         //
-        //  Difference between IsValid() and IsValidStrict() is that IsValid() expects part of the string to 
+        //  Difference between IsValid() and IsValidStrict() is that IsValid() expects part of the string to
         //  be ipv6 address where as IsValidStrict() expects strict ipv6 address.
         //
         // Inputs:
@@ -111,7 +111,7 @@ namespace System
                 start++;
                 needsClosingBracket = true;
 
-                // IsValidStrict() is only called if there is a ':' in the name string, i.e. 
+                // IsValidStrict() is only called if there is a ':' in the name string, i.e.
                 // it is a possible IPv6 address. So, if the string starts with a '[' and
                 // the pointer is advanced here there are still more characters to parse.
                 Debug.Assert(start < end);

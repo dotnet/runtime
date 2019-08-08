@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -123,8 +123,8 @@ namespace System.Text.RegularExpressions
             return typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
         }
 
-        /* 
-         * Entry point to dynamically compile a regular expression.  The expression is compiled to 
+        /*
+         * Entry point to dynamically compile a regular expression.  The expression is compiled to
          * an in-memory assembly.
          */
         internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options)
@@ -1019,7 +1019,7 @@ namespace System.Text.RegularExpressions
             // Backtrack switch
             MarkLabel(_backtrack);
 
-            // first call EnsureStorage 
+            // first call EnsureStorage
             Mvlocfld(_trackposV, s_trackposF);
             Mvlocfld(_stackposV, s_stackposF);
             Ldthis();
@@ -1466,7 +1466,7 @@ namespace System.Text.RegularExpressions
 
                 /*          // CURRENTLY DISABLED
                             // If for some reason we have a prefix we didn't use, use it now.
-                
+
                             if (_bmPrefix != null) {
                                 if (!_code._rightToLeft) {
                                     Ldthisfld(_textendF);
@@ -1479,7 +1479,7 @@ namespace System.Text.RegularExpressions
                                 Sub();
                                 Ldc(_bmPrefix._pattern.Length - 1);
                                 BltFar(l5);
-                                
+
                                 for (int i = 1; i < _bmPrefix._pattern.Length; i++) {
                                     Ldloc(_textV);
                                     Ldloc(_textposV);
@@ -1539,7 +1539,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Declares a local CultureInfo 
+         * Declares a local CultureInfo
          */
         private LocalBuilder DeclareCultureInfo()
         {
@@ -1597,7 +1597,7 @@ namespace System.Text.RegularExpressions
             // emit the code!
 
             // cache CultureInfo in local variable which saves excessive thread local storage accesses
-            InitLocalCultureInfo();  
+            InitLocalCultureInfo();
 
             GenerateForwardSection();
             GenerateMiddleSection();
@@ -1829,7 +1829,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexCode.Branchmark:
                     //: Stackframe(1);
-                    //: 
+                    //:
                     //: if (Textpos() != Stacked(0))
                     //: {                                   // Nonempty match -> loop now
                     //:     Track(Stacked(0), Textpos());   // Save old mark, textpos
@@ -1896,13 +1896,13 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Lazybranchmark:
                     //: StackPop();
                     //: int oldMarkPos = StackPeek();
-                    //: 
+                    //:
                     //: if (Textpos() != oldMarkPos) {         // Nonempty match -> next loop
                     //: {                                   // Nonempty match -> next loop
                     //:     if (oldMarkPos != -1)
                     //:         Track(Stacked(0), Textpos());   // Save old mark, textpos
                     //:     else
-                    //:         TrackPush(Textpos(), Textpos());   
+                    //:         TrackPush(Textpos(), Textpos());
                     //: }
                     //: else
                     //: {                                   // Empty match -> no loop
@@ -1939,7 +1939,7 @@ namespace System.Text.RegularExpressions
                         Br(AdvanceLabel());                 // Advance (near)
                                                             // else
                         MarkLabel(l1);
-                        ReadyPushStack();                   // push the current textPos on the stack. 
+                        ReadyPushStack();                   // push the current textPos on the stack.
                                                             // May be ignored by 'back2' or used by a true empty match.
                         Ldloc(mark);
 
@@ -2010,7 +2010,7 @@ namespace System.Text.RegularExpressions
                     //: Stackframe(2);
                     //: int mark = Stacked(0);
                     //: int count = Stacked(1);
-                    //: 
+                    //:
                     //: if (count >= Operand(1) || Textpos() == mark && count >= 0)
                     //: {                                   // Max loops or empty match -> straight now
                     //:     Track2(mark, count);            // Save old mark, count

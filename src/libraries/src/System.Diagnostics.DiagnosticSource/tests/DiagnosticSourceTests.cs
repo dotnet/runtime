@@ -36,14 +36,14 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(5, result[0].Value);
                 }   // unsubscribe
 
-                // Make sure that after unsubscribing, we don't get more events. 
+                // Make sure that after unsubscribing, we don't get more events.
                 source.Write("IntPayload", 5);
                 Assert.Equal(1, result.Count);
             }
         }
 
         /// <summary>
-        /// slightly less trivial of passing a structure with a couple of fields 
+        /// slightly less trivial of passing a structure with a couple of fields
         /// </summary>
         [Fact]
         public void StructPayload()
@@ -69,7 +69,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests the IObserver OnCompleted callback. 
+        /// Tests the IObserver OnCompleted callback.
         /// </summary>
         [Fact]
         public void Completed()
@@ -89,10 +89,10 @@ namespace System.Diagnostics.Tests
             listener.Dispose();
             Assert.True(observer.Completed);
 
-            // confirm that we can unsubscribe without crashing 
+            // confirm that we can unsubscribe without crashing
             subscription.Dispose();
 
-            // If we resubscribe after dispose, but it does not do anything.  
+            // If we resubscribe after dispose, but it does not do anything.
             subscription = listener.Subscribe(observer);
 
             listener.Write("IntPayload", 5);
@@ -122,7 +122,7 @@ namespace System.Diagnostics.Tests
                     return name == "StructPayload";
                 };
 
-                // Assert.False(listener.IsEnabled());  Since other things might turn on all DiagnosticSources, we can't ever test that it is not enabled. 
+                // Assert.False(listener.IsEnabled());  Since other things might turn on all DiagnosticSources, we can't ever test that it is not enabled.
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate))
                 {
                     Assert.False(source.IsEnabled("Uninteresting"));
@@ -185,12 +185,12 @@ namespace System.Diagnostics.Tests
                 Predicate<string> subscriber2Predicate = name => (name == "DataForSubscriber2");
                 var subscriber2Observer = new ObserverToList<TelemData>(subscriber2Result);
 
-                // Get two subscribers going. 
+                // Get two subscribers going.
                 using (var subscription1 = listener.Subscribe(subscriber1Observer, subscriber1Predicate))
                 {
                     using (var subscription2 = listener.Subscribe(subscriber2Observer, subscriber2Predicate))
                     {
-                        // Things that neither subscribe to get filtered out. 
+                        // Things that neither subscribe to get filtered out.
                         if (listener.IsEnabled("DataToFilterOut"))
                             listener.Write("DataToFilterOut", -1);
 
@@ -198,7 +198,7 @@ namespace System.Diagnostics.Tests
                         Assert.Equal(0, subscriber2Result.Count);
 
                         /****************************************************/
-                        // If a Source does not use the IsEnabled, then every subscriber gets it.  
+                        // If a Source does not use the IsEnabled, then every subscriber gets it.
                         subscriber1Result.Clear();
                         subscriber2Result.Clear();
                         listener.Write("UnfilteredData", 3);
@@ -212,8 +212,8 @@ namespace System.Diagnostics.Tests
                         Assert.Equal(3, (int)subscriber2Result[0].Value);
 
                         /****************************************************/
-                        // Filters not filter out everything, they are just a performance optimization.  
-                        // Here you actually get more than you want even though you use a filter 
+                        // Filters not filter out everything, they are just a performance optimization.
+                        // Here you actually get more than you want even though you use a filter
                         subscriber1Result.Clear();
                         subscriber2Result.Clear();
                         if (listener.IsEnabled("DataForSubscriber1"))
@@ -223,7 +223,7 @@ namespace System.Diagnostics.Tests
                         Assert.Equal("DataForSubscriber1", subscriber1Result[0].Key);
                         Assert.Equal(1, (int)subscriber1Result[0].Value);
 
-                        // Subscriber 2 happens to get it 
+                        // Subscriber 2 happens to get it
                         Assert.Equal(1, subscriber2Result.Count);
                         Assert.Equal("DataForSubscriber1", subscriber2Result[0].Key);
                         Assert.Equal(1, (int)subscriber2Result[0].Value);
@@ -234,7 +234,7 @@ namespace System.Diagnostics.Tests
                         if (listener.IsEnabled("DataForSubscriber2"))
                             listener.Write("DataForSubscriber2", 2);
 
-                        // Subscriber 1 happens to get it 
+                        // Subscriber 1 happens to get it
                         Assert.Equal(1, subscriber1Result.Count);
                         Assert.Equal("DataForSubscriber2", subscriber1Result[0].Key);
                         Assert.Equal(2, (int)subscriber1Result[0].Value);
@@ -248,7 +248,7 @@ namespace System.Diagnostics.Tests
                     /* Only Subscriber 1 is left */
                     /*********************************************************************/
 
-                    // Things that neither subscribe to get filtered out. 
+                    // Things that neither subscribe to get filtered out.
                     subscriber1Result.Clear();
                     subscriber2Result.Clear();
                     if (listener.IsEnabled("DataToFilterOut"))
@@ -258,7 +258,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(0, subscriber2Result.Count);
 
                     /****************************************************/
-                    // If a Source does not use the IsEnabled, then every subscriber gets it.  
+                    // If a Source does not use the IsEnabled, then every subscriber gets it.
                     subscriber1Result.Clear();
                     listener.Write("UnfilteredData", 3);
 
@@ -270,8 +270,8 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(0, subscriber2Result.Count);
 
                     /****************************************************/
-                    // Filters not filter out everything, they are just a performance optimization.  
-                    // Here you actually get more than you want even though you use a filter 
+                    // Filters not filter out everything, they are just a performance optimization.
+                    // Here you actually get more than you want even though you use a filter
                     subscriber1Result.Clear();
                     if (listener.IsEnabled("DataForSubscriber1"))
                         listener.Write("DataForSubscriber1", 1);
@@ -292,13 +292,13 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(0, subscriber1Result.Count);
                     // Subscriber 2 has dropped out
                     Assert.Equal(0, subscriber2Result.Count);
-                } // subscriber1 drops out  
+                } // subscriber1 drops out
 
                 /*********************************************************************/
                 /* No Subscribers are left */
                 /*********************************************************************/
 
-                // Things that neither subscribe to get filtered out. 
+                // Things that neither subscribe to get filtered out.
                 subscriber1Result.Clear();
                 subscriber2Result.Clear();
                 if (listener.IsEnabled("DataToFilterOut"))
@@ -308,7 +308,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(0, subscriber2Result.Count);
 
                 /****************************************************/
-                // If a Source does not use the IsEnabled, then every subscriber gets it.  
+                // If a Source does not use the IsEnabled, then every subscriber gets it.
 
                 listener.Write("UnfilteredData", 3);
 
@@ -317,8 +317,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(0, subscriber2Result.Count);
 
                 /****************************************************/
-                // Filters not filter out everything, they are just a performance optimization.  
-                // Here you actually get more than you want even though you use a filter 
+                // Filters not filter out everything, they are just a performance optimization.
+                // Here you actually get more than you want even though you use a filter
                 if (listener.IsEnabled("DataForSubscriber1"))
                     listener.Write("DataForSubscriber1", 1);
 
@@ -348,11 +348,11 @@ namespace System.Diagnostics.Tests
                 DiagnosticSource source = listener;
 
                 var random = new Random();
-                //  Beat on the default listener by subscribing and unsubscribing on many threads simultaneously. 
+                //  Beat on the default listener by subscribing and unsubscribing on many threads simultaneously.
                 var factory = new TaskFactory();
 
                 // To the whole stress test 10 times.  This keeps the task array size needed down while still
-                // having lots of concurrency.   
+                // having lots of concurrency.
                 for (int j = 0; j < 20; j++)
                 {
                     // Spawn off lots of concurrent activity
@@ -367,7 +367,7 @@ namespace System.Diagnostics.Tests
                             Predicate<string> predicate = (name) => name == taskName;
                             Predicate<KeyValuePair<string, object>> filter = (keyValue) => keyValue.Key == taskName;
 
-                            // set up the observer to only see events set with the task name as the name.  
+                            // set up the observer to only see events set with the task name as the name.
                             var observer = new ObserverToList<TelemData>(result, filter, taskName);
                             using (listener.Subscribe(observer, predicate))
                             {
@@ -377,14 +377,14 @@ namespace System.Diagnostics.Tests
                                 Assert.Equal(taskName, result[0].Key);
                                 Assert.Equal(taskNum, result[0].Value);
 
-                                // Spin a bit randomly.  This mixes of the lifetimes of the subscriptions and makes it 
-                                // more stressful 
+                                // Spin a bit randomly.  This mixes of the lifetimes of the subscriptions and makes it
+                                // more stressful
                                 var cnt = random.Next(10, 100) * 1000;
                                 while (0 < --cnt)
                                     GC.KeepAlive("");
                             }   // Unsubscribe
 
-                            // Send the notification again, to see if it now does NOT come through (count remains unchanged). 
+                            // Send the notification again, to see if it now does NOT come through (count remains unchanged).
                             source.Write(taskName, -1);
                             Assert.Equal(1, result.Count);
                         }, i);
@@ -395,7 +395,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests if as we create new DiagnosticListerns, we get callbacks for them 
+        /// Tests if as we create new DiagnosticListerns, we get callbacks for them
         /// </summary>
         [Fact]
         public void AllListenersAddRemove()
@@ -404,7 +404,7 @@ namespace System.Diagnostics.Tests
             {
                 DiagnosticSource source = listener;
 
-                // This callback will return the listener that happens on the callback  
+                // This callback will return the listener that happens on the callback
                 DiagnosticListener returnedListener = null;
                 Action<DiagnosticListener> onNewListener = delegate (DiagnosticListener listen)
                 {
@@ -419,20 +419,20 @@ namespace System.Diagnostics.Tests
                     returnedListener = listen;
                 };
 
-                // Subscribe, which delivers catch-up event for the Default listener 
+                // Subscribe, which delivers catch-up event for the Default listener
                 using (var allListenerSubscription = DiagnosticListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
                 {
                     Assert.Equal(listener, returnedListener);
                     returnedListener = null;
                 }   // Now we unsubscribe
 
-                // Create an dispose a listener, but we won't get a callback for it.  
+                // Create an dispose a listener, but we won't get a callback for it.
                 using (new DiagnosticListener("TestListen"))
                 { }
 
-                Assert.Null(returnedListener);          // No callback was made 
+                Assert.Null(returnedListener);          // No callback was made
 
-                // Resubscribe  
+                // Resubscribe
                 using (var allListenerSubscription = DiagnosticListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
                 {
 
@@ -454,20 +454,20 @@ namespace System.Diagnostics.Tests
                         }   // Dispose of listener2
                     }   // Dispose of listener1
 
-                } // Unsubscribe 
+                } // Unsubscribe
 
-                // Check that we are back to just the DefaultListener. 
+                // Check that we are back to just the DefaultListener.
                 using (var allListenerSubscription = DiagnosticListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
                 {
                     Assert.Equal(listener, returnedListener);
                     returnedListener = null;
-                }   // cleanup 
+                }   // cleanup
             }
         }
 
         /// <summary>
-        /// Tests that the 'catchupList' of active listeners is accurate even as we 
-        /// add and remove DiagnosticListeners randomly.  
+        /// Tests that the 'catchupList' of active listeners is accurate even as we
+        /// add and remove DiagnosticListeners randomly.
         /// </summary>
         [Fact]
         public void AllListenersCheckCatchupList()
@@ -483,11 +483,11 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(list, expected);
             }
 
-            // Remove the element randomly.  
+            // Remove the element randomly.
             var random = new Random(0);
             while (0 < expected.Count)
             {
-                var toRemoveIdx = random.Next(0, expected.Count - 1);     // Always leave the Default listener.  
+                var toRemoveIdx = random.Next(0, expected.Count - 1);     // Always leave the Default listener.
                 var toRemoveListener = expected[toRemoveIdx];
                 toRemoveListener.Dispose();     // Kill it (which removes it from the list)
                 expected.RemoveAt(toRemoveIdx);
@@ -527,7 +527,7 @@ namespace System.Diagnostics.Tests
                 List<DiagnosticListener> list = GetActiveListenersWithPrefix(nameof(AllSubscriberStress));
                 Assert.All(listeners, listener => Assert.Contains(listener, list));
 
-                // Dispose them all, first the even then the odd, just to mix it up and be more stressful.  
+                // Dispose them all, first the even then the odd, just to mix it up and be more stressful.
                 for (int j = 0; j < listeners.Count; j += 2) // even
                     listeners[j].Dispose();
                 for (int j = 1; j < listeners.Count; j += 2) // odd
@@ -665,7 +665,7 @@ namespace System.Diagnostics.Tests
                     seenActivityExport = true;
                 };
 
-                // Use the Subscribe that allows you to hook the OnActivityImport and OnActivityExport calls.  
+                // Use the Subscribe that allows you to hook the OnActivityImport and OnActivityExport calls.
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate, activityImport, activityExport))
                 {
                     if (listener.IsEnabled("IntPayload"))
@@ -685,9 +685,9 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        #region Helpers 
+        #region Helpers
         /// <summary>
-        /// Returns the list of active diagnostic listeners.  
+        /// Returns the list of active diagnostic listeners.
         /// </summary>
         /// <returns></returns>
         private static List<DiagnosticListener> GetActiveListenersWithPrefix(string prefix)
@@ -702,12 +702,12 @@ namespace System.Diagnostics.Tests
             // Subscribe, which gives you the list
             using (var allListenerSubscription = DiagnosticListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
             {
-            } // Unsubscribe to remove side effects.  
+            } // Unsubscribe to remove side effects.
             return ret;
         }
 
         /// <summary>
-        /// Used to make an observer out of an action delegate. 
+        /// Used to make an observer out of an action delegate.
         /// </summary>
         public static IObserver<T> MakeObserver<T>(
             Action<T> onNext = null, Action onCompleted = null)
@@ -716,7 +716,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Used in the implementation of MakeObserver.  
+        /// Used in the implementation of MakeObserver.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         private class Observer<T> : IObserver<T>
@@ -739,7 +739,7 @@ namespace System.Diagnostics.Tests
 
     // Takes an IObserver and returns a List<T> that are the elements observed.
     // Will assert on error and 'Completed' is set if the 'OnCompleted' callback
-    // is issued.  
+    // is issued.
     internal class ObserverToList<T> : IObserver<T>
     {
         public ObserverToList(List<T> output, Predicate<T> filter = null, string name = null)
@@ -773,12 +773,12 @@ namespace System.Diagnostics.Tests
 
         private List<T> _output;
         private Predicate<T> _filter;
-        private string _name;  // for debugging 
+        private string _name;  // for debugging
         #endregion
     }
 
     /// <summary>
-    /// Trivial class used for payloads.  (Usually anonymous types are used.  
+    /// Trivial class used for payloads.  (Usually anonymous types are used.
     /// </summary>
     internal class Payload
     {

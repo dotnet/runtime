@@ -16,7 +16,7 @@ namespace System.Linq.Tests
             var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
                     where x > int.MinValue
                     select x;
-                    
+
             Assert.Equal(q.TakeWhile(x => true), q.TakeWhile(x => true));
         }
 
@@ -121,7 +121,7 @@ namespace System.Linq.Tests
         public void IndexTakeWhileOverflowBeyondIntMaxValueElements()
         {
             var taken = new FastInfiniteEnumerator<int>().TakeWhile((e, i) => true);
-            
+
             using(var en = taken.GetEnumerator())
                 Assert.Throws<OverflowException>(() =>
                 {

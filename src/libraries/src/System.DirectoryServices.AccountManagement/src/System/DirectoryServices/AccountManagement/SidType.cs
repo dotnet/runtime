@@ -14,4 +14,3 @@ namespace System.DirectoryServices.AccountManagement
                                //   S-1-5-X for X != 21 and X != 32 (NT AUTHORITY), etc.
     }
 }
-

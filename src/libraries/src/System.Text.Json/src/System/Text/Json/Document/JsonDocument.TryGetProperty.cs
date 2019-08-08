@@ -181,7 +181,7 @@ namespace System.Text.Json
                             int remaining = currentPropertyName.Length - idx;
                             int written = 0;
                             byte[] rented = null;
-                            
+
                             try
                             {
                                 Span<byte> utf8Unescaped = remaining <= JsonConstants.StackallocThreshold ?

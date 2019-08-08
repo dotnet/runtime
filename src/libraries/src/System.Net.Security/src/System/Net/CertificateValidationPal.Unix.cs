@@ -8,7 +8,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
-{   
+{
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
@@ -115,7 +115,7 @@ namespace System.Net
                 NetEventSource.Exit(securityContext, result);
             }
             return result;
-        }      
+        }
 
         //
         // Used only by client SSL code, never returns null.

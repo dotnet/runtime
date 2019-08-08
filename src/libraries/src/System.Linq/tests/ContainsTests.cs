@@ -110,7 +110,7 @@ namespace System.Linq.Tests
         public void NullSource_ThrowsArgumentNullException()
         {
             IEnumerable<int> source = null;
-            
+
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.Contains(42));
             AssertExtensions.Throws<ArgumentNullException>("source", () => source.Contains(42, EqualityComparer<int>.Default));
         }

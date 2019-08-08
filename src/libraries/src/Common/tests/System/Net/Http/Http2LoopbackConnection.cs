@@ -218,7 +218,7 @@ namespace System.Net.Test.Common
         public async Task ReadRstStreamAsync(int streamId)
         {
             Frame frame = await ReadFrameAsync(Timeout);
-            
+
             if (frame == null)
             {
                 throw new Exception($"Expected RST_STREAM, saw EOF");

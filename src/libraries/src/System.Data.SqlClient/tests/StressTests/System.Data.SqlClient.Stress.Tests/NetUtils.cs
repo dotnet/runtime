@@ -68,7 +68,7 @@ namespace Microsoft.Test.Data.SqlClient
 
         /// <summary>
         /// Splits data source into protocol, host name, instance name and port.
-        ///         
+        ///
         /// Note that this algorithm does not cover all valid combinations of data source; only those we actually use in tests are supported now.
         /// Please update as needed.
         /// </summary>
@@ -126,7 +126,7 @@ namespace Microsoft.Test.Data.SqlClient
         /// * removes Failover Partner, if presents
         /// * removes the network library and protocol prefix (only TCP is supported)
         /// * if instance name is specified without port value, data source is replaced with "server, port" format instead of "server\name"
-        /// 
+        ///
         /// Note that this method can create a connection to the server in case TCP port is needed. The port value is cached per data source, to avoid round trip to the server on next use.
         /// </summary>
         /// <param name="connectionString">original connection string, must be valid</param>

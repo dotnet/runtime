@@ -85,7 +85,7 @@ namespace System.Reflection.Tests
         {
             const BindingFlags bf = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             Type runtimeDeclaringType = can.MemberInfo.DeclaringType.ProjectBackToRuntime();
-            MemberInfo runtimeMember = can.IsField ? 
+            MemberInfo runtimeMember = can.IsField ?
                 (MemberInfo)runtimeDeclaringType.GetField(can.MemberName, bf) :
                 (MemberInfo)runtimeDeclaringType.GetProperty(can.MemberName, bf);
             return new CustomAttributeNamedArgument(runtimeMember, can.TypedValue.ProjectBackToRuntime());

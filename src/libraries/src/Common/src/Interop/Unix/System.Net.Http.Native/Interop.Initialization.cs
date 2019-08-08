@@ -10,7 +10,7 @@ internal static partial class Interop
     // Initialization of libcurl is done in a static constructor.
     // This enables a project simply to include this file, and any usage of any of
     // the Http functions will trigger initialization.
-    
+
     internal static partial class Http
     {
         static Http()

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -153,7 +153,7 @@ namespace HttpStress
         // returning asynchronously the retrieved response string from the server.  Individual operations can be
         // commented out from here to turn them off, or additional ones can be added.
         public static (string name, Func<RequestContext, Task> operation)[] Operations =>
-            new (string, Func<RequestContext, Task>)[] 
+            new (string, Func<RequestContext, Task>)[]
             {
                 ("GET",
                 async ctx =>
@@ -335,7 +335,7 @@ namespace HttpStress
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
                 }),
-                
+
                 ("POST Duplex Dispose",
                 async ctx =>
                 {

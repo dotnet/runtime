@@ -89,7 +89,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
         }
 
-        public static byte[] ToByteArray(object obj, 
+        public static byte[] ToByteArray(object obj,
             FormatterAssemblyStyle assemblyStyle = FormatterAssemblyStyle.Full)
         {
             BinaryFormatter bf = new BinaryFormatter();
@@ -101,14 +101,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static string ToBase64String(object obj, 
+        public static string ToBase64String(object obj,
             FormatterAssemblyStyle assemblyStyle = FormatterAssemblyStyle.Full)
         {
             byte[] raw = ToByteArray(obj, assemblyStyle);
             return Convert.ToBase64String(raw);
         }
 
-        public static object FromByteArray(byte[] raw, 
+        public static object FromByteArray(byte[] raw,
             FormatterAssemblyStyle assemblyStyle = FormatterAssemblyStyle.Full)
         {
             var binaryFormatter = new BinaryFormatter();
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static object FromBase64String(string base64Str, 
+        public static object FromBase64String(string base64Str,
             FormatterAssemblyStyle assemblyStyle = FormatterAssemblyStyle.Full)
         {
             byte[] raw = Convert.FromBase64String(base64Str);

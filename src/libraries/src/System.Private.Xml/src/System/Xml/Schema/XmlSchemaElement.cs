@@ -303,4 +303,3 @@ namespace System.Xml.Schema
         }
     }
 }
-

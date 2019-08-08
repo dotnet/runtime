@@ -19,4 +19,3 @@ namespace System.Security.Cryptography.X509Certificates
         TrustedPublisher = 8, // trusted publishers (used in Authenticode).
     }
 }
-

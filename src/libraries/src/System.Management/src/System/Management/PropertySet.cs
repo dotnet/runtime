@@ -12,15 +12,15 @@ namespace System.Management
     ///    <para> Represents the set of properties of a WMI object.</para>
     /// </summary>
     /// <example>
-    ///    <code lang='C#'>using System; 
-    /// using System.Management; 
-    /// 
-    /// // This sample demonstrates how to enumerate properties 
+    ///    <code lang='C#'>using System;
+    /// using System.Management;
+    ///
+    /// // This sample demonstrates how to enumerate properties
     /// // in a ManagementObject object.
-    /// class Sample_PropertyDataCollection 
-    /// { 
+    /// class Sample_PropertyDataCollection
+    /// {
     ///     public static int Main(string[] args) {
-    ///         ManagementObject disk = new ManagementObject("win32_logicaldisk.deviceid = \"c:\""); 
+    ///         ManagementObject disk = new ManagementObject("win32_logicaldisk.deviceid = \"c:\"");
     ///         PropertyDataCollection diskProperties = disk.Properties;
     ///         foreach (PropertyData diskProperty in diskProperties) {
     ///             Console.WriteLine("Property = " + diskProperty.Name);
@@ -31,7 +31,7 @@ namespace System.Management
     ///    </code>
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
-    /// 
+    ///
     /// ' This sample demonstrates how to enumerate properties
     /// ' in a ManagementObject object.
     /// Class Sample_PropertyDataCollection
@@ -69,7 +69,7 @@ namespace System.Management
         /// <value>
         ///    <para>The number of objects in the collection.</para>
         /// </value>
-        public int Count 
+        public int Count
         {
             get {
                 string[] propertyNames = null; object qualVal = null;
@@ -99,10 +99,10 @@ namespace System.Management
         ///    <para>Gets or sets a value indicating whether the object is synchronized.</para>
         /// </summary>
         /// <value>
-        /// <para><see langword='true'/> if the object is synchronized; 
+        /// <para><see langword='true'/> if the object is synchronized;
         ///    otherwise, <see langword='false'/>.</para>
         /// </value>
-        public bool IsSynchronized { get { return false; } 
+        public bool IsSynchronized { get { return false; }
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Management
         /// <value>
         ///    <para>The object to be used for synchronization.</para>
         /// </value>
-        public object SyncRoot { get { return this; } 
+        public object SyncRoot { get { return this; }
         }
 
         /// <overload>
@@ -122,7 +122,7 @@ namespace System.Management
         /// </summary>
         /// <param name='array'>The array to which to copy the <see cref='System.Management.PropertyDataCollection'/>. </param>
         /// <param name='index'>The index from which to start copying. </param>
-        public void CopyTo(Array array, int index) 
+        public void CopyTo(Array array, int index)
         {
             if (null == array)
                 throw new ArgumentNullException(nameof(array));
@@ -130,7 +130,7 @@ namespace System.Management
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            // Get the names of the properties 
+            // Get the names of the properties
             string[] nameArray = null;
             object dummy = null;
             int flag = 0;
@@ -139,9 +139,9 @@ namespace System.Management
                 flag |= (int)tag_WBEM_CONDITION_FLAG_TYPE.WBEM_FLAG_SYSTEM_ONLY;
             else
                 flag |= (int)tag_WBEM_CONDITION_FLAG_TYPE.WBEM_FLAG_NONSYSTEM_ONLY;
-                
+
             flag |= (int)tag_WBEM_CONDITION_FLAG_TYPE.WBEM_FLAG_ALWAYS;
-                
+
             int status = this.parent.wbemObject.GetNames_(null, flag, ref dummy, out nameArray);
 
             if (status >= 0)
@@ -186,7 +186,7 @@ namespace System.Management
         /// <para>Returns the enumerator for this <see cref='System.Management.PropertyDataCollection'/>.</para>
         /// </summary>
         /// <returns>
-        /// <para>An <see cref='System.Collections.IEnumerator'/> 
+        /// <para>An <see cref='System.Collections.IEnumerator'/>
         /// that can be used to iterate through the collection.</para>
         /// </returns>
         public PropertyDataEnumerator GetEnumerator()
@@ -196,18 +196,18 @@ namespace System.Management
 
         //Enumerator class
         /// <summary>
-        /// <para>Represents the enumerator for <see cref='System.Management.PropertyData'/> 
+        /// <para>Represents the enumerator for <see cref='System.Management.PropertyData'/>
         /// objects in the <see cref='System.Management.PropertyDataCollection'/>.</para>
         /// </summary>
         /// <example>
-        ///    <code lang='C#'>using System; 
-        /// using System.Management; 
-        /// 
-        /// // This sample demonstrates how to enumerate all properties in a 
-        /// // ManagementObject using the PropertyDataEnumerator object. 
-        /// class Sample_PropertyDataEnumerator 
+        ///    <code lang='C#'>using System;
+        /// using System.Management;
+        ///
+        /// // This sample demonstrates how to enumerate all properties in a
+        /// // ManagementObject using the PropertyDataEnumerator object.
+        /// class Sample_PropertyDataEnumerator
         /// {
-        ///     public static int Main(string[] args) { 
+        ///     public static int Main(string[] args) {
         ///         ManagementObject disk = new ManagementObject("Win32_LogicalDisk.DeviceID='C:'");
         ///         PropertyDataCollection.PropertyDataEnumerator propertyEnumerator = disk.Properties.GetEnumerator();
         ///         while(propertyEnumerator.MoveNext()) {
@@ -220,7 +220,7 @@ namespace System.Management
         ///    </code>
         ///    <code lang='VB'>Imports System
         /// Imports System.Management
-        /// 
+        ///
         /// ' This sample demonstrates how to enumerate all properties in a
         /// ' ManagementObject using PropertyDataEnumerator object.
         /// Class Sample_PropertyDataEnumerator
@@ -267,7 +267,7 @@ namespace System.Management
                         Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
-        
+
             /// <internalonly/>
             object IEnumerator.Current { get { return (object)this.Current; } }
 
@@ -278,7 +278,7 @@ namespace System.Management
             ///    The current <see cref='System.Management.PropertyData'/>
             ///    element in the collection.
             /// </value>
-            public PropertyData Current 
+            public PropertyData Current
             {
                 get {
                     if ((index == -1) || (index == propertyNames.Length))
@@ -289,11 +289,11 @@ namespace System.Management
             }
 
             /// <summary>
-            /// <para> Moves to the next element in the <see cref='System.Management.PropertyDataCollection'/> 
+            /// <para> Moves to the next element in the <see cref='System.Management.PropertyDataCollection'/>
             /// enumeration.</para>
             /// </summary>
             /// <returns>
-            /// <para><see langword='true'/> if the enumerator was successfully advanced to the next element; 
+            /// <para><see langword='true'/> if the enumerator was successfully advanced to the next element;
             /// <see langword='false'/> if the enumerator has passed the end of the collection.</para>
             /// </returns>
             public bool MoveNext()
@@ -306,14 +306,14 @@ namespace System.Management
             }
 
             /// <summary>
-            /// <para>Resets the enumerator to the beginning of the <see cref='System.Management.PropertyDataCollection'/> 
+            /// <para>Resets the enumerator to the beginning of the <see cref='System.Management.PropertyDataCollection'/>
             /// enumeration.</para>
             /// </summary>
             public void Reset()
             {
                 index = -1;
             }
-            
+
         }//PropertyDataEnumerator
 
 
@@ -338,9 +338,9 @@ namespace System.Management
         /// Console.WriteLine("Free space on C: drive is: " &amp; c.Properties("FreeSpace").Value)
         ///    </code>
         /// </example>
-        public virtual PropertyData this[string propertyName] 
+        public virtual PropertyData this[string propertyName]
         {
-            get { 
+            get {
                 if (null == propertyName)
                     throw new ArgumentNullException(nameof(propertyName));
 
@@ -353,7 +353,7 @@ namespace System.Management
         /// </summary>
         /// <param name='propertyName'>The name of the property to be removed.</param>
         /// <remarks>
-        ///    <para> Properties can only be removed from class definitions, 
+        ///    <para> Properties can only be removed from class definitions,
         ///       not from instances. This method is only valid when invoked on a property
         ///       collection in a <see cref='System.Management.ManagementClass'/>.</para>
         /// </remarks>
@@ -397,7 +397,7 @@ namespace System.Management
         /// <param name='propertyName'>The name of the new property.</param>
         /// <param name='propertyValue'>The value of the property (cannot be null).</param>
         /// <remarks>
-        ///    <para> Properties can only be added to class definitions, not 
+        ///    <para> Properties can only be added to class definitions, not
         ///       to instances. This method is only valid when invoked on a <see cref='System.Management.PropertyDataCollection'/>
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
@@ -436,7 +436,7 @@ namespace System.Management
         /// <param name='propertyValue'>The value of the property (which can be null).</param>
         /// <param name='propertyType'>The CIM type of the property.</param>
         /// <remarks>
-        ///    <para> Properties can only be added to class definitions, not 
+        ///    <para> Properties can only be added to class definitions, not
         ///       to instances. This method is only valid when invoked on a <see cref='System.Management.PropertyDataCollection'/>
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
@@ -470,7 +470,7 @@ namespace System.Management
                     Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
         }
-        
+
         /// <summary>
         /// <para>Adds a new <see cref='System.Management.PropertyData'/> with no assigned value.</para>
         /// </summary>
@@ -478,7 +478,7 @@ namespace System.Management
         /// <param name='propertyType'>The CIM type of the property.</param>
         /// <param name='isArray'><see langword='true'/> to specify that the property is an array type; otherwise, <see langword='false'/>.</param>
         /// <remarks>
-        ///    <para> Properties can only be added to class definitions, not 
+        ///    <para> Properties can only be added to class definitions, not
         ///       to instances. This method is only valid when invoked on a <see cref='System.Management.PropertyDataCollection'/>
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
@@ -491,8 +491,8 @@ namespace System.Management
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
                 throw new InvalidOperationException();
 
-            int wmiCimType = (int)propertyType;  
-            
+            int wmiCimType = (int)propertyType;
+
             if (isArray)
                 wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
 
@@ -508,6 +508,6 @@ namespace System.Management
                     Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
         }
-        
+
     }//PropertyDataCollection
 }

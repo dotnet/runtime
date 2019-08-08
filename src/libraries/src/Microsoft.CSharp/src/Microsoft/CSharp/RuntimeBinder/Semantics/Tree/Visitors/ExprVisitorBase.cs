@@ -293,10 +293,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   The following exprs are used to represent the results of type binding, and are defined as follows:
 
                   TYPEARGUMENTS - This wraps the type arguments for a class. It contains the TypeArray* which is
-                    associated with the AggregateType for the instantiation of the class. 
+                    associated with the AggregateType for the instantiation of the class.
 
                   TYPEORNAMESPACE - This is the base class for this set of Exprs. When binding a type, the result
-                    must be a type or a namespace. This Expr encapsulates that fact. The lhs member is the Expr 
+                    must be a type or a namespace. This Expr encapsulates that fact. The lhs member is the Expr
                     tree that was bound to resolve the type or namespace.
 
                   TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we don't know

@@ -535,7 +535,7 @@ namespace System.ComponentModel.Composition
             }
 
             if (useEllipses)
-            {   // Add an elipse to indicate that there 
+            {   // Add an elipse to indicate that there
                 // are more types than actually listed
                 builder.Append(CultureInfo.CurrentCulture.TextInfo.ListSeparator);
                 builder.Append(" ...");

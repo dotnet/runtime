@@ -11,5 +11,3 @@ namespace System.Data.Odbc
         public static readonly string SQLType = "SQLType";
     }
 }
-
-

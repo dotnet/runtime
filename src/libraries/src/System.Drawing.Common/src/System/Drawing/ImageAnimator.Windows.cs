@@ -12,30 +12,30 @@ namespace System.Drawing
     /// <summary>
     ///     Animates one or more images that have time-based frames.
     ///     See the ImageInfo.cs file for the helper nested ImageInfo class.
-    ///     
+    ///
     ///     A common pattern for using this class is as follows (See PictureBox control):
     ///     1. The winform app (user's code) calls ImageAnimator.Animate() from the main thread.
-    ///     2. Animate() spawns the animating (worker) thread in the background, which will update the image 
+    ///     2. Animate() spawns the animating (worker) thread in the background, which will update the image
     ///        frames and raise the OnFrameChanged event, which handler will be executed in the main thread.
     ///     3. The main thread triggers a paint event (Invalidate()) from the OnFrameChanged handler.
-    ///     4. From the OnPaint event, the main thread calls ImageAnimator.UpdateFrames() and then paints the 
+    ///     4. From the OnPaint event, the main thread calls ImageAnimator.UpdateFrames() and then paints the
     ///        image (updated frame).
     ///     5. The main thread calls ImageAnimator.StopAnimate() when needed. This does not kill the worker thread.
-    ///     
+    ///
     ///     Comment on locking the image ref:
     ///     We need to synchronize access to sections of code that modify the image(s), but we don't want to block
     ///     animation of one image when modifying a different one; for this, we use the image ref for locking the
     ///     critical section (lock(image)).
-    ///     
+    ///
     ///     This class is safe for multi-threading but Image is not; multithreaded applications must use a critical
     ///     section lock using the image ref the image access is not from the same thread that executes ImageAnimator
-    ///     code.  If the user code locks on the image ref forever a deadlock will happen preventing the animation 
+    ///     code.  If the user code locks on the image ref forever a deadlock will happen preventing the animation
     ///     from occurring.
-    /// </summary>                                
+    /// </summary>
     public sealed partial class ImageAnimator
     {
         /// <summary>
-        ///     A list of images to be animated.    
+        ///     A list of images to be animated.
         /// </summary>
         private static List<ImageInfo> s_imageInfoList;
 
@@ -53,24 +53,24 @@ namespace System.Drawing
         private static Thread s_animationThread;
 
         /// <summary>
-        ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write- 
+        ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write-
         ///     access to it for a single thread.  Observe that synchronization access to image objects are done
         ///     with critical sections (lock).
         /// </summary>
         private static ReaderWriterLock s_rwImgListLock = new ReaderWriterLock();
 
         /// <summary>
-        ///     Flag to avoid a deadlock when waiting on a write-lock and an attempt to acquire a read-lock is 
-        ///     made in the same thread. If RWLock is currently owned by another thread, the current thread is going to wait on an 
-        ///     event using CoWaitForMultipleHandles while pumps message. 
+        ///     Flag to avoid a deadlock when waiting on a write-lock and an attempt to acquire a read-lock is
+        ///     made in the same thread. If RWLock is currently owned by another thread, the current thread is going to wait on an
+        ///     event using CoWaitForMultipleHandles while pumps message.
         ///     The comment above refers to the COM STA message pump, not to be confused with the UI message pump.
         ///     However, the effect is the same, the COM message pump will pump messages and dispatch them to the
-        ///     window while waiting on the writer lock; this has the potential of creating a re-entrancy situation 
-        ///     that if during the message processing a wait on a reader lock is originated the thread will be block 
+        ///     window while waiting on the writer lock; this has the potential of creating a re-entrancy situation
+        ///     that if during the message processing a wait on a reader lock is originated the thread will be block
         ///     on itself.
-        ///     While processing STA message, the thread may call back into managed code. We do this because 
-        ///     we can not block finalizer thread.  Finalizer thread may need to release STA objects on this thread. If 
-        ///     the current thread does not pump message, finalizer thread is blocked, and AD  unload is blocked while 
+        ///     While processing STA message, the thread may call back into managed code. We do this because
+        ///     we can not block finalizer thread.  Finalizer thread may need to release STA objects on this thread. If
+        ///     the current thread does not pump message, finalizer thread is blocked, and AD  unload is blocked while
         ///     waiting for finalizer thread. RWLock is a fair lock. If a thread waits for a writer lock, then it needs
         ///     a reader lock while pumping message, the thread is blocked forever.
         ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
@@ -106,7 +106,7 @@ namespace System.Drawing
                 return;
             }
 
-            // If the current thread already has the writer lock, no reader lock is acquired. Instead, the lock count on 
+            // If the current thread already has the writer lock, no reader lock is acquired. Instead, the lock count on
             // the writer lock is incremented. It already has a reader lock, the locks ref count will be incremented
             // w/o placing the request at the end of the reader queue.
 
@@ -216,8 +216,8 @@ namespace System.Drawing
             StopAnimate(image, onFrameChangedHandler);
 
             // Acquire a writer lock to modify the image info list.  If the thread has a reader lock we need to upgrade
-            // it to a writer lock; acquiring a reader lock in this case would block the thread on itself.  
-            // If the thread already has a writer lock its ref count will be incremented w/o placing the request in the 
+            // it to a writer lock; acquiring a reader lock in this case would block the thread on itself.
+            // If the thread already has a writer lock its ref count will be incremented w/o placing the request in the
             // writer queue.  See ReaderWriterLock.AcquireWriterLock method in the MSDN.
 
             bool readerLockHeld = s_rwImgListLock.IsReaderLockHeld;
@@ -247,7 +247,7 @@ namespace System.Drawing
                 if (imageInfo.Animated)
                 {
                     // Construct the image array
-                    //                               
+                    //
                     if (s_imageInfoList == null)
                     {
                         s_imageInfoList = new List<ImageInfo>();
@@ -317,7 +317,7 @@ namespace System.Drawing
         /// </summary>
         public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
         {
-            // Make sure we have a list of images                       
+            // Make sure we have a list of images
             if (image == null || s_imageInfoList == null)
             {
                 return;
@@ -380,8 +380,8 @@ namespace System.Drawing
 
         /// <summary>
         ///     Worker thread procedure which implements the main animation loop.
-        ///     NOTE: This is the ONLY code the worker thread executes, keeping it in one method helps better understand 
-        ///     any synchronization issues.  
+        ///     NOTE: This is the ONLY code the worker thread executes, keeping it in one method helps better understand
+        ///     any synchronization issues.
         ///     WARNING: Also, this is the only place where ImageInfo objects (not the contained image object) are modified,
         ///     so no access synchronization is required to modify them.
         /// </summary>
@@ -392,7 +392,7 @@ namespace System.Drawing
             while (true)
             {
                 // Acquire reader-lock to access imageInfoList, elemens in the list can be modified w/o needing a writer-lock.
-                // Observe that we don't need to check if the thread is waiting or a writer lock here since the thread this 
+                // Observe that we don't need to check if the thread is waiting or a writer lock here since the thread this
                 // method runs in never acquires a writer lock.
                 s_rwImgListLock.AcquireReaderLock(Timeout.Infinite);
                 try
@@ -437,4 +437,3 @@ namespace System.Drawing
         }
     }
 }
-

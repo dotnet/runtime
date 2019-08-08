@@ -720,7 +720,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                // commit changes           
+                // commit changes
                 cachedEntry.CommitChanges();
 
                 foreach (DictionaryEntry e in _subnets.changeList)
@@ -737,11 +737,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 }
 
-                // reset status variables            
+                // reset status variables
                 _subnets.changeList.Clear();
                 _subnetRetrieved = false;
 
-                // need to throw better exception for ADAM since its SMTP transport is not available            
+                // need to throw better exception for ADAM since its SMTP transport is not available
                 foreach (DictionaryEntry e in _SMTPBridgeheadServers.changeList)
                 {
                     try
@@ -820,7 +820,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         tmpEntry.CommitChanges();
-                        // cached the entry                 
+                        // cached the entry
                         _ntdsEntry = tmpEntry;
 
                         // create servers contain object
@@ -899,7 +899,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    // go through connection objects and find out its fromServer property. 
+                    // go through connection objects and find out its fromServer property.
                     ADSearcher adSearcher = new ADSearcher(de,
                                                           "(|(objectCategory=server)(objectCategory=NTDSConnection))",
                                                           new string[] { "fromServer", "distinguishedName", "dNSHostName", "objectCategory" },
@@ -935,7 +935,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             {
                                 string fromServer = (string)PropertyManager.GetSearchResultPropertyValue(r, PropertyManager.FromServer);
 
-                                // escaping manipulation                                
+                                // escaping manipulation
                                 string fromSite = Utils.GetPartialDN(fromServer, 3);
                                 pathCracker.Set(fromSite, NativeComInterfaces.ADS_SETTYPE_DN);
                                 fromSite = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
@@ -1092,7 +1092,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (disposing)
             {
-                // free other state (managed objects)                
+                // free other state (managed objects)
                 if (cachedEntry != null)
                     cachedEntry.Dispose();
 
@@ -1100,7 +1100,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     _ntdsEntry.Dispose();
             }
 
-            // free your own state (unmanaged objects)   
+            // free your own state (unmanaged objects)
 
             _disposed = true;
         }
@@ -1133,7 +1133,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void GetSubnets()
         {
-            // performs a search to find out the subnets that belong to this site     
+            // performs a search to find out the subnets that belong to this site
             DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
             string config = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.ConfigurationNamingContext);
             string subnetContainer = "CN=Subnets,CN=Sites," + config;
@@ -1224,7 +1224,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         link = new ActiveDirectorySiteLink(context, linkName, transportType, true, result.GetDirectoryEntry());
                         foreach (ActiveDirectorySite tmpSite in link.Sites)
                         {
-                            // don't add itself                            
+                            // don't add itself
                             if (Utils.Compare(tmpSite.Name, Name) == 0)
                                 continue;
 

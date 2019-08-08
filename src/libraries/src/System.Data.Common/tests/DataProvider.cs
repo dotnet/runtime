@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -82,7 +82,7 @@ namespace System.Data.Tests
 
         //This method replace the DataSet GetXmlSchema method
         //used to compare DataSets
-        //Created by Ofer (13-Nov-03) becuase DataSet GetXmlSchema method is not yet implemented in java 
+        //Created by Ofer (13-Nov-03) becuase DataSet GetXmlSchema method is not yet implemented in java
         public static string GetDSSchema(DataSet ds)
         {
             string strSchema = "DataSet Name=" + ds.DataSetName + "\n";
@@ -100,7 +100,7 @@ namespace System.Data.Tests
             foreach (DataTable dt in ds.Tables)
             {
                 strSchema += "Table=" + dt.TableName + "\t";
-                //Get Constraints  
+                //Get Constraints
                 strSchema += "Constraints =";
                 foreach (Constraint cs in dt.Constraints)
                     strSchema += cs.GetType().Name + ", ";

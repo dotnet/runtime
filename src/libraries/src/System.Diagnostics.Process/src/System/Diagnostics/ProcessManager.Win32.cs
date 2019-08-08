@@ -13,39 +13,39 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        public static IntPtr GetMainWindowHandle(int processId) 
+        public static IntPtr GetMainWindowHandle(int processId)
         {
             MainWindowFinder finder = new MainWindowFinder();
             return finder.FindMainWindow(processId);
         }
     }
 
-    internal sealed class MainWindowFinder 
+    internal sealed class MainWindowFinder
     {
         private const int GW_OWNER = 4;
         private IntPtr _bestHandle;
         private int _processId;
- 
+
         public IntPtr FindMainWindow(int processId)
         {
             _bestHandle = (IntPtr)0;
             _processId = processId;
-            
+
             Interop.User32.EnumThreadWindowsCallback callback = new Interop.User32.EnumThreadWindowsCallback(EnumWindowsCallback);
             Interop.User32.EnumWindows(callback, IntPtr.Zero);
- 
+
             GC.KeepAlive(callback);
             return _bestHandle;
         }
- 
-        private bool IsMainWindow(IntPtr handle) 
-        {           
+
+        private bool IsMainWindow(IntPtr handle)
+        {
             if (Interop.User32.GetWindow(handle, GW_OWNER) != (IntPtr)0 || !Interop.User32.IsWindowVisible(handle))
                 return false;
-            
+
             return true;
         }
- 
+
         private bool EnumWindowsCallback(IntPtr handle, IntPtr extraParameter) {
             int processId;
             Interop.User32.GetWindowThreadProcessId(handle, out processId);
@@ -98,7 +98,7 @@ namespace System.Diagnostics
                         // psapi!EnumProcessModules will return false with ERROR_PARTIAL_COPY (299).  In this case we can't
                         // do the enumeration at all.  So we'll detect this case and bail out.
                         //
-                        // Also, EnumProcessModules is not a reliable method to get the modules for a process. 
+                        // Also, EnumProcessModules is not a reliable method to get the modules for a process.
                         // If OS loader is touching module information, this method might fail and copy part of the data.
                         // This is no easy solution to this problem. The only reliable way to fix this is to
                         // suspend all the threads in target process. Of course we don't want to do this in Process class.
@@ -277,7 +277,7 @@ namespace System.Diagnostics
 
                     unsafe
                     {
-                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed 
+                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
                         // by GetProcessInfos below
                         fixed (long* bufferPtr = buffer)
                         {
@@ -327,7 +327,7 @@ namespace System.Diagnostics
                 if (newSize < existingBufferSize)
                 {
                     // In reality, we should never overflow.
-                    // Adding the code here just in case it happens.    
+                    // Adding the code here just in case it happens.
                     throw new OutOfMemoryException();
                 }
                 return newSize;
@@ -389,7 +389,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            // for normal process without name, using the process ID. 
+                            // for normal process without name, using the process ID.
                             processInfo.ProcessName = processInfo.ProcessId.ToString(CultureInfo.InvariantCulture);
                         }
                     }
@@ -435,9 +435,9 @@ namespace System.Diagnostics
             return temp;
         }
 
-        // This function generates the short form of process name. 
+        // This function generates the short form of process name.
         //
-        // This is from GetProcessShortName in NT code base. 
+        // This is from GetProcessShortName in NT code base.
         // Check base\screg\winreg\perfdlls\process\perfsprc.c for details.
         internal static string GetProcessShortName(string name)
         {

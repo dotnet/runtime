@@ -19,7 +19,7 @@ internal partial class Interop
         }
 
         internal static unsafe string RtlGetVersion()
-        {            
+        {
             const string Version = "Microsoft Windows";
             if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
             {

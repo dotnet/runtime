@@ -41,10 +41,10 @@ namespace System.Threading.Tasks.Dataflow
         public long Id { get { return _id; } }
 
         // These overrides are required by the FX API Guidelines.
-        // NOTE: When these overrides are present, the compiler doesn't complain about statements 
+        // NOTE: When these overrides are present, the compiler doesn't complain about statements
         // like 'if (struct == null) ...' which will result in incorrect behavior at runtime.
         // The product code should not use them. Instead, it should compare the Id properties.
-        // To verify that, every once in a while, comment out this region and build the product. 
+        // To verify that, every once in a while, comment out this region and build the product.
         #region Comparison Operators
         /// <summary>Checks two <see cref="DataflowMessageHeader"/> instances for equality by ID without boxing.</summary>
         /// <param name="other">Another <see cref="DataflowMessageHeader"/> instance.</param>

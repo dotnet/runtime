@@ -563,7 +563,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             p2[0] = false;
             return;
         }
-        
+
         public static bool StaticMethod_ReturnBool() => false;
     }
 }
@@ -604,7 +604,7 @@ namespace System.Dynamic.Runtime.Tests
             Assert.True(tc.BoolProperty);
             Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, tc.ByteArray);
         }
-        
+
         public class TestClass
         {
             public MyStruct ms;
@@ -727,7 +727,7 @@ namespace System.Dynamic.Runtime.Tests
 
             Assert.Equal("a", result.ToString().Trim());
         }
-        
+
         // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass011.regclass011
         [Fact]
         public static void CalledFrom_LockExpression()
@@ -953,7 +953,7 @@ namespace System.Dynamic.Runtime.Tests
             Assert.Equal(2, m.Value.Number);
             Assert.Equal(new byte?[] { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 }, result);
         }
-        
+
         // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass028.regclass028
         [Fact]
         public static void CalledFrom_GenericStaticMethodBody1()
@@ -1369,7 +1369,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1451,7 +1451,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1533,7 +1533,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1577,7 +1577,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         private static short? s_p2 = 2;
         private static byte s_p3 = 0;
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1733,7 +1733,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1829,7 +1829,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1984,7 +1984,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2064,7 +2064,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2190,7 +2190,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2258,7 +2258,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2419,7 +2419,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2551,7 +2551,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         private int[] _p2 = new int[2];
         private bool?[] _p3 = new bool?[6];
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2645,7 +2645,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2694,7 +2694,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2839,7 +2839,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
             s_result = (string[])dy.Method_ReturnStringArr(ref s_m);
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2869,7 +2869,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2955,7 +2955,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2994,7 +2994,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -3132,7 +3132,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
     public class Test
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -18,7 +18,7 @@ namespace CoreXml.Test.XLinq
             {
                 // open on different node types, scoping
                 // namespaces ...
-                // read subtree (scoping)      
+                // read subtree (scoping)
                 // adjacent text nodes
 
                 private string _xml = "<?xml version='1.0'?>\t<A><?PI?><!--comment1--><B xmlns='x' xmlns:p='nsp'>some_text<C/><?PIX click?><D xmlns='y'/><!--comm2--><p:E/></B></A>";
@@ -60,7 +60,7 @@ namespace CoreXml.Test.XLinq
                         TestLog.Compare(r.ReadState, ReadState.Initial, "r.ReadState before Read()");
                         r.Read();
                         TestLog.Compare(r.ReadState, ReadState.Interactive, "r.ReadState after Read()");
-                        TestLog.Compare(r.NodeType, (nodeType == XmlNodeType.Text && count == 0) ? XmlNodeType.Whitespace : nodeType, "r.NodeType"); // 
+                        TestLog.Compare(r.NodeType, (nodeType == XmlNodeType.Text && count == 0) ? XmlNodeType.Whitespace : nodeType, "r.NodeType"); //
                         switch (nodeType)
                         {
                             case XmlNodeType.Element:

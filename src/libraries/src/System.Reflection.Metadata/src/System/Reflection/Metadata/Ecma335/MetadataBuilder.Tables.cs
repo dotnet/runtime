@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private const byte MetadataFormatMajorVersion = 2;
         private const byte MetadataFormatMinorVersion = 0;
-        
+
         // type system table rows:
         private struct AssemblyRefTableRow { public Version Version; public BlobHandle PublicKeyToken; public StringHandle Name; public StringHandle Culture; public uint Flags; public BlobHandle HashValue; }
         private struct ModuleRow { public ushort Generation; public StringHandle Name; public GuidHandle ModuleVersionId; public GuidHandle EncId; public GuidHandle EncBaseId; }
@@ -51,12 +51,12 @@ namespace System.Reflection.Metadata.Ecma335
         private struct TypeRefRow { public int ResolutionScope; public StringHandle Name; public StringHandle Namespace; }
         private struct TypeSpecRow { public BlobHandle Signature; }
         private struct StandaloneSigRow { public BlobHandle Signature; }
-       
+
         // debug table rows:
         private struct DocumentRow { public BlobHandle Name; public GuidHandle HashAlgorithm; public BlobHandle Hash; public GuidHandle Language; }
         private struct MethodDebugInformationRow { public int Document; public BlobHandle SequencePoints; }
         private struct LocalScopeRow { public int Method; public int ImportScope; public int VariableList; public int ConstantList; public int StartOffset; public int Length; }
-        private struct LocalVariableRow { public ushort Attributes; public ushort Index; public StringHandle Name; } 
+        private struct LocalVariableRow { public ushort Attributes; public ushort Index; public StringHandle Name; }
         private struct LocalConstantRow { public StringHandle Name; public BlobHandle Signature; }
         private struct ImportScopeRow { public int Parent; public BlobHandle Imports; }
         private struct StateMachineMethodRow { public int MoveNextMethod; public int KickoffMethod; }
@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly List<EncLogRow> _encLogTable = new List<EncLogRow>();
         private readonly List<EncMapRow> _encMapTable = new List<EncMapRow>();
         private readonly List<EventRow> _eventTable = new List<EventRow>();
-        private readonly List<EventMapRow> _eventMapTable = new List<EventMapRow>();        
+        private readonly List<EventMapRow> _eventMapTable = new List<EventMapRow>();
         private readonly List<ExportedTypeRow> _exportedTypeTable = new List<ExportedTypeRow>();
         private readonly List<FieldLayoutRow> _fieldLayoutTable = new List<FieldLayoutRow>();
 
@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly List<CustomDebugInformationRow> _customDebugInformationTable = new List<CustomDebugInformationRow>();
 
         /// <summary>
-        /// Sets the capacity of the specified table. 
+        /// Sets the capacity of the specified table.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="table"/> is not a valid table index.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="rowCount"/> is negative.</exception>
@@ -349,9 +349,9 @@ namespace System.Reflection.Metadata.Ecma335
         #region Building
 
         // Note on argument value checking:
-        // 
-        // To avoid perf overhead we do minimal argument checking. 
-        // We only check integer parameter bounds if we perform a narrowing conversion, 
+        //
+        // To avoid perf overhead we do minimal argument checking.
+        // We only check integer parameter bounds if we perform a narrowing conversion,
         // so that we don't mangle values that match the Add method signature but are too big to represent in the metadata.
         // We do not validate ranges of enum values, we just ignore high bits when converting to smaller integral type.
         // Adding such checks would unlikely catch bugs in reasonably written code.
@@ -386,7 +386,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         public AssemblyDefinitionHandle AddAssembly(
-            StringHandle name, 
+            StringHandle name,
             Version version,
             StringHandle culture,
             BlobHandle publicKey,
@@ -459,7 +459,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <exception cref="ArgumentException"><paramref name="baseType"/> doesn't have the expected handle kind.</exception>
         public TypeDefinitionHandle AddTypeDefinition(
-            TypeAttributes attributes, 
+            TypeAttributes attributes,
             StringHandle @namespace,
             StringHandle name,
             EntityHandle baseType,
@@ -484,13 +484,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="type">Type definition.</param>
         /// <param name="packingSize">
-        /// Specifies that fields should be placed within the type instance at byte addresses which are a multiple of the value, 
-        /// or at natural alignment for that field type, whichever is smaller. Shall be one of the following: 0, 1, 2, 4, 8, 16, 32, 64, or 128. 
+        /// Specifies that fields should be placed within the type instance at byte addresses which are a multiple of the value,
+        /// or at natural alignment for that field type, whichever is smaller. Shall be one of the following: 0, 1, 2, 4, 8, 16, 32, 64, or 128.
         /// A value of zero indicates that the packing size used should match the default for the current platform.
         /// </param>
         /// <param name="size">
-        /// Indicates a minimum size of the type instance, and is intended to allow for padding. 
-        /// The amount of memory allocated is the maximum of the size calculated from the layout and <paramref name="size"/>. 
+        /// Indicates a minimum size of the type instance, and is intended to allow for padding.
+        /// The amount of memory allocated is the maximum of the size calculated from the layout and <paramref name="size"/>.
         /// Note that if this directive applies to a value type, then the size shall be less than 1 MB.
         /// </param>
         /// <remarks>
@@ -514,7 +514,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="type">The type implementing the interface.</param>
         /// <param name="implementedInterface">
-        /// The interface being implemented: 
+        /// The interface being implemented:
         /// <see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/>.
         /// </param>
         /// <remarks>
@@ -558,15 +558,15 @@ namespace System.Reflection.Metadata.Ecma335
         /// Add a type reference.
         /// </summary>
         /// <param name="resolutionScope">
-        /// The entity declaring the target type: 
+        /// The entity declaring the target type:
         /// <see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/>, <see cref="TypeReferenceHandle"/>, or nil.
         /// </param>
         /// <param name="namespace">Namespace.</param>
         /// <param name="name">Type name.</param>
         /// <exception cref="ArgumentException"><paramref name="resolutionScope"/> doesn't have the expected handle kind.</exception>
         public TypeReferenceHandle AddTypeReference(
-            EntityHandle resolutionScope, 
-            StringHandle @namespace, 
+            EntityHandle resolutionScope,
+            StringHandle @namespace,
             StringHandle name)
         {
             _typeRefTable.Add(new TypeRefRow
@@ -711,7 +711,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Add a custom attribute.
         /// </summary>
         /// <param name="parent">
-        /// An entity to attach the custom attribute to: 
+        /// An entity to attach the custom attribute to:
         /// <see cref="MethodDefinitionHandle"/>,
         /// <see cref="FieldDefinitionHandle"/>,
         /// <see cref="TypeReferenceHandle"/>,
@@ -972,9 +972,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="name">Method name/</param>
         /// <param name="signature">Method signature.</param>
         /// <param name="bodyOffset">
-        /// Offset within the block in the PE image that stores method bodies (IL stream), 
+        /// Offset within the block in the PE image that stores method bodies (IL stream),
         /// or -1 if the method doesn't have a body.
-        /// 
+        ///
         /// The final relative virtual address stored in the metadata is calculated when the metadata is serialized
         /// by adding the offset to the virtual address of the beginning of the block.
         /// </param>
@@ -984,7 +984,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bodyOffset"/> is less than -1.</exception>
         public MethodDefinitionHandle AddMethodDefinition(
-            MethodAttributes attributes, 
+            MethodAttributes attributes,
             MethodImplAttributes implAttributes,
             StringHandle name,
             BlobHandle signature,
@@ -1021,8 +1021,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </remarks>
         public void AddMethodImport(
             MethodDefinitionHandle method,
-            MethodImportAttributes attributes, 
-            StringHandle name, 
+            MethodImportAttributes attributes,
+            StringHandle name,
             ModuleReferenceHandle module)
         {
             _implMapTable.Add(new ImplMapRow
@@ -1063,10 +1063,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// Adds a MemberRef table row.
         /// </summary>
         /// <param name="parent">Containing entity:
-        /// <see cref="TypeDefinitionHandle"/>, 
-        /// <see cref="TypeReferenceHandle"/>, 
+        /// <see cref="TypeDefinitionHandle"/>,
+        /// <see cref="TypeReferenceHandle"/>,
         /// <see cref="ModuleReferenceHandle"/>,
-        /// <see cref="MethodDefinitionHandle"/>, or 
+        /// <see cref="MethodDefinitionHandle"/>, or
         /// <see cref="TypeSpecificationHandle"/>.
         /// </param>
         /// <param name="name">Member name.</param>
@@ -1271,7 +1271,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="startOffset">Offset of the first instruction covered by the scope.</param>
         /// <param name="length">The length (in bytes) of the scope.</param>
         /// <remarks>
-        /// Local scopes should be added in the same order as the corresponding method definition. 
+        /// Local scopes should be added in the same order as the corresponding method definition.
         /// Within a method they should be ordered by ascending <paramref name="startOffset"/> and then by descending <paramref name="length"/>.
         /// </remarks>
         public LocalScopeHandle AddLocalScope(MethodDefinitionHandle method, ImportScopeHandle importScope, LocalVariableHandle variableList, LocalConstantHandle constantList, int startOffset, int length)
@@ -1318,7 +1318,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="name">Name of the variable.</param>
         /// <param name="signature">
-        /// LocalConstantSig blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstantsig-blob. 
+        /// LocalConstantSig blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstantsig-blob.
         /// </param>
         public LocalConstantHandle AddLocalConstant(StringHandle name, BlobHandle signature)
         {
@@ -1336,7 +1336,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="parentScope">Parent scope handle.</param>
         /// <param name="imports">
-        /// Imports blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#imports-blob. 
+        /// Imports blob, see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#imports-blob.
         /// </param>
         public ImportScopeHandle AddImportScope(ImportScopeHandle parentScope, BlobHandle imports)
         {
@@ -1370,7 +1370,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Add custom debug information.
         /// </summary>
         /// <param name="parent">
-        /// An entity to attach the debug information to: 
+        /// An entity to attach the debug information to:
         /// <see cref="MethodDefinitionHandle"/>,
         /// <see cref="FieldDefinitionHandle"/>,
         /// <see cref="TypeReferenceHandle"/>,
@@ -1428,7 +1428,7 @@ namespace System.Reflection.Metadata.Ecma335
             // Table                    Keys                                Auto-ordered
             // --------------------------------------------------------------------------
             // ClassLayout              Parent                              No*
-            // Constant                 Parent                              Yes  
+            // Constant                 Parent                              Yes
             // CustomAttribute          Parent                              Yes
             // DeclSecurity             Parent                              Yes
             // FieldLayout              Field                               No*
@@ -1445,16 +1445,16 @@ namespace System.Reflection.Metadata.Ecma335
             // StateMachineMethod       MoveNextMethod                      No*
             // CustomDebugInformation   Parent                              Yes
             //
-            // Tables of entities that can't be referenced from other tables or blobs 
+            // Tables of entities that can't be referenced from other tables or blobs
             // are automatically ordered during serialization and thus don't require validation.
             //
-            // * We could potentially auto-order these. These tables are adding extra (optional) 
-            // information to a primary entity (TypeDef, FiledDef, etc.) and are thus easily emitted 
-            // in the same order as the parent entity. Hence they would usually be ordered already and 
+            // * We could potentially auto-order these. These tables are adding extra (optional)
+            // information to a primary entity (TypeDef, FiledDef, etc.) and are thus easily emitted
+            // in the same order as the parent entity. Hence they would usually be ordered already and
             // it would be extra overhead to order them. Let's just required them ordered.
             //
-            // ** We can't easily automatically order these since they represent entities that can be referenced 
-            // by other tables/blobs (e.g. CustomAttribute and CustomDebugInformation). Ordering these tables 
+            // ** We can't easily automatically order these since they represent entities that can be referenced
+            // by other tables/blobs (e.g. CustomAttribute and CustomDebugInformation). Ordering these tables
             // would require updating all references.
 
             ValidateClassLayoutTable();
@@ -2080,7 +2080,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             var ordered = _fieldMarshalTableNeedsSorting ? _fieldMarshalTable.OrderBy((x, y) => x.Parent - y.Parent) : _fieldMarshalTable;
-            
+
             foreach (FieldMarshalRow fieldMarshal in ordered)
             {
                 writer.WriteReference(fieldMarshal.Parent, metadataSizes.HasFieldMarshalCodedIndexIsSmall);
@@ -2093,7 +2093,7 @@ namespace System.Reflection.Metadata.Ecma335
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
             var ordered = _declSecurityTableNeedsSorting ? _declSecurityTable.OrderBy((x, y) => x.Parent - y.Parent) : _declSecurityTable;
-            
+
             foreach (DeclSecurityRow declSecurity in ordered)
             {
                 writer.WriteUInt16(declSecurity.Action);
@@ -2172,7 +2172,7 @@ namespace System.Reflection.Metadata.Ecma335
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
             var ordered = _methodSemanticsTableNeedsSorting ? _methodSemanticsTable.OrderBy((x, y) => (int)x.Association - (int)y.Association) : _methodSemanticsTable;
-            
+
             foreach (MethodSemanticsRow methodSemantic in ordered)
             {
                 writer.WriteUInt16(methodSemantic.Semantic);
@@ -2303,7 +2303,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         private void SerializeGenericParamTable(BlobBuilder writer, ImmutableArray<int> stringMap, MetadataSizes metadataSizes)
-        {         
+        {
             foreach (GenericParamRow genericParam in _genericParamTable)
             {
                 writer.WriteUInt16(genericParam.Number);

@@ -20,7 +20,7 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
-        // Note: this is initialized at class load because we 
+        // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
@@ -80,7 +80,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This property returns a Type object that can be passed to the various 
+        /// This property returns a Type object that can be passed to the various
         /// AddProvider methods to define a type description provider for interface types.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -99,13 +99,13 @@ namespace System.ComponentModel
         public static event RefreshEventHandler Refreshed;
 
         /// <summary>
-        /// The AddAttributes method allows you to add class-level attributes for a 
-        /// type or an instance. This method simply implements a type description provider 
-        /// that merges the provided attributes with the attributes that already exist on 
-        /// the class. This is a short cut for such a behavior. Adding additional 
-        /// attributes is common need for applications using the Windows Forms property 
-        /// window. The return value form AddAttributes is the TypeDescriptionProvider 
-        /// that was used to add the attributes. This provider can later be passed to 
+        /// The AddAttributes method allows you to add class-level attributes for a
+        /// type or an instance. This method simply implements a type description provider
+        /// that merges the provided attributes with the attributes that already exist on
+        /// the class. This is a short cut for such a behavior. Adding additional
+        /// attributes is common need for applications using the Windows Forms property
+        /// window. The return value form AddAttributes is the TypeDescriptionProvider
+        /// that was used to add the attributes. This provider can later be passed to
         /// RemoveProvider if the added attributes are no longer needed.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -128,13 +128,13 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The AddAttributes method allows you to add class-level attributes for a 
-        /// type or an instance. This method simply implements a type description provider 
-        /// that merges the provided attributes with the attributes that already exist on 
-        /// the class. This is a short cut for such a behavior. Adding additional 
-        /// attributes is common need for applications using the Windows Forms property 
-        /// window. The return value form AddAttributes is the TypeDescriptionProvider 
-        /// that was used to add the attributes. This provider can later be passed to 
+        /// The AddAttributes method allows you to add class-level attributes for a
+        /// type or an instance. This method simply implements a type description provider
+        /// that merges the provided attributes with the attributes that already exist on
+        /// the class. This is a short cut for such a behavior. Adding additional
+        /// attributes is common need for applications using the Windows Forms property
+        /// window. The return value form AddAttributes is the TypeDescriptionProvider
+        /// that was used to add the attributes. This provider can later be passed to
         /// RemoveProvider if the added attributes are no longer needed.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -169,12 +169,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Adds a type description provider that will be called on to provide 
-        /// type and instance information for any object that is of, or a subtype 
-        /// of, the provided type. Type can be any type, including interfaces. 
-        /// For example, to provide custom type and instance information for all 
-        /// components, you would pass typeof(IComponent). Passing typeof(object) 
-        /// will cause the provider to be called to provide type information for 
+        /// Adds a type description provider that will be called on to provide
+        /// type and instance information for any object that is of, or a subtype
+        /// of, the provided type. Type can be any type, including interfaces.
+        /// For example, to provide custom type and instance information for all
+        /// components, you would pass typeof(IComponent). Passing typeof(object)
+        /// will cause the provider to be called to provide type information for
         /// all types.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -204,10 +204,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Adds a type description provider that will be called on to provide 
-        /// type information for a single object instance. A provider added 
-        /// using this method will never have its CreateInstance method called 
-        /// because the instance already exists. This method does not prevent 
+        /// Adds a type description provider that will be called on to provide
+        /// type information for a single object instance. A provider added
+        /// using this method will never have its CreateInstance method called
+        /// because the instance already exists. This method does not prevent
         /// the object from finalizing.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -242,12 +242,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Adds a type description provider that will be called on to provide 
-        /// type and instance information for any object that is of, or a subtype 
-        /// of, the provided type. Type can be any type, including interfaces. 
-        /// For example, to provide custom type and instance information for all 
-        /// components, you would pass typeof(IComponent). Passing typeof(object) 
-        /// will cause the provider to be called to provide type information for 
+        /// Adds a type description provider that will be called on to provide
+        /// type and instance information for any object that is of, or a subtype
+        /// of, the provided type. Type can be any type, including interfaces.
+        /// For example, to provide custom type and instance information for all
+        /// components, you would pass typeof(IComponent). Passing typeof(object)
+        /// will cause the provider to be called to provide type information for
         /// all types.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -267,10 +267,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Adds a type description provider that will be called on to provide 
-        /// type information for a single object instance. A provider added 
-        /// using this method will never have its CreateInstance method called 
-        /// because the instance already exists. This method does not prevent 
+        /// Adds a type description provider that will be called on to provide
+        /// type information for a single object instance. A provider added
+        /// using this method will never have its CreateInstance method called
+        /// because the instance already exists. This method does not prevent
         /// the object from finalizing.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -309,7 +309,7 @@ namespace System.ComponentModel
                 }
 
                 // Immediately clear this. If we find a default provider
-                // and it starts messing around with type information, 
+                // and it starts messing around with type information,
                 // this could infinitely recurse.
                 s_defaultProviders[type] = null;
             }
@@ -318,7 +318,7 @@ namespace System.ComponentModel
             // the default provider attribute. If there is a
             // provider, we probably don't want to build up our
             // own cache state against the type. There shouldn't be
-            // more than one of these, but walk anyway. Walk in 
+            // more than one of these, but walk anyway. Walk in
             // reverse order so that the most derived takes precidence.
             object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false).ToArray();
             bool providerAdded = false;
@@ -334,7 +334,7 @@ namespace System.ComponentModel
                 }
             }
 
-            // If we did not add a provider, check the base class. 
+            // If we did not add a provider, check the base class.
             if (!providerAdded)
             {
                 Type baseType = type.BaseType;
@@ -346,12 +346,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The CreateAssocation method creates an association between two objects. 
-        /// Once an association is created, a designer or other filtering mechanism 
-        /// can add properties that route to either object into the primary object's 
-        /// property set. When a property invocation is made against the primary 
-        /// object, GetAssocation will be called to resolve the actual object 
-        /// instance that is related to its type parameter. 
+        /// The CreateAssocation method creates an association between two objects.
+        /// Once an association is created, a designer or other filtering mechanism
+        /// can add properties that route to either object into the primary object's
+        /// property set. When a property invocation is made against the primary
+        /// object, GetAssocation will be called to resolve the actual object
+        /// instance that is related to its type parameter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary)
@@ -422,9 +422,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method will search internal tables within TypeDescriptor for 
-        /// a TypeDescriptionProvider object that is associated with the given 
-        /// data type. If it finds one, it will delegate the call to that object. 
+        /// This method will search internal tables within TypeDescriptor for
+        /// a TypeDescriptionProvider object that is associated with the given
+        /// data type. If it finds one, it will delegate the call to that object.
         /// </summary>
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
@@ -543,8 +543,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetAssociation method returns the correct object to invoke 
-        /// for the requested type. It never returns null. 
+        /// The GetAssociation method returns the correct object to invoke
+        /// for the requested type. It never returns null.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
@@ -588,7 +588,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                // Not in our table. We have a default association with a designer 
+                // Not in our table. We have a default association with a designer
                 // if that designer is a component.
                 if (associatedObject == primary)
                 {
@@ -662,7 +662,7 @@ namespace System.ComponentModel
             // 1. Merge metadata from extenders.
             // 2. Allow services to filter the metadata
             // 3. If an attribute filter was specified, apply that.
-            // 
+            //
             // The goal here is speed. We get speed by not copying or
             // allocating memory. We do this by allowing each phase of the
             // pipeline to cache its data in the object cache. If
@@ -673,7 +673,7 @@ namespace System.ComponentModel
             // read-only IList or not). It is possible for the orignal
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
-            // 
+            //
             ICustomTypeDescriptor typeDesc = GetDescriptor(component, noCustomTypeDesc);
             ICollection results = typeDesc.GetAttributes();
 
@@ -1012,7 +1012,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of events for a specified component 
+        /// Gets a collection of events for a specified component
         /// using a specified array of attributes as a filter.
         /// </summary>
         public static EventDescriptorCollection GetEvents(object component, Attribute[] attributes)
@@ -1021,7 +1021,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of events for a specified component 
+        /// Gets a collection of events for a specified component
         /// using a specified array of attributes as a filter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -1039,7 +1039,7 @@ namespace System.ComponentModel
             // 1. Merge metadata from extenders.
             // 2. Allow services to filter the metadata
             // 3. If an attribute filter was specified, apply that.
-            // 
+            //
             // The goal here is speed. We get speed by not copying or
             // allocating memory. We do this by allowing each phase of the
             // pipeline to cache its data in the object cache. If
@@ -1050,7 +1050,7 @@ namespace System.ComponentModel
             // read-only IList or not). It is possible for the orignal
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
-            // 
+            //
             ICustomTypeDescriptor typeDesc = GetDescriptor(component, noCustomTypeDesc);
             ICollection results;
 
@@ -1188,7 +1188,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of properties for a specified type of 
+        /// Gets a collection of properties for a specified type of
         /// component using a specified array of attributes as a filter.
         /// </summary>
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
@@ -1231,7 +1231,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of properties for a specified 
+        /// Gets a collection of properties for a specified
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
@@ -1241,7 +1241,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of properties for a specified 
+        /// Gets a collection of properties for a specified
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
@@ -1251,7 +1251,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of properties for a specified component. Uses the attribute filter 
+        /// Gets a collection of properties for a specified component. Uses the attribute filter
         /// only if noAttributes is false. This is to preserve backward compat for the case when
         /// no attribute filter was passed in (as against passing in null).
         /// </summary>
@@ -1269,7 +1269,7 @@ namespace System.ComponentModel
             // 1. Merge metadata from extenders.
             // 2. Allow services to filter the metadata
             // 3. If an attribute filter was specified, apply that.
-            // 
+            //
             // The goal here is speed. We get speed by not copying or
             // allocating memory. We do this by allowing each phase of the
             // pipeline to cache its data in the object cache. If
@@ -1280,7 +1280,7 @@ namespace System.ComponentModel
             // read-only IList or not). It is possible for the orignal
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
-            // 
+            //
             ICustomTypeDescriptor typeDesc = GetDescriptor(component, noCustomTypeDesc);
             ICollection results;
 
@@ -1339,10 +1339,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetProvider method returns a type description provider for 
-        /// the given object or type. This will always return a type description 
-        /// provider. Even the default TypeDescriptor implementation is built on 
-        /// a TypeDescriptionProvider, and this will be returned unless there is 
+        /// The GetProvider method returns a type description provider for
+        /// the given object or type. This will always return a type description
+        /// provider. Even the default TypeDescriptor implementation is built on
+        /// a TypeDescriptionProvider, and this will be returned unless there is
         /// another provider that someone else has added.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -1357,10 +1357,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetProvider method returns a type description provider for 
-        /// the given object or type. This will always return a type description 
-        /// provider. Even the default TypeDescriptor implementation is built on 
-        /// a TypeDescriptionProvider, and this will be returned unless there is 
+        /// The GetProvider method returns a type description provider for
+        /// the given object or type. This will always return a type description
+        /// provider. Even the default TypeDescriptor implementation is built on
+        /// a TypeDescriptionProvider, and this will be returned unless there is
         /// another provider that someone else has added.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -1437,7 +1437,7 @@ namespace System.ComponentModel
         /// nodes solve that problem.
         ///
         /// If createDelegator is false, this method will recurse up the
-        /// base type chain looking for nodes. 
+        /// base type chain looking for nodes.
         /// </summary>
         private static TypeDescriptionNode NodeFor(Type type, bool createDelegator)
         {
@@ -1560,7 +1560,7 @@ namespace System.ComponentModel
         /// node because all it is doing is delegating elsewhere.
         ///
         /// Note that this behaves a little differently from normal
-        /// linked list code. In a normal linked list, you remove 
+        /// linked list code. In a normal linked list, you remove
         /// then target node and fixup the links. In this linked
         /// list, we remove the node AFTER the target node, fixup
         /// the links, and fixup the underlying providers that each
@@ -1597,14 +1597,14 @@ namespace System.ComponentModel
                         // at the target location. This removes
                         // the provider at the target location without
                         // the need to modify providers which may be
-                        // pointing to "target". 
+                        // pointing to "target".
                         target.Provider = target.Next.Provider;
 
                         // Now remove target.Next from the list
                         target.Next = target.Next.Next;
 
                         // If the new provider we got is a delegating
-                        // provider, we can remove this node from 
+                        // provider, we can remove this node from
                         // the list. The delegating provider should
                         // always be at the end of the node list.
                         if (target == head && target.Provider is DelegatingTypeDescriptionProvider)
@@ -1635,7 +1635,7 @@ namespace System.ComponentModel
                         s_providerTable.Remove(key);
                     }
 
-                    // Finally, clear our cache of provider types; it might be invalid 
+                    // Finally, clear our cache of provider types; it might be invalid
                     // now.
                     s_providerTypeTable.Clear();
                 }
@@ -1644,7 +1644,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// This is the last stage in our filtering pipeline. Here, we apply any
-        /// user-defined filter. 
+        /// user-defined filter.
         /// </summary>
         private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[] filter, object instance, IDictionary cache)
         {
@@ -1714,7 +1714,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Metdata filtering is the third stage of our pipeline. 
+        /// Metdata filtering is the third stage of our pipeline.
         /// In this stage we check to see if the given object is a
         /// sited component that provides the ITypeDescriptorFilterService
         /// object. If it does, we allow the TDS to filter the metadata.
@@ -1789,10 +1789,10 @@ namespace System.ComponentModel
                         {
                             // First, handle the new property. Because
                             // of the order in which we added extended
-                            // properties earlier in the pipeline, we can be 
+                            // properties earlier in the pipeline, we can be
                             // sure that the new property is an extender. We
                             // cannot be sure that the existing property
-                            // in the table is an extender, so we will 
+                            // in the table is an extender, so we will
                             // have to check.
                             //
                             string suffix = GetExtenderCollisionSuffix(desc);
@@ -1953,7 +1953,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Metadata merging is the second stage of our metadata pipeline. This stage
-        /// merges extended metdata with primary metadata, and stores it in 
+        /// merges extended metdata with primary metadata, and stores it in
         /// the cache if it is available.
         /// </summary>
         private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, object instance, IDictionary cache)
@@ -2003,7 +2003,7 @@ namespace System.ComponentModel
 
             // Our cache didn't match. We need to merge metadata and return
             // the merged copy. We create an array list here, rather than
-            // an array, because we want successive sections of the 
+            // an array, because we want successive sections of the
             // pipeline to be able to modify it.
             ArrayList list = new ArrayList(primary.Count + secondary.Count);
             foreach (object obj in primary)
@@ -2055,8 +2055,8 @@ namespace System.ComponentModel
 
         private static void RaiseRefresh(object component)
         {
-            // This volatility prevents the JIT from making certain optimizations 
-            // that could cause this firing pattern to break. Although the likelihood 
+            // This volatility prevents the JIT from making certain optimizations
+            // that could cause this firing pattern to break. Although the likelihood
             // the JIT makes those changes is mostly theoretical
             RefreshEventHandler handler = Volatile.Read(ref Refreshed);
 
@@ -2071,7 +2071,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Clears the properties and events for the specified 
+        /// Clears the properties and events for the specified
         /// component from the cache.
         /// </summary>
         public static void Refresh(object component) => Refresh(component, refreshReflectionProvider: true);
@@ -2160,7 +2160,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Clears the properties and events for the specified type 
+        /// Clears the properties and events for the specified type
         /// of component from the cache.
         /// </summary>
         public static void Refresh(Type type)
@@ -2214,7 +2214,7 @@ namespace System.ComponentModel
 
             // We only clear our filter and fire the refresh event if there was one or
             // more type description providers that were populated with metdata.
-            // This prevents us from doing a lot of extra work and raising 
+            // This prevents us from doing a lot of extra work and raising
             // a ton more events than we need to.
             if (found)
             {
@@ -2226,7 +2226,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Clears the properties and events for the specified 
+        /// Clears the properties and events for the specified
         /// module from the cache.
         /// </summary>
         public static void Refresh(Module module)
@@ -2294,7 +2294,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Clears the properties and events for the specified 
+        /// Clears the properties and events for the specified
         /// assembly from the cache.
         /// </summary>
         public static void Refresh(Assembly assembly)
@@ -2385,7 +2385,7 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        /// The RemoveAssociation method removes an association with an object. 
+        /// The RemoveAssociation method removes an association with an object.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary)
@@ -2437,9 +2437,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The RemoveProvider method removes a previously added type 
-        /// description provider. Removing a provider causes a Refresh 
-        /// event to be raised for the object or type the provider is 
+        /// The RemoveProvider method removes a previously added type
+        /// description provider. Removing a provider causes a Refresh
+        /// event to be raised for the object or type the provider is
         /// associated with.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2461,9 +2461,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The RemoveProvider method removes a previously added type 
-        /// description provider. Removing a provider causes a Refresh 
-        /// event to be raised for the object or type the provider is 
+        /// The RemoveProvider method removes a previously added type
+        /// description provider. Removing a provider causes a Refresh
+        /// event to be raised for the object or type the provider is
         /// associated with.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2486,9 +2486,9 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        /// The RemoveProvider method removes a previously added type 
-        /// description provider. Removing a provider causes a Refresh 
-        /// event to be raised for the object or type the provider is 
+        /// The RemoveProvider method removes a previously added type
+        /// description provider. Removing a provider causes a Refresh
+        /// event to be raised for the object or type the provider is
         /// associated with.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2508,9 +2508,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The RemoveProvider method removes a previously added type 
-        /// description provider. Removing a provider causes a Refresh 
-        /// event to be raised for the object or type the provider is 
+        /// The RemoveProvider method removes a previously added type
+        /// description provider. Removing a provider causes a Refresh
+        /// event to be raised for the object or type the provider is
         /// associated with.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2529,12 +2529,12 @@ namespace System.ComponentModel
             RemoveProvider(provider, instance);
         }
 
-        /// <summary> 
-        /// This function takes a member descriptor and an attribute and determines whether 
-        /// the member satisfies the particular attribute. This either means that the member 
-        /// contains the attribute or the member does not contain the attribute and the default 
-        /// for the attribute matches the passed in attribute. 
-        /// </summary> 
+        /// <summary>
+        /// This function takes a member descriptor and an attribute and determines whether
+        /// the member satisfies the particular attribute. This either means that the member
+        /// contains the attribute or the member does not contain the attribute and the default
+        /// for the attribute matches the passed in attribute.
+        /// </summary>
         private static bool ShouldHideMember(MemberDescriptor member, Attribute attribute)
         {
             if (member == null || attribute == null)
@@ -2583,12 +2583,12 @@ namespace System.ComponentModel
             /// </summary>
             internal IComNativeDescriptorHandler Handler { get; set; }
 #pragma warning restore 618
-            
+
             /// <summary>
             /// Implements GetTypeDescriptor. This creates a custom type
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
-            
+
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
             {
@@ -2710,7 +2710,7 @@ namespace System.ComponentModel
                 private Attribute[] _attributeArray;
 
                 /// <summary>
-                /// Creates a new custom type descriptor that can merge 
+                /// Creates a new custom type descriptor that can merge
                 /// the provided set of attributes with the existing set.
                 /// </summary>
                 internal AttributeTypeDescriptor(Attribute[] attrs, ICustomTypeDescriptor parent) : base(parent)
@@ -2871,7 +2871,7 @@ namespace System.ComponentModel
         /// <summary>
         /// This is a merged type descriptor that can merge the output of
         /// a primary and secondary type descriptor. If the primary doesn't
-        /// provide the needed information, the request is passed on to the 
+        /// provide the needed information, the request is passed on to the
         /// secondary.
         /// </summary>
         private sealed class MergedTypeDescriptor : ICustomTypeDescriptor

@@ -469,7 +469,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     return Array.Empty<byte>();
                 }
-                
+
                 byte[] tempCookie = new byte[_dirsyncCookie.Length];
                 for (int i = 0; i < tempCookie.Length; i++)
                 {

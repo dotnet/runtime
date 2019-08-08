@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -89,12 +89,12 @@ namespace System.Text.Json
         /// <remarks>
         /// Supports extended calendar date (5.2.2.1) and complete (5.4.2.1) calendar date/time of day
         /// representations with optional specification of seconds and fractional seconds.
-        /// 
+        ///
         /// Times can be explicitly specified as UTC ("Z" - 5.3.3) or offsets from UTC ("+/-hh:mm" 5.3.4.2).
-        /// If unspecified they are considered to be local per spec. 
-        /// 
+        /// If unspecified they are considered to be local per spec.
+        ///
         /// Examples: (TZD is either "Z" or hh:mm offset from UTC)
-        /// 
+        ///
         ///  YYYY-MM-DD               (eg 1997-07-16)
         ///  YYYY-MM-DDThh:mm         (eg 1997-07-16T19:20)
         ///  YYYY-MM-DDThh:mm:ss      (eg 1997-07-16T19:20:30)
@@ -102,7 +102,7 @@ namespace System.Text.Json
         ///  YYYY-MM-DDThh:mmTZD      (eg 1997-07-16T19:20+01:00)
         ///  YYYY-MM-DDThh:mm:ssTZD   (eg 1997-07-16T19:20:3001:00)
         ///  YYYY-MM-DDThh:mm:ss.sTZD (eg 1997-07-16T19:20:30.45Z)
-        /// 
+        ///
         /// Generally speaking we always require the "extended" option when one exists (3.1.3.5).
         /// The extended variants have separator characters between components ('-', ':', '.', etc.).
         /// Spaces are not permitted.

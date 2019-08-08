@@ -21,8 +21,8 @@ namespace System.DirectoryServices.ActiveDirectory
             // set the timeout to 2 minutes
             _searcher.ClientTimeout = s_defaultTimeSpan;
             _searcher.ServerPageTimeLimit = s_defaultTimeSpan;
-            // Page Size needs to be set so that we 
-            // can get all the results even when the number of results 
+            // Page Size needs to be set so that we
+            // can get all the results even when the number of results
             // is greater than the server set limit (1000 in Win2000 and 1500 in Win2003)
             _searcher.PageSize = 512;
         }

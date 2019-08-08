@@ -27,7 +27,7 @@ namespace Microsoft.Framework.WebEncoders
                 Assert.Equal("%F0%9F%92%A9", writer.GetStringBuilder().ToString());
             }
         }
-        
+
         [Fact]
         public void Ctor_WithTextEncoderSettings()
         {

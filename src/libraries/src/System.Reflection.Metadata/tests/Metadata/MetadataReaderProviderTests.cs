@@ -31,7 +31,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Throws<ArgumentNullException>(() => MetadataReaderProvider.FromMetadataImage(null, 10));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => 
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 fixed (byte* p = new byte[] { 0 }) MetadataReaderProvider.FromMetadataImage(p, -1);
             });

@@ -89,7 +89,7 @@ namespace System.Data.SqlClient
             SubscribeToAppDomainUnload();
         }
 
-        //  When remoted across appdomains, MarshalByRefObject links by default time out if there is no activity 
+        //  When remoted across appdomains, MarshalByRefObject links by default time out if there is no activity
         //  within a few minutes.  Add this override to prevent marshaled links from timing out.
         public override object InitializeLifetimeService()
         {
@@ -495,4 +495,3 @@ namespace System.Data.SqlClient
         internal SqlNotificationType Type => _type;
     }
 }
-

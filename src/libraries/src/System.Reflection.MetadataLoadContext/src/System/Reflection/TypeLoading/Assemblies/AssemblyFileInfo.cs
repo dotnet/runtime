@@ -7,8 +7,8 @@ using System.Diagnostics;
 namespace System.Reflection.TypeLoading
 {
     //
-    // Captures the contents of a row in the File metadata table in a format-agnostic way. The manifest module 
-    // is also represented as a fictious "row 0". 
+    // Captures the contents of a row in the File metadata table in a format-agnostic way. The manifest module
+    // is also represented as a fictious "row 0".
     //
     internal readonly struct AssemblyFileInfo
     {

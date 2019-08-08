@@ -26,12 +26,12 @@ namespace System.Threading.Tasks.Tests
 
             ManualResetEvent mre = new ManualResetEvent(false);
 
-            // we need to run this test in a local task scheduler, because it needs to perform 
+            // we need to run this test in a local task scheduler, because it needs to perform
             // the verification based on a known number of initially available threads.
             //
             //
             // @TODO: When we reach the _planB branch we need to add a trick here using ThreadPool.SetMaxThread
-            //        to bring down the TP worker count. This is because previous activity in the test process might have 
+            //        to bring down the TP worker count. This is because previous activity in the test process might have
             //        injected workers.
             TaskScheduler tm = TaskScheduler.Default;
 
@@ -246,7 +246,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(sideEffect, "Task appears not to have run");
             Assert.True(newSC.PostCount == 1, "Expected exactly one post to underlying SynchronizationContext");
 
-            // 
+            //
             // Run a Task synchronously on scTS, make sure that it completes
             //
             sideEffect = false;

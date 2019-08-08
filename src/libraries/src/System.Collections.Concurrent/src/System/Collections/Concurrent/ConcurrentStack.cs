@@ -22,7 +22,7 @@ namespace System.Collections.Concurrent
     // although some optimistic concurrency and retry is used, possibly leading to lack of
     // fairness and/or livelock. The stack uses spinning and backoff to add some randomization,
     // in hopes of statistically decreasing the possibility of livelock.
-    // 
+    //
     // Note that we currently allocate a new node on every push. This avoids having to worry
     // about potential ABA issues, since the CLR GC ensures that a memory address cannot be
     // reused before all references to it have died.
@@ -331,7 +331,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="items"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> or <paramref
-        /// name="count"/> is negative. Or <paramref name="startIndex"/> is greater than or equal to the length 
+        /// name="count"/> is negative. Or <paramref name="startIndex"/> is greater than or equal to the length
         /// of <paramref name="items"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="startIndex"/> + <paramref name="count"/> is
         /// greater than the length of <paramref name="items"/>.</exception>
@@ -535,12 +535,12 @@ namespace System.Collections.Concurrent
         /// inserting elements from the top of the <see cref="ConcurrentStack{T}"/>.</param>
         /// <param name="count">The number of elements to be popped from top of the <see
         /// cref="ConcurrentStack{T}"/> and inserted into <paramref name="items"/>.</param>
-        /// <returns>The number of objects successfully popped from the top of 
-        /// the <see cref="ConcurrentStack{T}"/> and inserted in <paramref name="items"/>.</returns>        
+        /// <returns>The number of objects successfully popped from the top of
+        /// the <see cref="ConcurrentStack{T}"/> and inserted in <paramref name="items"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="items"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> or <paramref
-        /// name="count"/> is negative. Or <paramref name="startIndex"/> is greater than or equal to the length 
+        /// name="count"/> is negative. Or <paramref name="startIndex"/> is greater than or equal to the length
         /// of <paramref name="items"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="startIndex"/> + <paramref name="count"/> is
         /// greater than the length of <paramref name="items"/>.</exception>
@@ -743,7 +743,7 @@ namespace System.Collections.Concurrent
         /// <returns>An enumerator for the <see cref="ConcurrentStack{T}"/>.</returns>
         /// <remarks>
         /// The enumeration represents a moment-in-time snapshot of the contents
-        /// of the stack.  It does not reflect any updates to the collection after 
+        /// of the stack.  It does not reflect any updates to the collection after
         /// <see cref="GetEnumerator()"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the stack.
         /// </remarks>
@@ -755,7 +755,7 @@ namespace System.Collections.Concurrent
 
             //If we put yield-return here, the iterator will be lazily evaluated. As a result a snapshot of
             //the stack is not taken when GetEnumerator is initialized but when MoveNext() is first called.
-            //This is inconsistent with existing generic collections. In order to prevent it, we capture the 
+            //This is inconsistent with existing generic collections. In order to prevent it, we capture the
             //value of _head in a buffer and call out to a helper method
             return GetEnumerator(_head);
         }

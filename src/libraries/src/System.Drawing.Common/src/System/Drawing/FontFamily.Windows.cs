@@ -22,7 +22,7 @@ namespace System.Drawing
                 return false;
             }
 
-            // We can safely use the ptr to the native GDI+ FontFamily because in windows it is common to 
+            // We can safely use the ptr to the native GDI+ FontFamily because in windows it is common to
             // all objects of the same family (singleton RO object).
             return otherFamily.NativeFamily == NativeFamily;
         }

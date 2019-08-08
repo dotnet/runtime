@@ -320,7 +320,7 @@ namespace System.ComponentModel.Composition
 
                 var copy = result.ToResult<object>();
 
-                Assert.Null(copy.Value);                
+                Assert.Null(copy.Value);
             }
         }
 

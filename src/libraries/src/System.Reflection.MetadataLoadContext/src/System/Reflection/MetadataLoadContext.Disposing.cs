@@ -30,7 +30,7 @@ namespace System.Reflection
 
             if (disposing)
             {
-                // Dispose all IDisposables given to this MetadataLoadContext. This releases any file locks on the underlying 
+                // Dispose all IDisposables given to this MetadataLoadContext. This releases any file locks on the underlying
                 // assembly files.
                 ConcurrentBag<IDisposable> disposables = _disposables;
                 if (disposables != null)

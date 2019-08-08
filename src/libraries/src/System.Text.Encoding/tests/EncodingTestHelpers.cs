@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -117,7 +117,7 @@ namespace System.Text.Tests
                 Assert.Equal(originalBytes[i], bytes[i]);
             }
         }
-        
+
         public static void Decode(Encoding encoding, byte[] bytes, int index, int count, string expected)
         {
             GetCharCount(encoding, bytes, index, count, expected.Length);
@@ -220,7 +220,7 @@ namespace System.Text.Tests
                 Assert.Equal(originalChars[i], chars[i]);
             }
         }
-        
+
         private static void GetString(Encoding encoding, byte[] bytes, int index, int count, string expected)
         {
             if (index == 0 && count == bytes.Length)

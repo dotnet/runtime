@@ -32,7 +32,7 @@ namespace System.DirectoryServices
         public int ExtendedError { get; }
 
         public string ExtendedErrorMessage { get; }
-        
+
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -186,7 +186,7 @@ namespace System.Net.Sockets.Tests
         public void SendPacketsElement_FileStreamWithOptions_Success(SocketImplementationType type) {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
                 var element = new SendPacketsElement(stream, 0, s_testFileSize);
-                SendPackets(type, element, s_testFileSize, GetExpectedContent(element)); 
+                SendPackets(type, element, s_testFileSize, GetExpectedContent(element));
             }
         }
 
@@ -217,7 +217,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         public void SendPacketsElement_FileStreamMultiPartMixed_MultipleFileStreams_Success(SocketImplementationType type) {
-            using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) 
+            using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
             using (var stream2 = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) {
                 var elements = new[]
                 {

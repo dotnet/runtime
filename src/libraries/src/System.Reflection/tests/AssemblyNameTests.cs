@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -176,7 +176,7 @@ namespace System.Reflection.Tests
 
             n.CodeBase = System.IO.Directory.GetCurrentDirectory();
             Assert.NotNull(n.CodeBase);
-        }        
+        }
 
         [Fact]
         public static void Verify_EscapedCodeBase()
@@ -211,7 +211,7 @@ namespace System.Reflection.Tests
             an.VersionCompatibility = System.Configuration.Assemblies.AssemblyVersionCompatibility.SameProcess;
             Assert.Equal(System.Configuration.Assemblies.AssemblyVersionCompatibility.SameProcess, an.VersionCompatibility);
         }
-              
+
         [Fact]
         public static void Clone()
         {
@@ -243,7 +243,7 @@ namespace System.Reflection.Tests
 
             Assembly a = typeof(AssemblyNameTests).Assembly;
             Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(a.Location).ToString());
-        }        
+        }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "AssemblyName.GetAssemblyName() not supported on UWP")]

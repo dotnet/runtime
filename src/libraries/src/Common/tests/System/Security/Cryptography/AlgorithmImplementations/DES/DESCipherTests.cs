@@ -271,7 +271,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
                 Assert.Throws<ArgumentOutOfRangeException>(
                     () => xform.TransformBlock(input, 0, input.Length, output, 0));
-                
+
                 Assert.Equal(new byte[output.Length], output);
             }
         }

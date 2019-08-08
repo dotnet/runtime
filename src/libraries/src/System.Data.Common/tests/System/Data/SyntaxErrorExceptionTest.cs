@@ -42,7 +42,7 @@ namespace System.Data.Tests
             // SyntaxErrorException - Column Expression
             Assert.Throws<SyntaxErrorException>(() => tbl.Columns[0].Expression = "Colummn +=+ 1"); //invalid expression
 
-            // SyntaxErrorException - Select 
+            // SyntaxErrorException - Select
             Assert.Throws<SyntaxErrorException>(() => tbl.Select("Name += something"));
         }
     }

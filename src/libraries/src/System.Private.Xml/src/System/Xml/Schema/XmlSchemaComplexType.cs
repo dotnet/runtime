@@ -516,8 +516,8 @@ namespace System.Xml.Schema
         // This method returns the effective value of the "element form" for the specified element in the specified
         //   parentSchema. Element form is either qualified, unqualified or none. If it's qualified it means that
         //   if the element doesn't declare its own namespace the targetNamespace of the schema is used instead.
-        // The element form can be either specified on the element itself via the "form" attribute or 
-        //   if that one is not present its inheritted from the value of the elementFormDefault attribute on the owning 
+        // The element form can be either specified on the element itself via the "form" attribute or
+        //   if that one is not present its inheritted from the value of the elementFormDefault attribute on the owning
         //   schema.
         private static XmlSchemaForm GetResolvedElementForm(XmlSchema parentSchema, XmlSchemaElement element)
         {

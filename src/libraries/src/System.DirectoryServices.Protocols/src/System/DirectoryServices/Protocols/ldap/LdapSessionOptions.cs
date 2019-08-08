@@ -506,7 +506,7 @@ namespace System.DirectoryServices.Protocols
                     // A certificate callback is specified so automatic bind is disabled.
                     _connection.AutoBind = false;
                 }
-            
+
                 _clientCertificateDelegate = value;
             }
         }
@@ -632,7 +632,7 @@ namespace System.DirectoryServices.Protocols
                 int error = Wldap32.ldap_start_tls(_connection._ldapHandle, ref serverError, ref ldapResult, serverControlArray, clientControlArray);
                 if (ldapResult != IntPtr.Zero)
                 {
-                    // Parse the referral.                          
+                    // Parse the referral.
                     int resultError = Wldap32.ldap_parse_result_referral(_connection._ldapHandle, ldapResult, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref referral, IntPtr.Zero, 0 /* not free it */);
                     if (resultError == 0 && referral != IntPtr.Zero)
                     {
@@ -672,7 +672,7 @@ namespace System.DirectoryServices.Protocols
                     if (Utility.IsResultCode((ResultCode)error))
                     {
                         // If the server failed request for whatever reason, the ldap_start_tls returns LDAP_OTHER
-                        // and the ServerReturnValue will contain the error code from the server.   
+                        // and the ServerReturnValue will contain the error code from the server.
                         if (error == (int)ResultCode.Other)
                         {
                             error = serverError;
@@ -918,7 +918,7 @@ namespace System.DirectoryServices.Protocols
 
                             // We don't have it yet, construct a new one.
                             tempReferralConnection = new LdapConnection(((LdapDirectoryIdentifier)(_connection.Directory)), _connection.GetCredential(), _connection.AuthType, ReferralFromConnection);
-                            
+
                             // Save it to the handle table.
                             LdapConnection.s_handleTable.Add(ReferralFromConnection, new WeakReference(tempReferralConnection));
                         }
@@ -986,7 +986,7 @@ namespace System.DirectoryServices.Protocols
 
                             // We don't have it yet, construct a new one.
                             tempReferralConnection = new LdapConnection(((LdapDirectoryIdentifier)(_connection.Directory)), _connection.GetCredential(), _connection.AuthType, referralFromConnection);
-                            
+
                             // Save it to the handle table.
                             LdapConnection.s_handleTable.Add(referralFromConnection, new WeakReference(tempReferralConnection));
                         }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
@@ -127,7 +127,7 @@ namespace System.Data.Common.Tests
             {
                 throw new NotImplementedException();
             }
-            
+
             protected override DbProviderFactory DbProviderFactory => TestDbProviderFactory.Instance;
         }
 
@@ -135,7 +135,7 @@ namespace System.Data.Common.Tests
         {
             public static DbProviderFactory Instance = new TestDbProviderFactory();
         }
-        
+
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
         public void CanBeFinalized()
@@ -145,7 +145,7 @@ namespace System.Data.Common.Tests
             GC.WaitForPendingFinalizers();
             Assert.True(_wasFinalized);
         }
-        
+
         [Fact]
         public void ProviderFactoryTest()
         {

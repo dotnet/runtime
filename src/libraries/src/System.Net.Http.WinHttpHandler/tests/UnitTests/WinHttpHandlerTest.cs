@@ -25,7 +25,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
     public class WinHttpHandlerTest
     {
         private const string FakeProxy = "http://proxy.contoso.com";
-        
+
         private readonly ITestOutputHelper _output;
 
         public WinHttpHandlerTest(ITestOutputHelper output)
@@ -69,7 +69,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
             handler.AutomaticRedirection = false;
-            
+
             Assert.False(handler.AutomaticRedirection);
         }
 
@@ -365,7 +365,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var handler = new WinHttpHandler();
             handler.MaxConnectionsPerServer = 1;
         }
-        
+
         [Fact]
         public void ReceiveDataTimeout_SetNegativeValue_ThrowsArgumentOutOfRangeException()
         {
@@ -923,7 +923,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
             Assert.Equal(typeof(WinHttpException), ex.InnerException.GetType());
         }
-        
+
         [Fact]
         public void SendAsync_MultipleCallsWithDispose_NoHandleLeaksManuallyVerifiedUsingLogging()
         {
@@ -957,7 +957,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             }
             else if (responseContentWasAutoDecompressed)
             {
-                
+
                 Assert.Null(contentLength);
                 Assert.Equal(0, contentEncoding.Count);
             }
@@ -1044,7 +1044,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 return this.bypassAll;
             }
         }
-        
+
         public class FakeDefaultWebProxy : IWebProxy
         {
             private ICredentials _credentials = null;
@@ -1064,7 +1064,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     _credentials = value;
                 }
             }
-            
+
             // This is a sentinel object representing the internal default system proxy that a developer would
             // use when accessing the System.Net.WebRequest.DefaultWebProxy property (from the System.Net.Requests
             // package). It can't support the GetProxy or IsBypassed methods. WinHttpHandler will handle this

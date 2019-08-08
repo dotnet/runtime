@@ -27,7 +27,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentOutOfRangeException">If selectorType Enumeration does not have a valid value</exception>
         /// <exception cref="System.Xml.XmlException">If PackageRelationshipSelectorType.Id and selection criteria is not valid Xsd Id</exception>
         /// <exception cref="ArgumentException">If PackageRelationshipSelectorType.Type and selection criteria is not valid relationship type</exception>
-        /// <exception cref="ArgumentException">If sourceUri is not "/" to indicate the PackageRoot, then it must conform to the 
+        /// <exception cref="ArgumentException">If sourceUri is not "/" to indicate the PackageRoot, then it must conform to the
         /// valid PartUri syntax</exception>
         public PackageRelationshipSelector(Uri sourceUri, PackageRelationshipSelectorType selectorType, string selectionCriteria)
         {
@@ -100,7 +100,7 @@ namespace System.IO.Packaging
 
 
         #endregion Public Properties
-        
+
         #region Public Methods
 
         /// <summary>
@@ -155,7 +155,7 @@ namespace System.IO.Packaging
                     break;
 
                 default:
-                    //Debug.Assert is fine here since the parameters have already been validated. And all the properties are 
+                    //Debug.Assert is fine here since the parameters have already been validated. And all the properties are
                     //readonly
                     Debug.Fail("This option should never be called");
                     break;
@@ -165,7 +165,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Public Methods
-        
+
         #region Private Members
 
         private Uri _sourceUri;

@@ -10,7 +10,7 @@ namespace System
     // ordering of instances of the class. The ordering represented by
     // IComparable can be used to sort arrays and collections of objects
     // that implement the interface.
-    // 
+    //
     public interface IComparable
     {
         // Interface does not need to be marked with the serializable attribute
@@ -19,7 +19,7 @@ namespace System
         // a value less than zero if this is less than object, zero
         // if this is equal to object, or a value greater than zero
         // if this is greater than object.
-        // 
+        //
         int CompareTo(object? obj);
     }
 
@@ -33,7 +33,7 @@ namespace System
         // a value less than zero if this is less than object, zero
         // if this is equal to object, or a value greater than zero
         // if this is greater than object.
-        // 
+        //
         int CompareTo([AllowNull] T other);
     }
 }

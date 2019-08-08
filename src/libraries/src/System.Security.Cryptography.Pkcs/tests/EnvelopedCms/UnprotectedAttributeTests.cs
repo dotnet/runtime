@@ -280,7 +280,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             // }
             //
             // The important part of this test is that there are 0 attributes of a type that is declared within the encoded message.
-            // This should return 2 as it should create a CryptographicAttributeObjectCollection with two CryptographicAttributeObjects, 
+            // This should return 2 as it should create a CryptographicAttributeObjectCollection with two CryptographicAttributeObjects,
             // the first one holding a list of document description with the two values, the second one holding an empty list of
             // document name.
 
@@ -547,5 +547,3 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
     }
 }
-
-

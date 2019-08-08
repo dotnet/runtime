@@ -47,10 +47,10 @@ namespace System.Net
                 return value;
             }
 
-            // For small inputs we allocate on the stack. In most cases a buffer three 
-            // times larger the original string should be sufficient as usually not all 
+            // For small inputs we allocate on the stack. In most cases a buffer three
+            // times larger the original string should be sufficient as usually not all
             // characters need to be encoded.
-            // For larger string we rent the input string's length plus a fixed 
+            // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
             Span<char> buffer = value.Length < 80 ?
                 stackalloc char[256] :
@@ -87,10 +87,10 @@ namespace System.Net
                 return;
             }
 
-            // For small inputs we allocate on the stack. In most cases a buffer three 
-            // times larger the original string should be sufficient as usually not all 
+            // For small inputs we allocate on the stack. In most cases a buffer three
+            // times larger the original string should be sufficient as usually not all
             // characters need to be encoded.
-            // For larger string we rent the input string's length plus a fixed 
+            // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
             Span<char> buffer = value.Length < 80 ?
                 stackalloc char[256] :
@@ -444,7 +444,7 @@ namespace System.Net
             int byteIndex = unsafeByteCount * 2;
 
             // Instead of allocating one array of length `byteCount` to store
-            // the UTF-8 encoded bytes, and then a second array of length 
+            // the UTF-8 encoded bytes, and then a second array of length
             // `3 * byteCount - 2 * unexpandedCount`
             // to store the URL-encoded UTF-8 bytes, we allocate a single array of
             // the latter and encode the data in place, saving the first allocation.

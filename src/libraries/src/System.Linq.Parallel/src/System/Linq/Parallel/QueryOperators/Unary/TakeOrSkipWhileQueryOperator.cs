@@ -333,7 +333,7 @@ namespace System.Linq.Parallel
                 }
 
                 // Now either enter (or continue) the yielding phase. As soon as we reach this, we know the
-                // current shared "low false" value is the absolute lowest with a false.                
+                // current shared "low false" value is the absolute lowest with a false.
                 if (_take)
                 {
                     // In the case of a take-while, we will yield each element from our buffer for which

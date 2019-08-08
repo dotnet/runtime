@@ -166,7 +166,7 @@ namespace System.Numerics
             return bits;
         }
 
-        private static unsafe void Subtract(uint* left, int leftLength, 
+        private static unsafe void Subtract(uint* left, int leftLength,
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
         {

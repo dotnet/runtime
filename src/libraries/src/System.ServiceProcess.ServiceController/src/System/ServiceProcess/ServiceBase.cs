@@ -238,9 +238,9 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </devdoc>
         [Browsable (false), DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog 
+        public virtual EventLog EventLog
         {
-            get 
+            get
             {
                 if (_eventLog == null)
                 {
@@ -599,7 +599,7 @@ namespace System.ServiceProcess
             if (services == null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
-            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();            
+            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();
 
             IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeOfSERVICE_TABLE_ENTRY));
             try
@@ -957,17 +957,17 @@ namespace System.ServiceProcess
         private void WriteLogEntry(string message, bool error = false)
         {
             // EventLog failures shouldn't affect the service operation
-            try 
+            try
             {
                 if (AutoLog)
                 {
-                    EventLog.WriteEntry(message); 
+                    EventLog.WriteEntry(message);
                 }
             }
-            catch  
+            catch
             {
                 // Do nothing.  Not having the event log is bad, but not starting the service as a result is worse.
-            }        
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     public class RuntimeBinderException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="RuntimeBinderException"/> class. 
+        /// Initializes a new instance of the <see cref="RuntimeBinderException"/> class.
         /// </summary>
         public RuntimeBinderException()
         {

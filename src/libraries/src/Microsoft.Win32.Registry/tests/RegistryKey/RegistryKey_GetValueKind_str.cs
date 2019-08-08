@@ -56,7 +56,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             const string valueName = "NoneKind";
             const RegistryValueKind expectedValueKind = RegistryValueKind.None;
-            
+
             TestRegistryKey.SetValue(valueName, new byte[] { 23, 32 }, RegistryValueKind.None);
             Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
         }

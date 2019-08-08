@@ -126,7 +126,7 @@ namespace System.Runtime.Serialization.Json
                  (_emitXsiType != EmitTypeInformation.Never))
             {
                 // We always deserialize collections assigned to System.Object as object[]
-                // Because of its common and JSON-specific nature, 
+                // Because of its common and JSON-specific nature,
                 //    we don't want to validate known type information for object[]
 
                 // Don't validate known type information when emitXsiType == Never because

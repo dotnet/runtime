@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
         private readonly string name;
 
         /// <summary>
-        /// The number of bytes in the UTF8 Encoding of 'name' INCLUDING a null terminator.  
+        /// The number of bytes in the UTF8 Encoding of 'name' INCLUDING a null terminator.
         /// </summary>
         private readonly int nameSize;
         private readonly EventFieldTags tags;
@@ -164,11 +164,11 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This is the main routine for FieldMetaData.  Basically it will serialize the data in
         /// this structure as TraceLogging style meta-data into the array 'metaArray' starting at
-        /// 'pos' (pos is updated to reflect the bytes written).  
-        /// 
+        /// 'pos' (pos is updated to reflect the bytes written).
+        ///
         /// Note that 'metaData' can be null, in which case it only updates 'pos'.  This is useful
         /// for a 'two pass' approach where you figure out how big to make the array, and then you
-        /// fill it in.   
+        /// fill it in.
         /// </summary>
         public void Encode(ref int pos, byte[]? metadata)
         {
@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
                 }
                 pos += 2;
 
-                // If InTypeCustomCountFlag set, write out the blob of custom meta-data.  
+                // If InTypeCustomCountFlag set, write out the blob of custom meta-data.
                 if (Statics.InTypeCustomCountFlag == (this.inType & Statics.InTypeCountMask) &&
                     this.fixedCount != 0)
                 {

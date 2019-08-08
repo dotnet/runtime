@@ -23,4 +23,3 @@ namespace System.Diagnostics
         internal static string LogFileName => string.Empty; // the default
     }
 }
-

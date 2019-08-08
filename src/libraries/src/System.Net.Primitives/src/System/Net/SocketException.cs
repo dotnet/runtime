@@ -20,10 +20,10 @@ namespace System.Net.Sockets
         public SocketException(int errorCode) : this((SocketError)errorCode)
         {
             // NOTE: SocketException(SocketError) isn't exposed publicly.  As a result, code with a SocketError calls
-            // this ctor, e.g. 
+            // this ctor, e.g.
             //     SocketError error = ...;
             //     throw new SocketException((int)error);
-            // That means we need to assume the errorCode is a SocketError value, rather than a platform-specific error code. 
+            // That means we need to assume the errorCode is a SocketError value, rather than a platform-specific error code.
             // Hence, no translation on the supplied code.  This does mean on Unix there's a difference between:
             //     new SocketException(); // will treat the last error as a native error code and translate it appropriately
             // and:

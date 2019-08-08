@@ -39,4 +39,3 @@ namespace Internal.Cryptography
         internal const string ClrIsEphemeral = "CLR IsEphemeral";
     }
 }
-

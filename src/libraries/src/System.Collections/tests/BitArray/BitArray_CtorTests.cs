@@ -256,7 +256,7 @@ namespace System.Collections.Tests
             BitArray bitArray = new BitArray(int.MaxValue - 30);
             BitArray clone = (BitArray)bitArray.Clone();
 
-            Assert.Equal(bitArray.Length, clone.Length);  
+            Assert.Equal(bitArray.Length, clone.Length);
         }
     }
 }

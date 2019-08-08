@@ -14,7 +14,7 @@ namespace AppCS
     {
         static ModChainB AppField01 = default(ModChainC);
         internal NS.Module.CS01.CS02.ModIGen2<Expression, object> AppProp { get { return new NS.Module.CS01.CS02.ModStructImplExp(); } }
- 
+
         public App(ref ModChainA p)
         {
             // p = AppField01.MA03(123); // CS0570
@@ -44,8 +44,8 @@ namespace AppCS
                 v.M01(ref refVal);
             }
             return v;
-        }  
-    }  
+        }
+    }
 }
 
 namespace AppCS
@@ -58,8 +58,8 @@ namespace AppCS
     {
         CO CoFooMethod();
     }
-    interface INormal<T> 
-    { 
+    interface INormal<T>
+    {
         T NormalFoo(T t);
     }
 

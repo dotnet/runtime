@@ -31,7 +31,7 @@ namespace System.Xml.Linq
 
         ///<overloads>
         /// Initializes a new instance of the <see cref="XDocument"/> class.
-        /// Overloaded constructors are provided for creating a new empty 
+        /// Overloaded constructors are provided for creating a new empty
         /// <see cref="XDocument"/>, creating an <see cref="XDocument"/> with
         /// a parameter list of initial content, and as a copy of another
         /// <see cref="XDocument"/> object.
@@ -156,7 +156,7 @@ namespace System.Xml.Linq
         }
 
         /// <overloads>
-        /// The Load method provides multiple strategies for creating a new 
+        /// The Load method provides multiple strategies for creating a new
         /// <see cref="XDocument"/> and initializing it from a data source containing
         /// raw XML.  Load from a file (passing in a URI to the file), a
         /// <see cref="Stream"/>, a <see cref="TextReader"/>, or an
@@ -165,8 +165,8 @@ namespace System.Xml.Linq
         /// <seealso cref="XDocument.Parse(string)"/>
         /// </overloads>
         /// <summary>
-        /// Create a new <see cref="XDocument"/> based on the contents of the file 
-        /// referenced by the URI parameter passed in.  Note: Use 
+        /// Create a new <see cref="XDocument"/> based on the contents of the file
+        /// referenced by the URI parameter passed in.  Note: Use
         /// <see cref="XDocument.Parse(string)"/> to create an <see cref="XDocument"/> from
         /// a string containing XML.
         /// <seealso cref="XmlReader.Create(string)"/>
@@ -191,8 +191,8 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Create a new <see cref="XDocument"/> based on the contents of the file 
-        /// referenced by the URI parameter passed in.  Optionally, whitespace can be preserved.  
+        /// Create a new <see cref="XDocument"/> based on the contents of the file
+        /// referenced by the URI parameter passed in.  Optionally, whitespace can be preserved.
         /// <see cref="XmlReader.Create(string)"/>
         /// </summary>
         /// <remarks>
@@ -225,7 +225,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Create a new <see cref="XDocument"/> and initialize its underlying XML tree using
-        /// the passed <see cref="Stream"/> parameter.  
+        /// the passed <see cref="Stream"/> parameter.
         /// </summary>
         /// <param name="stream">
         /// A <see cref="Stream"/> containing the raw XML to read into the newly
@@ -308,7 +308,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Create a new <see cref="XDocument"/> and initialize its underlying XML tree using
-        /// the passed <see cref="TextReader"/> parameter.  
+        /// the passed <see cref="TextReader"/> parameter.
         /// </summary>
         /// <param name="textReader">
         /// A <see cref="TextReader"/> containing the raw XML to read into the newly
@@ -517,7 +517,7 @@ namespace System.Xml.Linq
         /// A string containing XML.
         /// </param>
         /// <returns>
-        /// An <see cref="XDocument"/> containing an XML tree initialized from the 
+        /// An <see cref="XDocument"/> containing an XML tree initialized from the
         /// passed in XML string.
         /// </returns>
         public static XDocument Parse(string text)
@@ -544,7 +544,7 @@ namespace System.Xml.Linq
         /// A set of <see cref="LoadOptions"/>.
         /// </param>
         /// <returns>
-        /// An <see cref="XDocument"/> containing an XML tree initialized from the 
+        /// An <see cref="XDocument"/> containing an XML tree initialized from the
         /// passed in XML string.
         /// </returns>
         public static XDocument Parse(string text, LoadOptions options)
@@ -567,7 +567,7 @@ namespace System.Xml.Linq
         /// no indenting then use the SaveOptions version of Save (see
         /// <see cref="XDocument.Save(Stream, SaveOptions)"/>) enabling
         /// SaveOptions.DisableFormatting
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="stream">
@@ -582,7 +582,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XDocument"/> to a <see cref="Stream"/>.
         /// </summary>
         /// <param name="stream">
-        /// The <see cref="Stream"/> to output the XML to.  
+        /// The <see cref="Stream"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -611,7 +611,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XDocument"/> to a <see cref="Stream"/>.
         /// </summary>
         /// <param name="stream">
-        /// The <see cref="Stream"/> to output the XML to.  
+        /// The <see cref="Stream"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -641,7 +641,7 @@ namespace System.Xml.Linq
                 await w.FlushAsync().ConfigureAwait(false);
             }
         }
-        
+
         /// <summary>
         /// Output this <see cref="XDocument"/> to the passed in <see cref="TextWriter"/>.
         /// </summary>
@@ -650,7 +650,7 @@ namespace System.Xml.Linq
         /// no indenting then use the SaveOptions version of Save (see
         /// <see cref="XDocument.Save(TextWriter, SaveOptions)"/>) enabling
         /// SaveOptions.DisableFormatting
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="textWriter">
@@ -665,7 +665,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XDocument"/> to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="textWriter">
-        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// The <see cref="TextWriter"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -695,7 +695,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XDocument"/> to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="textWriter">
-        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// The <see cref="TextWriter"/> to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -718,7 +718,7 @@ namespace System.Xml.Linq
         ///<overloads>
         /// Outputs this <see cref="XDocument"/>'s underlying XML tree.  The output can
         /// be saved to a file, a <see cref="Stream"/>, a <see cref="TextWriter"/>,
-        /// or an <see cref="XmlWriter"/>.  Optionally whitespace can be preserved.  
+        /// or an <see cref="XmlWriter"/>.  Optionally whitespace can be preserved.
         /// </overloads>
         /// <summary>
         /// Output this <see cref="XDocument"/> to a file.
@@ -726,9 +726,9 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The format will be indented by default.  If you want
         /// no indenting then use the SaveOptions version of Save (see
-        /// <see cref="XDocument.Save(string, SaveOptions)"/>) enabling 
+        /// <see cref="XDocument.Save(string, SaveOptions)"/>) enabling
         /// SaveOptions.DisableFormatting.
-        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations.
         /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
         /// </remarks>
         /// <param name="fileName">
@@ -757,7 +757,7 @@ namespace System.Xml.Linq
         /// Output this <see cref="XDocument"/> to a file.
         /// </summary>
         /// <param name="fileName">
-        /// The name of the file to output the XML to.  
+        /// The name of the file to output the XML to.
         /// </param>
         /// <param name="options">
         /// If SaveOptions.DisableFormatting is enabled the output is not indented.
@@ -789,7 +789,7 @@ namespace System.Xml.Linq
         /// <seealso cref="XDocument.Save(XmlWriter)"/>
         /// </summary>
         /// <param name="writer">
-        /// The <see cref="XmlWriter"/> to output the content of this 
+        /// The <see cref="XmlWriter"/> to output the content of this
         /// <see cref="XDocument"/>.
         /// </param>
         public override void WriteTo(XmlWriter writer)
@@ -817,7 +817,7 @@ namespace System.Xml.Linq
         /// <seealso cref="XDocument.Save(XmlWriter)"/>
         /// </summary>
         /// <param name="writer">
-        /// The <see cref="XmlWriter"/> to output the content of this 
+        /// The <see cref="XmlWriter"/> to output the content of this
         /// <see cref="XDocument"/>.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>

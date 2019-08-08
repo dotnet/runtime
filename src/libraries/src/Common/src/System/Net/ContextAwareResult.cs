@@ -378,7 +378,7 @@ namespace System.Net
 
             // If the context is being abandoned or wasn't captured (SuppressFlow, null AsyncCallback), just
             // complete regularly, as long as CaptureOrComplete() has finished.
-            // 
+            //
             if (userToken != IntPtr.Zero || context == null)
             {
                 base.Complete(userToken);

@@ -6,7 +6,7 @@
 //
 // AsyncWork.cs
 //
-// Helper class that is used to test the FromAsync method. These classes hold the APM patterns 
+// Helper class that is used to test the FromAsync method. These classes hold the APM patterns
 // and is used by the TaskFromAsyncTest.cs file
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -250,7 +250,7 @@ namespace System.Threading.Tasks.Tests
             };
         }
 
-        #region APM  
+        #region APM
 
         public IAsyncResult BeginInvoke(T1 t1, T2 t2, T3 t3, AsyncCallback cb, object state)
         {
@@ -273,7 +273,7 @@ namespace System.Threading.Tasks.Tests
     #region AsyncFunc
 
     /// <summary>
-    /// Extends the base class to implement that function form of APM 
+    /// Extends the base class to implement that function form of APM
     /// </summary>
     public class AsyncFunc : AsyncWork
     {
@@ -435,5 +435,3 @@ namespace System.Threading.Tasks.Tests
 
     #endregion
 }
-
-

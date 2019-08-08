@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
         // to change the default DOP.
         internal static int DefaultDegreeOfParallelism = Math.Min(Environment.ProcessorCount, MAX_SUPPORTED_DOP);
 
-        // The size to use for bounded buffers. 
+        // The size to use for bounded buffers.
         internal const int DEFAULT_BOUNDED_BUFFER_CAPACITY = 512;
 
         // The number of bytes we want "chunks" to be, when partitioning, etc. We choose 4 cache

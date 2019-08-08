@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -106,8 +106,8 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ParseExtensions_WithNoMechanismsAdvertised_ShouldNotSupportAnyAuthTypes()
         {
-            // don't include any modules- it should still parse but no 
-            // auth should be supported            
+            // don't include any modules- it should still parse but no
+            // auth should be supported
             _extensions = new string[] { "AUTH", "dsn ", "Starttls", "smtputf8" };
             _smtpConnection.ParseExtensions(_extensions);
 

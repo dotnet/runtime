@@ -155,7 +155,7 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = Http2ApplicationProtocols;
-                    
+
                     // Note:
                     // The HTTP/2 specification states:
                     //   "A deployment of HTTP/2 over TLS 1.2 MUST disable renegotiation.
@@ -174,7 +174,7 @@ namespace System.Net.Http
                     _encodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(StaticTable.Authority, hostHeader);
                 }
             }
-            
+
             // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.
             if (_poolManager.Settings._preAuthenticate)
             {
@@ -224,7 +224,7 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+        private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (_http2Enabled && request.Version.Major >= 2)
@@ -314,7 +314,7 @@ namespace System.Net.Http
             return new ValueTask<HttpConnection>(waiter.WaitWithCancellationAsync(cancellationToken));
         }
 
-        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
             GetHttpConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpConnection connection = await GetOrReserveHttp11ConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -488,7 +488,7 @@ namespace System.Net.Http
                         // We are in the weird situation of having established a new HTTP 1.1 connection
                         // when we were already at the maximum for HTTP 1.1 connections.
                         // Just discard this connection and get another one from the pool.
-                        // This should be a really rare situation to get into, since it would require 
+                        // This should be a really rare situation to get into, since it would require
                         // the user to make multiple HTTP 1.1-only requests first before attempting an
                         // HTTP2 request, and the server failing to accept HTTP2.
                         canUse = false;

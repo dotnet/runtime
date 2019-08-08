@@ -44,7 +44,7 @@ namespace System.Tests
             DGoo dgoo = c.Foo;
             d1 = c.Foo;
             Assert.NotEqual(d1, (object)dgoo);
-            
+
             Assert.Equal(d1.GetHashCode(), d1.GetHashCode());
         }
 

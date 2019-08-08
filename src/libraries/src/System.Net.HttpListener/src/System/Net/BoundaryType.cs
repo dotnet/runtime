@@ -13,4 +13,3 @@ namespace System.Net
         Invalid = 5,
     }
 }
-

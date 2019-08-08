@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal sealed class RoByRefType : RoHasElementType
     {
-        internal RoByRefType(RoType elementType) 
+        internal RoByRefType(RoType elementType)
             : base(elementType)
         {
             Debug.Assert(elementType != null);

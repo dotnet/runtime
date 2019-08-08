@@ -30,7 +30,7 @@ namespace System.Xml
         private XmlValueGetter _nodeValueGetter;
         private XmlSchemaInfo _attributeSchemaInfo;
 
-        //Element PSVI 
+        //Element PSVI
         private XmlSchemaInfo _schemaInfo;
 
         //Event Handler
@@ -497,7 +497,7 @@ namespace System.Xml
         private XmlSchemaObject FindSchemaInfo(XmlElement elementToValidate)
         {
             _isPartialTreeValid = true;
-            Debug.Assert(elementToValidate.ParentNode.NodeType != XmlNodeType.Document); //Handle if it is the documentElement separately            
+            Debug.Assert(elementToValidate.ParentNode.NodeType != XmlNodeType.Document); //Handle if it is the documentElement separately
 
             //Create nodelist to navigate down again
             XmlNode currentNode = elementToValidate;
@@ -777,7 +777,7 @@ namespace System.Xml
                 findTypeValidator.Initialize(partialValidationType);
             }
             else
-            { //If we walked up to the root and no schemaInfo was there, start validating from root 
+            { //If we walked up to the root and no schemaInfo was there, start validating from root
                 findTypeValidator.Initialize();
             }
             return findTypeValidator;

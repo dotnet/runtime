@@ -50,7 +50,7 @@ namespace CoreXml.Test.XLinq
         }
 
         /// <summary>
-        /// Returns all variations (order matters) of given length from the source array. 
+        /// Returns all variations (order matters) of given length from the source array.
         /// Limiting the default combinations with a maximum length of 2 using reduceVariations, to improve perf.
         /// </summary>
         /// <typeparam name="T"></typeparam>

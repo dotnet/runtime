@@ -99,7 +99,7 @@ namespace System.Collections.Generic.Tests
         public static TheoryData<IEnumerable<T>> EnumerableData()
         {
             var data = new TheoryData<IEnumerable<T>>();
-            
+
             foreach (int count in Counts)
             {
                 data.Add(Enumerable.Repeat(default(T), count));
@@ -137,7 +137,7 @@ namespace System.Collections.Generic.Tests
             {
                 int count = enumerable.Count();
                 data.Add(enumerable, 0, count);
-                
+
                 // We want to make sure CopyTo works with different indices/counts too.
                 data.Add(enumerable, 0, count / 2);
                 data.Add(enumerable, count / 2, count / 2);

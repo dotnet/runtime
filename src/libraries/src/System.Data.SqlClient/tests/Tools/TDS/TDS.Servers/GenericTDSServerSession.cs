@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -348,7 +348,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Allocate deadlock priority option
             TDSSessionStateDeadlockPriorityOption deadlockPriorityOption = new TDSSessionStateDeadlockPriorityOption();
 
-            // Transfer properties from the session onto the session state 
+            // Transfer properties from the session onto the session state
             deadlockPriorityOption.Value = (sbyte)DeadlockPriority;
 
             // Register option with the collection
@@ -366,7 +366,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Allocate ISO fips option
             TDSSessionStateISOFipsOption isoFipsOption = new TDSSessionStateISOFipsOption();
 
-            // Transfer properties from the session onto the session state 
+            // Transfer properties from the session onto the session state
             isoFipsOption.TransactionIsolationLevel = TransactionIsolationLevel;
 
             // Register option with the collection
@@ -375,7 +375,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Allocate text size option
             TDSSessionStateTextSizeOption textSizeOption = new TDSSessionStateTextSizeOption();
 
-            // Transfer properties from the session onto the session state 
+            // Transfer properties from the session onto the session state
             textSizeOption.Value = TextSize;
 
             // Register option with the collection

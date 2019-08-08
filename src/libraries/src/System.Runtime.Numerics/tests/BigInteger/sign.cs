@@ -47,7 +47,7 @@ namespace System.Numerics.Tests
 
             // Sign Method - Int32.MinValue+1
             VerifySignString(Int32.MinValue.ToString() + " 1 b+ uSign");
-            
+
             // Sign Method - Int32.MaxValue
             VerifySignString(Int32.MaxValue.ToString() + " uSign");
 

@@ -14,9 +14,9 @@ namespace ReferencedClassLib
             try
             {
                 ResourceManager rm = new ResourceManager("ReferencedClassLib.ReferencedStrings", typeof(Program).Assembly);
-    
+
                 CultureInfo ci = CultureInfo.CreateSpecificCulture(lang);
-        
+
                 return rm.GetString("Describe", ci);
             }
             catch (Exception e)

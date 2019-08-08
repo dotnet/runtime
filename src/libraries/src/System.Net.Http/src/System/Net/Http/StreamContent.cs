@@ -113,7 +113,7 @@ namespace System.Net.Http
             if (_contentConsumed)
             {
                 // If the content needs to be written to a target stream a 2nd time, then the stream must support
-                // seeking (e.g. a FileStream), otherwise the stream can't be copied a second time to a target 
+                // seeking (e.g. a FileStream), otherwise the stream can't be copied a second time to a target
                 // stream (e.g. a NetworkStream).
                 if (_content.CanSeek)
                 {

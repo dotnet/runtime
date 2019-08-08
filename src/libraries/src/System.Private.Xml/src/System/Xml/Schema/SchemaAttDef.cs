@@ -28,7 +28,7 @@ namespace System.Xml.Schema
         private int _valueLineNum;
         private int _valueLinePos;
 
-        private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space   
+        private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space
 
         private bool _defaultValueChecked;
         private XmlSchemaAttribute _schemaAttribute;

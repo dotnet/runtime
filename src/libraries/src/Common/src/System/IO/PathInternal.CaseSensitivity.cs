@@ -20,8 +20,8 @@ namespace System.IO
         {
             get
             {
-                return s_isCaseSensitive ? 
-                    StringComparison.Ordinal : 
+                return s_isCaseSensitive ?
+                    StringComparison.Ordinal :
                     StringComparison.OrdinalIgnoreCase;
             }
         }
@@ -33,9 +33,9 @@ namespace System.IO
         /// Determines whether the file system is case sensitive.
         /// </summary>
         /// <remarks>
-        /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable, 
-        /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters 
-        /// and then tests for its existence with lower-case letters.  This could return invalid results in corner 
+        /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable,
+        /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters
+        /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
         /// cases where, for example, different file systems are mounted with differing sensitivities.
         /// </remarks>
         private static bool GetIsCaseSensitive()

@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Handle (<see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/>, or <see cref="TypeSpecificationHandle"/>) 
+        /// Handle (<see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/>, or <see cref="TypeSpecificationHandle"/>)
         /// specifying from which type this generic parameter is constrained to derive,
         /// or which interface this generic parameter is constrained to implement.
         /// </summary>

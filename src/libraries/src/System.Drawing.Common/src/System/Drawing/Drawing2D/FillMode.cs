@@ -10,4 +10,3 @@ namespace System.Drawing.Drawing2D
         Winding = 1
     }
 }
-

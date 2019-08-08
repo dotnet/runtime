@@ -11,13 +11,13 @@ namespace System.Transactions
     // When a transaction is promoted a single volatile enlistment is created in the new
     // transaction for all volitile enlistments on the transaction.  When the VolatileDemux
     // receives a preprepare it will fan that notification out to all of the enlistments
-    // on the transaction.  When it has gathered all of the responses it will send a 
+    // on the transaction.  When it has gathered all of the responses it will send a
     // single vote back to the DistributedTransactionManager.
     internal abstract class VolatileDemultiplexer : IEnlistmentNotificationInternal
     {
         // Reference the transactions so that we have access to it's enlistments
         protected InternalTransaction _transaction;
-        
+
         // Store the IVolatileEnlistment interface to call back to the Distributed TM
         internal IPromotedEnlistment _promotedEnlistment;
         internal IPromotedEnlistment _preparingEnlistment;

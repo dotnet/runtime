@@ -22,10 +22,10 @@ namespace System.Reflection.PortableExecutable
 
         /// <summary>
         /// The time and date that the debug data was created if the PE/COFF file is not deterministic,
-        /// otherwise a value based on the hash of the content. 
+        /// otherwise a value based on the hash of the content.
         /// </summary>
         /// <remarks>
-        /// The algorithm used to calculate this value is an implementation 
+        /// The algorithm used to calculate this value is an implementation
         /// detail of the tool that produced the file.
         /// </remarks>
         public uint Stamp { get; }
@@ -41,7 +41,7 @@ namespace System.Reflection.PortableExecutable
         public ushort MinorVersion { get; }
 
         /// <summary>
-        /// The format of debugging information. 
+        /// The format of debugging information.
         /// </summary>
         public DebugDirectoryEntryType Type { get; }
 

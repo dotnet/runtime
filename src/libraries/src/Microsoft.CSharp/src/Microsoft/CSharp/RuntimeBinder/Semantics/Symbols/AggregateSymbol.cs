@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private MethodSymbol _pConvFirst;
 
         // ------------------------------------------------------------------------
-        // 
+        //
         // Put members that are bits under here in a contiguous section.
         //
         // ------------------------------------------------------------------------
@@ -65,8 +65,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool _isSkipUDOps; // Never check for user defined operators on this type (eg, decimal, string, delegate).
 
-        // When this is unset we don't know if we have conversions.  When this 
-        // is set it indicates if this type or any base type has user defined 
+        // When this is unset we don't know if we have conversions.  When this
+        // is set it indicates if this type or any base type has user defined
         // conversion operators
         private bool? _hasConversion;
 

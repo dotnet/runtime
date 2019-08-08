@@ -18,18 +18,18 @@ namespace System.Reflection.PortableExecutable
         LeaveOpen = 1,
 
         /// <summary>
-        /// Reads metadata section into memory right away. 
+        /// Reads metadata section into memory right away.
         /// </summary>
         /// <remarks>
         /// Reading from other sections of the file is not allowed (<see cref="InvalidOperationException"/> is thrown by the <see cref="PEReader"/>).
         /// The underlying file may be closed and even deleted after <see cref="PEReader"/> is constructed.
-        /// 
+        ///
         /// <see cref="PEReader"/> closes the stream automatically by the time the constructor returns unless <see cref="LeaveOpen"/> is specified.
         /// </remarks>
         PrefetchMetadata = 1 << 1,
 
         /// <summary>
-        /// Reads the entire image into memory right away. 
+        /// Reads the entire image into memory right away.
         /// </summary>
         /// <remarks>
         /// <see cref="PEReader"/> closes the stream automatically by the time the constructor returns unless <see cref="LeaveOpen"/> is specified.

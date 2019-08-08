@@ -269,7 +269,7 @@ namespace System.Data.SqlClient
                     return;
                 }
 
-                // Handle readyfortoken by using count of columns in the loop.            
+                // Handle readyfortoken by using count of columns in the loop.
                 targetColumn = _metaData.FieldMetaData.Count;
             }
 

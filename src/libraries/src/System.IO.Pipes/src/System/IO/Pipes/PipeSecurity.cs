@@ -49,7 +49,7 @@ namespace System.IO.Pipes
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            // If the rule to be removed matches what is there currently then 
+            // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
             AuthorizationRuleCollection rules = GetAccessRules(true, true, rule.IdentityReference.GetType());
 
@@ -90,7 +90,7 @@ namespace System.IO.Pipes
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            // If the rule to be removed matches what is there currently then 
+            // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit
             AuthorizationRuleCollection rules = GetAccessRules(true, true,
                     rule.IdentityReference.GetType());
@@ -108,9 +108,9 @@ namespace System.IO.Pipes
                 }
             }
 
-            // It wasn't an exact match so try masking the sychronize bit (that is 
-            // automatically added for Allow) before removing the ACL. The logic 
-            // here should be same as Deny and hence fake a call to 
+            // It wasn't an exact match so try masking the sychronize bit (that is
+            // automatically added for Allow) before removing the ACL. The logic
+            // here should be same as Deny and hence fake a call to
             // AccessMaskFromRights as though the ACL is for Deny
             if (rule.PipeAccessRights != PipeAccessRights.FullControl)
             {
@@ -272,4 +272,3 @@ namespace System.IO.Pipes
         }
     }
 }
-

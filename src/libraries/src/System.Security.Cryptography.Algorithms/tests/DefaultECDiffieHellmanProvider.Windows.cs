@@ -42,4 +42,3 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
     }
 }
-

@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Initializes a new instance of the <see cref="ComposablePartExportProvider"/> class.
         /// </summary>
-        public ComposablePartExportProvider() : 
+        public ComposablePartExportProvider() :
             this(false)
         {
         }
@@ -104,8 +104,8 @@ namespace System.ComponentModel.Composition.Hosting
         ///     exports.
         /// </summary>
         /// <value>
-        ///     The <see cref="ExportProvider"/> which provides the 
-        ///     <see cref="ComposablePartExportProvider"/> access to <see cref="Export"/> objects. 
+        ///     The <see cref="ExportProvider"/> which provides the
+        ///     <see cref="ComposablePartExportProvider"/> access to <see cref="Export"/> objects.
         ///     The default is <see langword="null"/>.
         /// </value>
         /// <exception cref="ArgumentNullException">
@@ -116,14 +116,14 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <para>
         ///         -or-
         ///     </para>
-        ///     The methods on the <see cref="ComposablePartExportProvider"/> 
+        ///     The methods on the <see cref="ComposablePartExportProvider"/>
         ///     have already been accessed.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="ComposablePartExportProvider"/> has been disposed of.
         /// </exception>
         /// <remarks>
-        ///     This property must be set before accessing any methods on the 
+        ///     This property must be set before accessing any methods on the
         ///     <see cref="ComposablePartExportProvider"/>.
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "EnsureCanSet ensures that the property is set only once, Dispose is not required")]
@@ -231,7 +231,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
             return exports;
-        }    
+        }
 
         public void Compose(CompositionBatch batch)
         {
@@ -353,7 +353,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Clone the batch, so that the external changes wouldn't happen half-way thorugh compose
-            // NOTE : this does not guarantee the atomicity of cloning, which is not the goal anyway, 
+            // NOTE : this does not guarantee the atomicity of cloning, which is not the goal anyway,
             // rather the fact that all subsequent calls will deal with an unchanging batch
             batch = new CompositionBatch(batch.PartsToAdd, partsToRemove);
 

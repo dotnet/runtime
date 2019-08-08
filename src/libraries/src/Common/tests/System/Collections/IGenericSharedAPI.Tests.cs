@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -45,7 +45,7 @@ namespace System.Collections.Tests
         }
 
         // There are a number of methods shared between Queue, and Stack for which there is no
-        // common interface. To enable high code reuse, delegates are used to defer to those methods for 
+        // common interface. To enable high code reuse, delegates are used to defer to those methods for
         // checking validity.
         protected abstract int Count(IEnumerable<T> enumerable);
         protected abstract void Add(IEnumerable<T> enumerable, T value);

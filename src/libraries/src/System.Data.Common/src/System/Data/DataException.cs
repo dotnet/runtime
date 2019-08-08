@@ -179,7 +179,7 @@ namespace System.Data
             HResult = HResults.DataMissingPrimaryKey;
         }
     }
-    
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NoNullAllowedException : DataException
@@ -203,7 +203,7 @@ namespace System.Data
             HResult = HResults.DataNoNullAllowed;
         }
     }
-    
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyException : DataException
@@ -227,7 +227,7 @@ namespace System.Data
             HResult = HResults.DataReadOnly;
         }
     }
-    
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class RowNotInTableException : DataException
@@ -251,7 +251,7 @@ namespace System.Data
             HResult = HResults.DataRowNotInTable;
         }
     }
-    
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class VersionNotFoundException : DataException

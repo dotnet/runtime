@@ -165,7 +165,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
 
-            // The parser returns 'true' to indicate that it could parse the value (empty values allowed) and an 
+            // The parser returns 'true' to indicate that it could parse the value (empty values allowed) and an
             // value of 'null'. HttpHeaders will remove the header from the collection since the known header doesn't
             // have a value.
             headers.TryAddWithoutValidation(headers.Descriptor, string.Empty);
@@ -218,7 +218,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
 
             // MockParser is called with an empty string and decides that it is OK to have empty values but they
-            // shouldn't be added to the list of header values. HttpHeaders will remove the header since it doesn't 
+            // shouldn't be added to the list of header values. HttpHeaders will remove the header since it doesn't
             // have values.
             Assert.Equal(0, headers.Count());
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
@@ -267,7 +267,7 @@ namespace System.Net.Http.Tests
             // TryAddWithoutValidation() adds 'null' as string.empty to distinguish between an empty raw value and no raw
             // value. When the parser is called later, the parser can decide whether empty strings are valid or not.
             // In our case the MockParser returns 'success' with a parsed value of 'null' indicating that it is OK to
-            // have empty values, but they should be ignored. 
+            // have empty values, but they should be ignored.
             Assert.Equal(2, headers.Parser.EmptyValueCount);
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
         }
@@ -429,7 +429,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             string[] values = null;
-            
+
             Assert.Throws<ArgumentNullException>(() => { headers.TryAddWithoutValidation(headers.Descriptor, values); });
         }
 
@@ -439,7 +439,7 @@ namespace System.Net.Http.Tests
         public void Add_SingleUseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
-            
+
             AssertExtensions.Throws<ArgumentException>("name", () => { headers.Add(headerName, "value"); });
         }
 
@@ -777,7 +777,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             string[] values = null;
-            
+
             Assert.Throws<ArgumentNullException>(() => { headers.Add(headers.Descriptor, values); });
         }
 
@@ -1058,7 +1058,7 @@ namespace System.Net.Http.Tests
         public void Remove_UseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
-            
+
             AssertExtensions.Throws<ArgumentException>("name", () => { headers.Remove(headerName); });
         }
 
@@ -1203,7 +1203,7 @@ namespace System.Net.Http.Tests
         public void GetValues_UseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
-            
+
             AssertExtensions.Throws<ArgumentException>("name", () => { headers.GetValues(headerName); });
         }
 
@@ -1268,7 +1268,7 @@ namespace System.Net.Http.Tests
 
             // In the known header case, the MockParser accepts empty values but tells the store to not add the value.
             // Since no value is added for 'knownHeader', HttpHeaders removes the header from the store. This is only
-            // done for known headers. Custom headers are allowed to have empty/null values as shown by 
+            // done for known headers. Custom headers are allowed to have empty/null values as shown by
             // 'valuesForCustomHeaders' below
             Assert.False(headers.Contains(headers.Descriptor));
 
@@ -1489,7 +1489,7 @@ namespace System.Net.Http.Tests
         public void Contains_UseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
-            
+
             AssertExtensions.Throws<ArgumentException>("name", () => { headers.Contains(headerName); });
         }
 

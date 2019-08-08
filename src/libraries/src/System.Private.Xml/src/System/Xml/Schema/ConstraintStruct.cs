@@ -79,7 +79,7 @@ namespace System.Xml.Schema
     internal class SelectorActiveAxis : ActiveAxis
     {
         private ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
-        private ArrayList _KSs;                  // stack of KSStruct, will not become less 
+        private ArrayList _KSs;                  // stack of KSStruct, will not become less
         private int _KSpointer = 0;              // indicate current stack top (next available element);
 
         public int lastDepth
@@ -338,7 +338,7 @@ namespace System.Xml.Schema
                 other.SetDecimal(); // can't use cast and other.Type.IsEqual (value1, value2)
                 this.SetDecimal();
                 if (this.IsDecimal && other.IsDecimal)
-                { //Both are decimal / derived types 
+                { //Both are decimal / derived types
                     return this.ListDValueEquals(other);
                 }
             }

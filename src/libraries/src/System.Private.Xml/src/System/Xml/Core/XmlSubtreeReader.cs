@@ -83,12 +83,12 @@ namespace System.Xml
         // node used for a text node of ReadAttributeValue or as Initial or EOF node
         private NodeData _tmpNode;
 
-        // 
+        //
         // Constants
         //
         internal int InitialNamespaceAttributeCount = 4;
 
-        // 
+        //
         // Constructor
         //
         internal XmlSubtreeReader(XmlReader reader) : base(reader)
@@ -1226,7 +1226,7 @@ namespace System.Xml
             return _nsManager.LookupPrefix(namespaceName);
         }
 
-        // 
+        //
         // Private methods
         //
         private void ProcessNamespaces()
@@ -1575,4 +1575,3 @@ namespace System.Xml
         }
     }
 }
-

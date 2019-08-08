@@ -15,8 +15,8 @@ namespace Microsoft.Win32.SafeHandles
     {
         private const int DefaultInvalidHandle = -1;
 
-        // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe, and the 
-        // _named* fields remain null. For named pipes, SafePipeHandle.handle is a copy of the file descriptor 
+        // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe, and the
+        // _named* fields remain null. For named pipes, SafePipeHandle.handle is a copy of the file descriptor
         // extracted from the Socket's SafeHandle, and the _named* fields are the socket and its safe handle.
         // This allows operations related to file descriptors to be performed directly on the SafePipeHandle,
         // and operations that should go through the Socket to be done via _namedPipeSocket.  We keep the

@@ -39,7 +39,7 @@ namespace System.IO.MemoryMappedFiles
 
             // mmap can only create views that start at a multiple of the page size. As on Windows,
             // we hide this restriction form the user by creating larger views than the user requested and hiding the parts
-            // that the user did not request.  extraMemNeeded is the amount of extra memory we allocate before the start of the 
+            // that the user did not request.  extraMemNeeded is the amount of extra memory we allocate before the start of the
             // requested view. (mmap may round up the actual length such that it is also page-aligned; we hide that by using
             // the right size and not extending the size to be page-aligned.)
             ulong nativeSize;
@@ -99,10 +99,10 @@ namespace System.IO.MemoryMappedFiles
             }
             else
             {
-                // There are some corner cases where the .NET API allows the requested size to be zero, e.g. the caller is 
-                // creating a map at the end of the capacity.  We can't pass 0 to mmap, as that'll fail with EINVAL, nor can 
-                // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the 
-                // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter 
+                // There are some corner cases where the .NET API allows the requested size to be zero, e.g. the caller is
+                // creating a map at the end of the capacity.  We can't pass 0 to mmap, as that'll fail with EINVAL, nor can
+                // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the
+                // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter
                 // what backs the view, so we just create an anonymous mapping.
                 addr = Interop.Sys.MMap(
                     IntPtr.Zero,
@@ -119,7 +119,7 @@ namespace System.IO.MemoryMappedFiles
                 throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
             }
 
-            // Based on the HandleInheritability, try to prevent the memory-mapped region 
+            // Based on the HandleInheritability, try to prevent the memory-mapped region
             // from being inherited by a forked process
             if (memMappedFileHandle._inheritability == HandleInheritability.None)
             {
@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles
             {
                 _viewHandle.AcquirePointer(ref ptr);
                 int result = Interop.Sys.MSync(
-                    (IntPtr)ptr, (ulong)capacity, 
+                    (IntPtr)ptr, (ulong)capacity,
                     Interop.Sys.MemoryMappedSyncFlags.MS_SYNC | Interop.Sys.MemoryMappedSyncFlags.MS_INVALIDATE);
                 if (result < 0)
                 {

@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(quoted, dn.Decode(X500DistinguishedNameFlags.None));
             Assert.Equal(notQuoted, dn.Decode(X500DistinguishedNameFlags.DoNotUseQuotes));
         }
-        
+
         [Theory]
         [MemberData(nameof(T61Cases))]
         public static void T61Strings(string expected, string hexEncoded)
@@ -447,7 +447,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             new object[]
             {
                 "SERIALNUMBER=CVR:13471967-UID:121212121212, E=vhm@use.test.dk, " +
-                "CN=Hedeby's M\u00f8belhandel - Salgsafdelingen, " + 
+                "CN=Hedeby's M\u00f8belhandel - Salgsafdelingen, " +
                 "O=Hedeby's M\u00f8belhandel // CVR:13471967, C=DK",
                 "3081B5310B300906035504061302444B312D302B060355040A14244865646562" +
                 "792773204DF862656C68616E64656C202F2F204356523A313334373139363731" +

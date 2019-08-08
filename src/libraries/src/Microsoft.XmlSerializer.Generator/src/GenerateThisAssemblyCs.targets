@@ -16,7 +16,7 @@ namespace Microsoft.XmlSerializer.Generator
         internal const string AssemblyVersion = "$(AssemblyVersion)"%3B
         internal const string Version = "$(AssemblyFileVersion)"%3B
         internal const string PreReleaseLabel = "$(PreReleaseLabel)"%3B
-        
+
         internal static string InformationalVersion
         {
             get

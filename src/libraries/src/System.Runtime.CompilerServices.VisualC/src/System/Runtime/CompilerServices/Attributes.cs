@@ -89,7 +89,7 @@ namespace System.Runtime.CompilerServices
     }
 
     // The CLR data marshaler has some behaviors that are incompatible with
-    // C++. Specifically, C++ treats boolean variables as byte size, whereas 
+    // C++. Specifically, C++ treats boolean variables as byte size, whereas
     // the marshaller treats them as 4-byte size.  Similarly, C++ treats
     // wchar_t variables as 4-byte size, whereas the marshaller treats them
     // as single byte size under certain conditions.  In order to work around

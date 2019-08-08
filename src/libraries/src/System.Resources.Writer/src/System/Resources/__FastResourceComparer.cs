@@ -21,11 +21,11 @@ namespace System.Resources
         }
 
         // This hash function MUST be publicly documented with the resource
-        // file format, AND we may NEVER change this hash function's return 
+        // file format, AND we may NEVER change this hash function's return
         // value (without changing the file format).
         internal static int HashFunction(string key)
         {
-            // Never change this hash function.  We must standardize it so that 
+            // Never change this hash function.  We must standardize it so that
             // others can read & write our .resources files.  Additionally, we
             // have a copy of it in InternalResGen as well.
             uint hash = 5381;
@@ -44,7 +44,6 @@ namespace System.Resources
             return string.Equals(a, b);
         }
 
-     
+
     }
 }
-

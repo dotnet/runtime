@@ -121,7 +121,7 @@ namespace System.Composition.Convention
             {
                 throw new ArgumentNullException(nameof(getValueFromPartType));
             }
-            
+
             if (_metadataItemFuncs == null)
             {
                 _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();

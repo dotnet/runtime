@@ -46,9 +46,9 @@ namespace System.Diagnostics
                         long startTime = -1;
 
                         // Though we have asserted the required CAS permissions above, we may
-                        // still fail to query the process information if the user does not 
+                        // still fail to query the process information if the user does not
                         // have the necessary process access rights or privileges.
-                        // This might be the case if the current process was started by a 
+                        // This might be the case if the current process was started by a
                         // different user (primary token) than the current user
                         // (impersonation token) that has less privilege/ACL rights.
                         using (SafeProcessHandle procHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, false, pid))
@@ -69,13 +69,13 @@ namespace System.Diagnostics
             }
         }
 
-        // InitialOffset is the offset in our global shared memory where we put the first CategoryEntry.  It needs to be 4 because in 
+        // InitialOffset is the offset in our global shared memory where we put the first CategoryEntry.  It needs to be 4 because in
         // v1.0 and v1.1 we used IntPtr.Size.  That creates potential side-by-side issues on 64 bit machines using WOW64.
         // A v1.0 app running on WOW64 will assume the InitialOffset is 4.  A true 64 bit app on the same machine will assume
-        // the initial offset is 8. 
-        // However, using an offset of 4 means that our CounterEntry.Value is potentially misaligned.  This is why we have SetValue 
+        // the initial offset is 8.
+        // However, using an offset of 4 means that our CounterEntry.Value is potentially misaligned.  This is why we have SetValue
         // and other methods which split CounterEntry.Value into two ints.  With separate shared memory blocks per
-        // category, we can fix this and always use an inital offset of 8. 
+        // category, we can fix this and always use an inital offset of 8.
         internal int _initialOffset = 4;
 
         private CategoryData _categoryData;
@@ -96,7 +96,7 @@ namespace System.Diagnostics
 
             _categoryData = GetCategoryData();
 
-            // Check that the instance name isn't too long if we're using the new shared memory.  
+            // Check that the instance name isn't too long if we're using the new shared memory.
             // We allocate InstanceNameSlotSize bytes in the shared memory
             if (_categoryData.UseUniqueSharedMemory)
             {
@@ -157,13 +157,13 @@ namespace System.Diagnostics
             {
                 oldOffset = *((int*)_baseAddress);
                 // we need to verify the oldOffset before we start using it.  Otherwise someone could change
-                // it to something bogus and we would write outside of the shared memory. 
+                // it to something bogus and we would write outside of the shared memory.
                 ResolveOffset(oldOffset, 0);
 
                 newOffset = CalculateMemory(oldOffset, totalSize, out alignmentAdjustment);
 
-                // In the default shared mem we need to make sure that the end address is also aligned.  This is because 
-                // in v1.1/v1.0 we just assumed that the next free offset was always properly aligned. 
+                // In the default shared mem we need to make sure that the end address is also aligned.  This is because
+                // in v1.1/v1.0 we just assumed that the next free offset was always properly aligned.
                 int endAddressMod8 = (int)(_baseAddress + newOffset) & 0x7;
                 int endAlignmentAdjustment = (8 - endAddressMod8) & 0x7;
                 newOffset += endAlignmentAdjustment;
@@ -225,11 +225,11 @@ namespace System.Diagnostics
                 totalSize += s_processLifetimeEntrySize + instanceNameLength;
 
                 // If we're in a separate shared memory, we need to do a two stage update of the free memory pointer.
-                // First we calculate our alignment adjustment and where the new free offset is.  Then we 
-                // write the new structs and data.  The last two operations are to link the new structs into the 
+                // First we calculate our alignment adjustment and where the new free offset is.  Then we
+                // write the new structs and data.  The last two operations are to link the new structs into the
                 // existing ones and update the next free offset.  Our process could get killed in between those two,
-                // leaving the memory in an inconsistent state.  We use the "IsConsistent" flag to help determine 
-                // when that has happened. 
+                // leaving the memory in an inconsistent state.  We use the "IsConsistent" flag to help determine
+                // when that has happened.
                 freeMemoryOffset = *((int*)_baseAddress);
                 newOffset = CalculateMemory(freeMemoryOffset, totalSize, out alignmentAdjustment);
 
@@ -248,11 +248,11 @@ namespace System.Diagnostics
             CategoryEntry* newCategoryEntryPointer;
             InstanceEntry* newInstanceEntryPointer;
             // We need to decide where to put the padding returned in alignmentAdjustment.  There are several things that
-            // need to be aligned.  First, we need to align each struct on a 4 byte boundary so we can use interlocked 
+            // need to be aligned.  First, we need to align each struct on a 4 byte boundary so we can use interlocked
             // operations on the int Spinlock field.  Second, we need to align the CounterEntry on an 8 byte boundary so that
             // on 64 bit platforms we can use interlocked operations on the Value field.  alignmentAdjustment guarantees 8 byte
-            // alignemnt, so we use that for both.  If we're creating the very first category, however, we can't move that 
-            // CategoryEntry.  In this case we put the alignmentAdjustment before the InstanceEntry. 
+            // alignemnt, so we use that for both.  If we're creating the very first category, however, we can't move that
+            // CategoryEntry.  In this case we put the alignmentAdjustment before the InstanceEntry.
             if (freeMemoryOffset == _initialOffset)
             {
                 newCategoryEntryPointer = (CategoryEntry*)nextPtr;
@@ -268,7 +268,7 @@ namespace System.Diagnostics
             }
             nextPtr += s_instanceEntrySize;
 
-            // create the first CounterEntry and reserve space for all of the rest.  We won't 
+            // create the first CounterEntry and reserve space for all of the rest.  We won't
             // finish creating them until the end
             CounterEntry* newCounterEntryPointer = (CounterEntry*)nextPtr;
             nextPtr += s_counterEntrySize * _categoryData.CounterNames.Count;
@@ -352,11 +352,11 @@ namespace System.Diagnostics
                 totalSize += s_processLifetimeEntrySize + instanceNameLength;
 
                 // If we're in a separate shared memory, we need to do a two stage update of the free memory pointer.
-                // First we calculate our alignment adjustment and where the new free offset is.  Then we 
-                // write the new structs and data.  The last two operations are to link the new structs into the 
+                // First we calculate our alignment adjustment and where the new free offset is.  Then we
+                // write the new structs and data.  The last two operations are to link the new structs into the
                 // existing ones and update the next free offset.  Our process could get killed in between those two,
-                // leaving the memory in an inconsistent state.  We use the "IsConsistent" flag to help determine 
-                // when that has happened. 
+                // leaving the memory in an inconsistent state.  We use the "IsConsistent" flag to help determine
+                // when that has happened.
                 freeMemoryOffset = *((int*)_baseAddress);
                 newOffset = CalculateMemory(freeMemoryOffset, totalSize, out alignmentAdjustment);
             }
@@ -375,12 +375,12 @@ namespace System.Diagnostics
 
             freeMemoryOffset += alignmentAdjustment;
             long nextPtr = ResolveOffset(freeMemoryOffset, totalSize);    // don't add alignmentAdjustment since it's already
-                                                                          // been added to freeMemoryOffset 
+                                                                          // been added to freeMemoryOffset
 
             InstanceEntry* newInstanceEntryPointer = (InstanceEntry*)nextPtr;
             nextPtr += s_instanceEntrySize;
 
-            // create the first CounterEntry and reserve space for all of the rest.  We won't 
+            // create the first CounterEntry and reserve space for all of the rest.  We won't
             // finish creating them until the end
             CounterEntry* newCounterEntryPointer = (CounterEntry*)nextPtr;
             nextPtr += s_counterEntrySize * _categoryData.CounterNames.Count;
@@ -457,7 +457,7 @@ namespace System.Diagnostics
             int offset = (int)((long)newInstanceEntryPointer - _baseAddress);
             categoryPointer->IsConsistent = 0;
 
-            // prepend the new instance rather than append, helps with perf of hooking up subsequent counters 
+            // prepend the new instance rather than append, helps with perf of hooking up subsequent counters
             newInstanceEntryPointer->NextInstanceOffset = categoryPointer->FirstInstanceOffset;
             categoryPointer->FirstInstanceOffset = offset;
 
@@ -520,14 +520,14 @@ namespace System.Diagnostics
         {
             WaitForCriticalSection(spinLockPointer);
 
-            // Note - we are taking a lock here, but it probably isn't 
+            // Note - we are taking a lock here, but it probably isn't
             // worthwhile to use Thread.BeginCriticalRegion & EndCriticalRegion.
             // These only really help the CLR escalate from a thread abort
             // to an appdomain unload, under the assumption that you may be
             // editing shared state within the appdomain.  Here you are editing
             // shared state, but it is shared across processes.  Unloading the
             // appdomain isn't exactly helping.  The only thing that would help
-            // would be if the CLR tells the host to ensure all allocations 
+            // would be if the CLR tells the host to ensure all allocations
             // have a higher chance of succeeding within this critical region,
             // but of course that's only a probabilisitic statement.
 
@@ -548,7 +548,7 @@ namespace System.Diagnostics
             for (; spinCount > 0 && *spinLockPointer != 0; spinCount--)
             {
                 // We suspect there are scenarios where the finalizer thread
-                // will call this method.  The finalizer thread runs with 
+                // will call this method.  The finalizer thread runs with
                 // a higher priority than the other code.  Using SpinWait
                 // isn't sufficient, since it only spins, but doesn't yield
                 // to any lower-priority threads.  Call Thread.Sleep(1).
@@ -578,7 +578,7 @@ namespace System.Diagnostics
             return (int)hash;
         }
 
-        // Calculate the length of a string in the shared memory.  If we reach the end of the shared memory 
+        // Calculate the length of a string in the shared memory.  If we reach the end of the shared memory
         // before we see a null terminator, we throw.
         private unsafe int GetStringLength(char* startChar)
         {
@@ -596,8 +596,8 @@ namespace System.Diagnostics
             throw new InvalidOperationException(SR.MappingCorrupted);
         }
 
-        // Compare a managed string to a string located at a given offset.  If we walk past the end of the 
-        // shared memory, we throw. 
+        // Compare a managed string to a string located at a given offset.  If we walk past the end of the
+        // shared memory, we throw.
         private unsafe bool StringEquals(string stringA, int offset)
         {
             char* currentChar = (char*)ResolveOffset(offset, 0);
@@ -613,7 +613,7 @@ namespace System.Diagnostics
                     return false;
             }
 
-            // now check for the null termination. 
+            // now check for the null termination.
             if ((ulong)(currentChar + i) > (endAddress - 2))
                 throw new InvalidOperationException(SR.MappingCorrupted);
 
@@ -659,7 +659,7 @@ namespace System.Diagnostics
                             object fileMappingSizeObject = categoryKey.GetValue("FileMappingSize");
                             if (fileMappingSizeObject != null && data.UseUniqueSharedMemory)
                             {
-                                // we only use this reg value in the unique shared memory case. 
+                                // we only use this reg value in the unique shared memory case.
                                 fileMappingSize = (int)fileMappingSizeObject;
                                 if (fileMappingSize < MinCountersFileMappingSize)
                                     fileMappingSize = MinCountersFileMappingSize;
@@ -671,7 +671,7 @@ namespace System.Diagnostics
                             {
                                 fileMappingSize = GetFileMappingSizeFromConfig();
                                 if (data.UseUniqueSharedMemory)
-                                    fileMappingSize = fileMappingSize >> 2;  // if we have a custom filemapping, only make it 25% as large. 
+                                    fileMappingSize = fileMappingSize >> 2;  // if we have a custom filemapping, only make it 25% as large.
                             }
 
                             // now read the counter names
@@ -762,7 +762,7 @@ namespace System.Diagnostics
                 bool counterFound = false;
                 while (!FindCategory(&categoryPointer))
                 {
-                    // don't bother locking again if we're using a separate shared memory.  
+                    // don't bother locking again if we're using a separate shared memory.
                     bool sectionEntered;
                     if (_categoryData.UseUniqueSharedMemory)
                         sectionEntered = true;
@@ -795,7 +795,7 @@ namespace System.Diagnostics
                 {
                     InstanceEntry* lockInstancePointer = instancePointer;
 
-                    // don't bother locking again if we're using a separate shared memory.  
+                    // don't bother locking again if we're using a separate shared memory.
                     bool sectionEntered;
                     if (_categoryData.UseUniqueSharedMemory)
                         sectionEntered = true;
@@ -812,7 +812,7 @@ namespace System.Diagnostics
                             {
                                 reused = TryReuseInstance(instanceNameHashCode, instanceName, categoryPointer, &instancePointer, lifetime, lockInstancePointer);
                                 // at this point we might have reused an instance that came from v1.1/v1.0.  We can't assume it will have the counter
-                                // we're looking for. 
+                                // we're looking for.
                             }
 
                             if (!reused)
@@ -865,7 +865,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                // cache this instance for reuse 
+                // cache this instance for reuse
                 try
                 {
                     if (counterPointer != null && instancePointer != null)
@@ -894,7 +894,7 @@ namespace System.Diagnostics
         //
         // * when the function returns false the returnCategoryPointerReference is set to the last CategoryEntry
         //   in the linked list
-        // 
+        //
         private unsafe bool FindCategory(CategoryEntry** returnCategoryPointerReference)
         {
             CategoryEntry* firstCategoryPointer = (CategoryEntry*)(ResolveOffset(_initialOffset, s_categoryEntrySize));
@@ -961,7 +961,7 @@ namespace System.Diagnostics
             InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
             InstanceEntry* previousInstancePointer = currentInstancePointer;
             foundFreeInstance = false;
-            // Look at the first instance to determine if this is single or multi instance. 
+            // Look at the first instance to determine if this is single or multi instance.
             if (currentInstancePointer->InstanceNameHashCode == s_singleInstanceHashCode)
             {
                 if (StringEquals(SingleInstanceName, currentInstancePointer->InstanceNameOffset))
@@ -983,10 +983,10 @@ namespace System.Diagnostics
 
             //
             // 1st pass find exact matching!
-            // 
-            // We don't need to aggressively claim unused instances. For performance, we would proactively 
-            // verify lifetime of instances if activateUnusedInstances is specified and certain time 
-            // has elapsed since last sweep or we are running out of shared memory.  
+            //
+            // We don't need to aggressively claim unused instances. For performance, we would proactively
+            // verify lifetime of instances if activateUnusedInstances is specified and certain time
+            // has elapsed since last sweep or we are running out of shared memory.
             bool verifyLifeTime = activateUnusedInstances;
             if (activateUnusedInstances)
             {
@@ -1019,7 +1019,7 @@ namespace System.Diagnostics
                     {
                         if (StringEquals(instanceName, currentInstancePointer->InstanceNameOffset))
                         {
-                            // we found a matching instance. 
+                            // we found a matching instance.
                             *returnInstancePointerReference = currentInstancePointer;
 
                             CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(currentInstancePointer->FirstCounterOffset, s_counterEntrySize);
@@ -1040,7 +1040,7 @@ namespace System.Diagnostics
                                     if (lifetime != PerformanceCounterInstanceLifetime.Process)
                                         throw new InvalidOperationException(SR.CantConvertProcessToGlobal);
 
-                                    // make sure only one process is using this instance. 
+                                    // make sure only one process is using this instance.
                                     if (ProcessData.ProcessId != lifetimeEntry->ProcessId)
                                         throw new InvalidOperationException(SR.Format(SR.InstanceAlreadyExists, instanceName));
 
@@ -1122,24 +1122,24 @@ namespace System.Diagnostics
                 {
 
                     bool hasFit;
-                    long instanceNamePtr;       // we need cache this to avoid race conditions. 
+                    long instanceNamePtr;       // we need cache this to avoid race conditions.
 
                     if (_categoryData.UseUniqueSharedMemory)
                     {
                         instanceNamePtr = ResolveOffset(currentInstancePointer->InstanceNameOffset, InstanceNameSlotSize);
                         // In the separate shared memory case we should always have enough space for instances.  The
-                        // name slot size is fixed. 
+                        // name slot size is fixed.
                         Debug.Assert(((instanceName.Length + 1) * 2) <= InstanceNameSlotSize, "The instance name length should always fit in our slot size");
                         hasFit = true;
                     }
                     else
                     {
-                        // we don't know the string length yet. 
+                        // we don't know the string length yet.
                         instanceNamePtr = ResolveOffset(currentInstancePointer->InstanceNameOffset, 0);
 
                         // In the global shared memory, we require names to be exactly the same length in order
-                        // to reuse them.  This way we don't end up leaking any space and we don't need to 
-                        // depend on the layout of the memory to calculate the space we have. 
+                        // to reuse them.  This way we don't end up leaking any space and we don't need to
+                        // depend on the layout of the memory to calculate the space we have.
                         int length = GetStringLength((char*)instanceNamePtr);
                         hasFit = (length == instanceName.Length);
                     }
@@ -1148,7 +1148,7 @@ namespace System.Diagnostics
                     // Instance name fit
                     if (hasFit)
                     {
-                        // don't bother locking again if we're using a separate shared memory.  
+                        // don't bother locking again if we're using a separate shared memory.
                         bool sectionEntered;
                         if (noSpinLock)
                             sectionEntered = true;
@@ -1165,7 +1165,7 @@ namespace System.Diagnostics
 
                                 // return
                                 *returnInstancePointerReference = currentInstancePointer;
-                                // clear the counter values. 
+                                // clear the counter values.
                                 ClearCounterValues(*returnInstancePointerReference);
 
                                 if (_categoryData.UseUniqueSharedMemory)
@@ -1245,8 +1245,8 @@ namespace System.Diagnostics
 
             if (currentCategoryPointer->FirstInstanceOffset != 0)
             {
-                // Check whether the recently added instance at the head of the list is committed. If not, rewire 
-                // the head of the list to point to the next instance 
+                // Check whether the recently added instance at the head of the list is committed. If not, rewire
+                // the head of the list to point to the next instance
                 if (currentCategoryPointer->FirstInstanceOffset > freeOffset)
                 {
                     InstanceEntry* currentInstancePointer = (InstanceEntry*)ResolveOffset(currentCategoryPointer->FirstInstanceOffset, s_instanceEntrySize);
@@ -1297,7 +1297,7 @@ namespace System.Diagnostics
                         {
                             if ((ProcessData.StartupTime != -1) && (startTime != -1) && (ProcessData.StartupTime != startTime))
                             {
-                                // Process id got recycled.  Reclaim this instance. 
+                                // Process id got recycled.  Reclaim this instance.
                                 currentInstancePointer->RefCount = 0;
                                 return;
                             }
@@ -1310,15 +1310,15 @@ namespace System.Diagnostics
                                 int error = Marshal.GetLastWin32Error();
                                 if ((error == Interop.Errors.ERROR_INVALID_PARAMETER) && procHandle.IsInvalid)
                                 {
-                                    // The process is dead.  Reclaim this instance.  Note that we only clear the refcount here.  
+                                    // The process is dead.  Reclaim this instance.  Note that we only clear the refcount here.
                                     // If we tried to clear the pid and startup time as well, we would have a race where
-                                    // we could clear the pid/startup time but not the refcount. 
+                                    // we could clear the pid/startup time but not the refcount.
                                     currentInstancePointer->RefCount = 0;
                                     return;
                                 }
 
-                                // Defer cleaning the instance when we had previously encountered errors in 
-                                // recording process start time (i.e, when startTime == -1) until after the 
+                                // Defer cleaning the instance when we had previously encountered errors in
+                                // recording process start time (i.e, when startTime == -1) until after the
                                 // process id is not valid (which will be caught in the if check above)
                                 if (!procHandle.IsInvalid && startTime != -1)
                                 {
@@ -1327,7 +1327,7 @@ namespace System.Diagnostics
                                     {
                                         if (processStartTime != startTime)
                                         {
-                                            // The process is dead but a new one is using the same pid.  Reclaim this instance. 
+                                            // The process is dead but a new one is using the same pid.  Reclaim this instance.
                                             currentInstancePointer->RefCount = 0;
                                             return;
                                         }
@@ -1450,7 +1450,7 @@ namespace System.Diagnostics
                 {
                     try
                     {
-                        // validate whether the cached instance pointer is pointing at the right instance  
+                        // validate whether the cached instance pointer is pointing at the right instance
                         instancePointer = (InstanceEntry*)(ResolveOffset(_thisInstanceOffset, s_instanceEntrySize));
                         if (instancePointer->InstanceNameHashCode == instanceNameHashCode)
                         {
@@ -1702,7 +1702,7 @@ namespace System.Diagnostics
                     // may actually be closed in between these two calls.  When this happens, OpenFileMapping returns ERROR_FILE_NOT_FOUND.
                     // In this case, we need to loop back and retry creating the memory mapped file.
                     //
-                    // This loop will timeout in approximately 1.4 minutes.  An InvalidOperationException is thrown in the timeout case. 
+                    // This loop will timeout in approximately 1.4 minutes.  An InvalidOperationException is thrown in the timeout case.
                     //
                     //
                     int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
@@ -1785,9 +1785,9 @@ namespace System.Diagnostics
         // The final tmpPadding field is needed to make the size of this structure 8-byte aligned.  This is
         // necessary on IA64.
         // </WARNING>
-        // Note that in V1.0 and v1.1 there was no explicit padding defined on any of these structs.  That means that 
-        // sizeof(CategoryEntry) or Marshal.SizeOf(typeof(CategoryEntry)) returned 4 bytes less before Whidbey, 
-        // and the int we use as IsConsistent could actually overlap the InstanceEntry SpinLock.  
+        // Note that in V1.0 and v1.1 there was no explicit padding defined on any of these structs.  That means that
+        // sizeof(CategoryEntry) or Marshal.SizeOf(typeof(CategoryEntry)) returned 4 bytes less before Whidbey,
+        // and the int we use as IsConsistent could actually overlap the InstanceEntry SpinLock.
 
         [StructLayout(LayoutKind.Sequential)]
         private struct CategoryEntry
@@ -1833,8 +1833,8 @@ namespace System.Diagnostics
             public int Value_lo;
             public int Value_hi;
             public int NextCounterOffset;
-            public int padding2;        // The compiler adds this only if there is an int64 in the struct - 
-                                        // ie only for CounterEntry.  It really needs to be here.  
+            public int padding2;        // The compiler adds this only if there is an int64 in the struct -
+                                        // ie only for CounterEntry.  It really needs to be here.
         }
 
         [StructLayout(LayoutKind.Sequential)]

@@ -8,12 +8,12 @@ using Xunit;
 namespace System.Linq.Tests
 {
     public class FirstOrDefaultTests : EnumerableBasedTests
-    {        
+    {
         [Fact]
         public void Empty()
         {
             int[] source = { };
-            
+
             Assert.Equal(0, source.AsQueryable().FirstOrDefault());
         }
 
@@ -30,7 +30,7 @@ namespace System.Linq.Tests
             int?[] source = { 19, null, -10, 2, 4, 3, 0, 2 };
             Assert.Equal(19, source.AsQueryable().FirstOrDefault());
         }
-        
+
         [Fact]
         public void OneElementTruePredicate()
         {

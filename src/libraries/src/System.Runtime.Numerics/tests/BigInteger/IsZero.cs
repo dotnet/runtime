@@ -9,7 +9,7 @@ namespace System.Numerics.Tests
     public class IsZeroTest
     {
         private static int s_seed = 0;
-        
+
         [Fact]
         public static void RunIsZeroTests()
         {

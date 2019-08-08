@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             _key = key;
         }
-        
+
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
         {
             string oid;
@@ -105,12 +105,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             // Uncompressed point (0x04)
             uncompressedPoint[0] = 0x04;
-            
+
             Buffer.BlockCopy(ecParameters.Q.X, 0, uncompressedPoint, 1, ecParameters.Q.X.Length);
             Buffer.BlockCopy(ecParameters.Q.Y, 0, uncompressedPoint, 1 + ecParameters.Q.X.Length, ecParameters.Q.Y.Length);
 
             Oid ecPublicKey = new Oid(Oids.EcPublicKey);
-            
+
             return new PublicKey(
                 ecPublicKey,
                 new AsnEncodedData(ecPublicKey, curveOidEncoded),

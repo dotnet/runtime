@@ -360,7 +360,7 @@ namespace System.Xml
         }
 
         //the function checks if there is already node with the same name existing in the collection
-        // if so, remove it because the new one will be inserted to replace this one (could be in different position though ) 
+        // if so, remove it because the new one will be inserted to replace this one (could be in different position though )
         //  by the calling function later
         internal int RemoveDuplicateAttribute(XmlAttribute attr)
         {
@@ -400,7 +400,7 @@ namespace System.Xml
             doc.AddElementWithId(newVal, parentElem);
         }
 
-        // WARNING: 
+        // WARNING:
         //  For performance reasons, this function does not check
         //  for xml attributes within the collection with the same full name.
         //  This means that any caller of this function must be sure that

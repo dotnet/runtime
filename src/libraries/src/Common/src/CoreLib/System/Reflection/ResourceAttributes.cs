@@ -11,4 +11,3 @@ namespace System.Reflection
         Private = 0x0002,
     }
 }
-

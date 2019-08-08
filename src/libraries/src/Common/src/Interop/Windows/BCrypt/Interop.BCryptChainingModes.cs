@@ -14,4 +14,3 @@ internal partial class Interop
         internal const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
     }
 }
-

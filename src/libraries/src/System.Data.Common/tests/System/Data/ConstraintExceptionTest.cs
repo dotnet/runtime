@@ -96,7 +96,7 @@ namespace System.Data.Tests
             ds.EnforceConstraints = false;
             dtChild.Rows.Add(dtChild.Rows[0].ItemArray);
 
-            // UniqueConstraint Exception - ds.EnforceConstraints 
+            // UniqueConstraint Exception - ds.EnforceConstraints
             Assert.Throws<ConstraintException>(() => ds.EnforceConstraints = true);
         }
 

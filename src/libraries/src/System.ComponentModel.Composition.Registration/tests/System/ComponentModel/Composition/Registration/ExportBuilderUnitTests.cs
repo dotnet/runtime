@@ -31,12 +31,12 @@ namespace System.ComponentModel.Composition.Registration.Tests
             public IEnumerable<IFoo> IFoos { get; set; }
         }
 
-        public class FooImporter1 : FooImporterBase 
+        public class FooImporter1 : FooImporterBase
         {
             public FooImporter1 () {}
             public FooImporter1(IFoo fooImporter)
             {
-                ImportedFoo = fooImporter; 
+                ImportedFoo = fooImporter;
             }
         }
 
@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             public FooImporter2 () {}
             public FooImporter2(IFoo fooImporter)
             {
-                ImportedFoo = fooImporter; 
+                ImportedFoo = fooImporter;
             }
         }
 
@@ -54,7 +54,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             public FooImporter3 () {}
             public FooImporter3(IFoo fooImporter)
             {
-                ImportedFoo = fooImporter; 
+                ImportedFoo = fooImporter;
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             public FooImporter4 () {}
             public FooImporter4(IFoo fooImporter)
             {
-                ImportedFoo = fooImporter; 
+                ImportedFoo = fooImporter;
             }
         }
 
@@ -72,9 +72,9 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var ctx = new RegistrationBuilder();
             ctx.ForType<CFoo>().Export<IFoo>();
-            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx); 
+            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx);
             Assert.True(catalog.Parts.Count() != 0);
-            
+
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             var importer = new FooImporter();
             container.SatisfyImportsOnce(importer);
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             ctx.ForType(typeof(CFoo)).Export( (c) => c.AsContractType(typeof(IFoo)));
             var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx);
             Assert.True(catalog.Parts.Count() != 0);
-            
+
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             var importer = new FooImporter();
             container.SatisfyImportsOnce(importer);
@@ -102,9 +102,9 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var ctx = new RegistrationBuilder();
             ctx.ForTypesDerivedFrom<IFoo>().Export( (c) => c.Inherited().AsContractType(typeof(IFoo)));
-            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx); 
+            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx);
             Assert.True(catalog.Parts.Count() != 0);
-            
+
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             var importer = new FooImporter();
             container.SatisfyImportsOnce(importer);
@@ -117,9 +117,9 @@ namespace System.ComponentModel.Composition.Registration.Tests
         {
             var ctx = new RegistrationBuilder();
             ctx.ForTypesDerivedFrom(typeof(IFoo)).Export( (c) => c.Inherited().AsContractType(typeof(IFoo)));
-            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx); 
+            var catalog = new TypeCatalog(new[] { typeof(CFoo) }, ctx);
             Assert.True(catalog.Parts.Count() != 0);
-            
+
             var container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
             var importer = new FooImporter();
             container.SatisfyImportsOnce(importer);

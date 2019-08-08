@@ -136,7 +136,7 @@ namespace System.Collections.Generic.Tests
         public static TheoryData<IEnumerable<T>> EnumerableData()
         {
             var data = new TheoryData<IEnumerable<T>>();
-            
+
             IEnumerable<int> counts = CountData().Select(array => array[0]).Cast<int>();
 
             foreach (int count in counts)
@@ -197,7 +197,7 @@ namespace System.Collections.Generic.Tests
             // and add this many items to it, what should be it's capacity?
 
             Debug.Assert(count >= 0);
-            
+
             // We start with no capacity for 0 items...
             if (count == 0)
             {

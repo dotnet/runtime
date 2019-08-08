@@ -296,4 +296,3 @@ namespace System.Xml.Tests
         }
     }
 }
-

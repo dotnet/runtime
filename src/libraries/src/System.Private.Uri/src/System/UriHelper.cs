@@ -356,7 +356,7 @@ namespace System
                                     else if (iriParsing && ((ch <= '\x9F' && IsNotSafeForUnescape(ch)) ||
                                                             (ch > '\x9F' && !IriHelper.CheckIriUnicodeRange(ch, isQuery))))
                                     {
-                                        // check if unenscaping gives a char outside iri range 
+                                        // check if unenscaping gives a char outside iri range
                                         // if it does then keep it escaped
                                         next += 2;
                                         continue;
@@ -371,7 +371,7 @@ namespace System
                                         // Should be a rare case where the app tries to feed an invalid escaped sequence
                                         throw new UriFormatException(SR.net_uri_BadString);
                                     }
-                                    // keep a '%' as part of a bogus sequence 
+                                    // keep a '%' as part of a bogus sequence
                                     continue;
                                 }
                                 else
@@ -678,8 +678,8 @@ namespace System
         // In addition, do not unescape the following unsafe characters:
         // excluded    = "%" / "\"
         //
-        // This implementation used to use the following variant of the RFC 2396 reserved set. 
-        // That behavior is now disabled by default, and is controlled by a UriSyntax property. 
+        // This implementation used to use the following variant of the RFC 2396 reserved set.
+        // That behavior is now disabled by default, and is controlled by a UriSyntax property.
         // reserved    = ";" | "/" | "?" | "@" | "&" | "=" | "+" | "$" | ","
         // excluded    = control | "#" | "%" | "\"
         internal static bool IsNotSafeForUnescape(char ch)

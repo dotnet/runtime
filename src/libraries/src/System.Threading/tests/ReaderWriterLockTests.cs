@@ -466,7 +466,7 @@ namespace System.Threading.Tests
             }
 
             // Cannot downgrade to a recursive write lock level greater than or equal to the current
-            trwl.AcquireWriterLock(); 
+            trwl.AcquireWriterLock();
             trwl.AcquireWriterLock();
             tlc = trwl.UpgradeToWriterLock();
             trwl.ReleaseWriterLock();

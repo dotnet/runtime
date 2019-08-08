@@ -116,7 +116,7 @@ internal static partial class Interop
 
             return ret;
         }
-            
+
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]

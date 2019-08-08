@@ -514,7 +514,7 @@ namespace System.Net.Sockets.Tests
                 acceptArgs.SetBuffer(new byte[acceptBufferSize], 0, acceptBufferSize);
 
                 Assert.True(server.AcceptAsync(acceptArgs));
- 
+
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
                     client.Connect(IPAddress.Loopback, port);

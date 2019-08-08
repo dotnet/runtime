@@ -30,4 +30,3 @@ namespace System.IO.Pipes.Tests
         }
     }
 }
-

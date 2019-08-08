@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     {
         [Fact]
         public static void SelectFromCollection_InvalidInput()
-        { 
+        {
             Assert.Throws<ArgumentNullException>("certificates", () => X509Certificate2UI.SelectFromCollection(null, string.Empty, string.Empty, X509SelectionFlag.SingleSelection));
             Assert.Throws<ArgumentException>(() => X509Certificate2UI.SelectFromCollection(new X509Certificate2Collection(), string.Empty, string.Empty, (X509SelectionFlag)2));
         }

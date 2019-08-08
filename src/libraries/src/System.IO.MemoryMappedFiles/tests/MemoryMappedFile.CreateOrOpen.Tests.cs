@@ -211,7 +211,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// listed in the MemberData attribute (e.g. actual system page size instead of -1).
         /// </summary>
         /// <param name="mapNames">
-        /// The names to yield.  
+        /// The names to yield.
         /// non-null may be excluded based on platform.
         /// "CreateUniqueMapName()" will be translated to an invocation of that method.
         /// </param>

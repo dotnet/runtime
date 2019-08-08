@@ -40,7 +40,7 @@ namespace System.Text.Encodings.Web
         /// <para>
         /// Unlike the <see cref="Default"/>, this encoder instance allows some other characters to go through unescaped (for example, '+'), and hence must be used cautiously.
         /// </para>
-        /// </remarks> 
+        /// </remarks>
         public static JavaScriptEncoder UnsafeRelaxedJsonEscaping
         {
             get { return UnsafeRelaxedJavaScriptEncoder.s_singleton; }
@@ -61,7 +61,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <param name="allowedRanges">Set of characters that the encoder is allowed to not encode.</param>
         /// <returns>A new instance of the <see cref="JavaScriptEncoder"/>.</returns>
-        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks> 
+        /// <remarks>Some characters in <paramref name="allowedRanges"/> might still get encoded, i.e. this parameter is just telling the encoder what ranges it is allowed to not encode, not what characters it must not encode.</remarks>
         public static JavaScriptEncoder Create(params UnicodeRange[] allowedRanges)
         {
             return new DefaultJavaScriptEncoder(allowedRanges);
@@ -88,7 +88,7 @@ namespace System.Text.Encodings.Web
             _allowedCharacters.ForbidUndefinedCharacters();
 
             // Forbid characters that are special in HTML.
-            // Even though this is a not HTML encoder, 
+            // Even though this is a not HTML encoder,
             // it's unfortunately common for developers to
             // forget to HTML-encode a string once it has been JS-encoded,
             // so this offers extra protection.
@@ -97,9 +97,9 @@ namespace System.Text.Encodings.Web
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
             // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
             _allowedCharacters.ForbidCharacter('\\');
-            
+
             // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).
-            _allowedCharacters.ForbidCharacter('`'); 
+            _allowedCharacters.ForbidCharacter('`');
         }
 
         public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
@@ -128,7 +128,7 @@ namespace System.Text.Encodings.Web
         // surrogate pairs in the output.
         public override int MaxOutputCharactersPerInputCharacter
         {
-            get { return 12; } // "\uFFFF\uFFFF" is the longest encoded form 
+            get { return 12; } // "\uFFFF\uFFFF" is the longest encoded form
         }
 
         static readonly char[] s_b = new char[] { '\\', 'b' };
@@ -170,7 +170,7 @@ namespace System.Text.Encodings.Web
                 case '\f': toCopy = s_f; break;
                 case '\r': toCopy = s_r; break;
                 case '\\': toCopy = s_back; break;
-                default: return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); 
+                default: return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
             }
             return TryCopyCharacters(toCopy, buffer, bufferLength, out numberOfCharactersWritten);
         }

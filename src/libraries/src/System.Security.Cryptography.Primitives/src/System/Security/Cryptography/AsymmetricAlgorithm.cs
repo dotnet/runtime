@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
 
         public virtual void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
-        
+
         public virtual void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 

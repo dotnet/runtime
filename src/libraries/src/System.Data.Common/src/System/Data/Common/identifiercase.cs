@@ -11,6 +11,3 @@ namespace System.Data.Common
         Sensitive = 2
     }
 }
-
-
-

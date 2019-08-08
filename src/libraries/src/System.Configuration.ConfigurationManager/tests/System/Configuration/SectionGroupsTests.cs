@@ -38,7 +38,7 @@ namespace System.ConfigurationTests
                 ConfigurationSectionGroup sectionGroup = config.GetSectionGroup("emptySectionGroup");
                 Assert.NotNull(sectionGroup);
                 Assert.Empty(sectionGroup.Sections);
-                Assert.Empty(sectionGroup.SectionGroups);                
+                Assert.Empty(sectionGroup.SectionGroups);
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.ConfigurationTests
                 Assert.NotNull(sectionGroup);
                 Assert.Equal(1, sectionGroup.Sections.Count);
                 Assert.Equal("fooSection", sectionGroup.Sections[0].SectionInformation.Name);
-                Assert.Equal("System.Configuration.NameValueSectionHandler, System", sectionGroup.Sections[0].SectionInformation.Type);                
+                Assert.Equal("System.Configuration.NameValueSectionHandler, System", sectionGroup.Sections[0].SectionInformation.Type);
             }
         }
     }

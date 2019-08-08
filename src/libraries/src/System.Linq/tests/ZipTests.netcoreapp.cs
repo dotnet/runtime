@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -18,7 +18,7 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, first.Zip(second));
         }
-        
+
         [Fact]
         public void Zip2_ExplicitTypeParameters()
         {
@@ -53,13 +53,13 @@ namespace System.Linq.Tests
             ThrowsOnMatchEnumerable<int> first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 3, 3 }, 2);
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             IEnumerable<(int, int)> expected = new (int,int)[] { (1,2), (3,4), (3,6) };
-            
+
             Assert.Equal(expected, first.Zip(second));
 
             first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 2, 3 }, 2);
 
             IEnumerable<(int, int)> zip = first.Zip(second);
-            
+
             Assert.Throws<Exception>(() => zip.ToList());
         }
 

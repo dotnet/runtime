@@ -13,4 +13,3 @@ internal partial class Interop
         public static extern IntPtr LoadLibrary(string libFilename);
     }
 }
-

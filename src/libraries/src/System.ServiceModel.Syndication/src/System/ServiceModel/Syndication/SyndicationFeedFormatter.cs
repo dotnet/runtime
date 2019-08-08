@@ -335,7 +335,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(link));
             }
-    
+
             link.WriteAttributeExtensions(writer, version);
         }
 
@@ -375,7 +375,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(category));
             }
-        
+
             category.WriteElementExtensions(writer, version);
         }
 

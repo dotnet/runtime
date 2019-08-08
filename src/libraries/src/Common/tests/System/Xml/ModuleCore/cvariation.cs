@@ -35,16 +35,16 @@ namespace OLEDB.Test.ModuleCore
         public CVariation(CTestCase testcase, string desc, string function)
             : base(function, desc)
         {
-            //Note: The parent automatically gets setup on AddVariation so we don't 
-            //really need to pass in the test case, left here for backward compatibility 
+            //Note: The parent automatically gets setup on AddVariation so we don't
+            //really need to pass in the test case, left here for backward compatibility
             //of inherited drivers.
         }
 
         public CVariation(CTestCase testcase, string desc, TestFunc function)
             : base(null, desc)
         {
-            //Note: The parent automatically gets setup on AddVariation so we don't 
-            //really need to pass in the test case, left here for backward compatibility 
+            //Note: The parent automatically gets setup on AddVariation so we don't
+            //really need to pass in the test case, left here for backward compatibility
             //of inherited drivers.
             _pfunc = function;
         }

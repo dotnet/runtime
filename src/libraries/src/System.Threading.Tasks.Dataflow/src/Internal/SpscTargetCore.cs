@@ -59,7 +59,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>A task has reserved the right to run the completion routine.</summary>
         private volatile bool _completionReserved;
         /// <summary>
-        /// The Task currently active to process the block. This field is used to synchronize between producer and consumer, 
+        /// The Task currently active to process the block. This field is used to synchronize between producer and consumer,
         /// and it should not be set to null once the block completes, as doing so would allow for races where the producer
         /// gets another consumer task queued even though the block has completed.
         /// </summary>
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
         {
             // If we're not required to go back to the source to consume the offered message, try fast path.
-            return !consumeToAccept && Post(messageValue) ? 
+            return !consumeToAccept && Post(messageValue) ?
                 DataflowMessageStatus.Accepted :
                 OfferMessage_Slow(messageHeader, messageValue, source, consumeToAccept);
         }
@@ -180,10 +180,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     }
 #endif
 
-                    // Start the task.  In the erroneous case where the scheduler throws an exception, 
-                    // just allow it to propagate. Our other option would be to fault the block with 
+                    // Start the task.  In the erroneous case where the scheduler throws an exception,
+                    // just allow it to propagate. Our other option would be to fault the block with
                     // that exception, but in order for the block to complete we need to schedule a consumer
-                    // task to do so, and it's very likely that if the scheduler is throwing an exception 
+                    // task to do so, and it's very likely that if the scheduler is throwing an exception
                     // now, it would do so again.
                     newConsumer.Start(_dataflowBlockOptions.TaskScheduler);
                 }
@@ -310,7 +310,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Ensure that the _exceptions field has been initialized.
             // We need to synchronize the initialization and storing of
             // the exception because this method could be accessed concurrently
-            // by the producer and consumer, a producer calling Fault and the 
+            // by the producer and consumer, a producer calling Fault and the
             // processing task processing the user delegate which might throw.
 #pragma warning disable 0420
             lock (LazyInitializer.EnsureInitialized(ref _exceptions, () => new List<Exception>()))
@@ -395,7 +395,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Initializes the debugging helper.</summary>
             /// <param name="target">The target being viewed.</param>
             internal DebuggingInformation(SpscTargetCore<TInput> target) { _target = target; }
-            
+
             /// <summary>Gets the messages waiting to be processed.</summary>
             internal IEnumerable<TInput> InputQueue { get { return _target._messages.ToList(); } }
 

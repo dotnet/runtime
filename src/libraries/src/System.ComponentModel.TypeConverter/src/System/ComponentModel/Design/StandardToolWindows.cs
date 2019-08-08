@@ -24,7 +24,7 @@ namespace System.ComponentModel.Design
         /// Gets the GUID for the project explorer.
         /// </summary>
         public static readonly Guid ProjectExplorer = new Guid("{3ae79031-e1bc-11d0-8f78-00a0c9110057}");
-        
+
         /// <summary>
         /// Gets the GUID for the properties window.
         /// </summary>

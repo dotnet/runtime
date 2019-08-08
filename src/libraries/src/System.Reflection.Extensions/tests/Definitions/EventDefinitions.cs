@@ -53,7 +53,7 @@ namespace System.Reflection.Tests
         public static new string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
         public static new string[] PublicEvents = new string[] { "EventPublic", "EventPublicNew" };
 
-        new protected event EventHandler EventProtected;        // overrides the ProEvent from EventFieldTest parent        
+        new protected event EventHandler EventProtected;        // overrides the ProEvent from EventFieldTest parent
         public event EventHandler EventPublicNew;
     }
 
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
         public static new string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
         public static new string[] PublicEvents = new string[] { "eVentPublicNew", "EventPublic", "EventPublicNew" };
 
-        protected event EventHandler eVentProtected;        // overrides the ProEvent from EventFieldTest parent        
+        protected event EventHandler eVentProtected;        // overrides the ProEvent from EventFieldTest parent
         public event EventHandler eVentPublicNew;
         internal static event EventHandler eVENTInternal;
         private event EventHandler eVentPriVate;

@@ -23,7 +23,7 @@ public class WindowsIdentityTests
         WindowsIdentity windowsIdentity = WindowsIdentity.GetAnonymous();
         Assert.True(windowsIdentity.IsAnonymous);
         Assert.False(windowsIdentity.IsAuthenticated);
-        CheckDispose(windowsIdentity, true);        
+        CheckDispose(windowsIdentity, true);
     }
 
     [Fact]

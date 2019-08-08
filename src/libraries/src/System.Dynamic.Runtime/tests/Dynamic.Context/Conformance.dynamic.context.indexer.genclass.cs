@@ -787,7 +787,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
                     throw new TimeoutException(dy[x].ToString());
                 };
 
-            
+
                 result = func("Test");
                 threwException = false;
             }

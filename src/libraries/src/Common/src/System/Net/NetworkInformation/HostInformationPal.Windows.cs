@@ -62,7 +62,7 @@ namespace System.Net.NetworkInformation
             {
                 throw new Win32Exception((int)result);
             }
-            
+
             return fixedInfo;
         }
 

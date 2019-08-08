@@ -128,7 +128,7 @@ namespace Microsoft.Internal
             else if (valueType == GenerationServices.UInt32Type)
             {
                 // NOTE : This one is a bit tricky. Ldc.I4 takes an Int32 as an argument, although it really treats it as a 32bit number
-                // That said, some UInt32 values are larger that Int32.MaxValue, so the Convert call above will fail, which is why 
+                // That said, some UInt32 values are larger that Int32.MaxValue, so the Convert call above will fail, which is why
                 // we need to treat this case individually and cast to uint, and then - unchecked - to int.
                 ilGenerator.LoadInt(unchecked((int)((uint)rawValue)));
             }

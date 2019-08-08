@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,7 +11,7 @@ namespace System.Runtime.Caching
     // types of monitors:  PhysicalMemoryMonitor and CacheMemoryMonitor.  The first monitors
     // the amount of physical memory used on the machine, and helps determine when we should
     // drop cache entries to avoid paging.  The second monitors the amount of memory used by
-    // the cache itself, and helps determine when we should drop cache entries to avoid 
+    // the cache itself, and helps determine when we should drop cache entries to avoid
     // exceeding the cache's memory limit.  Both are configurable (see ConfigUtil.cs).
     internal abstract partial class MemoryMonitor
     {

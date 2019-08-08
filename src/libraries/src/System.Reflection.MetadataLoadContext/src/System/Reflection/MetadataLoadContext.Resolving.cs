@@ -17,7 +17,7 @@ namespace System.Reflection
         //
         // _binds keeps the resolve event from being called to resolve the same refName over and over again.
         // If the resolve logic allows variations on the ref name, it is possible and common for the same assembly instance
-        // to appear multiple times (once for each variation that was used to bind to it.) 
+        // to appear multiple times (once for each variation that was used to bind to it.)
         //
         // We also latch failures. That is, _binds can bind a RuntimeAssemblyName to a RoFailedBindAssembly.
         //

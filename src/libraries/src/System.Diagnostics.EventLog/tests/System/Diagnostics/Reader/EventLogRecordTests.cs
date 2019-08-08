@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tests
             {
                 action();
             }
-            catch (T) 
+            catch (T)
             {
                 action();
             }
@@ -132,7 +132,7 @@ namespace System.Diagnostics.Tests
             Guid? providerId, activityId, relatedActivityId;
             int? processId, threadId, qualifiers, task;
             long? keywords, recordId;
-            string providerName, machineName, containerLog; 
+            string providerName, machineName, containerLog;
             DateTime? timeCreated;
             IEnumerable<int> matchedQueryIds;
             EventBookmark bookmark, bookmarkArg = Helpers.GetBookmark("Application", PathType.LogName);
@@ -194,4 +194,3 @@ namespace System.Diagnostics.Tests
         }
     }
 }
-

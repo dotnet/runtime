@@ -269,4 +269,3 @@ internal class IOServices
         return DllImports.GetDriveType(drive) == 3;
     }
 }
-

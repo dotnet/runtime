@@ -279,7 +279,7 @@ namespace System.IO.Tests
             await sw.WriteLineAsync("World!");
 
             Assert.Equal(
-                string.Format("H{0}ello{0}World!{0}", Environment.NewLine), 
+                string.Format("H{0}ello{0}World!{0}", Environment.NewLine),
                 sw.ToString());
         }
 
@@ -294,7 +294,7 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteMisc()
         {
-            RemoteExecutor.Invoke(() => 
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
                 var sw = new StringWriter();
@@ -349,7 +349,7 @@ namespace System.IO.Tests
             sw.WriteLine(new object());
             Assert.Equal("System.Object" + Environment.NewLine, sw.ToString());
         }
-    
+
         [Fact]
         public static void TestWriteLineAsyncCharArray()
         {

@@ -54,7 +54,7 @@ namespace System.ComponentModel.TypeConverterTests
         {
             string path = Path.Combine("bitmaps", "TestImageWithOleHeader.bmp");
             using (FileStream fileStream = File.Open(path, FileMode.Open))
-            {              
+            {
                 using (var ms = new MemoryStream())
                 {
                     fileStream.CopyTo(ms);

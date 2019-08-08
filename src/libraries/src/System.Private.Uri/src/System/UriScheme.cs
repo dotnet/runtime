@@ -149,16 +149,16 @@ namespace System
 
             if (schemeName == null)
                 throw new ArgumentNullException(nameof(schemeName));
- 
+
             if (schemeName.Length == 1)
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
- 
+
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
- 
+
             if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
- 
+
             schemeName = schemeName.ToLower();
             FetchSyntax(uriParser, schemeName, defaultPort);
         }

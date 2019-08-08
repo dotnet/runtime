@@ -114,7 +114,7 @@ namespace System.Net.Sockets.Performance.Tests
             int connectionAttempts = 0;
             while (true)
             {
-                try 
+                try
                 {
                     await ConnectHelper();
 
@@ -137,7 +137,7 @@ namespace System.Net.Sockets.Performance.Tests
                     }
                 }
 
-                // Connection was refused.  
+                // Connection was refused.
                 // The server may be temporarily overloaded, and the server OS is rejecting connections.
                 // Wait a bit and then retry.
                 await Task.Delay(200);
@@ -165,7 +165,7 @@ namespace System.Net.Sockets.Performance.Tests
                 // necessarily always on buffer length boundaries.
                 _current_bytes = sends * _bufferLen;
 
-                // 
+                //
                 // TODO: It might be more efficient to have more than one outstanding Send/Receive.
 
                 // IMPORTANT: The code currently assumes one outstanding Send and one Receive. Interlocked operations

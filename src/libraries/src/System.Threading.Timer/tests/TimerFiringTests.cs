@@ -141,7 +141,7 @@ namespace System.Threading.Tests
         [Fact]
         public void Timer_CanBeDisposedMultipleTimes()
         {
-            // There's nothing to validate besides that we don't throw an exception, so rely on xunit 
+            // There's nothing to validate besides that we don't throw an exception, so rely on xunit
             // to catch any exception that would be thrown and signal a test failure
             TimerCallback tc = new TimerCallback((object o) => { });
             var t = new Timer(tc, null, 100, -1);

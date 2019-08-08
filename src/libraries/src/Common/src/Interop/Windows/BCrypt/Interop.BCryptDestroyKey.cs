@@ -14,4 +14,3 @@ internal partial class Interop
         internal static extern NTSTATUS BCryptDestroyKey(IntPtr hKey);
     }
 }
-

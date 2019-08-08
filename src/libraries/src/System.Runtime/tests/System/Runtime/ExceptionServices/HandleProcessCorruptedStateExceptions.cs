@@ -27,7 +27,7 @@ namespace System.Runtime.ExceptionServices.Tests
         static void CauseAVInNative()
         {
             SetErrorMode(SEM_NOGPFAULTERRORBOX);
-            try 
+            try
             {
                 RaiseException(0xC0000005, 0, 0, IntPtr.Zero);
             }

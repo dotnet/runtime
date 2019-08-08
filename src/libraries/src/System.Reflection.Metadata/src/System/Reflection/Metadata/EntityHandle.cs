@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 namespace System.Reflection.Metadata
 {
     /// <summary>
-    /// Represents a metadata entity (type reference/definition/specification, method definition, custom attribute, etc.). 
+    /// Represents a metadata entity (type reference/definition/specification, method definition, custom attribute, etc.).
     /// </summary>
     /// <remarks>
     /// Use <see cref="EntityHandle"/> to store multiple kinds of entity handles.
@@ -78,8 +78,8 @@ namespace System.Reflection.Metadata
 
         public HandleKind Kind
         {
-            get 
-            { 
+            get
+            {
                 // EntityHandles cannot be StringHandles and therefore we do not need
                 // to handle stripping the extra non-virtual string type bits here.
                 return (HandleKind)(Type >> TokenTypeIds.RowIdBitCount);
@@ -123,7 +123,7 @@ namespace System.Reflection.Metadata
         internal static int Compare(EntityHandle left, EntityHandle right)
         {
             // All virtual tokens will be sorted after non-virtual tokens.
-            // The order of handles that differ in kind is undefined, 
+            // The order of handles that differ in kind is undefined,
             // but we include it so that we ensure consistency with == and != operators.
             return left._vToken.CompareTo(right._vToken);
         }

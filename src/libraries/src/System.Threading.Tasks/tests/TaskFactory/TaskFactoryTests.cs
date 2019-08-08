@@ -49,7 +49,7 @@ namespace System.Threading.Tasks.Tests
 
             //Test constructor that accepts cancellationToken
 
-            // Exercising TF<int>(cancellationToken) with a noncancelled token 
+            // Exercising TF<int>(cancellationToken) with a noncancelled token
             cancellationSrc = new CancellationTokenSource();
             tfi = new TaskFactory<int>(cancellationSrc.Token);
             task = tfi.StartNew(() => 0);

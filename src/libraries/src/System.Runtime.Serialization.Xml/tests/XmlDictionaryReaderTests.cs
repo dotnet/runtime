@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Xml.Tests
         {
             // The test is to verify the fix made for the following issue:
             // When reading value chunk from XmlReader where Encoding.UTF8 is used, and where the
-            // encoded bytes contains 4-byte UTF-8 encoded characters: if the 4 byte character is decoded 
+            // encoded bytes contains 4-byte UTF-8 encoded characters: if the 4 byte character is decoded
             // into 2 chars and the char[] only has one space left, an ArgumentException will be thrown
             // stating that there is not enough space to decode the bytes.
             string xmlPayloadHolder = @"<s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/""><s:Body><Response xmlns=""http://tempuri.org/""><Result>{0}</Result></Response></s:Body></s:Envelope>";
@@ -151,7 +151,7 @@ namespace System.Runtime.Serialization.Xml.Tests
 
             using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, dictionary, null))
             {
-                // write using the dictionary - element name, namespace, value 
+                // write using the dictionary - element name, namespace, value
                 string value = "value";
                 writer.WriteElementString(stringList[0], stringList[1], value);
                 writer.Flush();

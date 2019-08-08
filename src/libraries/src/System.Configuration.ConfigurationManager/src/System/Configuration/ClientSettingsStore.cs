@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,11 +11,11 @@ using System.Xml;
 namespace System.Configuration
 {
     /// <summary>
-    /// This class abstracts the details of config system away from the LocalFileSettingsProvider. It talks to 
-    /// the configuration API and the relevant Sections to read and write settings. 
+    /// This class abstracts the details of config system away from the LocalFileSettingsProvider. It talks to
+    /// the configuration API and the relevant Sections to read and write settings.
     /// It understands sections of type ClientSettingsSection.
     ///
-    /// NOTE: This API supports reading from app.exe.config and user.config, but writing only to 
+    /// NOTE: This API supports reading from app.exe.config and user.config, but writing only to
     ///       user.config.
     /// </summary>
     internal sealed class ClientSettingsStore
@@ -54,7 +54,7 @@ namespace System.Configuration
         }
 
         // Declares the section handler of a given section in its section group, if a declaration isn't already
-        // present. 
+        // present.
         private void DeclareSection(Configuration config, string sectionName)
         {
             ConfigurationSectionGroup settingsGroup = config.GetSectionGroup(UserSettingsGroupName);
@@ -120,7 +120,7 @@ namespace System.Configuration
             ExeConfigurationFileMap fileMap = new ExeConfigurationFileMap();
 
             // NOTE: When isUserScoped is true, we don't care if configFileName represents a roaming file or
-            //       a local one. All we want is three levels of configuration. So, we use the PerUserRoaming level. 
+            //       a local one. All we want is three levels of configuration. So, we use the PerUserRoaming level.
             ConfigurationUserLevel userLevel = isUserScoped ? ConfigurationUserLevel.PerUserRoaming : ConfigurationUserLevel.None;
 
             if (isUserScoped)
@@ -257,7 +257,7 @@ namespace System.Configuration
             }
 
             /// <summary>
-            /// We delegate this to the ClientConfigurationHost. The only thing we need to do here is to 
+            /// We delegate this to the ClientConfigurationHost. The only thing we need to do here is to
             /// build a configPath from the ConfigurationUserLevel we get passed in.
             /// </summary>
             public override void InitForConfiguration(ref string locationSubPath, out string configPath, out string locationConfigPath,
@@ -306,7 +306,7 @@ namespace System.Configuration
             }
 
             /// <summary>
-            /// If the stream we are asked for represents a config file that we know about, we ask 
+            /// If the stream we are asked for represents a config file that we know about, we ask
             /// the host to assert appropriate permissions.
             /// </summary>
             public override Stream OpenStreamForRead(string streamName)
@@ -328,7 +328,7 @@ namespace System.Configuration
             }
 
             /// <summary>
-            /// If this is a stream that represents a user.config file that we know about, we ask 
+            /// If this is a stream that represents a user.config file that we know about, we ask
             /// the host to assert appropriate permissions.
             /// </summary>
             public override void WriteCompleted(string streamName, bool success, object writeContext)

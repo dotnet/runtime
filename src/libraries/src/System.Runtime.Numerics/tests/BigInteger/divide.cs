@@ -10,7 +10,7 @@ namespace System.Numerics.Tests
     {
         private static int s_samples = 10;
         private static Random s_random = new Random(100);
-        
+
         [Fact]
         public static void RunDivideTwoLargeBI()
         {
@@ -72,7 +72,7 @@ namespace System.Numerics.Tests
                 tempByteArray1 = GetRandomByteArray(s_random);
                 tempByteArray2 = new byte[] { 0 };
                 VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
-                
+
                 Assert.Throws<DivideByZeroException>(() =>
                 {
                     VerifyDivideString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivide");
@@ -199,7 +199,7 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
-        
+
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);

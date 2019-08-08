@@ -15,7 +15,7 @@ namespace System.Configuration
         //
 
         // locked by parent input, either because a parent section is locked,
-        // a parent section locks all children, or a location input for this 
+        // a parent section locks all children, or a location input for this
         // configPath has allowOverride=false.
         private const int FlagLocked = 0x00000001;
 
@@ -193,7 +193,7 @@ namespace System.Configuration
             {
                 FileInput = null;
 
-                // Reset LockChildren flag to the value provided by 
+                // Reset LockChildren flag to the value provided by
                 // location input or inherited sections.
                 _flags[FlagLockChildren] = Locked;
             }

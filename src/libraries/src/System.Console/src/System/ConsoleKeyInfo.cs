@@ -13,8 +13,8 @@ namespace System
         public ConsoleKeyInfo(char keyChar, ConsoleKey key, bool shift, bool alt, bool control)
         {
             // Limit ConsoleKey values to 0 to 255, but don't check whether the
-            // key is a valid value in our ConsoleKey enum.  There are a few 
-            // values in that enum that we didn't define, and reserved keys 
+            // key is a valid value in our ConsoleKey enum.  There are a few
+            // values in that enum that we didn't define, and reserved keys
             // that might start showing up on keyboards in a few years.
             if (((int)key) < 0 || ((int)key) > 255)
             {

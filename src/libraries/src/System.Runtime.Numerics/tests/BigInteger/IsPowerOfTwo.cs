@@ -86,7 +86,7 @@ namespace System.Numerics.Tests
                 }
             }
 
-            // If only one 1 and value is positive. 
+            // If only one 1 and value is positive.
             if ((1 == valueOne) && (!value2[value2.Length - 1]))
             {
                 expected = true;
@@ -141,7 +141,7 @@ namespace System.Numerics.Tests
 
             return value;
         }
-        
+
         private static void VerifyIsPowerOfTwo(BigInteger bigInt, bool expectedAnswer)
         {
             Assert.Equal(expectedAnswer, bigInt.IsPowerOfTwo);

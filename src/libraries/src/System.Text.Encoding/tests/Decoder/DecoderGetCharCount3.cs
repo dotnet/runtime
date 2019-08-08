@@ -154,7 +154,7 @@ namespace System.Text.Tests
         }
         #endregion
 
-        
+
         private void VerificationHelper(Decoder decoder, byte[] bytes, int index, int count, int expected, string errorno)
         {
             int ret = decoder.GetCharCount(bytes, index, count);

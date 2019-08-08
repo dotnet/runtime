@@ -358,7 +358,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNITCPHandle</returns>
         private SNITCPHandle CreateTcpHandle(DataSource details, long timerExpire, object callbackObject, bool parallel)
         {
-            // TCP Format: 
+            // TCP Format:
             // tcp:<host name>\<instance name>
             // tcp:<host name>,<TCP/IP port number>
 
@@ -467,7 +467,7 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Gets the Local db Named pipe data source if the input is a localDB server. 
+        /// Gets the Local db Named pipe data source if the input is a localDB server.
         /// </summary>
         /// <param name="fullServerName">The data source</param>
         /// <param name="error">Set true when an error occurred while getting LocalDB up</param>
@@ -518,7 +518,7 @@ namespace System.Data.SqlClient.SNI
         internal Protocol ConnectionProtocol = Protocol.None;
 
         /// <summary>
-        /// Provides the HostName of the server to connect to for TCP protocol. 
+        /// Provides the HostName of the server to connect to for TCP protocol.
         /// This information is also used for finding the SPN of SqlServer
         /// </summary>
         internal string ServerName { get; private set; }
@@ -727,7 +727,7 @@ namespace System.Data.SqlClient.SNI
             // Instance Name Handling. Only if we found a '\' and we did not find a port in the Data Source
             else if (backSlashIndex > -1)
             {
-                // This means that there will not be any part separated by comma. 
+                // This means that there will not be any part separated by comma.
                 InstanceName = tokensByCommaAndSlash[1].Trim();
 
                 if (string.IsNullOrWhiteSpace(InstanceName))
@@ -775,7 +775,7 @@ namespace System.Data.SqlClient.SNI
                     string[] tokensByBackSlash = _dataSourceAfterTrimmingProtocol.Split(BackSlashSeparator);
 
                     // The datasource is of the format \\host\pipe\sql\query [0]\[1]\[2]\[3]\[4]\[5]
-                    // It would at least have 6 parts. 
+                    // It would at least have 6 parts.
                     // Another valid Sql named pipe for an named instance is \\.\pipe\MSSQL$MYINSTANCE\sql\query
                     if (tokensByBackSlash.Length < 6)
                     {

@@ -10,7 +10,7 @@ namespace System.ComponentModel.Composition.Factories
 {
     partial class ExportProviderFactory
     {
-        // NOTE: Do not add any more behavior to this class, as ExportProviderTests.cs 
+        // NOTE: Do not add any more behavior to this class, as ExportProviderTests.cs
         // uses this to verify default behavior of the base class.
         private class NoOverridesExportProvider : ExportProvider
         {

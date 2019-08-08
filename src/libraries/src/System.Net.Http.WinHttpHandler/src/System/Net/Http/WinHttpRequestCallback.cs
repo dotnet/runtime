@@ -46,7 +46,7 @@ namespace System.Net.Http
 
             RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
         }
-        
+
         private static void RequestCallback(
             IntPtr handle,
             WinHttpRequestState state,
@@ -129,7 +129,7 @@ namespace System.Net.Http
         private static void OnRequestHandleClosing(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
-            
+
             // This is the last notification callback that WinHTTP will send. Therefore, we can
             // now explicitly dispose the state object which will free its corresponding GCHandle.
             // This will then allow the state object to be garbage collected.
@@ -140,7 +140,7 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
             Debug.Assert(state.LifecycleAwaitable != null, "OnRequestSendRequestComplete: LifecycleAwaitable is null");
-            
+
             state.LifecycleAwaitable.SetResult(1);
         }
 
@@ -178,7 +178,7 @@ namespace System.Net.Http
             Debug.Assert(state != null, "OnRequestWriteComplete: state is null");
             Debug.Assert(state.TcsInternalWriteDataToRequestStream != null, "TcsInternalWriteDataToRequestStream is null");
             Debug.Assert(!state.TcsInternalWriteDataToRequestStream.Task.IsCompleted, "TcsInternalWriteDataToRequestStream.Task is completed");
-            
+
             state.TcsInternalWriteDataToRequestStream.TrySetResult(true);
         }
 
@@ -200,13 +200,13 @@ namespace System.Net.Http
             {
                 // Add any cookies that may have arrived with redirect response.
                 WinHttpCookieContainerAdapter.AddResponseCookiesToContainer(state);
-                
+
                 // Reset cookie request headers based on redirectUri.
                 WinHttpCookieContainerAdapter.ResetCookieRequestHeaders(state, redirectUri);
             }
 
             state.RequestMessage.RequestUri = redirectUri;
-            
+
             // Redirection to a new uri may require a new connection through a potentially different proxy.
             // If so, we will need to respond to additional 407 proxy auth demands and re-attach any
             // proxy credentials. The ProcessResponse() method looks at the state.LastStatusCode
@@ -218,7 +218,7 @@ namespace System.Net.Http
                 state.LastStatusCode = 0;
             }
 
-            // For security reasons, we drop the server credential if it is a 
+            // For security reasons, we drop the server credential if it is a
             // NetworkCredential.  But we allow credentials in a CredentialCache
             // since they are specifically tied to URI's.
             if (!(state.ServerCredentials is CredentialCache))
@@ -230,12 +230,12 @@ namespace System.Net.Http
             // through the default headers.
             ResetAuthRequestHeaders(state);
         }
-        
+
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
             Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
-            
+
             if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
             {
                 // Not SSL/TLS.
@@ -328,7 +328,7 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            if (NetEventSource.IsEnabled) WinHttpTraceHelper.TraceAsyncError(state, asyncResult);            
+            if (NetEventSource.IsEnabled) WinHttpTraceHelper.TraceAsyncError(state, asyncResult);
 
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError), "WINHTTP_CALLBACK_STATUS_REQUEST_ERROR");
 
@@ -337,7 +337,7 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_SEND_REQUEST:
                     state.LifecycleAwaitable.SetException(innerException);
                     break;
-                    
+
                 case Interop.WinHttp.API_RECEIVE_RESPONSE:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_RESEND_REQUEST)
                     {
@@ -422,7 +422,7 @@ namespace System.Net.Http
         {
             const string AuthHeaderNameWithColon = "Authorization:";
             SafeWinHttpHandle requestHandle = state.RequestHandle;
-            
+
             // Clear auth headers.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(
                 requestHandle,

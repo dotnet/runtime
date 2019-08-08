@@ -102,7 +102,7 @@ namespace System.Globalization.Tests
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.MonthGenitiveNames = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "" });
         }
-        
+
         [Fact]
         public void MonthGenitiveNames_Format_ReturnsExpected()
         {

@@ -2356,8 +2356,8 @@ namespace System.Reflection.Metadata
 
             // V111 10TT -> VTTx xxxx xxxx xxxx  xxxx xxxx xxxx xxxx
             return new StringHandle(
-                (handle.VType & HandleType.VirtualBit) << 24 | 
-                (handle.VType & HandleType.NonVirtualStringTypeMask) << HeapHandleType.OffsetBitCount | 
+                (handle.VType & HandleType.VirtualBit) << 24 |
+                (handle.VType & HandleType.NonVirtualStringTypeMask) << HeapHandleType.OffsetBitCount |
                 (uint)handle.Offset);
         }
 
@@ -2428,16 +2428,16 @@ namespace System.Reflection.Metadata
     }
 
     /// <summary>
-    /// A handle that represents a namespace definition. 
+    /// A handle that represents a namespace definition.
     /// </summary>
     public readonly struct NamespaceDefinitionHandle : IEquatable<NamespaceDefinitionHandle>
     {
-        // Non-virtual (namespace having at least one type or forwarder of its own) 
-        // heap offset is to the null-terminated full name of the namespace in the 
+        // Non-virtual (namespace having at least one type or forwarder of its own)
+        // heap offset is to the null-terminated full name of the namespace in the
         // #String heap.
         //
-        // Virtual (namespace having child namespaces but no types of its own) 
-        // the virtual index is an auto-incremented value and serves solely to 
+        // Virtual (namespace having child namespaces but no types of its own)
+        // the virtual index is an auto-incremented value and serves solely to
         // create unique values for indexing into the NamespaceCache.
 
         // bits:
@@ -2459,7 +2459,7 @@ namespace System.Reflection.Metadata
         internal static NamespaceDefinitionHandle FromVirtualIndex(uint virtualIndex)
         {
             // we arbitrarily disallow 0 virtual index to simplify nil check.
-            Debug.Assert(virtualIndex != 0); 
+            Debug.Assert(virtualIndex != 0);
 
             if (!HeapHandleType.IsValidHeapOffset(virtualIndex))
             {
@@ -2605,7 +2605,7 @@ namespace System.Reflection.Metadata
         {
             // V... -> V111 0001
             return new Handle(
-                (byte)((handle._value & HeapHandleType.VirtualBit) >> 24 | HandleType.Blob), 
+                (byte)((handle._value & HeapHandleType.VirtualBit) >> 24 | HandleType.Blob),
                 (int)(handle._value & HeapHandleType.OffsetMask));
         }
 
@@ -2679,7 +2679,7 @@ namespace System.Reflection.Metadata
     // #Guid heap handle
     public readonly struct GuidHandle : IEquatable<GuidHandle>
     {
-        // The Guid heap is an array of GUIDs, each 16 bytes wide. 
+        // The Guid heap is an array of GUIDs, each 16 bytes wide.
         // Its first element is numbered 1, its second 2, and so on.
         private readonly int _index;
 

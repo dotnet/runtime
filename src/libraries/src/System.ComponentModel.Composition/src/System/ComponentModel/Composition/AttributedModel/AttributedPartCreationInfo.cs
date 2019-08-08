@@ -268,7 +268,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             _contractNamesOnNonInterfaces = new HashSet<string>();
 
-            // GetExportMembers should only contain the type itself along with the members declared on it, 
+            // GetExportMembers should only contain the type itself along with the members declared on it,
             // it should not contain any base types, members on base types or interfaces on the type.
             foreach (MemberInfo member in GetExportMembers(_type))
             {
@@ -278,7 +278,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
                     if (exportAttribute.GetType() == CompositionServices.InheritedExportAttributeType)
                     {
-                        // Any InheritedExports on the type itself are contributed during this pass 
+                        // Any InheritedExports on the type itself are contributed during this pass
                         // and we need to do the book keeping for those.
                         if (!_contractNamesOnNonInterfaces.Contains(attributedExportDefinition.ContractName))
                         {
@@ -294,8 +294,8 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
 
             // GetInheritedExports should only contain InheritedExports on base types or interfaces.
-            // The order of types returned here is important because it is used as a 
-            // priority list of which InhertedExport to choose if multiple exists with 
+            // The order of types returned here is important because it is used as a
+            // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
             // in the hiearchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
@@ -346,7 +346,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 yield return type;
             }
 
-            // Walk the fields 
+            // Walk the fields
             foreach (FieldInfo member in type.GetFields(flags))
             {
                 if (IsExport(member))
@@ -355,7 +355,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 }
             }
 
-            // Walk the properties 
+            // Walk the properties
             foreach (PropertyInfo member in type.GetProperties(flags))
             {
                 if (IsExport(member))
@@ -364,7 +364,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 }
             }
 
-            // Walk the methods 
+            // Walk the methods
             foreach (MethodInfo member in type.GetMethods(flags))
             {
                 if (IsExport(member))
@@ -382,8 +382,8 @@ namespace System.ComponentModel.Composition.AttributedModel
                 yield break;
             }
 
-            // The order of types returned here is important because it is used as a 
-            // priority list of which InhertedExport to choose if multiple exists with 
+            // The order of types returned here is important because it is used as a
+            // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
             // in the hiearchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
@@ -485,7 +485,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         {
             BindingFlags flags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-            // Walk the fields 
+            // Walk the fields
             foreach (FieldInfo member in type.GetFields(flags))
             {
                 if (IsImport(member))
@@ -494,7 +494,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 }
             }
 
-            // Walk the properties 
+            // Walk the properties
             foreach (PropertyInfo member in type.GetProperties(flags))
             {
                 if (IsImport(member))

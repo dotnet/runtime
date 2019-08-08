@@ -2590,7 +2590,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // Per section 8.1 of the RFC:
             // Receiving RST_STREAM with NO_ERROR after receiving EndStream on the response body is a special case.
-            // We should stop sending the request body, but treat the request as successful and 
+            // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
             byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
@@ -2659,7 +2659,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // Per section 8.1 of the RFC:
             // Receiving RST_STREAM with NO_ERROR after receiving EndStream on the response body is a special case.
-            // We should stop sending the request body, but treat the request as successful and 
+            // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
             byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");

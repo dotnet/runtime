@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tests
             var xPathEnum = new List<string>() { "Event/System/EventID", "Event/System/Provider/@Name" };
             var logPropertyContext = new EventLogPropertySelector(xPathEnum);
             var eventsQuery = new EventLogQuery(logName, PathType.LogName, queryString);
-            try 
+            try
             {
                 using (var logReader = new EventLogReader(eventsQuery))
                 {

@@ -20,7 +20,7 @@ namespace System.Data.ProviderBase
         private const int PruningPeriod = 30 * 1000;           // thirty seconds
 
 
-        // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to 
+        // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to
         // a maximum of Environment.ProcessorCount at a time.
         private static uint s_pendingOpenNonPooledNext = 0;
         private static Task<DbConnectionInternal>[] s_pendingOpenNonPooled = new Task<DbConnectionInternal>[Environment.ProcessorCount];

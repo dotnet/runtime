@@ -177,7 +177,7 @@ namespace System.Collections
         }
 
         // Pushes an item to the top of the stack.
-        // 
+        //
         public virtual void Push(object obj)
         {
             if (_size == _array.Length)

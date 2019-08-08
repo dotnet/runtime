@@ -7,7 +7,7 @@
 //
 // A spin lock is a mutual exclusion lock primitive where a thread trying to acquire the lock waits in a loop ("spins")
 // repeatedly checking until the lock becomes available. As the thread remains active performing a non-useful task,
-// the use of such a lock is a kind of busy waiting and consumes CPU resources without performing real work. 
+// the use of such a lock is a kind of busy waiting and consumes CPU resources without performing real work.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -57,7 +57,7 @@ namespace System.Threading
         //    1) Ownership tracking enabled: the high bit is 0, and the remaining bits
         //       store the managed thread ID of the current owner.  When the 31 low bits
         //       are 0, the lock is available.
-        //    2) Performance mode: when the high bit is 1, lock availability is indicated by the low bit.  
+        //    2) Performance mode: when the high bit is 1, lock availability is indicated by the low bit.
         //       When the low bit is 1 -- the lock is held; 0 -- the lock is available.
         //
         // There are several masks and constants below for convenience.
@@ -580,11 +580,11 @@ namespace System.Threading
         }
 
         /// <summary>Gets whether thread ownership tracking is enabled for this instance.</summary>
-        public bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0; 
+        public bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0;
 
         #region Debugger proxy class
         /// <summary>
-        /// Internal class used by debug type proxy attribute to display the owner thread ID 
+        /// Internal class used by debug type proxy attribute to display the owner thread ID
         /// </summary>
         internal class SystemThreading_SpinLockDebugView
         {

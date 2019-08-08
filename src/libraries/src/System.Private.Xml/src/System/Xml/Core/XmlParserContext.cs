@@ -206,6 +206,3 @@ namespace System.Xml
         }
     } // class XmlContext
 } // namespace System.Xml
-
-
-

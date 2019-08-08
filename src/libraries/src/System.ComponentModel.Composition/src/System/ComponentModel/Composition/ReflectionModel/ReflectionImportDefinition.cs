@@ -12,12 +12,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly ICompositionElement _origin;
 
         public ReflectionImportDefinition(
-            string contractName, 
+            string contractName,
             string requiredTypeIdentity,
             IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
-            ImportCardinality cardinality, 
-            bool isRecomposable, 
-            bool isPrerequisite, 
+            ImportCardinality cardinality,
+            bool isRecomposable,
+            bool isPrerequisite,
             CreationPolicy requiredCreationPolicy,
             IDictionary<string, object> metadata,
             ICompositionElement origin)

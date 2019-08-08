@@ -376,7 +376,7 @@ namespace System.Data.OleDb
             {
                 if (connection == null)
                 {
-                    // Use the adapter's connection if QuoteIdentifier was called from 
+                    // Use the adapter's connection if QuoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
                     if (connection == null)
@@ -426,7 +426,7 @@ namespace System.Data.OleDb
             {
                 if (connection == null)
                 {
-                    // Use the adapter's connection if UnquoteIdentifier was called from 
+                    // Use the adapter's connection if UnquoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
                     if (connection == null)

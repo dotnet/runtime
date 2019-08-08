@@ -16,7 +16,7 @@ namespace System.Xml
             InReadElementContent,
         }
 
-        // Fields 
+        // Fields
         private XmlReader _reader;
         private State _state;
         private int _valueOffset;
@@ -45,7 +45,7 @@ namespace System.Xml
             }
         }
 
-        // Static methods 
+        // Static methods
         internal static ReadContentAsBinaryHelper CreateOrReset(ReadContentAsBinaryHelper helper, XmlReader reader)
         {
             if (helper == null)
@@ -59,7 +59,7 @@ namespace System.Xml
             }
         }
 
-        // Internal methods 
+        // Internal methods
 
         internal int ReadContentAsBase64(byte[] buffer, int index, int count)
         {

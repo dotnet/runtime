@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -54,7 +54,7 @@ namespace System.Net.Http
 
             if (TryGetAuthenticationChallenge(response, isProxyAuth, authUri, credentials, out AuthenticationChallenge challenge))
             {
-                if (challenge.AuthenticationType == AuthenticationType.Negotiate || 
+                if (challenge.AuthenticationType == AuthenticationType.Negotiate ||
                     challenge.AuthenticationType == AuthenticationType.Ntlm)
                 {
                     bool isNewConnection = false;
@@ -178,4 +178,3 @@ namespace System.Net.Http
         }
     }
 }
-

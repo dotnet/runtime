@@ -171,7 +171,7 @@ namespace System
                 while (newPos < end)
                 {
                     if ((*newPos == '.') ||
-                        (*newPos == '\u3002') ||    //IDEOGRAPHIC FULL STOP 
+                        (*newPos == '\u3002') ||    //IDEOGRAPHIC FULL STOP
                         (*newPos == '\uFF0E') ||    //FULLWIDTH FULL STOP
                         (*newPos == '\uFF61'))      //HALFWIDTH IDEOGRAPHIC FULL STOP
                         break;
@@ -260,7 +260,7 @@ namespace System
                                 }
                             }
 
-                            if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP 
+                            if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP
                                 (c == '\uFF0E') ||                  //FULLWIDTH FULL STOP
                                 (c == '\uFF61'))                    //HALFWIDTH IDEOGRAPHIC FULL STOP
                             {
@@ -375,7 +375,7 @@ namespace System
         internal static unsafe string? UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
         {
             // Test common scenario first for perf
-            // try to get unicode equivalent 
+            // try to get unicode equivalent
             try
             {
                 return s_idnMapping.GetUnicode(idnHost);
@@ -439,7 +439,7 @@ namespace System
                         asciiLabel = false;
                         allAscii = false;
                     }
-                    if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP 
+                    if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP
                         (c == '\uFF0E') ||                  //FULLWIDTH FULL STOP
                         (c == '\uFF61'))                    //HALFWIDTH IDEOGRAPHIC FULL STOP
                     {

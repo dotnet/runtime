@@ -86,7 +86,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the name in the specified
-        /// <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes 
+        /// <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes
         /// in both the old <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         /// </summary>
         protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[] newAttributes)
@@ -170,7 +170,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets the name of the category that the member belongs to, as specified 
+        /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
         public virtual string Category => _category ?? (_category = ((CategoryAttribute) Attributes[typeof(CategoryAttribute)]).Category);
@@ -183,7 +183,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the
-        /// <see cref='System.ComponentModel.BrowsableAttribute'/>. 
+        /// <see cref='System.ComponentModel.BrowsableAttribute'/>.
         /// </summary>
         public virtual bool IsBrowsable => ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
 

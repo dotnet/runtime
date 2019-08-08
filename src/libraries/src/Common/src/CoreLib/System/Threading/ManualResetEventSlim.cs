@@ -42,7 +42,7 @@ namespace System.Threading
 
         // -- State -- //
         //For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
-        private volatile int m_combinedState; //ie a uint. Used for the state items listed below. 
+        private volatile int m_combinedState; //ie a uint. Used for the state items listed below.
 
         //1-bit for  signalled state
         private const int SignalledState_BitMask = unchecked((int)0x80000000);//1000 0000 0000 0000 0000 0000 0000 0000
@@ -77,7 +77,7 @@ namespace System.Threading
         /// cref="ManualResetEventSlim"/>.</value>
         /// <remarks>
         /// Accessing this property forces initialization of an underlying event object if one hasn't
-        /// already been created.  To simply wait on this <see cref="ManualResetEventSlim"/>, 
+        /// already been created.  To simply wait on this <see cref="ManualResetEventSlim"/>,
         /// the public Wait methods should be preferred.
         /// </remarks>
         public WaitHandle WaitHandle
@@ -305,7 +305,7 @@ namespace System.Threading
         private void Set(bool duringCancellation)
         {
             // We need to ensure that IsSet=true does not get reordered past the read of m_eventObj
-            // This would be a legal movement according to the .NET memory model. 
+            // This would be a legal movement according to the .NET memory model.
             // The code is safe as IsSet involves an Interlocked.CompareExchange which provides a full memory barrier.
             IsSet = true;
 
@@ -586,7 +586,7 @@ namespace System.Threading
                                     return false;
                             }
 
-                            // There is a race condition that Set will fail to see that there are waiters as Set does not take the lock, 
+                            // There is a race condition that Set will fail to see that there are waiters as Set does not take the lock,
                             // so after updating waiters, we must check IsSet again.
                             // Also, we must ensure there cannot be any reordering of the assignment to Waiters and the
                             // read from IsSet.  This is guaranteed as Waiters{set;} involves an Interlocked.CompareExchange
@@ -639,7 +639,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// When overridden in a derived class, releases the unmanaged resources used by the 
+        /// When overridden in a derived class, releases the unmanaged resources used by the
         /// <see cref="ManualResetEventSlim"/>, and optionally releases the managed resources.
         /// </summary>
         /// <param name="disposing">true to release both managed and unmanaged resources;
@@ -728,8 +728,8 @@ namespace System.Threading
 
         /// <summary>
         /// Private helper method - performs Mask and shift, particular helpful to extract a field from a packed word.
-        /// eg ExtractStatePortionAndShiftRight(0x12345678, 0xFF000000, 24) => 0x12, ie extracting the top 8-bits as a simple integer 
-        /// 
+        /// eg ExtractStatePortionAndShiftRight(0x12345678, 0xFF000000, 24) => 0x12, ie extracting the top 8-bits as a simple integer
+        ///
         /// ?? is there a common place to put this rather than being private to MRES?
         /// </summary>
         /// <param name="state"></param>
@@ -748,7 +748,7 @@ namespace System.Threading
         /// This is acceptable for boolean values for which the shift is unnecessary
         /// eg (val &amp; Mask) != 0 is an appropriate way to extract a boolean rather than using
         /// ((val &amp; Mask) &gt;&gt; shiftAmount) == 1
-        /// 
+        ///
         /// ?? is there a common place to put this rather than being private to MRES?
         /// </summary>
         /// <param name="state"></param>

@@ -12,7 +12,7 @@ namespace System.ComponentModel
     {
         /// <summary>
         /// Specifies that a property can be set only at design time.
-        /// This <see langword='static'/> field is read-only. 
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly DesignOnlyAttribute Yes = new DesignOnlyAttribute(true);
 

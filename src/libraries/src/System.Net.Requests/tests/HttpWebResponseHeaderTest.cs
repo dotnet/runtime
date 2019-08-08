@@ -78,7 +78,7 @@ namespace System.Net.Tests
                 WebResponse response = await getResponse;
                 HttpWebResponse httpResponse = (HttpWebResponse)response;
                 httpResponse.Close();
-                
+
                 // TODO: Issue #18851. Investigate .NET Core to see if it can
                 // match .NET Framework.
                 Assert.Throws<ObjectDisposedException>(() =>

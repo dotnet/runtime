@@ -14,7 +14,7 @@ namespace System.ComponentModel.Tests
             var context = new LicenseContext();
             Assert.Equal(LicenseUsageMode.Runtime, context.UsageMode);
         }
-        
+
         [Fact]
         public void GetSavedLicenseKey_Invoke_ReturnsNull()
         {

@@ -13,7 +13,7 @@ namespace System.Reflection.TypeLoading.Ecma
         /// Helper routine for the more general Module.GetType() family of apis. Also used in typeRef resolution.
         ///
         /// Resolves top-level named types only. No nested types. No constructed types. The input name must not be escaped.
-        /// 
+        ///
         /// If a type is not contained or forwarded from the assembly, this method returns null (does not throw.)
         /// This supports the "throwOnError: false" behavior of Module.GetType(string, bool).
         /// </summary>

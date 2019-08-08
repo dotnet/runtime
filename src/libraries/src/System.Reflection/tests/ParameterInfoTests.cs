@@ -112,7 +112,7 @@ namespace System.Reflection.Tests
         public void RawDefaultValueFromAttribute()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo2", 0);
-            object raw = p.RawDefaultValue;    
+            object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
             Assert.Equal<int>((int)raw, (int)BindingFlags.IgnoreCase);
         }
@@ -121,7 +121,7 @@ namespace System.Reflection.Tests
         public void RawDefaultValue_MetadataTrumpsAttribute()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo3", 0);
-            object raw = p.RawDefaultValue;    
+            object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
             Assert.Equal<int>((int)raw, (int)BindingFlags.FlattenHierarchy);
         }
@@ -239,7 +239,7 @@ namespace System.Reflection.Tests
             }
 
             Assert.True(false, "Expected to find MyAttribute");
-        }        
+        }
 
         public static IEnumerable<object[]> s_CustomAttributesTestData
         {
@@ -283,7 +283,7 @@ namespace System.Reflection.Tests
             // Regression test for https://github.com/dotnet/corefx/issues/20574
             //
             // It's easy to forget that ParameterInfo's and runtime-implemented ParameterInfo's are different objects and just because the
-            // latter doesn't support serialization doesn't mean other providers won't either. 
+            // latter doesn't support serialization doesn't mean other providers won't either.
             //
             // For historical reasons, ParameterInfo contains some serialization support that subtypes can optionally hang off. This
             // test ensures that support doesn't get vaporized.
@@ -394,11 +394,11 @@ namespace System.Reflection.Tests
         {
             public PodPersonParameterInfo(MemberInfo pretendMember, int pretendPosition)
             {
-                // Serialization can recreate a ParameterInfo from just these two pieces of data. Of course, this is just a test and no one 
+                // Serialization can recreate a ParameterInfo from just these two pieces of data. Of course, this is just a test and no one
                 // ever told this Member that it was adopting a counterfeit Parameter, but this is just a test...
                 MemberImpl = pretendMember;
                 PositionImpl = pretendPosition;
             }
-        }        
+        }
     }
 }

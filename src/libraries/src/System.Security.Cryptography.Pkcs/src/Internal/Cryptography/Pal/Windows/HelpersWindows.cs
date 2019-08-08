@@ -91,9 +91,9 @@ namespace Internal.Cryptography.Pal.Windows
 
         /// <summary>
         /// Returns the inner content of the CMS.
-        /// 
+        ///
         /// Special case: If the CMS is an enveloped CMS that has been decrypted and the inner content type is Oids.Pkcs7Data, the returned
-        /// content bytes are the decoded octet bytes, rather than the encoding of those bytes. This is a documented convenience behavior of 
+        /// content bytes are the decoded octet bytes, rather than the encoding of those bytes. This is a documented convenience behavior of
         /// CryptMsgGetParam(CMSG_CONTENT_PARAM) that apparently got baked into the behavior of the managed EnvelopedCms class.
         /// </summary>
         public static ContentInfo GetContentInfo(this SafeCryptMsgHandle hCryptMsg)
@@ -501,4 +501,3 @@ namespace Internal.Cryptography.Pal.Windows
         }
     }
 }
-

@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     // Initialization of libcrypto threading support is done in a static constructor.
     // This enables a project simply to include this file, and any usage of any of
-    // the System.Security.Cryptography.Native functions will trigger 
+    // the System.Security.Cryptography.Native functions will trigger
     // initialization of the threading support.
 
     internal static partial class Crypto
@@ -18,7 +18,7 @@ internal static partial class Interop
         {
             CryptoInitializer.Initialize();
         }
-    } 
+    }
 
     internal static class CryptoInitializer
     {

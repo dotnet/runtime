@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// The base class from which all binary query operators derive, that is, those that
     /// have two child operators. This introduces some convenience methods for those
-    /// classes, as well as any state common to all subclasses. 
+    /// classes, as well as any state common to all subclasses.
     /// </summary>
     /// <typeparam name="TLeftInput"></typeparam>
     /// <typeparam name="TRightInput"></typeparam>
@@ -78,7 +78,7 @@ namespace System.Linq.Parallel
 
         //---------------------------------------------------------------------------------------
         // Implementation of QueryResults for a binary operator. The results will not be indexable
-        // unless a derived class provides that functionality.        
+        // unless a derived class provides that functionality.
         //
 
         internal class BinaryQueryOperatorResults : QueryResults<TOutput>

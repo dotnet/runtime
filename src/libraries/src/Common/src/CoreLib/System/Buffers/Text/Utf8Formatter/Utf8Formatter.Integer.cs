@@ -18,13 +18,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -42,13 +42,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -67,13 +67,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -92,13 +92,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -116,13 +116,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -141,13 +141,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -165,13 +165,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>
@@ -190,13 +190,13 @@ namespace System.Buffers.Text
         /// <param name="format">The standard format to use</param>
         /// <returns>
         /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
-        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds. 
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
         /// </returns>
         /// <remarks>
         /// Formats supported:
         ///     G/g (default)
-        ///     D/d             32767  
-        ///     N/n             32,767       
+        ///     D/d             32767
+        ///     N/n             32,767
         ///     X/x             7fff
         /// </remarks>
         /// <exceptions>

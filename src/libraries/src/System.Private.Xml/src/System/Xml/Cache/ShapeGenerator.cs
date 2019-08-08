@@ -31,7 +31,7 @@ namespace System.Xml.XPath.DataBinding
             if (null != complexType) {
                 XmlSchemaParticle particle = null;
                 Shape rootShape = null;
-                
+
                 XmlSchemaContentType contentType = complexType.ElementDecl.ContentValidator.ContentType;
                 switch (contentType) {
                     case XmlSchemaContentType.Mixed:
@@ -50,7 +50,7 @@ namespace System.Xml.XPath.DataBinding
                     break;
 
                 }
-            
+
                 Debug.Assert(rootShape != null);
                 if (complexType.AttributeUses.Values.Count > 0) {
                     if (rootShape.BindingType != BindingType.Sequence) {
@@ -72,7 +72,7 @@ namespace System.Xml.XPath.DataBinding
                         rootShape.AddAttrShapeAt(attrShape, pos++);
                     }
                 }
-                
+
                 if (rootShape.BindingType != BindingType.Text) {
                     rootShape.Name = GenName(xseName);
                     rootShape.ContainerDecl = xse;
@@ -99,10 +99,10 @@ namespace System.Xml.XPath.DataBinding
             }
             if (xsp is XmlSchemaElement) {
                 s = ProcessParticleElement((XmlSchemaElement)xsp);
-            } 
+            }
             else if (xsp is XmlSchemaSequence) {
                 s = ProcessParticleGroup((XmlSchemaSequence)xsp, BindingType.Sequence);
-            } 
+            }
             else if (xsp is XmlSchemaChoice) {
                 s = ProcessParticleGroup((XmlSchemaChoice)xsp, BindingType.Choice);
             }
@@ -128,10 +128,10 @@ namespace System.Xml.XPath.DataBinding
             if (null != s)
                 return s;
 
-            bool complex = xse.ElementSchemaType is XmlSchemaComplexType; 
+            bool complex = xse.ElementSchemaType is XmlSchemaComplexType;
             s = new Shape(GenName(xse.QualifiedName), complex ? BindingType.ElementNested : BindingType.Element);
             s.AddParticle(xse);
-            
+
             if (complex) {
                 this.elementTypesProcessed.Add(xse, s);
                 s.NestedShape = GenerateFromSchema(xse);

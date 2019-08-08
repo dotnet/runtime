@@ -7,8 +7,8 @@ using System.Security;
 
 namespace System.Configuration.Internal
 {
-    // A public implementation of IInternalConfigHost that simply 
-    // delegates all members of the IInternalConfigHost interface to 
+    // A public implementation of IInternalConfigHost that simply
+    // delegates all members of the IInternalConfigHost interface to
     // another instance of a host. All interface members are marked virtual
     // so that a derived class can override just the ones needed to
     // implement that specific host, while all others are delegated to

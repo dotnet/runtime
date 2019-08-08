@@ -58,4 +58,3 @@ namespace Microsoft.Win32
         SessionRemoteControl = Interop.Wtsapi32.WTS_SESSION_REMOTE_CONTROL
     }
 }
-

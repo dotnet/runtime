@@ -11,7 +11,7 @@ namespace System.Reflection.TypeLoading.Ecma
 {
     /// <summary>
     /// Thread-safe interning table for objects that map 1-1 with ECMA tokens.
-    /// 
+    ///
     /// The key type is hard-coded to EntityHandle.
     /// The "T" type is the value type (e.g. RoTypeDefinition objects)
     /// The "C" type is an optional context value passed through the factory methods (so we don't to allocate a closure each time.)

@@ -15,7 +15,7 @@ namespace System.Text.Tests
             yield return new object[] { "\t\n\rXYZabc123", 0, 12, new byte[] { 9, 10, 13, 88, 89, 90, 97, 98, 99, 49, 50, 51 } };
             yield return new object[] { "A\t\r\n /z", 0, 7, new byte[] { 0x41, 0x09, 0x0D, 0x0A, 0x20, 0x2F, 0x7A } };
             yield return new object[] { "", 0, 1, new byte[] { 0x2B, 0x41, 0x41, 0x77, 0x2D } };
-            
+
             string chars2 = "UTF7 Encoding Example";
             yield return new object[] { chars2, 1, 2, new byte[] { 84, 70 } };
 
@@ -66,7 +66,7 @@ namespace System.Text.Tests
             Encode(true, source, index, count, expected);
             Encode(false, source, index, count, expected);
 
-            // UTF7Encoding performs no error checking, so even encoding invalid chars with 
+            // UTF7Encoding performs no error checking, so even encoding invalid chars with
             // a custom fallback should never throw
             Encoding exceptionEncoding = Encoding.GetEncoding("utf-7", new EncoderExceptionFallback(), new DecoderReplacementFallback("\uFFFD"));
             EncodingHelpers.Encode(exceptionEncoding, source, index, count, expected);
@@ -78,7 +78,7 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> Encode_Advanced_TestData()
         {
             string optionalChars1 = "!\"#$%&*;<=>@[]^_`{|}";
-            byte[] optionalFalseBytes = new byte[] 
+            byte[] optionalFalseBytes = new byte[]
             {
                 43, 65, 67, 69, 65, 73, 103, 65,
                 106, 65, 67, 81, 65, 74, 81, 65,
@@ -96,7 +96,7 @@ namespace System.Text.Tests
 
             yield return new object[] { false, optionalChars1, 0, optionalChars1.Length, optionalFalseBytes };
             yield return new object[] { true, optionalChars1, 0, optionalChars1.Length, optionalTrueBytes };
-            
+
             yield return new object[] { false, "\u0023\u0025\u03a0\u03a3", 1, 2, new byte[] { 43, 65, 67, 85, 68, 111, 65, 45 } };
             yield return new object[] { true, "\u0023\u0025\u03a0\u03a3", 1, 2, new byte[] { 37, 43, 65, 54, 65, 45 } };
 

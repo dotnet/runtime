@@ -42,14 +42,14 @@ namespace System.Text.Tests
             yield return new object[] { Encoding.UTF8.GetEncoder() };
             yield return new object[] { Encoding.Unicode.GetEncoder() };
         }
-              
+
         public static IEnumerable<object[]> Encoders_Convert()
         {
             yield return new object[] { Encoding.ASCII.GetEncoder(), 1 };
             yield return new object[] { Encoding.UTF8.GetEncoder(), 1 };
             yield return new object[] { Encoding.Unicode.GetEncoder(), 2 };
         }
-        
+
         // Call Convert to convert an arbitrary character array encoders
         [Theory]
         [MemberData(nameof(Encoders_RandomInput))]
@@ -166,7 +166,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 2, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, true, 1, 2, expectedCompleted: true);
         }
-        
+
         // Call Convert to convert partial of a ASCII character array with ASCII encoder
         [Fact]
         public void EncoderASCIIConvertASCIICharArrayPartial()
@@ -186,7 +186,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, chars.Length - 1, bytes, 0, bytes.Length, false, chars.Length - 1, chars.Length - 1, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, chars.Length - 1, bytes, 0, bytes.Length, true, chars.Length - 1, chars.Length - 1, expectedCompleted: true);
         }
-        
+
         // Call Convert to convert partial of a Unicode character array with ASCII encoder
         [Fact]
         public void EncoderASCIIConvertUnicodeCharArrayPartial()
@@ -207,7 +207,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 1, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 1, expectedCompleted: true);
         }
-        
+
         // Call Convert to convert partial of a Unicode character array with UTF8 encoder
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void EncoderUTF8ConvertUnicodeCharArrayPartial()
@@ -227,7 +227,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 0, expectedCompleted: false);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 4, expectedCompleted: true);
         }
- 
+
         // Call Convert to convert partial of a ASCII+Unicode character array with ASCII encoder
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial()
@@ -249,7 +249,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 0, 2, bytes, 0, bytes.Length, false, 2, 2, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 1, expectedCompleted: true);
         }
-        
+
         // Call Convert to convert partial of a ASCII+Unicode character array with UTF8 encoder
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial()

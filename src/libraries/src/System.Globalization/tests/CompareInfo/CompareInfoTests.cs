@@ -108,7 +108,7 @@ namespace System.Globalization.Tests
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
         private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
-        
+
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
@@ -409,14 +409,14 @@ namespace System.Globalization.Tests
             foreach (char c in source)
                 Assert.Equal(charExpectedResults, CompareInfo.IsSortable(c));
         }
-        
+
         [Fact]
         public void VersionTest()
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
             SortVersion sv2 = CultureInfo.GetCultureInfo("ja-JP").CompareInfo.Version;
             SortVersion sv3 = CultureInfo.GetCultureInfo("en").CompareInfo.Version;
-            
+
             Assert.Equal(sv1.FullVersion, sv3.FullVersion);
             Assert.NotEqual(sv1.SortId, sv2.SortId);
         }

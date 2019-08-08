@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2004 Mainsoft Co.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -50,7 +50,7 @@ namespace System.Data.Tests
             dt.Rows.Add(dt.NewRow());
             Assert.Equal(DBNull.Value, dt.Rows[0][0]);
 
-            // set AllowDBNull=false 
+            // set AllowDBNull=false
             Assert.Throws<DataException>(() =>
             {
                 dc.AllowDBNull = false; //the existing row contains null value
@@ -213,10 +213,10 @@ namespace System.Data.Tests
             dc = new DataColumn();
 
             pc = dc.ExtendedProperties;
-            // Checking ExtendedProperties default 
+            // Checking ExtendedProperties default
             Assert.True(pc != null);
 
-            // Checking ExtendedProperties count 
+            // Checking ExtendedProperties count
             Assert.Equal(0, pc.Count);
         }
 
@@ -483,11 +483,11 @@ namespace System.Data.Tests
             DataColumn dc;
             dc = new DataColumn("ColName", typeof(string));
 
-            //Checking default value 
+            //Checking default value
             // Ordinal default value
             Assert.Equal(-1, dc.Ordinal);
 
-            // needs a DataTable.Columns to test   
+            // needs a DataTable.Columns to test
             DataColumnCollection dcColl;
             DataTable tb = new DataTable();
             dcColl = tb.Columns;
@@ -662,7 +662,7 @@ namespace System.Data.Tests
 
             ds.Relations.Add("Relation1", parent.Columns[0], child.Columns[0], false);
 
-            //Create the computed columns 
+            //Create the computed columns
 
             DataColumn dcComputedParent = new DataColumn("computedParent", Type.GetType("System.Double"));
             parent.Columns.Add(dcComputedParent);

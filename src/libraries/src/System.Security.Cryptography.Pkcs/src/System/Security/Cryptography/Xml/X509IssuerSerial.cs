@@ -23,4 +23,3 @@ namespace System.Security.Cryptography.Xml
         public string SerialNumber { get; set; }
     }
 }
-

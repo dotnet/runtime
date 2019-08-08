@@ -79,4 +79,3 @@ namespace System.Drawing.Printing
         Custom = SafeNativeMethods.DMBIN_USER + 1,
     }
 }
-

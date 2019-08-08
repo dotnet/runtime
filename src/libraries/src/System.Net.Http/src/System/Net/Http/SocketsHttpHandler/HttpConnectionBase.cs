@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,11 +48,11 @@ namespace System.Net.Http
 
         internal static HttpRequestException CreateRetryException()
         {
-            // This is an exception that's thrown during request processing to indicate that the 
-            // attempt to send the request failed in such a manner that the server is guaranteed to not have 
+            // This is an exception that's thrown during request processing to indicate that the
+            // attempt to send the request failed in such a manner that the server is guaranteed to not have
             // processed the request in any way, and thus the request can be retried.
             // This will be caught in HttpConnectionPool.SendWithRetryAsync and the retry logic will kick in.
-            // The user should never see this exception. 
+            // The user should never see this exception.
             throw new HttpRequestException(null, null, allowRetry: true);
         }
 

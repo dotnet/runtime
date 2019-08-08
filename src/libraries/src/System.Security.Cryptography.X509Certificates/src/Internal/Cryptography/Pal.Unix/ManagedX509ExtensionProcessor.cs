@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal
             // The numeric values of X509KeyUsageFlags mean that if we interpret it as a little-endian
             // ushort it will line up with the flags in the spec. We flip bit order of each byte to get
             // the KeyUsageFlagsAsn order expected by AsnWriter.
-            KeyUsageFlagsAsn keyUsagesAsn = 
+            KeyUsageFlagsAsn keyUsagesAsn =
                 (KeyUsageFlagsAsn)ReverseBitOrder((byte)keyUsages) |
                 (KeyUsageFlagsAsn)(ReverseBitOrder((byte)(((ushort)keyUsages >> 8))) << 8);
 
@@ -59,7 +59,7 @@ namespace Internal.Cryptography.Pal
             // ended up being little-endian for BIT_STRING values.  Untwist the bytes, and now the bits all
             // line up with the existing X509KeyUsageFlags.
 
-            keyUsages = 
+            keyUsages =
                 (X509KeyUsageFlags)ReverseBitOrder((byte)keyUsagesAsn) |
                 (X509KeyUsageFlags)(ReverseBitOrder((byte)(((ushort)keyUsagesAsn >> 8))) << 8);
         }

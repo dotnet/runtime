@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Here we need to check our current type args. If we have an open placeholder,
             // then we need to have all open placeholders, and we want to flush
-            // our outer type args so that they're open placeholders. 
+            // our outer type args so that they're open placeholders.
             //
             // This is because of the following scenario:
             //
@@ -87,7 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // If we have a generic type definition, then we need to set the
-                    // base class to be our current base type, and use that to calculate 
+                    // base class to be our current base type, and use that to calculate
                     // our agg type and its base, then set it to be the generic version of the
                     // base type. This is because:
                     //

@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
             SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
 
             if (includePrivateParameters && keys.PrivateKey == null)
-            { 
+            {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 

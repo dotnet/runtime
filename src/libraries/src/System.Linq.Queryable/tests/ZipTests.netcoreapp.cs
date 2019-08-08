@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,7 +16,7 @@ namespace System.Linq.Tests
             var expected = new (int, int)[] { (1, 2), (2, 5), (3, 9) };
             Assert.Equal(expected, first.AsQueryable().Zip(second.AsQueryable()));
         }
-        
+
         [Fact]
         public void Zip2_FirstIsNull()
         {

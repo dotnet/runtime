@@ -5,12 +5,12 @@
 namespace System.Runtime.InteropServices.ComTypes
 {
     /// <summary>
-    /// The IAdviseSink interface enables containers and other objects to 
-    /// receive notifications of data changes, view changes, and compound-document 
-    /// changes occurring in objects of interest. Container applications, for 
-    /// example, require such notifications to keep cached presentations of their 
-    /// linked and embedded objects up-to-date. Calls to IAdviseSink methods are 
-    /// asynchronous, so the call is sent and then the next instruction is executed 
+    /// The IAdviseSink interface enables containers and other objects to
+    /// receive notifications of data changes, view changes, and compound-document
+    /// changes occurring in objects of interest. Container applications, for
+    /// example, require such notifications to keep cached presentations of their
+    /// linked and embedded objects up-to-date. Calls to IAdviseSink methods are
+    /// asynchronous, so the call is sent and then the next instruction is executed
     /// without waiting for the call's return.
     /// </summary>
     [ComImport]
@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public interface IAdviseSink
     {
         /// <summary>
-        /// Called by the server to notify a data object's currently registered 
+        /// Called by the server to notify a data object's currently registered
         /// advise sinks that data in the object has changed.
         /// </summary>
         [PreserveSig]
@@ -32,21 +32,21 @@ namespace System.Runtime.InteropServices.ComTypes
         void OnViewChange(int aspect, int index);
 
         /// <summary>
-        /// Called by the server to notify all registered advisory sinks that 
+        /// Called by the server to notify all registered advisory sinks that
         /// the object has been renamed.
         /// </summary>
         [PreserveSig]
         void OnRename(IMoniker moniker);
 
         /// <summary>
-        /// Called by the server to notify all registered advisory sinks that 
+        /// Called by the server to notify all registered advisory sinks that
         /// the object has been saved.
         /// </summary>
         [PreserveSig]
         void OnSave();
 
         /// <summary>
-        /// Called by the server to notify all registered advisory sinks that the 
+        /// Called by the server to notify all registered advisory sinks that the
         /// object has changed from the running to the loaded state.
         /// </summary>
         [PreserveSig]

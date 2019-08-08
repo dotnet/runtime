@@ -21,7 +21,7 @@ namespace System.CodeDom.Compiler.Tests
         public void Provider_Ctor()
         {
             Assert.Equal("cs", new CSharpCodeProvider().FileExtension);
-            Assert.Equal("cs", new CSharpCodeProvider(new Dictionary<string, string>()).FileExtension);     
+            Assert.Equal("cs", new CSharpCodeProvider(new Dictionary<string, string>()).FileExtension);
             AssertExtensions.Throws<ArgumentNullException>("providerOptions", () => new CSharpCodeProvider(null));
         }
 
@@ -221,7 +221,7 @@ namespace System.CodeDom.Compiler.Tests
                 new CodeVariableReferenceExpression("b"))));
             cd.Members.Add(cmm);
 
-            // call method with no parameters, call a method with multiple parameters, 
+            // call method with no parameters, call a method with multiple parameters,
             // and call a method from a method call
             cmm = new CodeMemberMethod();
             cmm.Name = "CallParamsMethods";
@@ -251,7 +251,7 @@ namespace System.CodeDom.Compiler.Tests
                 methodinvoke2, CodeBinaryOperatorType.Subtract, methodinvoke)));
             cd.Members.Add(cmm);
 
-            // first declare a class with a virtual method in it 
+            // first declare a class with a virtual method in it
             cd = new CodeTypeDeclaration("ClassWVirtualMethod");
             cd.IsClass = true;
             ns.Types.Add(cd);
@@ -757,19 +757,19 @@ namespace System.CodeDom.Compiler.Tests
                           using System.Drawing;
                           using System.Windows.Forms;
                           using System.ComponentModel;
-                  
+
                           [System.Serializable()]
                           [System.Obsolete(""Don\'t use this Class"")]
                           public class MyClass
                           {
                               [System.Xml.Serialization.XmlElementAttribute()]
                               private string myField = ""hi!"";
-              
+
                               [System.Obsolete(""Don\'t use this Constructor"")]
                               private MyClass()
                               {
                               }
-              
+
                               [System.Obsolete(""Don\'t use this Property"")]
                               private string MyProperty
                               {
@@ -778,13 +778,13 @@ namespace System.CodeDom.Compiler.Tests
                                       return this.myField;
                                   }
                               }
-              
+
                               [System.Obsolete(""Don\'t use this Method"")]
                               [System.ComponentModel.Editor(""This"", ""That"")]
                               private void MyMethod([System.Xml.Serialization.XmlElementAttribute(Form=System.Xml.Schema.XmlSchemaForm.Unqualified, IsNullable=false)] string blah, [System.Xml.Serialization.XmlElementAttribute(Form=System.Xml.Schema.XmlSchemaForm.Unqualified, IsNullable=false)] int[] arrayit)
                               {
                               }
-              
+
                               [System.Obsolete(""Don\'t use this Function"")]
                               [return: System.Xml.Serialization.XmlIgnoreAttribute()]
                               [return: System.Xml.Serialization.XmlRootAttribute(Namespace=""Namespace Value"", ElementName=""Root, hehehe"")]
@@ -792,23 +792,23 @@ namespace System.CodeDom.Compiler.Tests
                               {
                                   return ""Return"";
                               }
-              
+
                               [global::System.ObsoleteAttribute(""Don\'t use this Function"")]
                               [return: global::System.Xml.Serialization.XmlIgnoreAttribute()]
                               private void GlobalKeywordFunction()
                               {
                               }
-              
+
                               [System.Serializable()]
                               public class NestedClass
                               {
                               }
                           }
-              
+
                           public class Test : Form
                           {
                               private Button b = new Button();
-              
+
                               public Test()
                               {
                                   this.Size = new Size(600, 600);
@@ -817,10 +817,10 @@ namespace System.CodeDom.Compiler.Tests
                                   b.Location = new Point(400, 525);
                                   this.MyEvent += new EventHandler(this.b_Click);
                               }
-              
+
                               [System.CLSCompliantAttribute(false)]
                               public event System.EventHandler MyEvent;
-              
+
                               private void b_Click(object sender, System.EventArgs e)
                               {
                               }
@@ -1877,7 +1877,7 @@ namespace System.CodeDom.Compiler.Tests
                                   int1 = value;
                               }
                           }
-                      
+
                           protected virtual int FamilyProp
                           {
                               get
@@ -1889,7 +1889,7 @@ namespace System.CodeDom.Compiler.Tests
                                   int1 = value;
                               }
                           }
-                      
+
                           internal virtual int AssemblyProp
                           {
                               get
@@ -1901,7 +1901,7 @@ namespace System.CodeDom.Compiler.Tests
                                   int1 = value;
                               }
                           }
-                      
+
                           public static int staticProp
                           {
                               get
@@ -1909,13 +1909,13 @@ namespace System.CodeDom.Compiler.Tests
                                   return 99;
                               }
                           }
-                      
+
                           public virtual int thisRef(int value)
                           {
                               this.privProp1 = value;
                               return this.privProp1;
                           }
-                      
+
                           public virtual int setProp(int value)
                           {
                               this.prop1 = value;

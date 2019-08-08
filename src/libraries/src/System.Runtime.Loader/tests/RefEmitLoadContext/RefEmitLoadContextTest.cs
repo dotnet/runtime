@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -37,20 +37,20 @@ namespace System.Runtime.Loader.Tests
         private static void Init()
         {
             var assemblyFilename = "System.Runtime.Loader.Noop.Assembly.dll";
-            
+
             // Form the dynamic path that would not collide if another instance of this test is running.
             s_loadFromPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            
+
             // Create the folder
             Directory.CreateDirectory(s_loadFromPath);
-            
+
             var targetPath = Path.Combine(s_loadFromPath, assemblyFilename);
 
             // Rename the file local to the test folder.
             var sourcePath = Path.Combine(Directory.GetCurrentDirectory(),assemblyFilename);
 
             // Finally, copy the file to the temp location from where we expect to load it
-            File.Copy(sourcePath, targetPath); 
+            File.Copy(sourcePath, targetPath);
 
             // Copy the current assembly to the target location as well since we will load it in the custom load context via the
             // RefEmitted assembly.
@@ -65,7 +65,7 @@ namespace System.Runtime.Loader.Tests
         private static void DeleteDirectory()
         {
             try { Directory.Delete(s_loadFromPath, recursive: true); }
-            catch { } 
+            catch { }
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace System.Runtime.Loader.Tests
         {
             // Load this assembly in custom LoadContext
             var assemblyNameStr = "System.Runtime.Loader.Noop.Assembly.dll";
-            
+
             // Load the assembly in the specified load context
             var asmTargetAsm = loadContext.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyNameStr));
             var creatorLoadContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
@@ -96,7 +96,7 @@ namespace System.Runtime.Loader.Tests
             // Get reference to the helper method that will RefEmit an assembly and return reference to it.
             Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass");
             var method = System.Reflection.TypeExtensions.GetMethod(type, "GetRefEmitAssembly");
-            
+
             // Use the helper to generate an assembly
             var assemblyNameRefEmit = "RefEmitTestAssembly";
             var asmRefEmitLoaded = (Assembly)method.Invoke(null, new object[] {assemblyNameRefEmit, builderType});
@@ -127,7 +127,7 @@ namespace System.Runtime.Loader.Tests
             {
                 if (asmRefEmitLoaded == asm)
                 {
-                    if (asm.FullName == asmRefEmitLoaded.FullName)    
+                    if (asm.FullName == asmRefEmitLoaded.FullName)
                     {
                         fDynamicAssemblyFound = true;
                         break;

@@ -21,10 +21,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -67,12 +67,12 @@ namespace System.Drawing
         {
             internal byte width;        // Width of icon
             internal byte height;       // Height of icon
-            internal byte colorCount;   // colors in icon 
+            internal byte colorCount;   // colors in icon
             internal byte reserved; // Reserved
             internal ushort planes;         // Color Planes
             internal ushort bitCount;       // Bits per pixel
             internal uint bytesInRes;     // bytes in resource
-            internal uint imageOffset;  // position in file 
+            internal uint imageOffset;  // position in file
             internal bool png;       // for unsupported images (vista 256 png)
         };
 

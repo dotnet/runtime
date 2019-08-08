@@ -646,7 +646,7 @@ namespace System.Xml.Tests
                 string.Format("2002-12-30T23:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "datetime2");
 
-            // Read in Universal Time 
+            // Read in Universal Time
             dt = new DateTime();
             dtLocal = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.Local); // this is just to get the offset
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.RoundtripKind);
@@ -658,7 +658,7 @@ namespace System.Xml.Tests
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "Read in Universal Time");
             }
 
-            // Read in Local Time 
+            // Read in Local Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000-00:00", XmlDateTimeSerializationMode.RoundtripKind);
             if (TimeZoneInfo.Local.GetUtcOffset(dt).Hours == -8 || TimeZoneInfo.Local.GetUtcOffset(dt).Hours == 9)
@@ -668,7 +668,7 @@ namespace System.Xml.Tests
                     string.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "Read in Local Time");
             }
-            // Read in Unspecified Time 
+            // Read in Unspecified Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000", XmlDateTimeSerializationMode.RoundtripKind);
             expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
@@ -681,14 +681,14 @@ namespace System.Xml.Tests
         //[Variation("ToString(DateTime,XmlDateTimeSerializationMode.RoundtripKind) - valid cases")]
         public int ToType44()
         {
-            // Read in Universal Time 
+            // Read in Universal Time
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Utc, "Utc expected");
             string expDateTime = "2002-12-31T07:15:55Z";
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind), expDateTime, "Read in Universal Time");
 
-            // Read in Local Time 
+            // Read in Local Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000-00:00", XmlDateTimeSerializationMode.RoundtripKind);
             if (TimeZoneInfo.Local.GetUtcOffset(dt).Hours == -8 || TimeZoneInfo.Local.GetUtcOffset(dt).Hours == 9)
@@ -700,7 +700,7 @@ namespace System.Xml.Tests
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind), expDateTime, "Read in Local Time");
             }
 
-            // Read in Unspecified Time 
+            // Read in Unspecified Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Equals(dt.Kind, DateTimeKind.Unspecified, "unspecified time expected");
@@ -712,21 +712,21 @@ namespace System.Xml.Tests
         //[Variation("ToString(DateTime,XmlDateTimeSerializationMode.Utc) - valid cases")]
         public int ToType45()
         {
-            // Read in Universal Time 
+            // Read in Universal Time
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Unspecified, "Utc expected");
             string expDateTime = "2002-12-31T07:15:55Z";
             CError.Compare(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Utc), expDateTime, "Read in Universal Time");
 
-            // Read in Local Time 
+            // Read in Local Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000-00:00", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Local, "Local expected");
             expDateTime = "2002-12-31T07:15:55Z";
             CError.Compare(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Utc), expDateTime, "Read in Local Time");
 
-            // Read in Unspecified Time 
+            // Read in Unspecified Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Unspecified, "unspecified time expected");
@@ -738,14 +738,14 @@ namespace System.Xml.Tests
         //[Variation("ToString(DateTime,XmlDateTimeSerializationMode.Unspecified) - valid cases")]
         public int ToType46()
         {
-            // Read in Universal Time 
+            // Read in Universal Time
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Equals(dt.Kind, DateTimeKind.Utc, "Utc expected");
             string expDateTime = "2002-12-31T07:15:55";
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Unspecified), expDateTime, "Read in Universal Time");
 
-            // Read in Local Time 
+            // Read in Local Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000-00:00", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Equals(dt.Kind, DateTimeKind.Local, "Local expected");
@@ -755,7 +755,7 @@ namespace System.Xml.Tests
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Unspecified), expDateTime, "Read in Local Time");
             }
 
-            // Read in Unspecified Time 
+            // Read in Unspecified Time
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Equals(dt.Kind, DateTimeKind.Unspecified, "unspecified time expected");

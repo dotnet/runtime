@@ -30,8 +30,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Creates a new ECDsaCng object that will use the specified key. The key's
         ///     <see cref="CngKey.AlgorithmGroup" /> must be ECDsa. This constructor
-        ///     creates a copy of the key. Hence, the caller can safely dispose of the 
-        ///     passed in key and continue using the ECDsaCng object. 
+        ///     creates a copy of the key. Hence, the caller can safely dispose of the
+        ///     passed in key and continue using the ECDsaCng object.
         /// </summary>
         /// <param name="key">Key to use for ECDsa operations</param>
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an ECDsa key</exception>

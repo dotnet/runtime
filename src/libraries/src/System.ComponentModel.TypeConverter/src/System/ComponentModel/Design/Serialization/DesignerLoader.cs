@@ -5,19 +5,19 @@
 namespace System.ComponentModel.Design.Serialization
 {
     /// <summary>
-    /// DesignerLoader. This class is responsible for loading a designer document. 
+    /// DesignerLoader. This class is responsible for loading a designer document.
     /// Where and how this load occurs is a private matter for the designer loader.
-    /// The designer loader will be handed to an IDesignerHost instance. This instance, 
+    /// The designer loader will be handed to an IDesignerHost instance. This instance,
     /// when it is ready to load the document, will call BeginLoad, passing an instance
     /// of IDesignerLoaderHost. The designer loader will load up the design surface
     /// using the host interface, and call EndLoad on the interface when it is done.
     /// The error collection passed into EndLoad should be empty or null to indicate a
-    /// successful load, or it should contain a collection of exceptions that 
+    /// successful load, or it should contain a collection of exceptions that
     /// describe the error.
     ///
     /// Once a document is loaded, the designer loader is also responsible for
     /// writing any changes made to the document back whatever storage the
-    /// loader used when loading the document. 
+    /// loader used when loading the document.
     /// </summary>
     public abstract class DesignerLoader
     {
@@ -55,4 +55,3 @@ namespace System.ComponentModel.Design.Serialization
         public virtual void Flush() { }
     }
 }
-

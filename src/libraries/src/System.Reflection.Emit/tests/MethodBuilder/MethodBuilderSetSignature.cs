@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder returnType = typeParameters[0];
 
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T", "U");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[1];
 
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod",
                 MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
@@ -79,7 +79,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T", "U");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int), typeParameters[1].AsType() };
@@ -129,7 +129,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
@@ -206,7 +206,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
@@ -220,7 +220,7 @@ namespace System.Reflection.Emit.Tests
             int arraySize = 10;
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = null;
@@ -240,7 +240,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
-            
+
             GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(void) };
@@ -260,7 +260,7 @@ namespace System.Reflection.Emit.Tests
             Type ret = type.CreateTypeInfo().AsType();
             MethodInfo methodInfo = method.GetBaseDefinition();
             Type actualReturnType = methodInfo.ReturnType;
-            
+
             Assert.NotNull(actualReturnType);
             Assert.Equal(desiredReturnType.Name, actualReturnType.Name);
             Assert.Equal(desiredReturnType, actualReturnType);

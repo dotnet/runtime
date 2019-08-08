@@ -39,7 +39,7 @@ namespace XLinqTests
         }
 
         /// <summary>
-        /// XDocument: 
+        /// XDocument:
         ///  - with content, empty
         ///  - adding valid nodes
         ///  - adding invalid nodes

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Ported from EventWaitHandle.cs, Mutex.cs, Semaphore.cs and made extension methods (or renamed statics, where necessary) to allow 
+// Ported from EventWaitHandle.cs, Mutex.cs, Semaphore.cs and made extension methods (or renamed statics, where necessary) to allow
 // extending the class without System.Threading needing to rely on System.Security.AccessControl
 
 using System;

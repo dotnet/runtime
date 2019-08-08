@@ -389,8 +389,8 @@ namespace System.Numerics.Tests
             BigInteger b2 = Driver.b2;
             BigInteger b3 = Driver.b3;
             BigInteger[][] results = Driver.results;
-            
-            var threeOrderOperations = new Action<BigInteger, BigInteger>[] { 
+
+            var threeOrderOperations = new Action<BigInteger, BigInteger>[] {
                 new Action<BigInteger, BigInteger>((a, expected) => { Sign(a, expected); }),
                 new Action<BigInteger, BigInteger>((a, expected) => { Op_Not(a, expected); }),
                 new Action<BigInteger, BigInteger>((a, expected) => { Log10(a, expected); }),
@@ -403,7 +403,7 @@ namespace System.Numerics.Tests
                 new Action<BigInteger, BigInteger>((a, expected) => { Op_Plus(a, expected); })
             };
 
-            var nineOrderOperations = new Action<BigInteger, BigInteger, BigInteger>[] { 
+            var nineOrderOperations = new Action<BigInteger, BigInteger, BigInteger>[] {
                 new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Min(a, b, expected); }),
                 new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Max(a, b, expected); }),
                 new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_RightShift(a, b, expected); }),
@@ -818,4 +818,3 @@ namespace System.Numerics.Tests
         }
     }
 }
-

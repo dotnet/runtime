@@ -78,7 +78,7 @@ namespace System.ComponentModel.Tests
         {
             Assert.Equal(expected, attribute.Equals(other));
         }
-        
+
         [Fact]
         public void GetHashCode_InvokeMultipleTimes_ReturnsSame()
         {

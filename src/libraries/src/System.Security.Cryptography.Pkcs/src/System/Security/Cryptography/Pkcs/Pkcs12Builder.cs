@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs
             AddSafeContentsEncrypted(
                 safeContents,
                 // Allows null.
-                new ReadOnlySpan<byte>(passwordBytes), 
+                new ReadOnlySpan<byte>(passwordBytes),
                 pbeParameters);
         }
 
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Pkcs
                     }
 
                     // https://tools.ietf.org/html/rfc7292#section-4
-                    // 
+                    //
                     // MacData ::= SEQUENCE {
                     //   mac        DigestInfo,
                     //   macSalt    OCTET STRING,

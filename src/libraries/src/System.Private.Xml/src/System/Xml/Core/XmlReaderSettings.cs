@@ -691,7 +691,7 @@ namespace System.Xml
                     }
                 }
 
-                // assume the V1 readers already do all conformance checking; 
+                // assume the V1 readers already do all conformance checking;
                 // wrap only if IgnoreWhitespace, IgnoreComments, IgnoreProcessingInstructions or ProhibitDtd is true;
                 if (_ignoreWhitespace)
                 {

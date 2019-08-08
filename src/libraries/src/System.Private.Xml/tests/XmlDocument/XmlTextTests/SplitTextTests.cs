@@ -23,9 +23,9 @@ namespace System.Xml.Tests
         }
 
         /// <summary>
-        /// Using hard-coded offsets to SplitText may have unintended side effects since \r\n will 
-        /// be converted to \n in accordance with the XML spec located at 
-        /// http://www.w3.org/TR/2008/REC-xml-20081126/#sec-line-ends.  Better to calculate the offset 
+        /// Using hard-coded offsets to SplitText may have unintended side effects since \r\n will
+        /// be converted to \n in accordance with the XML spec located at
+        /// http://www.w3.org/TR/2008/REC-xml-20081126/#sec-line-ends.  Better to calculate the offset
         /// given to XmlText.SplitText using String.IndexOf or some other similar method.
         /// </summary>
         [Fact]

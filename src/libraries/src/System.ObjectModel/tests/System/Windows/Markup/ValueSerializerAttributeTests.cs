@@ -32,4 +32,3 @@ namespace System.Windows.Markup.Tests
         }
     }
 }
-

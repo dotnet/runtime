@@ -226,7 +226,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         HexInt16 = UInt16 + (EventFieldFormat.Hexadecimal << 8),
 
-#if false 
+#if false
         /// <summary>
         /// Formatted type.
         /// Encoding assumes 32-bit value.
@@ -324,7 +324,7 @@ namespace System.Diagnostics.Tracing
         /// Decoding treats as MBCS JSON.
         /// </summary>
         CountedMbcsJson = CountedMbcsString + (EventFieldFormat.Json << 8),
-#if false 
+#if false
         /// <summary>
         /// Formatted type.
         /// Encoding assumes 32-bit value.

@@ -368,7 +368,7 @@ namespace System.Drawing.Drawing2D
             set
             {
                 _interpolationColorsWasSet = true;
-                
+
                 if (value == null)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,

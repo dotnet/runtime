@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs
                 return true;
             }
         }
-        
+
         internal void EncodeTo(AsnWriter writer)
         {
             writer.PushSequence();

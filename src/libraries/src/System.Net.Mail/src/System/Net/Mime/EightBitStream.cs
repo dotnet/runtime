@@ -9,16 +9,16 @@ namespace System.Net.Mime
     /// <summary>
     /// This stream does not encode content, but merely allows the user to declare
     /// that the content does not need encoding.
-    /// 
+    ///
     /// This stream is also used to implement RFC 2821 Section 4.5.2 (pad leading
-    /// dots on a line) on the entire message so we don't have to implement it 
+    /// dots on a line) on the entire message so we don't have to implement it
     /// on all of the individual components.
-    /// 
-    /// History: This class used to be called SevenBitStream and was supposed to 
-    /// validate that outgoing bytes were within the acceptable range of 0 - 127 
+    ///
+    /// History: This class used to be called SevenBitStream and was supposed to
+    /// validate that outgoing bytes were within the acceptable range of 0 - 127
     /// and throw if a value > 127 is found.
     /// However, the enforcement was not properly implemented and rarely executed.
-    /// For legacy (app-compat) reasons we have chosen to remove the enforcement 
+    /// For legacy (app-compat) reasons we have chosen to remove the enforcement
     /// and rename the class from SevenBitStream to EightBitStream.
     /// </summary>
     internal class EightBitStream : DelegatedStream, IEncodableStream
@@ -26,7 +26,7 @@ namespace System.Net.Mime
         private WriteStateInfoBase _writeState;
 
         // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
-        // We make this optional because this stream may be used recursively and 
+        // We make this optional because this stream may be used recursively and
         // the encoding should only be done once.
         private bool _shouldEncodeLeadingDots = false;
 
@@ -123,7 +123,7 @@ namespace System.Net.Mime
 
         // helper methods
 
-        // Despite not having to encode content, we still have to implement 
+        // Despite not having to encode content, we still have to implement
         // RFC 2821 Section 4.5.2 about leading dots on a line
         private void EncodeLines(byte[] buffer, int offset, int count)
         {

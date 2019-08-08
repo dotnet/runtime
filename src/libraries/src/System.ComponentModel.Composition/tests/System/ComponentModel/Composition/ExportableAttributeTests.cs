@@ -76,7 +76,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Export]
-        // Should cause a conflict with the multiple nature of Name.Bar because 
+        // Should cause a conflict with the multiple nature of Name.Bar because
         // it isn't marked with IsMultiple=true
         [ExportMetadata("Bar", "Blah")]
         [Name("MEF")]

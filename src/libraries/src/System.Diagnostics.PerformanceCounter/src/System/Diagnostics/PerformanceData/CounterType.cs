@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,7 +6,7 @@ namespace System.Diagnostics.PerformanceData
 {
     /// <summary>
     /// Enum of friendly names to counter types (maps directory to the native types defined in winperf.h).
-    /// </summary>    
+    /// </summary>
     public enum CounterType
     {
         QueueLength = Interop.Kernel32.PerformanceCounterOptions.PERF_COUNTER_QUEUELEN_TYPE,

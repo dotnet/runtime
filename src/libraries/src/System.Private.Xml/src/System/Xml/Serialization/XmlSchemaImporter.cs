@@ -768,7 +768,7 @@ namespace System.Xml.Serialization
                 {
                     if (IsNeedXmlSerializationAttributes(arrayMapping))
                     {
-                        // we cannot use ArrayMapping in choice if additional custom 
+                        // we cannot use ArrayMapping in choice if additional custom
                         // serialization attributes are needed to serialize it
                         element.Mapping = arrayMapping.TopLevelMapping;
                         element.Mapping.ReferencedByTopLevelElement = false;

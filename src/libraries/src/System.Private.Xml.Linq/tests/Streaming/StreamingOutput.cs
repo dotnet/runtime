@@ -528,7 +528,7 @@ namespace XDocumentTests.Streaming
         }
 
         ///<summary>
-        /// This function is used in above variation to make sure that the 
+        /// This function is used in above variation to make sure that the
         /// IEnumerable is indeed walked lazily
         ///</summary>
         public IEnumerable<XElement> GetElements(XElement element)

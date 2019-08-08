@@ -16,7 +16,7 @@ namespace System.Linq.Tests
                     where x > int.MinValue
                     select x;
 
-            Func<int, bool> predicate = IsEven; 
+            Func<int, bool> predicate = IsEven;
             Assert.Equal(q.Any(predicate), q.Any(predicate));
         }
 
@@ -29,7 +29,7 @@ namespace System.Linq.Tests
             Func<string, bool> predicate = string.IsNullOrEmpty;
             Assert.Equal(q.Any(predicate), q.Any(predicate));
         }
-        
+
         public static IEnumerable<object[]> TestData()
         {
             yield return new object[] { new int[0], null, false };

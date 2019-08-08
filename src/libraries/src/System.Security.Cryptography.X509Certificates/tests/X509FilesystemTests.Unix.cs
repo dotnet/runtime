@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 chain.ChainPolicy.ExtraStore.Add(unrelated);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
-                
+
                 // The very start of the CRL period.
                 chain.ChainPolicy.VerificationTime = new DateTime(2015, 6, 17, 0, 0, 0, DateTimeKind.Utc);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     using (var certB = new X509Certificate2(TestData.DssCer))
                     {
                         store.Open(OpenFlags.ReadWrite);
-                        
+
                         // Ensure that ReadWrite took effect.
                         store.Add(certA);
 
@@ -435,7 +435,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             Assert.Contains(storeCert, expectedCerts);
                             storeCert.Dispose();
                         }
-                        
+
                         Assert.True(foundCertA, "foundCertA");
                     }
                 });
@@ -496,7 +496,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     using (var certD = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
                     {
                         store.Open(OpenFlags.ReadWrite);
-                        
+
                         store.Add(certA);
                         store.Add(certB);
                         store.Add(certC);

@@ -112,7 +112,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "CancelShutdown", cts.Token);
             }, server);
         }
-        
+
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
@@ -144,7 +144,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
             }
         }
-        
+
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
@@ -154,11 +154,11 @@ namespace System.Net.WebSockets.Client.Tests
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
                 var cts = new CancellationTokenSource();
-                
+
                 Task receive = cws.ReceiveAsync(segment, cts.Token);
                 cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
-                
+
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ReceiveAsync(segment, CancellationToken.None));
                 Assert.Equal(

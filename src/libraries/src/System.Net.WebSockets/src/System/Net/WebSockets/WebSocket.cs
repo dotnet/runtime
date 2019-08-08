@@ -103,7 +103,7 @@ namespace System.Net.WebSockets
             throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, validStatesText));
         }
 
-        protected static bool IsStateTerminal(WebSocketState state) => 
+        protected static bool IsStateTerminal(WebSocketState state) =>
             state == WebSocketState.Closed || state == WebSocketState.Aborted;
 
         public static ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize)

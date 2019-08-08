@@ -12,9 +12,9 @@ namespace System.ComponentModel.Design.Serialization
     /// A member relationship service is used by a serializer to announce that one
     /// property is related to a property on another object. Consider a code
     /// based serialization scheme where code is of the following form:
-    /// 
+    ///
     /// object1.Property1 = object2.Property2
-    /// 
+    ///
     /// Upon interpretation of this code, Property1 on object1 will be
     /// set to the return value of object2.Property2. But the relationship
     /// between these two objects is lost. Serialization schemes that
@@ -103,7 +103,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        /// This is the implementation API for returning relationships. The default implementation stores the 
+        /// This is the implementation API for returning relationships. The default implementation stores the
         /// relationship in a table. Relationships are stored weakly, so they do not keep an object alive.
         /// </summary>
         protected virtual MemberRelationship GetRelationship(MemberRelationship source)
@@ -117,7 +117,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        /// This is the implementation API for returning relationships. The default implementation stores the 
+        /// This is the implementation API for returning relationships. The default implementation stores the
         /// relationship in a table. Relationships are stored weakly, so they do not keep an object alive. Empty can be
         /// passed in for relationship to remove the relationship.
         /// </summary>

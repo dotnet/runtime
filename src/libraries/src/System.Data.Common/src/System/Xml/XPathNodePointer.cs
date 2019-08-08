@@ -36,7 +36,7 @@ namespace System.Xml
                     max = tempVal;
             }
             Debug.Assert(max == (int)XmlNodeType.XmlDeclaration);
-#endif        
+#endif
             var map = new int[20];
             map[(int)XmlNodeType.None] = -1;
             map[(int)XmlNodeType.Element] = (int)XPathNodeType.Element;
@@ -56,7 +56,7 @@ namespace System.Xml
             map[(int)XmlNodeType.EndElement] = -1;
             map[(int)XmlNodeType.EndEntity] = -1;
             map[(int)XmlNodeType.XmlDeclaration] = -1;
-            // xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.All)] = -1;     
+            // xmlNodeType_To_XpathNodeType_Map[(int)(XmlNodeType.All)] = -1;
             return map;
         }
 
@@ -186,7 +186,7 @@ namespace System.Xml
             }
         }
 
-        //LDAI: From CodeReview: Perf: We should have another array similar w/ 
+        //LDAI: From CodeReview: Perf: We should have another array similar w/
         //  xmlNodeType_To_XpathNodeType_Map that will return String.Empty for everything but the element and
         //  attribute case.
         internal string LocalName
@@ -1084,7 +1084,7 @@ namespace System.Xml
             for (; parent != null; depth++)
             {
                 curNode = parent;
-                parent = curNode.ParentNode; // no need to check for attribute since navigator can't be built on its children or navigate to its children 
+                parent = curNode.ParentNode; // no need to check for attribute since navigator can't be built on its children or navigate to its children
             }
             return curNode;
         }
@@ -1313,7 +1313,7 @@ namespace System.Xml
             if (n == null)
                 throw new InvalidOperationException(SR.DataDom_Foliation);
 
-            // Cannot use MoveTo( n ); b/c the initial state for MoveTo is invalid (region is foliated but this is not)            
+            // Cannot use MoveTo( n ); b/c the initial state for MoveTo is invalid (region is foliated but this is not)
             _node = n;
             _column = null;
             _fOnValue = false;
@@ -1338,7 +1338,7 @@ namespace System.Xml
                     return null;
             }
             else
-            { //defoliated so that we need to search through its column 
+            { //defoliated so that we need to search through its column
                 DataRow curRow = be.Row;
                 if (curRow == null)
                     return null;
@@ -1426,7 +1426,7 @@ namespace System.Xml
                         }
                     }
                     else
-                    {//defoliated so that we need to search through its column 
+                    {//defoliated so that we need to search through its column
                         DataRow curRow = be.Row;
                         if (curRow == null)
                             return false;
@@ -1487,7 +1487,7 @@ namespace System.Xml
                     }
                 }
                 else
-                {//defoliated so that we need to search through its column 
+                {//defoliated so that we need to search through its column
                     DataRow curRow = be.Row;
                     if (curRow == null)
                         return false;

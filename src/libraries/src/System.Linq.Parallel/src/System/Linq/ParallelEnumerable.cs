@@ -49,8 +49,8 @@ namespace System.Linq
     //
 
     /// <summary>
-    /// Provides a set of methods for querying objects that implement 
-    /// ParallelQuery{TSource}.  This is the parallel equivalent of 
+    /// Provides a set of methods for querying objects that implement
+    /// ParallelQuery{TSource}.  This is the parallel equivalent of
     /// <see cref="System.Linq.Enumerable"/>.
     /// </summary>
     public static class ParallelEnumerable
@@ -81,7 +81,7 @@ namespace System.Linq
         /// Enables parallelization of a query.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
-        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}"/> 
+        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}"/>
         /// to convert to a <see cref="System.Linq.ParallelQuery{T}"/>.</param>
         /// <returns>The source as a <see cref="System.Linq.ParallelQuery{T}"/> to bind to
         /// ParallelEnumerable extension methods.</returns>
@@ -138,8 +138,8 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <remarks>
-        /// A natural tension exists between performance and preserving order in parallel processing. By default, 
-        /// a parallelized query behaves as if the ordering of the results is arbitrary 
+        /// A natural tension exists between performance and preserving order in parallel processing. By default,
+        /// a parallelized query behaves as if the ordering of the results is arbitrary
         /// unless AsOrdered is applied or there is an explicit OrderBy operator in the query.
         /// </remarks>
         /// <returns>The source sequence which will maintain ordering in the query.</returns>
@@ -182,8 +182,8 @@ namespace System.Linq
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <remarks>
-        /// A natural tension exists between performance and preserving order in parallel processing. By default, 
-        /// a parallelized query behaves as if the ordering of the results is arbitrary unless AsOrdered 
+        /// A natural tension exists between performance and preserving order in parallel processing. By default,
+        /// a parallelized query behaves as if the ordering of the results is arbitrary unless AsOrdered
         /// is applied or there is an explicit OrderBy operator in the query.
         /// </remarks>
         /// <returns>The source sequence which will maintain ordering in the query.</returns>
@@ -229,7 +229,7 @@ namespace System.Linq
         /// <summary>
         /// Enables parallelization of a query.
         /// </summary>
-        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}"/> to convert 
+        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}"/> to convert
         /// to a <see cref="System.Linq.ParallelQuery{T}"/>.</param>
         /// <returns>
         /// The source as a ParallelQuery to bind to
@@ -254,7 +254,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Converts a <see cref="ParallelQuery{T}"/> into an 
+        /// Converts a <see cref="ParallelQuery{T}"/> into an
         /// <see cref="System.Collections.Generic.IEnumerable{T}"/> to force sequential
         /// evaluation of the query.
         /// </summary>
@@ -344,7 +344,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A ParallelQuery on which to set the option.</param>
         /// <param name="executionMode">The mode in which to execute the query.</param>
-        /// <returns>ParallelQuery representing the same query as source, but with the 
+        /// <returns>ParallelQuery representing the same query as source, but with the
         /// <seealso cref="System.Linq.ParallelExecutionMode"/> registered.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
@@ -376,7 +376,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A ParallelQuery on which to set the option.</param>
         /// <param name="mergeOptions">The merge options to set for this query.</param>
-        /// <returns>ParallelQuery representing the same query as source, but with the 
+        /// <returns>ParallelQuery representing the same query as source, but with the
         /// <seealso cref="ParallelMergeOptions"/> registered.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
@@ -414,7 +414,7 @@ namespace System.Linq
         /// </summary>
         /// <param name="start">The value of the first integer in the sequence.</param>
         /// <param name="count">The number of sequential integers to generate.</param>
-        /// <returns>An <b>IEnumerable&lt;Int32&gt;</b> in C# or <B>IEnumerable(Of Int32)</B> in 
+        /// <returns>An <b>IEnumerable&lt;Int32&gt;</b> in C# or <B>IEnumerable(Of Int32)</B> in
         /// Visual Basic that contains a range of sequential integral numbers.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// <paramref name="count"/> is less than 0
@@ -455,7 +455,7 @@ namespace System.Linq
         /// <summary>
         /// Returns an empty ParallelQuery{TResult} that has the specified type argument.
         /// </summary>
-        /// <typeparam name="TResult">The type to assign to the type parameter of the returned 
+        /// <typeparam name="TResult">The type to assign to the type parameter of the returned
         /// generic sequence.</typeparam>
         /// <returns>An empty sequence whose type argument is <typeparamref name="TResult"/>.</returns>
         public static ParallelQuery<TResult> Empty<TResult>()
@@ -483,11 +483,11 @@ namespace System.Linq
         /// Invokes in parallel the specified action for each element in the <paramref name="source"/>.
         /// </summary>
         /// <remarks>
-        /// This is an efficient way to process the output from a parallelized query because it does 
+        /// This is an efficient way to process the output from a parallelized query because it does
         /// not require a merge step at the end.  However, order of execution is non-deterministic.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
-        /// <param name="source">The <see cref="ParallelQuery{T}"/> whose elements will be processed by 
+        /// <param name="source">The <see cref="ParallelQuery{T}"/> whose elements will be processed by
         /// <paramref name="action"/>.</param>
         /// <param name="action">An Action to invoke on each element.</param>
         /// <exception cref="System.ArgumentNullException">
@@ -505,7 +505,7 @@ namespace System.Linq
             if (action == null) throw new ArgumentNullException(nameof(action));
 
             // We just instantiate the forall operator and invoke it synchronously on this thread.
-            // By the time it returns, the entire query has been executed and the actions run.. 
+            // By the time it returns, the entire query has been executed and the actions run..
             new ForAllOperator<TSource>(source, action).RunSynchronously();
         }
 
@@ -526,7 +526,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">A sequence to filter.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
-        /// <returns>A sequence that contains elements from the input sequence that satisfy 
+        /// <returns>A sequence that contains elements from the input sequence that satisfy
         /// the condition.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
@@ -569,7 +569,7 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
-        /// <returns>A sequence whose elements are the result of invoking the transform function on each 
+        /// <returns>A sequence whose elements are the result of invoking the transform function on each
         /// element of <paramref name="source"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
@@ -590,7 +590,7 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
-        /// <returns>A sequence whose elements are the result of invoking the transform function on each 
+        /// <returns>A sequence whose elements are the result of invoking the transform function on each
         /// element of <paramref name="source"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
@@ -618,7 +618,7 @@ namespace System.Linq
         /// <param name="second">The second sequence to zip.</param>
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
         /// <returns>
-        /// A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
+        /// A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing
         /// resultSelector pairwise on two sequences. If the sequence lengths are unequal, this truncates
         /// to the length of the shorter sequence.
         /// </returns>
@@ -636,8 +636,8 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Zip overload should never be called. 
-        /// This method is marked as obsolete and always throws 
+        /// This Zip overload should never be called.
+        /// This method is marked as obsolete and always throws
         /// <see cref="System.NotSupportedException"/> when invoked.
         /// </summary>
         /// <typeparam name="TFirst">This type parameter is not used.</typeparam>
@@ -666,7 +666,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Correlates in parallel the elements of two sequences based on matching keys. 
+        /// Correlates in parallel the elements of two sequences based on matching keys.
         /// The default equality comparer is used to compare keys.
         /// </summary>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
@@ -675,12 +675,12 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of the result elements.</typeparam>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element of 
+        /// <param name="outerKeySelector">A function to extract the join key from each element of
         /// the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element of 
+        /// <param name="innerKeySelector">A function to extract the join key from each element of
         /// the second sequence.</param>
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
-        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
+        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing
         /// an inner join on two sequences.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
@@ -696,7 +696,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Join overload should never be called. 
+        /// This Join overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when invoked.
         /// </summary>
         /// <typeparam name="TOuter">This type parameter is not used.</typeparam>
@@ -725,7 +725,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates in parallel the elements of two sequences based on matching keys. 
+        /// Correlates in parallel the elements of two sequences based on matching keys.
         /// A specified IEqualityComparer{T} is used to compare keys.
         /// </summary>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
@@ -734,13 +734,13 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of the result elements.</typeparam>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element 
+        /// <param name="outerKeySelector">A function to extract the join key from each element
         /// of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element 
+        /// <param name="innerKeySelector">A function to extract the join key from each element
         /// of the second sequence.</param>
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to hash and compare keys.</param>
-        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
+        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing
         /// an inner join on two sequences.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
@@ -762,7 +762,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Join overload should never be called. 
+        /// This Join overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when invoked.
         /// </summary>
         /// <typeparam name="TOuter">This type parameter is not used.</typeparam>
@@ -797,7 +797,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Correlates in parallel the elements of two sequences based on equality of keys and groups the results. 
+        /// Correlates in parallel the elements of two sequences based on equality of keys and groups the results.
         /// The default equality comparer is used to compare keys.
         /// </summary>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
@@ -806,13 +806,13 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of the result elements.</typeparam>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element 
+        /// <param name="outerKeySelector">A function to extract the join key from each element
         /// of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element 
+        /// <param name="innerKeySelector">A function to extract the join key from each element
         /// of the second sequence.</param>
-        /// <param name="resultSelector">A function to create a result element from an element from 
+        /// <param name="resultSelector">A function to create a result element from an element from
         /// the first sequence and a collection of matching elements from the second sequence.</param>
-        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
+        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing
         /// a grouped join on two sequences.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
@@ -828,7 +828,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This GroupJoin overload should never be called. 
+        /// This GroupJoin overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TOuter">This type parameter is not used.</typeparam>
@@ -845,7 +845,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of GroupJoin with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
-        /// Otherwise, the GroupJoin operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the GroupJoin operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         ///</remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -858,7 +858,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates in parallel the elements of two sequences based on key equality and groups the results. 
+        /// Correlates in parallel the elements of two sequences based on key equality and groups the results.
         /// A specified IEqualityComparer{T} is used to compare keys.
         /// </summary>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
@@ -867,14 +867,14 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of the result elements.</typeparam>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element 
+        /// <param name="outerKeySelector">A function to extract the join key from each element
         /// of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element 
+        /// <param name="innerKeySelector">A function to extract the join key from each element
         /// of the second sequence.</param>
-        /// <param name="resultSelector">A function to create a result element from an element from 
+        /// <param name="resultSelector">A function to create a result element from an element from
         /// the first sequence and a collection of matching elements from the second sequence.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to hash and compare keys.</param>
-        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing 
+        /// <returns>A sequence that has elements of type <typeparamref name="TResult"/> that are obtained by performing
         /// a grouped join on two sequences.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="outer"/> or <paramref name="inner"/> or <paramref name="outerKeySelector"/> or
@@ -896,7 +896,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This GroupJoin overload should never be called. 
+        /// This GroupJoin overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TOuter">This type parameter is not used.</typeparam>
@@ -914,7 +914,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of GroupJoin with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TOuter}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TInner}"/>.
-        /// Otherwise, the GroupJoin operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the GroupJoin operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -933,14 +933,14 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Projects in parallel each element of a sequence to an IEnumerable{T} 
+        /// Projects in parallel each element of a sequence to an IEnumerable{T}
         /// and flattens the resulting sequences into one sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TResult">The type of the elements of the sequence returned by <B>selector</B>.</typeparam>
         /// <param name="source">A sequence of values to project.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
-        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
+        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform
         /// function on each element of the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
@@ -955,15 +955,15 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Projects in parallel each element of a sequence to an IEnumerable{T}, and flattens the resulting 
-        /// sequences into one sequence. The index of each source element is used in the projected form of 
+        /// Projects in parallel each element of a sequence to an IEnumerable{T}, and flattens the resulting
+        /// sequences into one sequence. The index of each source element is used in the projected form of
         /// that element.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TResult">The type of the elements of the sequence returned by <B>selector</B>.</typeparam>
         /// <param name="source">A sequence of values to project.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
-        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
+        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform
         /// function on each element of the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="selector"/> is a null reference (Nothing in Visual Basic).
@@ -978,20 +978,20 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Projects each element of a sequence to an IEnumerable{T}, 
-        /// flattens the resulting sequences into one sequence, and invokes a result selector 
+        /// Projects each element of a sequence to an IEnumerable{T},
+        /// flattens the resulting sequences into one sequence, and invokes a result selector
         /// function on each element therein.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TCollection">The type of the intermediate elements collected by <paramref name="collectionSelector"/>.</typeparam>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="source">A sequence of values to project.</param>
-        /// <param name="collectionSelector">A transform function to apply to each source element; 
+        /// <param name="collectionSelector">A transform function to apply to each source element;
         /// the second parameter of the function represents the index of the source element.</param>
-        /// <param name="resultSelector">A function to create a result element from an element from 
+        /// <param name="resultSelector">A function to create a result element from an element from
         /// the first sequence and a collection of matching elements from the second sequence.</param>
-        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform 
-        /// function <paramref name="collectionSelector"/> on each element of <paramref name="source"/> and then mapping 
+        /// <returns>A sequence whose elements are the result of invoking the one-to-many transform
+        /// function <paramref name="collectionSelector"/> on each element of <paramref name="source"/> and then mapping
         /// each of those sequence elements and their corresponding source element to a result element.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="collectionSelector"/> or
@@ -1009,24 +1009,24 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Projects each element of a sequence to an IEnumerable{T}, flattens the resulting 
-        /// sequences into one sequence, and invokes a result selector function on each element 
-        /// therein. The index of each source element is used in the intermediate projected 
+        /// Projects each element of a sequence to an IEnumerable{T}, flattens the resulting
+        /// sequences into one sequence, and invokes a result selector function on each element
+        /// therein. The index of each source element is used in the intermediate projected
         /// form of that element.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TCollection">The type of the intermediate elements collected by 
+        /// <typeparam name="TCollection">The type of the intermediate elements collected by
         /// <paramref name="collectionSelector"/>.</typeparam>
         /// <typeparam name="TResult">The type of elements to return.</typeparam>
         /// <param name="source">A sequence of values to project.</param>
-        /// <param name="collectionSelector">A transform function to apply to each source element; 
+        /// <param name="collectionSelector">A transform function to apply to each source element;
         /// the second parameter of the function represents the index of the source element.</param>
-        /// <param name="resultSelector">A function to create a result element from an element from 
+        /// <param name="resultSelector">A function to create a result element from an element from
         /// the first sequence and a collection of matching elements from the second sequence.</param>
         /// <returns>
-        /// A sequence whose elements are the result of invoking the one-to-many transform 
-        /// function <paramref name="collectionSelector"/> on each element of <paramref name="source"/> and then mapping 
-        /// each of those sequence elements and their corresponding source element to a 
+        /// A sequence whose elements are the result of invoking the one-to-many transform
+        /// function <paramref name="collectionSelector"/> on each element of <paramref name="source"/> and then mapping
+        /// each of those sequence elements and their corresponding source element to a
         /// result element.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -1053,7 +1053,7 @@ namespace System.Linq
         /// Sorts in parallel the elements of a sequence in ascending order according to a key.
         /// </summary>
         /// <remarks>
-        /// In contrast to the sequential implementation, this is not a stable sort. 
+        /// In contrast to the sequential implementation, this is not a stable sort.
         /// To achieve a stable sort, change a query of the form:
         /// <code>var ordered = source.OrderBy((e) => e.k);</code>
         /// to instead be formed as:
@@ -1063,7 +1063,7 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <param name="source">A sequence of values to order.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted
         /// according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1083,7 +1083,7 @@ namespace System.Linq
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -1091,7 +1091,7 @@ namespace System.Linq
         /// <param name="source">A sequence of values to order.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted according 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted according
         /// to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1111,14 +1111,14 @@ namespace System.Linq
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <param name="source">A sequence of values to order.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted
         /// descending according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1137,7 +1137,7 @@ namespace System.Linq
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -1145,7 +1145,7 @@ namespace System.Linq
         /// <param name="source">A sequence of values to order.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted descending 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted descending
         /// according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1161,20 +1161,20 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Performs in parallel a subsequent ordering of the elements in a sequence 
+        /// Performs in parallel a subsequent ordering of the elements in a sequence
         /// in ascending order according to a key.
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource} than 
+        /// <param name="source">An OrderedParallelQuery{TSource} than
         /// contains elements to sort.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are
         /// sorted according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1190,26 +1190,26 @@ namespace System.Linq
                 (QueryOperator<TSource>)source.OrderedEnumerable.CreateOrderedEnumerable<TKey>(keySelector, null, false));
         }
         /// <summary>
-        /// Performs in parallel a subsequent ordering of the elements in a sequence in 
+        /// Performs in parallel a subsequent ordering of the elements in a sequence in
         /// ascending order by using a specified comparer.
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource} that contains 
+        /// <param name="source">An OrderedParallelQuery{TSource} that contains
         /// elements to sort.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted
         /// according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// 
+        ///
 
         public static OrderedParallelQuery<TSource> ThenBy<TSource, TKey>(
             this OrderedParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
@@ -1221,25 +1221,25 @@ namespace System.Linq
                 (QueryOperator<TSource>)source.OrderedEnumerable.CreateOrderedEnumerable<TKey>(keySelector, comparer, false));
         }
         /// <summary>
-        /// Performs in parallel a subsequent ordering of the elements in a sequence in 
+        /// Performs in parallel a subsequent ordering of the elements in a sequence in
         /// descending order, according to a key.
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource} than contains 
+        /// <param name="source">An OrderedParallelQuery{TSource} than contains
         /// elements to sort.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted
         /// descending according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        /// 
+        ///
 
         public static OrderedParallelQuery<TSource> ThenByDescending<TSource, TKey>(
             this OrderedParallelQuery<TSource> source, Func<TSource, TKey> keySelector)
@@ -1251,26 +1251,26 @@ namespace System.Linq
                 (QueryOperator<TSource>)source.OrderedEnumerable.CreateOrderedEnumerable<TKey>(keySelector, null, true));
         }
         /// <summary>
-        /// Performs in parallel a subsequent ordering of the elements in a sequence in descending 
+        /// Performs in parallel a subsequent ordering of the elements in a sequence in descending
         /// order by using a specified comparer.
         /// </summary>
         /// <remarks>
         /// In contrast to the sequential implementation, this is not a stable sort.
-        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for 
+        /// See the remarks for OrderBy(ParallelQuery{TSource}, Func{TSource,TKey}) for
         /// an approach to implementing a stable sort.
         /// </remarks>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource} than contains 
+        /// <param name="source">An OrderedParallelQuery{TSource} than contains
         /// elements to sort.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="comparer">An IComparer{TKey} to compare keys.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
+        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted
         /// descending according to a key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        ///         
+        ///
 
         public static OrderedParallelQuery<TSource> ThenByDescending<TSource, TKey>(
             this OrderedParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
@@ -1293,7 +1293,7 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a
         /// group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/>
@@ -1313,7 +1313,7 @@ namespace System.Linq
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="comparer">An equality comparer to compare keys.</param>
-        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a
         /// group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
@@ -1328,18 +1328,18 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Groups in parallel the elements of a sequence according to a specified key selector function and 
+        /// Groups in parallel the elements of a sequence according to a specified key selector function and
         /// projects the elements for each group by using a specified function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in each 
+        /// <typeparam name="TElement">The type of the elements in each
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// <param name="elementSelector">A function to map each source element to an element in an
         /// IGrouping{Key, TElement}.</param>
-        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a
         /// group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1352,20 +1352,20 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Groups in parallel the elements of a sequence according to a key selector function. 
-        /// The keys are compared by using a comparer and each group's elements are projected by 
+        /// Groups in parallel the elements of a sequence according to a key selector function.
+        /// The keys are compared by using a comparer and each group's elements are projected by
         /// using a specified function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in each 
+        /// <typeparam name="TElement">The type of the elements in each
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// <param name="elementSelector">A function to map each source element to an element in an
         /// IGrouping{Key, TElement}.</param>
         /// <param name="comparer">An equality comparer to compare keys.</param>
-        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a
         /// group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1395,16 +1395,16 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Groups in parallel the elements of a sequence according to a specified 
+        /// Groups in parallel the elements of a sequence according to a specified
         /// key selector function and creates a result value from each group and its key.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
-        /// <param name="source">A sequence whose elements to group.</param>       
+        /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
-        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a
         /// projection over a group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1421,8 +1421,8 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Groups in parallel the elements of a sequence according to a specified key selector function 
-        /// and creates a result value from each group and its key. The keys are compared 
+        /// Groups in parallel the elements of a sequence according to a specified key selector function
+        /// and creates a result value from each group and its key. The keys are compared
         /// by using a specified comparer.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -1432,7 +1432,7 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
         /// <param name="comparer">An equality comparer to compare keys.</param>
-        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a
         /// projection over a group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1448,21 +1448,21 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Groups in parallel the elements of a sequence according to a specified key 
-        /// selector function and creates a result value from each group and its key. 
+        /// Groups in parallel the elements of a sequence according to a specified key
+        /// selector function and creates a result value from each group and its key.
         /// The elements of each group are projected by using a specified function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in each 
+        /// <typeparam name="TElement">The type of the elements in each
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// <param name="elementSelector">A function to map each source element to an element in an
         /// IGrouping{Key, TElement}.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
-        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a
         /// projection over a group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1478,22 +1478,22 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Groups the elements of a sequence according to a specified key selector function and 
-        /// creates a result value from each group and its key. Key values are compared by using a 
+        /// Groups the elements of a sequence according to a specified key selector function and
+        /// creates a result value from each group and its key. Key values are compared by using a
         /// specified comparer, and the elements of each group are projected by using a specified function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in each 
+        /// <typeparam name="TElement">The type of the elements in each
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// <param name="elementSelector">A function to map each source element to an element in an
         /// IGrouping{Key, TElement}.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
         /// <param name="comparer">An equality comparer to compare keys.</param>
-        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a
         /// projection over a group and its key.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1652,7 +1652,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Applies in parallel an accumulator function over a sequence. 
+        /// Applies in parallel an accumulator function over a sequence.
         /// The specified seed value is used as the initial accumulator value.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -1687,8 +1687,8 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Applies in parallel an accumulator function over a sequence. The specified 
-        /// seed value is used as the initial accumulator value, and the specified 
+        /// Applies in parallel an accumulator function over a sequence. The specified
+        /// seed value is used as the initial accumulator value, and the specified
         /// function is used to select the result value.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -1697,7 +1697,7 @@ namespace System.Linq
         /// <param name="source">A sequence to aggregate over.</param>
         /// <param name="seed">The initial accumulator value.</param>
         /// <param name="func">An accumulator function to be invoked on each element.</param>
-        /// <param name="resultSelector">A function to transform the final accumulator value 
+        /// <param name="resultSelector">A function to transform the final accumulator value
         /// into the result value.</param>
         /// <returns>The transformed final accumulator value.</returns>
         /// <exception cref="System.ArgumentNullException">
@@ -1740,9 +1740,9 @@ namespace System.Linq
         /// available in the sequential implementation.
         /// </summary>
         /// <remarks>
-        /// This overload is specific to processing a parallelized query. A parallelized query may 
-        /// partition the data source sequence into several sub-sequences (partitions). 
-        /// The <paramref name="updateAccumulatorFunc"/> is invoked on each element within partitions. 
+        /// This overload is specific to processing a parallelized query. A parallelized query may
+        /// partition the data source sequence into several sub-sequences (partitions).
+        /// The <paramref name="updateAccumulatorFunc"/> is invoked on each element within partitions.
         /// Each partition then yields a single accumulated result. The <paramref name="combineAccumulatorsFunc"/>
         /// is then invoked on the results of each partition to yield a single element. This element is then
         /// transformed by the <paramref name="resultSelector"/> function.
@@ -1763,7 +1763,7 @@ namespace System.Linq
         /// </param>
         /// <returns>The transformed final accumulator value.</returns>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="source"/> or <paramref name="updateAccumulatorFunc"/> 
+        /// <paramref name="source"/> or <paramref name="updateAccumulatorFunc"/>
         /// or <paramref name="combineAccumulatorsFunc"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
@@ -1792,8 +1792,8 @@ namespace System.Linq
         /// </summary>
         /// <remarks>
         /// This overload is specific to parallelized queries. A parallelized query may partition the data source sequence
-        /// into several sub-sequences (partitions). The <paramref name="updateAccumulatorFunc"/> is invoked 
-        /// on each element within partitions. Each partition then yields a single accumulated result. 
+        /// into several sub-sequences (partitions). The <paramref name="updateAccumulatorFunc"/> is invoked
+        /// on each element within partitions. Each partition then yields a single accumulated result.
         /// The <paramref name="combineAccumulatorsFunc"/>
         /// is then invoked on the results of each partition to yield a single element. This element is then
         /// transformed by the <paramref name="resultSelector"/> function.
@@ -1809,14 +1809,14 @@ namespace System.Linq
         /// An accumulator function to be invoked on each element in a partition.
         /// </param>
         /// <param name="combineAccumulatorsFunc">
-        /// An accumulator function to be invoked on the yielded element from each partition. 
+        /// An accumulator function to be invoked on the yielded element from each partition.
         /// </param>
         /// <param name="resultSelector">
         /// A function to transform the final accumulator value into the result value.
         /// </param>
         /// <returns>The transformed final accumulator value.</returns>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="source"/> or <paramref name="seedFactory"/> or <paramref name="updateAccumulatorFunc"/> 
+        /// <paramref name="source"/> or <paramref name="seedFactory"/> or <paramref name="updateAccumulatorFunc"/>
         /// or <paramref name="combineAccumulatorsFunc"/> or <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
         /// <exception cref="System.AggregateException">
@@ -1888,14 +1888,14 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns a number that represents how many elements in the specified 
+        /// Returns a number that represents how many elements in the specified
         /// parallel sequence satisfy a condition.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence that contains elements to be counted.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>
-        /// A number that represents how many elements in the sequence satisfy the condition 
+        /// A number that represents how many elements in the sequence satisfy the condition
         /// in the predicate function.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -1964,7 +1964,7 @@ namespace System.Linq
         /// <param name="source">A sequence that contains elements to be counted.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>
-        /// A number that represents how many elements in the sequence satisfy the condition 
+        /// A number that represents how many elements in the sequence satisfy the condition
         /// in the predicate function.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -2204,7 +2204,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the sum of.</param>
@@ -2227,7 +2227,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2251,7 +2251,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2275,7 +2275,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2299,7 +2299,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2321,7 +2321,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2343,7 +2343,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2365,7 +2365,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2387,7 +2387,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2411,7 +2411,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the sum of the sequence of values that are obtained 
+        /// Computes in parallel the sum of the sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2688,7 +2688,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2713,7 +2713,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2735,7 +2735,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2760,7 +2760,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2782,7 +2782,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2807,7 +2807,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2829,7 +2829,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2854,7 +2854,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2876,7 +2876,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2901,7 +2901,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -2923,7 +2923,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the minimum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3191,7 +3191,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3216,7 +3216,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3238,7 +3238,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3263,7 +3263,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3285,7 +3285,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3310,7 +3310,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3332,7 +3332,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3357,7 +3357,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3379,7 +3379,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3404,7 +3404,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3426,7 +3426,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Invokes in parallel a transform function on each element of a 
+        /// Invokes in parallel a transform function on each element of a
         /// sequence and returns the maximum value.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3679,7 +3679,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3706,7 +3706,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3730,7 +3730,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3757,7 +3757,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3781,7 +3781,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3806,7 +3806,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3828,7 +3828,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3853,7 +3853,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3875,7 +3875,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -3900,7 +3900,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Computes in parallel the average of a sequence of values that are obtained 
+        /// Computes in parallel the average of a sequence of values that are obtained
         /// by invoking a transform function on each element of the input sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -4008,7 +4008,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Determines in parallel whether a sequence contains a specified element 
+        /// Determines in parallel whether a sequence contains a specified element
         /// by using the default equality comparer.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -4032,7 +4032,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Determines in parallel whether a sequence contains a specified element by using a 
+        /// Determines in parallel whether a sequence contains a specified element by using a
         /// specified IEqualityComparer{T}.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -4106,7 +4106,7 @@ namespace System.Linq
         /// <param name="source">The sequence to return elements from.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>
-        /// A sequence that contains the elements from the input sequence that occur before 
+        /// A sequence that contains the elements from the input sequence that occur before
         /// the element at which the test no longer passes.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -4121,17 +4121,17 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns elements from a parallel sequence as long as a specified condition is true. 
+        /// Returns elements from a parallel sequence as long as a specified condition is true.
         /// The element's index is used in the logic of the predicate function.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return elements from.</param>
         /// <param name="predicate">
-        /// A function to test each source element for a condition; the second parameter of the 
+        /// A function to test each source element for a condition; the second parameter of the
         /// function represents the index of the source element.
         /// </param>
         /// <returns>
-        /// A sequence that contains elements from the input sequence that occur before 
+        /// A sequence that contains elements from the input sequence that occur before
         /// the element at which the test no longer passes.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -4182,14 +4182,14 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Bypasses elements in a parallel sequence as long as a specified 
+        /// Bypasses elements in a parallel sequence as long as a specified
         /// condition is true and then returns the remaining elements.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return elements from.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
-        /// <returns>A sequence that contains the elements from the input sequence starting at 
-        /// the first element in the linear series that does not pass the test specified by 
+        /// <returns>A sequence that contains the elements from the input sequence starting at
+        /// the first element in the linear series that does not pass the test specified by
         /// <B>predicate</B>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="predicate"/> is a null reference (Nothing in Visual Basic).
@@ -4203,19 +4203,19 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Bypasses elements in a parallel sequence as long as a specified condition is true and 
-        /// then returns the remaining elements. The element's index is used in the logic of 
+        /// Bypasses elements in a parallel sequence as long as a specified condition is true and
+        /// then returns the remaining elements. The element's index is used in the logic of
         /// the predicate function.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return elements from.</param>
         /// <param name="predicate">
-        /// A function to test each source element for a condition; the 
+        /// A function to test each source element for a condition; the
         /// second parameter of the function represents the index of the source element.
         /// </param>
         /// <returns>
-        /// A sequence that contains the elements from the input sequence starting at the 
-        /// first element in the linear series that does not pass the test specified by 
+        /// A sequence that contains the elements from the input sequence starting at the
+        /// first element in the linear series that does not pass the test specified by
         /// <B>predicate</B>.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -4255,7 +4255,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Concat overload should never be called. 
+        /// This Concat overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4266,7 +4266,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Concat with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Concat operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Concat operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4280,14 +4280,14 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Determines whether two parallel sequences are equal by comparing the elements by using 
+        /// Determines whether two parallel sequences are equal by comparing the elements by using
         /// the default equality comparer for their type.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
         /// <param name="first">A sequence to compare to <b>second</b>.</param>
         /// <param name="second">A sequence to compare to the first input sequence.</param>
         /// <returns>
-        /// true if the two source sequences are of equal length and their corresponding elements 
+        /// true if the two source sequences are of equal length and their corresponding elements
         /// are equal according to the default equality comparer for their type; otherwise, false.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -4307,7 +4307,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This SequenceEqual overload should never be called. 
+        /// This SequenceEqual overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4318,7 +4318,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of SequenceEqual with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the SequenceEqual operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the SequenceEqual operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4328,7 +4328,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Determines whether two parallel sequences are equal by comparing their elements by 
+        /// Determines whether two parallel sequences are equal by comparing their elements by
         /// using a specified IEqualityComparer{T}.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
@@ -4336,7 +4336,7 @@ namespace System.Linq
         /// <param name="second">A sequence to compare to the first input sequence.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to use to compare elements.</param>
         /// <returns>
-        /// true if the two source sequences are of equal length and their corresponding 
+        /// true if the two source sequences are of equal length and their corresponding
         /// elements are equal according to the default equality comparer for their type; otherwise, false.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -4404,7 +4404,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// A helper method for SequenceEqual to dispose an enumerator. If an exception is thrown by the disposal, 
+        /// A helper method for SequenceEqual to dispose an enumerator. If an exception is thrown by the disposal,
         /// it gets wrapped into an AggregateException, unless it is an OCE with the query's CancellationToken.
         /// </summary>
         private static void DisposeEnumerator<TSource>(IEnumerator<TSource> e, CancellationState cancelState)
@@ -4427,7 +4427,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This SequenceEqual overload should never be called. 
+        /// This SequenceEqual overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4439,7 +4439,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of SequenceEqual with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the SequenceEqual operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the SequenceEqual operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4453,7 +4453,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Returns distinct elements from a parallel sequence by using the 
+        /// Returns distinct elements from a parallel sequence by using the
         /// default equality comparer to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -4469,7 +4469,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns distinct elements from a parallel sequence by using a specified 
+        /// Returns distinct elements from a parallel sequence by using a specified
         /// IEqualityComparer{T} to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -4508,7 +4508,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Union overload should never be called. 
+        /// This Union overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4519,7 +4519,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Union with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Union operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Union operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4550,7 +4550,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Union overload should never be called. 
+        /// This Union overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4562,7 +4562,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Union with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Union operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Union operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4577,7 +4577,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Produces the set intersection of two parallel sequences by using the 
+        /// Produces the set intersection of two parallel sequences by using the
         /// default equality comparer to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
@@ -4598,7 +4598,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Intersect overload should never be called. 
+        /// This Intersect overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4609,7 +4609,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Intersect with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Intersect operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Intersect operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4620,7 +4620,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Produces the set intersection of two parallel sequences by using 
+        /// Produces the set intersection of two parallel sequences by using
         /// the specified IEqualityComparer{T} to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
@@ -4645,7 +4645,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Intersect overload should never be called. 
+        /// This Intersect overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4657,7 +4657,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Intersect with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Intersect operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Intersect operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4673,7 +4673,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Produces the set difference of two parallel sequences by using 
+        /// Produces the set difference of two parallel sequences by using
         /// the default equality comparer to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
@@ -4681,7 +4681,7 @@ namespace System.Linq
         /// A sequence whose elements that are not also in <paramref name="second"/> will be returned.
         /// </param>
         /// <param name="second">
-        /// A sequence whose elements that also occur in the first sequence will cause those 
+        /// A sequence whose elements that also occur in the first sequence will cause those
         /// elements to be removed from the returned sequence.
         /// </param>
         /// <returns>A sequence that contains the set difference of the elements of two sequences.</returns>
@@ -4695,7 +4695,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Except overload should never be called. 
+        /// This Except overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4706,7 +4706,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Except with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Except operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Except operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4717,13 +4717,13 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Produces the set difference of two parallel sequences by using the 
+        /// Produces the set difference of two parallel sequences by using the
         /// specified IEqualityComparer{T} to compare values.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
         /// <param name="first">A sequence whose elements that are not also in <paramref name="second"/> will be returned.</param>
         /// <param name="second">
-        /// A sequence whose elements that also occur in the first sequence will cause those elements 
+        /// A sequence whose elements that also occur in the first sequence will cause those elements
         /// to be removed from the returned sequence.
         /// </param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare values.</param>
@@ -4741,7 +4741,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// This Except overload should never be called. 
+        /// This Except overload should never be called.
         /// This method is marked as obsolete and always throws <see cref="System.NotSupportedException"/> when called.
         /// </summary>
         /// <typeparam name="TSource">This type parameter is not used.</typeparam>
@@ -4753,7 +4753,7 @@ namespace System.Linq
         /// <remarks>
         /// This overload exists to disallow usage of Except with a left data source of type
         /// <see cref="System.Linq.ParallelQuery{TSource}"/> and a right data source of type <see cref="System.Collections.Generic.IEnumerable{TSource}"/>.
-        /// Otherwise, the Except operator would appear to be binding to the parallel implementation, 
+        /// Otherwise, the Except operator would appear to be binding to the parallel implementation,
         /// but would in reality bind to the sequential implementation.
         /// </remarks>
         [Obsolete(RIGHT_SOURCE_NOT_PARALLEL_STR)]
@@ -4772,7 +4772,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Converts a <see cref="ParallelQuery{T}"/> into an 
+        /// Converts a <see cref="ParallelQuery{T}"/> into an
         /// <see cref="System.Collections.Generic.IEnumerable{T}"/> to force sequential
         /// evaluation of the query.
         /// </summary>
@@ -4902,7 +4902,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to 
+        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to
         /// a specified key selector function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -4930,7 +4930,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to a 
+        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to a
         /// specified key selector function and key comparer.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -4993,7 +4993,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to specified 
+        /// Creates a Dictionary{TKey,TValue} from a ParallelQuery{T} according to specified
         /// key selector and element selector functions.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5005,7 +5005,7 @@ namespace System.Linq
         /// A transform function to produce a result element value from each element.
         /// </param>
         /// <returns>
-        /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/> 
+        /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/>
         /// selected from the input sequence
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5015,7 +5015,7 @@ namespace System.Linq
         /// <paramref name="keySelector"/> produces a key that is a null reference (Nothing in Visual Basic).
         /// -or-
         /// <paramref name="keySelector"/> produces duplicate keys for two elements.
-        /// -or- 
+        /// -or-
         /// One or more exceptions occurred during the evaluation of the query.
         /// </exception>
         /// <exception cref="System.OperationCanceledException">
@@ -5028,7 +5028,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates a Dictionary{TKey,TValue from a ParallelQuery{T} according to a 
+        /// Creates a Dictionary{TKey,TValue from a ParallelQuery{T} according to a
         /// specified key selector function, a comparer, and an element selector function.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5036,11 +5036,11 @@ namespace System.Linq
         /// <typeparam name="TElement">The type of the value returned by <paramref name="elementSelector"/>.</typeparam>
         /// <param name="source">A sequence to create a Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) from.</param>
         /// <param name="keySelector">A function to extract a key from each element.</param>
-        /// <param name="elementSelector">A transform function to produce a result element 
+        /// <param name="elementSelector">A transform function to produce a result element
         /// value from each element.</param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare keys.</param>
         /// <returns>
-        /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/> 
+        /// A Dictionary&lt;(Of &lt;(TKey, TValue&gt;)&gt;) that contains values of type <typeparamref name="TElement"/>
         /// selected from the input sequence
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5127,7 +5127,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates an ILookup{TKey,T} from a ParallelQuery{T} according to a specified 
+        /// Creates an ILookup{TKey,T} from a ParallelQuery{T} according to a specified
         /// key selector function and key comparer.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -5175,7 +5175,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates an ILookup{TKey,TElement} from a ParallelQuery{T} according to specified 
+        /// Creates an ILookup{TKey,TElement} from a ParallelQuery{T} according to specified
         /// key selector and element selector functions.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -5187,7 +5187,7 @@ namespace System.Linq
         /// A transform function to produce a result element value from each element.
         /// </param>
         /// <returns>
-        /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement 
+        /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement
         /// selected from the input sequence.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5206,7 +5206,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Creates an ILookup{TKey,TElement} from a ParallelQuery{T} according to 
+        /// Creates an ILookup{TKey,TElement} from a ParallelQuery{T} according to
         /// a specified key selector function, a comparer and an element selector function.
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
@@ -5219,7 +5219,7 @@ namespace System.Linq
         /// </param>
         /// <param name="comparer">An IEqualityComparer&lt;(Of &lt;(T&gt;)&gt;) to compare keys.</param>
         /// <returns>
-        /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement selected 
+        /// A Lookup&lt;(Of &lt;(TKey, TElement&gt;)&gt;) that contains values of type TElement selected
         /// from the input sequence.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5288,7 +5288,7 @@ namespace System.Linq
         // Both OfType and Cast convert a weakly typed stream to a strongly typed one:
         // the difference is that OfType filters out elements that aren't of the given type,
         // while Cast forces the cast, possibly resulting in InvalidCastExceptions.
-        // 
+        //
 
         /// <summary>
         /// Filters the elements of a ParallelQuery based on a specified type.
@@ -5384,7 +5384,7 @@ namespace System.Linq
         // An exception is thrown for empty data sources. Alternatively, the FirstOrDefault
         // method can be used which returns default(T) if empty (or no elements satisfy the
         // predicate).
-        // 
+        //
 
         /// <summary>
         /// Returns the first element of a parallel sequence.</summary>
@@ -5468,7 +5468,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the first element of a parallel sequence, or a default value if the 
+        /// Returns the first element of a parallel sequence, or a default value if the
         /// sequence contains no elements.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5509,7 +5509,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the first element of the parallel sequence that satisfies a condition or a 
+        /// Returns the first element of the parallel sequence that satisfies a condition or a
         /// default value if no such element is found.
         /// </summary>
         /// <remarks>There's a temporary difference from LINQ to Objects, this does not throw
@@ -5518,8 +5518,8 @@ namespace System.Linq
         /// <param name="source">The sequence to return an element from.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>
-        /// default(<B>TSource</B>) if <paramref name="source"/> is empty or if no element passes the test 
-        /// specified by <B>predicate</B>; otherwise, the first element in <paramref name="source"/> that 
+        /// default(<B>TSource</B>) if <paramref name="source"/> is empty or if no element passes the test
+        /// specified by <B>predicate</B>; otherwise, the first element in <paramref name="source"/> that
         /// passes the test specified by <B>predicate</B>.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5560,7 +5560,7 @@ namespace System.Linq
         // An exception is thrown for empty data sources. Alternatively, the LastOrDefault
         // method can be used which returns default(T) if empty (or no elements satisfy the
         // predicate).
-        // 
+        //
 
         /// <summary>
         /// Returns the last element of a parallel sequence.</summary>
@@ -5646,7 +5646,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the last element of a parallel sequence, or a default value if the 
+        /// Returns the last element of a parallel sequence, or a default value if the
         /// sequence contains no elements.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5686,14 +5686,14 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the last element of a parallel sequence that satisfies a condition, or 
+        /// Returns the last element of a parallel sequence that satisfies a condition, or
         /// a default value if no such element is found.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return an element from.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>
-        /// default(<typeparamref name="TSource"/>) if the sequence is empty or if no elements pass the test in the 
+        /// default(<typeparamref name="TSource"/>) if the sequence is empty or if no elements pass the test in the
         /// predicate function; otherwise, the last element that passes the test in the predicate function.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5735,7 +5735,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Returns the only element of a parallel sequence, and throws an exception if there is not 
+        /// Returns the only element of a parallel sequence, and throws an exception if there is not
         /// exactly one element in the sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5763,7 +5763,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the only element of a parallel sequence that satisfies a specified condition, 
+        /// Returns the only element of a parallel sequence that satisfies a specified condition,
         /// and throws an exception if more than one such element exists.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5791,13 +5791,13 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the only element of a parallel sequence, or a default value if the sequence is 
+        /// Returns the only element of a parallel sequence, or a default value if the sequence is
         /// empty; this method throws an exception if there is more than one element in the sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return the single element of.</param>
         /// <returns>
-        /// The single element of the input sequence, or default(<typeparamref name="TSource"/>) if the 
+        /// The single element of the input sequence, or default(<typeparamref name="TSource"/>) if the
         /// sequence contains no elements.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5819,15 +5819,15 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the only element of a parallel sequence that satisfies a specified condition 
-        /// or a default value if no such element exists; this method throws an exception 
+        /// Returns the only element of a parallel sequence that satisfies a specified condition
+        /// or a default value if no such element exists; this method throws an exception
         /// if more than one element satisfies the condition.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence to return the single element of.</param>
         /// <param name="predicate">A function to test an element for a condition.</param>
         /// <returns>
-        /// The single element of the input sequence that satisfies the condition, or 
+        /// The single element of the input sequence that satisfies the condition, or
         /// default(<typeparamref name="TSource"/>) if no such element is found.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">
@@ -5853,7 +5853,7 @@ namespace System.Linq
         //
 
         /// <summary>
-        /// Returns the elements of the specified parallel sequence or the type parameter's 
+        /// Returns the elements of the specified parallel sequence or the type parameter's
         /// default value in a singleton collection if the sequence is empty.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5870,7 +5870,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the elements of the specified parallel sequence or the specified value 
+        /// Returns the elements of the specified parallel sequence or the specified value
         /// in a singleton collection if the sequence is empty.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -5892,7 +5892,7 @@ namespace System.Linq
         // ElementAt yields an element at a specific index.  If the data source doesn't
         // contain such an element, an exception is thrown.  Alternatively, ElementAtOrDefault
         // will return a default value if the given index is invalid.
-        // 
+        //
 
         /// <summary>
         /// Returns the element at a specified index in a parallel sequence.
@@ -5933,14 +5933,14 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Returns the element at a specified index in a parallel sequence or a default value if the 
+        /// Returns the element at a specified index in a parallel sequence or a default value if the
         /// index is out of range.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence to return an element from.</param>
         /// <param name="index">The zero-based index of the element to retrieve.</param>
         /// <returns>
-        /// default(<B>TSource</B>) if the index is outside the bounds of the source sequence; 
+        /// default(<B>TSource</B>) if the index is outside the bounds of the source sequence;
         /// otherwise, the element at the specified position in the source sequence.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">

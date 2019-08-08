@@ -188,7 +188,7 @@ internal static partial class Interop
             internal uint dhcpV6Iaid;
 
             /* Windows 2008 +
-                  PIP_ADAPTER_DNS_SUFFIX             FirstDnsSuffix; 
+                  PIP_ADAPTER_DNS_SUFFIX             FirstDnsSuffix;
              * */
         }
 

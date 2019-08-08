@@ -107,4 +107,3 @@ namespace System.Security.Cryptography.X509Certificates
         private readonly List<X509Extension> _list = new List<X509Extension>();
     }
 }
-

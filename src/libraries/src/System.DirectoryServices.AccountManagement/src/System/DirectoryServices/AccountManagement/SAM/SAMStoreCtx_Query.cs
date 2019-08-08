@@ -34,12 +34,12 @@ namespace System.DirectoryServices.AccountManagement
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
         // searcher object (creating a fresh native searcher and assigning it to the PrincipalSearcher if one
         // doesn't already exist) and returns the native searcher.
-        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter == null), 
+        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter == null),
         // produces a query that will match all principals in the store.
         //
         // For stores which don't have a native searcher (SAM), the StoreCtx
         // is free to create any type of object it chooses to use as its internal representation of the query.
-        // 
+        //
         // Also adds in any clauses to the searcher to ensure that only principals, not mere
         // contacts, are retrieved from the store.
         internal override object PushFilterToNativeSearcher(PrincipalSearcher ps)
@@ -63,10 +63,10 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // The core query operation.
-        // Given a PrincipalSearcher containg a query filter, transforms it into the store schema 
+        // Given a PrincipalSearcher containg a query filter, transforms it into the store schema
         // and performs the query to get a collection of matching native objects (up to a maximum of sizeLimit,
-        // or uses the sizelimit already set on the DirectorySearcher if sizeLimit == -1). 
-        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter == null), 
+        // or uses the sizelimit already set on the DirectorySearcher if sizeLimit == -1).
+        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter == null),
         // matches all principals in the store.
         //
         // The collection may not be complete, i.e., paging - the returned ResultSet will automatically

@@ -58,7 +58,7 @@ namespace System.Composition.Diagnostics
             StringBuilder messageBuilder = new StringBuilder();
 
             // Format taken from TraceListener.TraceEvent in full framework
-            messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", 
+            messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ",
                 s_sourceName, eventType.ToString(), (int)traceId);
 
             if (arguments == null)

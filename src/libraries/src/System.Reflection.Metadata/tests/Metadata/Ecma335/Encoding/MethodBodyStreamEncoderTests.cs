@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -67,7 +67,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var body = encoder.AddMethodBody(10);
             Assert.Equal(3, body.Offset);
-         
+
             var segment = body.Instructions.GetBytes();
             Assert.Equal(4, segment.Offset); // +1 byte for the header
             Assert.Equal(10, segment.Count);
@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             new BlobWriter(body.Instructions).WriteBytes(0x02, 10);
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0x01, 0x01, 0x01,
                 0x2A, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
@@ -153,7 +153,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             new BlobWriter(body.Instructions).WriteBytes(0x02, 10);
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0x01, 0x01, 0x01,
                 0x00, // padding
@@ -161,7 +161,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 0x09, 0x00, // max stack
                 0x0A, 0x00, 0x00, 0x00, // code size
                 0x00, 0x00, 0x00, 0x00, // local sig
-                0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 
+                0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
             }, streamBuilder.ToArray());
         }
 
@@ -266,7 +266,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var bodyBytes = streamBuilder.ToArray();
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 0xFE, // tiny header
                 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -407,10 +407,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             AssertEx.Equal(new byte[]
             {
-                0x13, 0x30,                   // flags and header size 
-                0x02, 0x00,                   // max stack 
+                0x13, 0x30,                   // flags and header size
+                0x02, 0x00,                   // max stack
                 0x09, 0x00, 0x00, 0x00,       // code size
-                0x00, 0x00, 0x00, 0x00,       // local variable signature      
+                0x00, 0x00, 0x00, 0x00,       // local variable signature
 
                 0x1A,                         // ldc.i4.0
                 0xFE, 0x0F,                   // localloc
@@ -445,10 +445,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             AssertEx.Equal(new byte[]
             {
-                0x13, 0x30,                   // flags and header size 
-                0x02, 0x00,                   // max stack 
+                0x13, 0x30,                   // flags and header size
+                0x02, 0x00,                   // max stack
                 0x09, 0x00, 0x00, 0x00,       // code size
-                0x00, 0x00, 0x00, 0x00,       // local variable signature      
+                0x00, 0x00, 0x00, 0x00,       // local variable signature
 
                 0x1A,                         // ldc.i4.0
                 0xFE, 0x0F,                   // localloc
@@ -504,7 +504,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             flowBuilder.CopyCodeAndFixupBranches(srcBuilder, dstBuilder);
 
-            AssertEx.Equal(new byte[] 
+            AssertEx.Equal(new byte[]
             {
                 (byte)ILOpCode.Bge, 0xFA, 0x00, 0x00, 0x00,
                 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,

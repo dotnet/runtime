@@ -63,7 +63,7 @@ namespace System.Data.Tests
             DataRow zero = table.Rows.Add(0);
 
             Assert.Same(default(DataRow), table.ElementAtOrDefault(1));
-        } 
+        }
 
         [Fact]
         public void Select_ToListOfInts()

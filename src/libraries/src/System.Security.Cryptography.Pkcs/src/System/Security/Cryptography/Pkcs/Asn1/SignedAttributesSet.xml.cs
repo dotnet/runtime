@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,25 +28,25 @@ namespace System.Security.Cryptography.Pkcs
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "SignedAttributes");
         }
 #endif
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (SignedAttributes != null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                 for (int i = 0; i < SignedAttributes.Length; i++)
                 {
-                    SignedAttributes[i].Encode(writer); 
+                    SignedAttributes[i].Encode(writer);
                 }
                 writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
 
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs
         internal static SignedAttributesSet Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-            
+
             Decode(reader, out SignedAttributesSet decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Pkcs
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
             AsnReader collectionReader;
-            
+
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Asn1.AttributeAsn.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Asn1.AttributeAsn.Decode(collectionReader, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

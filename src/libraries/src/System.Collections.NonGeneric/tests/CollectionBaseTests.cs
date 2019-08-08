@@ -75,7 +75,7 @@ namespace System.Collections.Tests
             for (int i = 0; i < collBase.Count; i++)
             {
                 Foo value = CreateValue(i);
-                Assert.Equal(value, collBase[i]);               
+                Assert.Equal(value, collBase[i]);
             }
         }
 
@@ -821,7 +821,7 @@ namespace System.Collections.Tests
                 IntValue = intValue;
                 StringValue = stringValue;
             }
-            
+
             public int IntValue { get; set; }
             public string StringValue { get; set; }
 

@@ -63,42 +63,42 @@ namespace System.Security.AccessControl.Tests
             {
                 sd = new CommonSecurityDescriptor(false, true, ControlFlags.SystemAclPresent, null, null, sacl, null);
             });
-            
+
             // test case 2: SACL is not null, SACL.IsContainer is false, but isContainer parameter is true
             sacl = new SystemAcl(false, true, 10);
             AssertExtensions.Throws<ArgumentException>("systemAcl", () =>
             {
                 sd = new CommonSecurityDescriptor(true, true, ControlFlags.SystemAclPresent, null, null, sacl, null);
             });
-            
+
             // test case 3: DACL is not null, DACL.IsContainer is true, but isContainer parameter is false
             dacl = new DiscretionaryAcl(true, true, 10);
             AssertExtensions.Throws<ArgumentException>("discretionaryAcl", () =>
             {
                 sd = new CommonSecurityDescriptor(false, true, ControlFlags.DiscretionaryAclPresent, null, null, null, dacl);
             });
-            
+
             // test case 4: DACL is not null, DACL.IsContainer is false, but isContainer parameter is true
             dacl = new DiscretionaryAcl(false, true, 10);
             AssertExtensions.Throws<ArgumentException>("discretionaryAcl", () =>
             {
                 sd = new CommonSecurityDescriptor(true, true, ControlFlags.DiscretionaryAclPresent, null, null, null, dacl);
             });
-            
+
             // test case 5: SACL is not null, SACL.IsDS is true, but isDS parameter is false
             sacl = new SystemAcl(true, true, 10);
             AssertExtensions.Throws<ArgumentException>("systemAcl", () =>
             {
                 sd = new CommonSecurityDescriptor(true, false, ControlFlags.SystemAclPresent, null, null, sacl, null);
             });
-            
+
             // test case 6: SACL is not null, SACL.IsDS is false, but isDS parameter is true
             sacl = new SystemAcl(true, false, 10);
             AssertExtensions.Throws<ArgumentException>("systemAcl", () =>
             {
                 sd = new CommonSecurityDescriptor(true, true, ControlFlags.SystemAclPresent, null, null, sacl, null);
             });
-            
+
             // test case 7: DACL is not null, DACL.IsDS is true, but isDS parameter is false
             dacl = new DiscretionaryAcl(true, true, 10);
             AssertExtensions.Throws<ArgumentException>("discretionaryAcl", () =>

@@ -233,7 +233,7 @@ namespace System.Net.Sockets
 
         private static unsafe long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
         {
-            long bytesSent; 
+            long bytesSent;
             errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
             offset += bytesSent;
             count -= bytesSent;
@@ -1428,7 +1428,7 @@ namespace System.Net.Sockets
             Interop.Sys.PollEvent* events, int eventsLength,
             int microseconds)
         {
-            // Add each of the list's contents to the events array 
+            // Add each of the list's contents to the events array
             Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
             int offset = 0;
             AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);

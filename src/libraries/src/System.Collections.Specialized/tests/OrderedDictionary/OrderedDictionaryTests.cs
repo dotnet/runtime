@@ -44,7 +44,7 @@ namespace System.Collections.Specialized.Tests
             d1.Add("foo", "bar");
             AssertExtensions.Throws<ArgumentException>(null, () => d1.Add("FOO", "bar"));
 
-            // The equality comparer should also test for a non-existent key 
+            // The equality comparer should also test for a non-existent key
             d1.Remove("foofoo");
             Assert.True(d1.Contains("foo"));
 
@@ -121,10 +121,10 @@ namespace System.Collections.Specialized.Tests
             OrderedDictionary orderedDictionary = new OrderedDictionary().AsReadOnly();
             Assert.Throws<NotSupportedException>(() => orderedDictionary[0] = "value");
             Assert.Throws<NotSupportedException>(() => orderedDictionary["key"] = "value");
- 
+
             Assert.Throws<NotSupportedException>(() => orderedDictionary.Add("key", "value"));
             Assert.Throws<NotSupportedException>(() => orderedDictionary.Insert(0, "key", "value"));
- 
+
             Assert.Throws<NotSupportedException>(() => orderedDictionary.Remove("key"));
             Assert.Throws<NotSupportedException>(() => orderedDictionary.RemoveAt(0));
             Assert.Throws<NotSupportedException>(() => orderedDictionary.Clear());
@@ -164,7 +164,7 @@ namespace System.Collections.Specialized.Tests
             {
                 Assert.True(d.Contains(array[i]));
             }
-            
+
             AssertExtensions.Throws<ArgumentNullException>("array", () => keys.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => keys.CopyTo(new object[keys.Count], -1));
         }
@@ -290,7 +290,7 @@ namespace System.Collections.Specialized.Tests
             {
                 Assert.Equal(array[i], "bar_" + (i - 50));
             }
-            
+
             AssertExtensions.Throws<ArgumentNullException>("array", () => values.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => values.CopyTo(new object[values.Count], -1));
         }
@@ -454,7 +454,7 @@ namespace System.Collections.Specialized.Tests
             d["foo"] = "bar";
             Assert.Throws<InvalidOperationException>(() => e.MoveNext());
         }
-        
+
         [Fact]
         public void GetEnumeratorTests()
         {

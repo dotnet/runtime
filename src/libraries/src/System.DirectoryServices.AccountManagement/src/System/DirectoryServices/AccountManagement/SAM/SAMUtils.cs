@@ -203,8 +203,8 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            // There was a '\\' but no character after it because we were at the 
-            // end of the string.  
+            // There was a '\\' but no character after it because we were at the
+            // end of the string.
             // Append '\\\\' to match the '\\'.
             if (escapeMode)
             {

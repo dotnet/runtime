@@ -140,7 +140,7 @@ namespace System.Threading
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            // We explicitly choose to ignore the return value here. This enqueue operation might fail if the 
+            // We explicitly choose to ignore the return value here. This enqueue operation might fail if the
             // dispatcher queue was shut down before we got here. In that case, we choose to just move on and
             // pretend nothing happened.
             var ignored = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);

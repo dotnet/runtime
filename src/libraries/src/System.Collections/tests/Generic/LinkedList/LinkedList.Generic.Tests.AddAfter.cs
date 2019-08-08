@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
             linkedList.Remove(headItems[headItems.Length - 2]);
             linkedList.RemoveFirst();
             linkedList.RemoveLast();
-            //With the above remove we should have removed the first and last 3 items 
+            //With the above remove we should have removed the first and last 3 items
             tempItems = new T[headItems.Length - 6];
             Array.Copy(headItems, 3, tempItems, 0, headItems.Length - 6);
 
@@ -321,7 +321,7 @@ namespace System.Collections.Tests
             linkedList.Remove(headItems[headItems.Length - 2]);
             linkedList.RemoveFirst();
             linkedList.RemoveLast();
-            //With the above remove we should have removed the first and last 3 items 
+            //With the above remove we should have removed the first and last 3 items
             tempItems = new T[headItems.Length - 6];
             Array.Copy(headItems, 3, tempItems, 0, headItems.Length - 6);
 

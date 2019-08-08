@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,9 +6,9 @@
 namespace System.Data.SqlClient
 {
     // this structure is used for transporting packet handle references between the TdsParserStateObject
-    //  base class and Managed or Native implementations. 
+    //  base class and Managed or Native implementations.
     // It prevents the native IntPtr type from being boxed and prevents the need to cast from object which loses compile time type safety
-    // It carries type information so that assertions about the type of handle can be made in the implemented abstract methods 
+    // It carries type information so that assertions about the type of handle can be made in the implemented abstract methods
     // it is a ref struct so that it can only be used to transport the handles and not store them
 
     // N.B. If you change this type you must also change the version for the other platform

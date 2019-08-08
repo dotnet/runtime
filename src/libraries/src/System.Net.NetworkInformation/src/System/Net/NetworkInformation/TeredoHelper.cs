@@ -11,7 +11,7 @@ using System.Threading;
 namespace System.Net.NetworkInformation
 {
     // This class wraps the native API NotifyStableUnicastIpAddressTable.  The native function's behavior is:
-    // 
+    //
     // 1. If the address table is already stable, it returns ERROR_SUCCESS and a Mib table handle that we must free.
     //    The passed-in callback will never be called, and the cancelHandle is set to NULL.
     //
@@ -67,8 +67,8 @@ namespace System.Net.NetworkInformation
 
             lock (s_pendingNotifications)
             {
-                // If OnAppDomainUnload gets the lock first, tell our caller that we'll finish async.  Their AppDomain 
-                // is about to go down anyways.  If we do, hold the lock until we've added helper to the 
+                // If OnAppDomainUnload gets the lock first, tell our caller that we'll finish async.  Their AppDomain
+                // is about to go down anyways.  If we do, hold the lock until we've added helper to the
                 // s_pendingNotifications list (if we're going to complete asynchronously).
                 if (Environment.HasShutdownStarted)
                 {
@@ -153,7 +153,7 @@ namespace System.Net.NetworkInformation
         {
             Interop.IpHlpApi.FreeMibTable(table);
 
-            // Lock the TeredoHelper instance to ensure that only the first call to OnStabilized will get to call 
+            // Lock the TeredoHelper instance to ensure that only the first call to OnStabilized will get to call
             // RunCallback.  This is the only place that TeredoHelpers get locked, as individual instances are not
             // exposed to higher layers, so there's no chance for deadlock.
             if (!_runCallbackCalled)

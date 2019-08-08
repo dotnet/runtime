@@ -89,7 +89,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public Process()
         {
-            // This class once inherited a finalizer. For backward compatibility it has one so that 
+            // This class once inherited a finalizer. For backward compatibility it has one so that
             // any derived class that depends on it will see the behaviour expected. Since it is
             // not used by this class itself, suppress it immediately if this is not an instance
             // of a derived class it doesn't suffer the GC burden of finalization.
@@ -1135,7 +1135,7 @@ namespace System.Diagnostics
         {
             if (!_haveProcessHandle)
             {
-                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.            
+                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.
                 if (_disposed)
                 {
                     throw new ObjectDisposedException(GetType().Name);
@@ -1178,7 +1178,7 @@ namespace System.Diagnostics
         ///    <para>
         ///       Starts a process specified by the <see cref='System.Diagnostics.Process.StartInfo'/> property of this <see cref='System.Diagnostics.Process'/>
         ///       component and associates it with the
-        ///    <see cref='System.Diagnostics.Process'/> . If a process resource is reused 
+        ///    <see cref='System.Diagnostics.Process'/> . If a process resource is reused
         ///       rather than started, the reused process is associated with this <see cref='System.Diagnostics.Process'/>
         ///       component.
         ///    </para>
@@ -1209,7 +1209,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
 
-            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.            
+            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name);
@@ -1327,7 +1327,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Instructs the Process component to wait the specified number of milliseconds for 
+        /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
         public bool WaitForExit(int milliseconds)

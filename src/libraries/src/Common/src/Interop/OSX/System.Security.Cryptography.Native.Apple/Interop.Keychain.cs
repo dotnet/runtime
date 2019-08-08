@@ -20,7 +20,7 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_SecKeychainItemCopyKeychain(
             IntPtr item,
             out SafeKeychainHandle keychain);
-        
+
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate")]
         private static extern int AppleCryptoNative_SecKeychainCreateTemporary(
             string path,
@@ -181,7 +181,7 @@ internal static partial class Interop
 
             SafeKeychainHandle keychain;
             int osStatus;
-            
+
             if (createAllowed)
             {
                 // Attempt to create first

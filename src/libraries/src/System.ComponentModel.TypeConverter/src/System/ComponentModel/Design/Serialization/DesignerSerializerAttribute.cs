@@ -64,7 +64,7 @@ namespace System.ComponentModel.Design.Serialization
         /// Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
         public string SerializerBaseTypeName { get; }
-        
+
         /// <summary>
         /// This defines a unique ID for this attribute type. It is used
         /// by filtering algorithms to identify two attributes that are
@@ -91,4 +91,3 @@ namespace System.ComponentModel.Design.Serialization
         }
     }
 }
-

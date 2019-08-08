@@ -391,7 +391,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _consecutiveNullArrayEntryCount = 0;
             }
         }
-        
+
         internal void WriteMemberObjectRef(NameInfo memberNameInfo, int idRef)
         {
             InternalWriteItemNull();

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,7 +14,7 @@ namespace System.Numerics.Tests
     {
         [Fact]
         public static void NaN()
-        {   
+        {
             Assert.True(Complex.IsNaN(new Complex(double.NaN, double.NaN)));
             Assert.True(Complex.IsNaN(new Complex(1, double.NaN)));
             Assert.True(Complex.IsNaN(new Complex(double.NaN, 1)));
@@ -41,7 +41,7 @@ namespace System.Numerics.Tests
 
             Assert.True(Complex.IsInfinity(Complex.Infinity));
             Assert.False(Complex.IsInfinity(Complex.NaN));
-            
+
 
             VerifyRealImaginaryProperties(Complex.Infinity, double.PositiveInfinity, double.PositiveInfinity);
             VerifyMagnitudePhaseProperties(Complex.Infinity, double.PositiveInfinity, Math.PI / 4);

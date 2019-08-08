@@ -18,7 +18,7 @@ namespace System.Reflection.TypeLoading.Ecma
         private readonly EcmaModule _module;
         private readonly ParameterHandle _handle;
 
-        internal EcmaFatMethodParameter(IRoMethodBase roMethodBase, int position, Type parameterType, ParameterHandle handle) 
+        internal EcmaFatMethodParameter(IRoMethodBase roMethodBase, int position, Type parameterType, ParameterHandle handle)
             : base(roMethodBase, position, parameterType)
         {
             Debug.Assert(roMethodBase != null);

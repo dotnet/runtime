@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Asn1
         /// <param name="disallowFractions">
         ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
         ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute. 
+        ///   Time attribute.
         /// </param>
         /// <returns>
         ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Asn1
         /// <param name="disallowFractions">
         ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
         ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-        ///   Time attribute. 
+        ///   Time attribute.
         /// </param>
         /// <returns>
         ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.

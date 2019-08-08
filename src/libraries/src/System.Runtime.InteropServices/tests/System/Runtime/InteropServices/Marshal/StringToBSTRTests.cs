@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.Tests
             IntPtr ptr = Marshal.StringToBSTR(s);
             try
             {
-                Assert.NotEqual(IntPtr.Zero, ptr);  
+                Assert.NotEqual(IntPtr.Zero, ptr);
                 Assert.Equal(s, Marshal.PtrToStringBSTR(ptr));
             }
             finally

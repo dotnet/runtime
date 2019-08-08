@@ -15,9 +15,9 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Retrieves the list of available types. If baseType is null, all
         /// types are returned. Otherwise, only types deriving from the
-        /// specified base type are returned. If bool excludeGlobalTypes is false, 
+        /// specified base type are returned. If bool excludeGlobalTypes is false,
         /// types from all referenced assemblies are checked. Otherwise,
-        /// only types from non-GAC referenced assemblies are checked. 
+        /// only types from non-GAC referenced assemblies are checked.
         /// </summary>
         ICollection GetTypes(Type baseType, bool excludeGlobalTypes);
     }

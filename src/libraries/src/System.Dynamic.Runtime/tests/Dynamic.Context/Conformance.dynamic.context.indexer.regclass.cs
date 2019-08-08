@@ -1705,7 +1705,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
         private static int s_a = 0;
         private static MemberClass s_mc = new MemberClass();
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2205,7 +2205,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
 {
     // <Title> Tests regular class indexer used in dtor.</Title>
     // <Description>
-    // On IA64 the GC.WaitForPendingFinalizers() does not actually work... 
+    // On IA64 the GC.WaitForPendingFinalizers() does not actually work...
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>

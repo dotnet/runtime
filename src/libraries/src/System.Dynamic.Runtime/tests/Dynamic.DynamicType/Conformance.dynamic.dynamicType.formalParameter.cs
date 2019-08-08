@@ -459,7 +459,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             dynamic v24 = "";
             dynamic v25 = 'c';
             MyType1.Result = -1;
-            //new MyType1(v22); 
+            //new MyType1(v22);
             //ret &= Varifier(7, MyType1.Result, "(2) MyType1(params object[])");
             MyType1.Result = -1;
             new MyType1(v22, v23);
@@ -788,7 +788,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
         {
         }
 
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -942,7 +942,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
     public class Program
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -985,7 +985,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
     public class Program
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1028,7 +1028,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
     public class Program
     {
-        
+
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-// A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing 
-// thread; this provides an alternative to using a ThreadStatic static variable and having 
+// A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing
+// thread; this provides an alternative to using a ThreadStatic static variable and having
 // to check the variable prior to every access to see if it's been initialized.
 
 namespace System.Threading
@@ -18,7 +18,7 @@ namespace System.Threading
     /// <typeparam name="T">Specifies the type of data stored per-thread.</typeparam>
     /// <remarks>
     /// <para>
-    /// With the exception of <see cref="Dispose()"/>, all public and protected members of 
+    /// With the exception of <see cref="Dispose()"/>, all public and protected members of
     /// <see cref="ThreadLocal{T}"/> are thread-safe and may be used
     /// concurrently from multiple threads.
     /// </para>
@@ -55,7 +55,7 @@ namespace System.Threading
         private static readonly IdManager s_idManager = new IdManager();
 
         // A linked list of all values associated with this ThreadLocal<T> instance.
-        // We create a dummy head node. That allows us to remove any (non-dummy)  node without having to locate the m_linkedSlot field. 
+        // We create a dummy head node. That allows us to remove any (non-dummy)  node without having to locate the m_linkedSlot field.
         private LinkedSlot? _linkedSlot = new LinkedSlot(null);
 
         // Whether the Values property is supported
@@ -84,7 +84,7 @@ namespace System.Threading
         /// specified <paramref name="valueFactory"/> function.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="T:System.Func{T}"/> invoked to produce a lazily-initialized value when 
+        /// The <see cref="T:System.Func{T}"/> invoked to produce a lazily-initialized value when
         /// an attempt is made to retrieve <see cref="Value"/> without it having been previously initialized.
         /// </param>
         /// <exception cref="T:System.ArgumentNullException">
@@ -103,7 +103,7 @@ namespace System.Threading
         /// specified <paramref name="valueFactory"/> function.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="T:System.Func{T}"/> invoked to produce a lazily-initialized value when 
+        /// The <see cref="T:System.Func{T}"/> invoked to produce a lazily-initialized value when
         /// an attempt is made to retrieve <see cref="Value"/> without it having been previously initialized.
         /// </param>
         /// <param name="trackAllValues">Whether to track all values set on the instance and expose them via the Values property.</param>
@@ -243,9 +243,9 @@ namespace System.Threading
         /// </exception>
         /// <remarks>
         /// If this instance was not previously initialized for the current thread,
-        /// accessing <see cref="Value"/> will attempt to initialize it. If an initialization function was 
-        /// supplied during the construction, that initialization will happen by invoking the function 
-        /// to retrieve the initial value for <see cref="Value"/>.  Otherwise, the default value of 
+        /// accessing <see cref="Value"/> will attempt to initialize it. If an initialization function was
+        /// supplied during the construction, that initialization will happen by invoking the function
+        /// to retrieve the initial value for <see cref="Value"/>.  Otherwise, the default value of
         /// <typeparamref name="T"/> will be used.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -270,7 +270,7 @@ namespace System.Threading
                 {
                     // We verified that the instance has not been disposed *after* we got a reference to the slot.
                     // This guarantees that we have a reference to the right slot.
-                    // 
+                    //
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
                     return slot._value;
@@ -294,7 +294,7 @@ namespace System.Threading
                 {
                     // We verified that the instance has not been disposed *after* we got a reference to the slot.
                     // This guarantees that we have a reference to the right slot.
-                    // 
+                    //
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
                     slot._value = value;
@@ -413,7 +413,7 @@ namespace System.Threading
                 Debug.Assert(_linkedSlot != null, "Should only be null if disposed");
                 LinkedSlot? firstRealNode = _linkedSlot._next;
 
-                // Insert linkedSlot between nodes m_linkedSlot and firstRealNode. 
+                // Insert linkedSlot between nodes m_linkedSlot and firstRealNode.
                 // (_linkedSlot is the dummy head node that should always be in the front.)
                 linkedSlot._next = firstRealNode;
                 linkedSlot._previous = _linkedSlot;
@@ -572,9 +572,9 @@ namespace System.Threading
             LinkedSlotVolatile[] newTable = new LinkedSlotVolatile[newLen];
 
             //
-            // The lock is necessary to avoid a race with ThreadLocal.Dispose. GrowTable has to point all 
-            // LinkedSlot instances referenced in the old table to reference the new table. Without locking, 
-            // Dispose could use a stale SlotArray reference and clear out a slot in the old array only, while 
+            // The lock is necessary to avoid a race with ThreadLocal.Dispose. GrowTable has to point all
+            // LinkedSlot instances referenced in the old table to reference the new table. Without locking,
+            // Dispose could use a stale SlotArray reference and clear out a slot in the old array only, while
             // the value continues to be referenced from the new (larger) array.
             //
             lock (s_idManager)
@@ -608,15 +608,15 @@ namespace System.Threading
             //
             // Round up the size to the next power of 2
             //
-            // The algorithm takes three steps: 
+            // The algorithm takes three steps:
             // input -> subtract one -> propagate 1-bits to the right -> add one
             //
-            // Let's take a look at the 3 steps in both interesting cases: where the input 
+            // Let's take a look at the 3 steps in both interesting cases: where the input
             // is (Example 1) and isn't (Example 2) a power of 2.
             //
             // Example 1: 100000 -> 011111 -> 011111 -> 100000
             // Example 2: 011010 -> 011001 -> 011111 -> 100000
-            // 
+            //
             int newSize = minSize;
 
             // Step 1: Decrement
@@ -652,9 +652,9 @@ namespace System.Threading
 
         /// <summary>
         /// A node in the doubly-linked list stored in the ThreadLocal instance.
-        /// 
+        ///
         /// The value is stored in one of two places:
-        /// 
+        ///
         ///     1. If SlotArray is not null, the value is in SlotArray.Table[id]
         ///     2. If SlotArray is null, the value is in FinalValue.
         /// </summary>
@@ -728,12 +728,12 @@ namespace System.Threading
 
         /// <summary>
         /// A class that facilitates ThreadLocal cleanup after a thread exits.
-        /// 
-        /// After a thread with an associated thread-local table has exited, the FinalizationHelper 
-        /// is responsible for removing back-references to the table. Since an instance of FinalizationHelper 
+        ///
+        /// After a thread with an associated thread-local table has exited, the FinalizationHelper
+        /// is responsible for removing back-references to the table. Since an instance of FinalizationHelper
         /// is only referenced from a single thread-local slot, the FinalizationHelper will be GC'd once
         /// the thread has exited.
-        /// 
+        ///
         /// The FinalizationHelper then locates all LinkedSlot instances with back-references to the table
         /// (all those LinkedSlot instances can be found by following references from the table slots) and
         /// releases the table so that it can get GC'd.
@@ -789,7 +789,7 @@ namespace System.Threading
         }
     }
 
-    /// <summary>A debugger view of the ThreadLocal&lt;T&gt; to surface additional debugging properties and 
+    /// <summary>A debugger view of the ThreadLocal&lt;T&gt; to surface additional debugging properties and
     /// to ensure that the ThreadLocal&lt;T&gt; does not become initialized if it was not already.</summary>
     internal sealed class SystemThreading_ThreadLocalDebugView<T>
     {

@@ -35,9 +35,9 @@ namespace System.ComponentModel
 
         public bool CancellationPending
         {
-            get 
-            { 
-                return _cancellationPending; 
+            get
+            {
+                return _cancellationPending;
             }
         }
 
@@ -55,9 +55,9 @@ namespace System.ComponentModel
 
         public bool IsBusy
         {
-            get 
-            { 
-                return _isRunning; 
+            get
+            {
+                return _isRunning;
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.ComponentModel
 
         public event ProgressChangedEventHandler ProgressChanged;
 
-        // Gets invoked through the AsyncOperation on the proper thread. 
+        // Gets invoked through the AsyncOperation on the proper thread.
         private void ProgressReporter(object arg)
         {
             OnProgressChanged((ProgressChangedEventArgs)arg);
@@ -151,27 +151,27 @@ namespace System.ComponentModel
 
         public bool WorkerReportsProgress
         {
-            get 
-            { 
-                return _workerReportsProgress; 
+            get
+            {
+                return _workerReportsProgress;
             }
-            
-            set 
-            { 
-                _workerReportsProgress = value; 
+
+            set
+            {
+                _workerReportsProgress = value;
             }
         }
 
         public bool WorkerSupportsCancellation
         {
-            get 
+            get
             {
-                return _canCancelWorker; 
+                return _canCancelWorker;
             }
-            
-            set 
-            { 
-                _canCancelWorker = value; 
+
+            set
+            {
+                _canCancelWorker = value;
             }
         }
 

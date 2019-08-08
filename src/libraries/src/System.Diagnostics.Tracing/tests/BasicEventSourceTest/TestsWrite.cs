@@ -33,7 +33,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
+        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         /// Tests the EventListener code path
         /// </summary>
         [Fact]
@@ -47,7 +47,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
+        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         /// Tests the EventListener code path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
@@ -446,11 +446,11 @@ namespace BasicEventSourceTests
                 }));
 
 
-                // If you only wish to run one or several of the tests you can filter them here by 
-                // Uncommenting the following line.  
+                // If you only wish to run one or several of the tests you can filter them here by
+                // Uncommenting the following line.
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "Write/Basic/EventII"));
 
-                // Here is where we actually run tests.   First test the ETW path 
+                // Here is where we actually run tests.   First test the ETW path
                 EventTestHarness.RunTests(tests, listener, logger);
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
@@ -472,10 +472,10 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// This is not a user error but it is something unusual.   
+        /// This is not a user error but it is something unusual.
         /// You can use the Write API in a EventSource that was did not
         /// Declare SelfDescribingSerialization.  In that case THOSE
-        /// events MUST use SelfDescribing serialization.  
+        /// events MUST use SelfDescribing serialization.
         /// </summary>
         private static void Test_Write_T_In_Manifest_Serialization_Impl(
             IEnumerable<Func<Listener>> listenerGenerators)
@@ -524,7 +524,7 @@ namespace BasicEventSourceTests
                 if (evt.IsEtw)
                 {
                     var value = evt.PayloadValue(1, "v");
-                    Assert.Equal(2, int.Parse(value.ToString()));          // Green has the int value of 2. 
+                    Assert.Equal(2, int.Parse(value.ToString()));          // Green has the int value of 2.
                 }
                 else
                 {
@@ -556,7 +556,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Convert an array of key value pairs (as ETW structs) into a dictionary with those values.  
+        /// Convert an array of key value pairs (as ETW structs) into a dictionary with those values.
         /// </summary>
         /// <param name="structValue"></param>
         /// <returns></returns>

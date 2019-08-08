@@ -31,16 +31,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
             {
-                // Connect to the database then retrieve the schema information.  
+                // Connect to the database then retrieve the schema information.
                 connection.Open();
                 DataTable table = connection.GetSchema(schemaItemName);
 
-                // Display the contents of the table.  
+                // Display the contents of the table.
                 Assert.InRange<int>(table.Rows.Count, 1, int.MaxValue);
 
-                // Get all table columns 
+                // Get all table columns
                 HashSet<string> columnNames = new HashSet<string>();
-                
+
                 foreach (DataColumn column in table.Columns)
                 {
                     columnNames.Add(column.ColumnName);

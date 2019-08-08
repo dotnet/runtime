@@ -118,7 +118,7 @@ namespace Internal.Cryptography.Pal
         private static bool TryRead(byte[] data, out OpenSslPkcs12Reader pkcs12Reader, out Exception openSslException, bool captureException)
         {
             SafePkcs12Handle handle = Interop.Crypto.DecodePkcs12(data, data.Length);
-            openSslException = null;                
+            openSslException = null;
 
             if (!handle.IsInvalid)
             {

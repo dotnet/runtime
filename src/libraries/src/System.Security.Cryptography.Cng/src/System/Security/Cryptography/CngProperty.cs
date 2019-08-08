@@ -126,4 +126,3 @@ namespace System.Security.Cryptography
         private int? _lazyHashCode;
     }
 }
-

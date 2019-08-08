@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // Policy to decide whether "derivedMember" is a virtual override of "baseMember." Used to implement MethodInfo.GetBaseDefinition(),
         // parent chain traversal for discovering inherited custom attributes, and suppressing lookup results in the Type.Get*() api family.
-        // 
+        //
         // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
         public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
@@ -130,8 +130,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (t1.Equals(t2))
                 return true;
 
-            // If we got here, Reflection determined the types not equivalent. Most of the time, that's the result we want. 
-            // There is however, one wrinkle. If the type is or embeds a generic method parameter type, Reflection will always report them 
+            // If we got here, Reflection determined the types not equivalent. Most of the time, that's the result we want.
+            // There is however, one wrinkle. If the type is or embeds a generic method parameter type, Reflection will always report them
             // non-equivalent, since generic parameter type comparison always compares both the position and the declaring method. For our purposes, though,
             // we only want to consider the position.
 
@@ -173,7 +173,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (t1.IsGenericMethodParameter() && t2.IsGenericMethodParameter())
             {
                 // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
-                // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
+                // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to
                 // compare the positions.
                 return t1.GenericParameterPosition == t2.GenericParameterPosition;
             }
@@ -225,12 +225,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 #pragma warning restore CA1810
 
         //
-        // This is a singleton class one for each MemberInfo category: Return the appropriate one. 
+        // This is a singleton class one for each MemberInfo category: Return the appropriate one.
         //
         public static readonly MemberPolicies<M> Default;
 
         //
-        // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M 
+        // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M
         // being assigned a unique index (see the MemberTypeIndex for possible values). This is useful
         // for converting a type reference to M to an array index or switch case label.
         //

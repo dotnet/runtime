@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
             var format = new NumberFormatInfo();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "NumberDecimalDigits", () => format.NumberDecimalDigits = value);
         }
-        
+
         [Fact]
         public void NumberDecimalDigits_SetReadOnly_ThrowsInvalidOperationException()
         {

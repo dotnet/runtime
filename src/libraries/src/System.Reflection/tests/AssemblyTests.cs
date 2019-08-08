@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
         private string DestTestAssemblyPath { get; }
         private string LoadFromTestPath { get; }
 
-        public AssemblyTests() 
+        public AssemblyTests()
         {
             // Assembly.Location does not return the file path for single-file deployment targets.
             DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
@@ -226,7 +226,7 @@ namespace System.Reflection.Tests
             Assembly a = typeof(AssemblyTests).Assembly;
             Type t = a.GetType("G`1[[G`1[[System.Int32, mscorlib]]]]", throwOnError: true, ignoreCase: false);
             Assert.Equal(typeof(G<G<int>>), t);
-        }    
+        }
 
         [Fact]
         public void GlobalAssemblyCache()
@@ -270,7 +270,7 @@ namespace System.Reflection.Tests
         public void SecurityRuleSet_Netcore()
         {
             Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
-        }     
+        }
 
         [Theory]
         [MemberData(nameof(Load_TestData))]
@@ -325,7 +325,7 @@ namespace System.Reflection.Tests
         public void LoadFile_NoSuchPath_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("path", null, () => Assembly.LoadFile("System.Runtime.Tests.dll"));
-        }       
+        }
 
         [Fact]
         public void LoadFromUsingHashValue_Netcore()
@@ -410,7 +410,7 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentNullException>("partialName", () => Assembly.LoadWithPartialName(null));
             AssertExtensions.Throws<ArgumentException>("partialName", () => Assembly.LoadWithPartialName(""));
             Assert.Null(Assembly.LoadWithPartialName("no such assembly"));
-        }        
+        }
 #pragma warning restore 618
 
         [Fact]
@@ -486,8 +486,8 @@ namespace System.Reflection.Tests
 
             assembly = typeof(AssemblyTests).Assembly;
             Assert.Throws(exceptionType, () => assembly.CreateInstance(typeName, true, BindingFlags.Public, null, null, null, null));
-            Assert.Throws(exceptionType, () => assembly.CreateInstance(typeName, false, BindingFlags.Public, null, null, null, null));            
-        }     
+            Assert.Throws(exceptionType, () => assembly.CreateInstance(typeName, false, BindingFlags.Public, null, null, null, null));
+        }
 
         [Fact]
         public void CreateQualifiedName()
@@ -588,11 +588,11 @@ namespace System.Reflection.Tests
             AssemblyName an = typeof(AssemblyTests).Assembly.GetName();
             string fullName = an.FullName;
             string simpleName = an.Name;
-        
+
             Assembly a1 = Assembly.Load(fullName);
             Assert.NotNull(a1);
             Assert.Equal(fullName, a1.GetName().FullName);
-        
+
             Assembly a2 = Assembly.Load(simpleName);
             Assert.NotNull(a2);
             Assert.Equal(fullName, a2.GetName().FullName);
@@ -603,7 +603,7 @@ namespace System.Reflection.Tests
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((string)null));
             AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(string.Empty));
-        
+
             string emptyCName = new string('\0', 1);
             AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(emptyCName));
 
@@ -737,7 +737,7 @@ namespace System.Reflection.Tests
         private static Assembly GetGetCallingAssembly()
         {
             return Assembly.GetCallingAssembly();
-        }        
+        }
     }
 
     public struct PublicStruct { }

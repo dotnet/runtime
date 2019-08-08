@@ -60,7 +60,7 @@ namespace System.Xml.Tests
         [Fact]
         public static void Whitespace()
         {
-            var xml = @"<W> 	
+            var xml = @"<W>
         </W>";
             foreach (var insertType in s_InsertTypes)
                 foreach (var nodeType in s_XmlNodeTypes)

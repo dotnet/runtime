@@ -6,9 +6,9 @@
 //
 // CDSCollectionETWBCLProvider.cs
 //
-// A helper class for firing ETW events related to the Coordination Data Structure 
-// collection types. This provider is used by CDS collections in both mscorlib.dll 
-// and System.dll. The purpose of sharing the provider class is to be able to enable 
+// A helper class for firing ETW events related to the Coordination Data Structure
+// collection types. This provider is used by CDS collections in both mscorlib.dll
+// and System.dll. The purpose of sharing the provider class is to be able to enable
 // ETW tracing on all CDS collection with a single ETW provider GUID, and to minimize
 // the number of providers in use.
 //
@@ -39,7 +39,7 @@ namespace System.Collections.Concurrent
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // CDS Collection Event IDs (must be unique)
         //
 

@@ -13,7 +13,7 @@ namespace System.IO.Compression
         /// entry?s last write time. This method does not allow overwriting of an existing file with the same name. Attempting to extract explicit
         /// directories (entries with names that end in directory separator characters) will not result in the creation of a directory.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace, or contains one or more
         /// invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
@@ -30,11 +30,11 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
         /// -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-        /// 
+        ///
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName) => 
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName) =>
             ExtractToFile(source, destinationFileName, false);
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace System.IO.Compression
         /// The last write time of the file is set to the entry?s last write time.
         /// This method does allows overwriting of an existing file with the same name.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
@@ -84,7 +84,7 @@ namespace System.IO.Compression
             File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) => 
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)

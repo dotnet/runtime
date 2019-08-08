@@ -43,11 +43,11 @@ namespace System {
         // if false  then a/%2e./b  becomes a/../b and then usually compressed
         DontUnescapePathDotsAndSlashes= 0x100,
 
-        // IDN hosts supported. if true then unicode hostname is converted to IDN host 
+        // IDN hosts supported. if true then unicode hostname is converted to IDN host
         //  and vice versa
         Idn = 0x200,
 
-        //  Iri strict parsing flag. Makes sense for Unicode. If true then string is 
+        //  Iri strict parsing flag. Makes sense for Unicode. If true then string is
         //  normalized, bidi control characters are removed, unicode char limits are checked
         IriParsing = 0x400
     }

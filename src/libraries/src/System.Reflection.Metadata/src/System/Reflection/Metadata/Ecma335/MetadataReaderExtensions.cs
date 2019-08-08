@@ -293,7 +293,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Enumerates entries of EnC log.
         /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception> 
+        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader)
         {
             if (reader == null)
@@ -327,10 +327,10 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Enumerate types that define one or more properties. 
+        /// Enumerate types that define one or more properties.
         /// </summary>
         /// <returns>
-        /// The resulting sequence corresponds exactly to entries in PropertyMap table, 
+        /// The resulting sequence corresponds exactly to entries in PropertyMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of PropertyMap.
         /// </returns>
         public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader)
@@ -347,10 +347,10 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Enumerate types that define one or more events. 
+        /// Enumerate types that define one or more events.
         /// </summary>
         /// <returns>
-        /// The resulting sequence corresponds exactly to entries in EventMap table, 
+        /// The resulting sequence corresponds exactly to entries in EventMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of EventMap.
         /// </returns>
         public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader)
@@ -418,7 +418,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 case HandleKind.TypeSpecification:
                     // TODO: https://github.com/dotnet/corefx/issues/8139
-                    // We need more work here in differentiating case because instantiations can project class 
+                    // We need more work here in differentiating case because instantiations can project class
                     // to value type as in IReference<T> -> Nullable<T>. Unblocking Roslyn work where the differentiation
                     // feature is not used. Note that the use-case of custom-mods will not hit this because there is no
                     // CLASS | VALUETYPE before the modifier token and so it always comes in unresolved.

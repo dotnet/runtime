@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.ComponentModel.Composition.Primitives
 {
-    // Represents the ICompositionElement placeholder for an 
+    // Represents the ICompositionElement placeholder for an
     // object that does not implement ICompositionElement
     [DebuggerTypeProxy(typeof(CompositionElementDebuggerProxy))]
     internal class CompositionElement : ICompositionElement

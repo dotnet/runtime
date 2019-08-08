@@ -14,7 +14,7 @@ namespace System.Reflection.TypeLoading.Ecma
     internal static class EcmaCustomAttributeHelpers
     {
         /// <summary>
-        /// Converts ECMA-encoded custom attributes into a freshly allocated CustomAttributeData object suitable for direct return 
+        /// Converts ECMA-encoded custom attributes into a freshly allocated CustomAttributeData object suitable for direct return
         /// from the CustomAttributes api.
         /// </summary>
         public static IEnumerable<CustomAttributeData> ToTrueCustomAttributes(this CustomAttributeHandleCollection handles, EcmaModule module)
@@ -100,7 +100,7 @@ namespace System.Reflection.TypeLoading.Ecma
         }
 
         /// <summary>
-        /// Converts a list of System.Reflection.Metadata CustomAttributeTypedArgument&lt;&gt; into a freshly allocated CustomAttributeTypedArgument 
+        /// Converts a list of System.Reflection.Metadata CustomAttributeTypedArgument&lt;&gt; into a freshly allocated CustomAttributeTypedArgument
         /// list suitable for direct return from the CustomAttributes api.
         /// </summary>
         public static IList<CustomAttributeTypedArgument> ToApiForm(this IList<CustomAttributeTypedArgument<RoType>> catgs)
@@ -115,7 +115,7 @@ namespace System.Reflection.TypeLoading.Ecma
         }
 
         /// <summary>
-        /// Converts a System.Reflection.Metadata CustomAttributeTypedArgument&lt;&gt; into a freshly allocated CustomAttributeTypedArgument 
+        /// Converts a System.Reflection.Metadata CustomAttributeTypedArgument&lt;&gt; into a freshly allocated CustomAttributeTypedArgument
         /// object suitable for direct return from the CustomAttributes api.
         /// </summary>
         public static CustomAttributeTypedArgument ToApiForm(this CustomAttributeTypedArgument<RoType> catg) => ToApiForm(catg.Type, catg.Value);
@@ -131,7 +131,7 @@ namespace System.Reflection.TypeLoading.Ecma
         }
 
         /// <summary>
-        /// Converts a list of System.Reflection.Metadata CustomAttributeNamedArgument&lt;&gt; into a freshly allocated CustomAttributeNamedArgument 
+        /// Converts a list of System.Reflection.Metadata CustomAttributeNamedArgument&lt;&gt; into a freshly allocated CustomAttributeNamedArgument
         /// list suitable for direct return from the CustomAttributes api.
         /// </summary>
         public static IList<CustomAttributeNamedArgument> ToApiForm(this IList<CustomAttributeNamedArgument<RoType>> cangs, Type attributeType)
@@ -146,7 +146,7 @@ namespace System.Reflection.TypeLoading.Ecma
         }
 
         /// <summary>
-        /// Converts a System.Reflection.Metadata CustomAttributeNamedArgument&lt;&gt; into a freshly allocated CustomAttributeNamedArgument 
+        /// Converts a System.Reflection.Metadata CustomAttributeNamedArgument&lt;&gt; into a freshly allocated CustomAttributeNamedArgument
         /// object suitable for direct return from the CustomAttributes api.
         /// </summary>
         public static CustomAttributeNamedArgument ToApiForm(this CustomAttributeNamedArgument<RoType> cang, Type attributeType)

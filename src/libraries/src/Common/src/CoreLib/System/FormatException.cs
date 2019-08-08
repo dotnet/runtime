@@ -8,7 +8,7 @@
 **
 ** Purpose: Exception to designate an illegal argument to FormatMessage.
 **
-** 
+**
 ===========================================================*/
 
 using System.Runtime.Serialization;

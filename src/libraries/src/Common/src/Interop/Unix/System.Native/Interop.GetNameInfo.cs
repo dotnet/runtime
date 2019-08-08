@@ -15,16 +15,16 @@ internal static partial class Interop
             NI_NAMEREQD     = 0x1,
             NI_NUMERICHOST  = 0x2,
         }
-        
+
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNameInfo")]
         internal static extern unsafe int GetNameInfo(
-            byte* address, 
+            byte* address,
             uint addressLength,
             byte isIpv6,
-            byte* host, 
-            uint hostLength, 
-            byte* service, 
-            uint serviceLength, 
+            byte* host,
+            uint hostLength,
+            byte* service,
+            uint serviceLength,
             GetNameInfoFlags flags);
     }
 }

@@ -64,8 +64,8 @@ namespace System.Xml.Tests
         public static void XmlWithWhitespace()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml(@"<a> 
-          this-is-a    
+            xmlDocument.LoadXml(@"<a>
+          this-is-a
       </a>");
 
             Assert.Equal(1, xmlDocument.FirstChild.ChildNodes.Count);
@@ -187,17 +187,17 @@ namespace System.Xml.Tests
   text node one
   <elem1 child1="""" child2=""duu"" child3=""e1;e2;"" child4=""a1"" child5=""goody"">
      text node two e1; text node three
-  </elem1><!-- comment3 --><?PI3 processing instruction?>e2;<foo /><![CDATA[ <opentag> without an </endtag> and & <! are all ok here ]]><elem2 att1=""id1"" att2=""up"" att3=""attribute3""><a /></elem2><elem2> 
+  </elem1><!-- comment3 --><?PI3 processing instruction?>e2;<foo /><![CDATA[ <opentag> without an </endtag> and & <! are all ok here ]]><elem2 att1=""id1"" att2=""up"" att3=""attribute3""><a /></elem2><elem2>
       elem2-text1
-      <a> 
-          this-is-a    
-      </a> 
+      <a>
+          this-is-a
+      </a>
 
       elem2-text2
       e3;e4;<!-- elem2-comment1-->
       elem2-text3
 
-      <b> 
+      <b>
           this-is-b
       </b>
 
@@ -215,8 +215,8 @@ namespace System.Xml.Tests
         [Fact]
         public static void ElementNodeWithChildButNoAttribute()
         {
-            var xml = @"<a> 
-          this-is-a    
+            var xml = @"<a>
+          this-is-a
       </a>";
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(xml);
@@ -229,7 +229,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(@" <doc doc=""doc""><doc>
-     doc 
+     doc
   </doc><html>Just for testing purpose</html></doc>");
 
             var newNode = xmlDocument.CreateTextNode("new text node");

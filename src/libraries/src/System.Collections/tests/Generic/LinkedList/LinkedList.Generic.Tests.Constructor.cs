@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -107,7 +107,7 @@ namespace System.Collections.Tests
 
         /// <summary>
         /// Verifies that the tail/head properties are valid and
-        /// can iterate through the list (backwards and forwards) to 
+        /// can iterate through the list (backwards and forwards) to
         /// verify the contents of the list.
         /// </summary>
         private static void VerifyState(LinkedList<T> linkedList, T[] expectedItems)
@@ -236,7 +236,7 @@ namespace System.Collections.Tests
             int iterations = 0;
             int expectedCount = expectedItems.Length;
 
-            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made            
+            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made
             for (int i = 0; i < 3; i++)
             {
                 try
@@ -298,7 +298,7 @@ namespace System.Collections.Tests
             int iterations = 0;
             int expectedCount = expectedItems.Length;
 
-            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made            
+            //[] Verify non deterministic behavior of current every time it is called before a call to MoveNext() has been made
             for (int i = 0; i < 3; i++)
             {
                 try
@@ -317,7 +317,7 @@ namespace System.Collections.Tests
                 object currentItem = enumerator.Current;
                 object tempItem;
 
-                //[] Verify we have not gotten more items then we expected                
+                //[] Verify we have not gotten more items then we expected
                 Assert.True(iterations < expectedCount,
                     "Err_9844awpa More items have been returned from the enumerator(" + iterations + " items) then are in the expectedElements(" + expectedCount + " items)");
 

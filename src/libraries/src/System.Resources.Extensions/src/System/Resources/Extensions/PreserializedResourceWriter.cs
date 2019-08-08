@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -18,12 +18,12 @@ namespace System.Resources.Extensions
         // in order to read them.
         bool _requiresDeserializingResourceReader = false;
 
-        // use hard-coded strings rather than typeof so that the version doesn't leak into resources files 
+        // use hard-coded strings rather than typeof so that the version doesn't leak into resources files
         internal const string DeserializingResourceReaderFullyQualifiedName = "System.Resources.Extensions.DeserializingResourceReader, System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
         internal const string RuntimeResourceSetFullyQualifiedName = "System.Resources.Extensions.RuntimeResourceSet, System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
 
         // an internal type name used to represent an unknown resource type, explicitly omit version to save
-        // on size and avoid changes in user resources.  This works since we only ever load this type name 
+        // on size and avoid changes in user resources.  This works since we only ever load this type name
         // from calls to GetType from this assembly.
         private static readonly string UnknownObjectTypeName = typeof(UnknownType).FullName;
 
@@ -63,8 +63,8 @@ namespace System.Resources.Extensions
         /// Adds a resource of specified type represented by a string value.
         /// If the type is a primitive type, the value will be converted using TypeConverter by the writer
         /// to that primitive type and stored in the resources in binary format.
-        /// If the type is not a primitive type, the string value will be stored in the resources as a 
-        /// string and converted with a TypeConverter for the type when reading the resource.  
+        /// If the type is not a primitive type, the string value will be stored in the resources as a
+        /// string and converted with a TypeConverter for the type when reading the resource.
         /// This is done to avoid activating arbitrary types during resource writing.
         /// </summary>
         /// <param name="name">Resource name</param>
@@ -89,8 +89,8 @@ namespace System.Resources.Extensions
                 }
                 else
                 {
-                    // for primitive types that are not strings, convert the string value to the 
-                    // primitive type value.  
+                    // for primitive types that are not strings, convert the string value to the
+                    // primitive type value.
                     // we intentionally avoid calling GetType on the user provided type name
                     // and instead will only ever convert to one of the known types.
                     TypeConverter converter = TypeDescriptor.GetConverter(primitiveType);
@@ -115,7 +115,7 @@ namespace System.Resources.Extensions
         }
 
         /// <summary>
-        /// Adds a resource of specified type represented by a byte[] value which will be 
+        /// Adds a resource of specified type represented by a byte[] value which will be
         /// passed to the type's TypeConverter when reading the resource.
         /// </summary>
         /// <param name="name">Resource name</param>
@@ -136,7 +136,7 @@ namespace System.Resources.Extensions
         }
 
         /// <summary>
-        /// Adds a resource of specified type represented by a byte[] value which will be 
+        /// Adds a resource of specified type represented by a byte[] value which will be
         /// passed to BinaryFormatter when reading the resource.
         /// </summary>
         /// <param name="name">Resource name</param>
@@ -164,7 +164,7 @@ namespace System.Resources.Extensions
         }
 
         /// <summary>
-        /// Adds a resource of specified type represented by a Stream value which will be 
+        /// Adds a resource of specified type represented by a Stream value which will be
         /// passed to the type's constructor when reading the resource.
         /// </summary>
         /// <param name="name">Resource name</param>

@@ -195,5 +195,3 @@ namespace Internal.Cryptography.Pal.Native
         }
     }
 }
-
-

@@ -178,7 +178,7 @@ namespace System.Xml.Serialization
                     // special case of the single top-level XmlNode --> map it to node array to match the "mixed" any type for backward compatibility
                     isUnbounded = true;
 
-                // generate type name, make sure that it is backward compatible 
+                // generate type name, make sure that it is backward compatible
                 string baseName = isMixed ? "any" : isUnbounded ? "anyElements" : "anyElement";
                 string name = baseName;
                 int i = 0;

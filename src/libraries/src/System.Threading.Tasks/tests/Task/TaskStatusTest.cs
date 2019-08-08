@@ -155,7 +155,7 @@ namespace System.Threading.Tasks.Tests.Status
                     {
                         _mre.Wait();
                         //
-                        // Current Task status is WaitingForChildrenToComplete if Task didn't Cancel/Faulted and Child was created 
+                        // Current Task status is WaitingForChildrenToComplete if Task didn't Cancel/Faulted and Child was created
                         // without Detached options and current status of the child isn't RanToCompletion or Faulted yet
                         //
 
@@ -211,7 +211,7 @@ namespace System.Threading.Tasks.Tests.Status
                 try
                 {
                     //
-                    // Need to wait for Children task if it was created with Default option (Detached by default), 
+                    // Need to wait for Children task if it was created with Default option (Detached by default),
                     // or current task was either canceled or failed
                     //
                     if (_createChildTask &&

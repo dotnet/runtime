@@ -53,7 +53,7 @@ namespace XLinqTests
         // - attributes
         // - Document
         // - doubled decl, root elem, doctype
-        // - the same valid object instance multiple times 
+        // - the same valid object instance multiple times
         // - array/IEnumerable of allowed types
         // - array/IEnumerable including not allowed types
 

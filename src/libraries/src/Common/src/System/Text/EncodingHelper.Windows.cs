@@ -15,14 +15,14 @@ namespace System.Text
         // To avoid encoding exception in Console APIs we fallback to OSEncoding.
         //
         //
-        // The guaranteed way to identify the above is to use a try/catch pattern, however to avoid 1st chance exceptions 
+        // The guaranteed way to identify the above is to use a try/catch pattern, however to avoid 1st chance exceptions
         // we do a best-effort heuristic instead. By default CodePage 0 is CP_ACP(Windows ANSI encoding)
-        // and Encoding.GetEncoding(0) returns the ANSI codepage if its encoding data is available else it returns UTF8. We leverage 
+        // and Encoding.GetEncoding(0) returns the ANSI codepage if its encoding data is available else it returns UTF8. We leverage
         // this behavior to identify whether a potential provider is registered or not.
         //
         //
         // This pattern will always use UTF8 encoding if a custom provider is registered, and the console encoding is set to a custom encoding
-        // with codepage 0 not supported by the registered custom provider. To make Console use the intended encoding in this scenario, the user will have 
+        // with codepage 0 not supported by the registered custom provider. To make Console use the intended encoding in this scenario, the user will have
         // to register CodePagesEncodingProvider or support codepage 0 in their custom provider.
         internal static Encoding GetSupportedConsoleEncoding(int codepage)
         {

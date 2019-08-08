@@ -686,7 +686,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_DeserializeTypeWithEmptyTimeSpanProperty()
     {
-        string xml = 
+        string xml =
             @"<?xml version=""1.0""?>
             <TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
             <TimeSpanProperty />

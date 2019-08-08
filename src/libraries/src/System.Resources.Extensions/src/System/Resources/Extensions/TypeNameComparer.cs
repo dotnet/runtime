@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more informanullable enable
 
@@ -14,7 +14,7 @@ namespace System.Resources.Extensions
     /// Compares type names as strings, ignoring version.
     /// When type names are missing, mscorlib is assumed.
     /// This comparer is not meant to capture all scenarios (eg: TypeForwards)
-    /// but is meant to serve as a best effort, avoiding false positives, in the 
+    /// but is meant to serve as a best effort, avoiding false positives, in the
     /// absense of real type metadata.
     /// </summary>
     internal sealed class TypeNameComparer : IEqualityComparer<string>
@@ -85,7 +85,7 @@ namespace System.Resources.Extensions
                 simpleName2.IsEmpty && !typeSpan2.IsEmpty)
                 return false;
 
-            // if both are missing assembly name, or either is missing 
+            // if both are missing assembly name, or either is missing
             // assembly name and the other is mscorlib
             if (simpleName1.IsEmpty)
                 return (simpleName2.IsEmpty || IsMscorlib(simpleName2));

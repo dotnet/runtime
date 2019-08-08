@@ -5,7 +5,7 @@
 namespace System.Runtime.CompilerServices
 {
     // Custom attribute to indicating a TypeDef is a discardable attribute.
-    
+
     public class DiscardableAttribute : Attribute
     {
         public DiscardableAttribute() { }
