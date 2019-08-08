@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -288,13 +289,14 @@ namespace System
             return new TimeSpan(value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static long TimeToTicks(int hour, int minute, int second)
         {
             // totalSeconds is bounded by 2^31 * 2^12 + 2^31 * 2^8 + 2^31,
             // which is less than 2^44, meaning we won't overflow totalSeconds.
             long totalSeconds = (long)hour * 3600 + (long)minute * 60 + (long)second;
             if (totalSeconds > MaxSeconds || totalSeconds < MinSeconds)
-                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             return totalSeconds * TicksPerSecond;
         }
 

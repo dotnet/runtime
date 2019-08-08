@@ -132,6 +132,31 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Year()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.year,
+                                                    ExceptionResource.ArgumentOutOfRange_Year);
+        }
+        
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
+        {
+            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_BadHourMinuteSecond()
+        {
+            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_TimeSpanTooLong()
+        {
+            throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
@@ -657,6 +682,8 @@ namespace System
                     return "elementType";
                 case ExceptionArgument.arrayIndex:
                     return "arrayIndex";
+                case ExceptionArgument.year:
+                    return "year";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -687,6 +714,8 @@ namespace System
                     return SR.ArgumentOutOfRange_IndexCountBuffer;
                 case ExceptionResource.ArgumentOutOfRange_Count:
                     return SR.ArgumentOutOfRange_Count;
+                case ExceptionResource.ArgumentOutOfRange_Year:
+                    return SR.ArgumentOutOfRange_Year;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
@@ -901,6 +930,7 @@ namespace System
         endIndex,
         elementType,
         arrayIndex,
+        year,
     }
 
     //
@@ -912,6 +942,7 @@ namespace System
         ArgumentOutOfRange_IndexCount,
         ArgumentOutOfRange_IndexCountBuffer,
         ArgumentOutOfRange_Count,
+        ArgumentOutOfRange_Year,
         Arg_ArrayPlusOffTooSmall,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
