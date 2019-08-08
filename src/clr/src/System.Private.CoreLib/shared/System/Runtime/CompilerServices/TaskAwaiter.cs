@@ -463,7 +463,6 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task"/>.</summary>
-            /// <returns>The result of the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</returns>
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
             /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
