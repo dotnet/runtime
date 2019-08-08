@@ -73,7 +73,7 @@ namespace System
             info.AddValue("value", ToInt64());
         }
 
-        public unsafe override bool Equals(object? obj)
+        public override unsafe bool Equals(object? obj)
         {
             if (obj is IntPtr)
             {
@@ -87,7 +87,7 @@ namespace System
             return _value == other._value;
         }
 
-        public unsafe override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
 #if BIT64
             long l = (long)_value;
@@ -223,7 +223,7 @@ namespace System
             return _value;
         }
 
-        public unsafe override string ToString()
+        public override unsafe string ToString()
         {
             return ((nint)_value).ToString(CultureInfo.InvariantCulture);
         }
