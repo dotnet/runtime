@@ -38,7 +38,7 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
         /// <param name="componentPath">The path to the WinRT component that the type is expected to be defined in.</param>
         /// <param name="typeName">The name of the component type to activate</param>
         /// <param name="activationFactory">The activation factory</param>
-        public unsafe static int GetActivationFactory(
+        public static unsafe int GetActivationFactory(
             char* componentPath,
             [MarshalAs(UnmanagedType.HString)] string typeName,
             [MarshalAs(UnmanagedType.Interface)] out IActivationFactory? activationFactory)

@@ -124,7 +124,7 @@ namespace System
 #endif // FEATURE_COMINTEROP
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static private extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
+        private static extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {

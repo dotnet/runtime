@@ -902,7 +902,7 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public unsafe virtual int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
+        public virtual unsafe int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -932,7 +932,7 @@ namespace System.Globalization
             return IndexOf(source, char.ToString(value), startIndex, count, options, null);
         }
 
-        public unsafe virtual int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
+        public virtual unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {

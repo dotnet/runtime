@@ -1409,10 +1409,10 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private unsafe static extern void GetPEKind(QCallModule handle, int *peKind, int *machine);
+        private static extern unsafe void GetPEKind(QCallModule handle, int *peKind, int *machine);
 
         // making this internal, used by Module.GetPEKind
-        internal unsafe static void GetPEKind(RuntimeModule module, out PortableExecutableKinds peKind, out ImageFileMachine machine)
+        internal static unsafe void GetPEKind(RuntimeModule module, out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {
             int lKind, lMachine;
             GetPEKind(JitHelpers.GetQCallModuleOnStack(ref module), &lKind, &lMachine);

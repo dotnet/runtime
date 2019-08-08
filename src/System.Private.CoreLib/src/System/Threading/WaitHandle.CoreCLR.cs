@@ -21,7 +21,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern int WaitMultipleIgnoringSyncContext(IntPtr *waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
+        private static extern unsafe int WaitMultipleIgnoringSyncContext(IntPtr *waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
 
         private static int SignalAndWaitCore(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout)
         {

@@ -122,7 +122,7 @@ namespace System
         private static class WinRT
         {
             // Cache the value in readonly static that can be optimized out by the JIT
-            public readonly static bool IsSupported = WinRTSupported() != Interop.BOOL.FALSE;
+            public static readonly bool IsSupported = WinRTSupported() != Interop.BOOL.FALSE;
         }
 
         // Does the current version of Windows have Windows Runtime suppport?

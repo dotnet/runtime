@@ -10,7 +10,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal unsafe sealed class RuntimePropertyInfo : PropertyInfo
+    internal sealed unsafe class RuntimePropertyInfo : PropertyInfo
     {
         #region Private Data Members
         private int m_token;

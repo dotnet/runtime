@@ -67,7 +67,7 @@ namespace System.Text
             return result;
         }
 
-        public unsafe override int GetByteCount(char* chars, int count, bool flush)
+        public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             // Validate input parameters
             if (chars == null)
@@ -115,7 +115,7 @@ namespace System.Text
                                 pBytes + byteIndex, byteCount, flush);
         }
 
-        public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
             if (chars == null || bytes == null)

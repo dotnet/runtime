@@ -128,13 +128,13 @@ namespace System
 
 
         // Protected routine to determine if this class represents a Windows Runtime object
-        virtual internal bool IsWindowsRuntimeObjectImpl()
+        internal virtual bool IsWindowsRuntimeObjectImpl()
         {
             throw new NotImplementedException();
         }
 
         // Determines if this type is exported to WinRT (i.e. is an activatable class in a managed .winmd)
-        virtual internal bool IsExportedToWindowsRuntimeImpl()
+        internal virtual bool IsExportedToWindowsRuntimeImpl()
         {
             throw new NotImplementedException();
         }
