@@ -8,7 +8,7 @@
 **
 ** Purpose: Some floating-point math operations
 **
-** 
+**
 ===========================================================*/
 
 //This class contains only static members and doesn't require serialization.
@@ -103,7 +103,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern double FMod(double x, double y);
-        
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);
     }

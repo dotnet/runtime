@@ -31,7 +31,7 @@ namespace System
         {
         }
 
-        // This constructor is called from a class to generate a 
+        // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
         protected MulticastDelegate(Type target, string method) : base(target, method)

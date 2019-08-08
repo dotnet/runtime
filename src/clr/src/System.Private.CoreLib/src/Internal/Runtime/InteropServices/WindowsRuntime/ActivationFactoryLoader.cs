@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
         // we don't need to share this dictionary with the COM activation dictionary
         // since there will be no overlap.
         private static readonly Dictionary<string, AssemblyLoadContext> s_assemblyLoadContexts = new Dictionary<string, AssemblyLoadContext>(StringComparer.InvariantCultureIgnoreCase);
-        
+
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
             AssemblyLoadContext? alc;
@@ -52,7 +52,7 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
                 }
 
                 AssemblyLoadContext context = GetALC(Marshal.PtrToStringUni((IntPtr)componentPath)!);
-                
+
                 Type winRTType = context.LoadTypeForWinRTTypeNameInContext(typeName);
 
                 if (winRTType is null || !winRTType.IsExportedToWindowsRuntime)

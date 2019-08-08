@@ -35,7 +35,7 @@ namespace System.Threading.Tasks
 
         private static WFD.IAsyncCausalityTracerStatics s_TracerFactory = null!;
 
-        // The loggers that this Tracer knows about. 
+        // The loggers that this Tracer knows about.
         [Flags]
         private enum Loggers : byte
         {

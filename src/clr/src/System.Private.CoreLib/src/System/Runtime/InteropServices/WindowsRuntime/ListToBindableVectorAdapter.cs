@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // That's because they are invoked with special "this"! The "this" object
     // for all of these methods are not ListToBindableVectorAdapter objects. Rather, they are of type
     // IList. No actual ListToVectorBindableAdapter object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" to "IList". 
+    // see a lot of expressions that cast "this" to "IList".
     internal sealed class ListToBindableVectorAdapter
     {
         private ListToBindableVectorAdapter()

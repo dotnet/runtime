@@ -16,13 +16,13 @@ namespace System.Reflection.Emit
     //
     // This file implements the minimum subset of ISymWrapper.dll required to restore
     // that functionality. Namely, the SymWriter and SymDocumentWriter objects.
-    // 
+    //
     // Ideally we wouldn't need ISymWrapper.dll on desktop either - it's an ugly piece
     // of legacy.  We could just use this (or COM-interop code) everywhere, but we might
     // have to worry about compatibility.
-    // 
+    //
     // We've now got a real implementation even when no debugger is attached.  It's
-    // up to the runtime to ensure it doesn't provide us with an insecure writer 
+    // up to the runtime to ensure it doesn't provide us with an insecure writer
     // (eg. diasymreader) in the no-trust scenarios (no debugger, partial-trust code).
     //-----------------------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ namespace System.Reflection.Emit
         internal unsafe class SymWriter : ISymbolWriter
         {
             //------------------------------------------------------------------------------
-            // Creates a SymWriter. The SymWriter is a managed wrapper around the unmanaged 
+            // Creates a SymWriter. The SymWriter is a managed wrapper around the unmanaged
             // symbol writer provided by the runtime (ildbsymlib or diasymreader.dll).
             //------------------------------------------------------------------------------
             internal static ISymbolWriter CreateSymWriter()
@@ -155,7 +155,7 @@ namespace System.Reflection.Emit
 
             //------------------------------------------------------------------------------
             // Basic ctor. You'd think this ctor would take the unmanaged symwriter object as an argument
-            // but to fit in with existing desktop code, the unmanaged writer is passed in 
+            // but to fit in with existing desktop code, the unmanaged writer is passed in
             // through a subsequent call to InternalSetUnderlyingWriter
             //------------------------------------------------------------------------------
             private SymWriter()
@@ -349,7 +349,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // InternalSetUnderlyingWriter() wrapper.
             //
-            // Furnishes the native ISymUnmanagedWriter* pointer. 
+            // Furnishes the native ISymUnmanagedWriter* pointer.
             //
             // The parameter is actually a pointer to a pointer to an ISymUnmanagedWriter. As
             // with the real ISymWrapper.dll, ISymWrapper performs *no* Release (or AddRef) on pointers

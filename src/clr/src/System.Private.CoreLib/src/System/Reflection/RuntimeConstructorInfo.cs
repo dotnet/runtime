@@ -40,7 +40,7 @@ namespace System.Reflection
                     Type? declaringType = DeclaringType;
 
                     //
-                    // first take care of all the NO_INVOKE cases. 
+                    // first take care of all the NO_INVOKE cases.
                     if (declaringType == typeof(void) ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))

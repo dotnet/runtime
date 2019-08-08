@@ -648,7 +648,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
-            
+
             int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
             if (day > days[month] - days[month - 1])
             {
@@ -671,7 +671,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
             }
-            
+
             return TimeSpan.TimeToTicks(hour, minute, second);
         }
 

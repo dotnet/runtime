@@ -123,7 +123,7 @@ namespace System
                 }
             }
         }
-        
+
         /// <summary>
         /// Called from within the EE and is used to handle calls on methods of event interfaces.
         /// </summary>

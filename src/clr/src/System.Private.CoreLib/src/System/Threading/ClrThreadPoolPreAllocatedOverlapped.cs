@@ -14,12 +14,12 @@ namespace System.Threading
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying 
-        ///     a delegate that is invoked when each asynchronous I/O operation is complete, a user-provided 
+        ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying
+        ///     a delegate that is invoked when each asynchronous I/O operation is complete, a user-provided
         ///     object providing context, and managed objects that serve as buffers.
         /// </summary>
         /// <param name="callback">
-        ///     An <see cref="IOCompletionCallback"/> delegate that represents the callback method 
+        ///     An <see cref="IOCompletionCallback"/> delegate that represents the callback method
         ///     invoked when each asynchronous I/O operation completes.
         /// </param>
         /// <param name="state">
@@ -27,14 +27,14 @@ namespace System.Threading
         ///     object from other <see cref="NativeOverlapped"/> instances. Can be <see langword="null"/>.
         /// </param>
         /// <param name="pinData">
-        ///     An object or array of objects representing the input or output buffer for the operations. Each 
+        ///     An object or array of objects representing the input or output buffer for the operations. Each
         ///     object represents a buffer, for example an array of bytes.  Can be <see langword="null"/>.
         /// </param>
         /// <remarks>
-        ///     The new <see cref="PreAllocatedOverlapped"/> instance can be passed to 
+        ///     The new <see cref="PreAllocatedOverlapped"/> instance can be passed to
         ///     <see cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>, to produce
         ///     a <see cref="NativeOverlapped"/> instance that can be passed to the operating system in overlapped
-        ///     I/O operations.  A single <see cref="PreAllocatedOverlapped"/> instance can only be used for 
+        ///     I/O operations.  A single <see cref="PreAllocatedOverlapped"/> instance can only be used for
         ///     a single native I/O operation at a time.  However, the state stored in the <see cref="PreAllocatedOverlapped"/>
         ///     instance can be reused for subsequent native operations.
         ///     <note>
@@ -67,7 +67,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance. 
+        /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance.
         /// </summary>
         public void Dispose()
         {

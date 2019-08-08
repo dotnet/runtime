@@ -78,7 +78,7 @@ namespace System.Reflection.Emit
         public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
-        #endregion    
+        #endregion
     }
 
     internal sealed class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
@@ -178,11 +178,11 @@ namespace System.Reflection.Emit
             // for information about this change.
             //
             // There is a pre-existing race condition in this code with the side effect
-            // that the second thread's value clobbers the first in the hashtable. This is 
+            // that the second thread's value clobbers the first in the hashtable. This is
             // an acceptable race condition since we make no guarantees that this will return the
             // same object.
             //
-            // We're not entirely sure if this cache helps any specific scenarios, so 
+            // We're not entirely sure if this cache helps any specific scenarios, so
             // long-term, one could investigate whether it's needed. In any case, this
             // method isn't expected to be on any critical paths for performance.
             if (type.m_hashtable.Contains(Field))
@@ -264,43 +264,3 @@ namespace System.Reflection.Emit
         #endregion
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

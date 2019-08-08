@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 array[i++] = mapping.Key;
             }
         }
-        
+
         public int Count {
             get { return dictionary.Count; }
         }

@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tracing
         {
             s_RuntimeEventSource = new RuntimeEventSource();
         }
-        
+
         private RuntimeEventSource(): base(new Guid(0x49592C0F, 0x5A05, 0x516D, 0xAA, 0x4B, 0xA6, 0x4E, 0x02, 0x02, 0x6C, 0x89), "System.Runtime", EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tracing
         {
             if (command.Command == EventCommand.Enable)
             {
-                // NOTE: These counters will NOT be disposed on disable command because we may be introducing 
+                // NOTE: These counters will NOT be disposed on disable command because we may be introducing
                 // a race condition by doing that. We still want to create these lazily so that we aren't adding
                 // overhead by at all times even when counters aren't enabled.
 
@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
                 _gen2GCCounter = _gen2GCCounter ?? new IncrementingPollingCounter("gen-2-gc-count", this, () => GC.CollectionCount(2)) { DisplayName = "Gen 2 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _exceptionCounter = _exceptionCounter ?? new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _threadPoolThreadCounter = _threadPoolThreadCounter ?? new PollingCounter("threadpool-thread-count", this, () => ThreadPool.ThreadCount) { DisplayName = "ThreadPool Thread Count" };
-                _monitorContentionCounter = _monitorContentionCounter ?? new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) }; 
+                _monitorContentionCounter = _monitorContentionCounter ?? new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _threadPoolQueueCounter = _threadPoolQueueCounter ?? new PollingCounter("threadpool-queue-length", this, () => ThreadPool.PendingWorkItemCount) { DisplayName = "ThreadPool Queue Length" };
                 _completedItemsCounter = _completedItemsCounter ?? new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter = _gcTimeCounter ?? new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };

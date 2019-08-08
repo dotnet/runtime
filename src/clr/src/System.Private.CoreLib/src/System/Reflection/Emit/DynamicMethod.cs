@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         // DynamicMethod (just like we do for delegates). However, a user can get to
         // the corresponding RTDynamicMethod using Exception.TargetSite, StackFrame.GetMethod, etc.
         // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
-        // not be able to bound access to the DynamicMethod. Hence, we need to ensure that 
+        // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
         // we do not allow direct use of RTDynamicMethod.
         private RTDynamicMethod m_dynMethod = null!;
 
@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
             }
 
             MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, null, GetMethodDescriptor());
-            // stash this MethodInfo by brute force.  
+            // stash this MethodInfo by brute force.
             d.StoreDynamicMethod(GetMethodInfo());
             return d;
         }
@@ -365,7 +365,7 @@ namespace System.Reflection.Emit
             }
 
             MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, target, GetMethodDescriptor());
-            // stash this MethodInfo by brute force. 
+            // stash this MethodInfo by brute force.
             d.StoreDynamicMethod(GetMethodInfo());
             return d;
         }
@@ -443,7 +443,7 @@ namespace System.Reflection.Emit
 
             //
             // We do not demand any permission here because the caller already has access
-            // to the current DynamicMethod object, and it could just as easily emit another 
+            // to the current DynamicMethod object, and it could just as easily emit another
             // Transparent DynamicMethod to call the current DynamicMethod.
             //
 
@@ -738,4 +738,3 @@ namespace System.Reflection.Emit
         }
     }
 }
-

@@ -75,9 +75,9 @@ namespace System
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // This will return a class based upon the progID.  This is provided for 
-        // COM classic support.  Program ID's are not used in COM+ because they 
-        // have been superceded by namespace.  (This routine is called this instead 
+        // This will return a class based upon the progID.  This is provided for
+        // COM classic support.  Program ID's are not used in COM+ because they
+        // have been superceded by namespace.  (This routine is called this instead
         // of getClass() because of the name conflict with the first method above.)
         //
         //   param progID:     the progID of the class to retrieve
@@ -89,8 +89,8 @@ namespace System
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // This will return a class based upon the CLSID.  This is provided for 
-        // COM classic support.  
+        // This will return a class based upon the CLSID.  This is provided for
+        // COM classic support.
         //
         //   param CLSID:      the CLSID of the class to retrieve
         //   returns:          the class object associated to the CLSID

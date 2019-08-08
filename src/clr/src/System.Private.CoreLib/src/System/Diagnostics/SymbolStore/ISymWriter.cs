@@ -9,7 +9,7 @@
 ** Represents a symbol writer for managed code. Provides methods to
 ** define documents, sequence points, lexical scopes, and variables.
 **
-** 
+**
 ===========================================================*/
 
 using System.Reflection;

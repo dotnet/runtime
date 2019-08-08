@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public WriteOnlyArrayAttribute() { }
     }
 
-    // This attribute is applied on the return value to specify the name of the return value. 
+    // This attribute is applied on the return value to specify the name of the return value.
     // In WindowsRuntime all parameters including return value need to have unique names.
     // This is essential in JS as one of the ways to get at the results of a method in JavaScript is via a Dictionary object keyed by parameter name.
     [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]

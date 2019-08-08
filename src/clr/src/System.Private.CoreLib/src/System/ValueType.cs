@@ -19,7 +19,7 @@ using System.Runtime.Versioning;
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class ValueType
     {
         public override bool Equals(object? obj)
@@ -39,7 +39,7 @@ namespace System
             object thisObj = (object)this;
             object? thisResult, thatResult;
 
-            // if there are no GC references in this object we can avoid reflection 
+            // if there are no GC references in this object we can avoid reflection
             // and do a fast memcmp
             if (CanCompareBits(this))
                 return FastEqualsCheck(thisObj, obj);
