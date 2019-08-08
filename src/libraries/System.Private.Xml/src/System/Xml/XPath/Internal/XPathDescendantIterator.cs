@@ -25,6 +25,12 @@ namespace MS.Internal.Xml.XPath
 
         public override bool MoveNext()
         {
+            if (_level == -1)
+            {
+                // We can only get here when we already iterated over all descendants
+                return false;
+            }
+
             if (first)
             {
                 first = false;
@@ -47,6 +53,11 @@ namespace MS.Internal.Xml.XPath
                     {
                         if (_level == 0)
                         {
+                            // In an attempt to find next descendant we ended up being back in the root node
+                            // which means we are done iterating descendants.
+                            // If we have called this method again MoveToFirstChild would cause iteration to start over.
+                            // We will use _level == -1 to mark that we are already done iterating.
+                            _level = -1;
                             return false;
                         }
                         if (nav.MoveToNext())

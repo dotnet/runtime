@@ -373,5 +373,69 @@ namespace XPathTests.FunctionalTests
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void WhenUsingCustomXPathNavigatorDescendantIteratorShouldBeDoneAfterIterationIsComplete()
+        {
+            // When XPathDescendantIterator.MoveNext returns false it should keep returning false
+            // This is a regression test.
+            // Previously this scenario was possible to hit only when inheriting from XPathNavigator
+            // and not providing custom XPathDescendantsNavigator
+            string xml = "<root><a/><b/><c/><d><e/><f/></d></root>";
+            var xpnav = new CustomNavigator(Utils.CreateNavigator(xml));
+
+            var it = xpnav.SelectDescendants(XPathNodeType.All, true);
+            int ret = 0;
+            while (it.MoveNext())
+            {
+                ret++;
+            }
+
+            Assert.Equal(8, ret);
+            Assert.False(it.MoveNext());
+        }
+
+        class CustomNavigator : XPathNavigator
+        {
+            private XPathNavigator _inner;
+
+            public CustomNavigator(XPathNavigator inner)
+            {
+                _inner = inner;
+            }
+
+            private static XPathNavigator Unwrap(XPathNavigator navigator)
+            {
+                while (navigator is CustomNavigator custom)
+                {
+                    navigator = custom._inner;
+                }
+
+                return navigator;
+            }
+
+            public override XmlNameTable NameTable => _inner.NameTable;
+            public override XPathNodeType NodeType => _inner.NodeType;
+            public override string LocalName => _inner.LocalName;
+            public override string Name => _inner.Name;
+            public override string NamespaceURI => _inner.NamespaceURI;
+            public override string Prefix => _inner.Prefix;
+            public override string BaseURI => _inner.BaseURI;
+            public override bool IsEmptyElement => _inner.IsEmptyElement;
+            public override string Value => _inner.Value;
+            public override XPathNavigator Clone() => new CustomNavigator(_inner.Clone());
+            public override bool IsSamePosition(XPathNavigator other) => _inner.IsSamePosition(Unwrap(other));
+            public override bool MoveTo(XPathNavigator other) => _inner.MoveTo(Unwrap(other));
+            public override bool MoveToFirstAttribute() => _inner.MoveToFirstAttribute();
+            public override bool MoveToFirstChild() => _inner.MoveToFirstChild();
+            public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope) => _inner.MoveToFirstNamespace(namespaceScope);
+            public override bool MoveToId(string id) => _inner.MoveToId(id);
+            public override bool MoveToNext() => _inner.MoveToNext();
+            public override bool MoveToNextAttribute() => _inner.MoveToNextAttribute();
+            public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope) => _inner.MoveToNextNamespace(namespaceScope);
+            public override bool MoveToParent() => _inner.MoveToParent();
+            public override bool MoveToPrevious() => _inner.MoveToPrevious();
+        }
     }
 }
