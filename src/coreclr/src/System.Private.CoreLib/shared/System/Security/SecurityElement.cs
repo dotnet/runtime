@@ -10,9 +10,6 @@ using System.Text;
 
 namespace System.Security
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     internal interface ISecurityElementFactory
     {
         SecurityElement CreateSecurityElement();
@@ -24,9 +21,6 @@ namespace System.Security
         string? Attribute(string attributeName);
     }
 
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     public sealed class SecurityElement : ISecurityElementFactory
     {
         internal string _tag = null!;

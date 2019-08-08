@@ -1017,8 +1017,6 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            // Hits a code generation bug on ProjectN
-#if !PROJECTN
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
@@ -1054,7 +1052,6 @@ namespace System
                     return (result >= 0 ? startIndex : 0) + result;
                 }
             }
-#endif
 
 #if CORECLR
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
@@ -1221,8 +1218,6 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            // Hits a code generation bug on ProjectN
-#if !PROJECTN
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
@@ -1266,8 +1261,6 @@ namespace System
                     return (result >= 0 ? endIndex : 0) + result;
                 }
             }
-            
-#endif
 
 #if CORECLR
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);

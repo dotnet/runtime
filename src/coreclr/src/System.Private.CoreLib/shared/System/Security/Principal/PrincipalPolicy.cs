@@ -9,9 +9,6 @@
 
 namespace System.Security.Principal
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Security.Principal")]
-#endif
     public enum PrincipalPolicy 
     {
         // Note: it's important that the default policy has the value 0.

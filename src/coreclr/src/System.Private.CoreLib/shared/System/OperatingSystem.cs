@@ -7,9 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
         private readonly Version _version;
