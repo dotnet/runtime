@@ -4163,12 +4163,12 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
 #else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        internal static Type GetTypeFromProgIDImpl(String progID, String? server, bool throwOnError)
+        internal static Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError)
         {
             throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
         }
 
-        internal static Type GetTypeFromCLSIDImpl(Guid clsid, String? server, bool throwOnError)
+        internal static Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError)
         {
             throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
         }

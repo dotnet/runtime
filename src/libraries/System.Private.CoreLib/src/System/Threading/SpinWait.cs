@@ -283,7 +283,7 @@ namespace System.Threading
         /// <exception cref="ArgumentNullException">The <paramref name="condition"/> argument is null.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
         /// other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than
-        /// <see cref="System.Int32.MaxValue"/>.</exception>
+        /// <see cref="int.MaxValue"/>.</exception>
         public static bool SpinUntil(Func<bool> condition, TimeSpan timeout)
         {
             // Validate the timeout

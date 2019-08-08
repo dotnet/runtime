@@ -8,6 +8,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Numerics;
 using Internal.Runtime.CompilerServices;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
 using nint = System.Int64;
 using nuint = System.UInt64;

@@ -1740,12 +1740,12 @@ namespace System.StubHelpers
 
 #if FEATURE_ARRAYSTUB_AS_IL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void ArrayTypeCheck(object o, Object[] arr);
+        internal static extern void ArrayTypeCheck(object o, object[] arr);
 #endif
 
 #if FEATURE_MULTICASTSTUB_AS_IL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void MulticastDebuggerTraceHelper(object o, Int32 count);
+        internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
     }  // class StubHelpers
 }

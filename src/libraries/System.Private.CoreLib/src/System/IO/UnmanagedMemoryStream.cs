@@ -474,7 +474,7 @@ namespace System.IO
             {
                 int n = Read(buffer, offset, count);
                 Task<int>? t = _lastReadTask;
-                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<Int32>(n));
+                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
             }
             catch (Exception ex)
             {
