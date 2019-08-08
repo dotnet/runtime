@@ -8,7 +8,7 @@ To add an analyzer package to the build:
 ```XML
 <PackageReference Include="SonarAnalyzer.CSharp" Version="7.15.0.8572" />
 ```
-3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  Rules can be disabled by adding entries to the https://github.com/dotnet/corefx/blob/master/src/CodeAnalysis.ruleset file, e.g.
+3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  Rules can be disabled by adding entries to the https://github.com/dotnet/corefx/blob/master/src/Common/src/CoreLib/CodeAnalysis.ruleset file, e.g.
 ```XML
   <Rules AnalyzerId="SonarAnalyzer.CSharp" RuleNamespace="SonarAnalyzer.CSharp">
     <Rule Id="S1006" Action="None" />
