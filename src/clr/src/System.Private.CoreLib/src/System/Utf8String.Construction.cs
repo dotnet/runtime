@@ -73,7 +73,7 @@ namespace System
         /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         [CLSCompliant(false)]
-        public unsafe extern Utf8String(byte* value);
+        public extern unsafe Utf8String(byte* value);
 
 #if !CORECLR
         static
@@ -139,7 +139,7 @@ namespace System
         /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         [CLSCompliant(false)]
-        public unsafe extern Utf8String(char* value);
+        public extern unsafe Utf8String(char* value);
 
 #if !CORECLR
         static

@@ -24,7 +24,7 @@ namespace System.Security
             return bstr;
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             RuntimeImports.RhZeroMemory(handle, (UIntPtr)Marshal.SysStringByteLen(handle));
             Interop.OleAut32.SysFreeString(handle);

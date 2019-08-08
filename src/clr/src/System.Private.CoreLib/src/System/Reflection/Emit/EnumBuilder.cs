@@ -17,7 +17,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    sealed public class EnumBuilder : TypeInfo
+    public sealed class EnumBuilder : TypeInfo
     {
         public override bool IsAssignableFrom(TypeInfo? typeInfo)
         {

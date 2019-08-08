@@ -99,7 +99,7 @@ namespace System.Runtime.CompilerServices
         public static extern int GetHashCode(object o);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public new static extern bool Equals(object? o1, object? o2);
+        public static extern new bool Equals(object? o1, object? o2);
 
         public static int OffsetToStringData
         {
