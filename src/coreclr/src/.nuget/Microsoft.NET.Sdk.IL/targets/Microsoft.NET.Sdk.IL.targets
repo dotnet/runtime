@@ -27,27 +27,21 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNetCoreIlasmPackageVersion Condition="'$(MicrosoftNetCoreIlasmPackageVersion)' == ''">3.0.0</MicrosoftNetCoreIlasmPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion Condition="'$(MicrosoftNetCoreIlasmPackageVersion)' == ''">5.0.0</MicrosoftNetCoreIlasmPackageVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
-    <MicrosoftNetCoreRuntimeCoreClrPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.runtime.coreclr</MicrosoftNetCoreRuntimeCoreClrPackageName>
-    <MicrosoftNetCoreJitPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.jit</MicrosoftNetCoreJitPackageName>
-
+    
     <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
-         Otherwise packages will be restored and copied to $(ToolsDir)\ilasm
-         If ToolsDir is not defined a directory will be created under obj ($(BaseIntermediateOutputPath)).  -->
+         Otherwise packages will be restored and ilasm and ildasm will be referenced from their packages.  -->
     <_IlasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
-    <_IlasmDir Condition="'$(_IlasmDir)' == '' AND '$(ToolsDir)' != ''">$([MSBuild]::NormalizeDirectory($(ToolsDir), 'ilasm'))</_IlasmDir>
-    <_IlasmDir Condition="'$(_IlasmDir)' == ''">$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'ilasm'))</_IlasmDir>
-    <CoreCompileDependsOn Condition="'$(ILAsmToolPath)' == ''">$(CoreCompileDependsOn);CopyILAsmTool</CoreCompileDependsOn>
+    <_IldasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IldasmDir>
+    <CoreCompileDependsOn Condition="'$(ILAsmToolPath)' == ''">$(CoreCompileDependsOn);ResolveIlAsmToolPaths</CoreCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ILAsmToolPath)' == ''">
     <_IlasmPackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
     <_IlasmPackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
-    <_IlasmPackageReference Include="$(MicrosoftNetCoreRuntimeCoreClrPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
-    <_IlasmPackageReference Include="$(MicrosoftNetCoreJitPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
-    <PackageReference Include="@(_IlasmPackageReference)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="@(_IlasmPackageReference)" ExcludeAssets="native" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -60,16 +54,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Required by Microsoft.Common.targets -->
   </Target>
 
-  <Target Name="CopyILAsmTool">
+  <Target Name="ResolveIlAsmToolPaths">
     <ItemGroup>
       <_IlasmPackageReference NativePath="$(NuGetPackageRoot)\%(Identity)\%(Version)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native" />
       <_IlasmSourceFiles Include="%(_IlasmPackageReference.NativePath)\**\*" />
     </ItemGroup>
     <Error Condition="!Exists('%(_IlasmPackageReference.NativePath)')" Text="Package %(_IlasmPackageReference.Identity)\%(_IlasmPackageReference.Version) was not restored" />
 
-    <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->
-    <MakeDir Directories="$(_IlasmDir)" />
-    <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
+    <PropertyGroup>
+      <_IlasmDir Condition="'$(_IlasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIlasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IlasmDir>
+      <_IldasmDir Condition="'$(_IlasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIldasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IldasmDir>
+    </PropertyGroup>
   </Target>
 
   <!-- projects can define an ILResourceReference and we'll decompile it to get native resources -->
@@ -81,7 +76,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="'@(ILResourceReference->Count())' != '1'" Text="Only one ILResourceReference can be specified" />
     <PropertyGroup>
       <_ilResourceReference>%(ILResourceReference.FullPath)</_ilResourceReference>
-      <_IldasmCommand>$(_IlasmDir)ildasm</_IldasmCommand>
+      <_IldasmCommand>$(_IldasmDir)ildasm</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) "$(_ilResourceReference)"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
 
