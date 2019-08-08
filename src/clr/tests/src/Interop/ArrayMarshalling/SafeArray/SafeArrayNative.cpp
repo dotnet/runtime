@@ -142,7 +142,7 @@ HRESULT ReverseBSTR(BSTR str, BSTR *res)
     if (resLocal == nullptr)
         return E_INVALIDARG;
 
-    UINT len = TP_SysStringLen(str);
+    size_t len = TP_SysStringLen(str);
     *res = ReverseInplace(len, resLocal);
 
     return S_OK;

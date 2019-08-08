@@ -543,7 +543,7 @@ size_t TP_SysStringByteLen(BSTR bstr)
 #endif    
 }
 
-DWORD TP_SysStringLen(BSTR bstr)
+size_t TP_SysStringLen(BSTR bstr)
 {
 #ifdef WINDOWS
     return SysStringLen(bstr);
