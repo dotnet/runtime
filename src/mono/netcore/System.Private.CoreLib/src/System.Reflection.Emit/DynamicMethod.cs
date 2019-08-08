@@ -103,17 +103,17 @@ namespace System.Reflection.Emit {
 		DynamicMethod (string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type [] parameterTypes, Type owner, Module m, bool skipVisibility, bool anonHosted, bool typeOwner)
 		{
 			if (name == null)
-				throw new ArgumentNullException ("name");
+				throw new ArgumentNullException (nameof (name));
 			if (returnType == null)
 				returnType = typeof (void);
 			if (owner == null && typeOwner)
 				throw new ArgumentNullException (nameof (owner));
 			if ((m == null) && !anonHosted)
-				throw new ArgumentNullException ("m");			
+				throw new ArgumentNullException (nameof (m));			
 			if (parameterTypes != null) {
 				for (int i = 0; i < parameterTypes.Length; ++i)
 					if (parameterTypes [i] == null)
-						throw new ArgumentException ("Parameter " + i + " is null", "parameterTypes");
+						throw new ArgumentException ($"Parameter {i} is null");
 			}
 			if (owner != null && (owner.IsArray || owner.IsInterface)) {
 				throw new ArgumentException ("Owner can't be an array or an interface.");

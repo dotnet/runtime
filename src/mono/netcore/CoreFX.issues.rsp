@@ -548,10 +548,6 @@
 # Implementation task https://github.com/mono/mono/issues/15142
 -nomethod System.Reflection.Tests.IsCollectibleTests.*
 
-# Runtime crashes instead of TypeLoadException
--nomethod System.Tests.TypeTestsExtended.GetTypeByName_NoSuchType_ThrowsTypeLoadException
--nomethod System.Tests.TypeTestsExtended.GetTypeByNameCaseSensitiveTypeloadFailure
-
 # Mono ignores [Optional] attribute defined on parameters in delegates
 # https://github.com/mono/mono/issues/15148
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
@@ -906,10 +902,6 @@
 # https://github.com/mono/mono/issues/15334
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException
 
-# Expected null, but got parameterTypes
-# https://github.com/mono/mono/issues/15335
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.NullObjectInParameterTypes_ThrowsArgumentException
-
 ####################################################################
 ##  System.Runtime.Loader.Tests
 ####################################################################
@@ -965,10 +957,6 @@
 ####################################################################
 ##  System.ComponentModel.Composition.Registration.Tests
 ####################################################################
-
-# All have NRE
-# https://github.com/mono/mono/issues/15352
--nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.*
 
 # System.ComponentModel.Composition.Registration APIs are not supported on this platform.
 -nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.*
