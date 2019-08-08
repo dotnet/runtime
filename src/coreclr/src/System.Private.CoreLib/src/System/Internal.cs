@@ -32,6 +32,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 // Add Serviceable attribute to the assembly metadata
 [assembly: AssemblyMetadata("Serviceable", "True")]
 
+// Mark the library as a .NET Framework assembly
+[assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
+
 namespace System
 {
     static class CommonlyUsedGenericInstantiations
