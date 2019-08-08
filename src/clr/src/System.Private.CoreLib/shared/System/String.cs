@@ -44,9 +44,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -67,9 +64,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value, int startIndex, int length);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -103,9 +97,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern unsafe String(char* value);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -128,9 +119,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern unsafe String(char* value, int startIndex, int length);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -164,9 +152,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern unsafe String(sbyte* value);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -185,9 +170,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -247,9 +229,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -284,9 +263,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif
@@ -336,9 +312,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(ReadOnlySpan<char> value);
 
-#if PROJECTN
-        [DependencyReductionRoot]
-#endif
 #if !CORECLR
         static
 #endif

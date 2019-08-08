@@ -11,9 +11,6 @@ using System.Security.Principal;
 
 namespace System.Threading
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Threading.Thread")]
-#endif
     public sealed partial class Thread : CriticalFinalizerObject
     {
         private static AsyncLocal<IPrincipal?>? s_asyncLocalPrincipal;

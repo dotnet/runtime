@@ -17,9 +17,6 @@ using System.Threading;
 
 namespace System
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
