@@ -623,8 +623,17 @@ namespace
         }
 
         // Validate the current context is acceptable for this request (frameworks)
-        if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
-            return StatusCode::CoreHostIncompatibleConfig;
+        // Only validate for framework-dependent (i.e. non-empty frameworks)
+        // Self-contained apps don't contain information about frmeworks contained in the app, so there's nothing to validate against.
+        if (!existing_context->fx_versions_by_name.empty())
+        {
+            if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
+                return StatusCode::CoreHostIncompatibleConfig;
+        }
+        else
+        {
+            trace::verbose(_X("Skipped framework validation for loading a component in a self-contained app"));
+        }
 
         app_config.combine_properties(config_properties);
         return StatusCode::Success;
