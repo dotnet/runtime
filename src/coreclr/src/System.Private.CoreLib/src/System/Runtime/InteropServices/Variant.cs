@@ -275,7 +275,6 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Release any unmanaged memory associated with the Variant
         /// </summary>
-        /// <returns></returns>
         public void Clear()
         {
             // We do not need to call OLE32's VariantClear for primitive types or ByRefs
