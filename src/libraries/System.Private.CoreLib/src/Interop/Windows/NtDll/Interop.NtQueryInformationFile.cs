@@ -21,8 +21,8 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct IO_STATUS_BLOCK
         {
-            IO_STATUS Status;
-            IntPtr Information;
+            private IO_STATUS Status;
+            private IntPtr Information;
         }
 
         // This isn't an actual Windows type, we have to separate it out as the size of IntPtr varies by architecture
@@ -31,10 +31,10 @@ internal partial class Interop
         internal struct IO_STATUS
         {
             [FieldOffset(0)]
-            int Status;
+            private int Status;
 
             [FieldOffset(0)]
-            IntPtr Pointer;
+            private IntPtr Pointer;
         }
 
         internal const uint FileModeInformation = 16;
