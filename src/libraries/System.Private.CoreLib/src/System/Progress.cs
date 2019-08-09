@@ -88,8 +88,8 @@ namespace System
             Action<T>? handler = _handler;
             EventHandler<T>? changedEvent = ProgressChanged;
 
-            if (handler != null) handler(value);
-            if (changedEvent != null) changedEvent(this, value);
+            handler?.Invoke(value);
+            changedEvent?.Invoke(this, value);
         }
     }
 
