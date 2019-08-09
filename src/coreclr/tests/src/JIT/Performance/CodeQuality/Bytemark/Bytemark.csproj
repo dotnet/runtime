@@ -12,6 +12,7 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <!-- This test takes a very long time when run with runincontext -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

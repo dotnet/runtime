@@ -12,6 +12,7 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
