@@ -29,6 +29,8 @@ namespace HttpStress
 {
     public class StressServer : IDisposable
     {
+        // Header indicating expected response content length to be returned by the server
+        public const string ExpectedResponseContentLength = "Expected-Response-Content-Length";
 
         private EventListener _eventListener;
         private readonly IWebHost _webHost;
@@ -95,7 +97,7 @@ namespace HttpStress
                 {
                     var head = new[] { "HEAD" };
                     app.UseRouting();
-                    app.UseEndpoints(e => MapRoutes(e, configuration.MaxContentLength));
+                    app.UseEndpoints(MapRoutes);
                 });
 
             // Handle command-line arguments.
@@ -109,22 +111,24 @@ namespace HttpStress
             _webHost.Start();
         }
 
-        private static void MapRoutes(IEndpointRouteBuilder endpoints, int maxContentLength)
+        private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
-            string contentSource = ServerContentUtils.CreateStringContent(maxContentLength);
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
             {
                 // Get requests just send back the requested content.
-                await context.Response.WriteAsync(contentSource);
+                string content = CreateResponseContent(context);
+                await context.Response.WriteAsync(content);
             });
             endpoints.MapGet("/slow", async context =>
             {
                 // Sends back the content a character at a time.
-                for (int i = 0; i < contentSource.Length; i++)
+                string content = CreateResponseContent(context);
+
+                for (int i = 0; i < content.Length; i++)
                 {
-                    await context.Response.WriteAsync(contentSource[i].ToString());
+                    await context.Response.WriteAsync(content[i].ToString());
                     await context.Response.Body.FlushAsync();
                 }
             });
@@ -171,7 +175,8 @@ namespace HttpStress
             endpoints.MapGet("/abort", async context =>
             {
                 // Server writes some content, then aborts the connection
-                await context.Response.WriteAsync(contentSource.Substring(0, contentSource.Length / 2));
+                string content = CreateResponseContent(context);
+                await context.Response.WriteAsync(content.Substring(0, content.Length / 2));
                 context.Abort();
             });
             endpoints.MapPost("/", async context =>
@@ -199,7 +204,8 @@ namespace HttpStress
             endpoints.MapMethods("/", head, context =>
             {
                 // Just set the max content length on the response.
-                context.Response.Headers.ContentLength = maxContentLength;
+                string content = CreateResponseContent(context);
+                context.Response.Headers.ContentLength = content.Length;
                 return Task.CompletedTask;
             });
             endpoints.MapPut("/", async context =>
@@ -281,6 +287,23 @@ namespace HttpStress
                         Console.WriteLine();
                     }
                 }
+            }
+        }
+
+        private static string CreateResponseContent(HttpContext ctx)
+        {
+            return ServerContentUtils.CreateStringContent(GetExpectedContentLength());
+
+            int GetExpectedContentLength()
+            {
+                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) && 
+                    values.Count == 1 &&
+                    int.TryParse(values[0], out int result))
+                {
+                    return result;
+                }
+
+                throw new Exception($"Could not parse {ExpectedResponseContentLength} header");
             }
         }
     }
