@@ -80,18 +80,16 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if ne(job._jobFramework, '')}}:
-          - _finalFrameworkArg: ${{ job._jobFramework }}
-
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
-          - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
-          - group: DotNet-Blob-Feed
 
         - ${{ if eq(job.submitToHelix, 'true') }}:
           - _archiveTestsParameter: /p:ArchiveTests=Tests
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - group: DotNet-HelixApi-Access
+
+        - ${{ if ne(job.frameworkArg, '') }}:
+          - _finalFrameworkArg: ${{ job.frameworkArg }}
 
         - _args: -configuration $(_BuildConfig) -ci -arch $(_architecture) $(_finalFrameworkArg) $(_archiveTestsParameter) ${{ job.buildExtraArguments }}
         - _commonArguments: $(_args)
@@ -137,7 +135,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - task: DotNetCoreCLI@2
               displayName: Restore internal tools
-              condition: ne(variables['_skipRestoreInternalTools'], 'true')
+              condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
               inputs:
                 command: restore
                 feedsToUse: config
@@ -161,8 +159,7 @@ jobs:
 
           - ${{ if eq(job.submitToHelix, 'true') }}:
             - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-              - script: $(_msbuildCommand) eng/publish.proj
-                      /t:PublishTestAssets
+              - script: $(_msbuildCommand) eng/publishTestAssets.proj
                       /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
                       /p:AccountKey=$(dotnetfeed-storage-access-key-1)
                       /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
@@ -184,7 +181,7 @@ jobs:
               - task: PublishBuildArtifacts@1
                 displayName: Publish test asset manifest to artifacts container
                 inputs:
-                  pathToPublish: $(Build.SourcesDirectory)/artifacts/AssetManifests
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/TestAssetsManifests
                   artifactName: $(Agent.Os)_$(Agent.JobName)
                   artifactType: container
                 condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
@@ -214,7 +211,7 @@ jobs:
             - task: PublishBuildArtifacts@1
               displayName: Publish packages to artifacts container
               inputs:
-                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
+                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages
                 artifactName: packages
                 artifactType: container
               condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))

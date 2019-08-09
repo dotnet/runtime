@@ -10,50 +10,54 @@ parameters:
   #   Default: empty
   testScope: ''
 
-jobs:
-- template: corefx-base.yml
-  parameters:
-    isOfficialBuild: ${{ parameters.isOfficialBuild }}
-    testScope: ${{ parameters.testScope }}
-    targetOS: OSX
-    jobs:
+stages:
+- stage: MacOSStage
+  displayName: MacOS
+  dependsOn: []
+  jobs:
+  - template: corefx-base.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      testScope: ${{ parameters.testScope }}
+      targetOS: OSX
+      jobs:
 
-    # Legs with Helix testing
-    - job: MacOS
-      displayName: MacOS
-      strategy:
-        matrix:
-          ${{ if eq(parameters.fullMatrix, 'false') }}:
-            x64_Debug:
-              _BuildConfig: Debug
-              _architecture: x64
-              _framework: netcoreapp
-              _helixQueues: $(macOSQueues)
+      # Legs with Helix testing
+      - job: MacOS
+        displayName: Build
+        strategy:
+          matrix:
+            ${{ if eq(parameters.fullMatrix, 'false') }}:
+              x64_Debug:
+                _BuildConfig: Debug
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(macOSQueues)
 
-          ${{ if eq(parameters.fullMatrix, 'true') }}:
-            x64_Release:
-              _BuildConfig: Release
-              _architecture: x64
-              _framework: netcoreapp
-              _helixQueues: $(macOSQueues)
-              _publishTests: true
+            ${{ if eq(parameters.fullMatrix, 'true') }}:
+              x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(macOSQueues)
+                _publishTests: true
 
-      pool:
-        name: Hosted macOS
+        pool:
+          name: Hosted macOS
 
-      preBuildSteps:
-        - script: |
-            brew install pkgconfig openssl
-            ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
-            ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
-            ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
-          displayName: Install Build Dependencies
-      
-      submitToHelix: true
+        preBuildSteps:
+          - script: |
+              brew install pkgconfig openssl
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+            displayName: Install Build Dependencies
+        
+        submitToHelix: true
 
-      variables:
-        - ${{ if eq(parameters.fullMatrix, 'false') }}:
-          - macOSQueues: OSX.1013.Amd64.Open
+        variables:
+          - ${{ if eq(parameters.fullMatrix, 'false') }}:
+            - macOSQueues: OSX.1013.Amd64.Open
 
-        - ${{ if eq(parameters.fullMatrix, 'true') }}:
-          - macOSQueues: OSX.1013.Amd64.Open+OSX.1014.Amd64.Open
+          - ${{ if eq(parameters.fullMatrix, 'true') }}:
+            - macOSQueues: OSX.1013.Amd64.Open+OSX.1014.Amd64.Open
