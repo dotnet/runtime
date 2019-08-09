@@ -211,7 +211,7 @@ namespace System.Globalization
                 CurrentInfo : // Fast path for a null provider
                 GetProviderNonNull(formatProvider);
 
-            NumberFormatInfo GetProviderNonNull(IFormatProvider provider)
+            static NumberFormatInfo GetProviderNonNull(IFormatProvider provider)
             {
                 // Fast path for a regular CultureInfo
                 if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
