@@ -23,7 +23,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class TypeInitializationException : SystemException
     {
-        private string? _typeName;
+        private readonly string? _typeName;
 
         // This exception is not creatable without specifying the
         //    inner exception.

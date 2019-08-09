@@ -687,7 +687,7 @@ namespace System.Threading
             private int _nextIdToTry = 0;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
-            private List<bool> _freeIds = new List<bool>();
+            private readonly List<bool> _freeIds = new List<bool>();
 
             internal int GetId()
             {
@@ -741,7 +741,7 @@ namespace System.Threading
         private class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
-            private bool _trackAllValues;
+            private readonly bool _trackAllValues;
 
             internal FinalizationHelper(LinkedSlotVolatile[] slotArray, bool trackAllValues)
             {

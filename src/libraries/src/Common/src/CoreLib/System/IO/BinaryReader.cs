@@ -31,12 +31,12 @@ namespace System.IO
         private readonly Decoder _decoder;
         private byte[]? _charBytes;
         private char[]? _charBuffer;
-        private int _maxCharsSize;  // From MaxCharBytesSize & Encoding
+        private readonly int _maxCharsSize;  // From MaxCharBytesSize & Encoding
 
         // Performance optimization for Read() w/ Unicode.  Speeds us up by ~40%
-        private bool _2BytesPerChar;
-        private bool _isMemoryStream; // "do we sit on MemoryStream?" for Read/ReadInt32 perf
-        private bool _leaveOpen;
+        private readonly bool _2BytesPerChar;
+        private readonly bool _isMemoryStream; // "do we sit on MemoryStream?" for Read/ReadInt32 perf
+        private readonly bool _leaveOpen;
         private bool _disposed;
 
         public BinaryReader(Stream input) : this(input, Encoding.UTF8, false)

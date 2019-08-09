@@ -13,7 +13,7 @@ namespace System.Globalization
         IEquatable<SortVersion>
 #nullable restore
     {
-        private int m_NlsVersion; // Do not rename (binary serialization)
+        private readonly int m_NlsVersion; // Do not rename (binary serialization)
         private Guid m_SortId; // Do not rename (binary serialization)
 
         public int FullVersion => m_NlsVersion;

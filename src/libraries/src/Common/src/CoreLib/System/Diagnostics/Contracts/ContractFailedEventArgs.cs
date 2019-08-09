@@ -12,10 +12,10 @@ namespace System.Diagnostics.Contracts
 {
     public sealed class ContractFailedEventArgs : EventArgs
     {
-        private ContractFailureKind _failureKind;
-        private string? _message;
-        private string? _condition;
-        private Exception? _originalException;
+        private readonly ContractFailureKind _failureKind;
+        private readonly string? _message;
+        private readonly string? _condition;
+        private readonly Exception? _originalException;
         private bool _handled;
         private bool _unwind;
 

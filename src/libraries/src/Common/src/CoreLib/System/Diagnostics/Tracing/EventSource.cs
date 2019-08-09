@@ -2431,8 +2431,8 @@ namespace System.Diagnostics.Tracing
                 m_eventSource.SendCommand(listener, m_eventProviderType, perEventSourceSessionId, etwSessionId,
                                           (EventCommand)command, IsEnabled(), Level, MatchAnyKeyword, arguments);
             }
-            private EventSource m_eventSource;
-            private EventProviderType m_eventProviderType;
+            private readonly EventSource m_eventSource;
+            private readonly EventProviderType m_eventProviderType;
         }
 #endif
 
@@ -3913,7 +3913,7 @@ namespace System.Diagnostics.Tracing
 
         private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
 
-        private EventSourceSettings m_config;      // configuration information
+        private readonly EventSourceSettings m_config;      // configuration information
 
         private bool m_eventSourceDisposed;              // has Dispose been called.
 
@@ -4962,7 +4962,7 @@ namespace System.Diagnostics.Tracing
         }
         private string? m_message;
         private string? m_eventName;
-        private EventSource m_eventSource;
+        private readonly EventSource m_eventSource;
         private ReadOnlyCollection<string>? m_payloadNames;
         private Guid m_activityId;
         private long? m_osThreadId;
@@ -6280,15 +6280,14 @@ namespace System.Diagnostics.Tracing
         }
 #endif
 
-        private Dictionary<int, string> opcodeTab;
+        private readonly Dictionary<int, string> opcodeTab;
         private Dictionary<int, string>? taskTab;
 #if FEATURE_MANAGED_ETW_CHANNELS
         private Dictionary<int, ChannelInfo>? channelTab;
 #endif
         private Dictionary<ulong, string>? keywordTab;
         private Dictionary<string, Type>? mapsTab;
-
-        private Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
+        private readonly Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         // WCF used EventSource to mimic a existing ETW manifest.   To support this
@@ -6301,17 +6300,17 @@ namespace System.Diagnostics.Tracing
         private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 #endif
 
-        private StringBuilder sb;               // Holds the provider information.
-        private StringBuilder events;           // Holds the events.
-        private StringBuilder templates;
+        private readonly StringBuilder sb;               // Holds the provider information.
+        private readonly StringBuilder events;           // Holds the events.
+        private readonly StringBuilder templates;
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        private string providerName;
+        private readonly string providerName;
 #endif
-        private ResourceManager? resources;      // Look up localized strings here.
-        private EventManifestOptions flags;
-        private IList<string> errors;           // list of currently encountered errors
-        private Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
+        private readonly ResourceManager? resources;      // Look up localized strings here.
+        private readonly EventManifestOptions flags;
+        private readonly IList<string> errors;           // list of currently encountered errors
+        private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 
         // State we track between StartEvent and EndEvent.
         private string? eventName;               // Name of the event currently being processed.

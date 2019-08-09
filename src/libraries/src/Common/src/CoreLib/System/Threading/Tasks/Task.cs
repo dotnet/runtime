@@ -6287,7 +6287,7 @@ namespace System.Threading.Tasks
     // Proxy class for better debugging experience
     internal class SystemThreadingTasks_TaskDebugView
     {
-        private Task m_task;
+        private readonly Task m_task;
 
         public SystemThreadingTasks_TaskDebugView(Task task)
         {

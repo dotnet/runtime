@@ -20,8 +20,8 @@ namespace System.Runtime.Serialization
         private object?[] _values;
         private Type[] _types;
         private int _count;
-        private Dictionary<string, int> _nameToIndex;
-        private IFormatterConverter _converter;
+        private readonly Dictionary<string, int> _nameToIndex;
+        private readonly IFormatterConverter _converter;
         private string _rootTypeName;
         private string _rootTypeAssemblyName;
         private Type _rootType;

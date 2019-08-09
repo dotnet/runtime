@@ -24,8 +24,8 @@ namespace System
         Inherited = false)]
     public sealed class ObsoleteAttribute : Attribute
     {
-        private string? _message;
-        private bool _error;
+        private readonly string? _message;
+        private readonly bool _error;
 
         public ObsoleteAttribute()
         {

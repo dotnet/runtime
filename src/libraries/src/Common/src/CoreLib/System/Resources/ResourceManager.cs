@@ -102,9 +102,9 @@ namespace System.Resources
         protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet>? _resourceSets;
-        private string? _moduleDir;          // For assembly-ignorant directory location
-        private Type? _locationInfo;         // For Assembly or type-based directory layout
-        private Type? _userResourceSet;      // Which ResourceSet instance to create
+        private readonly string? _moduleDir;          // For assembly-ignorant directory location
+        private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
+        private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
         private CultureInfo? _neutralResourcesCulture;  // For perf optimizations.
 
         private CultureNameResourceSetPair? _lastUsedResourceCache;
@@ -761,7 +761,7 @@ namespace System.Resources
 
         internal class ResourceManagerMediator
         {
-            private ResourceManager _rm;
+            private readonly ResourceManager _rm;
 
             internal ResourceManagerMediator(ResourceManager rm)
             {

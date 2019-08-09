@@ -67,7 +67,7 @@ namespace System.IO
         // The intent of this field is to leave open the underlying stream when
         // disposing of this StreamReader.  A name like _leaveOpen is better,
         // but this type is serializable, and this field's name was _closable.
-        private bool _closable;  // Whether to close the underlying stream.
+        private readonly bool _closable;  // Whether to close the underlying stream.
 
         // We don't guarantee thread safety on StreamReader, but we should at
         // least prevent users from trying to read anything while an Async
