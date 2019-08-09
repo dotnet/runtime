@@ -72,7 +72,7 @@ namespace System.Text.Json.Tests
   ""name"": ""Name!"",
   ""birthDate"": ""2000-11-20T23:55:44Z"",
   ""lastModified"": ""2000-11-20T23:55:44Z""
-}", json);
+}".NormalizeLineEndings(), json);
 
             Person deserializedPerson = JsonSerializer.Deserialize<Person>(json, s_camelCaseAndIndentedOption);
 
@@ -85,7 +85,7 @@ namespace System.Text.Json.Tests
   ""Name"": ""Name!"",
   ""BirthDate"": ""2000-11-20T23:55:44Z"",
   ""LastModified"": ""2000-11-20T23:55:44Z""
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace System.Text.Json.Tests
     ""Medium"",
     ""Large""
   ]
-}", json);
+}".NormalizeLineEndings(), json);
         }
     }
 }

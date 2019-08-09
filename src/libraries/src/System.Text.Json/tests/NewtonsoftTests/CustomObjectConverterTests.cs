@@ -61,7 +61,7 @@ namespace System.Text.Json.Tests
     ""Last"": 2147483647
   },
   ""NullDecimalRange"": null
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(@"{
   ""ByteArray"": ""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ=="",
   ""NullByteArray"": null
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
