@@ -90,7 +90,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
             }
 
-            int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
+            static int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
 
             if (P(year) == 4 || P(year - 1) == 3)
             {
