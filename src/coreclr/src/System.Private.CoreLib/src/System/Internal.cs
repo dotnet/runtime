@@ -39,7 +39,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace System
 {
-    static class CommonlyUsedGenericInstantiations
+    internal static class CommonlyUsedGenericInstantiations
     {
         // This method is purely an aid for NGen to statically deduce which
         // instantiations to save in the ngen image.

@@ -4,7 +4,7 @@
 
 namespace System
 {
-    partial struct Guid
+    public partial struct Guid
     {
         public static Guid NewGuid()
         {

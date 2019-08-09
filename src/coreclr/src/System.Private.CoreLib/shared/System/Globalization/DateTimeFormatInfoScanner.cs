@@ -117,7 +117,7 @@ namespace System.Globalization
         // Hashtable for the known words.
         private static volatile Dictionary<string, string>? s_knownWords;
 
-        static Dictionary<string, string> KnownWords
+        private static Dictionary<string, string> KnownWords
         {
             get
             {
