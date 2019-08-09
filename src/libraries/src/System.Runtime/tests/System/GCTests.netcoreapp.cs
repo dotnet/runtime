@@ -26,7 +26,7 @@ namespace System.Tests
             Assert.True((end - start) < 5 * size, $"Allocated too much: start: {start} end: {end} size: {size}");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // [ActiveIssue(37378)]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>
