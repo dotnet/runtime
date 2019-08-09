@@ -5477,8 +5477,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->ip += 5;
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
-				td->sp [0].type = STACK_TYPE_I;
-				++td->sp;
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				break;
 			case CEE_MONO_OBJADDR:
 				CHECK_STACK (td, 1);
@@ -5491,8 +5490,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->ip += 5;
 				interp_add_ins (td, MINT_MONO_NEWOBJ);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
-				td->sp [0].type = STACK_TYPE_O;
-				++td->sp;
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_O);
 				break;
 			case CEE_MONO_RETOBJ:
 				CHECK_STACK (td, 1);
@@ -5546,8 +5544,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case CEE_MONO_LDDOMAIN:
 				interp_add_ins (td, MINT_MONO_LDDOMAIN);
-				td->sp [0].type = STACK_TYPE_I;
-				++td->sp;
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				++td->ip;
 				break;
 			case CEE_MONO_SAVE_LAST_ERROR:
