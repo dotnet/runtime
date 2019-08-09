@@ -68,7 +68,7 @@ namespace System.Collections.Immutable.Tests
                 var nextStack = currentStack.Pop();
                 Assert.Equal(expectedCount, currentStack.Count());
                 Assert.NotSame(currentStack, nextStack);
-                AssertAreSame(currentStack.Pop(), currentStack.Pop(), "Popping the stack 2X should yield the same shorter stack.");
+                AssertAreSame(currentStack.Pop(), currentStack.Pop());
                 currentStack = nextStack;
             }
         }
@@ -86,7 +86,7 @@ namespace System.Collections.Immutable.Tests
                 current.Pop(out element);
                 AssertAreSame(current.Peek(), element);
                 var next = current.Pop();
-                AssertAreSame(values[i], current.Peek(), "Pop mutated the stack instance.");
+                AssertAreSame(values[i], current.Peek());
                 current = next;
             }
         }
