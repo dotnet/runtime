@@ -2989,6 +2989,10 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, "<write base64 string when escape length bigger than given string")]
         [InlineData(false, true, "<write base64 string when escape length bigger than given string")]
         [InlineData(false, false, "<write base64 string when escape length bigger than given string")]
+        [InlineData(true, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(true, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(false, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(false, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
         public void WriteBase64String(bool formatted, bool skipValidation, string inputValue)
         {
             string propertyName = inputValue;
@@ -3027,6 +3031,11 @@ namespace System.Text.Json.Tests
                         jsonUtf8.WriteBase64String(encodedPropertyName, value);
                         break;
                 }
+
+                jsonUtf8.WriteStartArray("array");
+                jsonUtf8.WriteBase64StringValue(new byte[] { 1, 2 });
+                jsonUtf8.WriteBase64StringValue(new byte[] { 3, 4 });
+                jsonUtf8.WriteEndArray();
 
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
@@ -6339,6 +6348,11 @@ namespace System.Text.Json.Tests
             json.WriteValue(value);
             json.WritePropertyName(propertyName);
             json.WriteValue(value);
+            json.WritePropertyName("array");
+            json.WriteStartArray();
+            json.WriteValue(new byte[] { 1, 2 });
+            json.WriteValue(new byte[] { 3, 4 });
+            json.WriteEndArray();
             json.WriteEnd();
 
             json.Flush();
