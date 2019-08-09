@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Resources
 {
-    partial class ResourceReader
+    public partial class ResourceReader
     {
         private readonly bool _permitDeserialization;  // can deserialize BinaryFormatted resources
         private object? _binaryFormatter; // binary formatter instance to use for deserializing
