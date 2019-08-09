@@ -22,14 +22,11 @@ namespace System.Threading.Tests
             TimeSpan timeSpan = new TimeSpan(100);
 
             EnsureOperationCanceledExceptionThrown(
-               () => barrier.SignalAndWait(ct), ct,
-               "CancelBeforeWait:  An OCE should have been thrown.");
+                () => barrier.SignalAndWait(ct), ct);
             EnsureOperationCanceledExceptionThrown(
-               () => barrier.SignalAndWait(millisec, ct), ct,
-               "CancelBeforeWait:  An OCE should have been thrown.");
+                () => barrier.SignalAndWait(millisec, ct), ct);
             EnsureOperationCanceledExceptionThrown(
-               () => barrier.SignalAndWait(timeSpan, ct), ct,
-               "CancelBeforeWait:  An OCE should have been thrown.");
+                () => barrier.SignalAndWait(timeSpan, ct), ct);
 
             barrier.Dispose();
         }
@@ -48,8 +45,7 @@ namespace System.Threading.Tests
             //Now wait.. the wait should abort and an exception should be thrown
             EnsureOperationCanceledExceptionThrown(
                () => barrier.SignalAndWait(cancellationToken),
-               cancellationToken,
-               "CancelAfterWait:  An OCE(null) should have been thrown that references the cancellationToken.");
+               cancellationToken);
 
             // the token should not have any listeners.
             // currently we don't expose this.. but it was verified manually
@@ -73,7 +69,7 @@ namespace System.Threading.Tests
             // currently we don't expose this.. but it was verified manually
         }
 
-        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token, string message)
+        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token)
         {
             OperationCanceledException operationCanceledEx =
                 Assert.Throws<OperationCanceledException>(action);

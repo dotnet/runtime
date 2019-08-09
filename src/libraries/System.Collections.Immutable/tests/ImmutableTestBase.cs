@@ -21,7 +21,7 @@ namespace System.Collections.Immutable.Tests
             get { return 100; }
         }
 
-        internal static void AssertAreSame<T>(T expected, T actual, string message = null, params object[] formattingArgs)
+        internal static void AssertAreSame<T>(T expected, T actual)
         {
             if (typeof(T).GetTypeInfo().IsValueType)
             {

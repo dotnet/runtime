@@ -20,12 +20,9 @@ namespace System.Threading.Tests
             const int millisec = 100;
             TimeSpan timeSpan = new TimeSpan(100);
 
-            EnsureOperationCanceledExceptionThrown(
-               () => mres.Wait(ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
-            EnsureOperationCanceledExceptionThrown(
-               () => mres.Wait(millisec, ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
-            EnsureOperationCanceledExceptionThrown(
-               () => mres.Wait(timeSpan, ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
+            EnsureOperationCanceledExceptionThrown(() => mres.Wait(ct), ct);
+            EnsureOperationCanceledExceptionThrown(() => mres.Wait(millisec, ct), ct);
+            EnsureOperationCanceledExceptionThrown(() => mres.Wait(timeSpan, ct), ct);
             mres.Dispose();
         }
 
@@ -46,15 +43,13 @@ namespace System.Threading.Tests
                 );
 
             //Now wait.. the wait should abort and an exception should be thrown
-            EnsureOperationCanceledExceptionThrown(
-               () => mres.Wait(cancellationToken), cancellationToken,
-               "CancelBeforeWait:  An OCE(null) should have been thrown that references the cancellationToken.");
+            EnsureOperationCanceledExceptionThrown(() => mres.Wait(cancellationToken), cancellationToken);
 
             // the token should not have any listeners.
             // currently we don't expose this.. but it was verified manually
         }
 
-        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token, string message)
+        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token)
         {
             OperationCanceledException operationCanceledEx =
                 Assert.Throws<OperationCanceledException>(action);
