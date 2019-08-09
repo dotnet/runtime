@@ -1611,8 +1611,6 @@ namespace System
         {
             Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
 
-            int sepCount = separators.Length;
-
             for (int i = 0; i < Length; i++)
             {
                 for (int j = 0; j < separators.Length; j++)
