@@ -182,7 +182,7 @@ namespace System.Net.Mail
                         // DATA command or some similar situation.  This may send a RST
                         // but this is ok in this situation.  Do not reuse this connection
                         _tcpClient.LingerState = new LingerOption(true, 0);
-                        _networkStream.Close();
+                        _networkStream?.Close();
                         _tcpClient.Dispose();
                     }
                     _isClosed = true;
