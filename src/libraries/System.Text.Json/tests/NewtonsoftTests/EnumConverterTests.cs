@@ -50,7 +50,7 @@ namespace System.Text.Json.Tests
   ""StoreColor"": 2,
   ""NullableStoreColor1"": 8,
   ""NullableStoreColor2"": null
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace System.Text.Json.Tests
   ""StoreColor"": 1000,
   ""NullableStoreColor1"": 1000,
   ""NullableStoreColor2"": null
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -88,7 +88,7 @@ namespace System.Text.Json.Tests
   ""StoreColor"": 10,
   ""NullableStoreColor1"": 0,
   ""NullableStoreColor2"": 11
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(@"{
   ""Value1"": -2,
   ""Value2"": 6
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(@"{
   ""Value1"": -1,
   ""Value2"": -2147483648
-}", json);
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -146,7 +146,7 @@ namespace System.Text.Json.Tests
   4,
   5,
   2147483647
-]", json1);
+]".NormalizeLineEndings(), json1);
 
             IList<Foo> foos = JsonSerializer.Deserialize<List<Foo>>(json1);
 
@@ -166,7 +166,7 @@ namespace System.Text.Json.Tests
   0,
   1,
   2
-]", json2);
+]".NormalizeLineEndings(), json2);
 
             IList<Bar> bars = JsonSerializer.Deserialize<List<Bar>>(json2);
 
