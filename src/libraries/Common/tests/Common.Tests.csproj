@@ -76,7 +76,6 @@
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
-    <Compile Include="Tests\System\SpanTestHelpers.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />

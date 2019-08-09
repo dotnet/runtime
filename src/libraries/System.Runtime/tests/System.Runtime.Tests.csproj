@@ -35,9 +35,6 @@
     <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
       <Link>System\StringTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Tests\System\SpanTestHelpers.cs">
-      <Link>System\SpanTestHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>

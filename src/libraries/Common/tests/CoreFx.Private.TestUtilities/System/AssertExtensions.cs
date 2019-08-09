@@ -371,5 +371,60 @@ namespace System
                 throw new XunitException($"Expected: {string.Join(", ", expected)}{Environment.NewLine}Actual: {string.Join(", ", actual)}");
             }
         }
+
+        public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);
+
+        public delegate void AssertThrowsAction<T>(Span<T> span);
+
+        // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
+        public static void AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
+        {
+            Exception exception;
+
+            try
+            {
+                action(span);
+                exception = null;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            if (exception == null)
+            {
+                throw new ThrowsException(typeof(E));
+            }
+
+            if (exception.GetType() != typeof(E))
+            {
+                throw new ThrowsException(typeof(E), exception);
+            }
+        }
+
+        public static void AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
+        {
+            Exception exception;
+
+            try
+            {
+                action(span);
+                exception = null;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            if ( exception == null)
+            {
+                throw new ThrowsException(typeof(E));
+            }
+
+            if (exception.GetType() != typeof(E))
+            {
+                throw new ThrowsException(typeof(E), exception);
+            }
+        }
     }
 }
