@@ -1,0 +1,66 @@
+<Project DefaultTargets="PublishTestAssets">
+  <Import Project="..\Directory.Build.props" />
+
+  <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
+  this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->
+  <Import Project="..\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <AssetManifestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'TestAssetsManifests'))</AssetManifestDir>
+    <AssetManifestFilePath>$(AssetManifestDir)$(AssetManifestFileName)</AssetManifestFilePath>
+  </PropertyGroup>
+
+  <Target Name="PublishTestAssets">
+    <Error Text="The ExpectedFeedUrl property wasn't supplied." Condition="'$(ExpectedFeedUrl)' == ''" />
+    <Error Text="The AccountKey property wasn't supplied." Condition="'$(AccountKey)' == ''" />
+    <Error Text="FilesToPublishPattern property wasn't supplied." Condition="'$(FilesToPublishPattern)' == ''" />
+
+    <PropertyGroup>
+      <_TestAssetVersion>$(PackageVersion)-$(VersionSuffix)</_TestAssetVersion>
+      <_FileRelativePathBase>corefx-tests/$(_TestAssetVersion)/$(OSGroup).$(ArchGroup)/$(TargetGroup)/</_FileRelativePathBase>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ItemsToPush Remove="@(_ItemsToPush)" />
+      <_ItemsToPush Include="$(FilesToPublishPattern)" />
+      <_ItemsToPush>
+        <RelativeBlobPath>$(_FileRelativePathBase)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </_ItemsToPush>
+    </ItemGroup>
+
+    <Error Condition="'@(_ItemsToPush)' == ''" Text="No files to push." />
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(_ItemsToPush)"
+                    PublishFlatContainer="true"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)"
+                    ManifestBuildData="$(ManifestBuildData)"
+                    ManifestRepoUri="$(ManifestRepoUri)"
+                    AssetManifestPath="$(AssetManifestFilePath)"
+                    Overwrite="true" />
+
+    <ItemGroup>
+      <_ManifestToPush Remove="@(_ManifestToPush)" />
+      <_ManifestToPush Include="$(AssetManifestFilePath)">
+        <RelativeBlobPath>$(_FileRelativePathBase)$(AssetManifestFileName)</RelativeBlobPath>
+      </_ManifestToPush>
+    </ItemGroup>
+
+    <Message Importance="High" Text="PublishTestAssets: $(_FileRelativePathBase)$(AssetManifestFileName)" />
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(_ManifestToPush)"
+                    PublishFlatContainer="true"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)"
+                    ManifestBuildData="$(ManifestBuildData)"
+                    ManifestRepoUri="$(ManifestRepoUri)"
+                    AssetManifestPath="$(AssetManifestDir)ManifestUpload.xml"
+                    Overwrite="true" />
+  </Target>
+</Project>
