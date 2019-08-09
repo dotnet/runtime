@@ -43,8 +43,8 @@ namespace System.Diagnostics.Tracing
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
-        static List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
-        static Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
+        private static List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
+        private static Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
         {
             {'\b', "b"},
             {'\f', "f"},

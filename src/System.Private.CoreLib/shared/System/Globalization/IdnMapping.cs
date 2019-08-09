@@ -217,7 +217,7 @@ namespace System.Globalization
         }
 
         // See if we're only ASCII
-        static bool ValidateStd3AndAscii(string unicode, bool bUseStd3, bool bCheckAscii)
+        private static bool ValidateStd3AndAscii(string unicode, bool bUseStd3, bool bCheckAscii)
         {
             // If its empty, then its too small
             if (unicode.Length == 0)
@@ -306,7 +306,7 @@ namespace System.Globalization
         /* value can be any of the punycode_status values defined above   */
         /* except punycode_bad_input; if not punycode_success, then       */
         /* output_size and output might contain garbage.                  */
-        static string PunycodeEncode(string unicode)
+        private static string PunycodeEncode(string unicode)
         {
             // 0 length strings aren't allowed
             if (unicode.Length == 0)
@@ -859,7 +859,7 @@ namespace System.Globalization
         /* is caseless.  The behavior is undefined if bcp is not a basic */
         /* code point.                                                   */
 
-        static char EncodeBasic(char bcp)
+        private static char EncodeBasic(char bcp)
         {
             if (HasUpperCaseFlag(bcp))
                 bcp += (char)('a' - 'A');

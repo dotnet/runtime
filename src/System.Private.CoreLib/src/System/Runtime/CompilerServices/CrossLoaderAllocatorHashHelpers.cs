@@ -13,8 +13,8 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal class LAHashDependentHashTracker
     {
-        GCHandle _dependentHandle;
-        IntPtr _loaderAllocator;
+        private GCHandle _dependentHandle;
+        private IntPtr _loaderAllocator;
 
         ~LAHashDependentHashTracker()
         {
@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal class LAHashKeyToTrackers
     {
-        object _trackerOrTrackerSet = null!;
-        object _laLocalKeyValueStore = null!;
+        private object _trackerOrTrackerSet = null!;
+        private object _laLocalKeyValueStore = null!;
     }
 }

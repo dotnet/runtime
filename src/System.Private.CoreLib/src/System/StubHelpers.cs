@@ -631,12 +631,12 @@ namespace System.StubHelpers
         internal struct MarshalerState
         {
 #pragma warning disable CA1823 // not used by managed code
-            IntPtr m_pElementMT;
-            IntPtr m_Array;
-            int m_NativeDataValid;
-            int m_BestFitMap;
-            int m_ThrowOnUnmappableChar;
-            short m_vt;
+            private IntPtr m_pElementMT;
+            private IntPtr m_Array;
+            private int m_NativeDataValid;
+            private int m_BestFitMap;
+            private int m_ThrowOnUnmappableChar;
+            private short m_vt;
 #pragma warning restore CA1823
         }
 
@@ -1453,7 +1453,7 @@ namespace System.StubHelpers
         private IntPtr data1;
         private IntPtr data2;
 #else
-        long data1;
+        private long data1;
 #endif
     }  // struct NativeVariant
 
