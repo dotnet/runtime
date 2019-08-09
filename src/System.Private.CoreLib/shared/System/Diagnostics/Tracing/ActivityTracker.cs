@@ -613,7 +613,7 @@ namespace System.Diagnostics.Tracing
         private bool m_checkedForEnable;
 
         // Singleton
-        private static ActivityTracker s_activityTrackerInstance = new ActivityTracker();
+        private static readonly ActivityTracker s_activityTrackerInstance = new ActivityTracker();
 
         // Used to create unique IDs at the top level.  Not used for nested Ids (each activity has its own id generator)
         private static long m_nextId = 0;

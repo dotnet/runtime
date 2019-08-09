@@ -42,7 +42,7 @@ namespace System.Diagnostics.Contracts
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
     public sealed class ContractClassAttribute : Attribute
     {
-        private Type _typeWithContracts;
+        private readonly Type _typeWithContracts;
 
         public ContractClassAttribute(Type typeContainingContracts)
         {
@@ -62,7 +62,7 @@ namespace System.Diagnostics.Contracts
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class ContractClassForAttribute : Attribute
     {
-        private Type _typeIAmAContractFor;
+        private readonly Type _typeIAmAContractFor;
 
         public ContractClassForAttribute(Type typeContractsAreFor)
         {
@@ -121,7 +121,7 @@ namespace System.Diagnostics.Contracts
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property)]
     public sealed class ContractVerificationAttribute : Attribute
     {
-        private bool _value;
+        private readonly bool _value;
 
         public ContractVerificationAttribute(bool value) { _value = value; }
 
@@ -139,7 +139,7 @@ namespace System.Diagnostics.Contracts
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class ContractPublicPropertyNameAttribute : Attribute
     {
-        private string _publicName;
+        private readonly string _publicName;
 
         public ContractPublicPropertyNameAttribute(string name)
         {
@@ -178,10 +178,10 @@ namespace System.Diagnostics.Contracts
     [Conditional("CONTRACTS_FULL")]
     public sealed class ContractOptionAttribute : Attribute
     {
-        private string _category;
-        private string _setting;
-        private bool _enabled;
-        private string? _value;
+        private readonly string _category;
+        private readonly string _setting;
+        private readonly bool _enabled;
+        private readonly string? _value;
 
         public ContractOptionAttribute(string category, string setting, bool enabled)
         {

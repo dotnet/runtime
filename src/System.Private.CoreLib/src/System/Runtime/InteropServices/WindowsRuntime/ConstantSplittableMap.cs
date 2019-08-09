@@ -167,9 +167,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal struct IKeyValuePairEnumerator : IEnumerator<IKeyValuePair<TKey, TValue>>
         {
-            private KeyValuePair<TKey, TValue>[] _array;
-            private int _start;
-            private int _end;
+            private readonly KeyValuePair<TKey, TValue>[] _array;
+            private readonly int _start;
+            private readonly int _end;
             private int _current;
 
             internal IKeyValuePairEnumerator(KeyValuePair<TKey, TValue>[] items, int first, int end)

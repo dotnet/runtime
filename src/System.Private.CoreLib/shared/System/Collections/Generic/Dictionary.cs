@@ -1290,7 +1290,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
-            private Dictionary<TKey, TValue> _dictionary;
+            private readonly Dictionary<TKey, TValue> _dictionary;
 
             public KeyCollection(Dictionary<TKey, TValue> dictionary)
             {
@@ -1473,7 +1473,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
-            private Dictionary<TKey, TValue> _dictionary;
+            private readonly Dictionary<TKey, TValue> _dictionary;
 
             public ValueCollection(Dictionary<TKey, TValue> dictionary)
             {

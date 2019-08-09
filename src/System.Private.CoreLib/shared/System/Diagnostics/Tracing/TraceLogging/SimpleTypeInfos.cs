@@ -50,8 +50,8 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class ScalarTypeInfo : TraceLoggingTypeInfo
     {
-        private Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
-        private TraceLoggingDataType nativeFormat;
+        private readonly Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
+        private readonly TraceLoggingDataType nativeFormat;
 
         private ScalarTypeInfo(
             Type type,
@@ -96,9 +96,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class ScalarArrayTypeInfo : TraceLoggingTypeInfo
     {
-        private Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
-        private TraceLoggingDataType nativeFormat;
-        private int elementSize;
+        private readonly Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
+        private readonly TraceLoggingDataType nativeFormat;
+        private readonly int elementSize;
 
         private ScalarArrayTypeInfo(
             Type type,

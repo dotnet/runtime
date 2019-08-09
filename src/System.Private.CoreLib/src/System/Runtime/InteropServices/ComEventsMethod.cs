@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices
         /// Since multicast delegate's built-in chaining supports only chaining instances of the same type,
         /// we need to complement this design by using an explicit linked list data structure.
         /// </summary>
-        private List<DelegateWrapper> _delegateWrappers = new List<DelegateWrapper>();
+        private readonly List<DelegateWrapper> _delegateWrappers = new List<DelegateWrapper>();
 
         private readonly int _dispid;
         private ComEventsMethod? _next;

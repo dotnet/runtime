@@ -99,10 +99,10 @@ namespace System.Text
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class EncoderFallbackException : ArgumentException
     {
-        private char _charUnknown;
-        private char _charUnknownHigh;
-        private char _charUnknownLow;
-        private int _index;
+        private readonly char _charUnknown;
+        private readonly char _charUnknownHigh;
+        private readonly char _charUnknownLow;
+        private readonly int _index;
 
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)

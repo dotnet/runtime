@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     //
     internal sealed class CustomPropertyImpl : ICustomProperty
     {
-        private PropertyInfo m_property;
+        private readonly PropertyInfo m_property;
 
         //
         // Constructor

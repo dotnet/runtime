@@ -332,7 +332,7 @@ namespace System
         ////////////////////////////////////////////////////////////////////////////
 
         //          End       NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone   Era         UTCTimeMark
-        private static DS[][] dateParsingStates = {
+        private static readonly DS[][] dateParsingStates = {
 // DS.BEGIN                                                                             // DS.BEGIN
 new DS[] { DS.BEGIN, DS.ERROR,   DS.TX_N,    DS.N,       DS.D_Nd,    DS.T_Nt,    DS.ERROR,   DS.D_M,     DS.D_M,     DS.D_S,     DS.T_S,         DS.BEGIN,     DS.D_Y,     DS.D_Y,     DS.ERROR,   DS.BEGIN,  DS.BEGIN,    DS.ERROR},
 
@@ -5246,6 +5246,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // Internal.Console.WriteLine(s);
         }
 
+        // for testing; do not make this readonly
         private static bool _tracingEnabled = false;
 #endif // _LOGGING
     }
@@ -5274,10 +5275,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // The current character to be looked at.
         internal char m_current;
 
-        private CompareInfo m_info;
+        private readonly CompareInfo m_info;
         // Flag to indicate if we encouter an digit, we should check for token or not.
         // In some cultures, such as mn-MN, it uses "\x0031\x00a0\x0434\x04af\x0433\x044d\x044d\x0440\x00a0\x0441\x0430\x0440" in month names.
-        private bool m_checkDigitToken;
+        private readonly bool m_checkDigitToken;
 
         internal __DTString(ReadOnlySpan<char> str, DateTimeFormatInfo dtfi, bool checkDigitToken) : this(str, dtfi)
         {

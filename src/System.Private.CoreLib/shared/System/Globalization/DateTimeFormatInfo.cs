@@ -54,7 +54,7 @@ namespace System.Globalization
         private static volatile DateTimeFormatInfo? s_invariantInfo;
 
         // an index which points to a record in Culture Data Table.
-        private CultureData _cultureData;
+        private readonly CultureData _cultureData;
 
         // The culture name used to create this DTFI.
         private string? _name = null;

@@ -32,10 +32,10 @@ namespace System.Threading.Tasks
         // Should we be thinking about a TaskFactoryBase class?
 
         // member variables
-        private CancellationToken m_defaultCancellationToken;
-        private TaskScheduler? m_defaultScheduler;
-        private TaskCreationOptions m_defaultCreationOptions;
-        private TaskContinuationOptions m_defaultContinuationOptions;
+        private readonly CancellationToken m_defaultCancellationToken;
+        private readonly TaskScheduler? m_defaultScheduler;
+        private readonly TaskCreationOptions m_defaultCreationOptions;
+        private readonly TaskContinuationOptions m_defaultContinuationOptions;
 
         private TaskScheduler DefaultScheduler => m_defaultScheduler ?? TaskScheduler.Current;
 

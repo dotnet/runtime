@@ -130,7 +130,7 @@ namespace System.Text
             return null;
         }
 
-        private static object s_InternalSyncObject = new object();
+        private static readonly object s_InternalSyncObject = new object();
         private static volatile EncodingProvider[]? s_providers;
     }
 }

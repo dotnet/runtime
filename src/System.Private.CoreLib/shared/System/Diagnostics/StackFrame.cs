@@ -47,7 +47,7 @@ namespace System.Diagnostics
         /// <summary>
         /// This flag is set to true when the frame represents a rethrow marker.
         /// </summary>
-        private bool _isLastFrameFromForeignExceptionStackTrace;
+        private readonly bool _isLastFrameFromForeignExceptionStackTrace;
 
         private void InitMembers()
         {

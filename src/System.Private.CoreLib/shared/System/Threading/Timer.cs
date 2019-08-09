@@ -124,7 +124,7 @@ namespace System.Threading
         private const int ShortTimersThresholdMilliseconds = 333;
 
         // Time when Pause was called
-        private volatile int _pauseTicks = 0;
+        private readonly int _pauseTicks = 0;
 
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
