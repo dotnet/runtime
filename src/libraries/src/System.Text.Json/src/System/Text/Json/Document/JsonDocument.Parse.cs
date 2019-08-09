@@ -554,17 +554,12 @@ namespace System.Text.Json
             byte[] extraRentedBytes)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
-            Utf8JsonReader reader = new Utf8JsonReader(
-                utf8JsonSpan,
-                isFinalBlock: true,
-                new JsonReaderState(options: readerOptions));
-
             var database = new MetadataDb(utf8Json.Length);
             var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
-                Parse(utf8JsonSpan, reader, ref database, ref stack);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             catch
             {

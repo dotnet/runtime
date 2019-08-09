@@ -94,7 +94,7 @@ namespace System.Text.Json
                 return lastFrame;
             }
 
-            IEnumerable value = ReadStackFrame.GetEnumerableValue(state.Current);
+            IEnumerable value = ReadStackFrame.GetEnumerableValue(ref state.Current);
 
             if (state.Current.TempEnumerableValues != null)
             {
