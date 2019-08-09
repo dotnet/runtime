@@ -156,6 +156,97 @@ namespace System.Text.Json
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
         public abstract string ConvertName(string name);
     }
+    public abstract partial class JsonNode
+    {
+        internal JsonNode() { }
+    }
+    public sealed partial class JsonNumber : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonNumber>
+    {
+        public JsonNumber() { }
+        public JsonNumber(byte value) { }
+        public JsonNumber(decimal value) { }
+        public JsonNumber(double value) { }
+        public JsonNumber(short value) { }
+        public JsonNumber(int value) { }
+        public JsonNumber(long value) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonNumber(sbyte value) { }
+        public JsonNumber(float value) { }
+        public JsonNumber(string value) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonNumber(ushort value) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonNumber(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonNumber(ulong value) { }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Text.Json.JsonNumber other) { throw null; }
+        public byte GetByte() { throw null; }
+        public decimal GetDecimal() { throw null; }
+        public double GetDouble() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public short GetInt16() { throw null; }
+        public int GetInt32() { throw null; }
+        public long GetInt64() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public sbyte GetSByte() { throw null; }
+        public float GetSingle() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public ushort GetUInt16() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public uint GetUInt32() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public ulong GetUInt64() { throw null; }
+        public static bool operator ==(System.Text.Json.JsonNumber left, System.Text.Json.JsonNumber right) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (byte value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (decimal value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (double value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (short value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (int value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Text.Json.JsonNumber (sbyte value) { throw null; }
+        public static implicit operator System.Text.Json.JsonNumber (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Text.Json.JsonNumber (ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Text.Json.JsonNumber (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Text.Json.JsonNumber (ulong value) { throw null; }
+        public static bool operator !=(System.Text.Json.JsonNumber left, System.Text.Json.JsonNumber right) { throw null; }
+        public void SetByte(byte value) { }
+        public void SetDecimal(decimal value) { }
+        public void SetDouble(double value) { }
+        public void SetFormattedValue(string value) { }
+        public void SetInt16(short value) { }
+        public void SetInt32(int value) { }
+        public void SetInt64(long value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void SetSByte(sbyte value) { }
+        public void SetSingle(float value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void SetUInt16(ushort value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void SetUInt32(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void SetUInt64(ulong value) { }
+        public override string ToString() { throw null; }
+        public bool TryGetByte(out byte value) { throw null; }
+        public bool TryGetDecimal(out decimal value) { throw null; }
+        public bool TryGetDouble(out double value) { throw null; }
+        public bool TryGetInt16(out short value) { throw null; }
+        public bool TryGetInt32(out int value) { throw null; }
+        public bool TryGetInt64(out long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetSByte(out sbyte value) { throw null; }
+        public bool TryGetSingle(out float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt16(out ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt32(out uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool TryGetUInt64(out ulong value) { throw null; }
+    }
     public readonly partial struct JsonProperty
     {
         private readonly object _dummy;
