@@ -1130,15 +1130,12 @@ namespace System.StubHelpers
             }
             else
             {
-                string? strValue;
-                StringBuilder? sbValue;
-
-                if ((strValue = pManagedHome as string) != null)
+                if (pManagedHome is string strValue)
                 {
                     // string (LPStr or LPWStr)
                     pNativeHome = ConvertStringToNative(strValue, dwFlags);
                 }
-                else if ((sbValue = pManagedHome as StringBuilder) != null)
+                else if (pManagedHome is StringBuilder sbValue)
                 {
                     // StringBuilder (LPStr or LPWStr)
                     pNativeHome = ConvertStringBuilderToNative(sbValue, dwFlags);

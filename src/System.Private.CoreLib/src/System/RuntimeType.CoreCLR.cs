@@ -3131,8 +3131,7 @@ namespace System
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
         {
-            var otherRtType = other as RuntimeType;
-            if (otherRtType is null)
+            if (!(other is RuntimeType otherRtType))
             {
                 return false;
             }
@@ -4098,8 +4097,7 @@ namespace System
         internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Call the cached
-            ActivatorCache? cacheEntry = GenericCache as ActivatorCache;
-            if (cacheEntry != null)
+            if (GenericCache is ActivatorCache cacheEntry)
             {
                 cacheEntry.EnsureInitialized();
 

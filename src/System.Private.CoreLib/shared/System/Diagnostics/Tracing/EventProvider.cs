@@ -134,25 +134,15 @@ namespace System.Diagnostics.Tracing
         // EventSource has special logic to do this, no one else should be calling EventProvider.
         internal EventProvider(EventProviderType providerType)
         {
-            switch (providerType)
+            m_eventProvider = providerType switch
             {
-                case EventProviderType.ETW:
 #if PLATFORM_WINDOWS
-                    m_eventProvider = new EtwEventProvider();
-#else
-                    m_eventProvider = new NoOpEventProvider();
+                EventProviderType.ETW => new EtwEventProvider(),
 #endif
-                    break;
-                case EventProviderType.EventPipe:
 #if FEATURE_PERFTRACING
-                    m_eventProvider = new EventPipeEventProvider();
-#else
-                    m_eventProvider = new NoOpEventProvider();
+                EventProviderType.EventPipe => new EventPipeEventProvider(),
 #endif
-                    break;
-                default:
-                    m_eventProvider = new NoOpEventProvider();
-                    break;
+                _ => new NoOpEventProvider(),
             };
         }
 

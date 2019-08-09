@@ -363,17 +363,13 @@ namespace System.Globalization
 
         private static int GetResult(DateBuffer result, int part)
         {
-            switch (part)
+            return part switch
             {
-                case DatePartYear:
-                    return result.year;
-                case DatePartMonth:
-                    return result.month;
-                case DatePartDay:
-                    return result.day;
-            }
-
-            throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
+                DatePartYear => result.year,
+                DatePartMonth => result.month,
+                DatePartDay => result.day,
+                _ => throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing),
+            };
         }
 
         /// <summary>

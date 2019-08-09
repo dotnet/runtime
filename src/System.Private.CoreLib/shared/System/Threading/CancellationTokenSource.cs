@@ -773,19 +773,16 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(tokens));
             }
 
-            switch (tokens.Length)
+            return tokens.Length switch
             {
-                case 0:
-                    throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty);
-                case 1:
-                    return CreateLinkedTokenSource(tokens[0]);
-                case 2:
-                    return CreateLinkedTokenSource(tokens[0], tokens[1]);
-                default:
-                    // a defensive copy is not required as the array has value-items that have only a single reference field,
-                    // hence each item cannot be null itself, and reads of the payloads cannot be torn.
-                    return new LinkedNCancellationTokenSource(tokens);
-            }
+                0 => throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty),
+                1 => CreateLinkedTokenSource(tokens[0]),
+                2 => CreateLinkedTokenSource(tokens[0], tokens[1]),
+
+                // a defensive copy is not required as the array has value-items that have only a single reference field,
+                // hence each item cannot be null itself, and reads of the payloads cannot be torn.
+                _ => new LinkedNCancellationTokenSource(tokens),
+            };
         }
 
         /// <summary>
