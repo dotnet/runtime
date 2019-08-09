@@ -1316,19 +1316,12 @@ namespace System.Globalization
         /// </summary>
         internal string InternalGetMonthName(int month, MonthNameStyles style, bool abbreviated)
         {
-            string[] monthNamesArray;
-            switch (style)
+            string[] monthNamesArray = style switch
             {
-                case MonthNameStyles.Genitive:
-                    monthNamesArray = InternalGetGenitiveMonthNames(abbreviated);
-                    break;
-                case MonthNameStyles.LeapYear:
-                    monthNamesArray = InternalGetLeapYearMonthNames();
-                    break;
-                default:
-                    monthNamesArray = (abbreviated ? InternalGetAbbreviatedMonthNames() : InternalGetMonthNames());
-                    break;
-            }
+                MonthNameStyles.Genitive => InternalGetGenitiveMonthNames(abbreviated),
+                MonthNameStyles.LeapYear => InternalGetLeapYearMonthNames(),
+                _ => (abbreviated ? InternalGetAbbreviatedMonthNames() : InternalGetMonthNames()),
+            };
 
             // The month range is from 1 ~ m_monthNames.Length
             // (actually is 13 right now for all cases)

@@ -162,8 +162,7 @@ namespace System
                 // present in Process.  If it proves important, we could look at separating that functionality out of Process into
                 // Common files which could also be included here.
                 Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                IDisposable? currentProcess = processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) as IDisposable;
-                if (currentProcess != null)
+                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
                 {
                     using (currentProcess)
                     {

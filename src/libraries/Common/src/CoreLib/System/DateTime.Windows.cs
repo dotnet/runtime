@@ -31,13 +31,12 @@ namespace System
             DateTime dt = new DateTime(year, month, day);
             FullSystemTime time = new FullSystemTime(year, month, dt.DayOfWeek, day, hour, minute, second);
 
-            switch (kind)
+            return kind switch
             {
-                case DateTimeKind.Local: return ValidateSystemTime(&time.systemTime, localTime: true);
-                case DateTimeKind.Utc:   return ValidateSystemTime(&time.systemTime, localTime: false);
-                default:
-                    return ValidateSystemTime(&time.systemTime, localTime: true) || ValidateSystemTime(&time.systemTime, localTime: false);
-            }
+                DateTimeKind.Local => ValidateSystemTime(&time.systemTime, localTime: true),
+                DateTimeKind.Utc => ValidateSystemTime(&time.systemTime, localTime: false),
+                _ => ValidateSystemTime(&time.systemTime, localTime: true) || ValidateSystemTime(&time.systemTime, localTime: false),
+            };
         }
 
         private static unsafe DateTime FromFileTimeLeapSecondsAware(long fileTime)

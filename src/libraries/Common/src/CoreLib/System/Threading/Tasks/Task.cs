@@ -6659,10 +6659,9 @@ namespace System.Threading.Tasks
                 case TaskStatus.Faulted:
                     var edis = task.GetExceptionDispatchInfos();
                     ExceptionDispatchInfo oceEdi;
-                    OperationCanceledException? oce;
                     if (lookForOce && edis.Count > 0 &&
                         (oceEdi = edis[0]) != null &&
-                        (oce = oceEdi.SourceException as OperationCanceledException) != null)
+                        oceEdi.SourceException is OperationCanceledException oce)
                     {
                         result = TrySetCanceled(oce.CancellationToken, oceEdi);
                     }
@@ -6673,15 +6672,13 @@ namespace System.Threading.Tasks
                     break;
 
                 case TaskStatus.RanToCompletion:
-                    var taskTResult = task as Task<TResult>;
-
                     if (AsyncCausalityTracer.LoggingOn)
                         AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    result = TrySetResult(taskTResult != null ? taskTResult.Result : default);
+                    result = TrySetResult(task is Task<TResult> taskTResult ? taskTResult.Result : default);
                     break;
             }
             return result;

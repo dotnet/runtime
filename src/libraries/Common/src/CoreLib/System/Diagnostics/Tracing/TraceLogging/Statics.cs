@@ -203,25 +203,18 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format,
             TraceLoggingDataType native)
         {
-            switch (format)
+            return format switch
             {
-                case EventFieldFormat.Default:
-                    return native;
-                case EventFieldFormat.String:
-                    return TraceLoggingDataType.Char8;
-                case EventFieldFormat.Boolean:
-                    return TraceLoggingDataType.Boolean8;
-                case EventFieldFormat.Hexadecimal:
-                    return TraceLoggingDataType.HexInt8;
+                EventFieldFormat.Default => native,
+                EventFieldFormat.String => TraceLoggingDataType.Char8,
+                EventFieldFormat.Boolean => TraceLoggingDataType.Boolean8,
+                EventFieldFormat.Hexadecimal => TraceLoggingDataType.HexInt8,
 #if false
-                case EventSourceFieldFormat.Signed:
-                    return TraceLoggingDataType.Int8;
-                case EventSourceFieldFormat.Unsigned:
-                    return TraceLoggingDataType.UInt8;
+                EventSourceFieldFormat.Signed => TraceLoggingDataType.Int8,
+                EventSourceFieldFormat.Unsigned => TraceLoggingDataType.UInt8,
 #endif
-                default:
-                    return MakeDataType(native, format);
-            }
+                _ => MakeDataType(native, format),
+            };
         }
 
         /// <summary>
@@ -234,25 +227,18 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format,
             TraceLoggingDataType native)
         {
-            switch (format)
+            return format switch
             {
-                case EventFieldFormat.Default:
-                    return native;
-                case EventFieldFormat.String:
-                    return TraceLoggingDataType.Char16;
-                case EventFieldFormat.Hexadecimal:
-                    return TraceLoggingDataType.HexInt16;
+                EventFieldFormat.Default => native,
+                EventFieldFormat.String => TraceLoggingDataType.Char16,
+                EventFieldFormat.Hexadecimal => TraceLoggingDataType.HexInt16,
 #if false
-                case EventSourceFieldFormat.Port:
-                    return TraceLoggingDataType.Port;
-                case EventSourceFieldFormat.Signed:
-                    return TraceLoggingDataType.Int16;
-                case EventSourceFieldFormat.Unsigned:
-                    return TraceLoggingDataType.UInt16;
+                EventSourceFieldFormat.Port => TraceLoggingDataType.Port,
+                EventSourceFieldFormat.Signed => TraceLoggingDataType.Int16,
+                EventSourceFieldFormat.Unsigned => TraceLoggingDataType.UInt16,
 #endif
-                default:
-                    return MakeDataType(native, format);
-            }
+                _ => MakeDataType(native, format),
+            };
         }
 
         /// <summary>
@@ -265,37 +251,27 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format,
             TraceLoggingDataType native)
         {
-            switch (format)
+            return format switch
             {
-                case EventFieldFormat.Default:
-                    return native;
-                case EventFieldFormat.Boolean:
-                    return TraceLoggingDataType.Boolean32;
-                case EventFieldFormat.Hexadecimal:
-                    return TraceLoggingDataType.HexInt32;
+                EventFieldFormat.Default => native,
+                EventFieldFormat.Boolean => TraceLoggingDataType.Boolean32,
+                EventFieldFormat.Hexadecimal => TraceLoggingDataType.HexInt32,
 #if false
-                case EventSourceFieldFormat.Ipv4Address:
-                    return TraceLoggingDataType.Ipv4Address;
-                case EventSourceFieldFormat.ProcessId:
-                    return TraceLoggingDataType.ProcessId;
-                case EventSourceFieldFormat.ThreadId:
-                    return TraceLoggingDataType.ThreadId;
-                case EventSourceFieldFormat.Win32Error:
-                    return TraceLoggingDataType.Win32Error;
-                case EventSourceFieldFormat.NTStatus:
-                    return TraceLoggingDataType.NTStatus;
+                EventSourceFieldFormat.Ipv4Address => TraceLoggingDataType.Ipv4Address,
+                EventSourceFieldFormat.ProcessId => TraceLoggingDataType.ProcessId,
+                EventSourceFieldFormat.ThreadId => TraceLoggingDataType.ThreadId,
+                EventSourceFieldFormat.Win32Error => TraceLoggingDataType.Win32Error,
+                EventSourceFieldFormat.NTStatus => TraceLoggingDataType.NTStatus,
 #endif
-                case EventFieldFormat.HResult:
-                    return TraceLoggingDataType.HResult;
+                EventFieldFormat.HResult => TraceLoggingDataType.HResult,
 #if false
                 case EventSourceFieldFormat.Signed:
                     return TraceLoggingDataType.Int32;
                 case EventSourceFieldFormat.Unsigned:
                     return TraceLoggingDataType.UInt32;
 #endif
-                default:
-                    return MakeDataType(native, format);
-            }
+                _ => MakeDataType(native, format),
+            };
         }
 
         /// <summary>
@@ -308,23 +284,17 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format,
             TraceLoggingDataType native)
         {
-            switch (format)
+            return format switch
             {
-                case EventFieldFormat.Default:
-                    return native;
-                case EventFieldFormat.Hexadecimal:
-                    return TraceLoggingDataType.HexInt64;
+                EventFieldFormat.Default => native,
+                EventFieldFormat.Hexadecimal => TraceLoggingDataType.HexInt64,
 #if false
-                case EventSourceFieldFormat.FileTime:
-                    return TraceLoggingDataType.FileTime;
-                case EventSourceFieldFormat.Signed:
-                    return TraceLoggingDataType.Int64;
-                case EventSourceFieldFormat.Unsigned:
-                    return TraceLoggingDataType.UInt64;
+                EventSourceFieldFormat.FileTime => TraceLoggingDataType.FileTime,
+                EventSourceFieldFormat.Signed => TraceLoggingDataType.Int64,
+                EventSourceFieldFormat.Unsigned => TraceLoggingDataType.UInt64,
 #endif
-                default:
-                    return MakeDataType(native, format);
-            }
+                _ => MakeDataType(native, format),
+            };
         }
 
         /// <summary>
@@ -337,21 +307,16 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format,
             TraceLoggingDataType native)
         {
-            switch (format)
+            return format switch
             {
-                case EventFieldFormat.Default:
-                    return native;
-                case EventFieldFormat.Hexadecimal:
-                    return HexIntPtrType;
+                EventFieldFormat.Default => native,
+                EventFieldFormat.Hexadecimal => HexIntPtrType,
 #if false
-                case EventSourceFieldFormat.Signed:
-                    return IntPtrType;
-                case EventSourceFieldFormat.Unsigned:
-                    return UIntPtrType;
+                EventSourceFieldFormat.Signed => IntPtrType,
+                EventSourceFieldFormat.Unsigned => UIntPtrType,
 #endif
-                default:
-                    return MakeDataType(native, format);
-            }
+                _ => MakeDataType(native, format),
+            };
         }
 
         #endregion
