@@ -1061,7 +1061,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal static Exception GetExceptionForHR(int hresult, Exception? innerException, string? messageResource)
         {
-            Exception? e = null;
+            Exception? e;
             if (innerException != null)
             {
                 string? message = innerException.Message;

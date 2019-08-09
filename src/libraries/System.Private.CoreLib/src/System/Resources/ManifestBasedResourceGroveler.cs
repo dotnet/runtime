@@ -58,7 +58,7 @@ namespace System.Resources
 
             ResourceSet? rs = null;
             Stream? stream = null;
-            Assembly? satellite = null;
+            Assembly? satellite;
 
             // 1. Fixups for ultimate fallbacks
             CultureInfo lookForCulture = UltimateFallbackFixup(culture);

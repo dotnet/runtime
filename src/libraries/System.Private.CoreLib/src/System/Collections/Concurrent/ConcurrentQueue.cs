@@ -218,8 +218,7 @@ namespace System.Collections.Concurrent
                 // IsEmpty == !TryPeek. We use a "resultUsed:false" peek in order to avoid marking
                 // segments as preserved for observation, making IsEmpty a cheaper way than either
                 // TryPeek(out T) or Count == 0 to check whether any elements are in the queue.
-                T ignoredResult;
-                return !TryPeek(out ignoredResult, resultUsed: false);
+                return !TryPeek(out _, resultUsed: false);
             }
         }
 
