@@ -24,7 +24,7 @@ namespace System.Text
     {
         // Need a place for the last left over character, most of our encodings use this
         internal char _charLeftOver;
-        private Encoding _encoding;
+        private readonly Encoding _encoding;
         private bool _mustFlush;
         internal bool _throwOnOverflow;
         internal int _charsUsed;

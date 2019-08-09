@@ -1026,10 +1026,10 @@ namespace System.IO
             private readonly object? _stateObject;
             private readonly bool _isWrite;
             private ManualResetEvent? _waitHandle;
-            private ExceptionDispatchInfo? _exceptionInfo;
+            private readonly ExceptionDispatchInfo? _exceptionInfo;
 
             private bool _endXxxCalled;
-            private int _bytesRead;
+            private readonly int _bytesRead;
 
             internal SynchronousAsyncResult(int bytesRead, object? asyncStateObject)
             {
@@ -1114,7 +1114,7 @@ namespace System.IO
         // a lock for every operation making it thread safe.
         private sealed class SyncStream : Stream, IDisposable
         {
-            private Stream _stream;
+            private readonly Stream _stream;
 
             internal SyncStream(Stream stream)
             {

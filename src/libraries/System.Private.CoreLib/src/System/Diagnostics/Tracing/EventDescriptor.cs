@@ -43,21 +43,21 @@ namespace System.Diagnostics.Tracing
     {
         #region private
         [FieldOffset(0)]
-        private int m_traceloggingId;
+        private readonly int m_traceloggingId;
         [FieldOffset(0)]
-        private ushort m_id;
+        private readonly ushort m_id;
         [FieldOffset(2)]
-        private byte m_version;
+        private readonly byte m_version;
         [FieldOffset(3)]
-        private byte m_channel;
+        private readonly byte m_channel;
         [FieldOffset(4)]
-        private byte m_level;
+        private readonly byte m_level;
         [FieldOffset(5)]
-        private byte m_opcode;
+        private readonly byte m_opcode;
         [FieldOffset(6)]
-        private ushort m_task;
+        private readonly ushort m_task;
         [FieldOffset(8)]
-        private long m_keywords;
+        private readonly long m_keywords;
         #endregion
 
         public EventDescriptor(

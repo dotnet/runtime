@@ -16,7 +16,7 @@ namespace System
     [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     public sealed class CLSCompliantAttribute : Attribute
     {
-        private bool _compliant;
+        private readonly bool _compliant;
 
         public CLSCompliantAttribute(bool isCompliant)
         {

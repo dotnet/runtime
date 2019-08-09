@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //
         internal struct EventRegistrationTokenList
         {
-            private EventRegistrationToken firstToken;     // Optimization for common case where there is only one token
+            private readonly EventRegistrationToken firstToken;     // Optimization for common case where there is only one token
             private List<EventRegistrationToken>? restTokens;     // Rest of the tokens
 
             internal EventRegistrationTokenList(EventRegistrationToken token)
@@ -384,7 +384,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //
             internal class EventRegistrationTokenListWithCount
             {
-                private TokenListCount _tokenListCount;
+                private readonly TokenListCount _tokenListCount;
                 private EventRegistrationTokenList _tokenList;
 
                 internal EventRegistrationTokenListWithCount(TokenListCount tokenListCount, EventRegistrationToken token)
@@ -517,7 +517,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 new Dictionary<EventCacheKey, EventCacheEntry>();
 
             // Prevent add/remove handler code to run at the same with with cache cleanup code
-            private static volatile MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
+            private static readonly MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
 
             // Get InstanceKey to use in the cache
             private static object GetInstanceKey(Action<EventRegistrationToken> removeMethod)

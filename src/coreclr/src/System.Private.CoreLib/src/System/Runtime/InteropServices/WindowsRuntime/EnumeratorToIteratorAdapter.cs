@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal sealed class NonGenericToGenericEnumerator : IEnumerator<object?>
         {
-            private IEnumerator enumerator;
+            private readonly IEnumerator enumerator;
 
             public NonGenericToGenericEnumerator(IEnumerator enumerator)
             { this.enumerator = enumerator; }
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // Adapter class which holds a managed IEnumerator<T>, exposing it as a Windows Runtime IIterator<T>
     internal sealed class EnumeratorToIteratorAdapter<T> : IIterator<T>, IBindableIterator
     {
-        private IEnumerator<T> m_enumerator;
+        private readonly IEnumerator<T> m_enumerator;
         private bool m_firstItem = true;
         private bool m_hasCurrent;
 

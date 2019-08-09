@@ -26,9 +26,9 @@ namespace System.Resources
 {
     internal class ResourceFallbackManager : IEnumerable<CultureInfo>
     {
-        private CultureInfo m_startingCulture;
-        private CultureInfo? m_neutralResourcesCulture;
-        private bool m_useParents;
+        private readonly CultureInfo m_startingCulture;
+        private readonly CultureInfo? m_neutralResourcesCulture;
+        private readonly bool m_useParents;
 
         internal ResourceFallbackManager(CultureInfo? startingCulture, CultureInfo? neutralResourcesCulture, bool useParents)
         {

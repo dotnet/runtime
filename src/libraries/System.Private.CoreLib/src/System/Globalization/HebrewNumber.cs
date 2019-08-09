@@ -282,7 +282,7 @@ namespace System.Globalization
         };
 
         private const int minHebrewNumberCh = 0x05d0;
-        private static char s_maxHebrewNumberCh = (char)(minHebrewNumberCh + s_hebrewValues.Length - 1);
+        private static readonly char s_maxHebrewNumberCh = (char)(minHebrewNumberCh + s_hebrewValues.Length - 1);
 
         ////////////////////////////////////////////////////////////////////////////
         //

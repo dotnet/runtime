@@ -13,9 +13,9 @@ namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
-        private object? m_array;
-        private int m_offset;
-        private int m_count;
+        private readonly object? m_array;
+        private readonly int m_offset;
+        private readonly int m_count;
 
         // From MAX_SIZE_FOR_INTEROP in mlinfo.h
         private const int MaxSizeForInterop = 0x7ffffff0;

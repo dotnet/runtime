@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     internal sealed class TypeDependencyAttribute : Attribute
     {
-        private string typeName;
+        private readonly string typeName;
 
         public TypeDependencyAttribute(string typeName)
         {
