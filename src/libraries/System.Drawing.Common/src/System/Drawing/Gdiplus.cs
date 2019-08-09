@@ -520,7 +520,6 @@ namespace System.Drawing
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
         public static extern int SelectClipRgn(HandleRef hDC, HandleRef hRgn);
 
-        [SuppressMessage("Microsoft.Security", "CA2101:SpecifyMarshalingForPInvokeStringArguments")]
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int AddFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
 

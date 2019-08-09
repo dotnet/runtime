@@ -5,9 +5,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.ComponentModel.CompModSwitches.get_DGEditColumnEditing():System.Diagnostics.TraceSwitch")]
-[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.ComponentModel.CompModSwitches.get_LayoutPerformance():System.Diagnostics.TraceSwitch")]
-
 namespace System.ComponentModel
 {
     internal static class CompModSwitches

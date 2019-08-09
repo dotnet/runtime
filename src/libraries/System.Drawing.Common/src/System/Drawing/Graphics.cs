@@ -1580,13 +1580,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the specified image at the specified location.
         /// </summary>
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, PointF point)
         {
             DrawImage(image, point.X, point.Y);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, float x, float y)
         {
             if (image == null)
@@ -1600,13 +1598,11 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, RectangleF rect)
         {
             DrawImage(image, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, float x, float y, float width, float height)
         {
             if (image == null)
@@ -1622,13 +1618,11 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, Point point)
         {
             DrawImage(image, point.X, point.Y);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, int x, int y)
         {
             if (image == null)
@@ -1643,13 +1637,11 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, Rectangle rect)
         {
             DrawImage(image, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, int x, int y, int width, int height)
         {
             if (image == null)
@@ -1708,7 +1700,6 @@ namespace System.Drawing
         //
         //  @notes Perspective blt only works for bitmap images.
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void DrawImage(Image image, PointF[] destPoints)
         {
             if (destPoints == null)
@@ -1732,7 +1723,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void DrawImage(Image image, Point[] destPoints)
         {
             if (destPoints == null)
@@ -1756,7 +1746,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, float x, float y, RectangleF srcRect, GraphicsUnit srcUnit)
         {
             if (image == null)
@@ -1773,7 +1762,6 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, int x, int y, Rectangle srcRect, GraphicsUnit srcUnit)
         {
             if (image == null)
@@ -1790,7 +1778,6 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, RectangleF destRect, RectangleF srcRect, GraphicsUnit srcUnit)
         {
             if (image == null)
@@ -1810,7 +1797,6 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, Rectangle destRect, Rectangle srcRect, GraphicsUnit srcUnit)
         {
             if (image == null)
@@ -1830,7 +1816,6 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit)
         {
             if (destPoints == null)
@@ -1859,13 +1844,11 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes imageAttr)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             PointF[] destPoints,
@@ -1877,7 +1860,6 @@ namespace System.Drawing
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void DrawImage(
             Image image,
             PointF[] destPoints,
@@ -1913,13 +1895,11 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(Image image, Point[] destPoints, Rectangle srcRect, GraphicsUnit srcUnit)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, null, null, 0);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Point[] destPoints,
@@ -1930,7 +1910,6 @@ namespace System.Drawing
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Point[] destPoints,
@@ -1942,7 +1921,6 @@ namespace System.Drawing
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void DrawImage(
             Image image,
             Point[] destPoints,
@@ -1978,7 +1956,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -1991,7 +1968,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2005,7 +1981,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2020,8 +1995,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, callback, IntPtr.Zero);
         }
 
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2051,7 +2024,6 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2064,7 +2036,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2078,7 +2049,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2093,7 +2063,6 @@ namespace System.Drawing
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void DrawImage(
             Image image,
             Rectangle destRect,
@@ -2215,61 +2184,51 @@ namespace System.Drawing
             CopyFromScreen(upperLeftSource.X, upperLeftSource.Y, upperLeftDestination.X, upperLeftDestination.Y, blockRegionSize, copyPixelOperation);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destPoint, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             EnumerateMetafile(metafile, destPoint, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destPoint, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             EnumerateMetafile(metafile, destPoint, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destRect, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             EnumerateMetafile(metafile, destRect, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destRect, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             EnumerateMetafile(metafile, destRect, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destPoints, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
@@ -2279,19 +2238,16 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, callback, IntPtr.Zero, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, EnumerateMetafileProc callback)
         {
             EnumerateMetafile(metafile, destPoints, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             EnumerateMetafile(metafile, destPoints, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF destPoint,
@@ -2302,7 +2258,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoint, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF destPoint,
@@ -2314,7 +2269,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoint, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point destPoint,
@@ -2325,7 +2279,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoint, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point destPoint,
@@ -2337,7 +2290,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoint, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             RectangleF destRect,
@@ -2348,7 +2300,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destRect, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             RectangleF destRect,
@@ -2360,7 +2311,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destRect, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Rectangle destRect,
@@ -2371,7 +2321,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destRect, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Rectangle destRect,
@@ -2383,7 +2332,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destRect, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
@@ -2394,7 +2342,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
@@ -2406,7 +2353,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,
@@ -2417,7 +2363,6 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, srcRect, srcUnit, callback, IntPtr.Zero);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,
@@ -2445,7 +2390,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts)
         {
             if (pts == null)
