@@ -743,7 +743,7 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
+            DispatchToAllListeners(-1, eventCallbackArgs);
         }
 
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
