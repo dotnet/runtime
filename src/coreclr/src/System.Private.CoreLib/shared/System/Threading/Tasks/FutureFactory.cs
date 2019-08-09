@@ -1288,7 +1288,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(!IsCompleted, "The task should not have been completed yet.");
 
                 // Run the end method and complete the task
-                bool successfullySet = false;
+                bool successfullySet;
                 try
                 {
                     var result = endMethod(thisRef, asyncResult);

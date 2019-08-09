@@ -89,7 +89,7 @@ namespace System
                 ambiguousEnd = startTime - daylightTime.Delta;
             }
 
-            bool isDst = false;
+            bool isDst;
             if (startTime > endTime)
             {
                 // In southern hemisphere, the daylight saving time starts later in the year, and ends in the beginning of next year.

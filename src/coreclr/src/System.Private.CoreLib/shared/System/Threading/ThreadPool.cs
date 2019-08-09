@@ -582,7 +582,6 @@ namespace System.Threading
             // false later, but only if we're absolutely certain that the queue is empty.
             //
             bool needAnotherThread = true;
-            object? outerWorkItem = null;
             try
             {
                 //
@@ -604,7 +603,7 @@ namespace System.Threading
                 {
                     bool missedSteal = false;
                     // Use operate on workItem local to try block so it can be enregistered
-                    object? workItem = outerWorkItem = workQueue.Dequeue(tl, ref missedSteal);
+                    object? workItem = workQueue.Dequeue(tl, ref missedSteal);
 
                     if (workItem == null)
                     {
@@ -673,7 +672,7 @@ namespace System.Threading
                     currentThread.ResetThreadPoolThread();
 
                     // Release refs
-                    outerWorkItem = workItem = null;
+                    workItem = null;
 
                     // Return to clean ExecutionContext and SynchronizationContext
                     ExecutionContext.ResetThreadPoolThread(currentThread);

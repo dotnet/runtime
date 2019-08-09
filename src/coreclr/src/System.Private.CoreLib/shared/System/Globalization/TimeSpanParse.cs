@@ -1120,7 +1120,7 @@ namespace System.Globalization
 
             if (match)
             {
-                long ticks = 0;
+                long ticks;
                 var zero = new TimeSpanToken(0);
 
                 if (!TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, zero, zero, out ticks))
@@ -1190,7 +1190,7 @@ namespace System.Globalization
 
             if (match)
             {
-                long ticks = 0;
+                long ticks;
                 var zero = new TimeSpanToken(0);
 
                 if (!TryTimeToTicks(positive, raw._numbers0, zero, zero, zero, zero, out ticks))
@@ -1261,7 +1261,7 @@ namespace System.Globalization
             int leadingZeroes = 0;    // number of leading zeroes in the parsed fraction
             int ff = 0;               // parsed fraction
             int i = 0;                // format string position
-            int tokenLen = 0;         // length of current format token, used to update index 'i'
+            int tokenLen;             // length of current format token, used to update index 'i'
 
             var tokenizer = new TimeSpanTokenizer(input, -1);
 
@@ -1319,8 +1319,7 @@ namespace System.Globalization
 
                     case 'd':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
-                        int tmp = 0;
-                        if (tokenLen > 8 || seenDD || !ParseExactDigits(ref tokenizer, (tokenLen < 2) ? 1 : tokenLen, (tokenLen < 2) ? 8 : tokenLen, out tmp, out dd))
+                        if (tokenLen > 8 || seenDD || !ParseExactDigits(ref tokenizer, (tokenLen < 2) ? 1 : tokenLen, (tokenLen < 2) ? 8 : tokenLen, out _, out dd))
                         {
                             return result.SetInvalidStringFailure();
                         }
@@ -1417,10 +1416,8 @@ namespace System.Globalization
 
         private static bool ParseExactDigits(ref TimeSpanTokenizer tokenizer, int minDigitLength, out int result)
         {
-            result = 0;
-            int zeroes = 0;
             int maxDigitLength = (minDigitLength == 1) ? 2 : minDigitLength;
-            return ParseExactDigits(ref tokenizer, minDigitLength, maxDigitLength, out zeroes, out result);
+            return ParseExactDigits(ref tokenizer, minDigitLength, maxDigitLength, out _, out result);
         }
 
         private static bool ParseExactDigits(ref TimeSpanTokenizer tokenizer, int minDigitLength, int maxDigitLength, out int zeroes, out int result)
