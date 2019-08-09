@@ -39,17 +39,17 @@
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19408.13</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19408.13</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19407.1</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19407.1</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19407.1</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19408.17</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19408.17</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19408.17</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
     <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19380.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19380.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19407.1</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19407.1</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19409.1</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19409.1</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
-    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19406.2</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19408.2</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
     <!-- sni -->
