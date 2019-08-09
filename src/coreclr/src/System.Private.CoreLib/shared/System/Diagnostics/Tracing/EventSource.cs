@@ -2782,9 +2782,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     this.OnEventCommand(commandArgs);
-                    var eventCommandCallback = this.m_eventCommandExecuted;
-                    if (eventCommandCallback != null)
-                        eventCommandCallback(this, commandArgs);
+                    this.m_eventCommandExecuted?.Invoke(this, commandArgs);
 
                     if (!commandArgs.enable)
                     {
@@ -2835,9 +2833,7 @@ namespace System.Diagnostics.Tracing
                     // Debug.Assert(matchAnyKeyword == EventKeywords.None);
 
                     this.OnEventCommand(commandArgs);
-                    var eventCommandCallback = m_eventCommandExecuted;
-                    if (eventCommandCallback != null)
-                        eventCommandCallback(this, commandArgs);
+                    m_eventCommandExecuted?.Invoke(this, commandArgs);
                 }
             }
             catch (Exception e)
@@ -4255,11 +4251,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventData"></param>
         protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            EventHandler<EventWrittenEventArgs>? callBack = this.EventWritten;
-            if (callBack != null)
-            {
-                callBack(this, eventData);
-            }
+            this.EventWritten?.Invoke(this, eventData);
         }
 
 
