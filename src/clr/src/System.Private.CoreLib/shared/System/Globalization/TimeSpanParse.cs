@@ -153,7 +153,7 @@ namespace System.Globalization
 
         private ref struct TimeSpanTokenizer
         {
-            private ReadOnlySpan<char> _value;
+            private readonly ReadOnlySpan<char> _value;
             private int _pos;
 
             internal TimeSpanTokenizer(ReadOnlySpan<char> input) : this(input, 0) { }

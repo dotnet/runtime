@@ -22,7 +22,7 @@ namespace System.IO
 {
     internal sealed unsafe class PinnedBufferMemoryStream : UnmanagedMemoryStream
     {
-        private byte[] _array;
+        private readonly byte[] _array;
         private GCHandle _pinningHandle;
 
         internal PinnedBufferMemoryStream(byte[] array)

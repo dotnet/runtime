@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 {
     internal static class WindowsRuntimeMetadata
     {
-        private static EventHandler<DesignerNamespaceResolveEventArgs>? DesignerNamespaceResolve;
+        private static readonly EventHandler<DesignerNamespaceResolveEventArgs>? DesignerNamespaceResolve;
 
         internal static string[]? OnDesignerNamespaceResolve(string namespaceName)
         {
@@ -48,8 +48,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
     internal class DesignerNamespaceResolveEventArgs : EventArgs
     {
-        private string _NamespaceName;
-        private Collection<string> _ResolvedAssemblyFiles;
+        private readonly string _NamespaceName;
+        private readonly Collection<string> _ResolvedAssemblyFiles;
 
         public Collection<string> ResolvedAssemblyFiles
         {

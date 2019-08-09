@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
 
         public override string ToString() => $"PollingCounter '{Name}' Count {1} Mean {_lastVal.ToString("n3")}";
 
-        private Func<double> _metricProvider;
+        private readonly Func<double> _metricProvider;
         private double _lastVal;
 
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)

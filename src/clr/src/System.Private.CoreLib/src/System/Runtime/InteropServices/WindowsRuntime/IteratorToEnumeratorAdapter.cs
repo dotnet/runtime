@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private sealed class NonGenericToGenericIterator : IIterator<object?>
         {
-            private IBindableIterator iterator;
+            private readonly IBindableIterator iterator;
 
             public NonGenericToGenericIterator(IBindableIterator iterator)
             { this.iterator = iterator; }
@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // Also IEnumerator throws an exception when we call Current after reaching the end of collection.
     internal sealed class IteratorToEnumeratorAdapter<T> : IEnumerator<T>
     {
-        private IIterator<T> m_iterator;
+        private readonly IIterator<T> m_iterator;
         private bool m_hadCurrent;
         private T m_current = default!;
         private bool m_isInitialized;

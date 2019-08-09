@@ -69,7 +69,7 @@ namespace System
         {
             // Hold the error object instance but don't serialize/deserialize it
             [NonSerialized]
-            private object _realErrorObject;
+            private readonly object _realErrorObject;
 
             internal __RestrictedErrorObject(object errorObject)
             {
@@ -345,7 +345,7 @@ namespace System
         private MethodBase? _exceptionMethod;  //Needed for serialization.
         internal string? _message;
         private IDictionary? _data;
-        private Exception? _innerException;
+        private readonly Exception? _innerException;
         private string? _helpURL;
         private object? _stackTrace;
         private object? _watsonBuckets;
@@ -357,11 +357,11 @@ namespace System
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
         // unless a System.Resolver object roots it.
-        private object? _dynamicMethods;
+        private readonly object? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
-        private IntPtr _xptrs;             // Internal EE stuff
-        private int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+        private readonly IntPtr _xptrs;             // Internal EE stuff
+        private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
 #pragma warning restore CA1823
 #pragma warning restore 414
 

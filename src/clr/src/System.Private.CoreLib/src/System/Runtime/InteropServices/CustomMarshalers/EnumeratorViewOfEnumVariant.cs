@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
     {
         private readonly IEnumVARIANT _enumVariantObject;
         private bool _fetchedLastObject;
-        private object[] _nextArray = new object[1];
+        private readonly object[] _nextArray = new object[1];
         private object? _current;
 
         public EnumeratorViewOfEnumVariant(IEnumVARIANT enumVariantObject)

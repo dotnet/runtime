@@ -6,7 +6,7 @@ namespace System.Runtime.Remoting
 {
     public class ObjectHandle : MarshalByRefObject
     {
-        private object? _wrappedObject;
+        private readonly object? _wrappedObject;
 
         private ObjectHandle()
         {

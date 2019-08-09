@@ -1197,7 +1197,7 @@ namespace System.Text
 
         internal sealed class DefaultEncoder : Encoder, IObjectReference
         {
-            private Encoding _encoding;
+            private readonly Encoding _encoding;
 
             public DefaultEncoder(Encoding encoding)
             {
@@ -1262,7 +1262,7 @@ namespace System.Text
 
         internal sealed class DefaultDecoder : Decoder, IObjectReference
         {
-            private Encoding _encoding;
+            private readonly Encoding _encoding;
 
             public DefaultDecoder(Encoding encoding)
             {
@@ -1337,15 +1337,15 @@ namespace System.Text
         internal class EncodingCharBuffer
         {
             private unsafe char* _chars;
-            private unsafe char* _charStart;
-            private unsafe char* _charEnd;
+            private readonly unsafe char* _charStart;
+            private readonly unsafe char* _charEnd;
             private int _charCountResult = 0;
-            private Encoding _enc;
-            private DecoderNLS? _decoder;
-            private unsafe byte* _byteStart;
-            private unsafe byte* _byteEnd;
+            private readonly Encoding _enc;
+            private readonly DecoderNLS? _decoder;
+            private readonly unsafe byte* _byteStart;
+            private readonly unsafe byte* _byteEnd;
             private unsafe byte* _bytes;
-            private DecoderFallbackBuffer _fallbackBuffer;
+            private readonly DecoderFallbackBuffer _fallbackBuffer;
 
             internal unsafe EncodingCharBuffer(Encoding enc, DecoderNLS? decoder, char* charStart, int charCount,
                                                     byte* byteStart, int byteCount)
@@ -1510,14 +1510,14 @@ namespace System.Text
         internal class EncodingByteBuffer
         {
             private unsafe byte* _bytes;
-            private unsafe byte* _byteStart;
-            private unsafe byte* _byteEnd;
+            private readonly unsafe byte* _byteStart;
+            private readonly unsafe byte* _byteEnd;
             private unsafe char* _chars;
-            private unsafe char* _charStart;
-            private unsafe char* _charEnd;
+            private readonly unsafe char* _charStart;
+            private readonly unsafe char* _charEnd;
             private int _byteCountResult = 0;
-            private Encoding _enc;
-            private EncoderNLS? _encoder;
+            private readonly Encoding _enc;
+            private readonly EncoderNLS? _encoder;
             internal EncoderFallbackBuffer fallbackBuffer;
 
             internal unsafe EncodingByteBuffer(Encoding inEncoding, EncoderNLS? inEncoder,

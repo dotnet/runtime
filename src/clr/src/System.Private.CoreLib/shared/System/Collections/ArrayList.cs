@@ -772,7 +772,7 @@ namespace System.Collections
         // Note this requires reimplementing half of ArrayList...
         private class IListWrapper : ArrayList
         {
-            private IList _list;
+            private readonly IList _list;
 
             internal IListWrapper(IList list)
             {
@@ -1235,8 +1235,8 @@ namespace System.Collections
 
         private class SyncArrayList : ArrayList
         {
-            private ArrayList _list;
-            private object _root;
+            private readonly ArrayList _list;
+            private readonly object _root;
 
             internal SyncArrayList(ArrayList list)
                 : base(false)
@@ -1590,8 +1590,8 @@ namespace System.Collections
 
         private class SyncIList : IList
         {
-            private IList _list;
-            private object _root;
+            private readonly IList _list;
+            private readonly object _root;
 
             internal SyncIList(IList list)
             {
@@ -1719,7 +1719,7 @@ namespace System.Collections
 
         private class FixedSizeList : IList
         {
-            private IList _list;
+            private readonly IList _list;
 
             internal FixedSizeList(IList l)
             {
@@ -2031,7 +2031,7 @@ namespace System.Collections
 
         private class ReadOnlyList : IList
         {
-            private IList _list;
+            private readonly IList _list;
 
             internal ReadOnlyList(IList l)
             {
@@ -2343,12 +2343,12 @@ namespace System.Collections
         // made to the list while an enumeration is in progress.
         private sealed class ArrayListEnumerator : IEnumerator, ICloneable
         {
-            private ArrayList _list;
+            private readonly ArrayList _list;
             private int _index;
-            private int _endIndex;       // Where to stop.
-            private int _version;
+            private readonly int _endIndex;       // Where to stop.
+            private readonly int _version;
             private object? _currentElement;
-            private int _startIndex;     // Save this for Reset.
+            private readonly int _startIndex;     // Save this for Reset.
 
             internal ArrayListEnumerator(ArrayList list, int index, int count)
             {
@@ -2404,7 +2404,7 @@ namespace System.Collections
         private class Range : ArrayList
         {
             private ArrayList _baseList;
-            private int _baseIndex;
+            private readonly int _baseIndex;
             private int _baseSize;
             private int _baseVersion;
 
@@ -2819,13 +2819,13 @@ namespace System.Collections
 
         private sealed class ArrayListEnumeratorSimple : IEnumerator, ICloneable
         {
-            private ArrayList _list;
+            private readonly ArrayList _list;
             private int _index;
-            private int _version;
+            private readonly int _version;
             private object? _currentElement;
-            private bool _isArrayList;
+            private readonly bool _isArrayList;
             // this object is used to indicate enumeration has not started or has terminated
-            private static object s_dummyObject = new object();
+            private static readonly object s_dummyObject = new object();
 
             internal ArrayListEnumeratorSimple(ArrayList list)
             {
@@ -2910,7 +2910,7 @@ namespace System.Collections
 
         internal class ArrayListDebugView
         {
-            private ArrayList _arrayList;
+            private readonly ArrayList _arrayList;
 
             public ArrayListDebugView(ArrayList arrayList)
             {

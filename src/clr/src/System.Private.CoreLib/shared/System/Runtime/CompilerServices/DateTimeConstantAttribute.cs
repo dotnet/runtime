@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed class DateTimeConstantAttribute : CustomConstantAttribute
     {
-        private DateTime _date;
+        private readonly DateTime _date;
 
         public DateTimeConstantAttribute(long ticks)
         {

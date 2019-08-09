@@ -6,8 +6,8 @@ namespace System
 {
     public class UnhandledExceptionEventArgs : EventArgs
     {
-        private object _exception;
-        private bool _isTerminating;
+        private readonly object _exception;
+        private readonly bool _isTerminating;
 
         public UnhandledExceptionEventArgs(object exception, bool isTerminating)
         {

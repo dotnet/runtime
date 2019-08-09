@@ -59,7 +59,7 @@ namespace System.Text
         private char _cBestFit = '\0';
         private int _iCount = -1;
         private int _iSize;
-        private InternalDecoderBestFitFallback _oFallback;
+        private readonly InternalDecoderBestFitFallback _oFallback;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static object? s_InternalSyncObject;

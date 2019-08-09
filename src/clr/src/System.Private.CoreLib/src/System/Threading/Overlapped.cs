@@ -30,8 +30,8 @@ namespace System.Threading
 
     internal unsafe class _IOCompletionCallback
     {
-        private IOCompletionCallback _ioCompletionCallback;
-        private ExecutionContext _executionContext;
+        private readonly IOCompletionCallback _ioCompletionCallback;
+        private readonly ExecutionContext _executionContext;
         private uint _errorCode; // Error code
         private uint _numBytes; // No. of bytes transferred
         private NativeOverlapped* _pNativeOverlapped;
@@ -93,7 +93,7 @@ namespace System.Threading
         internal object? _callback; // IOCompletionCallback or _IOCompletionCallback
         internal readonly Overlapped _overlapped;
         private object? _userObject;
-        private NativeOverlapped * _pNativeOverlapped;
+        private readonly NativeOverlapped* _pNativeOverlapped;
         private IntPtr _eventHandle;
         private int _offsetLow;
         private int _offsetHigh;

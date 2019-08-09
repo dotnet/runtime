@@ -573,21 +573,21 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         private static readonly Type? s_licenseExceptionType = Type.GetType("System.ComponentModel.LicenseException, System.ComponentModel.TypeConverter", throwOnError: false);
 
         // LicenseManager
-        private MethodInfo _createWithContext;
+        private readonly MethodInfo _createWithContext;
 
         // LicenseInteropHelper
-        private MethodInfo _validateTypeAndReturnDetails;
-        private MethodInfo _getCurrentContextInfo;
+        private readonly MethodInfo _validateTypeAndReturnDetails;
+        private readonly MethodInfo _getCurrentContextInfo;
 
         // CLRLicenseContext
-        private MethodInfo _createDesignContext;
-        private MethodInfo _createRuntimeContext;
+        private readonly MethodInfo _createDesignContext;
+        private readonly MethodInfo _createRuntimeContext;
 
         // LicenseContext
-        private MethodInfo _setSavedLicenseKey;
+        private readonly MethodInfo _setSavedLicenseKey;
 
-        private Type _licInfoHelper;
-        private MethodInfo _licInfoHelperContains;
+        private readonly Type _licInfoHelper;
+        private readonly MethodInfo _licInfoHelperContains;
 
         // RCW Activation
         private object? _licContext;

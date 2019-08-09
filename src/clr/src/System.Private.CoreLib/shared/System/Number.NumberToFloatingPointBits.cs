@@ -64,7 +64,7 @@ namespace System
             }
         }
 
-        private static float[] s_Pow10SingleTable = new float[]
+        private static readonly float[] s_Pow10SingleTable = new float[]
         {
             1e0f,   // 10^0
             1e1f,   // 10^1
@@ -79,7 +79,7 @@ namespace System
             1e10f,  // 10^10
         };
 
-        private static double[] s_Pow10DoubleTable = new double[]
+        private static readonly double[] s_Pow10DoubleTable = new double[]
         {
             1e0,    // 10^0
             1e1,    // 10^1

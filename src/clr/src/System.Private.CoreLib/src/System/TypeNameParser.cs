@@ -89,7 +89,7 @@ namespace System
         #endregion
 
         #region Private Data Members
-        private SafeTypeNameParserHandle m_NativeParser;
+        private readonly SafeTypeNameParserHandle m_NativeParser;
         private static readonly char[] SPECIAL_CHARS = { ',', '[', ']', '&', '*', '+', '\\' }; /* see typeparse.h */
         #endregion
 

@@ -22,7 +22,7 @@ namespace System.Text
     internal class DecoderNLS : Decoder
     {
         // Remember our encoding
-        private Encoding _encoding;
+        private readonly Encoding _encoding;
         private bool _mustFlush;
         internal bool _throwOnOverflow;
         internal int _bytesUsed;
