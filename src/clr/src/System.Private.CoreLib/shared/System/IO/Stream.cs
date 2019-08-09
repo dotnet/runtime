@@ -829,10 +829,7 @@ namespace System.IO
                 asyncResult = new SynchronousAsyncResult(ex, state, isWrite: false);
             }
 
-            if (callback != null)
-            {
-                callback(asyncResult);
-            }
+            callback?.Invoke(asyncResult);
 
             return asyncResult;
         }
@@ -861,10 +858,7 @@ namespace System.IO
                 asyncResult = new SynchronousAsyncResult(ex, state, isWrite: true);
             }
 
-            if (callback != null)
-            {
-                callback(asyncResult);
-            }
+            callback?.Invoke(asyncResult);
 
             return asyncResult;
         }
