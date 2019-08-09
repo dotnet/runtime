@@ -430,8 +430,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF destPoint,
@@ -447,9 +445,6 @@ namespace System.Drawing
                 callbackData,
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point destPoint,
@@ -466,8 +461,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             RectangleF destRect,
@@ -484,8 +477,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             Rectangle destRect,
@@ -502,8 +493,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public unsafe void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
@@ -528,8 +517,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public unsafe void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,
@@ -554,8 +541,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             PointF destPoint,
@@ -576,8 +561,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             Point destPoint,
@@ -598,8 +581,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(
             Metafile metafile,
             RectangleF destRect,
@@ -620,8 +601,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(
             Metafile metafile,
             Rectangle destRect,
@@ -642,8 +621,6 @@ namespace System.Drawing
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
@@ -672,8 +649,6 @@ namespace System.Drawing
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public unsafe void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,

@@ -251,7 +251,6 @@ namespace System.Drawing
         ///       the identity palette mapping between the DIB and the display.
         /// </summary>
         /// <returns>A valid bitmap handle if successful, IntPtr.Zero otherwise.</returns>
-        [SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private IntPtr CreateCompatibleDIB(IntPtr hdc, IntPtr hpal, int ulWidth, int ulHeight, ref IntPtr ppvBits)
         {
             if (hdc == IntPtr.Zero)

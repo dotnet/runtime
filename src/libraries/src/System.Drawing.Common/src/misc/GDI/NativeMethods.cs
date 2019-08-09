@@ -9,8 +9,6 @@ namespace System.Drawing.Internal
 {
     internal partial class IntNativeMethods
     {
-        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
-
         public const int OBJ_PEN = 1;
         public const int OBJ_BRUSH = 2;
         public const int OBJ_FONT = 6;

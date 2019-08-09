@@ -12,7 +12,6 @@ namespace System.Drawing.Internal
     /// </summary>
     internal sealed partial class WindowsRegion : MarshalByRefObject, ICloneable, IDisposable
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private IntPtr _nativeHandle; // The hRegion, this class always takes ownership of the hRegion.
         private bool _ownHandle;
 
