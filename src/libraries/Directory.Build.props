@@ -375,4 +375,7 @@
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IsShipping Condition="$(MSBuildProjectName.Contains('Private')) or $(MSBuildProjectName.Contains('Experimental'))">false</IsShipping>
+  </PropertyGroup>
 </Project>

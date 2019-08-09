@@ -20,7 +20,7 @@ resources:
   - container: ubuntu_1604_arm_cross_container
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
 
-jobs:
+stages:
   # Windows outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
     - template: /eng/pipelines/windows.yml

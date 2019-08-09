@@ -19,19 +19,12 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <PropertyGroup>
-    <!--
-      Reset PackageOutputPath property from arcade as we need to use ConfigurationGroup instead of Configuration which arcade uses.
-      See issue https://github.com/dotnet/corefx/issues/33275
-    -->
-    <PackageOutputPath>$(ArtifactsDir)packages/$(ConfigurationGroup)/</PackageOutputPath>
-    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+    <ArtifactsPackagesDir>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'packages', '$(ConfigurationGroup)'))</ArtifactsPackagesDir>
+    <ArtifactsShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Shipping'))</ArtifactsShippingPackagesDir>
+    <ArtifactsNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'NonShipping'))</ArtifactsNonShippingPackagesDir>
 
-    <!--
-      PublishPattern needs to be the root of the packages folder to ensure we maintain the relative structure
-      in the blob container which would have a Debug or Release subfolder otherwise we end trying to publish both
-      Debug and Release assets during our publish legs.
-    -->
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(ArtifactsDir)packages\**\*.nupkg</PublishPattern>
+    <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
+    <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
