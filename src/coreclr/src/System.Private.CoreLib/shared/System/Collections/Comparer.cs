@@ -58,8 +58,7 @@ namespace System.Collections
             if (a == null) return -1;
             if (b == null) return 1;
 
-            string? sa = a as string;
-            if (sa != null && b is string sb)
+            if (a is string sa && b is string sb)
                 return _compareInfo.Compare(sa, sb);
 
             if (a is IComparable ia)

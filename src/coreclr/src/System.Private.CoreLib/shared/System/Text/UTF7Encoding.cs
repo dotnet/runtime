@@ -873,8 +873,7 @@ namespace System.Text
 
             public override bool Equals(object? value)
             {
-                DecoderUTF7Fallback? that = value as DecoderUTF7Fallback;
-                if (that != null)
+                if (value is DecoderUTF7Fallback)
                 {
                     return true;
                 }

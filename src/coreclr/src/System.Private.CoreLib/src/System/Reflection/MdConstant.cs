@@ -111,64 +111,25 @@ namespace System.Reflection
             }
             else
             {
-                switch (corElementType)
+                return corElementType switch
                 {
-                    #region Switch
-
-                    case CorElementType.ELEMENT_TYPE_VOID:
-                        return DBNull.Value;
-
-                    case CorElementType.ELEMENT_TYPE_CHAR:
-                        return *(char*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_I1:
-                        return *(sbyte*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_U1:
-                        return *(byte*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_I2:
-                        return *(short*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_U2:
-                        return *(ushort*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_I4:
-                        return *(int*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_U4:
-                        return *(uint*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_I8:
-                        return buffer;
-
-                    case CorElementType.ELEMENT_TYPE_U8:
-                        return (ulong)buffer;
-
-                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                        // The boolean value returned from the metadata engine is stored as a
-                        // BOOL, which actually maps to an int. We need to read it out as an int
-                        // to avoid problems on big-endian machines.
-                        return (*(int*)&buffer != 0);
-
-                    case CorElementType.ELEMENT_TYPE_R4:
-                        return *(float*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_R8:
-                        return *(double*)&buffer;
-
-                    case CorElementType.ELEMENT_TYPE_STRING:
-                        // A string constant can be empty but never null.
-                        // A nullref constant can only be type CorElementType.ELEMENT_TYPE_CLASS.
-                        return stringVal == null ? string.Empty : stringVal;
-
-                    case CorElementType.ELEMENT_TYPE_CLASS:
-                        return null;
-
-                    default:
-                        throw new FormatException(SR.Arg_BadLiteralFormat);
-                        #endregion
-                }
+                    CorElementType.ELEMENT_TYPE_VOID => DBNull.Value,
+                    CorElementType.ELEMENT_TYPE_CHAR => *(char*)&buffer,
+                    CorElementType.ELEMENT_TYPE_I1 => *(sbyte*)&buffer,
+                    CorElementType.ELEMENT_TYPE_U1 => *(byte*)&buffer,
+                    CorElementType.ELEMENT_TYPE_I2 => *(short*)&buffer,
+                    CorElementType.ELEMENT_TYPE_U2 => *(ushort*)&buffer,
+                    CorElementType.ELEMENT_TYPE_I4 => *(int*)&buffer,
+                    CorElementType.ELEMENT_TYPE_U4 => *(uint*)&buffer,
+                    CorElementType.ELEMENT_TYPE_I8 => buffer,
+                    CorElementType.ELEMENT_TYPE_U8 => (ulong)buffer,
+                    CorElementType.ELEMENT_TYPE_BOOLEAN => (*(int*)&buffer != 0),
+                    CorElementType.ELEMENT_TYPE_R4 => *(float*)&buffer,
+                    CorElementType.ELEMENT_TYPE_R8 => *(double*)&buffer,
+                    CorElementType.ELEMENT_TYPE_STRING => stringVal == null ? string.Empty : stringVal,
+                    CorElementType.ELEMENT_TYPE_CLASS => null,
+                    _ => throw new FormatException(SR.Arg_BadLiteralFormat),
+                };
             }
         }
     }

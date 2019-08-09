@@ -105,23 +105,14 @@ namespace System.Buffers.Text
                 offset = value.Offset;
             }
 
-            switch (symbol)
+            return symbol switch
             {
-                case 'R':
-                    return TryFormatDateTimeR(value.UtcDateTime, destination, out bytesWritten);
-
-                case 'l':
-                    return TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten);
-
-                case 'O':
-                    return TryFormatDateTimeO(value.DateTime, value.Offset, destination, out bytesWritten);
-
-                case 'G':
-                    return TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten);
-
-                default:
-                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
-            }
+                'R' => TryFormatDateTimeR(value.UtcDateTime, destination, out bytesWritten),
+                'l' => TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten),
+                'O' => TryFormatDateTimeO(value.DateTime, value.Offset, destination, out bytesWritten),
+                'G' => TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten),
+                _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
+            };
         }
 
         /// <summary>
@@ -149,23 +140,14 @@ namespace System.Buffers.Text
         {
             char symbol = FormattingHelpers.GetSymbolOrDefault(format, 'G');
 
-            switch (symbol)
+            return symbol switch
             {
-                case 'R':
-                    return TryFormatDateTimeR(value, destination, out bytesWritten);
-
-                case 'l':
-                    return TryFormatDateTimeL(value, destination, out bytesWritten);
-
-                case 'O':
-                    return TryFormatDateTimeO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
-
-                case 'G':
-                    return TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
-
-                default:
-                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
-            }
+                'R' => TryFormatDateTimeR(value, destination, out bytesWritten),
+                'l' => TryFormatDateTimeL(value, destination, out bytesWritten),
+                'O' => TryFormatDateTimeO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
+                'G' => TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
+                _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
+            };
         }
     }
 }

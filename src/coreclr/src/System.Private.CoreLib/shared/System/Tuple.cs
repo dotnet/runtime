@@ -296,15 +296,12 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -416,17 +413,13 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -547,19 +540,14 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    case 3:
-                        return Item4;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    3 => Item4,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -689,21 +677,15 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    case 3:
-                        return Item4;
-                    case 4:
-                        return Item5;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    3 => Item4,
+                    4 => Item5,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -842,23 +824,16 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    case 3:
-                        return Item4;
-                    case 4:
-                        return Item5;
-                    case 5:
-                        return Item6;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    3 => Item4,
+                    4 => Item5,
+                    5 => Item6,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -1006,25 +981,17 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    case 3:
-                        return Item4;
-                    case 4:
-                        return Item5;
-                    case 5:
-                        return Item6;
-                    case 6:
-                        return Item7;
-                    default:
-                        throw new IndexOutOfRangeException();
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    3 => Item4,
+                    4 => Item5,
+                    5 => Item6,
+                    6 => Item7,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
         }
     }
@@ -1214,25 +1181,18 @@ namespace System
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return Item1;
-                    case 1:
-                        return Item2;
-                    case 2:
-                        return Item3;
-                    case 3:
-                        return Item4;
-                    case 4:
-                        return Item5;
-                    case 5:
-                        return Item6;
-                    case 6:
-                        return Item7;
-                }
+                    0 => Item1,
+                    1 => Item2,
+                    2 => Item3,
+                    3 => Item4,
+                    4 => Item5,
+                    5 => Item6,
+                    6 => Item7,
 
-                return ((ITupleInternal)Rest)[index - 7];
+                    _ => ((ITupleInternal)Rest)[index - 7],
+                };
             }
         }
     }

@@ -983,8 +983,7 @@ namespace System.Collections
 
                 if (c.Count > 0)
                 {
-                    ArrayList? al = _list as ArrayList;
-                    if (al != null)
+                    if (_list is ArrayList al)
                     {
                         // We need to special case ArrayList.
                         // When c is a range of _list, we need to handle this in a special way.

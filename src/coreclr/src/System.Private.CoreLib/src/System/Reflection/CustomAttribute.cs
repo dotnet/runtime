@@ -505,62 +505,27 @@ namespace System.Reflection
         #region Private Static Methods
         private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
-            switch (encodedType)
+            return encodedType switch
             {
-                case (CustomAttributeEncoding.Enum):
-                    return typeof(Enum);
-
-                case (CustomAttributeEncoding.Int32):
-                    return typeof(int);
-
-                case (CustomAttributeEncoding.String):
-                    return typeof(string);
-
-                case (CustomAttributeEncoding.Type):
-                    return typeof(Type);
-
-                case (CustomAttributeEncoding.Array):
-                    return typeof(Array);
-
-                case (CustomAttributeEncoding.Char):
-                    return typeof(char);
-
-                case (CustomAttributeEncoding.Boolean):
-                    return typeof(bool);
-
-                case (CustomAttributeEncoding.SByte):
-                    return typeof(sbyte);
-
-                case (CustomAttributeEncoding.Byte):
-                    return typeof(byte);
-
-                case (CustomAttributeEncoding.Int16):
-                    return typeof(short);
-
-                case (CustomAttributeEncoding.UInt16):
-                    return typeof(ushort);
-
-                case (CustomAttributeEncoding.UInt32):
-                    return typeof(uint);
-
-                case (CustomAttributeEncoding.Int64):
-                    return typeof(long);
-
-                case (CustomAttributeEncoding.UInt64):
-                    return typeof(ulong);
-
-                case (CustomAttributeEncoding.Float):
-                    return typeof(float);
-
-                case (CustomAttributeEncoding.Double):
-                    return typeof(double);
-
-                case (CustomAttributeEncoding.Object):
-                    return typeof(object);
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)encodedType), nameof(encodedType));
-            }
+                CustomAttributeEncoding.Enum => typeof(Enum),
+                CustomAttributeEncoding.Int32 => typeof(int),
+                CustomAttributeEncoding.String => typeof(string),
+                CustomAttributeEncoding.Type => typeof(Type),
+                CustomAttributeEncoding.Array => typeof(Array),
+                CustomAttributeEncoding.Char => typeof(char),
+                CustomAttributeEncoding.Boolean => typeof(bool),
+                CustomAttributeEncoding.SByte => typeof(sbyte),
+                CustomAttributeEncoding.Byte => typeof(byte),
+                CustomAttributeEncoding.Int16 => typeof(short),
+                CustomAttributeEncoding.UInt16 => typeof(ushort),
+                CustomAttributeEncoding.UInt32 => typeof(uint),
+                CustomAttributeEncoding.Int64 => typeof(long),
+                CustomAttributeEncoding.UInt64 => typeof(ulong),
+                CustomAttributeEncoding.Float => typeof(float),
+                CustomAttributeEncoding.Double => typeof(double),
+                CustomAttributeEncoding.Object => typeof(object),
+                _ => throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)encodedType), nameof(encodedType)),
+            };
         }
 
         private static object EncodedValueToRawValue(long val, CustomAttributeEncoding encodedType)

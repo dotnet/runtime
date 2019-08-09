@@ -121,26 +121,15 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out DateTimeOffset value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+            return standardFormat switch
             {
-                case 'R':
-                    return TryParseDateTimeOffsetR(source, NoFlipCase, out value, out bytesConsumed);
-
-                case 'l':
-                    return TryParseDateTimeOffsetR(source, FlipCase, out value, out bytesConsumed);
-
-                case 'O':
-                    return TryParseDateTimeOffsetO(source, out value, out bytesConsumed, out _);
-
-                case default(char):
-                    return TryParseDateTimeOffsetDefault(source, out value, out bytesConsumed);
-
-                case 'G':
-                    return TryParseDateTimeG(source, out DateTime _, out value, out bytesConsumed);
-
-                default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
-            }
+                'R' => TryParseDateTimeOffsetR(source, NoFlipCase, out value, out bytesConsumed),
+                'l' => TryParseDateTimeOffsetR(source, FlipCase, out value, out bytesConsumed),
+                'O' => TryParseDateTimeOffsetO(source, out value, out bytesConsumed, out _),
+                default(char) => TryParseDateTimeOffsetDefault(source, out value, out bytesConsumed),
+                'G' => TryParseDateTimeG(source, out DateTime _, out value, out bytesConsumed),
+                _ => ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed),
+            };
         }
 
         private const uint FlipCase = 0x00000020u;  // XOR mask to flip the case of a letter.

@@ -110,12 +110,7 @@ namespace System.Reflection
 
         internal override bool CacheEquals(object? o)
         {
-            RtFieldInfo? m = o as RtFieldInfo;
-
-            if (m is null)
-                return false;
-
-            return m.m_fieldHandle == m_fieldHandle;
+            return o is RtFieldInfo m && m.m_fieldHandle == m_fieldHandle;
         }
 
         #endregion
