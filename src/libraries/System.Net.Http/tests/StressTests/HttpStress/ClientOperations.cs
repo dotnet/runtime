@@ -143,6 +143,14 @@ namespace HttpStress
             }
         }
 
+        // Generates a random expected response content length and adds it to the request headers
+        public int SetExpectedResponseContentLengthHeader(HttpRequestHeaders headers, int minLength = 0)
+        {
+            int expectedResponseContentLength = _random.Next(minLength, Math.Max(minLength, MaxContentLength));
+            headers.Add(StressServer.ExpectedResponseContentLength, expectedResponseContentLength.ToString());
+            return expectedResponseContentLength;
+        }
+
         public int GetRandomInt32(int minValueInclusive, int maxValueExclusive) => _random.Next(minValueInclusive, maxValueExclusive);
     }
 
@@ -158,67 +166,54 @@ namespace HttpStress
                 ("GET",
                 async ctx =>
                 {
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, "/"))
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        string content = await m.Content.ReadAsStringAsync();
-                        if (content.Length != ctx.MaxContentLength)
-                        {
-                            throw new Exception($"Expected content length {ctx.MaxContentLength} but got {content.Length}");
-                        }
-
-                        if (!ServerContentUtils.IsValidServerContent(content))
-                        {
-                            throw new Exception("Unexpected response content");
-                        }
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Get, "/");
+                    int expectedLength = ctx.SetExpectedResponseContentLengthHeader(req.Headers);
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
+                    
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
                 }),
 
                 ("GET Partial",
                 async ctx =>
                 {
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, "/slow"))
-                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
+                    using var req = new HttpRequestMessage(HttpMethod.Get, "/slow");
+                    int expectedLength = ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
+                    using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
-                        using (Stream s = await m.Content.ReadAsStreamAsync())
-                        {
-                            s.ReadByte(); // read single byte from response and throw the rest away
-                        }
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+
+                    using (Stream s = await m.Content.ReadAsStreamAsync())
+                    {
+                        s.ReadByte(); // read single byte from response and throw the rest away
                     }
                 }),
 
                 ("GET Headers",
                 async ctx =>
                 {
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, "/headers"))
+                    using var req = new HttpRequestMessage(HttpMethod.Get, "/headers");
+                    ctx.PopulateWithRandomHeaders(req.Headers);
+
+                    using HttpResponseMessage res = await ctx.SendAsync(req);
+
+                    ValidateHttpVersion(res, ctx.HttpVersion);
+                    ValidateStatusCode(res);
+
+                    // Validate that request headers are being echoed
+                    foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                     {
-                        ctx.PopulateWithRandomHeaders(req.Headers);
-
-                        using (HttpResponseMessage res = await ctx.SendAsync(req))
+                        if (!res.Headers.TryGetValues(reqHeader.Key, out IEnumerable<string> values))
                         {
-                            ValidateHttpVersion(res, ctx.HttpVersion);
-                            ValidateStatusCode(res);
-
-                            // Validate that request headers are being echoed
-                            foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
-                            {
-                                if (!res.Headers.TryGetValues(reqHeader.Key, out var values))
-                                {
-                                    throw new Exception($"Expected response header name {reqHeader.Key} missing.");
-                                }
-                                else if (!reqHeader.Value.SequenceEqual(values))
-                                {
-                                    string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
-                                    throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}");
-                                }
-                            }
+                            throw new Exception($"Expected response header name {reqHeader.Key} missing.");
                         }
-
+                        else if (!reqHeader.Value.SequenceEqual(values))
+                        {
+                            string FmtValues(IEnumerable<string> values) => string.Join(", ", values.Select(x => $"\"{x}\""));
+                            throw new Exception($"Unexpected values for header {reqHeader.Key}. Expected {FmtValues(reqHeader.Value)} but got {FmtValues(values)}");
+                        }
                     }
                 }),
 
@@ -227,13 +222,12 @@ namespace HttpStress
                 {
                     string uri = "/variables";
                     string expectedResponse = GetGetQueryParameters(ref uri, ctx.MaxRequestUriSize, ctx, ctx.MaxRequestParameters);
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, uri))
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
                 }),
 
                 ("GET Aborted",
@@ -241,10 +235,11 @@ namespace HttpStress
                 {
                     try
                     {
-                        using (var req = new HttpRequestMessage(HttpMethod.Get, "/abort"))
-                        {
-                            await ctx.SendAsync(req);
-                        }
+                        using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
+                        ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
+                        
+                        await ctx.SendAsync(req);
+
                         throw new Exception("Completed unexpectedly");
                     }
                     catch (Exception e)
@@ -285,13 +280,12 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringDuplexContent(content) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent(content, await m.Content.ReadAsStringAsync());;
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringDuplexContent(content) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }),
 
                 ("POST Multipart Data",
@@ -299,13 +293,12 @@ namespace HttpStress
                 {
                     (string expected, MultipartContent formDataContent) formData = GetMultipartContent(ctx, ctx.MaxRequestParameters);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = formData.formDataContent })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());;
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = formData.formDataContent };
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());
                 }),
 
                 ("POST Duplex",
@@ -313,13 +306,12 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent(content, await m.Content.ReadAsStringAsync());
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }),
 
                 ("POST Duplex Slow",
@@ -327,13 +319,12 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        ValidateContent(content, await m.Content.ReadAsStringAsync());
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }),
 
                 ("POST Duplex Dispose",
@@ -342,13 +333,12 @@ namespace HttpStress
                     // try to reproduce conditions described in https://github.com/dotnet/corefx/issues/39819
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
-                        // Cause the response to be disposed without reading the response body, which will cause the client to cancel the request
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    // Cause the response to be disposed without reading the response body, which will cause the client to cancel the request
                 }),
 
                 ("POST ExpectContinue",
@@ -356,34 +346,32 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringContent(content) })
-                    {
-                        req.Headers.ExpectContinue = true;
-                        using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
-                        {
-                            ValidateHttpVersion(m, ctx.HttpVersion);
-                            ValidateStatusCode(m);
-                            ValidateContent(content, await m.Content.ReadAsStringAsync());
-                        }
-                    }
+                    using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringContent(content) };
+
+                    req.Headers.ExpectContinue = true;
+                    using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }),
 
                 ("HEAD",
                 async ctx =>
                 {
-                    using (var req = new HttpRequestMessage(HttpMethod.Head, "/"))
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
+                    using var req = new HttpRequestMessage(HttpMethod.Head, "/");
+                    int expectedLength = ctx.SetExpectedResponseContentLengthHeader(req.Headers);
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
 
-                        if (m.Content.Headers.ContentLength != ctx.MaxContentLength)
-                        {
-                            throw new Exception($"Expected {ctx.MaxContentLength}, got {m.Content.Headers.ContentLength}");
-                        }
-                        string r = await m.Content.ReadAsStringAsync();
-                        if (r.Length > 0) throw new Exception($"Got unexpected response: {r}");
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+
+                    if (m.Content.Headers.ContentLength != expectedLength)
+                    {
+                        throw new Exception($"Expected {expectedLength}, got {m.Content.Headers.ContentLength}");
                     }
+                    string r = await m.Content.ReadAsStringAsync();
+                    if (r.Length > 0) throw new Exception($"Got unexpected response: {r}");
                 }),
 
                 ("PUT",
@@ -391,15 +379,14 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Put, "/") { Content = new StringContent(content) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
+                    using var req = new HttpRequestMessage(HttpMethod.Put, "/") { Content = new StringContent(content) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
 
-                        string r = await m.Content.ReadAsStringAsync();
-                        if (r != "") throw new Exception($"Got unexpected response: {r}");
-                    }
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+
+                    string r = await m.Content.ReadAsStringAsync();
+                    if (r != "") throw new Exception($"Got unexpected response: {r}");
                 }),
 
                 ("PUT Slow",
@@ -407,15 +394,26 @@ namespace HttpStress
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
-                    using (var req = new HttpRequestMessage(HttpMethod.Put, "/") { Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) })
-                    using (HttpResponseMessage m = await ctx.SendAsync(req))
-                    {
-                        ValidateHttpVersion(m, ctx.HttpVersion);
-                        ValidateStatusCode(m);
+                    using var req = new HttpRequestMessage(HttpMethod.Put, "/") { Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) };
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
 
-                        string r = await m.Content.ReadAsStringAsync();
-                        if (r != "") throw new Exception($"Got unexpected response: {r}");
-                    }
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+
+                    string r = await m.Content.ReadAsStringAsync();
+                    if (r != "") throw new Exception($"Got unexpected response: {r}");
+                }),
+
+                ("GET Slow",
+                async ctx =>
+                {
+                    using var req = new HttpRequestMessage(HttpMethod.Get, "/slow");
+                    int expectedLength = ctx.SetExpectedResponseContentLengthHeader(req.Headers);
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
+
+                    ValidateHttpVersion(m, ctx.HttpVersion);
+                    ValidateStatusCode(m);
+                    ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
                 }),
             };
 
@@ -441,6 +439,19 @@ namespace HttpStress
             if (actualContent != expectedContent)
             {
                 throw new Exception($"Expected response content \"{expectedContent}\", got \"{actualContent}\". {details}");
+            }
+        }
+
+        private static void ValidateServerContent(string content, int expectedLength)
+        {
+            if (content.Length != expectedLength)
+            {
+                throw new Exception($"Unexpected response content {content}. Should have length {expectedLength} long but was {content.Length}");
+            }
+
+            if (!ServerContentUtils.IsValidServerContent(content))
+            {
+                throw new Exception($"Unexpected response content {content}");
             }
         }
 
