@@ -47,7 +47,7 @@ mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssembly
 
 MONO_API MonoImage*    mono_assembly_load_module_checked (MonoAssembly *assembly, uint32_t idx, MonoError *error);
 
-MonoAssembly* mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenStatus *status);
+MonoAssembly* mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoadContext *alc, MonoImageOpenStatus *status);
 
 
 typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
@@ -104,7 +104,8 @@ typedef struct MonoAssemblyByNameRequest {
 
 void                   mono_assembly_request_prepare (MonoAssemblyLoadRequest *req,
 						      size_t req_size,
-						      MonoAssemblyContextKind asmctx);
+						      MonoAssemblyContextKind asmctx,
+						      MonoAssemblyLoadContext *alc);
 
 MonoAssembly*          mono_assembly_request_open (const char *filename,
 						     const MonoAssemblyOpenRequest *req,
@@ -127,7 +128,7 @@ gboolean
 mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer wanted_name);
 
 MonoAssembly*
-mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *status);
+mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
 
 MonoAssembly*
 mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyName *aname, MonoAssemblyContextKind asmctx);

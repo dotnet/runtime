@@ -121,25 +121,25 @@ parse_native_dll_search_directories (const char *native_dlls_dirs)
 }
 
 static MonoAssembly*
-mono_core_preload_hook (MonoAssemblyName *aname, char **unused_apaths, void *user_data)
+mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error)
 {
 	MonoAssembly *result = NULL;
 	MonoCoreTrustedPlatformAssemblies *a = (MonoCoreTrustedPlatformAssemblies *)user_data;
-	const gboolean refonly = FALSE; /* TODO: make a refonly preload hook, too */
 	/* TODO: check that CoreCLR wants the strong name semantics here */
 	MonoAssemblyCandidatePredicate predicate = &mono_assembly_candidate_predicate_sn_same_name;
 	void* predicate_ud = aname;
 
 	g_assert (aname);
 	g_assert (aname->name);
+	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
+	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
 	char *basename = g_strconcat (aname->name, ".dll", NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
 
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (!strcmp (basename, a->basenames[i])) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare (&req.request, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT);
-			req.request.alc = mono_domain_default_alc (mono_get_root_domain ());
+			mono_assembly_request_prepare (&req.request, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
@@ -170,7 +170,7 @@ mono_core_preload_hook (MonoAssemblyName *aname, char **unused_apaths, void *use
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook (mono_core_preload_hook, (void*)trusted_platform_assemblies);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
 }
 
 static gboolean

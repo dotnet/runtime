@@ -1634,7 +1634,7 @@ disassemble_file (const char *file)
 		/* FIXME: is this call necessary? */
 		/* FIXME: if it's necessary, can it be refonly instead? */
 		MonoAssemblyLoadRequest req;
-		mono_assembly_request_prepare (&req, sizeof (req), MONO_ASMCTX_DEFAULT);
+		mono_assembly_request_prepare (&req, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
 		mono_assembly_request_load_from (img, file, &req, &status);
 	}
 
@@ -1916,16 +1916,18 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
  * Try to load referenced assemblies from assemblies_path.
  */
 static MonoAssembly *
-monodis_preload (MonoAssemblyName *aname,
-				 gchar **assemblies_path,
-				 gpointer user_data)
+monodis_preload (MonoAssemblyLoadContext *alc,
+                 MonoAssemblyName *aname,
+                 gchar **assemblies_path,
+                 gboolean refonly,
+                 gpointer user_data,
+                 MonoError *error)
 {
 	MonoAssembly *result = NULL;
-	gboolean refonly = GPOINTER_TO_UINT (user_data);
 
 	if (assemblies_path && assemblies_path [0] != NULL) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare (&req.request, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT);
+		mono_assembly_request_prepare (&req.request, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, alc);
 
 		result = real_load (assemblies_path, aname->culture, aname->name, &req);
 	}
@@ -2057,7 +2059,7 @@ main (int argc, char *argv [])
 
 		mono_init_from_assembly (argv [0], filename);
 
-		mono_install_assembly_preload_hook (monodis_preload, GUINT_TO_POINTER (FALSE));
+		mono_install_assembly_preload_hook_v2 (monodis_preload, GUINT_TO_POINTER (FALSE), FALSE);
 
 		return disassemble_file (filename);
 	} else {

@@ -1059,8 +1059,7 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 #endif
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
-	req.request.alc = alc;
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, alc);
 	if (domain != mono_domain_get ()) {
 		current = mono_domain_get ();
 

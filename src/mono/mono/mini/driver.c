@@ -666,7 +666,7 @@ mini_regression_list (int verbose, int count, char *images [])
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
 		ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -793,7 +793,7 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 	total_run = total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
 		MonoAssembly *ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -1429,7 +1429,7 @@ load_agent (MonoDomain *domain, char *desc)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
 	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
@@ -2583,8 +2583,7 @@ mono_main (int argc, char* argv[])
 	}
 
 	MonoAssemblyOpenRequest open_req;
-	mono_assembly_request_prepare (&open_req.request, sizeof (open_req), MONO_ASMCTX_DEFAULT);
-	open_req.request.alc = mono_domain_default_alc (mono_get_root_domain ());
+	mono_assembly_request_prepare (&open_req.request, sizeof (open_req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
 	assembly = mono_assembly_request_open (aname, &open_req, &open_status);
 	if (!assembly && !mono_compile_aot) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));

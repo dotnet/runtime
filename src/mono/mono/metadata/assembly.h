@@ -99,10 +99,10 @@ typedef MonoAssembly * (*MonoAssemblyPreLoadFunc) (MonoAssemblyName *aname,
 						   char **assemblies_path,
 						   void* user_data);
 
-MONO_API void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func,
-						  void* user_data);
-MONO_API void          mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func,
-						  void* user_data);
+MONO_API MONO_RT_EXTERNAL_ONLY
+void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, void* user_data);
+MONO_API MONO_RT_EXTERNAL_ONLY
+void          mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, void* user_data);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_assembly_invoke_load_hook (MonoAssembly *ass);

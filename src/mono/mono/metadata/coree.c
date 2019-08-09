@@ -80,6 +80,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 	MonoImage* image;
 	gchar* file_name;
 	gchar* error;
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_get_root_domain ());
 
 	switch (dwReason)
 	{
@@ -89,7 +90,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		file_name = mono_get_module_file_name (hInst);
 
 		if (mono_get_root_domain ()) {
-			image = mono_image_open_from_module_handle (mono_domain_default_alc (mono_get_root_domain ()), hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
+			image = mono_image_open_from_module_handle (alc, hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
 		} else {
 			init_from_coree = TRUE;
 			mono_runtime_load (file_name, NULL);
@@ -122,7 +123,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 */
 		if (image->tables [MONO_TABLE_ASSEMBLY].rows && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+			mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, alc);
 			assembly = mono_assembly_request_open (file_name, &req, NULL);
 		}
 
@@ -133,7 +134,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			/* The process is terminating. */
 			return TRUE;
 		file_name = mono_get_module_file_name (hInst);
-		image = mono_image_loaded_internal (mono_domain_default_alc (mono_get_root_domain ()), file_name, FALSE);
+		image = mono_image_loaded_internal (alc, file_name, FALSE);
 		if (image)
 			mono_image_close (image);
 
@@ -176,7 +177,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
 	mono_close_exe_image ();
 	if (!assembly) {
