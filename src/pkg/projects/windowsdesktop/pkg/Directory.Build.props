@@ -30,6 +30,7 @@
     <FrameworkListFileClass Include="PresentationFramework.dll" Profile="WPF" />
     <FrameworkListFileClass Include="PresentationFramework.Luna.dll" Profile="WPF" />
     <FrameworkListFileClass Include="PresentationFramework.Royale.dll" Profile="WPF" />
+    <FrameworkListFileClass Include="PresentationUI.dll" Profile="WPF" />
     <FrameworkListFileClass Include="ReachFramework.dll" Profile="WPF" />
     <FrameworkListFileClass Include="System.CodeDom.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileClass Include="System.Configuration.ConfigurationManager.dll" Profile="WindowsForms;WPF" />
