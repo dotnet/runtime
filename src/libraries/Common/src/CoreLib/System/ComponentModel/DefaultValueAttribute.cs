@@ -60,7 +60,7 @@ namespace System.ComponentModel
                 }
 
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
-                bool TryConvertFromInvariantString(Type? typeToConvert, string? stringValue, out object? conversionResult)
+                static bool TryConvertFromInvariantString(Type? typeToConvert, string? stringValue, out object? conversionResult)
                 {
                     conversionResult = null;
 
