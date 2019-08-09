@@ -111,6 +111,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JsonNumberTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 </Project>

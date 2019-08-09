@@ -208,4 +208,8 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNumber.cs" />
+  </ItemGroup>
 </Project>

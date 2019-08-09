@@ -426,4 +426,7 @@
   <data name="SerializerCycleDetected" xml:space="preserve">
     <value>A possible object cycle was detected which is not supported. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}.</value>
   </data>
+  <data name="EmptyStringToInitializeNumber" xml:space="preserve">
+    <value>Expected a number, but instead got empty string.</value>
+  </data>
 </root>
