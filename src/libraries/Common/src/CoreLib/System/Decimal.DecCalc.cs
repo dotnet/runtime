@@ -2525,7 +2525,7 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            struct PowerOvfl
+            private struct PowerOvfl
             {
                 public readonly uint Hi;
                 public readonly ulong MidLo;
@@ -2537,7 +2537,7 @@ done:
                 }
             }
 
-            static readonly PowerOvfl[] PowerOvflValues = new[]
+            private static readonly PowerOvfl[] PowerOvflValues = new[]
             {
                 // This is a table of the largest values that can be in the upper two
                 // uints of a 96-bit number that will not overflow when multiplied
