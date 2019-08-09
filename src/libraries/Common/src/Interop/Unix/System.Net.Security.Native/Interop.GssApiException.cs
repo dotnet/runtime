@@ -15,6 +15,11 @@ internal static partial class Interop
         {
             private readonly Status _minorStatus;
 
+            public Status MajorStatus
+            {
+                get { return (Status)HResult;}
+            }
+
             public Status MinorStatus
             {
                 get { return _minorStatus;}
