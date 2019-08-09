@@ -97,6 +97,7 @@ SET(libunwind_la_SOURCES_generic
     mi/Gget_fpreg.c mi/Gset_fpreg.c
     mi/Gset_caching_policy.c
     mi/Gset_cache_size.c
+    oop/_OOP_find_proc_info.c
 )
 
 SET(libunwind_la_SOURCES_os_linux
