@@ -14,8 +14,8 @@
     </BinPlaceConfiguration>
   </ItemGroup>
 
-  <!-- Runtime / test-runtime binplacing -->
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <!-- Runtime / test-runtime binplacing, when we aren't building better live version of these libs -->
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <BinPlaceConfiguration Include="$(Configuration)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(RuntimePath)</RuntimePath>
