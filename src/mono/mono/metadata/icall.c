@@ -6382,7 +6382,7 @@ void
 ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory, MonoError *error)
 {
 #ifndef DISABLE_CRASH_REPORTING
-	mono_summarize_set_timeline_dir (directory);
+	mono_threads_summarize_init (directory);
 #endif
 }
 

@@ -15,6 +15,7 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/mono-config-dirs.h>
 
 #include <sys/param.h>
 #include <fcntl.h>
