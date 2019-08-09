@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tracing
         public TimeSpan DisplayRateTimeScale { get; set; }
         private double _increment;
         private double _prevIncrement;
-        private Func<double> _totalValueProvider;
+        private readonly Func<double> _totalValueProvider;
 
         /// <summary>
         /// Calls "_totalValueProvider" to enqueue the counter value to the queue.

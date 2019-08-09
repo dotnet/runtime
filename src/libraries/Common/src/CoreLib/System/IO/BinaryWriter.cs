@@ -22,7 +22,7 @@ namespace System.IO
         private readonly Encoding _encoding;
         private readonly Encoder _encoder;
 
-        private bool _leaveOpen;
+        private readonly bool _leaveOpen;
 
         // Perf optimization stuff
         private byte[]? _largeByteBuffer;  // temp space for writing chars.

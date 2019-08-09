@@ -21,7 +21,7 @@ namespace System.IO
     public class MemoryStream : Stream
     {
         private byte[] _buffer;    // Either allocated internally or externally.
-        private int _origin;       // For user-provided arrays, start at this origin
+        private readonly int _origin;       // For user-provided arrays, start at this origin
         private int _position;     // read/write head.
         private int _length;       // Number of bytes within the memory stream
         private int _capacity;     // length of usable portion of buffer for stream
@@ -29,7 +29,7 @@ namespace System.IO
 
         private bool _expandable;  // User-provided buffers aren't expandable.
         private bool _writable;    // Can user write to this stream?
-        private bool _exposable;   // Whether the array can be returned to the user.
+        private readonly bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
         private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync

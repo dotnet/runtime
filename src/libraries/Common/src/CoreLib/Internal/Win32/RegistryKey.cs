@@ -29,7 +29,7 @@ namespace Internal.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private SafeRegistryHandle _hkey;
+        private readonly SafeRegistryHandle _hkey;
 
         private RegistryKey(SafeRegistryHandle hkey)
         {

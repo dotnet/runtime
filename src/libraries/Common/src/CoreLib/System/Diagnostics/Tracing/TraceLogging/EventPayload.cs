@@ -150,8 +150,8 @@ namespace System.Diagnostics.Tracing
         }
 
         #region private
-        private List<string> m_names;
-        private List<object?> m_values;
+        private readonly List<string> m_names;
+        private readonly List<object?> m_values;
         #endregion
     }
 }
