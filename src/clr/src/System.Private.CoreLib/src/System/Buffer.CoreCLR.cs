@@ -15,7 +15,7 @@ using nuint = System.UInt32;
 
 namespace System
 {
-    partial class Buffer
+    public partial class Buffer
     {
         // Copies from one primitive array to another primitive array without
         // respecting types.  This calls memmove internally.  The count and

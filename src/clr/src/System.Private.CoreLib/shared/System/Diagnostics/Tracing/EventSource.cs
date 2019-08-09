@@ -5121,8 +5121,10 @@ namespace System.Diagnostics.Tracing
     [AttributeUsage(AttributeTargets.Field)]
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
+#else
+    internal
 #endif
-    internal class EventChannelAttribute : Attribute
+    class EventChannelAttribute : Attribute
     {
         /// <summary>
         /// Specified whether the channel is enabled by default
@@ -5161,8 +5163,10 @@ namespace System.Diagnostics.Tracing
     /// </summary>
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
+#else
+    internal
 #endif
-    internal enum EventChannelType
+    enum EventChannelType
     {
         /// <summary>The admin channel</summary>
         Admin = 1,
