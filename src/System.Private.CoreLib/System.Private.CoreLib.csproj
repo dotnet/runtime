@@ -54,7 +54,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);649,1573,1591,0419,3021</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649,1573,1591,3021,CA2002</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -434,6 +434,15 @@
     <PackageReference Include="$(ILLinkTasksPackage)">
       <Version>$(ILLinkTasksPackageVersion)</Version>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- Analyzers -->
+  <PropertyGroup>
+    <CodeAnalysisRuleset>shared\CodeAnalysis.ruleset</CodeAnalysisRuleset>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="all" />
   </ItemGroup>
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
