@@ -672,9 +672,7 @@ namespace System.Diagnostics.Tracing
             Guid eventSourceGuid;
             string? eventSourceName;
 
-            EventMetadata[]? eventDescriptors;
-            byte[]? manifest;
-            GetMetadata(out eventSourceGuid, out eventSourceName, out eventDescriptors, out manifest);
+            GetMetadata(out eventSourceGuid, out eventSourceName, out _, out _);
 
             if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null)
             {

@@ -74,7 +74,7 @@ namespace System.Buffers
             }
 
             var log = ArrayPoolEventSource.Log;
-            T[]? buffer = null;
+            T[]? buffer;
 
             int index = Utilities.SelectBucketIndex(minimumLength);
             if (index < _buckets.Length)

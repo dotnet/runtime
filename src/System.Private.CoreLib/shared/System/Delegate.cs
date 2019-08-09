@@ -82,7 +82,7 @@ namespace System
 
         public static Delegate? RemoveAll(Delegate? source, Delegate? value)
         {
-            Delegate? newDelegate = null;
+            Delegate? newDelegate;
 
             do
             {

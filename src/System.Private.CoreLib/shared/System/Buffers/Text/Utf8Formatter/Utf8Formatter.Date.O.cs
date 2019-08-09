@@ -49,7 +49,7 @@ namespace System.Buffers.Text
             bytesWritten = bytesRequired;
 
             // Hoist most of the bounds checks on buffer.
-            { var unused = destination[MinimumBytesNeeded - 1]; }
+            { _ = destination[MinimumBytesNeeded - 1]; }
 
             FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, destination, 0);
             destination[4] = Utf8Constants.Minus;

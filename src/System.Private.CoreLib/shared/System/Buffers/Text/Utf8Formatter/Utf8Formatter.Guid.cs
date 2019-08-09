@@ -117,7 +117,7 @@ namespace System.Buffers.Text
             // because it may have an observable side effect (throwing).
             // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
 
-            { var unused = destination[8]; }
+            { _ = destination[8]; }
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte03, destination, 0, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte02, destination, 2, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte01, destination, 4, FormattingHelpers.HexCasing.Lowercase);
@@ -133,7 +133,7 @@ namespace System.Buffers.Text
                 destination = destination.Slice(8);
             }
 
-            { var unused = destination[4]; }
+            { _ = destination[4]; }
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte05, destination, 0, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte04, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
@@ -147,7 +147,7 @@ namespace System.Buffers.Text
                 destination = destination.Slice(4);
             }
 
-            { var unused = destination[4]; }
+            { _ = destination[4]; }
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte07, destination, 0, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte06, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
@@ -161,7 +161,7 @@ namespace System.Buffers.Text
                 destination = destination.Slice(4);
             }
 
-            { var unused = destination[4]; }
+            { _ = destination[4]; }
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte08, destination, 0, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte09, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
@@ -175,7 +175,7 @@ namespace System.Buffers.Text
                 destination = destination.Slice(4);
             }
 
-            { var unused = destination[11]; } // can't hoist bounds check on the final brace (if exists)
+            { _ = destination[11]; } // can't hoist bounds check on the final brace (if exists)
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte10, destination, 0, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte11, destination, 2, FormattingHelpers.HexCasing.Lowercase);
             FormattingHelpers.WriteHexByte(guidAsBytes.Byte12, destination, 4, FormattingHelpers.HexCasing.Lowercase);
