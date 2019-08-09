@@ -568,18 +568,18 @@ namespace System.Globalization
 
         internal static long Pow10(int pow)
         {
-            switch (pow)
+            return pow switch
             {
-                case 0:  return 1;
-                case 1:  return 10;
-                case 2:  return 100;
-                case 3:  return 1000;
-                case 4:  return 10000;
-                case 5:  return 100000;
-                case 6:  return 1000000;
-                case 7:  return 10000000;
-                default: return (long)Math.Pow(10, pow);
-            }
+                0 => 1,
+                1 => 10,
+                2 => 100,
+                3 => 1000,
+                4 => 10000,
+                5 => 100000,
+                6 => 1000000,
+                7 => 10000000,
+                _ => (long)Math.Pow(10, pow),
+            };
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)
@@ -740,15 +740,15 @@ namespace System.Globalization
                 }
             }
 
-            switch (raw._numCount)
+            return raw._numCount switch
             {
-                case 1: return ProcessTerminal_D(ref raw, style, ref result);
-                case 2: return ProcessTerminal_HM(ref raw, style, ref result);
-                case 3: return ProcessTerminal_HM_S_D(ref raw, style, ref result);
-                case 4: return ProcessTerminal_HMS_F_D(ref raw, style, ref result);
-                case 5: return ProcessTerminal_DHMSF(ref raw, style, ref result);
-                default: return result.SetBadTimeSpanFailure();
-            }
+                1 => ProcessTerminal_D(ref raw, style, ref result),
+                2 => ProcessTerminal_HM(ref raw, style, ref result),
+                3 => ProcessTerminal_HM_S_D(ref raw, style, ref result),
+                4 => ProcessTerminal_HMS_F_D(ref raw, style, ref result),
+                5 => ProcessTerminal_DHMSF(ref raw, style, ref result),
+                _ => result.SetBadTimeSpanFailure(),
+            };
         }
 
         /// <summary>Validate the 5-number "Days.Hours:Minutes:Seconds.Fraction" terminal case.</summary>

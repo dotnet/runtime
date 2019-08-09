@@ -1061,15 +1061,12 @@ namespace System
         {
             get
             {
-                switch (InternalKind)
+                return InternalKind switch
                 {
-                    case KindUnspecified:
-                        return DateTimeKind.Unspecified;
-                    case KindUtc:
-                        return DateTimeKind.Utc;
-                    default:
-                        return DateTimeKind.Local;
-                }
+                    KindUnspecified => DateTimeKind.Unspecified,
+                    KindUtc => DateTimeKind.Utc,
+                    _ => DateTimeKind.Local,
+                };
             }
         }
 
