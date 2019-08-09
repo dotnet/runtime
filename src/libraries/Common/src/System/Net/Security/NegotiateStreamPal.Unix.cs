@@ -419,10 +419,40 @@ namespace System.Net.Security
 
                 return new SecurityStatusPal(errorCode);
             }
+            catch (Interop.NetSecurityNative.GssApiException gex)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, gex);
+                return new SecurityStatusPal(GetErrorCode(gex), gex);
+            }
             catch (Exception ex)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+            }
+        }
+
+        // https://www.gnu.org/software/gss/reference/gss.pdf (page 25)
+        private static SecurityStatusPalErrorCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
+        {
+            switch (exception.MajorStatus)
+            {
+                case Interop.NetSecurityNative.Status.GSS_S_NO_CRED:
+                    return SecurityStatusPalErrorCode.UnknownCredentials;
+                case Interop.NetSecurityNative.Status.GSS_S_BAD_BINDINGS:
+                    return SecurityStatusPalErrorCode.BadBinding;
+                case Interop.NetSecurityNative.Status.GSS_S_CREDENTIALS_EXPIRED:
+                    return SecurityStatusPalErrorCode.CertExpired;
+                case Interop.NetSecurityNative.Status.GSS_S_DEFECTIVE_TOKEN:
+                    return SecurityStatusPalErrorCode.InvalidToken;
+                case Interop.NetSecurityNative.Status.GSS_S_DEFECTIVE_CREDENTIAL:
+                    return SecurityStatusPalErrorCode.IncompleteCredentials;
+                case Interop.NetSecurityNative.Status.GSS_S_BAD_SIG:
+                    return SecurityStatusPalErrorCode.MessageAltered;
+                case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
+                    return SecurityStatusPalErrorCode.Unsupported;
+                case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
+                default:
+                    return SecurityStatusPalErrorCode.InternalError;
             }
         }
 
