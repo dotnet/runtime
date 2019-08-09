@@ -2149,10 +2149,10 @@ namespace System.Diagnostics.Tracing
             eventCallbackArgs.Message = m_eventData[eventId].Message;
             eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(args);
 
-            DispatchToAllListeners(eventId, childActivityID, eventCallbackArgs);
+            DispatchToAllListeners(eventId, eventCallbackArgs);
         }
 
-        private unsafe void DispatchToAllListeners(int eventId, Guid* childActivityID, EventWrittenEventArgs eventCallbackArgs)
+        private unsafe void DispatchToAllListeners(int eventId, EventWrittenEventArgs eventCallbackArgs)
         {
             Exception? lastThrownException = null;
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -5897,7 +5897,7 @@ namespace System.Diagnostics.Tracing
             List<CultureInfo>? cultures = null;
             if (resources != null && (flags & EventManifestOptions.AllCultures) != 0)
             {
-                cultures = GetSupportedCultures(resources);
+                cultures = GetSupportedCultures();
             }
             else
             {
@@ -5984,9 +5984,8 @@ namespace System.Diagnostics.Tracing
         /// we enumerate through all the "known" cultures and attempt to load a corresponding satellite
         /// assembly
         /// </summary>
-        /// <param name="resources"></param>
         /// <returns></returns>
-        private static List<CultureInfo> GetSupportedCultures(ResourceManager resources)
+        private static List<CultureInfo> GetSupportedCultures()
         {
             var cultures = new List<CultureInfo>();
 

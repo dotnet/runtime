@@ -689,7 +689,7 @@ namespace System
                         break;
                     case 'z':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatCustomizedTimeZone(dateTime, offset, format, tokenLen, bTimeOnly, result);
+                        FormatCustomizedTimeZone(dateTime, offset, tokenLen, bTimeOnly, result);
                         break;
                     case 'K':
                         tokenLen = 1;
@@ -777,7 +777,7 @@ namespace System
 
 
         // output the 'z' famliy of formats, which output a the offset from UTC, e.g. "-07:30"
-        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, ReadOnlySpan<char> format, int tokenLen, bool timeOnly, StringBuilder result)
+        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
         {
             // See if the instance already has an offset
             bool dateTimeFormat = (offset == NullOffset);
@@ -958,10 +958,6 @@ namespace System
                         // Convert to UTC invariants mean this will be in range
                         dateTime = dateTime - offset;
                     }
-                    else if (dateTime.Kind == DateTimeKind.Local)
-                    {
-                        InvalidFormatForLocal(format, dateTime);
-                    }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 's':       // Sortable without Time Zone Info
@@ -972,10 +968,6 @@ namespace System
                     {
                         // Convert to UTC invariants mean this will be in range
                         dateTime = dateTime - offset;
-                    }
-                    else if (dateTime.Kind == DateTimeKind.Local)
-                    {
-                        InvalidFormatForLocal(format, dateTime);
                     }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
@@ -1393,12 +1385,6 @@ namespace System
             }
 
             return results.ToArray();
-        }
-
-        // This is a placeholder for an MDA to detect when the user is using a
-        // local DateTime with a format that will be interpreted as UTC.
-        internal static void InvalidFormatForLocal(ReadOnlySpan<char> format, DateTime dateTime)
-        {
         }
     }
 }
