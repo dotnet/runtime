@@ -212,7 +212,7 @@ namespace System.Text.Json
             return JsonPropertyInfo.RuntimePropertyType;
         }
 
-        public static IEnumerable GetEnumerableValue(in ReadStackFrame current)
+        public static IEnumerable GetEnumerableValue(ref ReadStackFrame current)
         {
             if (current.IsEnumerable)
             {
