@@ -264,7 +264,6 @@ namespace System.Drawing.Imaging
         Save,
         Restore,
         BeginContainer,
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         BeginContainerNoParams,
         EndContainer,
         SetWorldTransform,

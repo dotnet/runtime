@@ -208,7 +208,6 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified file in the specified format and with the specified encoder parameters.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void Save(string filename, ImageCodecInfo encoder, EncoderParameters encoderParams)
         {
             if (filename == null)
@@ -288,7 +287,6 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified stream in the specified format.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters encoderParams)
         {
             if (stream == null)
@@ -340,7 +338,6 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to this <see cref='Image'/>.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void SaveAdd(EncoderParameters encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;
@@ -365,7 +362,6 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to the specified <see cref='Image'/>.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void SaveAdd(Image image, EncoderParameters encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;

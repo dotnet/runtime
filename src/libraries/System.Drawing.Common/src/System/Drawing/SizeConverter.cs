@@ -52,7 +52,6 @@ namespace System.Drawing {
         /// <devdoc>
         ///      Converts the given object to the converter's native type.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
 
             string strValue = value as string;
@@ -144,8 +143,6 @@ namespace System.Drawing {
         ///      for the object.  This is useful for objects that are immutable, but still
         ///      want to provide changable properties.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
             if( propertyValues == null ){
                 throw new ArgumentNullException( nameof(propertyValues) );

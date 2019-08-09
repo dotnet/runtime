@@ -5,8 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.Drawing.NativeMethods..ctor()")]
-
 namespace System.Drawing
 {
     internal class NativeMethods

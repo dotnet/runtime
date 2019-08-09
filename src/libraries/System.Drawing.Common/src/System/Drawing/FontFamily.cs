@@ -26,7 +26,6 @@ namespace System.Drawing
         private int _id;
 #endif
 
-        [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private void SetNativeFamily(IntPtr family)
         {
             Debug.Assert(_nativeFamily == IntPtr.Zero, "Setting GDI+ native font family when already initialized.");

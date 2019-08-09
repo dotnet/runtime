@@ -120,7 +120,6 @@ namespace System.Drawing {
         /// <devdoc>
         ///      Converts the given object to the converter's native type.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
             string strValue = value as string;
             if (strValue != null) {
