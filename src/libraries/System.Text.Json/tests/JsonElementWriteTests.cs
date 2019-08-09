@@ -343,6 +343,24 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public static void WriteSimpleObjectNeedsEscaping(bool indented)
+        {
+            WriteComplexValue(
+                indented,
+                @"{ ""prop><erty""   : 3,
+            ""> This is one long & unusual property name. <"":
+4
+}",
+                @"{
+  ""prop\u003E\u003Certy"": 3,
+  ""\u003E This is one long \u0026 unusual property name. \u003C"": 4
+}",
+                "{\"prop\\u003E\\u003Certy\":3,\"\\u003E This is one long \\u0026 unusual property name. \\u003C\":4}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public static void WriteEverythingArray(bool indented)
         {
             WriteComplexValue(
