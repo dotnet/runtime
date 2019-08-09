@@ -1633,7 +1633,7 @@ namespace System
                     if (number.IsNegative)
                         sb.Append(info.NegativeSign);
 
-                    FormatFixed(ref sb, ref number, nMaxDigits, info, null, info.NumberDecimalSeparator, null);
+                    FormatFixed(ref sb, ref number, nMaxDigits, null, info.NumberDecimalSeparator, null);
 
                     break;
                 }
@@ -2115,7 +2115,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info, info._currencyGroupSizes, info.CurrencyDecimalSeparator, info.CurrencyGroupSeparator);
+                        FormatFixed(ref sb, ref number, nMaxDigits, info._currencyGroupSizes, info.CurrencyDecimalSeparator, info.CurrencyGroupSeparator);
                         break;
                     case '-':
                         sb.Append(info.NegativeSign);
@@ -2130,7 +2130,7 @@ namespace System
             }
         }
 
-        private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo? info, int[]? groupDigits, string? sDecimal, string? sGroup)
+        private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, int[]? groupDigits, string? sDecimal, string? sGroup)
         {
             int digPos = number.Scale;
             byte* dig = number.GetDigitsPointer();
@@ -2245,7 +2245,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info, info._numberGroupSizes, info.NumberDecimalSeparator, info.NumberGroupSeparator);
+                        FormatFixed(ref sb, ref number, nMaxDigits, info._numberGroupSizes, info.NumberDecimalSeparator, info.NumberGroupSeparator);
                         break;
                     case '-':
                         sb.Append(info.NegativeSign);
@@ -2352,7 +2352,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info, info._percentGroupSizes, info.PercentDecimalSeparator, info.PercentGroupSeparator);
+                        FormatFixed(ref sb, ref number, nMaxDigits, info._percentGroupSizes, info.PercentDecimalSeparator, info.PercentGroupSeparator);
                         break;
                     case '-':
                         sb.Append(info.NegativeSign);
