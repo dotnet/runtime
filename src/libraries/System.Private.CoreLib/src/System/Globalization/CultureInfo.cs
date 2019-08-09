@@ -649,15 +649,12 @@ namespace System.Globalization
             get
             {
                 // special case the compatibility cultures
-                switch (this.Name)
+                return Name switch
                 {
-                    case "zh-CHT":
-                        return "zh-Hant";
-                    case "zh-CHS":
-                        return "zh-Hans";
-                    default:
-                        return this.Name;
-                }
+                    "zh-CHT" => "zh-Hant",
+                    "zh-CHS" => "zh-Hans",
+                    _ => Name,
+                };
             }
         }
 

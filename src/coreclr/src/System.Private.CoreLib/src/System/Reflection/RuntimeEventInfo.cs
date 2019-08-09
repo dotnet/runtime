@@ -56,12 +56,9 @@ namespace System.Reflection
         #region Internal Members
         internal override bool CacheEquals(object? o)
         {
-            RuntimeEventInfo? m = o as RuntimeEventInfo;
-
-            if (m is null)
-                return false;
-
-            return m.m_token == m_token &&
+            return
+                o is RuntimeEventInfo m &&
+                m.m_token == m_token &&
                 RuntimeTypeHandle.GetModule(m_declaringType).Equals(
                     RuntimeTypeHandle.GetModule(m.m_declaringType));
         }

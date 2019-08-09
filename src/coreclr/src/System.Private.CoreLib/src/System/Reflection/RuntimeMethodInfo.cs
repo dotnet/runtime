@@ -127,12 +127,7 @@ namespace System.Reflection
         #region Internal Members
         internal override bool CacheEquals(object? o)
         {
-            RuntimeMethodInfo? m = o as RuntimeMethodInfo;
-
-            if (m is null)
-                return false;
-
-            return m.m_handle == m_handle;
+            return o is RuntimeMethodInfo m && m.m_handle == m_handle;
         }
 
         internal Signature Signature

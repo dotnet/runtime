@@ -936,9 +936,8 @@ namespace System
                 return retVal;
 #endif
 
-            object[]? objArray = array as object[];
             int endIndex = startIndex + count;
-            if (objArray != null)
+            if (array is object[] objArray)
             {
                 if (value == null)
                 {
@@ -1120,9 +1119,8 @@ namespace System
                 return retVal;
 #endif
 
-            object[]? objArray = array as object[];
             int endIndex = startIndex - count + 1;
-            if (objArray != null)
+            if (array is object[] objArray)
             {
                 if (value == null)
                 {

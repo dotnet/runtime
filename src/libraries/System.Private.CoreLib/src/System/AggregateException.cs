@@ -258,7 +258,7 @@ namespace System
             }
 
             Exception[]? innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
-            if (innerExceptions == null)
+            if (innerExceptions is null)
             {
                 throw new SerializationException(SR.AggregateException_DeserializationFailure);
             }

@@ -67,8 +67,7 @@ namespace System.Threading.Tasks
             Task? task;
 
             // If the IAsyncResult is our task-wrapping IAsyncResult, extract the Task.
-            var twar = asyncResult as TaskWrapperAsyncResult;
-            if (twar != null)
+            if (asyncResult is TaskWrapperAsyncResult twar)
             {
                 task = twar.Task;
                 Debug.Assert(task != null, "TaskWrapperAsyncResult should never wrap a null Task.");
@@ -95,8 +94,7 @@ namespace System.Threading.Tasks
             Task<TResult>? task;
 
             // If the IAsyncResult is our task-wrapping IAsyncResult, extract the Task.
-            var twar = asyncResult as TaskWrapperAsyncResult;
-            if (twar != null)
+            if (asyncResult is TaskWrapperAsyncResult twar)
             {
                 task = twar.Task as Task<TResult>;
                 Debug.Assert(twar.Task != null, "TaskWrapperAsyncResult should never wrap a null Task.");

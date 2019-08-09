@@ -238,33 +238,15 @@ namespace System
             input = input.Trim();
 
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
-            bool success;
-            switch ((char)(format[0] | 0x20))
+            bool success = ((char)(format[0] | 0x20)) switch
             {
-                case 'd':
-                    success = TryParseExactD(input, ref result);
-                    break;
-
-                case 'n':
-                    success = TryParseExactN(input, ref result);
-                    break;
-
-                case 'b':
-                    success = TryParseExactB(input, ref result);
-                    break;
-
-                case 'p':
-                    success = TryParseExactP(input, ref result);
-                    break;
-
-                case 'x':
-                    success = TryParseExactX(input, ref result);
-                    break;
-
-                default:
-                    throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
-            }
-
+                'd' => TryParseExactD(input, ref result),
+                'n' => TryParseExactN(input, ref result),
+                'b' => TryParseExactB(input, ref result),
+                'p' => TryParseExactP(input, ref result),
+                'x' => TryParseExactX(input, ref result),
+                _ => throw new FormatException(SR.Format_InvalidGuidFormatSpecification),
+            };
             Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
             return result._parsedGuid;
         }
@@ -337,21 +319,16 @@ namespace System
                 return false;
             }
 
-            switch (guidString[0])
+            return (guidString[0]) switch
             {
-                case '(':
-                    return TryParseExactP(guidString, ref result);
-
-                case '{':
-                    return guidString.Contains('-') ?
+                '(' => TryParseExactP(guidString, ref result),
+                '{' => guidString.Contains('-') ?
                         TryParseExactB(guidString, ref result) :
-                        TryParseExactX(guidString, ref result);
-
-                default:
-                    return guidString.Contains('-') ?
+                        TryParseExactX(guidString, ref result),
+                _ => guidString.Contains('-') ?
                         TryParseExactD(guidString, ref result) :
-                        TryParseExactN(guidString, ref result);
-            }
+                        TryParseExactN(guidString, ref result),
+            };
         }
 
         // Two helpers used for parsing components:
