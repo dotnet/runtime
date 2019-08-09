@@ -21,7 +21,7 @@ namespace System.IO
     // UnmanagedMemoryStream from ResourceReader.
     internal sealed class UnmanagedMemoryStreamWrapper : MemoryStream
     {
-        private UnmanagedMemoryStream _unmanagedStream;
+        private readonly UnmanagedMemoryStream _unmanagedStream;
 
         internal UnmanagedMemoryStreamWrapper(UnmanagedMemoryStream stream)
         {

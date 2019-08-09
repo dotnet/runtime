@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [ClassInterface(ClassInterfaceType.None)]
     internal sealed class ManagedActivationFactory : IActivationFactory, IManagedActivationFactory
     {
-        private Type m_type;
+        private readonly Type m_type;
 
         internal ManagedActivationFactory(Type type)
         {

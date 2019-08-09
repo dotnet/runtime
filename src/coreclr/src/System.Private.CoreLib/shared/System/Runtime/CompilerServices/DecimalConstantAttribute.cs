@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed class DecimalConstantAttribute : Attribute
     {
-        private decimal _dec;
+        private readonly decimal _dec;
 
         [CLSCompliant(false)]
         public DecimalConstantAttribute(

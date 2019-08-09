@@ -35,9 +35,9 @@ namespace System.Diagnostics.Tracing
     internal struct EventPipeProviderConfiguration
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        private string m_providerName;
-        private ulong m_keywords;
-        private uint m_loggingLevel;
+        private readonly string m_providerName;
+        private readonly ulong m_keywords;
+        private readonly uint m_loggingLevel;
 
         [MarshalAs(UnmanagedType.LPWStr)]
         private readonly string? m_filterData;
@@ -93,10 +93,10 @@ namespace System.Diagnostics.Tracing
 
     internal sealed class EventPipeConfiguration
     {
-        private string m_outputFile;
-        private EventPipeSerializationFormat m_format;
-        private uint m_circularBufferSizeInMB;
-        private List<EventPipeProviderConfiguration> m_providers;
+        private readonly string m_outputFile;
+        private readonly EventPipeSerializationFormat m_format;
+        private readonly uint m_circularBufferSizeInMB;
+        private readonly List<EventPipeProviderConfiguration> m_providers;
         private TimeSpan m_minTimeBetweenSamples = TimeSpan.FromMilliseconds(1);
 
         internal EventPipeConfiguration(

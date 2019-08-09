@@ -25,7 +25,7 @@ namespace System.Diagnostics.Tracing
 
         internal static readonly EventPipeEventDispatcher Instance = new EventPipeEventDispatcher();
 
-        private IntPtr m_RuntimeProviderID;
+        private readonly IntPtr m_RuntimeProviderID;
 
         private ulong m_sessionID = 0;
         private DateTime m_syncTimeUtc;
@@ -33,12 +33,12 @@ namespace System.Diagnostics.Tracing
         private long m_timeQPCFrequency;
 
         private bool m_stopDispatchTask;
-        private EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
+        private readonly EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
         private Task? m_dispatchTask = null;
-        private object m_dispatchControlLock = new object();
-        private Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
+        private readonly object m_dispatchControlLock = new object();
+        private readonly Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
 
-        private static uint DefaultEventListenerCircularMBSize = 10;
+        private const uint DefaultEventListenerCircularMBSize = 10;
 
         private EventPipeEventDispatcher()
         {

@@ -83,7 +83,7 @@ namespace System.Threading
         // Every lock instance has a unique ID, which is used by ReaderWriterCount to associate itself with the lock
         // without holding a reference to it.
         private static long s_nextLockID;
-        private long _lockID;
+        private readonly long _lockID;
 
         // See comments on ReaderWriterCount.
         [ThreadStatic]
@@ -235,8 +235,8 @@ namespace System.Threading
         //
         private struct TimeoutTracker
         {
-            private int _total;
-            private int _start;
+            private readonly int _total;
+            private readonly int _start;
 
             public TimeoutTracker(TimeSpan timeout)
             {

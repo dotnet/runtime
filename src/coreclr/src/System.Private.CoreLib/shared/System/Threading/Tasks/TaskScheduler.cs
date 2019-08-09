@@ -569,7 +569,7 @@ namespace System.Threading.Tasks
     /// </summary>
     internal sealed class SynchronizationContextTaskScheduler : TaskScheduler
     {
-        private SynchronizationContext m_synchronizationContext;
+        private readonly SynchronizationContext m_synchronizationContext;
 
         /// <summary>
         /// Constructs a SynchronizationContextTaskScheduler associated with <see cref="System.Threading.SynchronizationContext.Current"/>
@@ -653,7 +653,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     public class UnobservedTaskExceptionEventArgs : EventArgs
     {
-        private AggregateException? m_exception;
+        private readonly AggregateException? m_exception;
         internal bool m_observed = false;
 
         /// <summary>

@@ -17,7 +17,7 @@ namespace System
         //
         private int _inext;
         private int _inextp;
-        private int[] _seedArray = new int[56];
+        private readonly int[] _seedArray = new int[56];
 
         //
         // Public Constants

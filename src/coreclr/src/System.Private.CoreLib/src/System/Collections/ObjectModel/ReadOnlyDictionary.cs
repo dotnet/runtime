@@ -356,7 +356,7 @@ namespace System.Collections.ObjectModel
         private struct DictionaryEnumerator : IDictionaryEnumerator
         {
             private readonly IDictionary<TKey, TValue> m_dictionary;
-            private IEnumerator<KeyValuePair<TKey, TValue>> m_enumerator;
+            private readonly IEnumerator<KeyValuePair<TKey, TValue>> m_enumerator;
 
             public DictionaryEnumerator(IDictionary<TKey, TValue> dictionary)
             {

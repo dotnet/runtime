@@ -127,8 +127,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                                           IBindableVector,      // IBindableVector -> IBindableVector/IVector<T>
                                                           IBindableVectorView   // IBindableVectorView -> IBindableVectorView/IVectorView<T>
     {
-        private object _target;
-        private InterfaceForwardingSupport _flags;
+        private readonly object _target;
+        private readonly InterfaceForwardingSupport _flags;
 
         internal ICustomPropertyProviderProxy(object target, InterfaceForwardingSupport flags)
         {
@@ -285,7 +285,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private sealed class IVectorViewToIBindableVectorViewAdapter<T> : IBindableVectorView
         {
-            private IVectorView<T> _vectorView;
+            private readonly IVectorView<T> _vectorView;
 
             public IVectorViewToIBindableVectorViewAdapter(IVectorView<T> vectorView)
             {
@@ -482,7 +482,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private sealed class IteratorOfTToIteratorAdapter<T> : IBindableIterator
         {
-            private IIterator<T> _iterator;
+            private readonly IIterator<T> _iterator;
 
             public IteratorOfTToIteratorAdapter(IIterator<T> iterator)
             { _iterator = iterator; }

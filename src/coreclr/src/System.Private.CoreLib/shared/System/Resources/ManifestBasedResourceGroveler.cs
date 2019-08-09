@@ -41,7 +41,7 @@ namespace System.Resources
     //
     internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
-        private ResourceManager.ResourceManagerMediator _mediator;
+        private readonly ResourceManager.ResourceManagerMediator _mediator;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {

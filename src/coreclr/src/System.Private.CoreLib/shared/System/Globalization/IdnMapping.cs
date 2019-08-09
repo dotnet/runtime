@@ -183,7 +183,7 @@ namespace System.Globalization
 
 
         // Legal "dot" separators (i.e: . in www.microsoft.com)
-        private static char[] c_Dots = { '.', '\u3002', '\uFF0E', '\uFF61' };
+        private static readonly char[] c_Dots = { '.', '\u3002', '\uFF0E', '\uFF61' };
 
         private string GetAsciiInvariant(string unicode, int index, int count)
         {

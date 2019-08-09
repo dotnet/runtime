@@ -269,9 +269,9 @@ namespace System.Collections
 
         private class NodeEnumerator : IDictionaryEnumerator
         {
-            private ListDictionaryInternal list;
+            private readonly ListDictionaryInternal list;
             private DictionaryNode? current;
-            private int version;
+            private readonly int version;
             private bool start;
 
 
@@ -362,8 +362,8 @@ namespace System.Collections
 
         private class NodeKeyValueCollection : ICollection
         {
-            private ListDictionaryInternal list;
-            private bool isKeys;
+            private readonly ListDictionaryInternal list;
+            private readonly bool isKeys;
 
             public NodeKeyValueCollection(ListDictionaryInternal list, bool isKeys)
             {
@@ -425,10 +425,10 @@ namespace System.Collections
 
             private class NodeKeyValueEnumerator : IEnumerator
             {
-                private ListDictionaryInternal list;
+                private readonly ListDictionaryInternal list;
                 private DictionaryNode? current;
-                private int version;
-                private bool isKeys;
+                private readonly int version;
+                private readonly bool isKeys;
                 private bool start;
 
                 public NodeKeyValueEnumerator(ListDictionaryInternal list, bool isKeys)

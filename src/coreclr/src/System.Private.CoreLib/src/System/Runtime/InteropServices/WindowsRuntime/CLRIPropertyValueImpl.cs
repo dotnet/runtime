@@ -11,8 +11,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 {
     internal class CLRIPropertyValueImpl : IPropertyValue
     {
-        private PropertyType _type;
-        private object _data;
+        private readonly PropertyType _type;
+        private readonly object _data;
 
         // Numeric scalar types which participate in coersion
         private static volatile Tuple<Type, PropertyType>[]? s_numericScalarTypes;

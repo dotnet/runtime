@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 {
     internal sealed class CLRIReferenceImpl<T> : CLRIPropertyValueImpl, IReference<T>, IGetProxyTarget
     {
-        private T _value;
+        private readonly T _value;
 
         public CLRIReferenceImpl(PropertyType type, T obj)
             : base(type, obj!)
@@ -60,8 +60,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                                       IReferenceArray<T>,
                                                       IList                     // Jupiter data binding needs IList/IEnumerable
     {
-        private T[] _value;
-        private IList _list;
+        private readonly T[] _value;
+        private readonly IList _list;
 
         public CLRIReferenceArrayImpl(PropertyType type, T[] obj)
             : base(type, obj)

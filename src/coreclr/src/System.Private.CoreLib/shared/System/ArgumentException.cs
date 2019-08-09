@@ -23,7 +23,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentException : SystemException
     {
-        private string? _paramName;
+        private readonly string? _paramName;
 
         // Creates a new ArgumentException with its message
         // string set to the empty string.

@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices
     internal class ComEventsInfo
     {
         private ComEventsSink? _sinks;
-        private object _rcw;
+        private readonly object _rcw;
 
         private ComEventsInfo(object rcw)
         {
