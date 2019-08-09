@@ -202,8 +202,7 @@ namespace System.Security
 
             for (int i = 0; i < _children.Count; ++i)
             {
-                ISecurityElementFactory? iseFactory = _children[i] as ISecurityElementFactory;
-                if (iseFactory != null && !(_children[i] is SecurityElement))
+                if (_children[i] is ISecurityElementFactory iseFactory && !(_children[i] is SecurityElement))
                     _children[i] = iseFactory.CreateSecurityElement();
             }
         }

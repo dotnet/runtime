@@ -383,99 +383,42 @@ namespace System
         // managed variants as an intermediate type.
         internal static void MarshalHelperConvertObjectToVariant(object o, ref Variant v)
         {
-            IConvertible? ic = o as IConvertible;
-
             if (o == null)
             {
                 v = Empty;
             }
-            else if (ic == null)
+            else if (o is IConvertible ic)
+            {
+                IFormatProvider provider = CultureInfo.InvariantCulture;
+                v = ic.GetTypeCode() switch
+                {
+                    TypeCode.Empty => Empty,
+                    TypeCode.Object => new Variant((object)o),
+                    TypeCode.DBNull => DBNull,
+                    TypeCode.Boolean => new Variant(ic.ToBoolean(provider)),
+                    TypeCode.Char => new Variant(ic.ToChar(provider)),
+                    TypeCode.SByte => new Variant(ic.ToSByte(provider)),
+                    TypeCode.Byte => new Variant(ic.ToByte(provider)),
+                    TypeCode.Int16 => new Variant(ic.ToInt16(provider)),
+                    TypeCode.UInt16 => new Variant(ic.ToUInt16(provider)),
+                    TypeCode.Int32 => new Variant(ic.ToInt32(provider)),
+                    TypeCode.UInt32 => new Variant(ic.ToUInt32(provider)),
+                    TypeCode.Int64 => new Variant(ic.ToInt64(provider)),
+                    TypeCode.UInt64 => new Variant(ic.ToUInt64(provider)),
+                    TypeCode.Single => new Variant(ic.ToSingle(provider)),
+                    TypeCode.Double => new Variant(ic.ToDouble(provider)),
+                    TypeCode.Decimal => new Variant(ic.ToDecimal(provider)),
+                    TypeCode.DateTime => new Variant(ic.ToDateTime(provider)),
+                    TypeCode.String => new Variant(ic.ToString(provider)),
+                    _ => throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode())),
+                };
+            }
+            else
             {
                 // This path should eventually go away. But until
                 // the work is done to have all of our wrapper types implement
                 // IConvertible, this is a cheapo way to get the work done.
                 v = new Variant(o);
-            }
-            else
-            {
-                IFormatProvider provider = CultureInfo.InvariantCulture;
-                switch (ic.GetTypeCode())
-                {
-                    case TypeCode.Empty:
-                        v = Empty;
-                        break;
-
-                    case TypeCode.Object:
-                        v = new Variant((object)o);
-                        break;
-
-                    case TypeCode.DBNull:
-                        v = DBNull;
-                        break;
-
-                    case TypeCode.Boolean:
-                        v = new Variant(ic.ToBoolean(provider));
-                        break;
-
-                    case TypeCode.Char:
-                        v = new Variant(ic.ToChar(provider));
-                        break;
-
-                    case TypeCode.SByte:
-                        v = new Variant(ic.ToSByte(provider));
-                        break;
-
-                    case TypeCode.Byte:
-                        v = new Variant(ic.ToByte(provider));
-                        break;
-
-                    case TypeCode.Int16:
-                        v = new Variant(ic.ToInt16(provider));
-                        break;
-
-                    case TypeCode.UInt16:
-                        v = new Variant(ic.ToUInt16(provider));
-                        break;
-
-                    case TypeCode.Int32:
-                        v = new Variant(ic.ToInt32(provider));
-                        break;
-
-                    case TypeCode.UInt32:
-                        v = new Variant(ic.ToUInt32(provider));
-                        break;
-
-                    case TypeCode.Int64:
-                        v = new Variant(ic.ToInt64(provider));
-                        break;
-
-                    case TypeCode.UInt64:
-                        v = new Variant(ic.ToUInt64(provider));
-                        break;
-
-                    case TypeCode.Single:
-                        v = new Variant(ic.ToSingle(provider));
-                        break;
-
-                    case TypeCode.Double:
-                        v = new Variant(ic.ToDouble(provider));
-                        break;
-
-                    case TypeCode.Decimal:
-                        v = new Variant(ic.ToDecimal(provider));
-                        break;
-
-                    case TypeCode.DateTime:
-                        v = new Variant(ic.ToDateTime(provider));
-                        break;
-
-                    case TypeCode.String:
-                        v = new Variant(ic.ToString(provider));
-                        break;
-
-                    default:
-                        throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode()));
-                }
             }
         }
 
@@ -530,106 +473,34 @@ namespace System
             else
             {
                 IFormatProvider provider = CultureInfo.InvariantCulture;
-                switch (vt)
+                v = vt switch
                 {
-                    case 0: /*VT_EMPTY*/
-                        v = Empty;
-                        break;
-
-                    case 1: /*VT_NULL*/
-                        v = DBNull;
-                        break;
-
-                    case 2: /*VT_I2*/
-                        v = new Variant(iv.ToInt16(provider));
-                        break;
-
-                    case 3: /*VT_I4*/
-                        v = new Variant(iv.ToInt32(provider));
-                        break;
-
-                    case 4: /*VT_R4*/
-                        v = new Variant(iv.ToSingle(provider));
-                        break;
-
-                    case 5: /*VT_R8*/
-                        v = new Variant(iv.ToDouble(provider));
-                        break;
-
-                    case 6: /*VT_CY*/
-                        v = new Variant(new CurrencyWrapper(iv.ToDecimal(provider)));
-                        break;
-
-                    case 7: /*VT_DATE*/
-                        v = new Variant(iv.ToDateTime(provider));
-                        break;
-
-                    case 8: /*VT_BSTR*/
-                        v = new Variant(iv.ToString(provider));
-                        break;
-
-                    case 9: /*VT_DISPATCH*/
-                        v = new Variant(new DispatchWrapper((object)iv));
-                        break;
-
-                    case 10: /*VT_ERROR*/
-                        v = new Variant(new ErrorWrapper(iv.ToInt32(provider)));
-                        break;
-
-                    case 11: /*VT_BOOL*/
-                        v = new Variant(iv.ToBoolean(provider));
-                        break;
-
-                    case 12: /*VT_VARIANT*/
-                        v = new Variant((object)iv);
-                        break;
-
-                    case 13: /*VT_UNKNOWN*/
-                        v = new Variant(new UnknownWrapper((object)iv));
-                        break;
-
-                    case 14: /*VT_DECIMAL*/
-                        v = new Variant(iv.ToDecimal(provider));
-                        break;
-
-                    // case 15: /*unused*/
-                    //  NOT SUPPORTED
-
-                    case 16: /*VT_I1*/
-                        v = new Variant(iv.ToSByte(provider));
-                        break;
-
-                    case 17: /*VT_UI1*/
-                        v = new Variant(iv.ToByte(provider));
-                        break;
-
-                    case 18: /*VT_UI2*/
-                        v = new Variant(iv.ToUInt16(provider));
-                        break;
-
-                    case 19: /*VT_UI4*/
-                        v = new Variant(iv.ToUInt32(provider));
-                        break;
-
-                    case 20: /*VT_I8*/
-                        v = new Variant(iv.ToInt64(provider));
-                        break;
-
-                    case 21: /*VT_UI8*/
-                        v = new Variant(iv.ToUInt64(provider));
-                        break;
-
-                    case 22: /*VT_INT*/
-                        v = new Variant(iv.ToInt32(provider));
-                        break;
-
-                    case 23: /*VT_UINT*/
-                        v = new Variant(iv.ToUInt32(provider));
-                        break;
-
-                    default:
-                        throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
-                }
+                    0 => /*VT_EMPTY*/ Empty,
+                    1 => /*VT_NULL*/ DBNull,
+                    2 => /*VT_I2*/ new Variant(iv.ToInt16(provider)),
+                    3 => /*VT_I4*/ new Variant(iv.ToInt32(provider)),
+                    4 => /*VT_R4*/ new Variant(iv.ToSingle(provider)),
+                    5 => /*VT_R8*/ new Variant(iv.ToDouble(provider)),
+                    6 => /*VT_CY*/ new Variant(new CurrencyWrapper(iv.ToDecimal(provider))),
+                    7 => /*VT_DATE*/ new Variant(iv.ToDateTime(provider)),
+                    8 => /*VT_BSTR*/ new Variant(iv.ToString(provider)),
+                    9 => /*VT_DISPATCH*/ new Variant(new DispatchWrapper((object)iv)),
+                    10 => /*VT_ERROR*/ new Variant(new ErrorWrapper(iv.ToInt32(provider))),
+                    11 => /*VT_BOOL*/ new Variant(iv.ToBoolean(provider)),
+                    12 => /*VT_VARIANT*/ new Variant((object)iv),
+                    13 => /*VT_UNKNOWN*/ new Variant(new UnknownWrapper((object)iv)),
+                    14 => /*VT_DECIMAL*/ new Variant(iv.ToDecimal(provider)),
+                    // 15 => : /*unused*/ NOT SUPPORTED
+                    16 => /*VT_I1*/ new Variant(iv.ToSByte(provider)),
+                    17 => /*VT_UI1*/ new Variant(iv.ToByte(provider)),
+                    18 => /*VT_UI2*/ new Variant(iv.ToUInt16(provider)),
+                    19 => /*VT_UI4*/ new Variant(iv.ToUInt32(provider)),
+                    20 => /*VT_I8*/ new Variant(iv.ToInt64(provider)),
+                    21 => /*VT_UI8*/ new Variant(iv.ToUInt64(provider)),
+                    22 => /*VT_INT*/ new Variant(iv.ToInt32(provider)),
+                    23 => /*VT_UINT*/ new Variant(iv.ToUInt32(provider)),
+                    _ => throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant),
+                };
             }
         }
     }

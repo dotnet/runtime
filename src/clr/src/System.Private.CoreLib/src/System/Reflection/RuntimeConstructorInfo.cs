@@ -97,12 +97,7 @@ namespace System.Reflection
 
         internal override bool CacheEquals(object? o)
         {
-            RuntimeConstructorInfo? m = o as RuntimeConstructorInfo;
-
-            if (m is null)
-                return false;
-
-            return m.m_handle == m_handle;
+            return o is RuntimeConstructorInfo m && m.m_handle == m_handle;
         }
 
         private Signature Signature

@@ -31,12 +31,9 @@ namespace System.Reflection
         #region Internal Members
         internal override bool CacheEquals(object? o)
         {
-            MdFieldInfo? m = o as MdFieldInfo;
-
-            if (m is null)
-                return false;
-
-            return m.m_tkField == m_tkField &&
+            return
+                o is MdFieldInfo m &&
+                m.m_tkField == m_tkField &&
                 m_declaringType.GetTypeHandleInternal().GetModuleHandle().Equals(
                     m.m_declaringType.GetTypeHandleInternal().GetModuleHandle());
         }
