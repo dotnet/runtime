@@ -20,9 +20,9 @@ namespace System.Threading.Tests
 
             const int millisec = 100;
             TimeSpan timeSpan = new TimeSpan(100);
-            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
-            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(millisec, ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
-            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(timeSpan, ct), ct, "CancelBeforeWait:  An OCE should have been thrown.");
+            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(ct), ct);
+            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(millisec, ct), ct);
+            EnsureOperationCanceledExceptionThrown(() => semaphoreSlim.Wait(timeSpan, ct), ct);
             semaphoreSlim.Dispose();
         }
 
@@ -44,13 +44,13 @@ namespace System.Threading.Tests
             //Now wait.. the wait should abort and an exception should be thrown
             EnsureOperationCanceledExceptionThrown(
                () => semaphoreSlim.Wait(cancellationToken),
-               cancellationToken, "CancelAfterWait:  An OCE(null) should have been thrown that references the cancellationToken.");
+               cancellationToken);
 
             // the token should not have any listeners.
             // currently we don't expose this.. but it was verified manually
         }
 
-        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token, string message)
+        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token)
         {
             OperationCanceledException operationCanceledEx =
                 Assert.Throws<OperationCanceledException>(action);
