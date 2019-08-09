@@ -377,7 +377,7 @@ namespace System.Threading.Tasks
             {
                 if (m_taskSchedulerId == 0)
                 {
-                    int newId = 0;
+                    int newId;
 
                     // We need to repeat if Interlocked.Increment wraps around and returns 0.
                     // Otherwise next time this scheduler's Id is queried it will get a new value
