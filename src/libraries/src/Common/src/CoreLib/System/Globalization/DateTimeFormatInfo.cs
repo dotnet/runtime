@@ -2250,8 +2250,9 @@ namespace System.Globalization
                 // We need to rescan the date words since we're always synthetic
                 DateTimeFormatInfoScanner scanner = new DateTimeFormatInfoScanner();
                 string[]? dateWords = scanner.GetDateWordsOfDTFI(this);
+
                 // Ensure the formatflags is initialized.
-                DateTimeFormatFlags flag = FormatFlags;
+                _ = FormatFlags;
 
                 // For some cultures, the date separator works more like a comma, being allowed before or after any date part.
                 // In these cultures, we do not use normal date separator since we disallow date separator after a date terminal state.
