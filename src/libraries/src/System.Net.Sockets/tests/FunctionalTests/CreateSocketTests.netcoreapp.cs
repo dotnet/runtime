@@ -14,7 +14,6 @@ namespace System.Net.Sockets.Tests
     public partial class CreateSocket
     {
         [Theory]
-        [InlineData(AddressFamily.Netlink)]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
         [PlatformSpecific(~TestPlatforms.Linux)]
@@ -25,7 +24,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [InlineData(AddressFamily.Netlink)]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
         [PlatformSpecific(TestPlatforms.Linux)]

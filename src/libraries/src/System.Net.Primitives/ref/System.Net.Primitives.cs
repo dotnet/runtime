@@ -403,9 +403,8 @@ namespace System.Net.Sockets
         Irda = 26,
         NetworkDesigners = 28,
         Max = 29,
-        Netlink = 30,
-        Packet = 31,
-        ControllerAreaNetwork = 32,
+        Packet = 65536,
+        ControllerAreaNetwork = 65537,
     }
     public enum SocketError
     {

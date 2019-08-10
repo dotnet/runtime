@@ -18,9 +18,9 @@ namespace System.Net
 
         public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
         {
-            if ((int)(family) > (int)AddressFamily.Max)
+            if ((int)(family) > ushort.MaxValue)
             {
-                // For legacy values up to AddressFamily.Max, family maps directly to Winsock value.
+                // For legacy values family maps directly to Winsock value.
                 // Other values will need mapping if/when supported.
                 // Currently, that is Netlink, Packet and ControllerAreaNetwork, neither of them supported on Windows.
                 throw new PlatformNotSupportedException();
