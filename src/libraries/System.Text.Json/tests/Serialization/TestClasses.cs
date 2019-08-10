@@ -147,12 +147,45 @@ namespace System.Text.Json.Serialization.Tests
         public int? MyInt { get; set; } = 1;
         public int[] MyIntArray { get; set; } = new int[] { 1 };
         public List<int> MyIntList { get; set; } = new List<int> { 1 };
+        public List<object> MyObjectList { get; set; } = new List<object> { 1 };
+        public List<List<object>> MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
+        public List<Dictionary<string, string>> MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
+            new Dictionary<string, string> { ["key"] = "value" }
+        };
+        public Dictionary<string, string> MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
+        public Dictionary<string, object> MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
+        public Dictionary<string, Dictionary<string, string>> MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["key"] = new Dictionary<string, string>
+            {
+                ["key"] = "value"
+            }
+        };
+        public Dictionary<string, List<object>> MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
+            ["key"] = new List<object> { "value" }
+        };
+        public Dictionary<string, Dictionary<string, object>> MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        {
+            ["key"] = new Dictionary<string, object>
+            {
+                ["key"] = "value"
+            }
+        };
+
         public static readonly string s_null_json =
                 @"{" +
-                @"""MyString"" : null," +
-                @"""MyInt"" : null," +
-                @"""MyIntArray"" : null," +
-                @"""MyIntList"" : null" +
+                    @"""MyString"" : null," +
+                    @"""MyInt"" : null," +
+                    @"""MyIntArray"" : null," +
+                    @"""MyIntList"" : null," +
+                    @"""MyObjectList"" : [null]," +
+                    @"""MyListList"" : [[null]]," +
+                    @"""MyDictionaryList"" : [{""key"" : null}]," +
+                    @"""MyStringDictionary"" : {""key"" : null}," +
+                    @"""MyObjectDictionary"" : {""key"" : null}," +
+                    @"""MyStringDictionaryDictionary"" : {""key"" : {""key"" : null}}," +
+                    @"""MyListDictionary"" : {""key"" : [null]}," +
+                    @"""MyObjectDictionaryDictionary"" : {""key"" : {""key"" : null}}" +
                 @"}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_null_json);
