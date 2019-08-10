@@ -116,4 +116,8 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="JsonBooleanTests.cs" />
+    <Compile Include="JsonStringTests.cs" />
+  </ItemGroup>
 </Project>
