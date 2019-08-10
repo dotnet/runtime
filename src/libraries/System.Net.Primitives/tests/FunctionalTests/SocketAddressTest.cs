@@ -76,16 +76,28 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [InlineData((AddressFamily)12345, -1)]
-        [InlineData((AddressFamily)12345, 16)]
+        [InlineData((AddressFamily)65539, -1)]
+        [InlineData((AddressFamily)65539, 16)]
+        [InlineData((AddressFamily)1_000_000, -1)]
         public static void ToString_UnknownFamily_Throws(AddressFamily family, int size)
         {
+            // Values above last known value should throw.
             Assert.Throws<PlatformNotSupportedException>(() => size >= 0 ? new SocketAddress(family, size) : new SocketAddress(family));
         }
 
         [Theory]
+        [InlineData((AddressFamily)125)]
+        [InlineData((AddressFamily)65535)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void ToString_LegacyUnknownFamily_Success(AddressFamily family)
+        {
+            // For legacy reasons, unknown values in ushort range don't throw on Windows.
+            var sa = new SocketAddress(family);
+            Assert.NotNull(sa.ToString());
+        }
+
+        [Theory]
         [InlineData(AddressFamily.Packet)]
-        [InlineData(AddressFamily.Netlink)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void ToString_UnsupportedFamily_Throws(AddressFamily family)
@@ -109,7 +121,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             foreach (AddressFamily family in Enum.GetValues(typeof(AddressFamily)))
             {
-                if ((int)family > (int)AddressFamily.Max)
+                if (family == AddressFamily.Packet || family == AddressFamily.ControllerAreaNetwork)
                 {
                     // Skip Linux specific protocols.
                     continue;
