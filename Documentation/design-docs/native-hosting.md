@@ -141,7 +141,7 @@ The functions return a handle to a new host context:
 The `hostfxr` will also track active runtime in the process. Due to limitations (and to simplify implementation) this tracking will actually not look at the actual `coreclr` module (or try to communicate with the runtime in any way). Instead `hostfxr` itself will track the host context initialization. The first host context initialization in the process will represent the "loaded runtime". It is only possible to have one "loaded runtime" in the process. Any subsequent host context initialization will just "attach" to the "loaded runtime" instead of creating a new one.
 
 ``` C
-#define hostfxr_handle = void *;
+typedef void* hostfxr_handle;
 
 struct hostfxr_initialize_parameters
 {
