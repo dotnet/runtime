@@ -646,6 +646,9 @@ namespace System.Text.Json.Tests
 
             Assert.True(jsonNumber != jsonNumberNull);
             Assert.True(jsonNumberNull != jsonNumber);
+
+            JsonNumber otherJsonNumberNull = null;
+            Assert.True(jsonNumberNull == otherJsonNumberNull);
         }
 
         [Fact]
