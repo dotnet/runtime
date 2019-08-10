@@ -492,11 +492,6 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
         case AF_INET6:
             *palAddressFamily = AddressFamily_AF_INET6;
             return true;
-#ifdef AF_NETLINK
-        case AF_NETLINK:
-            *palAddressFamily = AddressFamily_AF_NETLINK;
-            return true;
-#endif
 #ifdef AF_PACKET
         case AF_PACKET:
             *palAddressFamily = AddressFamily_AF_PACKET;
