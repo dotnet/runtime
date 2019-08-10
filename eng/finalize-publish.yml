@@ -19,9 +19,10 @@ jobs:
         name: NetCoreInternal-Pool
         queue: BuildPool.Windows.10.Amd64.VS2017
       dependsOn: ${{ parameters.dependsOn }}
+      publishUsingPipelines: true
   # Update dotnet/versions
   - job: Finalize_Publish_Versions
-    displayName: Finalize_Publish_Versions
+    displayName: Finalize Publish Versions
     dependsOn:
     - Asset_Registry_Publish
     pool:
@@ -30,13 +31,12 @@ jobs:
       - group: DotNet-Versions-Publish
     steps:
     # Download nuget packages
-    # Use parameters.dependsOn to determine the set of nuget packages we are publishing
-    - ${{ each build_id in parameters.dependsOn }}:
-      - task: DownloadPipelineArtifact@0
-        displayName: Download ${{ build_id }} nuget packages
-        inputs:
-          artifactName: ${{ build_id }}_nuget
-          targetPath: ${{ parameters.artifactsDir }}/nuget
+    - task: DownloadBuildArtifacts@0
+      displayName: Download nuget package artifacts
+      inputs:
+        buildType: current
+        artifactName: PackageArtifacts
+        downloadPath: ${{ parameters.artifactsDir }}/nuget
 
     - powershell: |
         $prefix = "refs/heads/"

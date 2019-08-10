@@ -65,7 +65,7 @@ jobs:
       inputs:
         buildType: current
         downloadType: single
-        artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
         downloadPath: $(System.ArtifactsDirectory)
 
 
@@ -73,7 +73,7 @@ jobs:
     - task: CopyFiles@2
       displayName: Populate Product directory
       inputs:
-        sourceFolder: $(System.ArtifactsDirectory)/${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
         contents: '**'
         targetFolder: $(productDirectory)/$(targetFlavor)
 
@@ -164,6 +164,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(binDirectory)/Logs
-        artifactName: ${{ format('test_crossgen_comparison_{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('TestLogs_crossgen_comparison_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()
