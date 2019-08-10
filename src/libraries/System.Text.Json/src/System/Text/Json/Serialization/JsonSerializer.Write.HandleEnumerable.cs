@@ -23,10 +23,17 @@ namespace System.Text.Json
 
                 if (enumerable == null)
                 {
-                    if (!state.Current.JsonPropertyInfo.IgnoreNullValues)
+                    // If applicable, we only want to ignore object properties.
+                    if (state.Current.JsonClassInfo.ClassType != ClassType.Object ||
+                        !state.Current.JsonPropertyInfo.IgnoreNullValues)
                     {
                         // Write a null object or enumerable.
                         state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
+                    }
+
+                    if (state.Current.PopStackOnEndCollection)
+                    {
+                        state.Pop();
                     }
 
                     return true;

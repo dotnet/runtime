@@ -1158,6 +1158,36 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(dictionaryLast.Dict);
         }
 
+        [Fact]
+        public static void NullDictionaryValuesShouldDeserializeAsNull()
+        {
+            const string json =
+                    @"{" +
+                        @"""StringVals"":{" +
+                            @"""key"":null" +
+                        @"}," +
+                        @"""ObjectVals"":{" +
+                            @"""key"":null" +
+                        @"}," +
+                        @"""StringDictVals"":{" +
+                            @"""key"":null" +
+                        @"}," +
+                        @"""ObjectDictVals"":{" +
+                            @"""key"":null" +
+                        @"}," +
+                        @"""ClassVals"":{" +
+                            @"""key"":null" +
+                        @"}" +
+                    @"}";
+
+            SimpleClassWithDictionaries obj = JsonSerializer.Deserialize<SimpleClassWithDictionaries>(json);
+            Assert.Null(obj.StringVals["key"]);
+            Assert.Null(obj.ObjectVals["key"]);
+            Assert.Null(obj.StringDictVals["key"]);
+            Assert.Null(obj.ObjectDictVals["key"]);
+            Assert.Null(obj.ClassVals["key"]);
+        }
+
         public class ClassWithNotSupportedDictionary
         {
             public Dictionary<int, int> MyDictionary { get; set; }
@@ -1211,6 +1241,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             public Dictionary<string, string> Dict { get; set; }
             public string Test { get; set; }
+        }
+
+        public class SimpleClassWithDictionaries
+        {
+            public Dictionary<string, string> StringVals { get; set; }
+            public Dictionary<string, object> ObjectVals { get; set; }
+            public Dictionary<string, Dictionary<string, string>> StringDictVals { get; set; }
+            public Dictionary<string, Dictionary<string, object>> ObjectDictVals { get; set; }
+            public Dictionary<string, SimpleClassWithDictionaries> ClassVals { get; set; }
         }
     }
 }
