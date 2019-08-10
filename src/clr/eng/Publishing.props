@@ -1,0 +1,44 @@
+<Project>
+  <!-- Used by Arcade to participate in publishing -->
+  <Import Project="../dir.common.props" />
+
+  <PropertyGroup>
+    <PublishDependsOnTargets>CollectCoreClrArtifacts;$(PublishDependsOnTargets)</PublishDependsOnTargets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Redefine Arcade symbol store directory for CoreCLR -->
+    <ArtifactsSymStoreDirectory>$([MSBuild]::NormalizeDirectory('$(BinDir)', 'PDB'))</ArtifactsSymStoreDirectory>
+
+    <!-- Used to define the OS moniker that will be used to create the asset manfiest. -->
+    <AssetManifestOS>$(OSIdentifier)</AssetManifestOS>
+    <!-- Used to define the PlatformName. -->
+    <PlatformName>$(BuildArch)</PlatformName>
+  </PropertyGroup>
+
+  <Target Name="CollectCoreClrArtifacts">
+    <ItemGroup>
+      <ExistingSymbolPackages Include="$(PackagesBinDir)symbolpkg\*.nupkg" IsShipping="true" />
+
+      <PackagesToPublish Include="$(PackagesBinDir)pkg\*.nupkg" IsShipping="true" />
+      <PackagesToPublish Update="$(PackagesBinDir)pkg\transport*.nupkg" IsShipping="false" />
+    </ItemGroup>
+
+    <!-- Managed-only packages are built on each windows leg, but we
+         only want to upload them once. Let's arbitrarily upload these
+         only from the x64 leg. -->
+    <ItemGroup Condition=" '$(BuildArch)' != 'x64' ">
+      <ExistingSymbolPackages Remove="$(PackagesBinDir)symbolpkg\Microsoft.NET.Sdk.IL*.nupkg" />
+      <ExistingSymbolPackages Remove="$(PackagesBinDir)symbolpkg\Microsoft.TargetingPack.Private.CoreCLR*.nupkg" />
+
+      <PackagesToPublish Remove="$(PackagesBinDir)pkg\*Microsoft.NET.Sdk.IL*.nupkg" />
+      <PackagesToPublish Remove="$(PackagesBinDir)pkg\*Microsoft.TargetingPack.Private.CoreCLR*.nupkg" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ItemsToPushToBlobFeed Include="@(PackagesToPublish);@(ExistingSymbolPackages)">
+        <ManifestArtifactData Condition="!%(IsShipping)">NonShipping=true</ManifestArtifactData>
+      </ItemsToPushToBlobFeed>
+    </ItemGroup>
+  </Target>
+</Project>

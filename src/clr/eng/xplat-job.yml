@@ -35,6 +35,7 @@ jobs:
     helixType: ${{ parameters.helixType }}
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    enablePublishUsingPipelines: true
 
     pool:
 

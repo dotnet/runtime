@@ -20,7 +20,7 @@ jobs:
 
     # Compute job name from template parameters
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('{0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # FreeBSD builds are disabled in the public project because we
     # don't have any FreeBSD agents in the public pool.
@@ -131,23 +131,24 @@ jobs:
 
     # Sign on Windows
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: powershell eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(buildConfigUpper) /p:DotNetSignType=%_SignType% -projects $(Build.SourcesDirectory)\eng\empty.csproj
+      - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Binaries
 
       - task: PublishBuildArtifacts@1
-        displayName: Publish Signing Logs to VSTS
+        displayName: Publish Signing Logs
         inputs:
           PathtoPublish: '$(Build.SourcesDirectory)/artifacts/'
           PublishLocation: Container
-          ArtifactName: $(Agent.Os)_$(Agent.JobName)_$(archType)
+          ArtifactName: ${{ format('SignLogs_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
         continueOnError: true
         condition: always()
 
+    # Publish product output directory for consumption by tests.
     - task: PublishBuildArtifacts@1
       displayName: Publish product build
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
-        artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(_BuildConfig)
+        artifactName: ${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -159,22 +160,16 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
+      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
         displayName: Build packages
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(officialBuildIdArg) -ci
+      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
         displayName: Build packages
 
     # Publish official build
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.csproj
-          displayName: Restore blob feed tasks
-          ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-            env:
-              # Arcade uses this SDK instead of trying to restore one.
-              DotNetCoreSdkDir: /usr/local/dotnet
-        - script: ./eng/common/msbuild.sh --ci src/publishwitharcade.proj /p:__BuildType=$(buildConfigUpper) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osIdentifier) /p:AzureFeedUrl=$(dotnetfeedUrl) /p:AzureAccountKey=$(dotnetfeedPAT)
+        - script: ./eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osIdentifier) /bl:"$(Build.SourcesDirectory)/bin/Logs/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
@@ -184,25 +179,17 @@ jobs:
               DotNetCoreSdkDir: /usr/local/dotnet
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         # TODO: pass publish feed url and access token in from the internal pipeline
-        - powershell: eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
-          displayName: Restore blob feed tasks
-        - powershell: eng\common\msbuild.ps1 -ci src\publishwitharcade.proj /p:__BuildType=$(buildConfigUpper) /p:__BuildArch=$(archType) /p:OSIdentifier=$(osIdentifier) /p:AzureFeedUrl=$(dotnetfeedUrl) /p:AzureAccountKey=$(dotnetfeedPAT)
+        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osIdentifier) /bl:"$(Build.SourcesDirectory)\bin\Logs\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
             NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
-      # Save nuget packages in pipeline for update dotnet/versions
-      - task: PublishPipelineArtifact@0
-        displayName: Save packages as pipeline artifact
-        inputs:
-          artifactName: ${{ format('build_{0}_{1}_{2}_nuget', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-          targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)/.nuget/pkg
 
     # Publish Logs
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
-        artifactName: ${{ format('build_{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('BuildLogs_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()
