@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using Xunit;
-using Newtonsoft.Json;
 
 namespace System.Text.Json.Tests
 {

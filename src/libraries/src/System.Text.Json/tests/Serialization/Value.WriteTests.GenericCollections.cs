@@ -791,6 +791,59 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteKeyValuePairWithNullValues()
+        {
+            {
+                KeyValuePair<string, string> kvp = new KeyValuePair<string, string>("key", null);
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+            }
+
+            {
+                KeyValuePair<string, object> kvp = new KeyValuePair<string, object>("key", null);
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+            }
+
+            {
+                KeyValuePair<string, SimpleClassWithKeyValuePairs> kvp = new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null);
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+            }
+
+            {
+                KeyValuePair<string, KeyValuePair<string, string>> kvp = new KeyValuePair<string, KeyValuePair<string, string>>("key", new KeyValuePair<string, string>("key", null));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+            }
+
+            {
+                KeyValuePair<string, KeyValuePair<string, object>> kvp = new KeyValuePair<string, KeyValuePair<string, object>>("key", new KeyValuePair<string, object>("key", null));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+            }
+
+            {
+                KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> kvp = new KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>("key", new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+            }
+        }
+
+        // https://github.com/dotnet/corefx/issues/39808
+        [Fact]
+        public static void WriteClassWithNullKeyValuePairValues_Regression39808()
+        {
+            var value = new SimpleClassWithKeyValuePairs()
+            {
+                KvpWStrVal = new KeyValuePair<string, string>("key", null),
+                KvpWObjVal = new KeyValuePair<string, object>("key", null),
+                KvpWClassVal = new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null),
+                KvpWStrKvpVal = new KeyValuePair<string, KeyValuePair<string, string>>("key", new KeyValuePair<string, string>("key", null)),
+                KvpWObjKvpVal = new KeyValuePair<string, KeyValuePair<string, object>>("key", new KeyValuePair<string, object>("key", null)),
+                KvpWClassKvpVal = new KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>("key", new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null)),
+            };
+
+            string expectedJson = @"{""KvpWStrVal"":{""Key"":""key"",""Value"":null},""KvpWObjVal"":{""Key"":""key"",""Value"":null},""KvpWClassVal"":{""Key"":""key"",""Value"":null},""KvpWStrKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}},""KvpWObjKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}},""KvpWClassKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}}";
+            string result = JsonSerializer.Serialize(value);
+            Assert.Equal(expectedJson, result);
+        }
+
+        [Fact]
         public static void WriteGenericCollectionWrappers()
         {
             SimpleTestClassWithGenericCollectionWrappers obj1 = new SimpleTestClassWithGenericCollectionWrappers();
@@ -819,6 +872,16 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj5));
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj5));
+        }
+
+        public class SimpleClassWithKeyValuePairs
+        {
+            public KeyValuePair<string, string> KvpWStrVal { get; set; }
+            public KeyValuePair<string, object> KvpWObjVal { get; set; }
+            public KeyValuePair<string, SimpleClassWithKeyValuePairs> KvpWClassVal { get; set; }
+            public KeyValuePair<string, KeyValuePair<string, string>> KvpWStrKvpVal { get; set; }
+            public KeyValuePair<string, KeyValuePair<string, object>> KvpWObjKvpVal { get; set; }
+            public KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> KvpWClassKvpVal { get; set; }
         }
     }
 }

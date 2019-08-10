@@ -73,6 +73,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.MyInt);
             Assert.Null(obj.MyIntArray);
             Assert.Null(obj.MyIntList);
+            Assert.Null(obj.MyObjectList[0]);
+            Assert.Null(obj.MyListList[0][0]);
+            Assert.Null(obj.MyDictionaryList[0]["key"]);
+            Assert.Null(obj.MyStringDictionary["key"]);
+            Assert.Null(obj.MyObjectDictionary["key"]);
+            Assert.Null(obj.MyStringDictionaryDictionary["key"]["key"]);
+            Assert.Null(obj.MyListDictionary["key"][0]);
+            Assert.Null(obj.MyObjectDictionaryDictionary["key"]["key"]);
         }
 
         [Fact]
@@ -82,10 +90,21 @@ namespace System.Text.Json.Serialization.Tests
             options.IgnoreNullValues = true;
 
             TestClassWithInitializedProperties obj = JsonSerializer.Deserialize<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json, options);
+
             Assert.Equal("Hello", obj.MyString);
             Assert.Equal(1, obj.MyInt);
             Assert.Equal(1, obj.MyIntArray[0]);
             Assert.Equal(1, obj.MyIntList[0]);
+
+            Assert.Null(obj.MyObjectList[0]);
+            Assert.Null(obj.MyObjectList[0]);
+            Assert.Null(obj.MyListList[0][0]);
+            Assert.Null(obj.MyDictionaryList[0]["key"]);
+            Assert.Null(obj.MyStringDictionary["key"]);
+            Assert.Null(obj.MyObjectDictionary["key"]);
+            Assert.Null(obj.MyStringDictionaryDictionary["key"]["key"]);
+            Assert.Null(obj.MyListDictionary["key"][0]);
+            Assert.Null(obj.MyObjectDictionaryDictionary["key"]["key"]);
         }
 
         [Fact]
