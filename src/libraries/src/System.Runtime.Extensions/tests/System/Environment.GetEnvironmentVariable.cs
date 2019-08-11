@@ -220,6 +220,13 @@ namespace System.Tests
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
+            
+            // [ActiveIssue(40226)]
+            if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
+            {
+                lookForSetValue = false;
+            }
+
             string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
 
