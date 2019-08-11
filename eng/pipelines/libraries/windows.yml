@@ -34,7 +34,7 @@ stages:
                 _BuildConfig: Debug
                 _architecture: x64
                 _framework: netcoreapp
-                _helixQueues: $(netcoreappWindowsQueues) # Temporarily disable Nano for issue 38858: +$(nanoQueues)
+                _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
 
               x86_Release:
                 _BuildConfig: Release
@@ -110,7 +110,7 @@ stages:
         buildExtraArguments: /p:RuntimeOS=win10
 
         variables:
-          - nanoQueues: "`(Windows.Nano.1803.Amd64.Open`)windows.10.amd64.serverrs4.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
+          - nanoQueues: "`(Windows.Nano.1809.Amd64.Open`)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353"
           - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
           - windowsArmQueue: Windows.10.Arm64.Open
 

@@ -17,6 +17,12 @@ namespace System.Tests
 
         internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
         {
+            // [ActiveIssue(40226)]
+            if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
+            {
+                return false;
+            }
+
             return target == EnvironmentVariableTarget.Process || (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !PlatformDetection.IsUap);
         }
 
