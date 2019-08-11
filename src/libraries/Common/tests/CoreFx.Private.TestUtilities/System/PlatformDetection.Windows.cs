@@ -222,6 +222,9 @@ namespace System
                     switch (result)
                     {
                         case 15703: // APPMODEL_ERROR_NO_APPLICATION
+                        case 120:   // ERROR_CALL_NOT_IMPLEMENTED
+                                    // This function is not supported on this system.
+                                    // In example on Windows Nano Server
                             s_isInAppContainer = 0;
                             break;
                         case 0:     // ERROR_SUCCESS
