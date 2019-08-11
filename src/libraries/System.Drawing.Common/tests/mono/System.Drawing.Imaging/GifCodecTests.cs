@@ -29,6 +29,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -108,7 +109,7 @@ namespace MonoTests.System.Drawing.Imaging
             Bitmap8bitsPixels(Helpers.GetTestBitmapPath("nature24bits87.gif"));
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
         public void Bitmap8bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature24bits.gif");
