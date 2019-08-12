@@ -22,32 +22,6 @@ namespace Microsoft.NET.HostModel.AppHost
         private readonly static byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
         /// <summary>
-        /// The HostModel implements several services for updating the AppHost DLL.
-        /// These updates involve multiple file open/close operations.
-        /// An Antivirus scanner may intercept in-between and lock the file, 
-        /// causing the operations to fail with IO-Error.
-        /// So, the operations are retried a few times on IOException.
-        /// </summary>
-        /// <param name="func">The action to retry on IO-Error</param>
-        private static void RetryOnIOError(Action func)
-        {
-            uint numberOfRetries = 500;
-
-            for (uint i = 1; i <= numberOfRetries; i++)
-            {
-                try
-                {
-                    func();
-                    break;
-                }
-                catch (IOException) when (i < numberOfRetries)
-                {
-                    Thread.Sleep(100);
-                }
-            }
-        }
-
-        /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
         /// </summary>
         /// <param name="appHostSourceFilePath">The path of Apphost template, which has the place holder</param>
@@ -69,11 +43,11 @@ namespace Microsoft.NET.HostModel.AppHost
             }
 
             BinaryUtils.CopyFile(appHostSourceFilePath, appHostDestinationFilePath);
+            bool appHostIsPEImage = false;
 
             void RewriteAppHost()
             {
                 // Re-write the destination apphost with the proper contents.
-                bool appHostIsPEImage = false;
                 using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationFilePath))
                 {
                     using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
@@ -93,7 +67,10 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                     }
                 }
+            }
 
+            void UpdateResources()
+            { 
                 if (assemblyToCopyResorcesFrom != null && appHostIsPEImage)
                 {
                     if (ResourceUpdater.IsSupportedOS())
@@ -112,10 +89,12 @@ namespace Microsoft.NET.HostModel.AppHost
 
             try
             {
-                RetryOnIOError(RewriteAppHost);
+                RetryUtil.RetryOnIOError(RewriteAppHost);
+
+                RetryUtil.RetryOnWin32Error(UpdateResources);
 
                 // Memory-mapped write does not updating last write time
-                RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow));
+                RetryUtil.RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow));
             }
             catch (Exception ex)
             {
@@ -154,13 +133,15 @@ namespace Microsoft.NET.HostModel.AppHost
             };
 
             // Re-write the destination apphost with the proper contents.
-            RetryOnIOError(() => BinaryUtils.SearchAndReplace(appHostPath,
-                                                              bundleHeaderPlaceholder,
-                                                              BitConverter.GetBytes(bundleHeaderOffset), 
-                                                              pad0s:false));
+            RetryUtil.RetryOnIOError(() => 
+                BinaryUtils.SearchAndReplace(appHostPath,
+                                             bundleHeaderPlaceholder,
+                                             BitConverter.GetBytes(bundleHeaderOffset), 
+                                             pad0s:false));
 
             // Memory-mapped write does not updating last write time
-            RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
+            RetryUtil.RetryOnIOError(() => 
+                File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
         }
 
         /// <summary>
@@ -197,7 +178,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
-            RetryOnIOError(FindBundleHeader);
+            RetryUtil.RetryOnIOError(FindBundleHeader);
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
