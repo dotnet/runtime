@@ -2516,7 +2516,7 @@ leave:
 
 static
 MonoAssembly *
-mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *executing_assembly, MonoError *error)
+mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *executing_assembly, MonoAssemblyContextKind asmctx, MonoError *error)
 {
 	MonoAssembly *ass = NULL;
 	HANDLE_FUNCTION_ENTER ();
@@ -2534,10 +2534,9 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 		goto leave;
 	}
 
-
 	MonoImageOpenStatus status;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_INDIVIDUAL, alc);
+	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx, alc);
 	req.requesting_assembly = executing_assembly;
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
@@ -2560,7 +2559,7 @@ ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname, 
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	MonoAssembly *executing_assembly;
 	executing_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
-	MonoAssembly *ass = mono_alc_load_file (mono_domain_default_alc (domain), fname, executing_assembly, error);
+	MonoAssembly *ass = mono_alc_load_file (mono_domain_default_alc (domain), fname, executing_assembly, MONO_ASMCTX_INDIVIDUAL, error);
 	goto_if_nok (error, leave);
 
 	result = mono_assembly_get_object_handle (domain, ass, error);
@@ -2577,7 +2576,7 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile (gpointer a
 
 	MonoAssembly *executing_assembly;
 	executing_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
-	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, error);
+	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, mono_alc_is_default (alc) ? MONO_ASMCTX_LOADFROM : MONO_ASMCTX_INDIVIDUAL, error);
 	goto_if_nok (error, leave);
 
 	result = mono_assembly_get_object_handle (domain, ass, error);

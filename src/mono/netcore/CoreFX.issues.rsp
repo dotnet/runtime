@@ -376,10 +376,6 @@
 # https://github.com/mono/mono/issues/15069
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
-# Returns the same string, but still fails.  
-# https://github.com/mono/mono/issues/15076
--nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
-
 ####################################################################
 ##  System.Resources.ResourceManager.Tests
 ####################################################################
