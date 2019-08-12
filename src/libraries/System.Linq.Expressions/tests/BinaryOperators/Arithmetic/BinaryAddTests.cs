@@ -463,7 +463,7 @@ namespace System.Linq.Expressions.Tests
             {
                 expected = a + b;
             }
-            catch(OverflowException)
+            catch (OverflowException)
             {
                 Assert.Throws<OverflowException>(() => f());
                 return;

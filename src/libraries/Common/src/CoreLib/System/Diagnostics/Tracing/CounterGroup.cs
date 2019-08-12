@@ -65,7 +65,7 @@ namespace System.Diagnostics.Tracing
             }
             else if (e.Command == EventCommand.Disable)
             {
-                lock(s_counterGroupLock)
+                lock (s_counterGroupLock)
                 {
                     DisableTimer();
                 }

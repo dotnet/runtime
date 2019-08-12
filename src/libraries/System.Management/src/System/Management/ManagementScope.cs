@@ -558,7 +558,7 @@ namespace System.Management
                 // See if we are in the same apartment as where the original IWbemServices lived
                 // If we are in a different apartment, give the caller an RCW generated just for their
                 // apartment, and set the proxy blanket appropriately
-                if(!object.ReferenceEquals(unknown, wbemServices))
+                if (!object.ReferenceEquals(unknown, wbemServices))
                 {
                     // We need to set the proxy blanket on 'unknown' or else the QI for IWbemServices may
                     // fail if we are running under a local user account.  The QI has to be done by
@@ -952,7 +952,7 @@ namespace System.Management
                     {
                         // The locator cannot be marshalled accross apartments, so we must create the locator
                         // and get the IWbemServices from an MTA thread
-                        if(!MTAHelper.IsNoContextMTA())
+                        if (!MTAHelper.IsNoContextMTA())
                         {
                             //
                             // Ensure we are able to trap exceptions from worker thread.
@@ -999,7 +999,7 @@ namespace System.Management
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
 
-                if( ((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor >= 1)) || (Environment.OSVersion.Version.Major >= 6) )
+                if ( ((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor >= 1)) || (Environment.OSVersion.Version.Major >= 6) )
                 {
                     threadParam.options.Flags |= (int)tag_WBEM_CONNECT_OPTIONS.WBEM_FLAG_CONNECT_USE_MAX_WAIT;
                 }
@@ -1073,7 +1073,7 @@ namespace System.Management
         internal int Clone_(ref IEnumWbemClassObject   ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CloneEnumWbemClassObject_f(
@@ -1108,7 +1108,7 @@ namespace System.Management
         internal int ConnectNSecureIWbemServices(string path,  ref IWbemServices pServices)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope )
+            if ( null != scope )
             {
                 bool needToReset = false;
                 IntPtr handle = IntPtr.Zero;
@@ -1180,7 +1180,7 @@ namespace System.Management
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if ( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
             return status;
         }
@@ -1194,7 +1194,7 @@ namespace System.Management
         internal int PutClass_(IWbemClassObjectFreeThreaded pObject, int lFlags, IWbemContext pCtx,  IntPtr ppCallResult)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.PutClassWmi_f(pObject,
@@ -1222,7 +1222,7 @@ namespace System.Management
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if ( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
             return status;
          }
@@ -1235,7 +1235,7 @@ namespace System.Management
          internal int CreateClassEnum_(string strSuperClass, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope )
+            if ( null != scope )
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CreateClassEnumWmi_f(strSuperClass,
@@ -1261,7 +1261,7 @@ namespace System.Management
          internal int PutInstance_( IWbemClassObjectFreeThreaded pInst, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.PutInstanceWmi_f(pInst,
@@ -1289,7 +1289,7 @@ namespace System.Management
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if ( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
             return status;
          }
@@ -1303,7 +1303,7 @@ namespace System.Management
          internal int CreateInstanceEnum_(string strFilter, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CreateInstanceEnumWmi_f(strFilter,
@@ -1329,7 +1329,7 @@ namespace System.Management
          internal int ExecQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.ExecQueryWmi_f(strQueryLanguage,
@@ -1356,7 +1356,7 @@ namespace System.Management
          internal int ExecNotificationQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( null != scope)
+            if ( null != scope)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.ExecNotificationQueryWmi_f(strQueryLanguage,
@@ -1385,7 +1385,7 @@ namespace System.Management
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if ( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.ExecMethod_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, out ppOutParams, ppCallResult);
             return status;
          }

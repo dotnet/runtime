@@ -169,7 +169,7 @@ namespace System.Reflection.Tests
         {
             MemberInfo[] m = typeof(MemberInfoTests).GetMember("SampleClass");
             Assert.Equal(1, m.Count());
-            foreach(CustomAttributeData cad in m[0].GetCustomAttributesData())
+            foreach (CustomAttributeData cad in m[0].GetCustomAttributesData())
             {
                 if (cad.AttributeType == typeof(ComVisibleAttribute))
                 {

@@ -285,7 +285,7 @@ namespace System.Management
     ///         ManagementClass newClass = new ManagementClass();
     ///         EnumerationOptions options = new EnumerationOptions();
     ///         options.EnumerateDeep = false;
-    ///         foreach(ManagementObject o in newClass.GetSubclasses(options)) {
+    ///         foreach (ManagementObject o in newClass.GetSubclasses(options)) {
     ///             Console.WriteLine(o["__Class"]);
     ///         }
     ///         return 0;
@@ -733,7 +733,7 @@ namespace System.Management
     ///             new ObjectGetOptions(null, new TimeSpan(0,0,0,5), true);
     ///         ManagementClass diskClass =
     ///             new ManagementClass("root/cimv2", "Win32_Process", options);
-    ///         foreach(QualifierData qualifier in diskClass.Qualifiers) {
+    ///         foreach (QualifierData qualifier in diskClass.Qualifiers) {
     ///             Console.WriteLine(qualifier.Name + ":" + qualifier.Value);
     ///         }
     ///         return 0;
@@ -957,7 +957,7 @@ namespace System.Management
                     case PutType.UpdateOnly : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY; break;
                     case PutType.CreateOnly : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_ONLY; break;
                     case PutType.UpdateOrCreate : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_OR_UPDATE; break;
-                    default : throw new ArgumentException(null, "Type");
+                    default: throw new ArgumentException(null, "Type");
                 }
             }
         }
@@ -1325,12 +1325,12 @@ namespace System.Management
         public string Password
         {
             set {
-                if( value != null)
+                if ( value != null)
                 {
                     if (securePassword == null)
                     {
                         securePassword = new SecureString();
-                        for( int i=0; i <value.Length;i++)
+                        for ( int i=0; i <value.Length;i++)
                         {
                             securePassword.AppendChar(value[i]);
                         }
@@ -1338,7 +1338,7 @@ namespace System.Management
                     else
                     {
                         SecureString tempStr = new SecureString();
-                        for( int i=0; i <value.Length;i++)
+                        for ( int i=0; i <value.Length;i++)
                         {
                             tempStr.AppendChar(value[i]);
                         }
@@ -1373,9 +1373,9 @@ namespace System.Management
         public SecureString SecurePassword
         {
             set{
-                if( value != null)
+                if ( value != null)
                 {
-                    if( securePassword == null)
+                    if ( securePassword == null)
                     {
                         securePassword = value.Copy();
                     }
@@ -1561,7 +1561,7 @@ namespace System.Management
             if (password != null)
             {
                 this.securePassword = new SecureString();
-                for( int i=0; i <password.Length;i++)
+                for ( int i=0; i <password.Length;i++)
                 {
                     securePassword.AppendChar(password[i]);
                 }
@@ -1644,7 +1644,7 @@ namespace System.Management
                 try{
                     return System.Runtime.InteropServices.Marshal.SecureStringToBSTR(securePassword);
                 }
-                catch(OutOfMemoryException)
+                catch (OutOfMemoryException)
                 {
                     return IntPtr.Zero;
                 }

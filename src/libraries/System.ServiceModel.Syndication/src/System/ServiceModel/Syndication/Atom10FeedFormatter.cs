@@ -778,7 +778,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
                                 IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
-                                foreach(SyndicationItem item in items)
+                                foreach (SyndicationItem item in items)
                                 {
                                     feedItems.Add(item);
                                 }

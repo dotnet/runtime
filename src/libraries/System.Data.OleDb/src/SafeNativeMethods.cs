@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Data.Common
 {
-    [SuppressUnmanagedCodeSecurity()]
+    [SuppressUnmanagedCodeSecurity]
     internal static class SafeNativeMethods
     {
         [DllImport(Interop.Libraries.Ole32, SetLastError = false)]

@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    partial class RC2Implementation
+    internal partial class RC2Implementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,

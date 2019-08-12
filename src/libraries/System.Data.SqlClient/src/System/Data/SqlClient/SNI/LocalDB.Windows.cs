@@ -90,7 +90,7 @@ namespace System.Data.SqlClient.SNI
 
             lock (this)
             {
-                if(_sqlUserInstanceLibraryHandle !=null)
+                if (_sqlUserInstanceLibraryHandle !=null)
                 {
                     return true;
                 }

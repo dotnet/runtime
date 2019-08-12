@@ -436,7 +436,7 @@ namespace System.Diagnostics.Tracing
             var pinCount = eventTypes.pinCount;
             var scratch = stackalloc byte[eventTypes.scratchSize];
             var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
-            for(int i = 0; i < eventTypes.dataCount + 3; i++)
+            for (int i = 0; i < eventTypes.dataCount + 3; i++)
                 descriptors[i] = default;
 
             var pins = stackalloc GCHandle[pinCount];
@@ -552,7 +552,7 @@ namespace System.Diagnostics.Tracing
                 // we may have 2 for each arg, so we allocate enough for this.
                 var descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
                 var descriptors = stackalloc EventData[descriptorsLength];
-                for(int i = 0; i < descriptorsLength; i++)
+                for (int i = 0; i < descriptorsLength; i++)
                     descriptors[i] = default;
 
                 fixed (byte*

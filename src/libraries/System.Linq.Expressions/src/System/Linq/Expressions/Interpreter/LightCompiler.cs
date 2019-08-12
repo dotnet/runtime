@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Interpreter
         public bool Matches(Type exceptionType) => _exceptionType.IsAssignableFrom(exceptionType);
 
         public override string ToString() =>
-            string.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}->{2}]", _exceptionType.Name, HandlerStartIndex, HandlerEndIndex);
+            string.Format(CultureInfo.InvariantCulture, "catch ({0}) [{1}->{2}]", _exceptionType.Name, HandlerStartIndex, HandlerEndIndex);
     }
 
     internal sealed class TryCatchFinallyHandler
@@ -783,9 +783,9 @@ namespace System.Linq.Expressions.Interpreter
                         case ExpressionType.Equal:
                         case ExpressionType.NotEqual:
                             /* generating (equal/not equal):
-                                * if(left == null) {
+                                * if (left == null) {
                                 *      right == null/right != null
-                                * }else if(right == null) {
+                                * }else if (right == null) {
                                 *      False/True
                                 * }else{
                                 *      op_Equality(left, right)/op_Inequality(left, right)

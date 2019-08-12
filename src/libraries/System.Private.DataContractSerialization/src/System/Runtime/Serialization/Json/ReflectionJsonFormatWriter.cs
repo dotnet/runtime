@@ -255,7 +255,7 @@ namespace System.Runtime.Serialization.Json
                         ReflectionWriteEndElement(xmlWriter);
                     }
 
-                    if(classContract.HasExtensionData)
+                    if (classContract.HasExtensionData)
                     {
                         context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, memberCount);
                     }

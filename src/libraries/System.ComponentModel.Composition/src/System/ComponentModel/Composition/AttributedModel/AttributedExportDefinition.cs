@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type typeIdentityType, string contractName)
             : base(contractName, (IDictionary<string, object>)null)
         {
-            if(partCreationInfo == null)
+            if (partCreationInfo == null)
             {
                 throw new ArgumentNullException(nameof(partCreationInfo));
             }

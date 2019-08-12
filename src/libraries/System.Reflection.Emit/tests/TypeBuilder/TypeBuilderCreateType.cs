@@ -49,12 +49,12 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder type = Helpers.DynamicType(attributes);
                 Type createdType = type.CreateType();
             }
-            catch(System.InvalidOperationException)
+            catch (System.InvalidOperationException)
             {
                 Assert.Equal(TypeAttributes.ClassSemanticsMask, attributes);
                 return;
             }
-            catch(System.ArgumentException)
+            catch (System.ArgumentException)
             {
                 return; // All others should fail with this exception
             }

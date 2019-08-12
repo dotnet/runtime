@@ -602,7 +602,7 @@ namespace System.Net.Http
                         {
                             nc = networkCredential;
                         }
-                        else if(!AreEqualNetworkCredentials(nc, networkCredential))
+                        else if (!AreEqualNetworkCredentials(nc, networkCredential))
                         {
                             throw new PlatformNotSupportedException(SR.Format(SR.net_http_unix_invalid_credential, CurlVersionDescription));
                         }

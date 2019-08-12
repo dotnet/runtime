@@ -2126,7 +2126,7 @@ namespace System.Xml.Schema
             while (counter < length) {
                 BitSet curpos = runningPositions[counter].curpos;
                 SequenceNode.WriteBitSet(curpos);
-                for(int rcnt = 0; rcnt < runningPositions[counter].rangeCounters.Length; rcnt++) {
+                for (int rcnt = 0; rcnt < runningPositions[counter].rangeCounters.Length; rcnt++) {
                     Debug.WriteIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "RangeCounter[" + rcnt + "]" + runningPositions[counter].rangeCounters[rcnt] + " ");
                 }
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "");

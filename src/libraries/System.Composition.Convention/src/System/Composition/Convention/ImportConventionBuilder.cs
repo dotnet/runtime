@@ -35,7 +35,7 @@ namespace System.Composition.Convention
             {
                 throw new ArgumentNullException(nameof(contractName));
             }
-            if(contractName.Length == 0)
+            if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
             }
@@ -126,7 +126,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if(getConstraintValueFromPartType == null)
+            if (getConstraintValueFromPartType == null)
             {
                 throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
             }

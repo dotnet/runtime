@@ -29,7 +29,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 proceed = !string.IsNullOrWhiteSpace(hostname) && IsBrowserAlive(hostname);
             }
 
-            if(proceed)
+            if (proceed)
             {
                 using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
                 {

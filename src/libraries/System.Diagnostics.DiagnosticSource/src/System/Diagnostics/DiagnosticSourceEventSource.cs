@@ -307,7 +307,7 @@ namespace System.Diagnostics
                 sb.Append('"').Append(keyValue.Key).Append("\":\"");
 
                 // Write out the value characters, escaping things as needed.
-                foreach(var c in keyValue.Value)
+                foreach (var c in keyValue.Value)
                 {
                     if (char.IsControl(c))
                     {

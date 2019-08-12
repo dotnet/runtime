@@ -398,7 +398,7 @@ namespace System.Composition.Convention
                 throw new ArgumentNullException(nameof(sharingBoundary));
             }
 
-            if(sharingBoundary.Length == 0)
+            if (sharingBoundary.Length == 0)
             {
                 throw new ArgumentException(SR.ArgumentException_EmptyString);
             }

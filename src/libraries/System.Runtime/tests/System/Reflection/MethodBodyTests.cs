@@ -88,7 +88,7 @@ namespace System.Reflection.Tests
                     throw new ArgumentException("Input argument cannot be a string.");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }

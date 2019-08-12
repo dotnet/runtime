@@ -121,7 +121,7 @@ namespace System.Management
 
             // If the string passed is empty or null then throw
             // an exception
-            if(dmtf == null)
+            if (dmtf == null)
             {
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
@@ -132,7 +132,7 @@ namespace System.Management
 
             // if the length of the string is not equal to the
             // standard length of the DMTF datetime then throw an exception
-            if(dmtf.Length != SIZEOFDMTFDATETIME)
+            if (dmtf.Length != SIZEOFDMTFDATETIME)
             {
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
@@ -184,7 +184,7 @@ namespace System.Management
                     utcOffset = int.Parse(tempString,frmInt32);
                 }
 
-                if( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
+                if ( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(dmtfDate));
                 }
@@ -243,7 +243,7 @@ namespace System.Management
 
             // If the offset is more than that what can be specified in DMTF format, then
             // convert the date to UniversalTime
-            if(Math.Abs(OffsetMins) > MAXSIZE_UTC_DMTF)
+            if (Math.Abs(OffsetMins) > MAXSIZE_UTC_DMTF)
             {
                 date = date.ToUniversalTime();
                 UtcString = "+000";
@@ -275,7 +275,7 @@ namespace System.Management
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));
-            if(strMicrosec.Length > 6)
+            if (strMicrosec.Length > 6)
             {
                 strMicrosec = strMicrosec.Substring(0,6);
             }
@@ -327,11 +327,11 @@ namespace System.Management
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
-            if(dmtfts.Length != SIZEOFDMTFDATETIME)
+            if (dmtfts.Length != SIZEOFDMTFDATETIME)
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
-            if(dmtfts.Substring(21,4) != ":000")
+            if (dmtfts.Substring(21,4) != ":000")
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
@@ -362,7 +362,7 @@ namespace System.Management
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
 
-            if( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0 )
+            if ( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0 )
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
@@ -413,7 +413,7 @@ namespace System.Management
             // Days that can be represented is more than what can be represented
             // then throw an exception
             // and also negative timespan cannot be represented in DMTF
-            if(timespan.Days > MAXDATE_INTIMESPAN || timespan < TimeSpan.Zero)
+            if (timespan.Days > MAXDATE_INTIMESPAN || timespan < TimeSpan.Zero)
             {
                 throw new System.ArgumentOutOfRangeException();
             }
@@ -430,7 +430,7 @@ namespace System.Management
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));
-            if(strMicrosec.Length > 6)
+            if (strMicrosec.Length > 6)
             {
                 strMicrosec = strMicrosec.Substring(0,6);
             }

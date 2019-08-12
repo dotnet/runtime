@@ -33,7 +33,7 @@ namespace System.Composition.Hosting.Util
                 return;
             }
 
-            if(e.Index == index)
+            if (e.Index == index)
             {
                 throw new ArgumentException(SR.Format(SR.Key_Already_Exist, index), nameof(index));
             }

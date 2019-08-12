@@ -80,7 +80,7 @@ namespace System.Linq.Parallel
 
             if (LeftChild.OutputOrdered)
             {
-                if(ExchangeUtilities.IsWorseThan(LeftChild.OrdinalIndexState, OrdinalIndexState.Increasing))
+                if (ExchangeUtilities.IsWorseThan(LeftChild.OrdinalIndexState, OrdinalIndexState.Increasing))
                 {
                     PartitionedStream<TLeftInput, int> leftStreamInt =
                         QueryOperator<TLeftInput>.ExecuteAndCollectResults(leftStream, leftStream.PartitionCount, OutputOrdered, preferStriping, settings)

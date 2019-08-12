@@ -56,7 +56,7 @@ namespace Microsoft.Internal
 
         public static string GetDisplayName(Type declaringType, string name)
         {
-            if(declaringType == null)
+            if (declaringType == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -66,7 +66,7 @@ namespace Microsoft.Internal
 
         public static string GetDisplayName(this MemberInfo member)
         {
-            if(member == null)
+            if (member == null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -85,7 +85,7 @@ namespace Microsoft.Internal
         internal static bool TryGetGenericInterfaceType(Type instanceType, Type targetOpenInterfaceType, out Type targetClosedInterfaceType)
         {
             // The interface must be open
-            if(!targetOpenInterfaceType.IsInterface ||
+            if (!targetOpenInterfaceType.IsInterface ||
                 !targetOpenInterfaceType.IsGenericTypeDefinition ||
                 instanceType.IsGenericTypeDefinition)
             {

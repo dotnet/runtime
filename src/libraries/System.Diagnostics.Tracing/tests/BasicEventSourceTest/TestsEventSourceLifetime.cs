@@ -49,7 +49,7 @@ namespace BasicEventSourceTests
             using (var es = new LifetimeTestEventSource())
             {
                 FieldInfo field = es.GetType().GetTypeInfo().BaseType.GetField("m_provider", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if(field == null)
+                if (field == null)
                 {
                     field = es.GetType().GetTypeInfo().BaseType.GetField("m_etwProvider", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 }

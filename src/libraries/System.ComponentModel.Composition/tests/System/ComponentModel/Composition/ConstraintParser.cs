@@ -200,7 +200,7 @@ namespace System.ComponentModel.Composition
 
             // There should only ever be one argument; otherwise,
             // we've got the wrong IDictionary.get_Item method.
-            if(methodCall.Arguments.Count != 1)
+            if (methodCall.Arguments.Count != 1)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

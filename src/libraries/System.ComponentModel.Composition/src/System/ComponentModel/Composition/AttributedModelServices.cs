@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition
             Requires.NotNull(attributedPart, nameof(attributedPart));
 
             var reflectionComposablePartDefinition = partDefinition as ReflectionComposablePartDefinition;
-            if(reflectionComposablePartDefinition == null)
+            if (reflectionComposablePartDefinition == null)
             {
                 throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }

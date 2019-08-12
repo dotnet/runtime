@@ -67,7 +67,7 @@ namespace Microsoft.XmlSerializer.Generator
                     else if (ArgumentMatch(arg, "out") || ShortNameArgumentMatch(arg, "o"))
                     {
                         i++;
-                        if(i >= args.Length || codePath != null )
+                        if (i >= args.Length || codePath != null )
                         {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
@@ -179,7 +179,7 @@ namespace Microsoft.XmlSerializer.Generator
                     return 0;
                 }
 
-                if(disableRun)
+                if (disableRun)
                 {
                     Console.WriteLine("This tool is not intended to be used directly.");
                     Console.WriteLine("Please refer to https://go.microsoft.com/fwlink/?linkid=858594 on how to use it.");
@@ -530,7 +530,7 @@ namespace Microsoft.XmlSerializer.Generator
             var referencelist = new List<string>();
             if (s_references.Length > 0)
             {
-                foreach(var entry in s_references.Split(';'))
+                foreach (var entry in s_references.Split(';'))
                 {
                     string trimentry = entry.Trim();
                     if (string.IsNullOrEmpty(trimentry))

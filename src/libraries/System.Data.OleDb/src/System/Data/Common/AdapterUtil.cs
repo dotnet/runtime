@@ -261,7 +261,7 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidCommandType(CommandType value)
         {
 #if DEBUG
-            switch(value) {
+            switch (value) {
             case CommandType.Text:
             case CommandType.StoredProcedure:
             case CommandType.TableDirect:
@@ -276,7 +276,7 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
         {
 #if DEBUG
-            switch(value) {
+            switch (value) {
             case DataRowVersion.Default:
             case DataRowVersion.Current:
             case DataRowVersion.Original:
@@ -292,7 +292,7 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidIsolationLevel(IsolationLevel value)
         {
 #if DEBUG
-            switch(value) {
+            switch (value) {
             case IsolationLevel.Unspecified:
             case IsolationLevel.Chaos:
             case IsolationLevel.ReadUncommitted:
@@ -311,7 +311,7 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidParameterDirection(ParameterDirection value)
         {
 #if DEBUG
-            switch(value) {
+            switch (value) {
             case ParameterDirection.Input:
             case ParameterDirection.Output:
             case ParameterDirection.InputOutput:
@@ -327,7 +327,7 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidUpdateRowSource(UpdateRowSource value)
         {
 #if DEBUG
-            switch(value) {
+            switch (value) {
             case UpdateRowSource.None:
             case UpdateRowSource.OutputParameters:
             case UpdateRowSource.FirstReturnedRecord:

@@ -191,7 +191,7 @@ namespace System.ComponentModel.Composition
             }
             else
             {
-                if(errorsCount != 1 || pathCount != 1)
+                if (errorsCount != 1 || pathCount != 1)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }

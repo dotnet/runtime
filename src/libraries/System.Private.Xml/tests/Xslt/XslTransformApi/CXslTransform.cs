@@ -2315,7 +2315,7 @@ namespace System.Xml.Tests
                     {
                         VerifyResult(expected);
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         _output.WriteLine("Failed to process Load after calling {0} times", i);
                         throw;

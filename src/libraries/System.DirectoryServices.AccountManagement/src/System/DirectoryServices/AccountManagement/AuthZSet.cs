@@ -610,7 +610,7 @@ namespace System.DirectoryServices.AccountManagement
                         int groupCount = groupSidAndAttrs.Length;
                         IntPtr[] pGroupSids = new IntPtr[groupCount];
 
-                        for(int i=0; i < groupCount; i++)
+                        for (int i=0; i < groupCount; i++)
                         {
                             pGroupSids[i] = groupSidAndAttrs[i].pSid;
 
@@ -699,7 +699,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             IntPtr pCurrentDomain = Marshal.ReadIntPtr(pDomains, Marshal.SizeOf(typeof(Int32)));
 
-                            for(int i=0; i < domainCount; i++)
+                            for (int i=0; i < domainCount; i++)
                             {
                                 domains[i] =(UnsafeNativeMethods.LSA_TRUST_INFORMATION) Marshal.PtrToStructure(pCurrentDomain, typeof(UnsafeNativeMethods.LSA_TRUST_INFORMATION));
                                 pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_TRUST_INFORMATION)));

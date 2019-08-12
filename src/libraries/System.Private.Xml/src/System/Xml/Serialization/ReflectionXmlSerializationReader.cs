@@ -849,7 +849,7 @@ namespace System.Xml.Serialization
                 {
                     Reader.Skip();
                 }
-                else if(element.Mapping.TypeDesc.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
+                else if (element.Mapping.TypeDesc.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
                 {
                     Reader.Skip();
                     value = default(TimeSpan);

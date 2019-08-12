@@ -1895,12 +1895,12 @@ namespace System.Xml.Serialization
         /*
         Exception GetReflectionVariableException(string typeFullName, string memberName){
             string key;
-            if(memberName == null)
+            if (memberName == null)
                 key = typeFullName;
             else
                 key = memberName+":"+typeFullName;
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach(object varAvail in reflectionVariables.Keys){
+            foreach (object varAvail in reflectionVariables.Keys){
                 sb.Append(varAvail.ToString());
                 sb.Append("\n");
             }
@@ -4138,7 +4138,7 @@ namespace System.Xml.Serialization
                 Writer.Write(source);
                 Writer.Write(".Length != 0)");
             }
-            else if(value is double || value is float)
+            else if (value is double || value is float)
             {
                 Writer.Write("!");
                 Writer.Write(source);
@@ -4218,11 +4218,11 @@ namespace System.Xml.Serialization
                     {
                         Writer.Write("System.Double.NaN");
                     }
-                    else if(double.IsPositiveInfinity((double)value))
+                    else if (double.IsPositiveInfinity((double)value))
                     {
                         Writer.Write("System.Double.PositiveInfinity");
                     }
-                    else if(double.IsNegativeInfinity((double)value))
+                    else if (double.IsNegativeInfinity((double)value))
                     {
                         Writer.Write("System.Double.NegativeInfinity");
                     }
@@ -4248,7 +4248,7 @@ namespace System.Xml.Serialization
                     {
                         Writer.Write("System.Single.NaN");
                     }
-                    else if(float.IsPositiveInfinity((float)value))
+                    else if (float.IsPositiveInfinity((float)value))
                     {
                         Writer.Write("System.Single.PositiveInfinity");
                     }

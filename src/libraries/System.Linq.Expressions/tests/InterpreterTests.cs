@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Tests
                       IP_0005: Call(Int32 Abs(Int32))
                       IP_0006: Goto[1] -> 13
                     }
-                    catch(DivideByZeroException) [8->11]
+                    catch (DivideByZeroException) [8->11]
                     {
                       IP_0007: EnterExceptionHandler()
                       IP_0008: StoreLocal(1)

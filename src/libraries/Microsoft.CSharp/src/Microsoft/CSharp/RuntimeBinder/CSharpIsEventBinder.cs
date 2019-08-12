@@ -84,7 +84,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));
-            return BinderHelper.Bind(this, _binder, new [] { target }, null, null);
+            return BinderHelper.Bind(this, _binder, new[] { target }, null, null);
         }
     }
 }

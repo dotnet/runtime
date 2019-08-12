@@ -235,7 +235,7 @@ namespace System.Drawing {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if( value is Color ){
+            if ( value is Color ){
                 if (destinationType == typeof(string)) {
                     Color c = (Color)value;
 

@@ -9,7 +9,7 @@ using System;
 
 namespace System.Reflection.Metadata
 {
-    partial class BlobBuilder
+    public partial class BlobBuilder
     {
         // internal for testing
         internal struct Chunks : IEnumerable<BlobBuilder>, IEnumerator<BlobBuilder>, IEnumerator

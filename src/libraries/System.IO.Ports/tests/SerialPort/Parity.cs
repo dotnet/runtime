@@ -431,7 +431,7 @@ namespace System.IO.Ports.Tests
                 Debug.WriteLine("parityIndex={0}", parityIndex);
 
                 /*
-                for(int i=0; i<xmitBytes.Length; i++) {
+                for (int i=0; i<xmitBytes.Length; i++) {
                   do {
                     xmitBytes[i] = (byte)rndGen.Next(0, 256);
                     isParityError = !VerifyParityByte(xmitBytes[i], com1.DataBits, (Parity)parity);

@@ -79,7 +79,7 @@ namespace System.Management
                 int status = (int)ManagementStatus.Failed;
 
 #pragma warning disable CA2002
-                lock(typeof(enumLock))
+                lock (typeof(enumLock))
 #pragma warning restore CA2002
                 {
                     try
@@ -255,7 +255,7 @@ namespace System.Management
                 int status = (int)ManagementStatus.Failed;
 
 #pragma warning disable CA2002
-                lock(typeof(enumLock))
+                lock (typeof(enumLock))
 #pragma warning restore CA2002
                 {
                     try

@@ -124,7 +124,7 @@ namespace System.Memory.Tests
 
             BufferSegment<T> last = null;
             BufferSegment<T> first = null;
-            foreach(ReadOnlyMemory<T> input in inputs)
+            foreach (ReadOnlyMemory<T> input in inputs)
             {
                 int length = input.Length;
                 int dataOffset = length / 2;

@@ -283,7 +283,7 @@ internal static class Utils
         XElement[] deskChildElems = baselineXElement.Descendants().OrderBy(m => m.Name.NamespaceName).ToArray();
         XElement[] coreCLRChildElems = actualXElement.Descendants().OrderBy(m => m.Name.NamespaceName).ToArray();
 
-        if(deskChildElems.Length != coreCLRChildElems.Length)
+        if (deskChildElems.Length != coreCLRChildElems.Length)
         {
             return false;
         }

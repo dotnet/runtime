@@ -86,7 +86,7 @@ namespace Stress.Data
             {
                 get
                 {
-                    if(_sources.Count == 0)
+                    if (_sources.Count == 0)
                     {
                         reader.Load();
                         _sources = reader.Sources;

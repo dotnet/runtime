@@ -19,7 +19,7 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateContainsNullElement(string parameterName)
         {
-            if(parameterName == null)
+            if (parameterName == null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
@@ -31,7 +31,7 @@ namespace System.ComponentModel
 
         public static ObjectDisposedException CreateObjectDisposed(object instance)
         {
-            if(instance == null)
+            if (instance == null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -41,12 +41,12 @@ namespace System.ComponentModel
 
         public static NotImplementedException CreateNotOverriddenByDerived(string memberName)
         {
-            if(memberName == null)
+            if (memberName == null)
             {
                 throw new ArgumentNullException(nameof(memberName));
             }
 
-            if(memberName.Length == 0)
+            if (memberName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(memberName)), nameof(memberName));
             }
@@ -58,12 +58,12 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateExportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            if(parameterName == null)
+            if (parameterName == null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
 
-            if(parameterName.Length == 0)
+            if (parameterName.Length == 0)
             {
                 throw new ArgumentException(SR.ArgumentException_EmptyString);
             }
@@ -76,12 +76,12 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateImportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            if(parameterName == null)
+            if (parameterName == null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
 
-            if(parameterName.Length == 0)
+            if (parameterName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
             }
@@ -93,17 +93,17 @@ namespace System.ComponentModel
 
         public static CompositionException CreateCannotGetExportedValue(ComposablePart part, ExportDefinition definition, Exception innerException)
         {
-            if(part == null)
+            if (part == null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if(definition == null)
+            if (definition == null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if(innerException == null)
+            if (innerException == null)
             {
                 throw new ArgumentNullException(nameof(innerException));
             }
@@ -114,17 +114,17 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateReflectionModelInvalidPartDefinition(string parameterName, Type partDefinitionType)
         {
-            if(parameterName == null)
+            if (parameterName == null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
 
-            if(parameterName.Length == 0)
+            if (parameterName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
             }
 
-            if(partDefinitionType == null)
+            if (partDefinitionType == null)
             {
                 throw new ArgumentNullException(nameof(partDefinitionType));
             }
@@ -134,12 +134,12 @@ namespace System.ComponentModel
 
         public static ArgumentException ExportFactory_TooManyGenericParameters(string typeName)
         {
-            if(typeName == null)
+            if (typeName == null)
             {
                 throw new ArgumentNullException(nameof(typeName));
             }
 
-            if(typeName.Length == 0)
+            if (typeName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(typeName)), nameof(typeName));
             }

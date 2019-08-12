@@ -80,7 +80,7 @@ namespace System.Management
                 case QualifierType.MethodQualifier :
                     status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
                     break;
-                default :
+                default:
                     throw new ManagementException(ManagementStatus.Unexpected, null, null); //is this the best fit error ??
             }
 

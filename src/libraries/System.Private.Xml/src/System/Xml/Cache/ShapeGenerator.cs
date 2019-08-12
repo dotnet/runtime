@@ -65,7 +65,7 @@ namespace System.Xml.XPath.DataBinding
                     XmlSchemaAttribute[] xsaArray = new XmlSchemaAttribute[attributes.Count];
                     attributes.CopyTo(xsaArray, 0);
                     Array.Sort(xsaArray, new XmlSchemaAttributeComparer());
-                    foreach(XmlSchemaAttribute xsa in xsaArray) {
+                    foreach (XmlSchemaAttribute xsa in xsaArray) {
                         string name = GenAttrName(xsa.QualifiedName, names);
                         Shape attrShape = new Shape(name, BindingType.Attribute);
                         attrShape.AddParticle(xsa);

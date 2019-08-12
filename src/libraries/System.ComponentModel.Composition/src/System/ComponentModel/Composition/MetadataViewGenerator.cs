@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition
     //
     //     public __Foo__MedataViewProxy (IDictionary<string, object> metadata)
     //     {
-    //         if(metadata == null)
+    //         if (metadata == null)
     //         {
     //             throw InvalidArgumentException("metadata");
     //         }
@@ -40,11 +40,11 @@ namespace System.ComponentModel.Composition
     //              Record3 = (typeRecord1)Record3;
     //              Record4 = (typeRecord1)Record4;
     //          }
-    //          catch(InvalidCastException ice)
+    //          catch (InvalidCastException ice)
     //          {
     //              //Annotate exception .Data with diagnostic info
     //          }
-    //          catch(NulLReferenceException ice)
+    //          catch (NulLReferenceException ice)
     //          {
     //              //Annotate exception .Data with diagnostic info
     //          }
@@ -91,12 +91,12 @@ namespace System.ComponentModel.Composition
 
         public static MetadataViewFactory GetMetadataViewFactory(Type viewType)
         {
-            if(viewType == null)
+            if (viewType == null)
             {
                 throw new ArgumentNullException(nameof(viewType));
             }
 
-            if(!viewType.IsInterface)
+            if (!viewType.IsInterface)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -110,18 +110,18 @@ namespace System.ComponentModel.Composition
             }
 
             // No factory exists
-            if(!foundMetadataViewFactory)
+            if (!foundMetadataViewFactory)
             {
                 // Try again under a write lock if still none generate the proxy
                 Type generatedProxyType = GenerateInterfaceViewProxyType(viewType);
-                if(generatedProxyType == null)
+                if (generatedProxyType == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
 
                 MetadataViewFactory generatedMetadataViewFactory = (MetadataViewFactory)Delegate.CreateDelegate(
                     typeof(MetadataViewFactory), generatedProxyType.GetMethod(MetadataViewGenerator.MetadataViewFactoryName, BindingFlags.Public | BindingFlags.Static));
-                if(generatedMetadataViewFactory == null)
+                if (generatedMetadataViewFactory == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -140,7 +140,7 @@ namespace System.ComponentModel.Composition
 
         public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object> metadata)
         {
-            if(metadataViewFactory == null)
+            if (metadataViewFactory == null)
             {
                 throw new ArgumentNullException(nameof(metadataViewFactory));
             }
@@ -149,7 +149,7 @@ namespace System.ComponentModel.Composition
             {
                 return (TMetadataView)metadataViewFactory.Invoke(metadata);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new TargetInvocationException(e);
             }
@@ -248,7 +248,7 @@ namespace System.ComponentModel.Composition
                 Label innerTryCastValue;
 
                 DefaultValueAttribute[] attrs = propertyInfo.GetAttributes<DefaultValueAttribute>(false);
-                if(attrs.Length > 0)
+                if (attrs.Length > 0)
                 {
                     innerTryCastValue = proxyCtorIL.BeginExceptionBlock();
                 }

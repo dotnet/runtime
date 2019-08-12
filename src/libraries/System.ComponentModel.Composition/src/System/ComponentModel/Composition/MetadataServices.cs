@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
 
         public static T GetValue<T>(this IDictionary<string, object> metadata, string key)
         {
-            if(metadata == null)
+            if (metadata == null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }

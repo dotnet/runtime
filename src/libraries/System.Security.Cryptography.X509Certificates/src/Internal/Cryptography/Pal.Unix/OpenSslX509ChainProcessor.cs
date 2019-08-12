@@ -142,7 +142,7 @@ namespace Internal.Cryptography.Pal
 
             if (extraCerts?.Count > 0)
             {
-                foreach(X509Certificate2 cert in extraCerts)
+                foreach (X509Certificate2 cert in extraCerts)
                 {
                     AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal).SafeHandle, untrusted);
                 }

@@ -115,7 +115,7 @@ namespace System.Collections.Generic
             Debug.Assert(array != _array);
             int srcIndex = 0;
             int dstIndex = arrayIndex + _size;
-            while(srcIndex < _size)
+            while (srcIndex < _size)
             {
                 array[--dstIndex] = _array[srcIndex++];
             }

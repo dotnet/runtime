@@ -107,7 +107,7 @@ namespace System.Drawing {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if( value is Rectangle ){
+            if ( value is Rectangle ){
                 if (destinationType == typeof(string)) {
                     Rectangle rect = (Rectangle)value;
 
@@ -149,7 +149,7 @@ namespace System.Drawing {
         ///      want to provide changable properties.
         /// </devdoc>
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
-            if( propertyValues == null ){
+            if ( propertyValues == null ){
                 throw new ArgumentNullException( nameof(propertyValues) );
             }
 
@@ -158,7 +158,7 @@ namespace System.Drawing {
             object width =  propertyValues["Width"];
             object height =  propertyValues["Height"];
 
-            if(x == null || y == null || width == null || height == null ||
+            if (x == null || y == null || width == null || height == null ||
                 !(x is int) || !(y is int) || !(width is int) || !(height is int) ) {
                     throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

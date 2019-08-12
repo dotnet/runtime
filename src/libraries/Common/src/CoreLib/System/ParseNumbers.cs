@@ -262,7 +262,7 @@ namespace System
             else
             {
                 index = 0;
-                for (int i = 0; i < buffer.Length; i++) // for(...;i<buffer.Length;...) loop instead of do{...}while(l!=0) to help JIT eliminate span bounds checks
+                for (int i = 0; i < buffer.Length; i++) // for (...;i<buffer.Length;...) loop instead of do{...}while(l!=0) to help JIT eliminate span bounds checks
                 {
                     uint div = l / (uint)radix; // TODO https://github.com/dotnet/coreclr/issues/3439
                     uint charVal = l - (div * (uint)radix);

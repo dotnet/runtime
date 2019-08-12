@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.ComponentModel.Composition
 {
-    partial class ExportServices
+    internal partial class ExportServices
     {
         private sealed class DisposableLazy<T, TMetadataView> : Lazy<T, TMetadataView>, IDisposable
         {
@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition
             public DisposableLazy(Func<T> valueFactory, TMetadataView metadataView, IDisposable disposable, LazyThreadSafetyMode mode)
                 : base(valueFactory, metadataView, mode)
             {
-                if(disposable == null)
+                if (disposable == null)
                 {
                     throw new ArgumentNullException(nameof(disposable));
                 }
@@ -36,7 +36,7 @@ namespace System.ComponentModel.Composition
             public DisposableLazy(Func<T> valueFactory, IDisposable disposable, LazyThreadSafetyMode mode)
                 : base(valueFactory, mode)
             {
-                if(disposable == null)
+                if (disposable == null)
                 {
                     throw new ArgumentNullException(nameof(disposable));
                 }

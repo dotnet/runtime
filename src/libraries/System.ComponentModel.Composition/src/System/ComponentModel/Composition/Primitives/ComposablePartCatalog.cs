@@ -55,7 +55,7 @@ namespace System.ComponentModel.Composition.Primitives
             get
             {
                 ThrowIfDisposed();
-                if(_queryableParts == null)
+                if (_queryableParts == null)
                 {
                     // Guarantee one time only set _queryableParts
                     var p = this.AsQueryable();
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition.Primitives
         public virtual IEnumerator<ComposablePartDefinition> GetEnumerator()
         {
             var parts = Parts;
-            if(object.ReferenceEquals(parts, _queryableParts))
+            if (object.ReferenceEquals(parts, _queryableParts))
             {
                 return Enumerable.Empty<ComposablePartDefinition>().GetEnumerator();
             }

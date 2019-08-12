@@ -273,7 +273,7 @@ namespace System.IO.Tests
                     await readTask;
                     // we may not have canceled before the task completed.
                 }
-                catch(OperationCanceledException oce)
+                catch (OperationCanceledException oce)
                 {
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome

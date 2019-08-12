@@ -13,7 +13,7 @@ using static Interop.BCrypt;
 
 namespace System.Security.Cryptography
 {
-    partial class AesGcm
+    public partial class AesGcm
     {
         private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM);
         private SafeKeyHandle _keyHandle;

@@ -27,7 +27,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             Task.Factory.StartNew(() => { SetupProxy(actualHost, actualPort); });
 
-            for(int i = 0; i < 10 && Port == -1; i++)
+            for (int i = 0; i < 10 && Port == -1; i++)
             {
                 Thread.Sleep(500);
             }
@@ -156,12 +156,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static void GetTcpInfoFromDataSource(string dataSource, out string hostName, out int port)
         {
             string[] dataSourceParts = dataSource.Split(',');
-            if(dataSourceParts.Length == 1)
+            if (dataSourceParts.Length == 1)
             {
                 hostName = dataSourceParts[0].Replace("tcp:", "");
                 port = 1433;
             }
-            else if(dataSourceParts.Length == 2)
+            else if (dataSourceParts.Length == 2)
             {
                 hostName = dataSourceParts[0].Replace("tcp:", "");
                 port = int.Parse(dataSourceParts[1]);

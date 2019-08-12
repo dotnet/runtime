@@ -414,7 +414,7 @@ namespace System.Drawing.Tests
             {
                 File.Open(bitmapUncPath, FileMode.Open, FileAccess.Read, FileShare.Read).Dispose();
             }
-            catch(IOException)
+            catch (IOException)
             {
                 return;
             }

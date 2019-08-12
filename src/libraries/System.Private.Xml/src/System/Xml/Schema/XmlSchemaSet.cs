@@ -651,7 +651,7 @@ namespace System.Xml.Schema
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Remove, Add and AddSchemaToSet
             // methods. If you change anything here *make sure* to update Remove/Add/AddSchemaToSet method(s) accordingly.
             // The only difference is that we don't touch .schemas collection here to not break a code like this:
-            // foreach(XmlSchema s in schemaset.schemas) { schemaset.Reprocess(s); }
+            // foreach (XmlSchema s in schemaset.schemas) { schemaset.Reprocess(s); }
             // This is by purpose.
             if (schema == null)
             {
@@ -829,7 +829,7 @@ namespace System.Xml.Schema
             }
 
             foreach (XmlSchemaElement element in schema.Elements.Values) {
-                if(!AddToTable(elements, element.QualifiedName, element)) {
+                if (!AddToTable(elements, element.QualifiedName, element)) {
                     RemoveSchemaFromGlobalTables(schema);
                     return false;
                 }

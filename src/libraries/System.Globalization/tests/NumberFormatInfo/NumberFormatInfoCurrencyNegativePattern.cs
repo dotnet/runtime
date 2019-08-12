@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
             {
                 culture = CultureInfo.GetCultureInfo(locale);
             }
-            catch(CultureNotFoundException)
+            catch (CultureNotFoundException)
             {
                 return; // ignore unsupported culture
             }

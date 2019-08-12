@@ -463,7 +463,7 @@ namespace System.Net.Tests
         [MemberData(nameof(HtmlDecode_TestData))]
         public static void HtmlDecode_TextWriterOutput(string value, string expected)
         {
-            if(value == null)
+            if (value == null)
                 expected = string.Empty;
             StringWriter output = new StringWriter(CultureInfo.InvariantCulture);
             WebUtility.HtmlDecode(value, output);
@@ -474,7 +474,7 @@ namespace System.Net.Tests
         [MemberData(nameof(HtmlEncode_TestData))]
         public static void HtmlEncode_TextWriterOutput(string value, string expected)
         {
-            if(value == null)
+            if (value == null)
                 expected = string.Empty;
             StringWriter output = new StringWriter(CultureInfo.InvariantCulture);
             WebUtility.HtmlEncode(value, output);

@@ -163,7 +163,7 @@ namespace System.Xml
                 n.WriteTo(w);
             } //still use the old code to generate the output
             /*
-            foreach( XmlNode n in this ) {
+            foreach ( XmlNode n in this ) {
                 if ( n.NodeType != XmlNodeType.EntityReference )
                 n.WriteTo( w );
                 else

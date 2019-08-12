@@ -16,14 +16,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
             switch (memberType)
             {
                 case MemberTypes.Field:
-                    if(accessors.Length != 1)
+                    if (accessors.Length != 1)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
                     return ((FieldInfo)accessors[0]).ToReflectionField();
 
                 case MemberTypes.Property:
-                    if(accessors.Length != 2)
+                    if (accessors.Length != 2)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -34,7 +34,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     return ((Type)accessors[0]).ToReflectionType();
 
                 default:
-                    if(memberType != MemberTypes.Method)
+                    if (memberType != MemberTypes.Method)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionWritableMember ToReflectionWriteableMember(this LazyMemberInfo lazyMember)
         {
-            if((lazyMember.MemberType != MemberTypes.Field) && (lazyMember.MemberType != MemberTypes.Property))
+            if ((lazyMember.MemberType != MemberTypes.Field) && (lazyMember.MemberType != MemberTypes.Property))
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionProperty CreateReflectionProperty(MethodInfo getMethod, MethodInfo setMethod)
         {
-            if(getMethod == null && setMethod == null)
+            if (getMethod == null && setMethod == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

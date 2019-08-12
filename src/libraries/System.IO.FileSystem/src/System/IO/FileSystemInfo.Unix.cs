@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-    partial class FileSystemInfo
+    public partial class FileSystemInfo
     {
         private FileStatus _fileStatus;
 

@@ -106,7 +106,7 @@ namespace System.Drawing {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if(value is Point){
+            if (value is Point){
                 if (destinationType == typeof(string)) {
                     Point pt = (Point)value;
 
@@ -144,14 +144,14 @@ namespace System.Drawing {
         ///      want to provide changable properties.
         /// </devdoc>
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
-            if( propertyValues == null ) {
+            if ( propertyValues == null ) {
                 throw new ArgumentNullException( nameof(propertyValues) );
             }
 
             object x = propertyValues["X"];
             object y = propertyValues["Y"];
 
-            if(x == null || y == null ||
+            if (x == null || y == null ||
                 !(x is int) || !(y is int)) {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

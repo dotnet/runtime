@@ -92,7 +92,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if(childContainer != null)
+                    if (childContainer != null)
                     {
                         childContainer.Dispose();
                     }

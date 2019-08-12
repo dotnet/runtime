@@ -693,7 +693,7 @@ namespace System.Diagnostics.Tracing
         {
             // If the EventSource is set to emit all events as TraceLogging events, skip this initialization.
             // Events will be defined when they are emitted for the first time.
-            if(SelfDescribingEvents)
+            if (SelfDescribingEvents)
             {
                 return;
             }
@@ -1876,7 +1876,7 @@ namespace System.Diagnostics.Tracing
                     // ETW strings are NULL-terminated, so marshal everything up to the first
                     // null in the string.
                     //return System.Runtime.InteropServices.Marshal.PtrToStringUni(dataPointer);
-                    if(dataPointer == IntPtr.Zero)
+                    if (dataPointer == IntPtr.Zero)
                     {
                         return null;
                     }
@@ -2526,7 +2526,7 @@ namespace System.Diagnostics.Tracing
         private int GetParameterCount(EventMetadata eventData)
         {
             int paramCount;
-            if(eventData.Parameters == null)
+            if (eventData.Parameters == null)
             {
                 paramCount = eventData.ParameterTypes.Length;
             }
@@ -2541,7 +2541,7 @@ namespace System.Diagnostics.Tracing
         private Type GetDataType(EventMetadata eventData, int parameterId)
         {
             Type dataType;
-            if(eventData.Parameters == null)
+            if (eventData.Parameters == null)
             {
                 dataType = EventTypeToType(eventData.ParameterTypes[parameterId]);
             }

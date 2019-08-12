@@ -270,7 +270,7 @@ namespace System.Drawing
                 {
                     c = ColorConverterCommon.ConvertFromString(htmlColor, CultureInfo.CurrentCulture);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     throw new ArgumentException(ex.Message, nameof(htmlColor), ex);
                 }

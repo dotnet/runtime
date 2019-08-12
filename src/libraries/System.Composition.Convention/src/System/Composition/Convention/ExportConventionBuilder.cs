@@ -52,11 +52,11 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(string contractName)
         {
-            if(contractName == null)
+            if (contractName == null)
             {
                 throw new ArgumentNullException(nameof(contractName));
             }
-            if(contractName.Length == 0)
+            if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
             }

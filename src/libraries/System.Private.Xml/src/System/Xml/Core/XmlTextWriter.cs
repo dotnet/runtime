@@ -1426,13 +1426,13 @@ namespace System.Xml
             {
                 _textWriter.WriteLine();
                 int i = (beforeEndElement ? _top - 1 : _top) * _indentation;
-                if(i <= _indentChars.Length)
+                if (i <= _indentChars.Length)
                 {
                     _textWriter.Write(_indentChars, 0, i);
                 }
                 else
                 {
-                    while(i > 0)
+                    while (i > 0)
                     {
                         _textWriter.Write(_indentChars, 0, Math.Min(i, _indentChars.Length));
                         i -= _indentChars.Length;

@@ -2379,7 +2379,7 @@ public static partial class DataContractJsonSerializerTests
             Utils.CompareResult result2 = Utils.Compare(baseline2, actualOutput2);
             Assert.True(result2.Equal, $"{nameof(actualOutput2)} was not as expected: {Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
         }
