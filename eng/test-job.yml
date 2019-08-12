@@ -28,6 +28,9 @@ jobs:
     osIdentifier: ${{ parameters.osIdentifier }}
     helixType: 'build/tests/'
 
+    # Test jobs should continue on error
+    continueOnError: true
+
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
       name: ${{ format('test_{0}_{1}_{2}_{3}', 'p0', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
