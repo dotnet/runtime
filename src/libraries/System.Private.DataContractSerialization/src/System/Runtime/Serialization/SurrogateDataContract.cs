@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
 
         private class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            ISerializationSurrogate serializationSurrogate;
+            private ISerializationSurrogate serializationSurrogate;
 
             internal SurrogateDataContractCriticalHelper(Type type, ISerializationSurrogate serializationSurrogate)
                 : base(type)

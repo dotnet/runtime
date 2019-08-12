@@ -479,7 +479,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Performs shared initialization between Load and LoadAsync.
         /// </summary>
-        static XDocument InitLoad(XmlReader reader, LoadOptions options)
+        private static XDocument InitLoad(XmlReader reader, LoadOptions options)
         {
             XDocument d = new XDocument();
             if ((options & LoadOptions.SetBaseUri) != 0)

@@ -130,7 +130,7 @@ namespace System.Diagnostics
         ///     Returns whether this process component is associated with a real process.
         /// </devdoc>
         /// <internalonly/>
-        bool Associated
+        private bool Associated
         {
             get { return _haveProcessId || _haveProcessHandle; }
         }

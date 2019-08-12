@@ -3950,7 +3950,7 @@ namespace System.Diagnostics.Tracing
 
         // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
         // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
-        ActivityTracker m_activityTracker = null!;
+        private ActivityTracker m_activityTracker = null!;
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
 
@@ -5083,7 +5083,7 @@ namespace System.Diagnostics.Tracing
         public EventActivityOptions ActivityOptions { get; set; }
 
 #region private
-        EventOpcode m_opcode;
+        private EventOpcode m_opcode;
         private bool m_opcodeSet;
 #endregion
     }
@@ -5122,7 +5122,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #endif
-    class EventChannelAttribute : Attribute
+    internal class EventChannelAttribute : Attribute
     {
         /// <summary>
         /// Specified whether the channel is enabled by default
@@ -5162,7 +5162,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #endif
-    enum EventChannelType
+    internal enum EventChannelType
     {
         /// <summary>The admin channel</summary>
         Admin = 1,
@@ -6268,7 +6268,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        class ChannelInfo
+        private class ChannelInfo
         {
             public string? Name;
             public ulong Keywords;
@@ -6276,15 +6276,15 @@ namespace System.Diagnostics.Tracing
         }
 #endif
 
-        Dictionary<int, string> opcodeTab;
-        Dictionary<int, string>? taskTab;
+        private Dictionary<int, string> opcodeTab;
+        private Dictionary<int, string>? taskTab;
 #if FEATURE_MANAGED_ETW_CHANNELS
-        Dictionary<int, ChannelInfo>? channelTab;
+        private Dictionary<int, ChannelInfo>? channelTab;
 #endif
-        Dictionary<ulong, string>? keywordTab;
-        Dictionary<string, Type>? mapsTab;
+        private Dictionary<ulong, string>? keywordTab;
+        private Dictionary<string, Type>? mapsTab;
 
-        Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
+        private Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         // WCF used EventSource to mimic a existing ETW manifest.   To support this
@@ -6293,26 +6293,26 @@ namespace System.Diagnostics.Tracing
         // this set of channel keywords that we allow to be explicitly set.  You
         // can ignore these bits otherwise.
         internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
-        ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
-        const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
+        private ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
+        private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 #endif
 
-        StringBuilder sb;               // Holds the provider information.
-        StringBuilder events;           // Holds the events.
-        StringBuilder templates;
+        private StringBuilder sb;               // Holds the provider information.
+        private StringBuilder events;           // Holds the events.
+        private StringBuilder templates;
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        string providerName;
+        private string providerName;
 #endif
-        ResourceManager? resources;      // Look up localized strings here.
-        EventManifestOptions flags;
-        IList<string> errors;           // list of currently encountered errors
-        Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
+        private ResourceManager? resources;      // Look up localized strings here.
+        private EventManifestOptions flags;
+        private IList<string> errors;           // list of currently encountered errors
+        private Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 
         // State we track between StartEvent and EndEvent.
-        string? eventName;               // Name of the event currently being processed.
-        int numParams;                  // keeps track of the number of args the event has.
-        List<int>? byteArrArgIndices;   // keeps track of the index of each byte[] argument
+        private string? eventName;               // Name of the event currently being processed.
+        private int numParams;                  // keeps track of the number of args the event has.
+        private List<int>? byteArrArgIndices;   // keeps track of the index of each byte[] argument
 #endregion
     }
 

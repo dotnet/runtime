@@ -10,8 +10,8 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        const uint MOVEFILE_REPLACE_EXISTING = 0x01;
-        const uint MOVEFILE_COPY_ALLOWED = 0x02;
+        private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
+        private const uint MOVEFILE_COPY_ALLOWED = 0x02;
 
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use MoveFile.

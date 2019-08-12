@@ -198,7 +198,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the take- or skip-while.
         //
 
-        class TakeOrSkipWhileQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
+        private class TakeOrSkipWhileQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
         {
             private readonly QueryOperatorEnumerator<TResult, TKey> _source; // The data source to enumerate.
             private readonly Func<TResult, bool> _predicate;  // The actual predicate function.
@@ -394,7 +394,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        class OperatorState<TKey>
+        private class OperatorState<TKey>
         {
             internal volatile int _updatesDone = 0;
             internal TKey _currentLowKey;

@@ -131,12 +131,12 @@ namespace System.Text.Encodings.Web
             get { return 12; } // "\uFFFF\uFFFF" is the longest encoded form
         }
 
-        static readonly char[] s_b = new char[] { '\\', 'b' };
-        static readonly char[] s_t = new char[] { '\\', 't' };
-        static readonly char[] s_n = new char[] { '\\', 'n' };
-        static readonly char[] s_f = new char[] { '\\', 'f' };
-        static readonly char[] s_r = new char[] { '\\', 'r' };
-        static readonly char[] s_back = new char[] { '\\', '\\' };
+        private static readonly char[] s_b = new char[] { '\\', 'b' };
+        private static readonly char[] s_t = new char[] { '\\', 't' };
+        private static readonly char[] s_n = new char[] { '\\', 'n' };
+        private static readonly char[] s_f = new char[] { '\\', 'f' };
+        private static readonly char[] s_r = new char[] { '\\', 'r' };
+        private static readonly char[] s_back = new char[] { '\\', '\\' };
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9

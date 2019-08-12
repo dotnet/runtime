@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
         private readonly CancellationToken _cancellationToken; // A token for canceling the process.
         private Mutables _mutables; // Mutable fields for this enumerator.
 
-        class Mutables
+        private class Mutables
         {
             internal int _currentBufferIndex; // Current buffer index.
             internal ListChunk<Pair<TInputOutput, THashKey>> _currentBuffer; // The buffer we're currently enumerating.

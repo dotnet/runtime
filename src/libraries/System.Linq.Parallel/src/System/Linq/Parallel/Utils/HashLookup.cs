@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
             return false;
         }
 
-        void Resize()
+        private void Resize()
         {
             int newSize = checked(count * 2 + 1);
             int[] newBuckets = new int[newSize];

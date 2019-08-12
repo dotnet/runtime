@@ -19,7 +19,7 @@ using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
-    class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase
+    internal class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
         private readonly QueryOperatorEnumerator<TOutput, TKey> _partition; // The source partition.

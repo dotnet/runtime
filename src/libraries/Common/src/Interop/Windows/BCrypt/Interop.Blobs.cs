@@ -286,8 +286,8 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
         {
-            int cbSize;
-            uint dwInfoVersion;
+            private int cbSize;
+            private uint dwInfoVersion;
             internal byte* pbNonce;
             internal int cbNonce;
             internal byte* pbAuthData;

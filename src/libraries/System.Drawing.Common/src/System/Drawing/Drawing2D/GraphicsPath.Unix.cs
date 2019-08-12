@@ -46,7 +46,7 @@ namespace System.Drawing.Drawing2D
 
         internal IntPtr _nativePath = IntPtr.Zero;
 
-        GraphicsPath(IntPtr ptr)
+        private GraphicsPath(IntPtr ptr)
         {
             _nativePath = ptr;
         }
@@ -116,7 +116,7 @@ namespace System.Drawing.Drawing2D
             Dispose(false);
         }
 
-        void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             int status;
             if (_nativePath != IntPtr.Zero)

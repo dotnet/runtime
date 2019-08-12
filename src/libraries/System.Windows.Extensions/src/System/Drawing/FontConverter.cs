@@ -394,7 +394,7 @@ namespace System.Drawing
 
         public sealed class FontNameConverter : TypeConverter, IDisposable
         {
-            FontFamily[] _fonts;
+            private FontFamily[] _fonts;
 
             public FontNameConverter()
             {

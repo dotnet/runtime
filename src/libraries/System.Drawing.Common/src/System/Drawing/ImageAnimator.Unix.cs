@@ -38,7 +38,7 @@ using System.Threading;
 namespace System.Drawing
 {
 
-    class AnimateEventArgs : EventArgs
+    internal class AnimateEventArgs : EventArgs
     {
 
         private int frameCount;
@@ -70,7 +70,7 @@ namespace System.Drawing
     public sealed class ImageAnimator
     {
 
-        static Hashtable ht = Hashtable.Synchronized(new Hashtable());
+        private static Hashtable ht = Hashtable.Synchronized(new Hashtable());
 
         private ImageAnimator()
         {
@@ -161,7 +161,7 @@ namespace System.Drawing
         }
     }
 
-    class WorkerThread
+    internal class WorkerThread
     {
 
         private EventHandler frameChangeHandler;

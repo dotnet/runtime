@@ -68,8 +68,8 @@ namespace System.Drawing
         internal int Version;
         internal int SigCount;
         internal int SigSize;
-        IntPtr SigPattern;
-        IntPtr SigMask;
+        private IntPtr SigPattern;
+        private IntPtr SigMask;
 
         internal static void MarshalTo(GdipImageCodecInfo gdipcodec, ImageCodecInfo codec)
         {
@@ -119,7 +119,7 @@ namespace System.Drawing
     [StructLayout(LayoutKind.Sequential)]
     internal struct IconInfo
     {
-        int fIcon;
+        private int fIcon;
         public int xHotspot;
         public int yHotspot;
         public IntPtr hbmMask;

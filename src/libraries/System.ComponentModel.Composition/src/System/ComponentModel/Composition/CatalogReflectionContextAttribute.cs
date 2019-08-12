@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false,Inherited = true)]
     public class CatalogReflectionContextAttribute : Attribute
     {
-        Type _reflectionContextType;
+        private Type _reflectionContextType;
 
         public CatalogReflectionContextAttribute(Type reflectionContextType)
         {

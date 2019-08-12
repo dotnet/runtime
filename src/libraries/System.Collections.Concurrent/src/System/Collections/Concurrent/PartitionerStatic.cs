@@ -491,8 +491,8 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TSource">Type of elements in the source data</typeparam>
         private class DynamicPartitionerForIEnumerable<TSource> : OrderablePartitioner<TSource>
         {
-            IEnumerable<TSource> _source;
-            readonly bool _useSingleChunking;
+            private IEnumerable<TSource> _source;
+            private readonly bool _useSingleChunking;
 
             //constructor
             internal DynamicPartitionerForIEnumerable(IEnumerable<TSource> source, EnumerablePartitionerOptions partitionerOptions)
@@ -1003,7 +1003,7 @@ namespace System.Collections.Concurrent
         {
             // TCollection can be: IList<TSource>, TSource[] and IEnumerable<TSource>
             // Derived classes specify TCollection, and implement the abstract method GetOrderableDynamicPartitions_Factory accordingly
-            TCollection _data;
+            private TCollection _data;
 
             /// <summary>
             /// Constructs a new orderable partitioner
@@ -1510,7 +1510,7 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TSource"></typeparam>
         private class StaticIndexRangePartitionerForIList<TSource> : StaticIndexRangePartitioner<TSource, IList<TSource>>
         {
-            IList<TSource> _list;
+            private IList<TSource> _list;
             internal StaticIndexRangePartitionerForIList(IList<TSource> list)
                 : base()
             {
@@ -1568,7 +1568,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private class StaticIndexRangePartitionerForArray<TSource> : StaticIndexRangePartitioner<TSource, TSource[]>
         {
-            TSource[] _array;
+            private TSource[] _array;
             internal StaticIndexRangePartitionerForArray(TSource[] array)
                 : base()
             {

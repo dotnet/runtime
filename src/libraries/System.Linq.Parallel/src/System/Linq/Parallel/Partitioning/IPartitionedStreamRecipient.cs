@@ -15,7 +15,7 @@ namespace System.Linq.Parallel
     /// whose generic type parameter is the type of the order keys in the partitioned stream.
     /// </summary>
     /// <typeparam name="TElement"></typeparam>
-    interface IPartitionedStreamRecipient<TElement>
+    internal interface IPartitionedStreamRecipient<TElement>
     {
         void Receive<TKey>(PartitionedStream<TElement, TKey> partitionedStream);
     }

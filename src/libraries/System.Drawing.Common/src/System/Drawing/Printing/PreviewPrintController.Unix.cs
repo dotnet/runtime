@@ -40,8 +40,8 @@ namespace System.Drawing.Printing
 {
     public class PreviewPrintController : PrintController
     {
-        bool useantialias;
-        ArrayList pageInfoList;
+        private bool useantialias;
+        private ArrayList pageInfoList;
 
         public PreviewPrintController()
         {

@@ -38,7 +38,7 @@ namespace System.Net.Security
             return negoContext.IsNtlmUsed ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Kerberos;
         }
 
-        static byte[] GssWrap(
+        private static byte[] GssWrap(
             SafeGssContextHandle context,
             bool encrypt,
             byte[] buffer,

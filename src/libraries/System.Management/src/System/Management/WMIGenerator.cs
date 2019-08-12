@@ -192,7 +192,7 @@ namespace System.Management
         /// <summary>
         /// Checks if mandatory properties are properly initialized.
         /// </summary>
-        void CheckIfClassIsProperlyInitialized()
+        private void CheckIfClassIsProperlyInitialized()
         {
             if (classobj == null)
             {
@@ -477,7 +477,7 @@ namespace System.Management
             return cc;
         }
 
-        bool GenerateAndWriteCode(CodeLanguage lang)
+        private bool GenerateAndWriteCode(CodeLanguage lang)
         {
 
             if (InitializeCodeGenerator(lang) == false)
@@ -601,7 +601,7 @@ namespace System.Management
         /// This functrion initializes the public attributes and private variables
         /// list that will be used in the generated code.
         /// </summary>
-        void InitilializePublicPrivateMembers()
+        private void InitilializePublicPrivateMembers()
         {
             //Initialize the public members
             PublicNamesUsed.Add("SystemPropertiesProperty","SystemProperties");
@@ -680,7 +680,7 @@ namespace System.Management
         /// due to the collision between the local objects of the generated
         /// class and the properties/methos of the original WMI Class.
         /// </summary>
-        void ProcessNamingCollisions()
+        private void ProcessNamingCollisions()
         {
             if (classobj.Properties != null)
             {
@@ -1008,7 +1008,7 @@ namespace System.Management
             }
         }
 
-        void GeneratePathProperty()
+        private void GeneratePathProperty()
         {
             cmp = new CodeMemberProperty();
             cmp.Name = PublicNamesUsed["PathProperty"].ToString();
@@ -1082,7 +1082,7 @@ namespace System.Management
         /// used for seperating the system properties from the other properties. This is used
         /// just to make the drop down list in the editor to look good.
         /// </summary>
-        CodeTypeDeclaration GenerateSystemPropertiesClass()
+        private CodeTypeDeclaration GenerateSystemPropertiesClass()
         {
             CodeTypeDeclaration SysPropsClass = new CodeTypeDeclaration(PublicNamesUsed["SystemPropertiesClass"].ToString());
             SysPropsClass.TypeAttributes =TypeAttributes.NestedPublic;
@@ -1168,7 +1168,7 @@ namespace System.Management
         /// of the WMI class and will generate them as properties of the managed code
         /// wrapper class.
         /// </summary>
-        void GenerateProperties()
+        private void GenerateProperties()
         {
             bool bRead;
             bool bWrite;
@@ -1569,7 +1569,7 @@ namespace System.Management
         /// This function will process the qualifiers for a given WMI property and set the
         /// attributes of the generated property accordingly.
         /// </summary>
-        string ProcessPropertyQualifiers(PropertyData prop,ref bool bRead, ref bool bWrite, ref bool bStatic,bool bDynamicClass,out bool nullable)
+        private string ProcessPropertyQualifiers(PropertyData prop,ref bool bRead, ref bool bWrite, ref bool bStatic,bool bDynamicClass,out bool nullable)
         {
             bool hasWrite = false;
             bool writeValue = false;
@@ -1788,7 +1788,7 @@ namespace System.Management
         /// <returns>
         /// returns if the property is an enum. This is checked by if enum is added or not
         /// </returns>
-        bool GeneratePropertyHelperEnums(PropertyData prop, string strPropertyName, bool bNullable)
+        private bool GeneratePropertyHelperEnums(PropertyData prop, string strPropertyName, bool bNullable)
         {
             bool isEnumAdded = false;
             bool bZeroFieldInEnum = false;
@@ -2031,7 +2031,7 @@ namespace System.Management
         ///            return "\\&lt;defNameSpace&gt;:&lt;defClassName&gt;=@";
         ///        }
         /// </summary>
-        void GenerateConstructPath()
+        private void GenerateConstructPath()
         {
             string strType;
             cmm = new CodeMemberMethod();
@@ -2096,7 +2096,7 @@ namespace System.Management
         ///     _privSystemProps = new ManagementSystemProperties(_privObject);
         /// }
         /// </summary>
-        void GenerateDefaultConstructor()
+        private void GenerateDefaultConstructor()
         {
             cctor = new CodeConstructor();
             cctor.Attributes = MemberAttributes.Public;
@@ -2136,7 +2136,7 @@ namespace System.Management
         ///public cons(UInt32 key_Key1, String key_Key2) :this(null,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
-        void GenerateConstructorWithKeys()
+        private void GenerateConstructorWithKeys()
         {
             if (arrKeyType.Count > 0)
             {
@@ -2194,7 +2194,7 @@ namespace System.Management
         ///public cons(ManagementScope scope,UInt32 key_Key1, String key_Key2) :this(scope,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
-        void GenerateConstructorWithScopeKeys()
+        private void GenerateConstructorWithScopeKeys()
         {
             cctor = new CodeConstructor();
             cctor.Attributes = MemberAttributes.Public;
@@ -2256,7 +2256,7 @@ namespace System.Management
         ///        public Cons(ManagementPath path) : this (null, path,null){
         ///        }
         /// </summary>
-        void GenerateConstructorWithPath()
+        private void GenerateConstructorWithPath()
         {
             string strPathObject = "path";
             cctor = new CodeConstructor();
@@ -2288,7 +2288,7 @@ namespace System.Management
         ///        public Cons(ManagementPath path, ObjectGetOptions options) : this (null, path,options){
         ///        }
         /// </summary>
-        void GenerateConstructorWithPathOptions()
+        private void GenerateConstructorWithPathOptions()
         {
             string strPathObject = "path";
             string strGetOptions = "getOptions";
@@ -2317,7 +2317,7 @@ namespace System.Management
         ///                            this (new ManagementScope(scope), new ManagementPath(path),options){
         ///        }
         /// </summary>
-        void GenerateConstructorWithScopePath()
+        private void GenerateConstructorWithScopePath()
         {
             string strPathObject = "path";
 
@@ -2343,7 +2343,7 @@ namespace System.Management
         ///        public Cons(ManagementScope scope, ObjectGetOptions options) : this (scope, &lt;ClassName&gt;.ConstructPath(),null){
         ///        }
         /// </summary>
-        void GenerateConstructorWithScope()
+        private void GenerateConstructorWithScope()
         {
 
             cctor = new CodeConstructor();
@@ -2379,7 +2379,7 @@ namespace System.Management
         ///        public Cons(ObjectGetOptions options) : this (null, &lt;ClassName&gt;.ConstructPath(),options){
         ///        }
         /// </summary>
-        void GenerateConstructorWithOptions()
+        private void GenerateConstructorWithOptions()
         {
             string strGetOptions = "getOptions";
 
@@ -2414,7 +2414,7 @@ namespace System.Management
         ///        public Cons(ManagementScope scope, ObjectGetOptions options) : this (scope, &lt;ClassName&gt;.ConstructPath(),options){
         ///        }
         /// </summary>
-        void GenerateConstructorWithScopeOptions()
+        private void GenerateConstructorWithScopeOptions()
         {
             string strGetOptions = "getOptions";
 
@@ -2457,7 +2457,7 @@ namespace System.Management
         ///            PrivateSystemProperties = new ManagementSystemProperties(PrivateObject);
         ///        }
         /// </summary>
-        void GenerateConstructorWithScopePathOptions()
+        private void GenerateConstructorWithScopePathOptions()
         {
             string strPathObject = "path";
             string strGetOptions = "getOptions";
@@ -2510,7 +2510,7 @@ namespace System.Management
         ///            }
         ///        }
         /// </summary>
-        void GenarateConstructorWithLateBound()
+        private void GenarateConstructorWithLateBound()
         {
             string strLateBoundObject = "theObject";
             string LateBoundSystemProperties = "SystemProperties";
@@ -2581,7 +2581,7 @@ namespace System.Management
         ///    }
         ///
         /// </summary>
-        void GenarateConstructorWithLateBoundForEmbedded()
+        private void GenarateConstructorWithLateBoundForEmbedded()
         {
             string strLateBoundObject = "theObject";
 
@@ -2642,7 +2642,7 @@ namespace System.Management
         ///            PrivateSystemProperties = new ManagementSystemProperties(PrivateObject);
         ///        }
         /// </summary>
-        void GenerateInitializeObject()
+        private void GenerateInitializeObject()
         {
             string strPathObject = "path";
             string strGetOptions = "getOptions";
@@ -2773,7 +2773,7 @@ namespace System.Management
         ///     }
         ///
         /// </summary>
-        void GenerateMethods()
+        private void GenerateMethods()
         {
             string strInParams = "inParams";
             string strOutParams = "outParams";
@@ -3274,7 +3274,7 @@ namespace System.Management
         ///            return GetInstances((System.Management.ManagementScope)null,(System.Management.EnumerateionOptions)null);
         ///        }
         /// </summary>
-        void GenerateGetInstancesWithNoParameters()
+        private void GenerateGetInstancesWithNoParameters()
         {
             cmm = new CodeMemberMethod();
 
@@ -3303,7 +3303,7 @@ namespace System.Management
         ///            return GetInstances(null,Condition,null);
         ///     }
         /// </summary>
-        void GenerateGetInstancesWithCondition()
+        private void GenerateGetInstancesWithCondition()
         {
             string strCondition = "condition";
             cmm = new CodeMemberMethod();
@@ -3334,7 +3334,7 @@ namespace System.Management
         ///            return GetInstances(null,null,selectedProperties);
         ///        }
         /// </summary>
-        void GenerateGetInstancesWithProperties()
+        private void GenerateGetInstancesWithProperties()
         {
             string strSelectedProperties = "selectedProperties";
             cmm = new CodeMemberMethod();
@@ -3364,7 +3364,7 @@ namespace System.Management
         ///            return GetInstances(null,condition,selectedProperties);
         ///        }
         /// </summary>
-        void GenerateGetInstancesWithWhereProperties()
+        private void GenerateGetInstancesWithWhereProperties()
         {
             string strSelectedProperties = "selectedProperties";
             string strCondition = "condition";
@@ -3413,7 +3413,7 @@ namespace System.Management
         ///    }
         ///    This method takes the scope which is useful for connection to remote machine
         /// </summary>
-        void GenerateGetInstancesWithScope()
+        private void GenerateGetInstancesWithScope()
         {
             cmm = new CodeMemberMethod();
 
@@ -3523,7 +3523,7 @@ namespace System.Management
         ///            return GetInstances(scope,Condition,null);
         ///     }
         /// </summary>
-        void GenerateGetInstancesWithScopeCondition()
+        private void GenerateGetInstancesWithScopeCondition()
         {
             string strCondition = "condition";
             cmm = new CodeMemberMethod();
@@ -3554,7 +3554,7 @@ namespace System.Management
         ///            return GetInstances(scope,null,selectedProperties);
         ///        }
         /// </summary>
-        void GenerateGetInstancesWithScopeProperties()
+        private void GenerateGetInstancesWithScopeProperties()
         {
             string strSelectedProperties = "selectedProperties";
             cmm = new CodeMemberMethod();
@@ -3593,7 +3593,7 @@ namespace System.Management
         ///            return new ServiceCollection(ObjectSearcher.Get());
         ///        }
         /// </summary>
-        void GenerateGetInstancesWithScopeWhereProperties()
+        private void GenerateGetInstancesWithScopeWhereProperties()
         {
             string strCondition = "condition";
             string strSelectedProperties = "selectedProperties";
@@ -3685,7 +3685,7 @@ namespace System.Management
         /// The generated code will look like this
         ///         private &lt;MemberType&gt; &lt;MemberName&gt;;
         /// </summary>
-        void GeneratePrivateMember(string memberName,string MemberType,string Comment)
+        private void GeneratePrivateMember(string memberName,string MemberType,string Comment)
         {
             GeneratePrivateMember(memberName,MemberType,null,false,Comment);
         }
@@ -3695,7 +3695,7 @@ namespace System.Management
         /// The generated code will look like this
         ///         private &lt;MemberType&gt; &lt;MemberName&gt; = &lt;initValue&gt;;
         /// </summary>
-        void GeneratePrivateMember(string memberName,string MemberType,CodeExpression initExpression,bool isStatic,string Comment)
+        private void GeneratePrivateMember(string memberName,string MemberType,CodeExpression initExpression,bool isStatic,string Comment)
         {
             cf = new CodeMemberField();
             cf.Name = memberName;
@@ -3717,7 +3717,7 @@ namespace System.Management
             }
         }
 
-        CodeTypeDeclaration GenerateTypeConverterClass()
+        private CodeTypeDeclaration GenerateTypeConverterClass()
         {
             string TypeDescriptorContextClass = "System.ComponentModel.ITypeDescriptorContext";
             string contextObject = "context";
@@ -4514,7 +4514,7 @@ namespace System.Management
         /// This function will find a given string in the passed
         /// in a case insensitive manner and will return true if the string is found.
         /// </summary>
-        int IsContainedIn(string strToFind, ref SortedList sortedList)
+        private int IsContainedIn(string strToFind, ref SortedList sortedList)
         {
             int nIndex = -1;
             for (int i=0; i < sortedList.Count; i++)
@@ -4719,7 +4719,7 @@ namespace System.Management
         /// <summary>
         /// Function to convert a given ValueMap or BitMap name to propert enum name
         /// </summary>
-        static string ConvertValuesToName(string str)
+        private static string ConvertValuesToName(string str)
         {
             string strRet = string.Empty;
             string strToReplace = "_";
@@ -4771,7 +4771,7 @@ namespace System.Management
         /// This function goes thru the names in array list and resolves any duplicates
         /// if any so that these names can be added as values of enum
         /// </summary>
-        void ResolveEnumNameValues(ArrayList arrIn,ref ArrayList arrayOut)
+        private void ResolveEnumNameValues(ArrayList arrIn,ref ArrayList arrayOut)
         {
             arrayOut.Clear();
             int        nCurIndex = 0;
@@ -4802,7 +4802,7 @@ namespace System.Management
         /// This function will find a given string in the passed
         /// array list.
         /// </summary>
-        static bool IsContainedInArray(string strToFind, ArrayList arrToSearch)
+        private static bool IsContainedInArray(string strToFind, ArrayList arrToSearch)
         {
             for (int i=0; i < arrToSearch.Count; i++)
             {
@@ -4817,7 +4817,7 @@ namespace System.Management
         /// <summary>
         /// Function to create a appropriate generator
         /// </summary>
-        bool InitializeCodeGenerator(CodeLanguage lang)
+        private bool InitializeCodeGenerator(CodeLanguage lang)
         {
             string strProvider = "";
             Assembly asm = null;
@@ -4911,7 +4911,7 @@ namespace System.Management
         /// Function which checks if the language supports Unsigned numbers
         /// </summary>
         /// <param name="Language">Language</param>
-        void GetUnsignedSupport(CodeLanguage Language)
+        private void GetUnsignedSupport(CodeLanguage Language)
         {
             switch(Language)
             {
@@ -4932,7 +4932,7 @@ namespace System.Management
         /// Function which adds commit function to commit all the changes
         /// to the object to WMI
         /// </summary>
-        void GenerateCommitMethod()
+        private void GenerateCommitMethod()
         {
             cmm = new CodeMemberMethod();
             cmm.Name = PublicNamesUsed["CommitMethod"].ToString();
@@ -5001,7 +5001,7 @@ namespace System.Management
         /// Function to convert a value in format "0x..." to a integer
         /// to the object to WMI
         /// </summary>
-        static int ConvertBitMapValueToInt32(string bitMap)
+        private static int ConvertBitMapValueToInt32(string bitMap)
         {
             string strTemp = "0x";
             int ret = 0;
@@ -5029,7 +5029,7 @@ namespace System.Management
         /// <summary>
         /// Function to get the Converstion function to be used for Numeric datatypes
         /// </summary>
-        string GetConversionFunction(CimType cimType)
+        private string GetConversionFunction(CimType cimType)
         {
             string retFunctionName = string.Empty;
 
@@ -5127,7 +5127,7 @@ namespace System.Management
         /// <summary>
         /// Checks if a given property is to be visible for Designer seriliazation
         /// </summary>
-        static bool IsDesignerSerializationVisibilityToBeSet(string propName)
+        private static bool IsDesignerSerializationVisibilityToBeSet(string propName)
         {
             if (!string.Equals(propName,"Path",StringComparison.OrdinalIgnoreCase))
             {
@@ -5305,7 +5305,7 @@ namespace System.Management
         /// <summary>
         /// Adds comments at the begining of the class defination
         /// </summary>
-        void AddClassComments(CodeTypeDeclaration cc)
+        private void AddClassComments(CodeTypeDeclaration cc)
         {
             cc.Comments.Add(new CodeCommentStatement(SR.CommentShouldSerialize));
             cc.Comments.Add(new CodeCommentStatement(SR.CommentIsPropNull));
@@ -5401,7 +5401,7 @@ namespace System.Management
         /// Generates the functions CheckIfProperClass() which checks if the given path
         /// can be represented with the generated code
         /// </summary>
-        void GenerateIfClassvalidFuncWithAllParams()
+        private void GenerateIfClassvalidFuncWithAllParams()
         {
             string strPathParam = "path";
             string strGetOptions = "OptionsParam";
@@ -5469,7 +5469,7 @@ namespace System.Management
         /// Generates the functions CheckIfProperClass() which checks if the given path
         /// can be represented with the generated code
         /// </summary>
-        void GenerateIfClassvalidFunction()
+        private void GenerateIfClassvalidFunction()
         {
             // Call this function to generate the first overload of this function
             GenerateIfClassvalidFuncWithAllParams();
@@ -5591,7 +5591,7 @@ namespace System.Management
         /// Generates code for Property Get for Cimtype.Reference and CimType.DateTime type property
         /// Also generated code to initialize a variable after converting a property to DateTime and ManagementPathProperty
         /// </summary>
-        void GenerateCodeForRefAndDateTimeTypes(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varToAssign,bool bIsValueProprequired)
+        private void GenerateCodeForRefAndDateTimeTypes(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varToAssign,bool bIsValueProprequired)
         {
 
             if(bArray == false)
@@ -5779,7 +5779,7 @@ namespace System.Management
         /// <summary>
         /// Generates code for Property Set for Cimtype.DateTime and CimType.Reference type property
         /// </summary>
-        void AddPropertySet(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varValue)
+        private void AddPropertySet(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varValue)
         {
             if(varValue == null)
             {
@@ -5880,7 +5880,7 @@ namespace System.Management
         /// <summary>
         /// Internal function used to create object. Used in adding code for Property Get for DateTime and Reference properties
         /// </summary>
-        CodeExpression CreateObjectForProperty(string strType, CodeExpression param)
+        private CodeExpression CreateObjectForProperty(string strType, CodeExpression param)
         {
             switch(strType)
             {
@@ -5932,7 +5932,7 @@ namespace System.Management
         /// Internal function used to create code to convert DateTime or ManagementPath to String
         /// convert a expression. Used in adding code for Property Set for DateTime and Reference properties
         /// </summary>
-        CodeExpression ConvertPropertyToString(string strType,CodeExpression beginingExpression)
+        private CodeExpression ConvertPropertyToString(string strType,CodeExpression beginingExpression)
         {
             switch(strType)
             {
@@ -6018,7 +6018,7 @@ namespace System.Management
             cmp.Comments.Add(new CodeCommentStatement(SR.CommentManagementScope));
         }
 
-        void AddGetStatementsForEnumArray(CodeIndexerExpression ciProp,CodeMemberProperty cmProp)
+        private void AddGetStatementsForEnumArray(CodeIndexerExpression ciProp,CodeMemberProperty cmProp)
         {
             string strArray = "arrEnumVals";
             string ArrToRet = "enumToRet";
@@ -6183,7 +6183,7 @@ namespace System.Management
         ///        return new GenClass(new ManagementClass(new System.Management.ManagementClass(CreatedWmiNamespace, CreatedClassName, null).CreateInstance()));
         /// }
         /// </summary>
-        void GenerateCreateInstance()
+        private void GenerateCreateInstance()
         {
             string strTemp = "tmpMgmtClass";
             cmm = new CodeMemberMethod();
@@ -6266,7 +6266,7 @@ namespace System.Management
         ///        PrivateLateBoundObject.Delete();
         /// }
         /// </summary>
-        void GenerateDeleteInstance()
+        private void GenerateDeleteInstance()
         {
             cmm = new CodeMemberMethod();
 
@@ -6295,7 +6295,7 @@ namespace System.Management
         /// <summary>
         /// Function to genreate helper function for DMTF to DateTime and DateTime to DMTF
         /// </summary>
-        void GenerateDateTimeConversionFunction()
+        private void GenerateDateTimeConversionFunction()
         {
             AddToDateTimeFunction();
             AddToDMTFDateTimeFunction();
@@ -6304,7 +6304,7 @@ namespace System.Management
         /// <summary>
         /// Function to genreate helper function for DMTF Time interval to TimeSpan and vice versa
         /// </summary>
-        void GenerateTimeSpanConversionFunction()
+        private void GenerateTimeSpanConversionFunction()
         {
             AddToTimeSpanFunction();
             AddToDMTFTimeIntervalFunction();
@@ -6315,7 +6315,7 @@ namespace System.Management
         /// <summary>
         /// Generated code for function to do conversion of date from DMTF format to DateTime format
         /// </summary>
-        void AddToDateTimeFunction()
+        private void AddToDateTimeFunction()
         {
             string dmtfParam = "dmtfDate";
             string year    = "year";
@@ -6735,7 +6735,7 @@ namespace System.Management
         /// <summary>
         /// Generates some common code used in conversion function for DateTime
         /// </summary>
-        static void DateTimeConversionFunctionHelper(CodeStatementCollection cmmdt ,
+        private static void DateTimeConversionFunctionHelper(CodeStatementCollection cmmdt ,
             string toCompare,
             string tempVarName,
             string dmtfVarName,
@@ -6767,7 +6767,7 @@ namespace System.Management
             cmmdt.Add(cis);
         }
 
-        void AddToDMTFTimeIntervalFunction()
+        private void AddToDMTFTimeIntervalFunction()
         {
             string dmtfTimeSpan = "dmtftimespan";
             string timespan    = "timespan";
@@ -7030,7 +7030,7 @@ namespace System.Management
 
         }
 
-        void AddToDMTFDateTimeFunction()
+        private void AddToDMTFDateTimeFunction()
         {
             string strUtc = "utcString";
             string dateParam    = "date";
@@ -7330,7 +7330,7 @@ namespace System.Management
         }
 
         // Helper function exclusively added to be used from AddToDMTFFunction function
-        void ToDMTFDateHelper(string dateTimeMember,CodeMemberMethod cmmdt,string strType)
+        private void ToDMTFDateHelper(string dateTimeMember,CodeMemberMethod cmmdt,string strType)
         {
             string dmtfDateTime = "dmtfDateTime";
             string dateParam = "date";
@@ -7355,7 +7355,7 @@ namespace System.Management
                 cmie2)));
         }
 
-        void AddToTimeSpanFunction()
+        private void AddToTimeSpanFunction()
         {
             string tsParam    = "dmtfTimespan";
             string days = "days";
@@ -7663,7 +7663,7 @@ namespace System.Management
         }
 
         // Exclusive helper function to be used from AddToTimeSpanFunction
-        static void ToTimeSpanHelper(int start,int numOfCharacters,string strVarToAssign,CodeStatementCollection statCol)
+        private static void ToTimeSpanHelper(int start,int numOfCharacters,string strVarToAssign,CodeStatementCollection statCol)
         {
             string strTemp = "tempString";
             string tsParam    = "dmtfTimespan";
@@ -7682,7 +7682,7 @@ namespace System.Management
             statCol.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(strVarToAssign),cmie));
         }
 
-        void InitPrivateMemberVariables(CodeMemberMethod cmMethod)
+        private void InitPrivateMemberVariables(CodeMemberMethod cmMethod)
         {
             CodeMethodInvokeExpression cmieInit = new CodeMethodInvokeExpression();
             cmieInit.Method.MethodName = PrivateNamesUsed["initVariable"].ToString();
@@ -7690,7 +7690,7 @@ namespace System.Management
             cmMethod.Statements.Add(cmieInit);
         }
 
-        void GenerateMethodToInitializeVariables()
+        private void GenerateMethodToInitializeVariables()
         {
 
             CodeMemberMethod cmmInit = new CodeMemberMethod ();
@@ -7709,7 +7709,7 @@ namespace System.Management
 
 
         //
-        static CodeMethodInvokeExpression GenerateConcatStrings(CodeExpression ce1,CodeExpression ce2)
+        private static CodeMethodInvokeExpression GenerateConcatStrings(CodeExpression ce1,CodeExpression ce2)
         {
             CodeExpression []cmieParams = {ce1,ce2 };
 

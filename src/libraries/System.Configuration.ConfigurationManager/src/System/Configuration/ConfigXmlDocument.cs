@@ -17,9 +17,9 @@ namespace System.Configuration
     // the UserData property to hang any info off of any node.
     public sealed class ConfigXmlDocument : XmlDocument, IConfigErrorInfo
     {
-        XmlTextReader _reader;
-        int _lineOffset;
-        string _filename;
+        private XmlTextReader _reader;
+        private int _lineOffset;
+        private string _filename;
 
         int IConfigErrorInfo.LineNumber
         {

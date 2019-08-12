@@ -22,8 +22,8 @@ namespace Internal.Cryptography.Pal
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        const string BCRYPT_ECC_CURVE_NAME_PROPERTY = "ECCCurveName";
-        const string BCRYPT_ECC_PARAMETERS_PROPERTY = "ECCParameters";
+        private const string BCRYPT_ECC_CURVE_NAME_PROPERTY = "ECCCurveName";
+        private const string BCRYPT_ECC_PARAMETERS_PROPERTY = "ECCParameters";
 
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {

@@ -23,7 +23,7 @@ internal static partial class Interop
         internal int Use;
         internal IntPtr Sid;
         internal int DomainIndex;
-        uint Flags;
+        private uint Flags;
     }
 
     [StructLayout(LayoutKind.Sequential)]

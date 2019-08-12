@@ -221,7 +221,7 @@ namespace System.Linq.Parallel
             private readonly int _sectionCount; // Precomputed in ctor: the number of sections the range is split into.
             private Mutables _mutables; // Lazily allocated mutable variables.
 
-            class Mutables
+            private class Mutables
             {
                 internal Mutables()
                 {
@@ -399,7 +399,7 @@ namespace System.Linq.Parallel
             private readonly int _sectionCount; // Precomputed in ctor: the number of sections the range is split into.
             private Mutables _mutables; // Lazily allocated mutable variables.
 
-            class Mutables
+            private class Mutables
             {
                 internal Mutables()
                 {
@@ -581,7 +581,7 @@ namespace System.Linq.Parallel
             private readonly Shared<bool> _exceptionTracker;
             private Mutables _mutables; // Any mutable fields on this enumerator. These mutables are local and persistent
 
-            class Mutables
+            private class Mutables
             {
                 internal Mutables()
                 {

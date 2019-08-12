@@ -117,7 +117,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the first operation.
         //
 
-        class FirstQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
+        private class FirstQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private Func<TSource, bool> _predicate; // The optional predicate used during the search.
@@ -232,7 +232,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        class FirstQueryOperatorState<TKey>
+        private class FirstQueryOperatorState<TKey>
         {
             internal TKey _key;
             internal int _partitionId = -1;

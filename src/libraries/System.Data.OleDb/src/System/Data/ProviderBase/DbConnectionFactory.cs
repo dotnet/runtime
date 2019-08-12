@@ -23,9 +23,9 @@ namespace System.Data.ProviderBase
 
         // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to
         // a maximum of Environment.ProcessorCount at a time.
-        static int s_pendingOpenNonPooledNext = 0;
-        static Task<DbConnectionInternal>[] s_pendingOpenNonPooled = new Task<DbConnectionInternal>[Environment.ProcessorCount];
-        static Task<DbConnectionInternal> s_completedTask;
+        private static int s_pendingOpenNonPooledNext = 0;
+        private static Task<DbConnectionInternal>[] s_pendingOpenNonPooled = new Task<DbConnectionInternal>[Environment.ProcessorCount];
+        private static Task<DbConnectionInternal> s_completedTask;
 
         protected DbConnectionFactory() : this(DbConnectionPoolCountersNoCounters.SingletonInstance) { }
 
@@ -113,7 +113,7 @@ namespace System.Data.ProviderBase
         }
 
         // GetCompletedTask must be called from within s_pendingOpenPooled lock
-        static Task<DbConnectionInternal> GetCompletedTask()
+        private static Task<DbConnectionInternal> GetCompletedTask()
         {
             if (s_completedTask == null)
             {
