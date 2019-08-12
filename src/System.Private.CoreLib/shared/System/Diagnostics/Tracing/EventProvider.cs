@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tracing
         }
 
         internal IEventProvider m_eventProvider;         // The interface that implements the specific logging mechanism functions.
-        Interop.Advapi32.EtwEnableCallback? m_etwCallback;     // Trace Callback function
+        private Interop.Advapi32.EtwEnableCallback? m_etwCallback;     // Trace Callback function
         private long m_regHandle;                        // Trace Registration Handle
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
@@ -260,7 +260,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Parameter filterData of type: Void*" />
         // <UsesUnsafeCode Name="Parameter callbackContext of type: Void*" />
         // </SecurityKernel>
-        unsafe void EtwEnableCallBack(
+        private unsafe void EtwEnableCallBack(
                         in System.Guid sourceId,
                         int controlCode,
                         byte setLevel,
