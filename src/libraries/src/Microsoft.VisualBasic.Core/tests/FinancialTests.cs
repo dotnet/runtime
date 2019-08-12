@@ -39,7 +39,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentException>(() => Financial.DDB(Cost, Salvage, Life, Period, Factor));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(40245)]
         [InlineData(0, 0, 0, 0, DueDate.EndOfPeriod, 0, 0)]
         [InlineData(0.02 / 12, 12.0, -100.0, -100.0, DueDate.BegOfPeriod, 1315.0982120264073, -4)]
         [InlineData(0.0083, 15, 263.0, 0, DueDate.EndOfPeriod, -4182.657291138164, -4)]
