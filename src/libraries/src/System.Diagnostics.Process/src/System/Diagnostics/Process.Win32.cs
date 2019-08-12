@@ -439,7 +439,7 @@ namespace System.Diagnostics
                 .Where(p => !p.Handle.IsInvalid && predicate(p.Process))
                 .ToList();
 
-            SafeProcessHandle SafeGetHandle(Process process)
+            static SafeProcessHandle SafeGetHandle(Process process)
             {
                 try
                 {

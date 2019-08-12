@@ -4434,7 +4434,7 @@ namespace System.Net.Sockets
                 InitializeSocketsCore();
             }
 
-            void InitializeSocketsCore()
+            static void InitializeSocketsCore()
             {
                 lock (InternalSyncObject)
                 {

@@ -422,7 +422,7 @@ namespace System.Drawing
 
         private static void CheckByte(int value, string name)
         {
-            void ThrowOutOfByteRange(int v, string n) =>
+            static void ThrowOutOfByteRange(int v, string n) =>
                 throw new ArgumentException(SR.Format(SR.InvalidEx2BoundArgument, n, v, byte.MinValue, byte.MaxValue));
 
             if (unchecked((uint)value) > byte.MaxValue)
