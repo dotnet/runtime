@@ -944,7 +944,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 inline GenTreeStmt* Compiler::gtNewStmt(GenTree* expr, IL_OFFSETX offset)
 {
-    GenTreeStmt* stmt = new (this, GT_STMT) GenTreeStmt(expr, offset);
+    GenTreeStmt* stmt = new (this->getAllocator(CMK_ASTNode)) GenTreeStmt(expr, offset);
     return stmt;
 }
 
@@ -1318,9 +1318,6 @@ inline void Compiler::gtSetStmtInfo(GenTreeStmt* stmt)
     /* Recursively process the expression */
 
     gtSetEvalOrder(expr);
-
-    // Set the statement to have the same costs as the top node of the tree.
-    stmt->CopyCosts(expr);
 }
 
 /*****************************************************************************/
@@ -4352,13 +4349,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             if (this->AsField()->gtFldObj != nullptr)
             {
                 visitor(this->AsField()->gtFldObj);
-            }
-            return;
-
-        case GT_STMT:
-            if (this->AsStmt()->gtStmtExpr != nullptr)
-            {
-                visitor(this->AsStmt()->gtStmtExpr);
             }
             return;
 

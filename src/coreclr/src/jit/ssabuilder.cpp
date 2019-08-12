@@ -97,13 +97,13 @@ void Compiler::fgResetForSsa()
         {
             blk->bbMemorySsaPhiFunc[memoryKind] = nullptr;
         }
-        if (blk->bbTreeList != nullptr)
+        if (blk->bbStmtList != nullptr)
         {
             GenTreeStmt* last = blk->lastStmt();
-            blk->bbTreeList   = blk->FirstNonPhiDef();
-            if (blk->bbTreeList != nullptr)
+            blk->bbStmtList   = blk->FirstNonPhiDef();
+            if (blk->bbStmtList != nullptr)
             {
-                blk->bbTreeList->gtPrev = last;
+                blk->bbStmtList->gtPrev = last;
             }
         }
 
@@ -756,7 +756,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 
                     GenTree* phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
 
-                    GenTreeStmt* stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
+                    GenTreeStmt* stmt = m_pCompiler->fgNewStmtAtBeg(bbInDomFront, phiAsg);
                     m_pCompiler->gtSetStmtInfo(stmt);
                     m_pCompiler->fgSetStmtSeq(stmt);
                 }
@@ -1631,7 +1631,7 @@ void SsaBuilder::Print(BasicBlock** postOrder, int count)
     for (int i = count - 1; i >= 0; --i)
     {
         printf("After SSA " FMT_BB ":\n", postOrder[i]->bbNum);
-        m_pCompiler->gtDispTreeList(postOrder[i]->bbTreeList);
+        m_pCompiler->gtDispStmtList(postOrder[i]->bbStmtList);
     }
 }
 #endif // DEBUG

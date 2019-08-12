@@ -535,7 +535,7 @@ void Compiler::gsParamsToShadows()
             opAssign = gtNewAssignNode(dst, src);
         }
         fgEnsureFirstBBisScratch();
-        (void)fgInsertStmtAtBeg(fgFirstBB, fgMorphTree(opAssign));
+        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(opAssign));
     }
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
@@ -586,7 +586,7 @@ void Compiler::gsParamsToShadows()
                     opAssign = gtNewAssignNode(dst, src);
                 }
 
-                (void)fgInsertStmtNearEnd(block, fgMorphTree(opAssign));
+                (void)fgNewStmtNearEnd(block, fgMorphTree(opAssign));
             }
         }
     }

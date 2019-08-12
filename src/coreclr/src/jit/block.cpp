@@ -611,7 +611,7 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 bool BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
-    assert(to->bbTreeList == nullptr);
+    assert(to->bbStmtList == nullptr);
 
     to->bbFlags  = from->bbFlags;
     to->bbWeight = from->bbWeight;
@@ -660,8 +660,8 @@ void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
 
 bool BasicBlock::IsLIR()
 {
-    const bool isLIR = (bbFlags & BBF_IS_LIR) != 0;
-    assert((bbTreeList == nullptr) || ((isLIR) == !bbTreeList->IsStatement()));
+    assert(isValid());
+    const bool isLIR = ((bbFlags & BBF_IS_LIR) != 0);
     return isLIR;
 }
 
@@ -672,16 +672,11 @@ bool BasicBlock::IsLIR()
 //    None.
 //
 // Return Value:
-//    The first statement in the block's bbTreeList.
+//    The first statement in the block's bbStmtList.
 //
 GenTreeStmt* BasicBlock::firstStmt() const
 {
-    if (bbTreeList == nullptr)
-    {
-        return nullptr;
-    }
-
-    return bbTreeList->AsStmt();
+    return bbStmtList;
 }
 
 //------------------------------------------------------------------------
@@ -691,16 +686,16 @@ GenTreeStmt* BasicBlock::firstStmt() const
 //    None.
 //
 // Return Value:
-//    The last statement in the block's bbTreeList.
+//    The last statement in the block's bbStmtList.
 //
 GenTreeStmt* BasicBlock::lastStmt() const
 {
-    if (bbTreeList == nullptr)
+    if (bbStmtList == nullptr)
     {
         return nullptr;
     }
 
-    GenTreeStmt* result = bbTreeList->AsStmt()->gtPrevStmt;
+    GenTreeStmt* result = bbStmtList->gtPrevStmt;
     assert(result != nullptr && result->gtNext == nullptr);
     return result;
 }
@@ -805,6 +800,27 @@ bool BasicBlock::isEmpty()
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// isValid: Checks that the basic block doesn't mix statements and LIR lists.
+//
+// Return Value:
+//    True if it a valid basic block.
+//
+bool BasicBlock::isValid()
+{
+    const bool isLIR = ((bbFlags & BBF_IS_LIR) != 0);
+    if (isLIR)
+    {
+        // Should not have statements in LIR.
+        return (bbStmtList == nullptr);
+    }
+    else
+    {
+        // Should not have tree list before LIR.
+        return (bbTreeList == nullptr);
+    }
 }
 
 GenTreeStmt* BasicBlock::FirstNonPhiDef()
