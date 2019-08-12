@@ -690,7 +690,7 @@ PosRem:
                         }
 
                         break;
-                    } // for(;;)
+                    } // for (;;)
                 }
                 return scale;
 
