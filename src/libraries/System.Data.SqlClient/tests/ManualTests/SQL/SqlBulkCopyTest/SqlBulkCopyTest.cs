@@ -187,6 +187,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             ColumnCollation.Test(dstConstr, AddGuid("SqlBulkCopyTest_ColumnCollation"));
         }
 
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public void CopyWidenNullInexactNumericsTest()
+        {
+            CopyWidenNullInexactNumerics.Test(srcConstr, dstConstr);
+        }
+
         [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void CopyAllFromReaderAsyncTest()
         {
