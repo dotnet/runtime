@@ -91,6 +91,7 @@ namespace System.Threading
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [return: NotNullIfNotNull("location1")]
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -105,6 +106,7 @@ namespace System.Threading
         //     ret
         // The workaround is no longer strictly necessary now that we have Unsafe.As but it does
         // have the advantage of being less sensitive to JIT's inliner decisions.
+        [return: NotNullIfNotNull("location1")]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
             return Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
