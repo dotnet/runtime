@@ -3380,8 +3380,6 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoContext ctx;
 	GString* text;
-	char *name;
-	GError *gerror = NULL;
 
 	if (!thread)
 		return;

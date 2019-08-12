@@ -268,8 +268,11 @@ mono_utf8_validate_and_len (const gchar *source, glong* oLength, const gchar** o
 		/* no fall-through in this inner switch */
 		case 0xE0: if (a < (guchar) 0xA0) retVal = FALSE; break;
 		case 0xED: if (a > (guchar) 0x9F) retVal = FALSE; break;
-		case 0xEF: if (a == (guchar)0xB7 && (*(srcPtr+1) > (guchar) 0x8F && *(srcPtr+1) < 0xB0)) retVal = FALSE;
-				   if (a == (guchar)0xBF && (*(srcPtr+1) == (guchar) 0xBE || *(srcPtr+1) == 0xBF)) retVal = FALSE; break;
+		case 0xEF: {
+			if (a == (guchar)0xB7 && (*(srcPtr+1) > (guchar) 0x8F && *(srcPtr+1) < 0xB0)) retVal = FALSE;
+			else if (a == (guchar)0xBF && (*(srcPtr+1) == (guchar) 0xBE || *(srcPtr+1) == 0xBF)) retVal = FALSE;
+			break;
+		}
 		case 0xF0: if (a < (guchar) 0x90) retVal = FALSE; break;
 		case 0xF4: if (a > (guchar) 0x8F) retVal = FALSE; break;
 		default:   if (a < (guchar) 0x80) retVal = FALSE;
@@ -353,8 +356,11 @@ mono_utf8_validate_and_len_with_bounds (const gchar *source, glong max_bytes, gl
 		/* no fall-through in this inner switch */
 		case 0xE0: if (a < (guchar) 0xA0) retVal = FALSE; break;
 		case 0xED: if (a > (guchar) 0x9F) retVal = FALSE; break;
-		case 0xEF: if (a == (guchar)0xB7 && (*(srcPtr+1) > (guchar) 0x8F && *(srcPtr+1) < 0xB0)) retVal = FALSE;
-				   if (a == (guchar)0xBF && (*(srcPtr+1) == (guchar) 0xBE || *(srcPtr+1) == 0xBF)) retVal = FALSE; break;
+		case 0xEF: {
+			if (a == (guchar)0xB7 && (*(srcPtr+1) > (guchar) 0x8F && *(srcPtr+1) < 0xB0)) retVal = FALSE;
+			else if (a == (guchar)0xBF && (*(srcPtr+1) == (guchar) 0xBE || *(srcPtr+1) == 0xBF)) retVal = FALSE;
+			break;
+		}
 		case 0xF0: if (a < (guchar) 0x90) retVal = FALSE; break;
 		case 0xF4: if (a > (guchar) 0x8F) retVal = FALSE; break;
 		default:   if (a < (guchar) 0x80) retVal = FALSE;

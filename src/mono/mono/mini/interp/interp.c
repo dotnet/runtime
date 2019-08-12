@@ -204,9 +204,6 @@ debug_enter (InterpFrame *frame, int *tracing)
 #else
 
 int mono_interp_traceopt = 0;
-static void debug_enter (InterpFrame *frame, int *tracing)
-{
-}
 #define DEBUG_LEAVE()
 
 #endif
