@@ -107,7 +107,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDebian10))] // [ActiveIssue(40175)]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {

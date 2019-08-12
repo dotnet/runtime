@@ -26,6 +26,7 @@ namespace System
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
         public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
+        public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
         public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", 14, 4);
         public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", 16, 4);
         public static bool IsUbuntu1704 => IsDistroAndVersion("ubuntu", 17, 4);
@@ -55,6 +56,7 @@ namespace System
         public static bool IsNotRedHatFamily6 => !IsRedHatFamily6;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
+        public static bool IsNotDebian10 => !IsDebian10;
 
         private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
