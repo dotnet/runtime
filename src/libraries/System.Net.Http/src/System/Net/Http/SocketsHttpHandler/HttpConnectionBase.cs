@@ -63,7 +63,7 @@ namespace System.Net.Http
         {
             _ = IgnoreExceptionsAsync(task);
 
-            async Task IgnoreExceptionsAsync(ValueTask<int> task)
+            static async Task IgnoreExceptionsAsync(ValueTask<int> task)
             {
                 try { await task.ConfigureAwait(false); } catch { }
             }
@@ -74,7 +74,7 @@ namespace System.Net.Http
         {
             _ = IgnoreExceptionsAsync(task);
 
-            async Task IgnoreExceptionsAsync(Task task)
+            static async Task IgnoreExceptionsAsync(Task task)
             {
                 try { await task.ConfigureAwait(false); } catch { }
             }

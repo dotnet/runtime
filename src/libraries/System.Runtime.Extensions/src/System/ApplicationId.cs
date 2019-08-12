@@ -76,7 +76,7 @@ namespace System
                 stringBuilder.Append(HexDigit(digit));
             }
 
-            char HexDigit(int num) =>
+            static char HexDigit(int num) =>
                 (char)((num < 10) ? (num + '0') : (num + ('A' - 10)));
         }
 
