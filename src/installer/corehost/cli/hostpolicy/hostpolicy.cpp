@@ -12,7 +12,6 @@
 #include <fx_muxer.h>
 #include <utils.h>
 #include "coreclr.h"
-#include <cpprest/json.h>
 #include <error_codes.h>
 #include "breadcrumbs.h"
 #include <host_startup_info.h>

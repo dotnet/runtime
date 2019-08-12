@@ -12,8 +12,9 @@
 #include <wintrust.h>
 #include <Softpub.h>
 
-#include <cpprest/json.h>
-using namespace web;
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
+#include "json_parser.h"
 
 using comhost::clsid_map_entry;
 using comhost::clsid_map;
@@ -45,29 +46,21 @@ namespace
 
     clsid_map parse_stream(_Inout_ pal::istream_t &json_map_raw)
     {
-        skip_utf8_bom(&json_map_raw);
+        json_parser_t json;
 
-        // Parse JSON
-        json::value json_map;
-        try
-        {
-            json_map = json::value::parse(json_map_raw);
-        }
-        catch (const json::json_exception&)
+        if (!json.parse_stream(json_map_raw, _X("<embedded .clsidmap>")))
         {
             trace::error(_X("Embedded .clsidmap format is invalid"));
             throw HResultException{ StatusCode::InvalidConfigFile };
         }
 
-        json::object &json_obj = json_map.as_object();
-
         // Process JSON and construct a map
         HRESULT hr;
         clsid_map mapping;
-        for (std::pair<utility::string_t, json::value> &prop : json_obj)
+        for (const auto &prop : json.document().GetObject())
         {
             CLSID clsidMaybe;
-            hr = string_to_clsid(prop.first, clsidMaybe);
+            hr = string_to_clsid(prop.name.GetString(), clsidMaybe);
             if (FAILED(hr))
             {
                 assert(false && "Invalid CLSID");
@@ -79,14 +72,14 @@ namespace
 
             e.clsid = clsidMaybe;
 
-            json::object &val = prop.second.as_object();
-            e.assembly = val.at(_X("assembly")).as_string();
-            e.type = val.at(_X("type")).as_string();
+            const auto &val = prop.value.GetObject();
+            e.assembly = val[_X("assembly")].GetString();
+            e.type = val[_X("type")].GetString();
 
             // Check if a ProgID was defined.
-            auto prodIdMaybe = val.find(_X("progid"));
-            if (prodIdMaybe != val.cend())
-                e.progid = prodIdMaybe->second.as_string();
+            const auto &prodIdMaybe = val.FindMember(_X("progid"));
+            if (prodIdMaybe != val.MemberEnd())
+                e.progid = prodIdMaybe->value.GetString();
 
             mapping[clsidMaybe] = std::move(e);
         }

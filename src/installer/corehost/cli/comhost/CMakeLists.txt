@@ -9,7 +9,7 @@ set(DOTNET_PROJECT_NAME "comhost")
 
 # Include directories
 include_directories(../fxr)
-include_directories(../json/casablanca/include)
+include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
@@ -18,16 +18,13 @@ set(SOURCES
     clsidmap.cpp
     ../redirected_error_writer.cpp
     ../fxr/fx_ver.cpp
-    ../json/casablanca/src/json/json.cpp
-    ../json/casablanca/src/json/json_parsing.cpp
-    ../json/casablanca/src/json/json_serialization.cpp
-    ../json/casablanca/src/utilities/asyncrt_utils.cpp
+    ../json_parser.cpp
 )
 
 set(HEADERS
     comhost.h
     ../fxr/fx_ver.h
-    ../json/casablanca/include/cpprest/json.h
+    ../json_parser.h
 )
 
 if(WIN32)

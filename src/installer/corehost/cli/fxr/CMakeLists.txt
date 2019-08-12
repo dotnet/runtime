@@ -8,7 +8,7 @@ project(hostfxr)
 set(DOTNET_PROJECT_NAME "hostfxr")
 
 # Include directories
-include_directories(../json/casablanca/include)
+include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
@@ -17,14 +17,11 @@ set(SOURCES
     ../host_startup_info.cpp
     ../roll_forward_option.cpp
     ../runtime_config.cpp
-    ../json/casablanca/src/json/json.cpp
-    ../json/casablanca/src/json/json_parsing.cpp
-    ../json/casablanca/src/json/json_serialization.cpp
-    ../json/casablanca/src/utilities/asyncrt_utils.cpp
     ../fx_definition.cpp
     ../fx_reference.cpp
     ../version.cpp
     ../version_compatibility_range.cpp
+    ../json_parser.cpp
     ./command_line.cpp
     ./corehost_init.cpp
     ./hostfxr.cpp
@@ -46,13 +43,13 @@ set(HEADERS
     ../host_startup_info.h
     ../hostpolicy.h
     ../runtime_config.h
-    ../json/casablanca/include/cpprest/json.h
     ../fx_definition.h
     ../fx_reference.h
     ../roll_forward_option.h
     ../roll_fwd_on_no_candidate_fx_option.h
     ../version.h
     ../version_compatibility_range.h
+    ../json_parser.h
     ./command_line.h
     ./corehost_init.h
     ./fx_ver.h
