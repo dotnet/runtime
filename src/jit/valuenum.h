@@ -737,12 +737,6 @@ public:
     {
     };
 
-    // Return true if two value numbers would compare equal.
-    bool VNIsEqual(ValueNum vn1, ValueNum vn2)
-    {
-        return (vn1 == vn2) && (vn1 != NoVN) && !varTypeIsFloating(TypeOfVN(vn1));
-    }
-
 private:
     struct Chunk;
 
