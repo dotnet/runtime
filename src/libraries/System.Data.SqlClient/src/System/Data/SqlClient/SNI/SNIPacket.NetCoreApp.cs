@@ -19,7 +19,7 @@ namespace System.Data.SqlClient.SNI
         public void ReadFromStreamAsync(Stream stream, SNIAsyncCallback callback)
         {
             // Treat local function as a static and pass all params otherwise as async will allocate
-            async Task ReadFromStreamAsync(SNIPacket packet, SNIAsyncCallback cb, ValueTask<int> valueTask)
+            static async Task ReadFromStreamAsync(SNIPacket packet, SNIAsyncCallback cb, ValueTask<int> valueTask)
             {
                 bool error = false;
                 try
@@ -71,7 +71,7 @@ namespace System.Data.SqlClient.SNI
         public void WriteToStreamAsync(Stream stream, SNIAsyncCallback callback, SNIProviders provider, bool disposeAfterWriteAsync = false)
         {
             // Treat local function as a static and pass all params otherwise as async will allocate
-            async Task WriteToStreamAsync(SNIPacket packet, SNIAsyncCallback cb, SNIProviders providers, bool disposeAfter, ValueTask valueTask)
+            static async Task WriteToStreamAsync(SNIPacket packet, SNIAsyncCallback cb, SNIProviders providers, bool disposeAfter, ValueTask valueTask)
             {
                 uint status = TdsEnums.SNI_SUCCESS;
                 try
