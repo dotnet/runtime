@@ -3390,11 +3390,11 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (!varTypeIsFloating(typ))
                 {
                     ZeroVN = VNZeroForType(typ);
-                    if (VNIsEqual(arg0VN, ZeroVN))
+                    if (arg0VN == ZeroVN)
                     {
                         resultVN = arg1VN;
                     }
-                    else if (VNIsEqual(arg1VN, ZeroVN))
+                    else if (arg1VN == ZeroVN)
                     {
                         resultVN = arg0VN;
                     }
@@ -3409,11 +3409,11 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (!varTypeIsFloating(typ))
                 {
                     ZeroVN = VNZeroForType(typ);
-                    if (VNIsEqual(arg1VN, ZeroVN))
+                    if (arg1VN == ZeroVN)
                     {
                         resultVN = arg0VN;
                     }
-                    else if (VNIsEqual(arg0VN, arg1VN))
+                    else if (arg0VN == arg1VN)
                     {
                         resultVN = ZeroVN;
                     }
@@ -3528,17 +3528,18 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 //
                 // This identity does not apply for floating point (when x == NaN)
                 //
-                if (!varTypeIsFloating(typ))
+
+                if (arg0VN == arg1VN)
                 {
-                    if (VNIsEqual(arg0VN, arg1VN))
+                    if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                     {
                         resultVN = VNOneForType(typ);
                     }
-                    if ((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN))
-                    {
-                        resultVN = VNZeroForType(typ);
-                    }
-                    if (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull()))
+                }
+                else
+                {
+                    if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
+                        (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull())))
                     {
                         resultVN = VNZeroForType(typ);
                     }
@@ -3549,22 +3550,22 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             case GT_GT:
             case GT_LT:
                 // (x != x) == false,  (null != non-null) == true,  (non-null != null) == true
-                // (x > x)  == false,  (null == non-null) == true,  (non-null == null) == true
-                // (x < x)  == false,  (null == non-null) == true,  (non-null == null) == true
+                // (x > x)  == false,  (null > non-null) == true,  (non-null > null) == true
+                // (x < x)  == false,  (null < non-null) == true,  (non-null < null) == true
                 //
                 // This identity does not apply for floating point (when x == NaN)
                 //
-                if (!varTypeIsFloating(typ))
+                if (arg0VN == arg1VN)
                 {
-                    if (VNIsEqual(arg0VN, arg1VN))
+                    if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                     {
                         resultVN = VNZeroForType(typ);
                     }
-                    if ((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN))
-                    {
-                        resultVN = VNOneForType(typ);
-                    }
-                    if (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull()))
+                }
+                else
+                {
+                    if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
+                        (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull())))
                     {
                         resultVN = VNOneForType(typ);
                     }
@@ -3577,22 +3578,52 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     }
     else // must be a VNF_ function
     {
-        // These identities do not apply for floating point (when x == NaN)
-        //
-        if (VNIsEqual(arg0VN, arg1VN))
+        switch (func)
         {
-            // x <= x == true
-            // x >= x == true
-            if ((func == VNF_LE_UN) || (func == VNF_GE_UN))
-            {
-                resultVN = VNOneForType(typ);
-            }
-            // x < x == false
-            // x > x == false
-            else if ((func == VNF_LT_UN) || (func == VNF_GT_UN))
-            {
-                resultVN = VNZeroForType(typ);
-            }
+            case VNF_LT_UN:
+                // (x < 0) == false
+                // (x < x) == false
+                std::swap(arg0VN, arg1VN);
+                __fallthrough;
+            case VNF_GT_UN:
+                // (0 > x) == false
+                // (x > x) == false
+                // None of the above identities apply to floating point comparisons.
+                // For example, (NaN > NaN) is true instead of false because these are
+                // unordered comparisons.
+                if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)) &&
+                    ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) || (arg0VN == arg1VN)))
+                {
+                    resultVN = VNZeroForType(typ);
+                }
+                break;
+
+            case VNF_GE_UN:
+                // (x >= 0) == true
+                // (x >= x) == true
+                std::swap(arg0VN, arg1VN);
+                __fallthrough;
+            case VNF_LE_UN:
+                // (0 <= x) == true
+                // (x <= x) == true
+                // TODO-Bug: Unlike (x < x) and (x > x), (x >= x) and (x <= x) also apply to
+                // floating point comparisons: x is either equal to itself or is unordered
+                // if it's NaN.
+                // However, GetVNFuncForNode is broken for floating point comparisons and creates
+                // VNF_LT/GT/GE/LE_UN based on the GTF_UNSIGNED flag instead of the GTF_RELOP_NAN_UN
+                // flag. This happens to work in many cases because the importer sets both but
+                // sometimes the 2 flags can get out of sync (e.g. gtReverseCond flips only
+                // GTF_RELOP_NAN_UN).
+                // In summary - attempting to eval floating point comparisons here triggers a bug.
+                if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)) &&
+                    ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) || (arg0VN == arg1VN)))
+                {
+                    resultVN = VNOneForType(typ);
+                }
+                break;
+
+            default:
+                break;
         }
     }
     return resultVN;
