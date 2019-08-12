@@ -5731,9 +5731,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			if (clause_args && clause_index == clause_args->exit_clause)
 				goto exit_frame;
-			while (sp > frame->stack) {
-				--sp;
-			}
+			g_assert (sp >= frame->stack);
+			sp = frame->stack;
+
 			if (frame->finally_ips) {
 				ip = (const guint16*)frame->finally_ips->data;
 				frame->finally_ips = g_slist_remove (frame->finally_ips, ip);
@@ -5750,9 +5750,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
-			while (sp > frame->stack) {
-				--sp;
-			}
+			g_assert (sp >= frame->stack);
+			sp = frame->stack;
 			frame->ip = ip;
 
 			if (*ip == MINT_LEAVE_S_CHECK || *ip == MINT_LEAVE_CHECK) {
