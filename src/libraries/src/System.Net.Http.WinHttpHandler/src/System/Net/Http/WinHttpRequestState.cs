@@ -101,7 +101,7 @@ namespace System.Net.Http
 
         public WinHttpHandler Handler { get; set; }
 
-        SafeWinHttpHandle _requestHandle;
+        private SafeWinHttpHandle _requestHandle;
         public SafeWinHttpHandle RequestHandle
         {
             get

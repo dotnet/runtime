@@ -1544,10 +1544,10 @@ namespace System.IO.Ports
             internal bool endEventLoop;
             private int eventsOccurred;
 
-            WaitCallback callErrorEvents;
-            WaitCallback callReceiveEvents;
-            WaitCallback callPinEvents;
-            IOCompletionCallback freeNativeOverlappedCallback;
+            private WaitCallback callErrorEvents;
+            private WaitCallback callReceiveEvents;
+            private WaitCallback callPinEvents;
+            private IOCompletionCallback freeNativeOverlappedCallback;
 
 #if DEBUG
             private readonly string portName;

@@ -217,7 +217,7 @@ namespace System.IO
             /// The size of the native struct inotify_event.  4 32-bit integer values, the last of which is a length
             /// that indicates how many bytes follow to form the string name.
             /// </summary>
-            const int c_INotifyEventSize = 16;
+            private const int c_INotifyEventSize = 16;
 
             /// <summary>
             /// Weak reference to the associated watcher.  A weak reference is used so that the FileSystemWatcher may be collected and finalized,

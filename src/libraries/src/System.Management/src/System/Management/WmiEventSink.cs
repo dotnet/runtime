@@ -23,12 +23,12 @@ internal class WmiEventSink : IWmiEventSource
     private bool                            isLocal;
 
 
-    static ManagementOperationObserver watcherParameter;
-    static object contextParameter;
-    static ManagementScope scopeParameter;
-    static string pathParameter;
-    static string classNameParameter;
-    static WmiEventSink wmiEventSinkNew;
+    private static ManagementOperationObserver watcherParameter;
+    private static object contextParameter;
+    private static ManagementScope scopeParameter;
+    private static string pathParameter;
+    private static string classNameParameter;
+    private static WmiEventSink wmiEventSinkNew;
 
     internal static WmiEventSink GetWmiEventSink(
         ManagementOperationObserver watcher,
@@ -55,7 +55,7 @@ internal class WmiEventSink : IWmiEventSource
         return wmiEventSinkNew;
     }
 
-    static void HackToCreateWmiEventSink()
+    private static void HackToCreateWmiEventSink()
     {
         wmiEventSinkNew = new WmiEventSink(watcherParameter, contextParameter, scopeParameter, pathParameter, classNameParameter);
     }
@@ -222,12 +222,12 @@ internal class WmiGetEventSink : WmiEventSink
 {
     private ManagementObject    managementObject;
 
-    static ManagementOperationObserver watcherParameter;
-    static object contextParameter;
-    static ManagementScope scopeParameter;
-    static ManagementObject managementObjectParameter;
+    private static ManagementOperationObserver watcherParameter;
+    private static object contextParameter;
+    private static ManagementScope scopeParameter;
+    private static ManagementObject managementObjectParameter;
 
-    static WmiGetEventSink wmiGetEventSinkNew;
+    private static WmiGetEventSink wmiGetEventSinkNew;
 
     internal static WmiGetEventSink GetWmiGetEventSink(
         ManagementOperationObserver watcher,
@@ -252,7 +252,7 @@ internal class WmiGetEventSink : WmiEventSink
         return wmiGetEventSinkNew;
     }
 
-    static void HackToCreateWmiGetEventSink()
+    private static void HackToCreateWmiGetEventSink()
     {
         wmiGetEventSinkNew = new WmiGetEventSink(watcherParameter, contextParameter, scopeParameter, managementObjectParameter);
     }

@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Threading.Channels
 {
-    interface IDebugEnumerable<T>
+    internal interface IDebugEnumerable<T>
     {
         IEnumerator<T> GetEnumerator();
     }

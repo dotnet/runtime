@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization
             return CreateSchema(ns, schemas);
         }
 
-        static XmlSchema CreateSchema(string ns, XmlSchemaSet schemas)
+        private static XmlSchema CreateSchema(string ns, XmlSchemaSet schemas)
         {
             XmlSchema schema = new XmlSchema();
 

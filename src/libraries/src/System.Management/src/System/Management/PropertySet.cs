@@ -51,7 +51,7 @@ namespace System.Management
     public class PropertyDataCollection : ICollection, IEnumerable
     {
         private ManagementBaseObject parent;
-        bool isSystem;
+        private bool isSystem;
 
         internal PropertyDataCollection(ManagementBaseObject parent, bool isSystem) : base()
         {

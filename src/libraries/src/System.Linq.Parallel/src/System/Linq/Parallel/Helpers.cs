@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
             return false;
         }
 
-        bool Find(TElement value, bool add)
+        private bool Find(TElement value, bool add)
         {
             int hashCode = InternalGetHashCode(value);
             for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
@@ -107,7 +107,7 @@ namespace System.Linq.Parallel
             return false;
         }
 
-        void Resize()
+        private void Resize()
         {
             int newSize = checked(_count * 2 + 1);
             int[] newBuckets = new int[newSize];

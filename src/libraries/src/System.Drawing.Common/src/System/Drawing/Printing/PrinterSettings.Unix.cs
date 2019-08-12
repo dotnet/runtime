@@ -379,7 +379,7 @@ namespace System.Drawing.Printing
 
         public class PaperSourceCollection : ICollection, IEnumerable
         {
-            ArrayList _PaperSources = new ArrayList();
+            private ArrayList _PaperSources = new ArrayList();
 
             public PaperSourceCollection(PaperSource[] array)
             {
@@ -424,7 +424,7 @@ namespace System.Drawing.Printing
 
         public class PaperSizeCollection : ICollection, IEnumerable
         {
-            ArrayList _PaperSizes = new ArrayList();
+            private ArrayList _PaperSizes = new ArrayList();
 
             public PaperSizeCollection(PaperSize[] array)
             {
@@ -468,7 +468,7 @@ namespace System.Drawing.Printing
 
         public class PrinterResolutionCollection : ICollection, IEnumerable
         {
-            ArrayList _PrinterResolutions = new ArrayList();
+            private ArrayList _PrinterResolutions = new ArrayList();
 
             public PrinterResolutionCollection(PrinterResolution[] array)
             {
@@ -512,7 +512,7 @@ namespace System.Drawing.Printing
 
         public class StringCollection : ICollection, IEnumerable
         {
-            ArrayList _Strings = new ArrayList();
+            private ArrayList _Strings = new ArrayList();
 
             public StringCollection(string[] array)
             {

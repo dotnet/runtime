@@ -146,7 +146,6 @@
     <Rule Id="SA1312" Action="None" /> <!-- Variable should begin with lower-case letter -->
     <Rule Id="SA1313" Action="None" /> <!-- Parameter should begin with lower-case letter -->
     <Rule Id="SA1314" Action="None" /> <!-- Type parameter names should begin with T -->
-    <Rule Id="SA1400" Action="None" /> <!-- Element should declare an access modifier -->
     <Rule Id="SA1401" Action="None" /> <!-- Fields should be private -->
     <Rule Id="SA1402" Action="None" /> <!-- File may only contain a single type -->
     <Rule Id="SA1403" Action="None" /> <!-- File may only contain a single namespace -->

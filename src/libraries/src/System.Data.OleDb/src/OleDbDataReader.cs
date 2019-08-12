@@ -36,8 +36,8 @@ namespace System.Data.OleDb
         private int _depth;
         private bool _isClosed, _isRead, _hasRows, _hasRowsReadCheck;
 
-        long _sequentialBytesRead;
-        int _sequentialOrdinal;
+        private long _sequentialBytesRead;
+        private int _sequentialOrdinal;
 
         private Bindings[] _bindings; // _metdata contains the ColumnBinding
 

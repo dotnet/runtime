@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        XmlSchemaSet GetSchemaSet()
+        private XmlSchemaSet GetSchemaSet()
         {
             if (_schemas == null)
             {
@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
             return _schemas;
         }
 
-        DataContractSet DataContractSet
+        private DataContractSet DataContractSet
         {
             get
             {
@@ -61,15 +61,15 @@ namespace System.Runtime.Serialization
             }
         }
 
-        void TraceExportBegin()
+        private void TraceExportBegin()
         {
         }
 
-        void TraceExportEnd()
+        private void TraceExportEnd()
         {
         }
 
-        void TraceExportError(Exception exception)
+        private void TraceExportError(Exception exception)
         {
         }
 

@@ -375,7 +375,7 @@ namespace System.Management
             ManagementObjectCTOR(scope, path, options);
         }
 
-        void ManagementObjectCTOR(ManagementScope scope, ManagementPath path, ObjectGetOptions options)
+        private void ManagementObjectCTOR(ManagementScope scope, ManagementPath path, ObjectGetOptions options)
         {
             // We may use this to set the scope path
             string nsPath = string.Empty;

@@ -1116,7 +1116,7 @@ namespace System
         {
             // We know that if we are using console APIs rather than file APIs, then the encoding
             // is Encoding.Unicode implying 2 bytes per character:
-            const int BytesPerWChar = 2;
+            private const int BytesPerWChar = 2;
 
             private readonly bool _isPipe; // When reading from pipes, we need to properly handle EOF cases.
             private IntPtr _handle;

@@ -86,7 +86,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct vnode
+        private struct vnode
         {
             public long tv_sec;
             public long tv_usec;

@@ -594,7 +594,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         /// <summary>Static class used to cache generic delegates the C# compiler doesn't cache by default.</summary>
         /// <remarks>Without this, we end up allocating the generic delegate each time the operation is used.</remarks>
-        static class CachedGenericDelegates<T>
+        private static class CachedGenericDelegates<T>
         {
             /// <summary>A function that returns the default value of T.</summary>
             internal static readonly Func<T> DefaultTResultFunc = () => default(T);

@@ -131,7 +131,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for projecting elements as it is walked.
         //
 
-        class IndexedSelectQueryOperatorEnumerator : QueryOperatorEnumerator<TOutput, int>
+        private class IndexedSelectQueryOperatorEnumerator : QueryOperatorEnumerator<TOutput, int>
         {
             private readonly QueryOperatorEnumerator<TInput, int> _source; // The data source to enumerate.
             private readonly Func<TInput, int, TOutput> _selector;  // The actual select function.
@@ -187,7 +187,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        class IndexedSelectQueryOperatorResults : UnaryQueryOperatorResults
+        private class IndexedSelectQueryOperatorResults : UnaryQueryOperatorResults
         {
             private IndexedSelectQueryOperator<TInput, TOutput> _selectOp;  // Operator that generated the results
             private int _childCount; // The number of elements in child results

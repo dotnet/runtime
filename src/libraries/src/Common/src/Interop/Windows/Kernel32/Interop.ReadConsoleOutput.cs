@@ -12,8 +12,8 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct CHAR_INFO
         {
-            ushort charData;
-            short attributes;
+            private ushort charData;
+            private short attributes;
         }
 
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "ReadConsoleOutputW")]

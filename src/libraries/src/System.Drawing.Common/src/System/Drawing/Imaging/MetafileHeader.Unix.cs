@@ -37,7 +37,7 @@ namespace System.Drawing.Imaging
 {
 
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
-    struct EnhMetafileHeader
+    internal struct EnhMetafileHeader
     {
         public int type;
         public int size;
@@ -58,7 +58,7 @@ namespace System.Drawing.Imaging
 
     // hack: keep public type as Sequential while making it possible to get the required union
     [StructLayout(LayoutKind.Explicit)]
-    struct MonoMetafileHeader
+    internal struct MonoMetafileHeader
     {
         [FieldOffset(0)]
         public MetafileType type;

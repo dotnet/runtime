@@ -4,7 +4,7 @@
 
 namespace System.Runtime.Serialization
 {
-    class ReflectionBasedSerializationFeature
+    internal class ReflectionBasedSerializationFeature
     {
         public const string Name = "System.Runtime.Serialization.ReflectionBasedSerialization";
     }

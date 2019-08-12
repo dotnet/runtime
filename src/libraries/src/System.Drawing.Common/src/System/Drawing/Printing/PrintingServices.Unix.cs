@@ -797,7 +797,7 @@ namespace System.Drawing.Printing
 
         #region Print job methods
 
-        static string tmpfile;
+        private static string tmpfile;
 
         /// <summary>
         /// Gets a pointer to an options list parsed from the printer's current settings, to use when setting up the printing job

@@ -46,7 +46,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        sealed class PendingGetConnection
+        private sealed class PendingGetConnection
         {
             public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion, DbConnectionOptions userOptions)
             {
@@ -62,9 +62,9 @@ namespace System.Data.ProviderBase
 
         private sealed class TransactedConnectionPool
         {
-            Dictionary<SysTx.Transaction, TransactedConnectionList> _transactedCxns;
+            private Dictionary<SysTx.Transaction, TransactedConnectionList> _transactedCxns;
 
-            DbConnectionPool _pool;
+            private DbConnectionPool _pool;
 
             internal TransactedConnectionPool(DbConnectionPool pool)
             {
@@ -943,7 +943,7 @@ namespace System.Data.ProviderBase
             return _resError;
         }
 
-        void WaitForPendingOpen()
+        private void WaitForPendingOpen()
         {
             Debug.Assert(!Thread.CurrentThread.IsThreadPoolThread, "This thread may block for a long time.  Threadpool threads should not be used.");
 

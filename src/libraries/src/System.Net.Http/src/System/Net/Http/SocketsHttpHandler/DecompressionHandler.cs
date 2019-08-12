@@ -94,8 +94,8 @@ namespace System.Net.Http
 
         private abstract class DecompressedContent : HttpContent
         {
-            HttpContent _originalContent;
-            bool _contentConsumed;
+            private readonly HttpContent _originalContent;
+            private bool _contentConsumed;
 
             public DecompressedContent(HttpContent originalContent)
             {

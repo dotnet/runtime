@@ -907,7 +907,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
     /// A wrapper struct for volatile bool, please note the copy of the struct it self will not be volatile
     /// for example this statement will not include in volatile operation volatileBool1 = volatileBool2 the jit will copy the struct and will ignore the volatile
     /// </summary>
-    struct VolatileBool
+    internal struct VolatileBool
     {
         public VolatileBool(bool value)
         {

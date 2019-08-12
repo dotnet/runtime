@@ -1475,7 +1475,7 @@ namespace System.Numerics
         }
 
 
-        struct CanonicalBasis
+        private struct CanonicalBasis
         {
             public Vector3 Row0;
             public Vector3 Row1;
@@ -1483,7 +1483,7 @@ namespace System.Numerics
         };
 
 
-        struct VectorBasis
+        private struct VectorBasis
         {
             public unsafe Vector3* Element0;
             public unsafe Vector3* Element1;

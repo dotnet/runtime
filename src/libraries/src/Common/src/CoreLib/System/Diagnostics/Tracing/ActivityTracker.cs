@@ -440,7 +440,7 @@ namespace System.Diagnostics.Tracing
             /// the value is either encoded into nibble itself or it can spill over into the
             /// bytes that follow.
             /// </summary>
-            enum NumberListCodes : byte
+            private enum NumberListCodes : byte
             {
                 End = 0x0,             // ends the list.   No valid value has this prefix.
                 LastImmediateValue = 0xA,
@@ -565,7 +565,7 @@ namespace System.Diagnostics.Tracing
         // This callback is used to initialize the m_current AsyncLocal Variable.
         // Its job is to keep the ETW Activity ID (part of thread local storage) in sync
         // with m_current.ActivityID
-        void ActivityChanging(AsyncLocalValueChangedArgs<ActivityInfo?> args)
+        private void ActivityChanging(AsyncLocalValueChangedArgs<ActivityInfo?> args)
         {
             ActivityInfo? cur = args.CurrentValue;
             ActivityInfo? prev = args.PreviousValue;
@@ -609,14 +609,14 @@ namespace System.Diagnostics.Tracing
         ///
         /// This variable points to a linked list that represents all Activities that have started but have not stopped.
         /// </summary>
-        AsyncLocal<ActivityInfo?>? m_current;
-        bool m_checkedForEnable;
+        private AsyncLocal<ActivityInfo?>? m_current;
+        private bool m_checkedForEnable;
 
         // Singleton
         private static ActivityTracker s_activityTrackerInstance = new ActivityTracker();
 
         // Used to create unique IDs at the top level.  Not used for nested Ids (each activity has its own id generator)
-        static long m_nextId = 0;
+        private static long m_nextId = 0;
         private const ushort MAX_ACTIVITY_DEPTH = 100;            // Limit maximum depth of activities to be tracked at 100.
                                                                   // This will avoid leaking memory in case of activities that are never stopped.
 

@@ -822,8 +822,8 @@ nameof(sddlForm));
     {
         #region Private Members
 
-        bool _isContainer;
-        bool _isDS;
+        private bool _isContainer;
+        private bool _isDS;
         private RawSecurityDescriptor _rawSd;
         private SystemAcl _sacl;
         private DiscretionaryAcl _dacl;
