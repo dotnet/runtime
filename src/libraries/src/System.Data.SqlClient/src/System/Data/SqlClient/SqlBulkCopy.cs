@@ -891,10 +891,10 @@ namespace System.Data.SqlClient
                                     value = _SqlDataReaderRowSource.GetSqlDecimal(sourceOrdinal);
                                     break;
                                 case ValueMethod.SqlTypeSqlDouble:
-                                    value = new SqlDecimal(_SqlDataReaderRowSource.GetSqlDouble(sourceOrdinal).Value);
+                                    value = (SqlDecimal)_SqlDataReaderRowSource.GetSqlDouble(sourceOrdinal); // use cast to handle IsNull correctly because no public constructor allows it
                                     break;
                                 case ValueMethod.SqlTypeSqlSingle:
-                                    value = new SqlDecimal(_SqlDataReaderRowSource.GetSqlSingle(sourceOrdinal).Value);
+                                    value = (SqlDecimal)_SqlDataReaderRowSource.GetSqlSingle(sourceOrdinal); // use cast to handle IsNull correctly because no public constructor allows it
                                     break;
                                 default:
                                     Debug.Fail($"Current column is marked as being a SqlType, but no SqlType compatible method was provided. Method: {_currentRowMetadata[destRowIndex].Method}");
