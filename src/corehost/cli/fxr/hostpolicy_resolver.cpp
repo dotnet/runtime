@@ -11,6 +11,8 @@
 #include <trace.h>
 #include <utils.h>
 
+#include "json_parser.h"
+
 namespace
 {
     std::mutex g_hostpolicy_lock;
@@ -27,49 +29,27 @@ namespace
         trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
 
         pal::string_t retval;
-        if (!pal::file_exists(deps_json))
+
+        json_parser_t json;
+        if (!json.parse_file(deps_json))
         {
-            trace::verbose(_X("Dependency manifest [%s] does not exist"), deps_json.c_str());
             return retval;
         }
 
-        pal::ifstream_t file(deps_json);
-        if (!file.good())
+        // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
+        // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
+        pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
+        for (const auto& library : json.document()[_X("libraries")].GetObject())
         {
-            trace::verbose(_X("Dependency manifest [%s] could not be opened"), deps_json.c_str());
-            return retval;
-        }
-
-        if (skip_utf8_bom(&file))
-        {
-            trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), deps_json.c_str());
-        }
-
-        try
-        {
-            const auto root = json_value::parse(file);
-            const auto& json = root.as_object();
-            const auto& libraries = json.at(_X("libraries")).as_object();
-
-            // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
-            // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-            pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
-            for (const auto& library : libraries)
+            pal::string_t lib_name{library.name.GetString()};
+            if (starts_with(lib_name, prefix, false))
             {
-                if (starts_with(library.first, prefix, false))
-                {
-                    // Extract the version information that occurs after '/'
-                    retval = library.first.substr(prefix.size());
-                    break;
-                }
+                // Extract the version information that occurs after '/'
+                retval = lib_name.substr(prefix.size());
+                break;
             }
         }
-        catch (const std::exception& je)
-        {
-            pal::string_t jes;
-            (void)pal::utf8_palstring(je.what(), &jes);
-            trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), deps_json.c_str(), jes.c_str());
-        }
+
         trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), retval.c_str(), deps_json.c_str());
         return retval;
     }

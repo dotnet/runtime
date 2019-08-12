@@ -8,11 +8,8 @@
 #include <list>
 
 #include "pal.h"
-#include "cpprest/json.h"
+#include "rapidjson/fwd.h"
 #include "fx_reference.h"
-
-typedef web::json::value json_value;
-typedef web::json::object json_object;
 
 class runtime_config_t
 {
@@ -39,7 +36,7 @@ public:
     const pal::string_t& get_tfm() const;
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_is_framework_dependent() const;
-    bool parse_opts(const json_value& opts);
+    bool parse_opts(const json_parser_t::value_t& opts);
     void combine_properties(std::unordered_map<pal::string_t, pal::string_t>& combined_properties) const;
     const fx_reference_vector_t& get_frameworks() const { return m_frameworks; }
     void set_fx_version(pal::string_t version);
@@ -77,9 +74,9 @@ private:
     // If set to true, all versions (including pre-release) are considered even if starting from a release framework reference.
     bool m_roll_forward_to_prerelease;
 
-    bool parse_framework(const json_object& fx_obj, fx_reference_t& fx_out);
-    bool read_framework_array(web::json::array frameworks);
-    
+    bool parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out);
+    bool read_framework_array(const json_parser_t::value_t& frameworks);
+
     bool mark_specified_setting(specified_setting setting);
 };
 #endif // __RUNTIME_CONFIG_H__

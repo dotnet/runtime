@@ -11,7 +11,6 @@
 #include <trace.h>
 #include <utils.h>
 
-#include <cpprest/json.h>
 #include <corehost_context_contract.h>
 #include <hostpolicy.h>
 #include "corehost_init.h"

@@ -88,7 +88,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_native_search_directories:Fail[2147516555]") // StatusCode::ResolverInitFailure
                 .And.HaveStdOutContaining("hostfxr reported errors:")
-                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{appFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{appFixture.TestProject.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
                 .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {appFixture.TestProject.DepsJson}");
         }
 

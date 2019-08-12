@@ -9,7 +9,7 @@ set(DOTNET_PROJECT_NAME "hostpolicy")
 
 # Include directories
 include_directories(../fxr)
-include_directories(../json/casablanca/include)
+include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
@@ -22,10 +22,6 @@ set(SOURCES
     ./hostpolicy_init.cpp
     ../roll_forward_option.cpp
     ../runtime_config.cpp
-    ../json/casablanca/src/json/json.cpp
-    ../json/casablanca/src/json/json_parsing.cpp
-    ../json/casablanca/src/json/json_serialization.cpp
-    ../json/casablanca/src/utilities/asyncrt_utils.cpp
     ../fxr/fx_ver.cpp
     ../host_startup_info.cpp
     ../deps_format.cpp
@@ -34,6 +30,7 @@ set(SOURCES
     ../fx_reference.cpp
     ../version.cpp
     ../version_compatibility_range.cpp
+    ../json_parser.cpp
 )
 
 set(HEADERS
@@ -46,7 +43,6 @@ set(HEADERS
     ../corehost_context_contract.h
     ../hostpolicy.h
     ../runtime_config.h
-    ../json/casablanca/include/cpprest/json.h
     ../fxr/fx_ver.h
     ../host_startup_info.h
     ../deps_format.h
@@ -55,6 +51,7 @@ set(HEADERS
     ../fx_reference.h
     ../version.h
     ../version_compatibility_range.h
+    ../json_parser.h
 )
 
 include(../lib.cmake)
