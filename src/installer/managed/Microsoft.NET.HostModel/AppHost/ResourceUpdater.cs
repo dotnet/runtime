@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -420,13 +419,6 @@ namespace Microsoft.NET.HostModel
         private class ResourceNotAvailableException : Exception
         {
             public ResourceNotAvailableException(string message) : base(message)
-            {
-            }
-        }
-
-        private class HResultException : Exception
-        {
-            public HResultException(int hResult) : base(hResult.ToString("X4"))
             {
             }
         }
