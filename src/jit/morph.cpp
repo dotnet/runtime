@@ -6754,7 +6754,8 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     {
         if (call->gtReturnType != TYP_VOID)
         {
-            JITDUMP("Inlining [%06u] failed, so bashing [%06u] to NOP\n", dspTreeID(call), dspTreeID(fgMorphStmt));
+            JITDUMP("Inlining [%06u] failed, so bashing [%06u] to NOP\n", dspTreeID(call),
+                    dspTreeID(fgMorphStmt->gtStmtExpr));
 
             // Detach the GT_CALL tree from the original statement by
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
@@ -6828,9 +6829,9 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     if (verbose)
     {
         printf("Expanding INLINE_CANDIDATE in statement ");
-        printTreeID(fgMorphStmt);
+        printTreeID(fgMorphStmt->gtStmtExpr);
         printf(" in " FMT_BB ":\n", compCurBB->bbNum);
-        gtDispTree(fgMorphStmt);
+        gtDispTree(fgMorphStmt->gtStmtExpr);
         if (call->IsImplicitTailCall())
         {
             printf("Note: candidate is implicit tail call\n");
@@ -8256,7 +8257,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 if (verbose)
                 {
                     printf("\nInserting assignment of a multi-reg call result to a temp:\n");
-                    gtDispTree(assgStmt);
+                    gtDispTree(assgStmt->gtStmtExpr);
                 }
                 result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif // DEBUG
@@ -14712,7 +14713,6 @@ GenTree* Compiler::fgMorphToEmulatedFP(GenTree* tree)
 GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree);
-    assert(tree->gtOper != GT_STMT);
 
 #ifdef DEBUG
     if (verbose)
@@ -15192,7 +15192,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
     if (block->bbJumpKind == BBJ_COND)
     {
-        noway_assert(block->bbTreeList != nullptr && block->bbTreeList->gtPrev != nullptr);
+        noway_assert(block->bbStmtList != nullptr && block->bbStmtList->gtPrev != nullptr);
 
         GenTreeStmt* lastStmt = block->lastStmt();
 
@@ -15400,7 +15400,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
     }
     else if (block->bbJumpKind == BBJ_SWITCH)
     {
-        noway_assert(block->bbTreeList != nullptr && block->bbTreeList->gtPrev != nullptr);
+        noway_assert(block->bbStmtList != nullptr && block->bbStmtList->gtPrev != nullptr);
 
         GenTreeStmt* lastStmt = block->lastStmt();
 
@@ -15698,7 +15698,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
 #ifdef DEBUG
         compCurStmtNum++;
-        if (stmt == block->bbTreeList)
+        if (stmt == block->bbStmtList)
         {
             block->bbStmtNum = compCurStmtNum; // Set the block->bbStmtNum
         }
@@ -16526,8 +16526,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, GenTreeStmt* stmt)
     helperBlock->inheritWeightPercentage(cond2Block, 50);
 
     // Append cond1 as JTRUE to cond1Block
-    GenTree* jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
-    GenTree* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->gtStmtILoffsx);
+    GenTree*     jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
+    GenTreeStmt* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->gtStmtILoffsx);
     fgInsertStmtAtEnd(cond1Block, jmpStmt);
 
     // Append cond2 as JTRUE to cond2Block
@@ -16536,14 +16536,14 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, GenTreeStmt* stmt)
     fgInsertStmtAtEnd(cond2Block, jmpStmt);
 
     // AsgBlock should get tmp = op1 assignment.
-    trueExpr          = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), trueExpr);
-    GenTree* trueStmt = fgNewStmtFromTree(trueExpr, stmt->gtStmtILoffsx);
+    trueExpr              = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), trueExpr);
+    GenTreeStmt* trueStmt = fgNewStmtFromTree(trueExpr, stmt->gtStmtILoffsx);
     fgInsertStmtAtEnd(asgBlock, trueStmt);
 
     // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
     gtReverseCond(cond2Expr);
-    GenTree* helperExpr = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), true2Expr);
-    GenTree* helperStmt = fgNewStmtFromTree(helperExpr, stmt->gtStmtILoffsx);
+    GenTree*     helperExpr = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), true2Expr);
+    GenTreeStmt* helperStmt = fgNewStmtFromTree(helperExpr, stmt->gtStmtILoffsx);
     fgInsertStmtAtEnd(helperBlock, helperStmt);
 
     // Finally remove the nested qmark stmt.
@@ -16741,8 +16741,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, GenTreeStmt* stmt)
         elseBlock->inheritWeightPercentage(condBlock, 50);
     }
 
-    GenTree* jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, qmark->gtGetOp1());
-    GenTree* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->gtStmtILoffsx);
+    GenTree*     jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, qmark->gtGetOp1());
+    GenTreeStmt* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->gtStmtILoffsx);
     fgInsertStmtAtEnd(condBlock, jmpStmt);
 
     // Remove the original qmark statement.
@@ -16868,7 +16868,7 @@ void Compiler::fgMorph()
         CORINFO_INITCLASS_USE_HELPER)
     {
         fgEnsureFirstBBisScratch();
-        fgInsertStmtAtBeg(fgFirstBB, fgInitThisClass());
+        fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
     }
 
 #ifdef DEBUG
@@ -16884,7 +16884,7 @@ void Compiler::fgMorph()
                 op                   = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
 
                 fgEnsureFirstBBisScratch();
-                fgInsertStmtAtEnd(fgFirstBB, op);
+                fgNewStmtAtEnd(fgFirstBB, op);
             }
         }
     }
@@ -17518,7 +17518,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                     GenTree* addr   = gtNewLclvNode(lclNum, TYP_BYREF);
                     GenTree* rhs    = gtNewBlockVal(addr, (unsigned)size);
                     GenTree* assign = gtNewAssignNode(lhs, rhs);
-                    fgInsertStmtAtBeg(fgFirstBB, assign);
+                    fgNewStmtAtBeg(fgFirstBB, assign);
                 }
 
                 // Update the locals corresponding to the promoted fields.
@@ -18116,19 +18116,19 @@ public:
         if (m_compiler->verbose)
         {
             printf("LocalAddressVisitor visiting statement:\n");
-            m_compiler->gtDispTree(stmt);
+            m_compiler->gtDispTree(stmt->gtStmtExpr);
             m_stmtModified = false;
         }
 #endif // DEBUG
 
         WalkTree(&stmt->gtStmtExpr, nullptr);
 
-        // We could have somethinge like STMT(IND(ADDR(LCL_VAR))) so we need to escape
+        // We could have something a statement like IND(ADDR(LCL_VAR)) so we need to escape
         // the location here. This doesn't seem to happen often, if ever. The importer
         // tends to wrap such a tree in a COMMA.
         if (TopValue(0).IsLocation())
         {
-            EscapeLocation(TopValue(0), stmt);
+            EscapeLocation(TopValue(0), nullptr);
         }
         else
         {
@@ -18147,7 +18147,7 @@ public:
             if (m_stmtModified)
             {
                 printf("LocalAddressVisitor modified statement:\n");
-                m_compiler->gtDispTree(stmt);
+                m_compiler->gtDispTree(stmt->gtStmtExpr);
             }
 
             printf("\n");
@@ -18500,7 +18500,7 @@ private:
         // - It can be a GT_OBJ that has a correct size, but different than the size of the LHS.
         //   The LHS size takes precedence.
         // Just take the LHS size in all cases.
-        if (user->OperIs(GT_ASG) && (indir == user->gtGetOp2()))
+        if (user != nullptr && user->OperIs(GT_ASG) && (indir == user->gtGetOp2()))
         {
             indir = user->gtGetOp1();
 
@@ -18835,9 +18835,9 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreeStmt
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
         printf("From " FMT_BB ", stmt", block->bbNum);
-        printTreeID(stmt);
+        printTreeID(stmt->gtStmtExpr);
         printf(" to stmt");
-        printTreeID(lastStmt);
+        printTreeID(lastStmt->gtStmtExpr);
         printf("\n");
     }
 #endif
@@ -18878,9 +18878,9 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreeStmt
     if (verbose)
     {
         printf("\n" FMT_BB " stmt", block->bbNum);
-        printTreeID(stmt);
+        printTreeID(stmt->gtStmtExpr);
         printf("(before)\n");
-        gtDispTree(stmt);
+        gtDispTree(stmt->gtStmtExpr);
     }
 #endif
 
@@ -18898,9 +18898,9 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreeStmt
     if (verbose)
     {
         printf("\nReplaced " FMT_BB " stmt", block->bbNum);
-        printTreeID(stmt);
+        printTreeID(stmt->gtStmtExpr);
         printf("(after)\n");
-        gtDispTree(stmt);
+        gtDispTree(stmt->gtStmtExpr);
     }
 #endif
     return true;

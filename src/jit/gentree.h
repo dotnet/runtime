@@ -303,6 +303,8 @@ public:
 class GenTreeUseEdgeIterator;
 class GenTreeOperandIterator;
 
+struct GenTreeStmt;
+
 /*****************************************************************************/
 
 // Forward declarations of the subtypes
@@ -402,7 +404,7 @@ struct GenTree
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
 #if ASSERTION_PROP
-    AssertionInfo gtAssertionInfo; // valid only for non-GT_STMT nodes
+    AssertionInfo gtAssertionInfo;
 
     bool GeneratesAssertion() const
     {
@@ -891,8 +893,6 @@ public:
 
 #define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
                                                //            even if they have been retyped as SIMD16.
-
-#define GTF_STMT_CMPADD             0x80000000 // GT_STMT -- added by compiler
 
 //---------------------------------------------------------------------
 //
@@ -2022,10 +2022,6 @@ public:
     {
         return OperGet() == GT_CALL;
     }
-    bool IsStatement() const
-    {
-        return OperGet() == GT_STMT;
-    }
     inline bool IsHelperCall();
 
     bool gtOverflow() const;
@@ -2049,7 +2045,6 @@ public:
     bool IsPhiDefn();
 
     // Returns "true" iff "*this" is a statement containing an assignment that defines an SSA name (lcl = phi(...));
-    bool IsPhiDefnStmt();
 
     // Because of the fact that we hid the assignment operator of "BitSet" (in DEBUG),
     // we can't synthesize an assignment operator.
@@ -4882,8 +4877,6 @@ struct GenTreeRetExpr : public GenTree
 #endif
 };
 
-/* gtStmt   -- 'statement expr' (GT_STMT) */
-
 class InlineContext;
 
 struct GenTreeILOffset : public GenTree
@@ -4909,7 +4902,7 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
-struct GenTreeStmt : public GenTree
+struct GenTreeStmt
 {
     GenTree*       gtStmtExpr;      // root of the expression tree
     GenTree*       gtStmtList;      // first node (for forward walks)
@@ -4924,6 +4917,11 @@ struct GenTreeStmt : public GenTree
 
     __declspec(property(get = getPrevStmt)) GenTreeStmt* gtPrevStmt;
 
+    GenTreeStmt* gtNext;
+    GenTreeStmt* gtPrev;
+
+    bool compilerAdded;
+
     GenTreeStmt* getNextStmt()
     {
         if (gtNext == nullptr)
@@ -4932,7 +4930,7 @@ struct GenTreeStmt : public GenTree
         }
         else
         {
-            return gtNext->AsStmt();
+            return gtNext;
         }
     }
 
@@ -4944,34 +4942,35 @@ struct GenTreeStmt : public GenTree
         }
         else
         {
-            return gtPrev->AsStmt();
+            return gtPrev;
         }
     }
 
     GenTreeStmt(GenTree* expr, IL_OFFSETX offset)
-        : GenTree(GT_STMT, TYP_VOID)
-        , gtStmtExpr(expr)
+        : gtStmtExpr(expr)
         , gtStmtList(nullptr)
         , gtInlineContext(nullptr)
         , gtStmtILoffsx(offset)
 #ifdef DEBUG
         , gtStmtLastILoffs(BAD_IL_OFFSET)
 #endif
-    {
-        // Statements can't have statements as part of their expression tree.
-        assert(expr->gtOper != GT_STMT);
-
-        // Set the statement to have the same costs as the top node of the tree.
-        // This is used long before costs have been assigned, so we need to copy
-        // the raw costs.
-        CopyRawCosts(expr);
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeStmt() : GenTree(GT_STMT, TYP_VOID)
+        , gtNext(nullptr)
+        , gtPrev(nullptr)
+        , compilerAdded(false)
     {
     }
-#endif
+
+    bool IsPhiDefnStmt();
+
+    unsigned char GetCostSz() const
+    {
+        return gtStmtExpr->GetCostSz();
+    }
+
+    unsigned char GetCostEx() const
+    {
+        return gtStmtExpr->GetCostEx();
+    }
 };
 
 /*  NOTE: Any tree nodes that are larger than 8 bytes (two ints or
