@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml
 {
     internal class DSASignatureDescription : SignatureDescription
     {
-        const string HashAlgorithm = "SHA1";
+        private const string HashAlgorithm = "SHA1";
 
         public DSASignatureDescription()
         {

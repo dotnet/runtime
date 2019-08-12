@@ -442,7 +442,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        void TransactionCompletedEvent(object sender, TransactionEventArgs e)
+        private void TransactionCompletedEvent(object sender, TransactionEventArgs e)
         {
             Transaction transaction = e.Transaction;
 

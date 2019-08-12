@@ -61,9 +61,9 @@ namespace System.Data.ProviderBase
 
         private sealed class TransactedConnectionPool
         {
-            Dictionary<Transaction, TransactedConnectionList> _transactedCxns;
+            private Dictionary<Transaction, TransactedConnectionList> _transactedCxns;
 
-            DbConnectionPool _pool;
+            private DbConnectionPool _pool;
 
             private static int _objectTypeCount; // Bid counter
             internal readonly int _objectID = System.Threading.Interlocked.Increment(ref _objectTypeCount);

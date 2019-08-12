@@ -279,7 +279,7 @@ namespace System.Linq.Parallel
         /// </summary>
         private class GroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, ListChunk<TElement>, int>
         {
-            const int OrderKey = unchecked((int)0xdeadbeef);
+            private const int OrderKey = unchecked((int)0xdeadbeef);
 
             internal GroupJoinHashLookup(HashLookup<THashKey, ListChunk<TElement>> lookup)
                 : base(lookup)

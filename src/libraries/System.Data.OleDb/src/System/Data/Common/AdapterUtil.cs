@@ -34,7 +34,7 @@ namespace System.Data.Common
             }
         }
 
-        static void TraceException(string trace, Exception e)
+        private static void TraceException(string trace, Exception e)
         {
             Debug.Assert(e != null, "TraceException: null Exception");
             if (e != null)

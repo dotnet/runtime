@@ -497,7 +497,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
         }
 
-        static void WriteWarning(Exception e, bool parsableerrors)
+        private static void WriteWarning(Exception e, bool parsableerrors)
         {
             Console.Out.WriteLine(FormatMessage(parsableerrors, true, e.Message));
             if (e.InnerException != null)

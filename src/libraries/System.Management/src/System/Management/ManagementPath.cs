@@ -1047,7 +1047,7 @@ namespace System.Management
     /// <summary>
     /// Converts a String to a ManagementPath
     /// </summary>
-    class ManagementPathConverter : ExpandableObjectConverter
+    internal class ManagementPathConverter : ExpandableObjectConverter
     {
 
         /// <summary>

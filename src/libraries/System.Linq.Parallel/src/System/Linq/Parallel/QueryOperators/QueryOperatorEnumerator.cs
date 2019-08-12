@@ -50,7 +50,7 @@ namespace System.Linq.Parallel
             return new QueryOperatorClassicEnumerator(this);
         }
 
-        class QueryOperatorClassicEnumerator : IEnumerator<TElement>
+        private class QueryOperatorClassicEnumerator : IEnumerator<TElement>
         {
             private QueryOperatorEnumerator<TElement, TKey> _operatorEnumerator;
             private TElement _current;

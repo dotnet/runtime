@@ -116,7 +116,7 @@ namespace System.Linq.Parallel
         // then doesn't return elements it has already seen before.
         //
 
-        class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
+        private class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
@@ -189,7 +189,7 @@ namespace System.Linq.Parallel
             return wrappedChild.Distinct(_comparer);
         }
 
-        class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
+        private class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.

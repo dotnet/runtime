@@ -38,11 +38,11 @@ namespace System.Data
         // Selectors and comparers are mapped using the index in the list.
         // E.g: _comparers[i] is used with _selectors[i]
 
-        LinkedList<Func<T, object>> _selectors = new LinkedList<Func<T, object>>();
-        LinkedList<Comparison<object>> _comparers = new LinkedList<Comparison<object>>();
+        private LinkedList<Func<T, object>> _selectors = new LinkedList<Func<T, object>>();
+        private LinkedList<Comparison<object>> _comparers = new LinkedList<Comparison<object>>();
 
-        LinkedListNode<Func<T, object>> _currentSelector = null;
-        LinkedListNode<Comparison<object>> _currentComparer = null;
+        private LinkedListNode<Func<T, object>> _currentSelector = null;
+        private LinkedListNode<Comparison<object>> _currentComparer = null;
 
         /// <summary>
         /// Adds a sorting selector/comparer in the correct order

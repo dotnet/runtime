@@ -226,7 +226,7 @@ namespace System.Linq.Parallel
         protected readonly CancellationToken _cancellationToken;
         private Mutables _mutables; // All of the mutable state.
 
-        class Mutables
+        private class Mutables
         {
             internal HashLookup<Wrapper<TGroupKey>, ListChunk<TElement>> _hashLookup; // The lookup with key-value mappings.
             internal int _hashLookupIndex; // The current index within the lookup.
@@ -429,7 +429,7 @@ namespace System.Linq.Parallel
         protected readonly CancellationToken _cancellationToken;
         private Mutables _mutables; // All the mutable state.
 
-        class Mutables
+        private class Mutables
         {
             internal HashLookup<Wrapper<TGroupKey>, GroupKeyData> _hashLookup; // The lookup with key-value mappings.
             internal int _hashLookupIndex; // The current index within the lookup.
@@ -724,7 +724,7 @@ namespace System.Linq.Parallel
     /// </summary>
     internal class OrderedGroupByGrouping<TGroupKey, TOrderKey, TElement> : IGrouping<TGroupKey, TElement>
     {
-        const int INITIAL_CHUNK_SIZE = 2;
+        private const int INITIAL_CHUNK_SIZE = 2;
 
         private TGroupKey _groupKey; // The group key for this grouping
         private ListChunk<Pair<TOrderKey, TElement>> _values; // Values in this group

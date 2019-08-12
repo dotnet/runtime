@@ -248,7 +248,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            bool HasFactoryMethod(ClassDataContract classContract)
+            private bool HasFactoryMethod(ClassDataContract classContract)
             {
                 return Globals.TypeOfIObjectReference.IsAssignableFrom(classContract.UnderlyingType);
             }

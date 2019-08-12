@@ -97,10 +97,10 @@ namespace System.Text.Encodings.Web
             get { return 10; } // "&#x10FFFF;" is the longest encoded form
         }
 
-        static readonly char[] s_quote = "&quot;".ToCharArray();
-        static readonly char[] s_ampersand = "&amp;".ToCharArray();
-        static readonly char[] s_lessthan = "&lt;".ToCharArray();
-        static readonly char[] s_greaterthan = "&gt;".ToCharArray();
+        private static readonly char[] s_quote = "&quot;".ToCharArray();
+        private static readonly char[] s_ampersand = "&amp;".ToCharArray();
+        private static readonly char[] s_lessthan = "&lt;".ToCharArray();
+        private static readonly char[] s_greaterthan = "&gt;".ToCharArray();
 
         public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {

@@ -155,7 +155,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for concatenating two data sources.
         //
 
-        sealed class ConcatQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TSource, ConcatKey<TLeftKey, TRightKey>>
+        private sealed class ConcatQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TSource, ConcatKey<TLeftKey, TRightKey>>
         {
             private QueryOperatorEnumerator<TSource, TLeftKey> _firstSource; // The first data source to enumerate.
             private QueryOperatorEnumerator<TSource, TRightKey> _secondSource; // The second data source to enumerate.
@@ -226,7 +226,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        class ConcatQueryOperatorResults : BinaryQueryOperatorResults
+        private class ConcatQueryOperatorResults : BinaryQueryOperatorResults
         {
             private int _leftChildCount; // The number of elements in the left child result set
             private int _rightChildCount; // The number of elements in the right child result set

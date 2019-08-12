@@ -387,7 +387,7 @@ namespace System.Xml.Linq
             }
         }
 
-        async Task WriteStartElementAsync(XElement e, CancellationToken cancellationToken)
+        private async Task WriteStartElementAsync(XElement e, CancellationToken cancellationToken)
         {
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
@@ -409,7 +409,7 @@ namespace System.Xml.Linq
 
     internal struct NamespaceResolver
     {
-        class NamespaceDeclaration
+        private class NamespaceDeclaration
         {
             public string prefix;
             public XNamespace ns;

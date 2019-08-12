@@ -151,7 +151,7 @@ namespace System.Data.ProviderBase
             }
         };
 
-        const int CounterInstanceNameMaxLength = 127;
+        private const int CounterInstanceNameMaxLength = 127;
 
         internal readonly Counter HardConnectsPerSecond;
         internal readonly Counter HardDisconnectsPerSecond;
@@ -312,7 +312,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        void ExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)
+        private void ExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)
         {
             if ((null != e) && e.IsTerminating)
             {
@@ -320,12 +320,12 @@ namespace System.Data.ProviderBase
             }
         }
 
-        void ExitEventHandler(object sender, EventArgs e)
+        private void ExitEventHandler(object sender, EventArgs e)
         {
             Dispose();
         }
 
-        void UnloadEventHandler(object sender, EventArgs e)
+        private void UnloadEventHandler(object sender, EventArgs e)
         {
             Dispose();
         }

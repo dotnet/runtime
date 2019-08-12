@@ -113,7 +113,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the last operation.
         //
 
-        class LastQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
+        private class LastQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private Func<TSource, bool> _predicate; // The optional predicate used during the search.
@@ -235,7 +235,7 @@ namespace System.Linq.Parallel
         }
 
 
-        class LastQueryOperatorState<TKey>
+        private class LastQueryOperatorState<TKey>
         {
             internal TKey _key;
             internal int _partitionId = -1;

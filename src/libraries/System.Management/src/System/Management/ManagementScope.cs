@@ -378,14 +378,14 @@ namespace System.Management
                 LoadPlatformNotSupportedDelegates(SR.Format(SR.PlatformNotSupported_FrameworkUpdatedRequired, wminet_utilsPath));
             }
         }
-        static bool LoadDelegate<TDelegate>(ref TDelegate delegate_f, IntPtr hModule, string procName) where TDelegate : class
+        private static bool LoadDelegate<TDelegate>(ref TDelegate delegate_f, IntPtr hModule, string procName) where TDelegate : class
         {
             IntPtr procAddr = Interop.Kernel32.GetProcAddress(hModule, procName);
             return procAddr != IntPtr.Zero &&
                 (delegate_f = Marshal.GetDelegateForFunctionPointer<TDelegate>(procAddr)) != null;
         }
 
-        static void LoadPlatformNotSupportedDelegates(string exceptionMessage)
+        private static void LoadPlatformNotSupportedDelegates(string exceptionMessage)
         {
             ResetSecurity_f = (_) => throw new PlatformNotSupportedException(exceptionMessage);
             SetSecurity_f = (ref bool _, ref IntPtr __) => throw new PlatformNotSupportedException(exceptionMessage);
@@ -968,7 +968,7 @@ namespace System.Management
             }
         }
 
-        void InitializeGuts(object o)
+        private void InitializeGuts(object o)
         {
             ManagementScope threadParam = (ManagementScope) o ;
             IWbemLocator loc = (IWbemLocator) new WbemLocator();
@@ -1486,7 +1486,7 @@ namespace System.Management
     /// <summary>
     /// Converts a String to a ManagementScope
     /// </summary>
-    class ManagementScopeConverter : ExpandableObjectConverter
+    internal class ManagementScopeConverter : ExpandableObjectConverter
     {
 
         /// <summary>

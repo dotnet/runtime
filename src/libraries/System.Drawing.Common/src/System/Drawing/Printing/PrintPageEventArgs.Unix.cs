@@ -41,13 +41,13 @@ namespace System.Drawing.Printing
     /// </summary>
     public class PrintPageEventArgs : EventArgs
     {
-        bool cancel;
-        Graphics graphics;
-        bool hasmorePages;
-        Rectangle marginBounds;
-        Rectangle pageBounds;
-        PageSettings pageSettings;
-        GraphicsPrinter graphics_context;
+        private bool cancel;
+        private Graphics graphics;
+        private bool hasmorePages;
+        private Rectangle marginBounds;
+        private Rectangle pageBounds;
+        private PageSettings pageSettings;
+        private GraphicsPrinter graphics_context;
 
         public PrintPageEventArgs(Graphics graphics, Rectangle marginBounds,
             Rectangle pageBounds, PageSettings pageSettings)

@@ -9,8 +9,8 @@ namespace System.Data.SqlClient
 {
     public sealed class SqlCredential
     {
-        string _userId;
-        SecureString _password;
+        private string _userId;
+        private SecureString _password;
 
         public SqlCredential(string userId, SecureString password)
         {

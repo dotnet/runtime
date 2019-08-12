@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
         // requested.
         //
 
-        class ContainsSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
+        private class ContainsSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The source data.
             private readonly TInput _searchValue; // The value for which we are searching.

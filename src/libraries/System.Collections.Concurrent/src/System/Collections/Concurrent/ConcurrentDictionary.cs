@@ -2041,7 +2041,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private sealed class DictionaryEnumerator : IDictionaryEnumerator
         {
-            IEnumerator<KeyValuePair<TKey, TValue>> _enumerator; // Enumerator over the dictionary.
+            private IEnumerator<KeyValuePair<TKey, TValue>> _enumerator; // Enumerator over the dictionary.
 
             internal DictionaryEnumerator(ConcurrentDictionary<TKey, TValue> dictionary)
             {

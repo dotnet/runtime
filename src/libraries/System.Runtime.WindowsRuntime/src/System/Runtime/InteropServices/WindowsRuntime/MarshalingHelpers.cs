@@ -105,9 +105,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
     internal static class NotifyCollectionChangedEventArgsMarshaler
     {
-        const string WinRTNotifyCollectionChangedEventArgsName = "Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs";
+        private const string WinRTNotifyCollectionChangedEventArgsName = "Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs";
 
-        static INotifyCollectionChangedEventArgsFactory s_EventArgsFactory;
+        private static INotifyCollectionChangedEventArgsFactory s_EventArgsFactory;
 
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT NotifyCollectionChangedEventArgs instance.
@@ -178,9 +178,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
     internal static class PropertyChangedEventArgsMarshaler
     {
-        const string WinRTPropertyChangedEventArgsName = "Windows.UI.Xaml.Data.PropertyChangedEventArgs";
+        private const string WinRTPropertyChangedEventArgsName = "Windows.UI.Xaml.Data.PropertyChangedEventArgs";
 
-        static IPropertyChangedEventArgsFactory s_pPCEventArgsFactory;
+        private static IPropertyChangedEventArgsFactory s_pPCEventArgsFactory;
 
         // Extracts PropertyName from a managed PropertyChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT PropertyChangedEventArgs instance.

@@ -22,7 +22,7 @@ namespace System.Management
     }
 
     //Class for calling GetErrorInfo from managed code
-    class WbemErrorInfo
+    internal class WbemErrorInfo
     {
         public static IWbemClassObjectFreeThreaded GetErrorInfo()
         {

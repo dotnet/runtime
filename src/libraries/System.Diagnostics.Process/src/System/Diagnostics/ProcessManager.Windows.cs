@@ -614,7 +614,7 @@ namespace System.Diagnostics
                 return (long)MemoryMarshal.Read<int>(data);
         }
 
-        enum ValueId
+        private enum ValueId
         {
             Unknown = -1,
             HandleCount,
