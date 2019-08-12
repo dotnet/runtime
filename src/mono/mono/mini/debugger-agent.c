@@ -3231,8 +3231,7 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 	int aindex;
 	gint32 ret = 1;
 	cinfo = mono_custom_attrs_from_field_checked (f->parent, f, error);
-	if (!is_ok (error))
-		return ret;
+	goto_if_nok (error, leave);
 	attr = NULL;
 	if (cinfo) {
 		for (aindex = 0; aindex < cinfo->num_attrs; ++aindex) {
@@ -3246,8 +3245,10 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 
 				mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size,
 																	&typed_args, &named_args, &num_named_args, &arginfo, error);
-				if (!is_ok (error))
-					return FALSE;
+				if (!is_ok (error)) {
+					ret = 0;
+					goto leave;
+				}
 				ret = *(gint32*)typed_args [1];
 				g_free (typed_args);
 				g_free (named_args);
@@ -3256,6 +3257,8 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 			}
 		}
 	}
+leave:
+	mono_error_cleanup (error);
 	return ret;
 }
 
