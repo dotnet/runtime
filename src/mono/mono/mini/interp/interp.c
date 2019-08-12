@@ -4773,8 +4773,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
 #ifndef DISABLE_REMOTING
+			gpointer tmp;
 			if (mono_object_is_transparent_proxy (o)) {
-				gpointer tmp;
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 
 				addr = (char*)mono_load_remote_field_checked (o, klass, field, &tmp, error);
@@ -4800,8 +4800,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	
 			ip += 2;
 #ifndef DISABLE_REMOTING
+			gpointer tmp;
 			if (mono_object_is_transparent_proxy (o)) {
-				gpointer tmp;
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 				addr = (char*)mono_load_remote_field_checked (o, klass, field, &tmp, error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */

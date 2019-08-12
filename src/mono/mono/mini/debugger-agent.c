@@ -9467,10 +9467,11 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (val);
 			} else {
 				void *field_value = NULL;
-
+#ifndef DISABLE_REMOTING
+				void *field_storage = NULL;
+#endif
 				if (remote_obj) {
 #ifndef DISABLE_REMOTING
-					void *field_storage = NULL;
 					field_value = mono_load_remote_field_checked(obj, obj_type, f, &field_storage, error);
 					if (!is_ok (error)) {
 						mono_error_cleanup (error); /* FIXME report the error */
